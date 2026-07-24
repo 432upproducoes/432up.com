@@ -1,0 +1,324 @@
+/* ========== core.css · 432UP · v2.1.0 · 2026-02-26 ========== */
+/* Base compartilhada: reset, variáveis, tipografia, glass, debug, toast,
+   header, nav, footer, FAB, visual layers (aurora/fog/algae/orbs/particles),
+   fade-in, motion, responsivo */
+/* Extraído cirurgicamente da index v3.8.2 */
+
+/* ── Reset ── */
+*,*::before,*::after{margin:0;padding:0;box-sizing:border-box}
+html{scroll-behavior:smooth}
+
+/* ── Variáveis base (tema padrão = coringa) ── */
+:root{
+  --font:'Inter',system-ui,-apple-system,sans-serif;
+  --radius:16px;
+  --radius-sm:10px;
+  --transition:.3s cubic-bezier(.4,0,.2,1);
+  --bpm:74;
+  --beat:calc(60s / var(--bpm));
+}
+
+/* ── Dark mode ── */
+[data-theme="dark"]{
+  --bg:#0a0a12;
+  --bg2:#12121e;
+  --bg-primary:#0a0a12;
+  --text:#e8e8ed;
+  --text2:#9a9ab0;
+  --accent:#8b5cf6;
+  --accent2:#a78bfa;
+  --accent-glow:rgba(139,92,246,.25);
+  --green:#22c55e;
+  --red:#ef4444;
+  --surface:rgba(255,255,255,.06);
+  --border:rgba(255,255,255,.08);
+  --card-hover:rgba(139,92,246,.1);
+  --glass-bg:rgba(18,18,30,.82);
+  --glass-border:rgba(255,255,255,.08);
+  --glass-blur:16px;
+  --header-bg:rgba(10,10,18,.85);
+  --shadow:0 8px 32px rgba(0,0,0,.3);
+  --aurora-1:rgba(139,92,246,.12);
+  --aurora-2:rgba(59,130,246,.08);
+  --aurora-3:rgba(16,185,129,.06);
+  --fog-color:rgba(139,92,246,.03);
+  --algae-color:rgba(139,92,246,.4);
+  --orb-color:rgba(139,92,246,.06);
+  --particle-color:rgba(255,255,255,.5);
+}
+
+/* ── Light mode ── */
+[data-theme="light"]{
+  --bg:#fafaf9;
+  --bg2:#f0ece4;
+  --bg-primary:#fafaf9;
+  --text:#1a1a1e;
+  --text2:#6b6b7b;
+  --accent:#7c3aed;
+  --accent2:#6d28d9;
+  --accent-glow:rgba(124,58,237,.15);
+  --green:#16a34a;
+  --red:#dc2626;
+  --surface:rgba(0,0,0,.04);
+  --border:rgba(0,0,0,.06);
+  --card-hover:rgba(124,58,237,.08);
+  --glass-bg:rgba(240,236,228,.82);
+  --glass-border:rgba(0,0,0,.06);
+  --glass-blur:16px;
+  --header-bg:rgba(250,250,249,.85);
+  --shadow:0 8px 32px rgba(0,0,0,.08);
+  --aurora-1:rgba(124,58,237,.08);
+  --aurora-2:rgba(59,130,246,.06);
+  --aurora-3:rgba(16,185,129,.04);
+  --fog-color:rgba(124,58,237,.02);
+  --algae-color:rgba(124,58,237,.3);
+  --orb-color:rgba(124,58,237,.04);
+  --particle-color:rgba(0,0,0,.3);
+}
+
+/* ── Tipografia ── */
+body{
+  font-family:var(--font);
+  background:var(--bg);
+  color:var(--text);
+  min-height:100vh;
+  transition:background .5s,color .5s;
+  overflow-x:hidden;
+  -webkit-font-smoothing:antialiased;
+  -moz-osx-font-smoothing:grayscale;
+}
+
+a{color:var(--accent);text-decoration:none;transition:color var(--transition)}
+a:hover{color:var(--accent2)}
+
+/* ── Glass base ── */
+.glass{
+  background:var(--glass-bg);
+  border:1px solid var(--glass-border);
+  border-radius:var(--radius);
+  backdrop-filter:blur(var(--glass-blur));
+  -webkit-backdrop-filter:blur(var(--glass-blur));
+}
+
+/* ── Debug bar ── */
+.debug{
+  position:fixed;top:0;left:0;right:0;z-index:9999;
+  background:rgba(0,0,0,.9);color:#0f0;
+  font:11px/1.4 monospace;padding:6px 12px;
+  display:flex;align-items:center;gap:12px;
+  backdrop-filter:blur(10px);
+  -webkit-backdrop-filter:blur(10px);
+}
+.debug .dot{width:8px;height:8px;border-radius:50%;flex-shrink:0}
+.debug .dot.on{background:#0f0;box-shadow:0 0 6px #0f0}
+.debug .dot.off{background:#f00;box-shadow:0 0 6px #f00}
+.debug button{background:#333;color:#fff;border:none;padding:2px 8px;border-radius:4px;cursor:pointer;font:11px monospace}
+.debug-hidden .debug{display:none}
+.debug #dbgFps{margin-left:auto;color:#0ff}
+
+/* ── Toast ── */
+.toast{
+  position:fixed;top:50px;left:50%;
+  transform:translateX(-50%) translateY(-20px);
+  background:var(--bg2);border:1px solid var(--accent);
+  color:var(--text);padding:12px 24px;
+  border-radius:var(--radius-sm);font-size:.85rem;
+  opacity:0;transition:all .4s;z-index:9999;
+  pointer-events:none;text-align:center;max-width:90vw;
+  backdrop-filter:blur(10px);
+  -webkit-backdrop-filter:blur(10px);
+}
+.toast.show{opacity:1;transform:translateX(-50%) translateY(0)}
+
+/* ── Header / Nav ── */
+.header-main{
+  position:fixed;top:0;left:0;right:0;z-index:990;
+  background:var(--header-bg);
+  backdrop-filter:blur(20px);
+  -webkit-backdrop-filter:blur(20px);
+  border-bottom:1px solid var(--border);
+  transition:background .5s;
+}
+.header-inner{
+  max-width:1200px;margin:0 auto;
+  display:flex;align-items:center;justify-content:space-between;
+  padding:0 24px;height:60px;
+}
+.logo{font-size:1.3rem;font-weight:700;color:var(--text);text-decoration:none;letter-spacing:-.5px}
+.logo span{color:var(--accent)}
+
+.nav-toggle{
+  display:none;background:none;border:none;
+  color:var(--text);font-size:1.5rem;cursor:pointer;
+  padding:8px;line-height:1;
+  -webkit-tap-highlight-color:transparent;
+}
+.nav-menu{display:flex;align-items:center;gap:24px;list-style:none}
+.nav-menu a{
+  color:var(--text2);font-size:.85rem;font-weight:500;
+  text-decoration:none;transition:color var(--transition);
+}
+.nav-menu a:hover{color:var(--accent)}
+.nav-menu a.active{color:var(--accent);font-weight:600}
+
+/* ── Footer ── */
+.footer-main{
+  text-align:center;padding:40px 20px;
+  font-size:.75rem;color:var(--text2);
+  position:relative;z-index:10;
+}
+.footer-main a{color:var(--accent);text-decoration:none}
+.footer-main #footerAdmin{
+  cursor:pointer;
+  -webkit-tap-highlight-color:transparent;
+  touch-action:manipulation;
+  display:inline-block;padding:10px 20px;
+  position:relative;z-index:1000;
+}
+
+/* ── FAB WhatsApp ── */
+.fab-wa{
+  position:fixed;bottom:24px;right:20px;z-index:998;
+  width:56px;height:56px;border-radius:50%;
+  background:var(--green);color:#fff;border:none;
+  font-size:1.6rem;cursor:pointer;
+  box-shadow:0 4px 20px rgba(34,197,94,.4);
+  transition:all .3s;
+  display:flex;align-items:center;justify-content:center;
+  -webkit-tap-highlight-color:transparent;
+}
+.fab-wa:hover{transform:scale(1.08);box-shadow:0 6px 28px rgba(34,197,94,.5)}
+
+/* ═══════════════════════════════════════════════
+   VISUAL LAYERS — Aurora, Fog, Algae, Orbs, Particles
+   ═══════════════════════════════════════════════ */
+
+.visual-layers{
+  position:fixed;top:0;left:0;right:0;bottom:0;
+  z-index:0;pointer-events:none;overflow:hidden;
+}
+
+/* ── Aurora ── */
+.aurora{
+  position:absolute;top:-50%;left:-50%;right:-50%;bottom:-50%;
+  background:
+    radial-gradient(ellipse at 20% 50%, var(--aurora-1) 0%, transparent 50%),
+    radial-gradient(ellipse at 80% 20%, var(--aurora-2) 0%, transparent 50%),
+    radial-gradient(ellipse at 50% 80%, var(--aurora-3) 0%, transparent 50%);
+  animation:auroraDrift 25s ease-in-out infinite alternate;
+}
+@keyframes auroraDrift{
+  0%{transform:rotate(0deg) scale(1)}
+  33%{transform:rotate(3deg) scale(1.05)}
+  66%{transform:rotate(-2deg) scale(.97)}
+  100%{transform:rotate(1deg) scale(1.02)}
+}
+
+/* ── Fog ── */
+.fog{
+  position:absolute;top:0;left:0;right:0;bottom:0;
+  background:
+    radial-gradient(ellipse at 30% 40%, var(--fog-color) 0%, transparent 60%),
+    radial-gradient(ellipse at 70% 60%, var(--fog-color) 0%, transparent 60%);
+  animation:fogShift 30s ease-in-out infinite alternate;
+}
+@keyframes fogShift{
+  0%{opacity:.6;transform:scale(1)}
+  50%{opacity:1;transform:scale(1.1)}
+  100%{opacity:.7;transform:scale(.95)}
+}
+
+/* ── Algae ── */
+.algae{
+  position:absolute;border-radius:50%;
+  background:var(--algae-color);
+  animation:algaeFloat linear infinite;
+  will-change:transform,opacity;
+}
+@keyframes algaeFloat{
+  0%{transform:translateY(0) translateX(0) scale(1);opacity:.3}
+  25%{transform:translateY(-30vh) translateX(10px) scale(1.2);opacity:.5}
+  50%{transform:translateY(-60vh) translateX(-10px) scale(.8);opacity:.3}
+  75%{transform:translateY(-80vh) translateX(15px) scale(1.1);opacity:.4}
+  100%{transform:translateY(-100vh) translateX(0) scale(1);opacity:.1}
+}
+
+/* ── Orbs ── */
+.orb{
+  position:absolute;border-radius:50%;
+  background:radial-gradient(circle,var(--orb-color) 0%,transparent 70%);
+  animation:orbFloat ease-in-out infinite;
+  will-change:transform;
+}
+@keyframes orbFloat{
+  0%,100%{transform:translate(0,0) scale(1)}
+  25%{transform:translate(30px,-40px) scale(1.1)}
+  50%{transform:translate(-20px,-20px) scale(.9)}
+  75%{transform:translate(10px,30px) scale(1.05)}
+}
+
+/* ── Particles ── */
+.particle{
+  position:absolute;border-radius:50%;
+  background:var(--particle-color);
+  animation:particleDrift linear infinite;
+  will-change:transform,opacity;
+}
+@keyframes particleDrift{
+  0%{transform:translateY(0) translateX(0);opacity:.3}
+  50%{transform:translateY(-50vh) translateX(20px);opacity:.6}
+  100%{transform:translateY(-100vh) translateX(-10px);opacity:0}
+}
+
+/* ── Motion off → pausa tudo ── */
+[data-motion="off"] .aurora,
+[data-motion="off"] .fog,
+[data-motion="off"] .algae,
+[data-motion="off"] .orb,
+[data-motion="off"] .particle{
+  animation-play-state:paused !important;
+}
+
+/* ── Fade-in (IntersectionObserver) ── */
+.fade-in{
+  opacity:0;transform:translateY(20px);
+  transition:opacity .6s var(--transition),transform .6s var(--transition);
+}
+.fade-in.visible{opacity:1;transform:translateY(0)}
+
+/* ═══════════════════════════════════════════════
+   RESPONSIVO
+   ═══════════════════════════════════════════════ */
+
+@media(max-width:768px){
+  .nav-toggle{display:block}
+  .nav-menu{
+    position:fixed;top:60px;left:0;right:0;
+    background:var(--header-bg);
+    backdrop-filter:blur(20px);
+    -webkit-backdrop-filter:blur(20px);
+    flex-direction:column;gap:0;
+    border-bottom:1px solid var(--border);
+    max-height:0;overflow:hidden;
+    transition:max-height .3s ease;
+  }
+  .nav-menu.open{max-height:400px}
+  .nav-menu a{
+    display:block;padding:14px 24px;
+    border-bottom:1px solid var(--border);
+    width:100%;
+  }
+  .header-inner{padding:0 16px}
+  .fab-wa{bottom:20px;right:16px;width:52px;height:52px;font-size:1.4rem}
+}
+
+@media(max-width:480px){
+  .header-inner{height:54px}
+  .logo{font-size:1.1rem}
+}
+
+/* ── Reduced motion (acessibilidade) ── */
+@media(prefers-reduced-motion:reduce){
+  .aurora,.fog,.algae,.orb,.particle{animation:none !important}
+  .fade-in{opacity:1;transform:none;transition:none}
+}
