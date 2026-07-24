@@ -1,0 +1,221 @@
+<!DOCTYPE html>
+<html lang="pt-BR" data-page="gal" data-theme="dark" data-motion="on">
+<head>
+  <!-- Google Analytics GA4 -->
+<script async src="https://www.googletagmanager.com/gtag/js?id=G-7SWNCP1NV6"></script>
+<script>
+  window.dataLayer = window.dataLayer || [];
+  function gtag(){dataLayer.push(arguments);}
+  gtag('js', new Date());
+  gtag('config', 'G-7SWNCP1NV6');
+</script>
+
+  <meta charset="UTF-8">
+  <link rel="icon" type="image/png" href="/imagens/favicon.png">
+  <link rel="apple-touch-icon" href="/imagens/favicon.png">
+
+  <meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+  <title>432UP • Memórias</title>
+
+  <!-- IMPORTANTE:
+       A galeria precisa do CSS base das camadas (variáveis + keyframes + estilos dos layers).
+       Por isso, carregue o index.css ANTES do galeria.css (galeria.css pode sobrescrever). -->
+  <link rel="stylesheet" href="css/index.css">
+  <link rel="stylesheet" href="css/galeria.css">
+  <link rel="canonical" href="https://www.432up.com/galeria">
+<meta property="og:url" content="https://www.432up.com/galeria">
+<link rel="alternate" hreflang="pt-BR" href="https://www.432up.com/galeria">
+<link rel="alternate" hreflang="x-default" href="https://www.432up.com/galeria">
+
+</head>
+
+<body>
+  <!-- Supabase SDK (manter) -->
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+<!-- Tracker unificado -->
+<script src="https://www.432up.com/js/tracker.js"></script>
+
+
+  <!-- DEBUG BAR -->
+  <div id="debugBar">
+    <span><b>432UP</b> Galeria v1.3</span>
+    <span>TEMA <b id="dTheme">dark</b></span>
+    <span>DB <span id="dDb" class="y">…</span></span>
+    <span>FOTOS <span id="dFotos">0</span></span>
+    <span>CATS <span id="dCats">0</span></span>
+    <span>ALG:<span id="dAlg">0</span></span>
+    <span>ORB:<span id="dOrb">0</span></span>
+    <span>PRT:<span id="dPrt">0</span></span>
+    <span>FPS <span id="dFps" class="g">--</span></span>
+    <button id="btnMotion" onclick="toggleMotion()">MOTION ON</button>
+  </div>
+
+  <div class="toast-container" id="toastBox"></div>
+
+  <!-- VISUAL LAYERS (IDs precisam bater com o motor visual) -->
+  <div class="aurora-layer" id="auroraLayer">
+    <div class="aurora-band"></div><div class="aurora-band"></div><div class="aurora-band"></div><div class="aurora-band"></div>
+  </div>
+
+  <div class="fog-layer" id="fogLayer">
+    <div class="fog-band"></div><div class="fog-band"></div>
+  </div>
+
+  <div class="algae-layer" id="algaeLayer"></div>
+  <div class="orbs-layer" id="orbsLayer"></div>
+  <div class="particles-layer" id="particlesLayer"></div>
+
+  <!-- NAV OVERLAY -->
+  <div class="nav-overlay" id="navOverlay" onclick="closeNav()"></div>
+
+  <!-- HEADER -->
+  <header>
+    <a href="https://www.432up.com/" style="text-decoration:none"><h1>432UP</h1></a>
+    <nav class="nav" id="mainNav">
+      <a href="https://www.432up.com/" onclick="closeNav()">Início</a>
+      <a href="https://www.432up.com/#secServicos" onclick="closeNav()">Experiências</a>
+      <a href="#" class="active" onclick="closeNav()">Memórias</a>
+      <a href="https://www.432up.com/#secPacotes" onclick="closeNav()">Pacotes</a>
+      <a href="https://www.432up.com/#secFaq" onclick="closeNav()">FAQ</a>
+      <a href="https://www.432up.com/#secContato" onclick="closeNav()">Contato</a>
+    </nav>
+    <div class="header-actions">
+      <button class="hamburger" id="btnHamburger" onclick="toggleNav()" aria-label="Menu">☰</button>
+    </div>
+  </header>
+
+  <!-- HERO -->
+  <div class="hero-galeria">
+    <h2>Memórias que ficam</h2>
+    <p>Cada foto e vídeo conta uma história. Reviva os melhores momentos dos nossos eventos.</p>
+  </div>
+
+  <!-- CAROUSEL MARÉ -->
+  <div class="mare-section">
+    <div class="mare-track" id="mareTrack"></div>
+  </div>
+
+  <!-- FILTROS -->
+  <div class="filtros-wrap" id="filtrosWrap">
+    <button class="filtro-chip ativo" data-filtro="" onclick="filtrar('')">Todos</button>
+    <button class="filtro-chip" data-filtro="video" onclick="filtrar('video')">🎬 Vídeos</button>
+  </div>
+
+  <!-- MASONRY -->
+  <div class="masonry-wrap">
+    <div class="masonry-grid" id="masonryGrid"></div>
+    <p class="gal-empty" id="galEmpty" style="display:none">Nenhuma mídia encontrada nesta categoria.</p>
+  </div>
+
+  <!-- LIGHTBOX -->
+  <div class="lightbox" id="lightbox">
+    <button class="lb-close" onclick="fecharLb()">✕</button>
+    <button class="lb-prev" onclick="navegarLb(-1)">‹</button>
+    <div class="lb-inner" id="lbInner">
+      <img id="lbImg" src="" alt="">
+      <div class="lb-caption" id="lbCaption"></div>
+    </div>
+    <button class="lb-next" onclick="navegarLb(1)">›</button>
+  </div>
+
+  <!-- ADMIN OVERLAY -->
+  <div class="admin-overlay" id="adminOverlay">
+    <div class="admin-panel" style="position:relative">
+      <button class="admin-close" onclick="fecharAdmin()">✕</button>
+      <h2>⚙️ Admin <span>Galeria</span></h2>
+
+      <!-- GERENCIADOR DE CATEGORIAS -->
+      <div class="cat-manager" id="catManager">
+        <div class="cat-manager-title">CATEGORIAS</div>
+        <div class="cat-list" id="catList"></div>
+        <div class="cat-add-row">
+          <input id="catNovoNome" placeholder="Nova categoria">
+          <input id="catNovoEmoji" placeholder="Emoji" style="width:60px">
+          <button onclick="addCat()">+</button>
+        </div>
+      </div>
+
+      <hr class="admin-divider">
+
+      <!-- TIPO DE MÍDIA -->
+      <div class="admin-field">
+        <label>TIPO DE MÍDIA</label>
+        <div class="admin-radio-group">
+          <label><input type="radio" name="adminTipo" value="foto" checked onchange="toggleTipoAdmin()"> Foto</label>
+          <label><input type="radio" name="adminTipo" value="video_yt" onchange="toggleTipoAdmin()"> Vídeo YouTube</label>
+          <label><input type="radio" name="adminTipo" value="video_up" onchange="toggleTipoAdmin()"> Vídeo Upload</label>
+        </div>
+      </div>
+
+      <!-- UPLOAD ZONE (fotos) -->
+      <div id="adminUploadWrap">
+        <div class="admin-upload-zone" id="uploadZone" onclick="document.getElementById('fileInput').click()">
+          Arraste fotos aqui ou toque para selecionar
+        </div>
+        <input type="file" id="fileInput" accept="image/*" multiple style="display:none" onchange="handleFiles(this.files)">
+      </div>
+
+      <!-- VIDEO URL (YouTube) -->
+      <div id="adminVideoYtWrap" style="display:none">
+        <div class="admin-field">
+          <label>URL DO YOUTUBE</label>
+          <input id="adminVideoUrl" placeholder="https://youtube.com/watch?v=...">
+        </div>
+      </div>
+
+      <!-- VIDEO UPLOAD (direto) -->
+      <div id="adminVideoUpWrap" style="display:none">
+        <div class="admin-upload-zone" id="uploadZoneVid" onclick="document.getElementById('vidInput').click()">
+          Arraste vídeo aqui ou toque para selecionar (máx 50MB)
+        </div>
+        <input type="file" id="vidInput" accept="video/*" style="display:none" onchange="handleVidFile(this.files)">
+      </div>
+
+      <!-- CAMPOS COMUNS -->
+      <div style="display:flex;gap:10px">
+        <div class="admin-field" style="flex:1"><input id="adminTitulo" placeholder="Título (opcional)"></div>
+        <div class="admin-field" style="flex:1">
+          <select id="adminCat"></select>
+        </div>
+      </div>
+      <div class="admin-field"><input id="adminLocal" placeholder="Local do evento"></div>
+      <div class="admin-field"><textarea id="adminDesc" placeholder="Descrição (opcional)"></textarea></div>
+      <label style="display:flex;align-items:center;gap:8px;margin-bottom:14px;font-size:.85rem;cursor:pointer">
+        <input type="checkbox" id="adminDest"> Marcar como destaque
+      </label>
+      <button class="admin-btn" id="btnPublicar" onclick="publicar()">📤 Publicar</button>
+
+      <hr class="admin-divider">
+
+      <!-- MÍDIAS CADASTRADAS -->
+      <div class="admin-subtitle">MÍDIAS CADASTRADAS</div>
+      <div id="adminList"></div>
+    </div>
+  </div>
+
+  <!-- FOOTER -->
+  <footer id="siteFooter">
+    © 2025 432UP Produções ·
+    <a id="footerWa" href="https://wa.me/5511948564577">WhatsApp</a> ·
+    <a id="footerIg" href="https://instagram.com/432up.producoes">Instagram</a>
+  </footer>
+
+  <!-- FAB -->
+  <a href="https://wa.me/5511948564577" class="fab" id="fabWa">💬</a>
+
+ 
+  <script src="https://www.432up.com/js/config.js"></script>
+  <script src="https://www.432up.com/js/core.js"></script>
+  <script src="https://www.432up.com/js/galeria.js"></script>
+
+</body>
+</html>
+
+
+
+
+
+
+
+
+
