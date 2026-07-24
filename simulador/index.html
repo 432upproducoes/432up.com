@@ -1,0 +1,1397 @@
+<!DOCTYPE html>
+
+<html lang="pt-BR" data-motion="on">
+
+<head>
+
+<!-- ========== THEME (SYSTEM DEFAULT + TEMP TOGGLE) — iOS SAFE ========== -->
+
+<script>
+(function () {
+  'use strict';
+
+  var html = document.documentElement;
+
+  var VARS_DARK = '--bg:#06050f;--bg2:#0c0a1e;--text:#f0e8d0;--text2:#a09080;--text-bright:#fff;--gold:#F0C040;--gold-bright:#FFD700;--gold-dim:#c9a83c;--gold-glow:rgba(240,192,64,.25);--gold-glow-sm:rgba(240,192,64,.12);--violet:#9333EA;--violet-dim:#7c3aed;--violet-glow:rgba(147,51,234,.3);--pink:#EC4899;--green:#22C55E;--red:#EF4444;--surface:rgba(255,255,255,0.035);--surface2:rgba(255,255,255,0.06);--card-hover:rgba(240,192,64,.06);--border:rgba(240,192,64,.18);--border-hover:rgba(240,192,64,.45);--accent-glow:rgba(240,192,64,.08);--glass-bg:rgba(255,255,255,0.05);--glass-bg-hover:rgba(255,255,255,0.09);--glass-border:rgba(255,255,255,0.10);--glass-shadow:0 8px 32px rgba(0,0,0,0.35);--glass-inset:inset 0 1px 0 rgba(255,255,255,0.08);--glass-blur:20px;--glass-bg-solid:rgba(12,10,30,.92);--grad-gold:linear-gradient(135deg,#F0C040 0%,#c9a83c 100%);--grad-btn:linear-gradient(135deg,#F0C040 0%,#E8961A 100%);--grad-btn-wa:linear-gradient(135deg,#22C55E 0%,#16a34a 100%);--grad-surface:linear-gradient(135deg,rgba(240,192,64,.08),rgba(147,51,234,.06));--party-opacity:1';
+  var VARS_LIGHT = '--bg:#faf6ee;--bg2:#f0ead8;--text:#1a1510;--text2:#6b5c4a;--text-bright:#000;--gold:#c5950a;--gold-bright:#d4a30c;--gold-dim:#a07e08;--gold-glow:rgba(197,149,10,.18);--gold-glow-sm:rgba(197,149,10,.08);--violet:#7c3aed;--violet-dim:#6d28d9;--violet-glow:rgba(124,58,237,.15);--pink:#db2777;--green:#16a34a;--red:#dc2626;--surface:rgba(255,255,255,0.75);--surface2:rgba(255,255,255,0.88);--card-hover:rgba(197,149,10,.08);--border:rgba(0,0,0,0.08);--border-hover:rgba(197,149,10,.4);--accent-glow:rgba(197,149,10,.06);--glass-bg:rgba(255,255,255,0.60);--glass-bg-hover:rgba(255,255,255,0.78);--glass-border:rgba(0,0,0,0.07);--glass-shadow:0 8px 32px rgba(0,0,0,0.06);--glass-inset:inset 0 1px 0 rgba(255,255,255,0.95);--glass-blur:24px;--glass-bg-solid:rgba(255,255,255,.94);--grad-gold:linear-gradient(135deg,#c5950a 0%,#a07e08 100%);--grad-btn:linear-gradient(135deg,#d4a30c 0%,#c5950a 100%);--grad-btn-wa:linear-gradient(135deg,#16a34a 0%,#15803d 100%);--grad-surface:linear-gradient(135deg,rgba(197,149,10,.06),rgba(124,58,237,.03));--party-opacity:0.35';
+
+  var mql = window.matchMedia ? window.matchMedia('(prefers-color-scheme: dark)') : null;
+  function systemTheme() { return (mql && mql.matches) ? 'dark' : 'light'; }
+
+  var manualOverride = false;
+  var lastSystem = systemTheme();
+
+  function setIconLabel(theme) {
+    var ico = document.getElementById('themeIcon');
+    var lbl = document.getElementById('themeLabel');
+    if (ico) ico.textContent = theme === 'dark' ? '☀️' : '🌙';
+    if (lbl) lbl.textContent = theme === 'dark' ? 'Acenda as Luzes' : 'Apague as Luzes e Comece a Festa 🎉';
+  }
+
+  function forcePseudoRepaintSoon() {
+    // iOS Safari: garante repaint dos pseudo-elementos
+    requestAnimationFrame(function () {
+      requestAnimationFrame(function () {
+        html.classList.add('force-pe-repaint');
+        if (document.body) void document.body.offsetHeight;
+        html.classList.remove('force-pe-repaint');
+      });
+    });
+  }
+
+  function applyTheme(theme) {
+    html.classList.add('theme-transitioning');
+    html.setAttribute('data-theme', theme);
+
+    // body pode ainda não existir neste momento
+    if (document.body) document.body.setAttribute('data-theme', theme);
+
+    html.style.cssText = (theme === 'light') ? VARS_LIGHT : VARS_DARK;
+    if (document.body) document.body.style.background = (theme === 'light') ? '#faf6ee' : '#06050f';
+
+    setIconLabel(theme);
+    forcePseudoRepaintSoon();
+
+    setTimeout(function () {
+      html.classList.remove('theme-transitioning');
+      if (document.body) document.body.style.background = '';
+    }, 650);
+  }
+
+  // 1) Primeiro paint: segue sistema
+  applyTheme(lastSystem);
+
+  // 2) Quando o body nascer, garante data-theme também nele
+  document.addEventListener('DOMContentLoaded', function () {
+    var cur = html.getAttribute('data-theme') || systemTheme();
+    if (document.body) document.body.setAttribute('data-theme', cur);
+    setIconLabel(cur);
+  });
+
+  // 3) Toggle: override TEMP (não salva). Se sistema mudar depois, sistema vence.
+  window.toggle432Theme = function () {
+    manualOverride = true;
+    var cur = html.getAttribute('data-theme') || systemTheme();
+    var next = (cur === 'dark') ? 'light' : 'dark';
+    applyTheme(next);
+    if (window.dataLayer) window.dataLayer.push({ event: 'theme_toggle', theme: next });
+  };
+
+  // 4) Sistema mudou: volta a seguir sistema (mesmo se user togglou)
+  function syncToSystemWhenPossible() {
+    if (document.hidden) return; // troca no Control Center pode acontecer em background
+    var sys = systemTheme();
+    lastSystem = sys;
+    manualOverride = false;
+    applyTheme(sys);
+  }
+
+  if (mql && mql.addEventListener) {
+    mql.addEventListener('change', function () {
+      // defere 2 frames pra evitar timing bug iOS
+      setTimeout(syncToSystemWhenPossible, 0);
+    });
+  }
+
+  // 5) Fallback iOS: ao voltar pro foreground, sincroniza se o sistema mudou
+  function onForeground() {
+    if (document.hidden) return;
+    var sys = systemTheme();
+    if (sys !== lastSystem || manualOverride) syncToSystemWhenPossible();
+  }
+  document.addEventListener('visibilitychange', onForeground);
+  window.addEventListener('pageshow', onForeground);
+  window.addEventListener('focus', onForeground);
+})();
+</script>
+
+  <!-- ========== FIX 2: Critical CSS inline — variáveis de tema aplicadas sincronicamente ========== -->
+
+  <style>
+  :root,
+  html[data-theme="dark"],
+  body[data-theme="dark"] {
+    --gold: #F0C040;
+    --gold-bright: #FFD700;
+    --gold-dim: #c9a83c;
+    --gold-glow: rgba(240,192,64,.25);
+    --gold-glow-sm: rgba(240,192,64,.12);
+    --violet: #9333EA;
+    --violet-dim: #7c3aed;
+    --violet-glow: rgba(147,51,234,.3);
+    --pink: #EC4899;
+    --green: #22C55E;
+    --red: #EF4444;
+    --bg: #06050f;
+    --bg2: #0c0a1e;
+    --surface: rgba(255,255,255,0.035);
+    --surface2: rgba(255,255,255,0.06);
+    --card-hover: rgba(240,192,64,.06);
+    --text: #f0e8d0;
+    --text2: #a09080;
+    --text-bright: #ffffff;
+    --border: rgba(240,192,64,.18);
+    --border-hover: rgba(240,192,64,.45);
+    --accent: var(--gold);
+    --accent-glow: rgba(240,192,64,.08);
+    --glass-bg: rgba(255,255,255,0.05);
+    --glass-bg-hover: rgba(255,255,255,0.09);
+    --glass-border: rgba(255,255,255,0.10);
+    --glass-shadow: 0 8px 32px rgba(0,0,0,0.35);
+    --glass-inset: inset 0 1px 0 rgba(255,255,255,0.08);
+    --glass-blur: 20px;
+    --glass-bg-solid: rgba(12,10,30,.92);
+    --radius: 18px;
+    --radius-sm: 10px;
+    --radius-xs: 6px;
+    --font: 'Raleway', 'Inter', sans-serif;
+    --font-display: 'Cinzel', serif;
+    --z-content: 10;
+    --grad-gold: linear-gradient(135deg, #F0C040 0%, #c9a83c 100%);
+    --grad-btn: linear-gradient(135deg, #F0C040 0%, #E8961A 100%);
+    --grad-btn-wa: linear-gradient(135deg, #22C55E 0%, #16a34a 100%);
+    --grad-surface: linear-gradient(135deg, rgba(240,192,64,.08), rgba(147,51,234,.06));
+    --grad-card-border: linear-gradient(135deg, rgba(240,192,64,.4), rgba(147,51,234,.2), rgba(240,192,64,.1));
+    --party-opacity: 1;
+  }
+  html[data-theme="light"],
+  body[data-theme="light"] {
+    --gold: #c5950a;
+    --gold-bright: #d4a30c;
+    --gold-dim: #a07e08;
+    --gold-glow: rgba(197,149,10,.18);
+    --gold-glow-sm: rgba(197,149,10,.08);
+    --violet: #7c3aed;
+    --violet-dim: #6d28d9;
+    --violet-glow: rgba(124,58,237,.15);
+    --pink: #db2777;
+    --green: #16a34a;
+    --red: #dc2626;
+    --bg: #faf6ee;
+    --bg2: #f0ead8;
+    --surface: rgba(255,255,255,0.75);
+    --surface2: rgba(255,255,255,0.88);
+    --card-hover: rgba(197,149,10,.08);
+    --text: #1a1510;
+    --text2: #6b5c4a;
+    --text-bright: #000000;
+    --border: rgba(0,0,0,0.08);
+    --border-hover: rgba(197,149,10,.4);
+    --accent: var(--gold);
+    --accent-glow: rgba(197,149,10,.06);
+    --glass-bg: rgba(255,255,255,0.60);
+    --glass-bg-hover: rgba(255,255,255,0.78);
+    --glass-border: rgba(0,0,0,0.07);
+    --glass-shadow: 0 8px 32px rgba(0,0,0,0.06);
+    --glass-inset: inset 0 1px 0 rgba(255,255,255,0.95);
+    --glass-blur: 24px;
+    --glass-bg-solid: rgba(255,255,255,.94);
+    --grad-gold: linear-gradient(135deg, #c5950a 0%, #a07e08 100%);
+    --grad-btn: linear-gradient(135deg, #d4a30c 0%, #c5950a 100%);
+    --grad-btn-wa: linear-gradient(135deg, #16a34a 0%, #15803d 100%);
+    --grad-surface: linear-gradient(135deg, rgba(197,149,10,.06), rgba(124,58,237,.03));
+    --party-opacity: 0.35;
+  }
+  html.force-pe-repaint body::before,
+  html.force-pe-repaint body::after { display: none !important; }
+  </style>
+
+  <!-- ========== FIX 3: Preload do CSS externo ========== -->
+
+  <link rel="preload" href="https://www.432up.com/css/temas/festa.css" as="style">
+
+  <!-- Supabase e tracker movidos para fim do body -->
+
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+
+  <!-- ========== CANONICAL & HREFLANG ========== -->
+
+  <link rel="canonical" href="https://www.432up.com/simulador">
+  <meta property="og:url" content="https://www.432up.com/simulador">
+  <link rel="alternate" hreflang="pt-BR" href="https://www.432up.com/simulador">
+  <link rel="alternate" hreflang="x-default" href="https://www.432up.com/simulador">
+
+  <!-- ========== FAVICON ========== -->
+
+  <link rel="icon" type="image/png" href="/imagens/favicon.png">
+  <link rel="apple-touch-icon" href="/imagens/favicon.png">
+
+  <!-- ========== SEO CORE ========== -->
+
+  <title>Simulador de Evento Online — Quanto Custa Agora? DJ, Banda, Som, Iluminação SP | 432UP</title>
+  <meta name="description" content="Precisa saber quanto custa seu evento agora? Simule na hora: DJ, banda ao vivo, cantora, hino nacional, som, iluminação, palco. Casamento, aniversário, corporativo, churrasco, chácara, cerimônia de posse, Copa 2026 e mais. Resposta em 30 segundos. São Paulo e interior.">
+  <meta name="keywords" content="simulador evento SP, quanto custa DJ agora, quanto custa banda ao vivo SP, quanto custa cantora ao vivo evento, quanto custa hino nacional ao vivo, quanto custa iluminação festa, quanto custa evento 100 pessoas, quanto custa evento 200 pessoas, quanto custa evento 300 pessoas, quanto custa evento 500 pessoas, orçamento rápido evento SP, decisão imediata DJ SP, preciso saber quanto custa evento, orçamento evento na hora, simular custo festa online grátis, empresa audiovisual SP, equipe audiovisual eventos, produção audiovisual SP, equipe técnica evento SP, DJ casamento SP, DJ aniversário SP, DJ corporativo SP, DJ churrasco SP, DJ festa chácara SP, DJ fazenda SP, DJ festa surpresa SP, DJ festa do pijama SP, DJ festa íntima SP, DJ rooftop SP, trio elétrico SP, carro alegórico SP, banda carnaval SP, bloco de rua SP, micareta SP, cerimônia de posse SP, evento político SP, evento institucional SP, palanque SP, comício SP, jantar político SP, DJ confraternização empresa SP, festa final de ano empresa SP, DJ festa gala SP, DJ convenção SP, DJ congresso SP, Expo Center Norte DJ SP, feira SP audiovisual, Fórmula 1 evento SP, assessora eventos SP, cerimonialista SP DJ, Copa do Mundo 2026 evento SP, Halloween SP DJ, réveillon 2026 SP, luau SP, festa junina SP, festa surpresa SP, festa homenagem SP, festa intimista SP, festa temática SP, festa anos 80 SP, festa anos 90 SP, festival SP audiovisual, especialista audiovisual eventos SP, especializado som iluminação SP">
+  <meta name="robots" content="index, follow, max-snippet:-1, max-image-preview:large">
+
+  <!-- ========== GEO / HREFLANG ========== -->
+
+  <meta name="geo.region" content="BR-SP">
+  <meta name="geo.placename" content="São Paulo">
+  <meta name="geo.position" content="-23.5505;-46.6333">
+  <meta name="ICBM" content="-23.5505, -46.6333">
+
+  <!-- ========== OPEN GRAPH ========== -->
+
+  <meta property="og:title" content="Simulador de Evento Online — Quanto Custa Agora? | 432UP">
+  <meta property="og:description" content="Precisa saber o valor do seu evento agora? Simule DJ, banda ao vivo, cantora, som e iluminação para qualquer evento em SP. Resultado em 30 segundos, sem cadastro.">
+  <meta property="og:type" content="website">
+  <meta property="og:image" content="https://www.432up.com/img/og-simulador.jpg">
+  <meta property="og:locale" content="pt_BR">
+  <meta property="og:site_name" content="432UP Produções">
+
+  <!-- ========== TWITTER CARD ========== -->
+
+  <meta name="twitter:card" content="summary_large_image">
+  <meta name="twitter:title" content="Simulador de Evento Online — Quanto Custa Agora? | 432UP">
+  <meta name="twitter:description" content="Simule DJ, banda ao vivo, cantora, som e iluminação para qualquer evento em SP. Resultado em 30 segundos, sem cadastro.">
+
+  <!-- ========== JSON-LD: WebApplication ========== -->
+
+  <script type="application/ld+json">
+  {
+    "@context": "https://schema.org",
+    "@type": "WebApplication",
+    "name": "Simulador de Eventos 432UP — Quanto Custa Agora",
+    "url": "https://www.432up.com/simulador",
+    "applicationCategory": "BusinessApplication",
+    "operatingSystem": "All",
+    "description": "Simule na hora quanto custa DJ, banda ao vivo, cantora, hino nacional ao vivo, som, iluminação e palco para qualquer evento em São Paulo. Casamento, aniversário, corporativo, formatura, churrasco, festa chácara, cerimônia de posse, evento político, feira, Expo Center Norte, Copa do Mundo 2026 e mais.",
+    "offers": {
+      "@type": "Offer",
+      "price": "0",
+      "priceCurrency": "BRL"
+    },
+    "aggregateRating": {
+      "@type": "AggregateRating",
+      "ratingValue": "4.9",
+      "reviewCount": "500"
+    },
+    "provider": {
+      "@type": "LocalBusiness",
+      "name": "432UP Produções",
+      "telephone": "+55-11-94856-4577",
+      "email": "432up.producoes@gmail.com",
+      "address": {
+        "@type": "PostalAddress",
+        "addressLocality": "São Paulo",
+        "addressRegion": "SP",
+        "addressCountry": "BR"
+      },
+      "areaServed": {
+        "@type": "State",
+        "name": "São Paulo"
+      }
+    }
+  }
+  </script>
+
+  <!-- ========== JSON-LD: FAQPage ========== -->
+
+  <script type="application/ld+json">
+  {
+    "@context": "https://schema.org",
+    "@type": "FAQPage",
+    "mainEntity": [
+      {
+        "@type": "Question",
+        "name": "Quanto custa contratar uma banda ao vivo para evento em SP?",
+        "acceptedAnswer": {
+          "@type": "Answer",
+          "text": "Banda ao vivo para eventos em São Paulo varia de R$ 5.800 a R$ 15.000 dependendo do número de músicos, repertório e duração. Use o simulador da 432UP para ter o valor estimado agora, em 30 segundos, sem falar com ninguém."
+        }
+      },
+      {
+        "@type": "Question",
+        "name": "Quanto custa cantora ao vivo ou hino nacional ao vivo para cerimônia?",
+        "acceptedAnswer": {
+          "@type": "Answer",
+          "text": "Cantora ao vivo para cerimônias de posse, formaturas, eventos cívicos, Copa do Mundo 2026 e festas de gala é um serviço especializado da 432UP. Simule agora ou entre em contato pelo WhatsApp para orçamento personalizado."
+        }
+      },
+      {
+        "@type": "Question",
+        "name": "Como saber quanto custa DJ para festa em chácara ou fazenda agora?",
+        "acceptedAnswer": {
+          "@type": "Answer",
+          "text": "DJ para festa em chácara ou fazenda em SP parte de R$ 1.900 na 432UP. O valor considera deslocamento e estrutura para ambientes abertos. Simule agora pelo nosso simulador e receba o valor estimado em 30 segundos."
+        }
+      },
+      {
+        "@type": "Question",
+        "name": "Quanto custa som e iluminação para evento de 100, 200, 300 ou 500 pessoas?",
+        "acceptedAnswer": {
+          "@type": "Answer",
+          "text": "Para 100 pessoas a partir de R$ 2.490, para 200 a partir de R$ 3.690, para 500 ou mais a partir de R$ 6.490 no Pacote Ouro completo. Simule agora com o número exato de convidados do seu evento."
+        }
+      },
+      {
+        "@type": "Question",
+        "name": "A 432UP atende eventos corporativos, feiras e Expo Center Norte?",
+        "acceptedAnswer": {
+          "@type": "Answer",
+          "text": "Sim. A 432UP é especialista em audiovisual corporativo: confraternização, festa de gala, convenção, lançamento, premiação, Expo Center Norte, feiras especializadas e Fórmula 1 São Paulo. Simule agora o orçamento completo."
+        }
+      },
+      {
+        "@type": "Question",
+        "name": "A 432UP atende cerimônias de posse e eventos políticos em 2026?",
+        "acceptedAnswer": {
+          "@type": "Answer",
+          "text": "Sim. Em 2026, ano eleitoral, a 432UP está preparada para cerimônias de posse, eventos de campanha, comícios, jantares políticos, palanques e atos públicos em São Paulo e interior com estrutura completa de som, iluminação e palco."
+        }
+      },
+      {
+        "@type": "Question",
+        "name": "Quanto custa trio elétrico ou carro alegórico para evento em SP?",
+        "acceptedAnswer": {
+          "@type": "Answer",
+          "text": "Trio elétrico e carro alegórico têm estruturas específicas de som e iluminação. A 432UP atende carnaval, micareta, bloco de rua, pré-carnaval e eventos temáticos em SP. Simule agora ou entre em contato pelo WhatsApp."
+        }
+      },
+      {
+        "@type": "Question",
+        "name": "Posso simular evento intimista, festa surpresa, homenagem ou festa do pijama?",
+        "acceptedAnswer": {
+          "@type": "Answer",
+          "text": "Sim. O simulador da 432UP atende desde eventos intimistas para 20 pessoas até grandes produções para 500+. Festa surpresa, homenagem, festa do pijama, festa temática, rooftop, cobertura, jardim — simule qualquer formato agora."
+        }
+      },
+      {
+        "@type": "Question",
+        "name": "A 432UP atende assessoras de eventos e cerimonialistas em SP?",
+        "acceptedAnswer": {
+          "@type": "Answer",
+          "text": "Sim. Assessoras de eventos, cerimonialistas, buffets, hotéis e espaços de eventos em SP encontram na 432UP parceria de longo prazo. Com +500 eventos e 98% de satisfação, a 432UP é fornecedora de confiança para profissionais do setor."
+        }
+      },
+      {
+        "@type": "Question",
+        "name": "Preciso de um orçamento rápido agora para apresentar. O que faço?",
+        "acceptedAnswer": {
+          "@type": "Answer",
+          "text": "Simule agora pelo nosso simulador gratuito, gere o PDF profissional em segundos e apresente imediatamente — para diretoria, casal, comissão ou cliente. Sem esperar retorno de vendedor. Disponível 24 horas, 7 dias por semana."
+        }
+      }
+    ]
+  }
+  </script>
+
+  <!-- ========== JSON-LD: BreadcrumbList ========== -->
+
+  <script type="application/ld+json">
+  {
+    "@context": "https://schema.org",
+    "@type": "BreadcrumbList",
+    "itemListElement": [
+      {
+        "@type": "ListItem",
+        "position": 1,
+        "name": "432UP",
+        "item": "https://www.432up.com/"
+      },
+      {
+        "@type": "ListItem",
+        "position": 2,
+        "name": "Simulador de Eventos — Quanto Custa Agora",
+        "item": "https://www.432up.com/simulador"
+      }
+    ]
+  }
+  </script>
+
+  <!-- ========== PRECONNECT ========== -->
+
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link rel="preconnect" href="https://paetkspbfejtjjkngqej.supabase.co">
+  <link rel="preconnect" href="https://wa.me">
+
+  <!-- ========== FONTS ========== -->
+
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+  <link href="https://fonts.googleapis.com/css2?family=Cinzel:wght@400;600;700;900&family=Raleway:ital,wght@0,300;0,400;0,500;0,600;0,700;0,800;1,400&display=swap" rel="stylesheet">
+
+  <!-- ========== EXTERNAL CSS ========== -->
+
+  <link rel="stylesheet" href="https://www.432up.com/css/index.css">
+  <link rel="stylesheet" href="https://www.432up.com/css/temas/festa.css">
+
+</head>
+
+<body>
+  <!-- GTM noscript: adicionar quando tiver ID real — tarefa pendente -->
+
+  <!-- ========== NOSCRIPT SEO FALLBACK ========== -->
+
+  <noscript>
+    <div class="noscript-content">
+      <h1>Simulador de Eventos 432UP — Quanto Custa Agora?</h1>
+      <p>Precisa saber quanto custa seu evento agora? Simule na hora o valor de DJ, banda ao vivo, cantora, hino nacional ao vivo, som, iluminação e palco para qualquer tipo de evento em São Paulo. Sem cadastro, sem ligar, sem esperar vendedor. Resultado em 30 segundos.</p>
+      <h2>Celebrações pessoais</h2>
+      <p>Casamento, aniversário, festa de 15 anos, debutante, churrasco, festa em chácara, festa na fazenda, festa surpresa, festa homenagem, festa do pijama, festa temática, festa intimista, rooftop, noivado, baby shower, festa anos 80, festa anos 90.</p>
+      <h2>Corporativo e institucional</h2>
+      <p>Confraternização de empresa, festa de final de ano, festa de gala, lançamento de produto, convenção, congresso, seminário, premiação, jantar de negócios, open house, feira, Expo Center Norte, Fórmula 1 SP.</p>
+      <h2>Político e cívico 2026</h2>
+      <p>Cerimônia de posse, evento de campanha, comício, jantar político, palanque, ato público, cerimônia oficial, hino nacional ao vivo, cantora para hino nacional, banda para hino nacional.</p>
+      <h2>Carnaval e street</h2>
+      <p>Trio elétrico, carro alegórico, banda de carnaval, bloco de rua, micareta, baile de carnaval, pré-carnaval, axé, pagode, samba, frevo.</p>
+      <h2>Preços de referência 2026</h2>
+      <p>DJ: R$ 1.900–R$ 6.490 | Banda ao vivo: R$ 5.800–R$ 15.000 | Som: R$ 1.500–R$ 4.500 | Iluminação: R$ 1.400–R$ 3.800 | Palco: R$ 3.500–R$ 8.000.</p>
+      <p><a href="https://wa.me/5511948564577">WhatsApp</a> | <a href="https://www.432up.com">432up.com</a></p>
+    </div>
+  </noscript>
+
+  <!-- ========== VISUAL LAYERS ========== -->
+
+  <div class="aurora-layer" id="auroraLayer">
+    <div class="aurora-band" style="--aurora-1:linear-gradient(135deg,rgba(139,92,246,.3),rgba(59,130,246,.2))"></div>
+    <div class="aurora-band" style="--aurora-2:linear-gradient(225deg,rgba(168,85,247,.25),rgba(99,102,241,.15))"></div>
+    <div class="aurora-band" style="--aurora-3:linear-gradient(315deg,rgba(124,58,237,.2),rgba(79,70,229,.15))"></div>
+    <div class="aurora-band" style="--aurora-4:linear-gradient(45deg,rgba(139,92,246,.15),rgba(37,99,235,.1))"></div>
+  </div>
+  <div class="fog-layer" id="fogLayer"><div class="fog-band"></div><div class="fog-band"></div></div>
+  <div class="algae-layer" id="algaeLayer"></div>
+  <div class="orbs-layer" id="orbsLayer"></div>
+  <div class="particles-layer" id="particlesLayer"></div>
+  <div class="party-grain"></div>
+  <canvas id="confettiCanvas"></canvas>
+  <div class="disco-ball-wrap" aria-hidden="true">
+    <div class="disco-string"></div>
+    <div class="disco-ball">
+      <div class="disco-flares">
+        <div class="disco-flare"></div><div class="disco-flare"></div>
+        <div class="disco-flare"></div><div class="disco-flare"></div>
+        <div class="disco-flare"></div><div class="disco-flare"></div>
+        <div class="disco-flare"></div><div class="disco-flare"></div>
+      </div>
+    </div>
+  </div>
+  <div class="dancer-left" aria-hidden="true">
+    <svg viewBox="0 0 120 240" fill="none" xmlns="http://www.w3.org/2000/svg">
+      <circle cx="60" cy="28" r="18" fill="rgba(240,192,64,0.55)"/>
+      <path d="M60 46 L52 90 L40 140 L55 140 L62 110 L68 140 L82 140 L70 90 Z" fill="rgba(147,51,234,0.55)"/>
+      <path d="M52 55 Q28 40 18 20" stroke="rgba(240,192,64,0.55)" stroke-width="8" stroke-linecap="round" fill="none"/>
+      <path d="M70 60 Q94 58 108 68" stroke="rgba(240,192,64,0.55)" stroke-width="8" stroke-linecap="round" fill="none"/>
+      <path d="M55 140 Q46 185 38 220" stroke="rgba(147,51,234,0.55)" stroke-width="9" stroke-linecap="round" fill="none"/>
+      <path d="M68 140 Q80 180 88 215" stroke="rgba(147,51,234,0.55)" stroke-width="9" stroke-linecap="round" fill="none"/>
+    </svg>
+  </div>
+  <div class="dancer-right" aria-hidden="true">
+    <svg viewBox="0 0 120 240" fill="none" xmlns="http://www.w3.org/2000/svg">
+      <circle cx="60" cy="28" r="18" fill="rgba(236,72,153,0.55)"/>
+      <path d="M60 46 L52 90 L42 138 L57 138 L60 108 L72 138 L82 138 L68 90 Z" fill="rgba(240,192,64,0.45)"/>
+      <path d="M52 58 Q30 62 14 56" stroke="rgba(236,72,153,0.55)" stroke-width="8" stroke-linecap="round" fill="none"/>
+      <path d="M68 55 Q90 38 102 18" stroke="rgba(236,72,153,0.55)" stroke-width="8" stroke-linecap="round" fill="none"/>
+      <path d="M57 138 Q44 178 32 210" stroke="rgba(240,192,64,0.5)" stroke-width="9" stroke-linecap="round" fill="none"/>
+      <path d="M72 138 Q82 180 90 216" stroke="rgba(240,192,64,0.5)" stroke-width="9" stroke-linecap="round" fill="none"/>
+    </svg>
+  </div>
+
+  <!-- ========== URGENCY BAR — DIFERENTE DA CALCULADORA ========== -->
+
+  <div class="urgency-bar" role="alert" aria-label="Decisão imediata">
+    <span class="ub-pulse"></span>
+    <span>⚡ <strong>Precisa saber o valor agora?</strong> Simule em <strong>30 segundos</strong> — <a href="#calcSection">sem ligar, sem cadastro, sem esperar</a></span>
+  </div>
+
+  <!-- ========== HEADER ========== -->
+
+  <header>
+    <h1><a href="https://www.432up.com/" style="color:inherit;text-decoration:none">432UP</a></h1>
+    <nav class="nav" id="mainNav">
+      <a href="https://www.432up.com/">Início</a>
+      <a href="https://www.432up.com/#secServicos">Experiências</a>
+      <a href="https://www.432up.com/galeria">Memórias</a>
+      <a href="https://www.432up.com/#secPacotes">Pacotes</a>
+      <a href="https://www.432up.com/#secFaq">FAQ</a>
+      <a href="https://www.432up.com/#secContato">Contato</a>
+      <a href="#calcSection" class="nav-cta">Simular Agora</a>
+    </nav>
+    <div class="header-actions">
+      <button class="theme-toggle" id="themeToggle" aria-label="Alternar tema" onclick="toggle432Theme()">
+        <span class="tt-icon" id="themeIcon">☀️</span>
+        <span id="themeLabel">Apague as Luzes e Comece a Festa</span>
+      </button>
+      <button class="hamburger" onclick="toggleNav()" aria-label="Abrir menu">☰</button>
+    </div>
+  </header>
+
+    <div class="nav-overlay" id="navOverlay" onclick="closeNav()"></div>
+  <!-- ========== HERO — DIFERENTE DA CALCULADORA ========== -->
+
+  <section class="hero-lp" aria-label="Simulador de quanto custa seu evento agora">
+    <h1>Quanto Custa Seu Evento?<br><span class="h-accent">Descubra Agora — Em 30 Segundos</span></h1>
+    <p class="hero-sub">DJ, banda ao vivo, cantora, hino nacional, som, iluminação, palco. <strong>Qualquer evento, qualquer tamanho. Resposta imediata, sem ligar, sem vendedor.</strong></p>
+    <div class="hero-badges">
+      <span class="hero-badge">⚡ Resposta em 30 segundos</span>
+      <span class="hero-badge">🎯 Decisão imediata</span>
+      <span class="hero-badge">🔒 Sem cadastro</span>
+      <span class="hero-badge">🎵 DJ, Banda, Cantora, Hino</span>
+      <span class="hero-badge">📍 SP Capital e Interior</span>
+    </div>
+    <a href="#calcSection" class="hero-cta-btn" role="button">⚡ QUERO SABER O VALOR AGORA</a>
+  </section>
+
+  <!-- ========== TRUST BAR ========== -->
+
+  <div class="trust-bar" role="complementary" aria-label="Indicadores de confiança">
+    <div class="trust-item"><span class="trust-icon">🏆</span> +500 eventos realizados</div>
+    <div class="trust-item"><span class="trust-icon">⭐</span> 98% de satisfação</div>
+    <div class="trust-item"><span class="trust-icon">🎵</span> DJ, Banda, Cantora ao Vivo</div>
+    <div class="trust-item"><span class="trust-icon">📍</span> SP Capital, Interior e MG</div>
+  </div>
+
+  <!-- ========== PAIN BLOCK ========== -->
+
+  <section class="pain-block" aria-label="Por que simular agora">
+    <h2 class="pain-title">Por que ainda não sabe o valor do seu evento?</h2>
+    <div class="pain-cards">
+      <div class="pain-card">
+        <div class="pc-icon">📞</div>
+        <div class="pc-title">Sem ligar para ninguém</div>
+        <div class="pc-desc">Chega de aguardar retorno de fornecedor. Aqui você tem o valor estimado agora, sozinho, em 30 segundos.</div>
+      </div>
+      <div class="pain-card">
+        <div class="pc-icon">⏱️</div>
+        <div class="pc-title">Decisão imediata</div>
+        <div class="pc-desc">Precisa aprovar o orçamento agora? Simule, gere o PDF e apresente para diretoria ou casal em minutos.</div>
+      </div>
+      <div class="pain-card">
+        <div class="pc-icon">🎯</div>
+        <div class="pc-title">Qualquer tipo de evento</div>
+        <div class="pc-desc">Churrasco, posse, Copa, carnaval, feira, gala, pijama, hino nacional — todos os formatos atendidos.</div>
+      </div>
+      <div class="pain-card">
+        <div class="pc-icon">📄</div>
+        <div class="pc-title">PDF profissional na hora</div>
+        <div class="pc-desc">Baixe o orçamento em PDF para apresentar imediatamente. Sem esperar. Sem cadastro. 24h por dia.</div>
+      </div>
+    </div>
+  </section>
+
+  <div id="stepperPlaceholder"></div>
+
+  <!-- ========== STEPPER BAR ========== -->
+
+  <div class="stepper-bar" id="stepperBar">
+    <a class="step-indicator active" href="#secPacotes" data-step="1">
+      <div class="step-circle">📦</div>
+      <div class="step-label">Pacote / Serviços</div>
+    </a>
+    <div class="step-connector"></div>
+    <a class="step-indicator" href="#secEventInfo" data-step="2">
+      <div class="step-circle">📋</div>
+      <div class="step-label">Detalhes do Evento</div>
+    </a>
+    <div class="step-connector"></div>
+    <a class="step-indicator" href="#resumoBox" data-step="3">
+      <div class="step-circle">🧾</div>
+      <div class="step-label">Resumo</div>
+    </a>
+    <div class="step-connector"></div>
+    <a class="step-indicator" href="#resumoActions" data-step="4">
+      <div class="step-circle">📨</div>
+      <div class="step-label">Receber Orçamento</div>
+    </a>
+  </div>
+
+  <!-- ========== MAIN CALCULATOR CONTAINER ========== -->
+
+  <div class="container" id="calcSection">
+
+<div class="header-calc">
+  <h2 style="font-size:clamp(1.6rem,4vw,2.2rem);font-weight:700;margin-bottom:8px">
+    Simule seu <span style="color:var(--accent)">Evento Agora</span>
+  </h2>
+  <p style="color:var(--text2);font-size:.95rem;max-width:500px;margin:0 auto">Selecione os serviços, informe os detalhes e descubra o valor estimado em segundos. Sem ligar, sem cadastro, sem esperar.</p>
+</div>
+
+<div class="stats">
+  <div class="stat"><strong>+500</strong><span>Eventos</span></div>
+  <div class="stat"><strong>98%</strong><span>Satisfação</span></div>
+  <div class="stat"><strong>10+</strong><span>Anos</span></div>
+</div>
+
+<div id="secPacotes"></div>
+<h3 class="sec-title">📦 Escolha seu Pacote</h3>
+<p class="sec-sub">Selecione um pacote com desconto ou monte do zero abaixo.</p>
+<div class="grid grid-pkg" id="pkgGrid"></div>
+
+<h3 class="sec-title">🎛️ Serviços</h3>
+<p class="sec-sub">Adicione extras ou personalize seu evento.</p>
+<div class="grid grid-svc" id="svcGrid"></div>
+
+<div class="event-section" id="secEventInfo">
+  <h3 class="sec-title">📋 Informações do Evento</h3>
+  <p class="sec-sub">Preencha só o que quiser. WhatsApp não exige nada obrigatório.</p>
+
+  <div class="event-group">
+    <div class="event-label">Tipo de Evento</div>
+    <div class="chips" id="tipoChips">
+      <span class="chip" data-val="Casamento">Casamento</span>
+      <span class="chip" data-val="Aniversário">Aniversário</span>
+      <span class="chip" data-val="Corporativo">Corporativo</span>
+      <span class="chip" data-val="Formatura">Formatura</span>
+      <span class="chip" data-val="Festival">Festival</span>
+      <span class="chip outro" data-val="outro">Outro</span>
+    </div>
+  </div>
+
+  <div class="event-group">
+    <div class="event-label">Data</div>
+    <input type="date" class="event-input" id="evDate">
+  </div>
+
+  <div class="event-group">
+    <div class="event-label">Cidade / Local</div>
+    <div class="chips" id="localChips" style="margin-bottom:10px">
+      <span class="chip" data-val="Itaim Bibi - SP">Itaim Bibi - SP</span>
+      <span class="chip" data-val="Vila Nova Conceição - SP">Vila Nova Conceição - SP</span>
+      <span class="chip" data-val="Jardim Europa - SP">Jardim Europa - SP</span>
+      <span class="chip" data-val="Jardim Paulistano - SP">Jardim Paulistano - SP</span>
+      <span class="chip" data-val="Moema - SP">Moema - SP</span>
+      <span class="chip" data-val="Alphaville - SP">Alphaville - SP</span>
+    </div>
+    <input type="text" class="event-input" id="evLocal" placeholder="Ou digite a cidade / local">
+  </div>
+
+  <div class="event-group">
+    <div class="event-label">Convidados</div>
+    <div class="chips" id="guestChips">
+      <span class="chip" data-val="80">80</span>
+      <span class="chip" data-val="120">120</span>
+      <span class="chip" data-val="150">150</span>
+      <span class="chip" data-val="200">200</span>
+      <span class="chip" data-val="250">250</span>
+      <span class="chip" data-val="300">300</span>
+      <span class="chip" data-val="400">400</span>
+      <span class="chip" data-val="500+">500+</span>
+      <span class="chip outro" data-val="outro">Outro</span>
+    </div>
+    <input type="number" class="event-input" id="guestCustom" placeholder="Quantidade personalizada" min="10" max="5000" style="display:none;margin-top:8px">
+  </div>
+
+  <div class="event-group slider-group">
+    <div class="event-label">Duração (horas)</div>
+    <div class="slider-label">
+      <span id="hourLabel">4h</span>
+      <span class="slider-value" id="hourVal">4h</span>
+    </div>
+    <div class="slider-wrap">
+      <input type="range" id="hourSlider" min="2" max="12" value="4" step="1">
+    </div>
+    <div class="slider-snaps" id="hourSnaps"></div>
+  </div>
+
+  <div class="event-group">
+    <div class="event-label">Extras e Observações</div>
+    <textarea class="event-textarea" id="evObs" placeholder="Descreva extras: hino nacional ao vivo, trio elétrico, carro alegórico, telão, efeitos especiais, logística, horários."></textarea>
+  </div>
+</div>
+
+<div class="guarantee" role="complementary">
+  <span class="guarantee-icon">🛡️</span>
+  <div class="guarantee-text">
+    <strong>Garantia de Satisfação:</strong> +500 eventos realizados com 98% de aprovação. Se a proposta não atender suas expectativas, você não tem nenhum compromisso.
+  </div>
+</div>
+
+<div class="resumo-box" id="resumoBox">
+  <div class="resumo-title">🧾 Resumo do Valor Estimado</div>
+  <div id="resumoBody">
+    <p class="resumo-empty">Selecione um pacote ou serviço para ver o resumo.</p>
+  </div>
+  <div id="resumoInfo"></div>
+  <div id="resumoTotal"></div>
+  <div class="confirm-box" id="confirmBox" style="display:none">
+    <input type="checkbox" id="confirmCheck">
+    <label for="confirmCheck">Confirmo que revisei as informações acima e desejo <strong>receber meu orçamento</strong>. Entendo que os valores são estimados e serão confirmados pela equipe da 432UP.</label>
+  </div>
+  <div class="resumo-actions" id="resumoActions" style="display:none">
+    <button class="btn-resumo-wa btn-act-primary" id="btnResumoWA">
+      <div class="btn-act-icon">💬</div>
+      <div class="btn-act-body">
+        <span class="btn-act-label">Enviar pelo WhatsApp</span>
+        <span class="btn-act-sub">Confirme sua data · resposta em até 2h · sem compromisso</span>
+      </div>
+      <span class="btn-act-badge">RECOMENDADO</span>
+    </button>
+    <div class="btn-act-row">
+      <button class="btn-act-sec btn-act-pdf" id="btn432Pdf">
+        <div class="btn-act-sec-top">
+          <span class="btn-act-sec-icon">📄</span>
+          <span class="btn-act-sec-label">Baixar PDF</span>
+        </div>
+        <span class="btn-act-sec-desc">Orçamento completo para guardar</span>
+      </button>
+      <button class="btn-resumo-email btn-act-sec btn-act-email" id="btnResumoEmail">
+        <div class="btn-act-sec-top">
+          <span class="btn-act-sec-icon">✉️</span>
+          <span class="btn-act-sec-label">Receber E-mail</span>
+        </div>
+        <span class="btn-act-sec-desc">Envio para sua caixa de entrada</span>
+      </button>
+    </div>
+  </div>
+</div>
+
+<div class="contact-section">
+  <h3>Tem dúvidas?</h3>
+  <p>Resposta em até 2h · Sem compromisso</p>
+  <div class="contact-links">
+    <a class="contact-link wa" id="contactWA" href="#">💬 WhatsApp</a>
+    <a class="contact-link" id="contactEmail" href="mailto:432up.producoes@gmail.com">✉️ E-mail</a>
+  </div>
+</div>
+
+  </div><!-- /.container -->
+
+  <!-- ========== PRICE REFERENCE TABLE ========== -->
+
+  <section class="price-ref" aria-label="Tabela de preços de referência 2026">
+    <h2>Preços de Referência 2026 — DJ, Banda, Cantora, Som e Iluminação para Eventos em SP</h2>
+    <table role="table">
+      <thead>
+        <tr><th>Serviço</th><th>Faixa de Preço</th><th>Eventos Atendidos</th></tr>
+      </thead>
+      <tbody>
+        <tr><td>DJ Profissional</td><td class="pr-price">R$ 1.900 – R$ 6.490</td><td>Casamento, aniversário, churrasco, chácara, corporativo, formatura, debutante, surpresa, pijama, luau, Halloween, Copa 2026, carnaval</td></tr>
+        <tr><td>Banda ao Vivo</td><td class="pr-price">R$ 5.800 – R$ 15.000</td><td>Casamento, festa de gala, corporativo, cerimônia de posse, evento político, formatura, convenção, confraternização</td></tr>
+        <tr><td>Cantora / Hino Nacional ao Vivo</td><td class="pr-price">sob consulta</td><td>Cerimônia de posse, formatura militar, evento cívico, Copa do Mundo 2026, festa de gala, cerimônia institucional, ato público</td></tr>
+        <tr><td>Trio Elétrico / Carro Alegórico</td><td class="pr-price">sob consulta</td><td>Carnaval, micareta, bloco de rua, pré-carnaval, festa junina, evento temático SP</td></tr>
+        <tr><td>Sonorização Completa</td><td class="pr-price">R$ 1.500 – R$ 4.500</td><td>Todos os eventos · 80 a 500+ convidados · Expo Center Norte · feiras · congressos · Fórmula 1 SP</td></tr>
+        <tr><td>Iluminação Cênica</td><td class="pr-price">R$ 1.400 – R$ 3.800</td><td>Casamento, festa de gala, corporativo, show, trio elétrico, carro alegórico, carnaval, rooftop</td></tr>
+        <tr><td>Palco Estrutural</td><td class="pr-price">R$ 3.500 – R$ 8.000</td><td>Show, banda ao vivo, trio elétrico, carro alegórico, feira, convenção, Expo Center Norte, Fórmula 1 SP</td></tr>
+        <tr><td>Pacote Completo (Ouro)</td><td class="pr-price">a partir de R$ 6.490</td><td>DJ + som + luz + palco + filmagem — economia de até 37% vs avulso</td></tr>
+      </tbody>
+    </table>
+  </section>
+
+  <!-- ========== EDITORIAL SEO ========== -->
+
+  <section class="editorial-seo" aria-label="Como saber quanto custa qualquer evento em SP agora">
+    <h2>Como Saber Quanto Custa Qualquer Evento em São Paulo Agora</h2>
+    <p>Se você precisa saber o valor do seu evento agora — seja para uma decisão imediata, apresentação à diretoria, aprovação de casal ou proposta para comissão — o simulador online gratuito da 432UP foi criado exatamente para isso. Em menos de 30 segundos você tem o valor estimado de DJ, banda ao vivo, cantora ao vivo, sonorização, iluminação cênica, palco e filmagem, sem ligar, sem cadastro e sem falar com vendedor.</p>
+
+<p>A 432UP é especialista em produção audiovisual para todos os formatos de evento em São Paulo: <strong>casamentos, aniversários, festas de 15 anos, debutantes, churrasco, festa em chácara, festa na fazenda, festa surpresa, festa homenagem, festa do pijama, festa temática, festa intimista, festa anos 80, festa anos 90, rooftop, cobertura, noivado, baby shower, luau</strong>. Para o segmento corporativo e institucional: <strong>confraternização de empresa, festa de final de ano, festa de gala, lançamento de produto, convenção, congresso, seminário, premiação, jantar de negócios, open house, Expo Center Norte, feiras especializadas e Fórmula 1 São Paulo</strong>.</p>
+
+<p>Em 2026, ano eleitoral, a 432UP está preparada para atender <strong>cerimônias de posse, eventos de campanha, comícios, jantares políticos, palanques, atos públicos, cerimônias oficiais e eventos institucionais</strong> em São Paulo e interior, com estrutura completa de som, iluminação e palco. Para cerimônias cívicas, a 432UP oferece serviço especializado de <strong>cantora ao vivo para hino nacional, banda ao vivo para hino nacional e DJ para hino nacional</strong> — um território praticamente exclusivo no mercado paulistano para formaturas militares, posses, atos públicos e Copa do Mundo 2026.</p>
+
+<p>Para eventos de <strong>carnaval e street</strong>, a equipe técnica da 432UP atende <strong>trio elétrico, carro alegórico, banda de carnaval, bloco de rua, micareta, baile de carnaval, pré-carnaval, axé, pagode, samba e frevo</strong> com toda a estrutura especializada. Para eventos sazonais: <strong>réveillon 2026, Halloween, Copa do Mundo 2026, luau, festa junina e natal corporativo</strong>.</p>
+
+<p>Assessoras de eventos, cerimonialistas, buffets, hotéis e espaços de eventos em São Paulo que buscam fornecedor audiovisual especializado para seus clientes encontram na 432UP uma parceria de longo prazo — com mais de 500 eventos realizados, 98% de satisfação e atendimento em toda a Grande SP, interior paulista e Minas Gerais. Use o simulador agora, tenha o valor estimado em 30 segundos e compartilhe com sua equipe ou cliente imediatamente.</p>
+
+<p>Explore também: <a href="https://www.432up.com">calculadora de orçamento</a>, <a href="https://www.432up.com/casamento-sp">DJ para casamento SP</a>, <a href="https://www.432up.com/corporativo">eventos corporativos SP</a>, <a href="https://www.432up.com/debutante">festa de 15 anos SP</a> e <a href="https://www.432up.com/copa">Copa do Mundo 2026</a>.</p>
+
+  </section>
+
+  <!-- ========== FAQ ========== -->
+
+  <section class="faq-section" id="faqSection" aria-label="Perguntas frequentes sobre quanto custa eventos SP">
+    <h2>Perguntas Frequentes — Quanto Custa Meu Evento Agora?</h2>
+
+<div class="faq-item">
+  <div class="faq-q" role="button" aria-expanded="false" tabindex="0">Quanto custa contratar uma banda ao vivo para evento em SP?<span class="faq-arrow">▼</span></div>
+  <div class="faq-a"><p>Banda ao vivo para eventos em São Paulo varia de R$ 5.800 a R$ 15.000 dependendo do número de músicos, repertório e duração. Use o simulador da 432UP para ter o valor estimado agora, em 30 segundos, sem falar com ninguém.</p></div>
+</div>
+
+<div class="faq-item">
+  <div class="faq-q" role="button" aria-expanded="false" tabindex="0">Quanto custa cantora ao vivo ou hino nacional ao vivo para cerimônia?<span class="faq-arrow">▼</span></div>
+  <div class="faq-a"><p>Cantora ao vivo para cerimônias de posse, formaturas, eventos cívicos, Copa do Mundo 2026 e festas de gala é um serviço especializado da 432UP. Simule agora ou entre em contato pelo WhatsApp para orçamento personalizado.</p></div>
+</div>
+
+<div class="faq-item">
+  <div class="faq-q" role="button" aria-expanded="false" tabindex="0">Como saber quanto custa DJ para festa em chácara ou fazenda agora?<span class="faq-arrow">▼</span></div>
+  <div class="faq-a"><p>DJ para festa em chácara ou fazenda em SP parte de R$ 1.900 na 432UP. O valor considera deslocamento e estrutura para ambientes abertos. Simule agora e receba o valor estimado em 30 segundos.</p></div>
+</div>
+
+<div class="faq-item">
+  <div class="faq-q" role="button" aria-expanded="false" tabindex="0">Quanto custa som e iluminação para evento de 100, 200, 300 ou 500 pessoas?<span class="faq-arrow">▼</span></div>
+  <div class="faq-a"><p>Para 100 pessoas a partir de R$ 2.490, para 200 a partir de R$ 3.690, para 500 ou mais a partir de R$ 6.490 no Pacote Ouro completo. Simule agora com o número exato de convidados do seu evento.</p></div>
+</div>
+
+<div class="faq-item">
+  <div class="faq-q" role="button" aria-expanded="false" tabindex="0">A 432UP atende eventos corporativos, feiras e Expo Center Norte?<span class="faq-arrow">▼</span></div>
+  <div class="faq-a"><p>Sim. A 432UP é especialista em audiovisual corporativo: confraternização, festa de gala, convenção, lançamento, premiação, Expo Center Norte, feiras especializadas e Fórmula 1 São Paulo. Simule agora o orçamento completo.</p></div>
+</div>
+
+<div class="faq-item">
+  <div class="faq-q" role="button" aria-expanded="false" tabindex="0">A 432UP atende cerimônias de posse e eventos políticos em 2026?<span class="faq-arrow">▼</span></div>
+  <div class="faq-a"><p>Sim. Em 2026, ano eleitoral, a 432UP está preparada para cerimônias de posse, eventos de campanha, comícios, jantares políticos, palanques e atos públicos em São Paulo e interior com estrutura completa de som, iluminação e palco.</p></div>
+</div>
+
+<div class="faq-item">
+  <div class="faq-q" role="button" aria-expanded="false" tabindex="0">Quanto custa trio elétrico ou carro alegórico para evento em SP?<span class="faq-arrow">▼</span></div>
+  <div class="faq-a"><p>Trio elétrico e carro alegórico têm estruturas específicas de som e iluminação. A 432UP atende carnaval, micareta, bloco de rua, pré-carnaval e eventos temáticos em SP. Simule agora ou entre em contato pelo WhatsApp.</p></div>
+</div>
+
+<div class="faq-item">
+  <div class="faq-q" role="button" aria-expanded="false" tabindex="0">Posso simular evento intimista, festa surpresa, homenagem ou festa do pijama?<span class="faq-arrow">▼</span></div>
+  <div class="faq-a"><p>Sim. O simulador da 432UP atende desde eventos intimistas para 20 pessoas até grandes produções para 500+. Festa surpresa, homenagem, festa do pijama, festa temática, rooftop, cobertura, jardim — simule qualquer formato agora.</p></div>
+</div>
+
+<div class="faq-item">
+  <div class="faq-q" role="button" aria-expanded="false" tabindex="0">A 432UP atende assessoras de eventos e cerimonialistas em SP?<span class="faq-arrow">▼</span></div>
+  <div class="faq-a"><p>Sim. Assessoras, cerimonialistas, buffets, hotéis e espaços de eventos em SP encontram na 432UP parceria de longo prazo. Com +500 eventos e 98% de satisfação, a 432UP é fornecedora de confiança para profissionais do setor.</p></div>
+</div>
+
+<div class="faq-item">
+  <div class="faq-q" role="button" aria-expanded="false" tabindex="0">Preciso de um orçamento rápido agora para apresentar. O que faço?<span class="faq-arrow">▼</span></div>
+  <div class="faq-a"><p>Simule agora pelo nosso simulador gratuito, gere o PDF profissional em segundos e apresente imediatamente — para diretoria, casal, comissão ou cliente. Sem esperar retorno de vendedor. Disponível 24 horas, 7 dias por semana.</p></div>
+</div>
+
+  </section>
+
+  <!-- ========== TESTIMONIALS ========== -->
+
+  <section class="testimonials-section" aria-label="Depoimentos de clientes">
+    <h2>Quem Simulou e Fechou com a 432UP</h2>
+    <div class="testimonial-grid">
+      <div class="testimonial-card">
+        <div class="tc-stars">★★★★★</div>
+        <div class="tc-text">"Precisava de um orçamento urgente para apresentar à diretoria. Simulei em 30 segundos, gerei o PDF e aprovaram na hora. Evento corporativo para 300 pessoas, tudo saiu perfeito."</div>
+        <div class="tc-author">Fernanda M. — Head de Marketing</div>
+        <div class="tc-event">Corporativo — Itaim Bibi, SP · 300 convidados</div>
+      </div>
+      <div class="testimonial-card">
+        <div class="tc-stars">★★★★★</div>
+        <div class="tc-text">"Contratamos para a cerimônia de posse. Som impecável, cantora para o hino nacional emocionou a todos. A 432UP entendeu exatamente o que um evento institucional precisa."</div>
+        <div class="tc-author">Dr. Roberto S. — Assessoria Institucional SP</div>
+        <div class="tc-event">Cerimônia de Posse — São Paulo · 200 convidados</div>
+      </div>
+      <div class="testimonial-card">
+        <div class="tc-stars">★★★★★</div>
+        <div class="tc-text">"Festa surpresa de 50 anos na chácara. Simulei o valor na hora, fechei no dia seguinte. DJ leu perfeitamente o clima intimista que queríamos. Todo mundo amou."</div>
+        <div class="tc-author">Família Almeida</div>
+        <div class="tc-event">Festa Surpresa — Chácara SP · 80 convidados</div>
+      </div>
+    </div>
+  </section>
+
+  <!-- ========== INTERNAL LINKS ========== -->
+
+  <section class="internal-links" aria-label="Páginas relacionadas">
+    <h3>Explore também</h3>
+    <div class="il-grid">
+      <a href="https://www.432up.com/simulador" class="il-link">🧮 Calculadora de Orçamento</a>
+      <a href="https://www.432up.com/casamento-sp" class="il-link">💍 Casamento SP</a>
+      <a href="https://www.432up.com/casamento-interior" class="il-link">💒 Casamento Interior</a>
+      <a href="https://www.432up.com/corporativo" class="il-link">🏢 Corporativo</a>
+      <a href="https://www.432up.com/debutante" class="il-link">👸 15 Anos</a>
+      <a href="https://www.432up.com/copa" class="il-link">⚽ Copa 2026</a>
+      <a href="https://www.432up.com/reveillon" class="il-link">🎆 Réveillon</a>
+      <a href="https://www.432up.com/halloween" class="il-link">🎃 Halloween</a>
+      <a href="https://www.432up.com/aniversario" class="il-link">🎂 Aniversário</a>
+      <a href="https://www.432up.com/formatura" class="il-link">🎓 Formatura</a>
+      <a href="https://www.432up.com/galeria" class="il-link">📸 Galeria</a>
+      <a href="https://www.432up.com/" class="il-link">🏠 Site Principal</a>
+    </div>
+  </section>
+
+  <!-- ========== FINAL CTA ========== -->
+
+  <section class="final-cta" aria-label="Simule agora">
+    <h2>Precisa saber o valor agora?</h2>
+    <p>30 segundos. Sem ligar. Sem cadastro. Sem esperar. PDF profissional na hora para qualquer evento.</p>
+    <div class="final-cta-btns">
+      <a href="#calcSection" class="hero-cta-btn" role="button">⚡ SIMULAR AGORA — GRATUITO</a>
+      <a href="https://wa.me/5511948564577?text=Ol%C3%A1!%20Preciso%20de%20um%20or%C3%A7amento%20r%C3%A1pido%20para%20meu%20evento%20agora." class="btn-resumo-wa" style="padding:16px 28px;text-decoration:none;border-radius:10px" target="_blank" rel="noopener noreferrer">💬 Falar pelo WhatsApp</a>
+    </div>
+  </section>
+
+  <!-- ========== FOOTER ========== -->
+
+  <footer class="footer">
+    <p>432UP Produções · São Paulo, SP · <a href="https://www.432up.com/">432up.com</a></p>
+    <p><span id="footerAdmin">432UP</span></p>
+  </footer>
+
+  <!-- ========== FAB WhatsApp ========== -->
+
+<a class="fab-wa" id="fabWA" href="#" aria-label="Falar pelo WhatsApp" role="button">💬</a>
+
+  <div class="fab-total hidden" id="fabTotal" style="display:none!important;visibility:hidden!important">
+    <span class="ft-label">Total</span>
+    <span class="ft-val" id="fabVal">R$ 0</span>
+    <span class="ft-eco" id="fabEco"></span>
+  </div>
+
+  <!-- ========== STICKY CTA MOBILE ========== -->
+
+  <div class="sticky-cta-mobile" id="stickyCta" role="complementary" aria-label="Orçamento rápido">
+    <div class="sticky-cta-inner">
+      <div class="sticky-cta-info">
+        <div class="sticky-cta-label">Valor estimado</div>
+        <div class="sticky-cta-val" id="stickyVal">R$ 0</div>
+      </div>
+      <button class="sticky-cta-btn" id="stickyBtn">💬 WhatsApp</button>
+    </div>
+  </div>
+
+  <!-- ========== EXIT-INTENT POPUP ========== -->
+
+  <div class="exit-overlay" id="exitOverlay" role="dialog" aria-label="Antes de sair">
+    <div class="exit-box">
+      <div class="exit-icon">⚡</div>
+      <h3>Leva só 30 segundos</h3>
+      <p>Você está a um clique de saber o valor do seu evento. Sem ligar. Sem cadastro. Sem esperar.</p>
+      <button class="exit-btn" id="exitBtn">⚡ Quero Saber o Valor Agora</button>
+      <button class="exit-close" id="exitClose">Não, obrigado</button>
+    </div>
+  </div>
+
+  <!-- ========== SOCIAL PROOF NOTIFICATION ========== -->
+
+  <div class="social-notif" id="socialNotif" aria-live="polite">
+    <span class="sn-icon">🎉</span>
+    <div class="sn-text" id="snText"><strong>Fernanda de SP</strong> acabou de simular uma confraternização para 200 pessoas</div>
+  </div>
+
+  <!-- ========== EMAIL MODAL ========== -->
+
+  <div class="modal-overlay" id="emailModal">
+    <div class="modal-box">
+      <button class="modal-close" id="modalClose" aria-label="Fechar">✕</button>
+      <h3>✉️ Enviar orçamento por e-mail</h3>
+      <p class="modal-sub">Preencha seus dados para receber o orçamento.</p>
+      <div class="field"><label>Seu nome *</label><input type="text" id="mName" placeholder="Seu nome"></div>
+      <div class="field"><label>WhatsApp *</label><input type="tel" id="mPhone" placeholder="(11) 99999-9999"></div>
+      <div class="field"><label>E-mail *</label><input type="email" id="mEmail" placeholder="seu@email.com"></div>
+      <div class="modal-actions">
+        <button class="btn-cancel" id="modalCancel">Cancelar</button>
+        <button class="btn-send-email" id="modalSend">Enviar</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- ========== POST-EMAIL MODAL ========== -->
+
+  <div class="modal-overlay" id="postEmailModal">
+    <div class="modal-box post-email">
+      <button class="modal-close" id="postModalClose" aria-label="Fechar">✕</button>
+      <h3>✅ E-mail enviado!</h3>
+      <p>Deseja ser atendido no WhatsApp agora mesmo?<br>Nossa equipe pode agilizar seu orçamento.</p>
+      <div class="post-email-actions">
+        <button class="btn-resumo-wa" id="postModalWA">💬 Sim, quero WhatsApp</button>
+        <button class="btn-cancel" id="postModalNo">Não, obrigado</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- ========== POST-PDF MODAL ========== -->
+
+  <div class="modal-overlay" id="postPdfModal">
+    <div class="modal-box post-pdf-glass">
+      <button class="modal-close" id="postPdfClose" aria-label="Fechar">✕</button>
+      <div class="post-pdf-icon">📄</div>
+      <h3>Orçamento salvo!</h3>
+      <p>Seu PDF foi gerado com sucesso.<br>Que tal conversar com nossa equipe agora e garantir sua data?</p>
+      <div class="post-pdf-actions">
+        <button class="btn-resumo-wa" id="postPdfWA">💬 Resposta em até 2h</button>
+        <button class="btn-cancel" id="postPdfNo">Agora não</button>
+      </div>
+      <div class="post-pdf-hint">68% das pessoas que simularam fecharam com a 432UP</div>
+    </div>
+  </div>
+
+  <!-- ========== TOAST ========== -->
+
+  <div class="toast" id="toast"></div>
+
+  <!-- ========== EXTERNAL JS — caminhos absolutos + defer ========== -->
+
+  <script defer src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+
+  <script defer src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
+
+  <script defer src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js"></script>
+
+  <script defer src="/js/pdf.js"></script>
+
+  <script defer src="/js/config.js"></script>
+
+  <script defer src="/js/core.js"></script>
+
+  <script defer src="/js/calc.js"></script>
+
+  <script defer src="/js/tracker.js"></script>
+
+  <!-- ========== ANIMAÇÕES MOBILE — técnica 3 segundos ========== -->
+
+  <!-- PARA DESLIGAR: apague daqui até FIM ANIMAÇÕES MOBILE JS    -->
+
+  <script>
+  if (window.innerWidth <= 768) {
+    setTimeout(function() {
+      document.body.classList.add('animations-mobile-active');
+    }, 3000);
+  }
+  </script>
+
+  <!-- FIM ANIMAÇÕES MOBILE JS -->
+
+  <!-- ========== PARTY ANIMATIONS SCRIPT — IDENTICAL TO CALCULADORA ========== -->
+
+  <script>
+  (function(){
+    'use strict';
+    var canvas = document.getElementById('confettiCanvas');
+    if (!canvas) return;
+    var ctx = canvas.getContext('2d');
+    function resizeCanvas() { canvas.width = window.innerWidth; canvas.height = window.innerHeight; }
+    resizeCanvas();
+    window.addEventListener('resize', resizeCanvas, { passive: true });
+    var COLORS = ['#F0C040','#FFD700','#9333EA','#EC4899','#38BDF8','#22C55E','#F97316','#ffffff'];
+    var pieces = [];
+    var NUM = window.innerWidth < 600 ? 55 : 90;
+    function Piece() { this.reset(true); }
+    Piece.prototype.reset = function(init) {
+      this.x = Math.random() * canvas.width;
+      this.y = init ? Math.random() * canvas.height : -20;
+      this.w = 5 + Math.random() * 8; this.h = 3 + Math.random() * 5;
+      this.color = COLORS[Math.floor(Math.random() * COLORS.length)];
+      this.speed = 0.8 + Math.random() * 1.8; this.drift = (Math.random() - 0.5) * 0.8;
+      this.rot = Math.random() * Math.PI * 2; this.rotSpeed = (Math.random() - 0.5) * 0.08;
+      this.opacity = 0.6 + Math.random() * 0.4; this.shape = Math.random() > 0.5 ? 'rect' : 'circle';
+    };
+    for (var i = 0; i < NUM; i++) { pieces.push(new Piece()); }
+    if (document.body.classList.contains('embed-mode')) return;
+    var raf;
+    function animateConfetti() {
+      ctx.clearRect(0, 0, canvas.width, canvas.height);
+      for (var i = 0; i < pieces.length; i++) {
+        var p = pieces[i]; ctx.save(); ctx.globalAlpha = p.opacity;
+        ctx.translate(p.x, p.y); ctx.rotate(p.rot); ctx.fillStyle = p.color;
+        if (p.shape === 'circle') { ctx.beginPath(); ctx.arc(0,0,p.w/2,0,Math.PI*2); ctx.fill(); }
+        else { ctx.fillRect(-p.w/2,-p.h/2,p.w,p.h); }
+        ctx.restore();
+        p.y += p.speed; p.x += p.drift; p.rot += p.rotSpeed;
+        if (p.y > canvas.height + 20) { p.reset(false); }
+      }
+      raf = requestAnimationFrame(animateConfetti);
+    }
+    if (document.visibilityState !== 'hidden') { animateConfetti(); }
+    document.addEventListener('visibilitychange', function() {
+      if (document.hidden) { cancelAnimationFrame(raf); } else { animateConfetti(); }
+    });
+    var SPARKLE_COUNT = window.innerWidth < 600 ? 6 : 12;
+    for (var s = 0; s < SPARKLE_COUNT; s++) {
+      var spark = document.createElement('div');
+      spark.className = 'sparkle';
+      spark.style.cssText = ['left:'+(5+Math.random()*90)+'vw','width:'+(3+Math.random()*6)+'px','height:'+(3+Math.random()*6)+'px','animation-duration:'+(6+Math.random()*10)+'s','animation-delay:'+(Math.random()*-15)+'s','background:'+COLORS[Math.floor(Math.random()*4)],'box-shadow: 0 0 10px 4px '+COLORS[Math.floor(Math.random()*4)]].join(';');
+      document.body.appendChild(spark);
+    }
+    var slider = document.getElementById('hourSlider');
+    function updateSliderFill() { if (!slider) return; var pct = ((slider.value - slider.min) / (slider.max - slider.min)) * 100; slider.style.setProperty('--val', pct + '%'); }
+    if (slider) { slider.addEventListener('input', updateSliderFill); updateSliderFill(); }
+    if (window.IntersectionObserver) {
+      var cardObs = new IntersectionObserver(function(entries) { entries.forEach(function(e) { if (e.isIntersecting) { e.target.style.opacity='1'; e.target.style.transform='translateY(0)'; cardObs.unobserve(e.target); } }); }, { threshold: 0.1, rootMargin: '0px 0px -40px 0px' });
+      function observeCards() { var all = document.querySelectorAll('.card, .testimonial-card, .pain-card, .faq-item, .stat'); all.forEach(function(el) { el.style.opacity='0'; el.style.transform='translateY(20px)'; el.style.transition='opacity .5s ease, transform .5s ease'; cardObs.observe(el); }); }
+      setTimeout(observeCards, 800);
+    }
+    function burst(x, y) {
+      for (var b = 0; b < 12; b++) {
+        var dot = document.createElement('div'); var angle = (b/12)*Math.PI*2; var dist = 40+Math.random()*40;
+        dot.style.cssText = ['position:fixed','left:'+x+'px','top:'+y+'px','width:6px','height:6px','border-radius:50%','background:'+COLORS[Math.floor(Math.random()*4)],'pointer-events:none','z-index:9998','transition:all .6s ease-out','opacity:1'].join(';');
+        document.body.appendChild(dot);
+        setTimeout(function(d, a, dist) { d.style.transform='translate('+(Math.cos(a)*dist)+'px,'+(Math.sin(a)*dist)+'px) scale(0)'; d.style.opacity='0'; setTimeout(function() { d.parentNode && d.parentNode.removeChild(d); }, 700); }.bind(null, dot, angle, dist), 10);
+      }
+    }
+    document.querySelectorAll('.hero-cta-btn, .btn-resumo-wa, .btn-resumo-pdf, .sticky-cta-btn').forEach(function(btn) { btn.addEventListener('click', function(e) { burst(e.clientX, e.clientY); }); });
+    console.log('[432UP] Simulador v1.0 — Party decoratives loaded ✨');
+  })();
+  </script>
+
+  <!-- ========== LP ENHANCEMENT SCRIPT ========== -->
+
+  <script>
+  (function(){
+    'use strict';
+    window.dataLayer = window.dataLayer || [];
+    function dlPush(event, params) { var obj = { event: event }; if (params) Object.keys(params).forEach(function(k){ obj[k] = params[k]; }); dataLayer.push(obj); if (typeof fbq === 'function') { fbq('trackCustom', event, params || {}); } }
+    dlPush('simulator_page_load', { page: 'simulador' });
+    var pkgGrid = document.getElementById('pkgGrid');
+    if (pkgGrid) { var pkgObs = new MutationObserver(function(){ var selected = pkgGrid.querySelector('.card.selected'); if (selected) { var name = selected.querySelector('.card-name'); dlPush('simulator_package_select', { package_name: name ? name.textContent : 'unknown' }); } }); pkgObs.observe(pkgGrid, { subtree: true, attributes: true, attributeFilter: ['class'] }); }
+    var svcGrid = document.getElementById('svcGrid');
+    if (svcGrid) { var svcObs = new MutationObserver(function(){ var selected = svcGrid.querySelectorAll('.card.selected'); selected.forEach(function(card){ if (!card.dataset.tracked) { card.dataset.tracked = '1'; var name = card.querySelector('.card-name'); dlPush('simulator_extra_added', { service_name: name ? name.textContent : 'unknown' }); } }); }); svcObs.observe(svcGrid, { subtree: true, attributes: true, attributeFilter: ['class'] }); }
+    var resumoBox = document.getElementById('resumoBox');
+    if (resumoBox && window.IntersectionObserver) { var resumoTracked = false; var resumoObs = new IntersectionObserver(function(entries){ entries.forEach(function(e){ if (e.isIntersecting && !resumoTracked) { resumoTracked = true; dlPush('simulator_summary_viewed'); } }); }, { threshold: 0.5 }); resumoObs.observe(resumoBox); }
+    var waButtons = ['btnResumoWA','fabWA','contactWA','postModalWA','postPdfWA','stickyBtn'];
+    waButtons.forEach(function(id){ var btn = document.getElementById(id); if (btn) { btn.addEventListener('click', function(){ dlPush('whatsapp_click', { source: id }); if (typeof fbq === 'function') fbq('track', 'Contact'); }); } });
+    var scrollMilestones = [25, 50, 75, 90]; var scrollTracked = {};
+    window.addEventListener('scroll', function(){ var scrollPct = Math.round((window.scrollY / (document.documentElement.scrollHeight - window.innerHeight)) * 100); scrollMilestones.forEach(function(m){ if (scrollPct >= m && !scrollTracked[m]) { scrollTracked[m] = true; dlPush('scroll_depth', { depth: m }); } }); }, { passive: true });
+    var timeIntervals = [30, 60, 120, 300]; var timeTracked = {}; var pageStart = Date.now();
+    setInterval(function(){ var elapsed = Math.floor((Date.now() - pageStart) / 1000); timeIntervals.forEach(function(t){ if (elapsed >= t && !timeTracked[t]) { timeTracked[t] = true; dlPush('time_on_page', { seconds: t }); } }); }, 5000);
+    document.querySelectorAll('.faq-q').forEach(function(q){ q.addEventListener('click', function(){ var item = q.parentElement; var wasOpen = item.classList.contains('open'); document.querySelectorAll('.faq-item').forEach(function(fi){ fi.classList.remove('open'); }); if (!wasOpen) { item.classList.add('open'); q.setAttribute('aria-expanded','true'); } else { q.setAttribute('aria-expanded','false'); } }); q.addEventListener('keydown', function(e){ if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); q.click(); } }); });
+    var stickyCta = document.getElementById('stickyCta'); var calcSection = document.getElementById('calcSection'); var fabWaEl = document.getElementById('fabWA');
+    if (stickyCta && calcSection) { var stickyVisible = false; window.addEventListener('scroll', function(){ var rect = calcSection.getBoundingClientRect(); var shouldShow = rect.top < 0 && rect.bottom > window.innerHeight * 0.3; if (shouldShow && !stickyVisible) { stickyCta.classList.add('visible'); stickyVisible = true; if (fabWaEl) fabWaEl.style.opacity = '0'; if (fabWaEl) fabWaEl.style.pointerEvents = 'none'; } else if (!shouldShow && stickyVisible) { stickyCta.classList.remove('visible'); stickyVisible = false; if (fabWaEl) fabWaEl.style.opacity = '1'; if (fabWaEl) fabWaEl.style.pointerEvents = 'auto'; } }, { passive: true }); }
+    var fabVal = document.getElementById('fabVal'); var stickyVal = document.getElementById('stickyVal');
+    if (fabVal && stickyVal) { var syncObs = new MutationObserver(function(){ stickyVal.textContent = fabVal.textContent; }); syncObs.observe(fabVal, { childList: true, characterData: true, subtree: true }); }
+    var stickyBtn = document.getElementById('stickyBtn'); if (stickyBtn) { stickyBtn.addEventListener('click', function(e){ e.preventDefault(); if (typeof sendWA === 'function') sendWA('sticky_cta_mobile_simulador'); }); }
+    var exitOverlay = document.getElementById('exitOverlay'); var exitShown = false; var exitCooldown = false;
+    document.addEventListener('mouseout', function(e){ if (exitShown || exitCooldown) return; if (e.clientY <= 0 && e.relatedTarget === null) { showExitPopup(); } });
+    var lastScrollY = window.scrollY; var rapidScrollCount = 0;
+    window.addEventListener('scroll', function(){ if (exitShown || exitCooldown) return; if (window.scrollY < lastScrollY - 100 && window.scrollY < 200) { rapidScrollCount++; if (rapidScrollCount >= 2 && Date.now() - pageStart > 15000) { showExitPopup(); } } else { rapidScrollCount = 0; } lastScrollY = window.scrollY; }, { passive: true });
+    function showExitPopup() { if (typeof hasAnyInteraction === 'function' && !hasAnyInteraction()) return; exitShown = true; exitOverlay.classList.add('active'); dlPush('exit_intent_shown'); }
+    var exitBtn = document.getElementById('exitBtn'); var exitClose = document.getElementById('exitClose');
+    if (exitBtn) { exitBtn.addEventListener('click', function(){ exitOverlay.classList.remove('active'); document.getElementById('calcSection').scrollIntoView({ behavior: 'smooth' }); dlPush('exit_intent_returned'); }); }
+    if (exitClose) { exitClose.addEventListener('click', function(){ exitOverlay.classList.remove('active'); exitCooldown = true; }); }
+    if (exitOverlay) { exitOverlay.addEventListener('click', function(e){ if (e.target === exitOverlay) { exitOverlay.classList.remove('active'); exitCooldown = true; } }); }
+    var socialNotif = document.getElementById('socialNotif'); var snText = document.getElementById('snText');
+    var notifications = [
+      { icon: '🎉', text: '<strong>Fernanda de SP</strong> acabou de simular uma confraternização para 200 pessoas' },
+      { icon: '🏢', text: '<strong>Ricardo M.</strong> simulou evento corporativo Expo Center Norte' },
+      { icon: '💍', text: '<strong>Ana & Lucas</strong> simularam casamento em chácara em Atibaia' },
+      { icon: '🎭', text: '<strong>Assessora Carol</strong> simulou evento de gala para cliente — 400 convidados' },
+      { icon: '⚡', text: '<strong>Comissão de Posse</strong> gerou PDF de cerimônia institucional agora' },
+      { icon: '🎂', text: '<strong>Família Santos</strong> simulou festa surpresa intimista em rooftop' },
+      { icon: '📄', text: '<strong>3 pessoas</strong> geraram PDF nos últimos 15 minutos' }
+    ];
+    var snIndex = 0;
+    function showNotification() { if (document.hidden) return; if (document.body.classList.contains('embed-mode')) return; var n = notifications[snIndex % notifications.length]; socialNotif.querySelector('.sn-icon').textContent = n.icon; snText.innerHTML = n.text; socialNotif.classList.add('show'); setTimeout(function(){ socialNotif.classList.remove('show'); }, 4500); snIndex++; }
+    setTimeout(function(){ showNotification(); setInterval(showNotification, 35000); }, 20000);
+    document.querySelectorAll('a[href="#calcSection"]').forEach(function(a){ a.addEventListener('click', function(e){ e.preventDefault(); var target = document.getElementById('calcSection'); if (target) { target.scrollIntoView({ behavior: 'smooth', block: 'start' }); dlPush('hero_cta_click'); } }); });
+    var postPdfClose = document.getElementById('postPdfClose'); var postPdfNo = document.getElementById('postPdfNo'); var postPdfWA = document.getElementById('postPdfWA'); var postPdfModal = document.getElementById('postPdfModal');
+    if (postPdfClose) postPdfClose.addEventListener('click', function(){ postPdfModal.classList.remove('active'); });
+    if (postPdfNo) postPdfNo.addEventListener('click', function(){ postPdfModal.classList.remove('active'); });
+    if (postPdfWA) { postPdfWA.addEventListener('click', function(){ postPdfModal.classList.remove('active'); if (typeof sendWA === 'function') sendWA('pos_pdf_simulador'); }); }
+    if (postPdfModal) { postPdfModal.addEventListener('click', function(e){ if(e.target === postPdfModal) postPdfModal.classList.remove('active'); }); }
+    var months = ['Janeiro','Fevereiro','Março','Abril','Maio','Junho','Julho','Agosto','Setembro','Outubro','Novembro','Dezembro'];
+    var now = new Date();
+    var urgencyText = document.querySelector('.urgency-bar span:last-child');
+    if (urgencyText) { urgencyText.innerHTML = '⚡ <strong>Precisa saber o valor agora?</strong> Simule em <strong>30 segundos</strong> — <a href="#calcSection">sem ligar, sem cadastro, sem esperar</a>'; }
+    document.querySelectorAll('.card').forEach(function(c){ c.setAttribute('role','button'); c.setAttribute('tabindex','0'); c.addEventListener('keydown', function(e){ if (e.key==='Enter'||e.key===' ') { e.preventDefault(); c.click(); } }); });
+    document.querySelectorAll('.chip').forEach(function(c){ c.setAttribute('role','option'); c.setAttribute('tabindex','0'); c.addEventListener('keydown', function(e){ if (e.key==='Enter'||e.key===' ') { e.preventDefault(); c.click(); } }); });
+    console.log('[432UP] Simulador LP Enhancement v1.0 loaded');
+  })();
+  </script>
+
+  <!-- ========== STEPPER + CONFIRM LOGIC ========== -->
+
+  <script>
+  (function(){
+    'use strict';
+    var stepAnchors = { 1: document.getElementById('secPacotes'), 2: document.getElementById('secEventInfo'), 3: document.getElementById('resumoBox'), 4: document.getElementById('resumoActions') };
+    var stepIndicators = document.querySelectorAll('.step-indicator');
+    function updateStepper() { var scrollY = window.scrollY + window.innerHeight * 0.4; var activeStep = 1; for (var i = 4; i >= 1; i--) { var el = stepAnchors[i]; if (el && el.getBoundingClientRect().top + window.scrollY <= scrollY) { activeStep = i; break; } } stepIndicators.forEach(function(si) { var step = parseInt(si.getAttribute('data-step')); si.classList.remove('active'); if (step === activeStep) si.classList.add('active'); }); }
+    window.addEventListener('scroll', updateStepper, { passive: true }); setTimeout(updateStepper, 1000);
+    stepIndicators.forEach(function(si) { si.addEventListener('click', function(e) { e.preventDefault(); var href = si.getAttribute('href'); if (href) { var target = document.querySelector(href); if (target) { target.scrollIntoView({ behavior: 'smooth', block: 'start' }); } } }); });
+    var confirmBox = document.getElementById('confirmBox'); var confirmCheck = document.getElementById('confirmCheck'); var resumoActions = document.getElementById('resumoActions');
+    if (confirmBox && confirmCheck && resumoActions) {
+      var resumoBody = document.getElementById('resumoBody');
+      var resumoWatcher = new MutationObserver(function() { var hasContent = !resumoBody.querySelector('.resumo-empty'); if (hasContent) { confirmBox.style.display = 'flex'; updateActionButtons(); } else { confirmBox.style.display = 'none'; confirmCheck.checked = false; } });
+      resumoWatcher.observe(resumoBody, { childList: true, subtree: true });
+      function updateActionButtons() { var btns = resumoActions.querySelectorAll('button'); if (confirmCheck.checked) { btns.forEach(function(b) { b.style.opacity='1'; b.style.pointerEvents='auto'; b.style.filter='none'; }); } else { btns.forEach(function(b) { b.style.opacity='.4'; b.style.pointerEvents='none'; b.style.filter='grayscale(0.5)'; }); } }
+      confirmCheck.addEventListener('change', updateActionButtons); updateActionButtons();
+    }
+    console.log('[432UP] Simulador Stepper + Confirm v2.0 loaded');
+  })();
+  </script>
+
+
+
+
+
+
+<script>
+(function(){
+  var hdr = document.querySelector('header');
+  var urg = document.querySelector('.urgency-bar');
+  var bar = document.getElementById('stepperBar');
+  var ph = document.getElementById('stepperPlaceholder');
+  if (!hdr) return;
+
+  var spacer = document.getElementById('headerSpacer');
+  if (!spacer) {
+    spacer = document.createElement('div');
+    spacer.id = 'headerSpacer';
+    hdr.parentNode.insertBefore(spacer, hdr);
+  }
+  spacer.style.display = 'none';
+
+  var barTop = 0, barH = 0;
+  function measureBar() {
+    if (!bar) return;
+    if (bar.classList.contains('is-sticky')) { bar.classList.remove('is-sticky'); ph.style.height='0'; ph.classList.remove('active'); }
+    barTop = bar.getBoundingClientRect().top + window.pageYOffset;
+    barH = bar.offsetHeight;
+  }
+
+  function onScroll() {
+    var urgH = urg ? urg.offsetHeight : 0;
+    var hdrH = hdr.offsetHeight;
+
+    if (window.scrollY >= urgH) {
+      hdr.style.cssText = 'position:fixed!important;top:0!important;left:0!important;right:0!important;z-index:100!important;';
+      spacer.style.display = 'block';
+      spacer.style.height = hdrH + 'px';
+    } else {
+      hdr.style.cssText = '';
+      spacer.style.display = 'none';
+    }
+
+    if (!bar || !ph) return;
+    var fixedHdrH = (window.scrollY >= urgH) ? hdrH : 0;
+    if (window.scrollY >= barTop - fixedHdrH) {
+      if (!bar.classList.contains('is-sticky')) {
+        ph.style.height = barH + 'px';
+        ph.classList.add('active');
+        bar.classList.add('is-sticky');
+      }
+      bar.style.top = fixedHdrH + 'px';
+    } else {
+      if (bar.classList.contains('is-sticky')) {
+        bar.classList.remove('is-sticky');
+        bar.style.top = '';
+        ph.style.height = '0';
+        ph.classList.remove('active');
+        barTop = bar.getBoundingClientRect().top + window.pageYOffset;
+
+        
+        
+      }
+    }
+  }
+
+  function init() { measureBar(); onScroll(); }
+  if (document.readyState === 'complete') setTimeout(init, 500);
+  else window.addEventListener('load', function(){ setTimeout(init, 500); });
+  window.addEventListener('scroll', onScroll, {passive:true});
+  window.addEventListener('resize', function(){ measureBar(); onScroll(); }, {passive:true});
+})();
+</script>
+
+
+
+
+
+
+
+  <!-- ===== PDF OVERLAY ===== -->
+
+  <div id="pdf432-overlay" style="display:none;position:fixed;inset:0;background:rgba(0,0,0,.7);z-index:99999;align-items:center;justify-content:center;flex-direction:column;gap:16px;font-family:'Inter',sans-serif;">
+    <div style="width:52px;height:52px;border:4px solid rgba(255,255,255,.2);border-top-color:#e63946;border-radius:50%;animation:pdf432spin .8s linear infinite;"></div>
+    <div style="color:#fff;font-size:1rem;font-weight:600;letter-spacing:.5px;">Gerando PDF...</div>
+  </div>
+  <style>@keyframes pdf432spin{to{transform:rotate(360deg)}}</style>
+
+  <!-- ===== PDF TEMPLATE ===== -->
+
+  <div id="pdf432-template" style="position:fixed;left:-9999px;top:0;width:794px;background:#fff;z-index:-1;visibility:hidden;">
+  <div id="pdf432-page" style="width:794px;min-height:1123px;background:#ffffff;font-family:'Inter',Arial,sans-serif;color:#1a1a1a;box-sizing:border-box;position:relative;overflow:hidden;">
+    <div style="background:linear-gradient(135deg,#1a1a2e 0%,#16213e 50%,#0f3460 100%);padding:36px 50px 30px;position:relative;overflow:hidden;">
+      <div style="position:absolute;top:-40px;right:-40px;width:180px;height:180px;border-radius:50%;background:rgba(230,57,70,.15);"></div>
+      <div style="display:flex;justify-content:space-between;align-items:flex-start;position:relative;z-index:1;">
+        <div><div style="font-size:38px;font-weight:900;color:#fff;letter-spacing:4px;line-height:1;margin-bottom:4px;">432<span style="color:#e63946;">UP</span></div><div style="color:rgba(255,255,255,.55);font-size:11px;letter-spacing:2px;text-transform:uppercase;">Produções & Eventos</div></div>
+        <div style="text-align:right;"><div style="background:rgba(230,57,70,.9);color:#fff;font-size:11px;font-weight:700;letter-spacing:2px;text-transform:uppercase;padding:5px 14px;border-radius:20px;margin-bottom:10px;display:inline-block;">PRÉ-ORÇAMENTO</div><div style="color:rgba(255,255,255,.9);font-size:13px;font-weight:600;" id="pdf432-num-orc">Nº #20260301-0000</div><div style="color:rgba(255,255,255,.5);font-size:11px;margin-top:3px;" id="pdf432-emitido">Emitido em 01/03/2026</div><div style="color:#e63946;font-size:11px;font-weight:600;margin-top:3px;">⏱ Válido por 7 dias</div></div>
+      </div>
+      <div style="margin-top:20px;padding-top:16px;border-top:1px solid rgba(255,255,255,.1);color:rgba(255,255,255,.7);font-size:12px;font-style:italic;">Proposta elaborada especialmente para você · www.432up.com</div>
+    </div>
+    <div style="padding:30px 50px;background:#fff;">
+      <div style="margin-bottom:24px;">
+        <div style="font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:2px;color:#e63946;margin-bottom:10px;display:flex;align-items:center;gap:8px;"><div style="width:24px;height:2px;background:#e63946;"></div>INFORMAÇÕES DO EVENTO<div style="flex:1;height:1px;background:#f0f0f0;"></div></div>
+        <div style="background:#f8f9fa;border-radius:10px;padding:16px 20px;display:grid;grid-template-columns:1fr 1fr 1fr;gap:12px;" id="pdf432-info-grid"></div>
+      </div>
+      <div id="pdf432-pkg-section" style="margin-bottom:24px;display:none;">
+        <div style="font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:2px;color:#e63946;margin-bottom:10px;display:flex;align-items:center;gap:8px;"><div style="width:24px;height:2px;background:#e63946;"></div>PACOTE SELECIONADO<div style="flex:1;height:1px;background:#f0f0f0;"></div></div>
+        <div style="background:linear-gradient(135deg,#1a1a2e,#16213e);border-radius:10px;padding:16px 20px;display:flex;justify-content:space-between;align-items:center;">
+          <div><div id="pdf432-pkg-nome" style="color:#fff;font-size:16px;font-weight:700;"></div><div id="pdf432-pkg-items" style="color:rgba(255,255,255,.6);font-size:12px;margin-top:4px;"></div><div id="pdf432-pkg-horas" style="color:rgba(255,255,255,.5);font-size:11px;margin-top:2px;"></div></div>
+          <div style="text-align:right;"><div id="pdf432-pkg-preco" style="color:#e63946;font-size:22px;font-weight:900;"></div><div id="pdf432-pkg-eco" style="color:rgba(255,255,255,.5);font-size:11px;"></div></div>
+        </div>
+      </div>
+      <div style="margin-bottom:24px;">
+        <div style="font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:2px;color:#e63946;margin-bottom:10px;display:flex;align-items:center;gap:8px;"><div style="width:24px;height:2px;background:#e63946;"></div>COMPOSIÇÃO DO ORÇAMENTO<div style="flex:1;height:1px;background:#f0f0f0;"></div></div>
+        <table style="width:100%;border-collapse:collapse;font-size:12px;">
+          <thead><tr style="background:#1a1a2e;color:#fff;"><th style="padding:10px 14px;text-align:left;border-radius:8px 0 0 0;font-weight:600;">Descrição</th><th style="padding:10px 14px;text-align:left;font-weight:600;">Detalhe</th><th style="padding:10px 14px;text-align:right;border-radius:0 8px 0 0;font-weight:600;">Valor</th></tr></thead>
+          <tbody id="pdf432-tabela"></tbody>
+        </table>
+      </div>
+      <div id="pdf432-obs-section" style="display:none;margin-bottom:24px;"><div style="background:#fff8e1;border-left:3px solid #ffc107;border-radius:0 8px 8px 0;padding:12px 16px;font-size:12px;"><div style="font-weight:700;color:#856404;margin-bottom:4px;">📝 Observações</div><div id="pdf432-obs-txt" style="color:#555;"></div></div></div>
+      <div style="background:linear-gradient(135deg,#1a1a2e,#0f3460);border-radius:12px;padding:20px 24px;display:flex;justify-content:space-between;align-items:center;margin-bottom:24px;">
+        <div><div style="color:rgba(255,255,255,.6);font-size:11px;text-transform:uppercase;letter-spacing:1px;">Total Estimado</div><div style="color:rgba(255,255,255,.4);font-size:10px;margin-top:4px;">* Valores sujeitos a confirmação pela equipe</div><div id="pdf432-eco-line" style="display:none;margin-top:6px;"><span style="background:rgba(34,197,94,.15);color:#16a34a;border-radius:20px;padding:3px 10px;font-size:11px;font-weight:600;" id="pdf432-eco-badge"></span></div></div>
+        <div id="pdf432-total-val" style="color:#e63946;font-size:32px;font-weight:900;text-shadow:0 0 20px rgba(230,57,70,.3);"></div>
+      </div>
+      <div style="background:#f8f9fa;border-radius:10px;padding:16px 20px;margin-bottom:24px;"><div style="font-size:11px;font-weight:700;color:#1a1a1a;margin-bottom:10px;text-transform:uppercase;letter-spacing:1px;">✅ Próximos Passos</div><div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:10px;font-size:11px;color:#555;"><div style="display:flex;gap:8px;align-items:flex-start;"><span style="color:#e63946;font-weight:700;">01</span><span>Entre em contato pelo WhatsApp para confirmar disponibilidade</span></div><div style="display:flex;gap:8px;align-items:flex-start;"><span style="color:#e63946;font-weight:700;">02</span><span>Nossa equipe elabora a proposta final personalizada</span></div><div style="display:flex;gap:8px;align-items:flex-start;"><span style="color:#e63946;font-weight:700;">03</span><span>Assinatura do contrato e confirmação da data</span></div></div></div>
+    </div>
+    <div style="background:linear-gradient(135deg,#1a1a2e,#16213e);padding:20px 50px;display:flex;justify-content:space-between;align-items:center;">
+      <div style="color:rgba(255,255,255,.5);font-size:10px;line-height:1.8;"><div style="color:#fff;font-weight:700;font-size:12px;margin-bottom:4px;">432UP Produções & Eventos</div><div>📱 (11) 94856-4577</div><div>📧 432up.producoes@gmail.com</div><div>🌐 www.432up.com</div><div>📸 @432up.producoes</div></div>
+      <div style="text-align:center;"><div style="font-size:28px;font-weight:900;color:#fff;letter-spacing:3px;">432<span style="color:#e63946;">UP</span></div><div style="color:rgba(255,255,255,.4);font-size:9px;margin-top:2px;letter-spacing:1px;">PRODUÇÕES & EVENTOS</div><div style="display:flex;gap:8px;margin-top:10px;justify-content:center;"><div style="background:rgba(255,255,255,.1);border-radius:6px;padding:4px 8px;color:rgba(255,255,255,.7);font-size:9px;font-weight:600;">+500 Eventos</div><div style="background:rgba(230,57,70,.2);border-radius:6px;padding:4px 8px;color:#e63946;font-size:9px;font-weight:600;">98% Satisfação</div></div></div>
+      <div style="text-align:right;max-width:160px;"><div style="color:rgba(255,255,255,.4);font-size:9px;font-style:italic;line-height:1.6;">"Cada detalhe conta.<br>Cada memória importa."</div><div style="color:rgba(255,255,255,.2);font-size:9px;margin-top:8px;" id="pdf432-footer-num"></div></div>
+    </div>
+  </div>
+  </div>
+
+  <!-- PDF bridge -->
+
+  <script>
+  window.addEventListener('load', function() {
+    var vis = document.getElementById('btn432Pdf');
+    if (!vis) return;
+    vis.addEventListener('click', function(e) {
+      e.preventDefault(); e.stopImmediatePropagation();
+      var real = document.getElementById('btnResumoPDF');
+      if (real) { real.click(); return; }
+      var byClass = document.querySelector('.btn-resumo-pdf:not(#btn432Pdf)');
+      if (byClass) { byClass.click(); return; }
+      if (typeof window.gerarPDF432 === 'function') window.gerarPDF432();
+    });
+  });
+  </script>
+
+
+
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+  window.toggleNav = function() {
+    var nav = document.getElementById('mainNav');
+    var overlay = document.getElementById('navOverlay');
+    var isOpen = nav.classList.toggle('open');
+    var theme = document.documentElement.getAttribute('data-theme');
+    if (isOpen) {
+      nav.style.cssText = theme === 'light'
+        ? 'background:rgba(250,246,238,.93)!important;backdrop-filter:blur(24px)!important;-webkit-backdrop-filter:blur(24px)!important;'
+        : 'background:rgba(12,10,30,.85)!important;backdrop-filter:blur(24px)!important;-webkit-backdrop-filter:blur(24px)!important;';
+    } else {
+      nav.style.cssText = '';
+    }
+    overlay.style.cssText = isOpen
+      ? 'display:block!important;position:fixed!important;inset:0!important;z-index:99!important;background:rgba(0,0,0,.6)!important;'
+      : '';
+      
+    var stepper = document.getElementById('stepperBar');
+    
+    
+    
+	if (stepper) stepper.style.setProperty('z-index', isOpen ? '90' : '200', 'important');
+
+    
+  };
+
+  window.closeNav = function() {
+    var nav = document.getElementById('mainNav');
+    nav.classList.remove('open');
+    nav.style.cssText = '';
+    document.getElementById('navOverlay').style.cssText = '';
+    var stepper = document.getElementById('stepperBar');
+    if (stepper) stepper.style.setProperty('z-index', '', 'important');
+    setTimeout(function(){ window.dispatchEvent(new Event('resize')); }, 350);
+
+  };
+});
+</script>
+
+
+
+
+
+</body>
+</html>
+
+
+
+
+
+
+
+
