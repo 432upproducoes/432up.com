@@ -1,4 +1,4 @@
-/* ========== 432UP CORE v2.6.4 — 2026-03-05 ========== */
+/* ========== 432UP CORE v2.6.3 — 2026-03-05 ========== */
 (function(){
   'use strict';
 
@@ -13,29 +13,18 @@
     };
   }
 
-  /* sbGet protegido contra DOMException no Safari Anônimo */
   async function sbGet(table, query) {
     try {
       var url = C.supabase.url + '/rest/v1/' + table + '?' + (query || '');
-      var r = await fetch(url, { 
-        method: 'GET',
-        headers: sbHeaders(),
-        mode: 'cors',
-        credentials: 'omit'
-      }).catch(function(err){
-        console.warn('[sbGet fetch catch]', table, err);
-        return null;
-      });
-
-      if (!r || !r.ok) return null;
+      var r = await fetch(url, { headers: sbHeaders() });
+      if (!r.ok) throw new Error(r.status);
       return await r.json();
     } catch (e) {
-      console.warn('[sbGet exception]', table, e);
+      console.error('[sbGet]', table, e);
       return null;
     }
   }
 
-  /* sbPost protegido */
   async function sbPost(table, body) {
     try {
       var r = await fetch(C.supabase.url + '/rest/v1/' + table, {
@@ -46,19 +35,18 @@
           'Content-Type':  'application/json',
           'Prefer':        'return=minimal'
         },
-        mode: 'cors',
-        credentials: 'omit',
         body: JSON.stringify(body)
-      }).catch(function(err){
-        console.warn('[sbPost fetch catch]', table, err);
-        return null;
       });
-
-      if (!r || !r.ok) return false;
-      return true;
+      if (!r.ok) {
+        var txt = await r.text();
+        console.error('[sbPost] Erro ' + r.status + ' em ' + table + ':', txt);
+      } else {
+        console.log('[sbPost] OK → ' + table);
+      }
+      return r;
     } catch (e) {
-      console.warn('[sbPost exception]', table, e);
-      return false;
+      console.error('[sbPost] Falha rede:', e);
+      return null;
     }
   }
 
@@ -108,12 +96,7 @@
     if (contactEmail) contactEmail.href = 'mailto:' + email;
   }
 
-  var _sysTheme = 'dark';
-  try {
-    if (window.matchMedia && matchMedia('(prefers-color-scheme:light)').matches) {
-      _sysTheme = 'light';
-    }
-  } catch(e) {}
+  var _sysTheme = (matchMedia('(prefers-color-scheme:light)').matches ? 'light' : 'dark');
 
   function applyThemeAutoFromSystem() {
     if (document.documentElement.dataset.themeFixed === '1') return;
@@ -122,14 +105,10 @@
     if (el) el.textContent = _sysTheme;
   }
 
-  try {
-    if (window.matchMedia) {
-      matchMedia('(prefers-color-scheme:light)').addEventListener('change', function(e){
-        _sysTheme = e.matches ? 'light' : 'dark';
-        applyThemeAutoFromSystem();
-      });
-    }
-  } catch(e) {}
+  matchMedia('(prefers-color-scheme:light)').addEventListener('change', function(e){
+    _sysTheme = e.matches ? 'light' : 'dark';
+    applyThemeAutoFromSystem();
+  });
 
   applyThemeAutoFromSystem();
 
@@ -249,7 +228,9 @@
     else boot();
   })();
 
-  /* VISUAL ENGINE */
+  /* ==========================================================
+   * VISUAL ENGINE
+   * ========================================================== */
   var _visualCache = { loadedAt:0, rawRow:null, cfg:null, lastPageApplied:null };
   var _visualInFlight = null;
 
@@ -289,19 +270,34 @@
         var rows = await sbGet('co_configuracoes','id=eq.1&select=*');
         var row  = (rows && rows[0]) ? rows[0] : {};
 
+        /* =======================================================
+         * MERGE STRATEGY v2.6.3:
+         * 1) Começa com o JSONB (valor) — contém os campos globais
+         *    salvos pelo admin (motion_enabled, layer_algae, etc.)
+         * 2) Colunas diretas da linha sobrescrevem SOMENTE se não
+         *    forem campos globais já presentes no JSONB.
+         *    Colunas de página (gal_*, home_*, calc_*) sempre
+         *    sobrescrevem pois são específicas.
+         * Isso evita que colunas diretas zerem globais do JSONB.
+         * ======================================================= */
         var jsonb = row.valor || {};
         var cfg   = {};
 
+        /* 1) JSONB primeiro */
         Object.keys(jsonb).forEach(function(k){ cfg[k] = jsonb[k]; });
 
+        /* 2) Colunas diretas: só aplica se for chave de página
+              OU se o JSONB não tiver essa chave */
         var PAGE_PREFIXES = ['gal_','galeria_','home_','index_','calc_','calculadora_'];
         Object.keys(row).forEach(function(k){
           if (k === 'valor' || k === 'id' || k === 'created_at' || k === 'updated_at') return;
           if (row[k] === undefined || row[k] === null) return;
           var isPageKey = PAGE_PREFIXES.some(function(px){ return k.indexOf(px) === 0; });
           if (isPageKey) {
+            /* chave de página: sempre aplica coluna direta */
             cfg[k] = row[k];
           } else {
+            /* chave global: só aplica se JSONB não tiver */
             if (cfg[k] === undefined || cfg[k] === null) cfg[k] = row[k];
           }
         });
@@ -310,9 +306,6 @@
         _visualCache.rawRow   = row;
         _visualCache.cfg      = cfg;
         return cfg;
-      } catch(err) {
-        console.warn('[loadVisualConfig catch]', err);
-        return {};
       } finally {
         _visualInFlight = null;
       }
@@ -321,6 +314,11 @@
     return _visualInFlight;
   }
 
+  /* ==========================================================
+   * _resolvePageLayers v2.6.3
+   * FIX CRÍTICO: globais lidos EXCLUSIVAMENTE do JSONB (valor.*).
+   * Colunas de página (gal_layer_*) só entram quando herdar=false.
+   * ========================================================== */
   function _resolvePageLayers(cfg, page){
     cfg = cfg||{};
     var p = String(page||'').toLowerCase();
@@ -340,6 +338,9 @@
       return arr;
     }
 
+    /* ---- GLOBAIS: lidos do JSONB via campos sem prefixo de página ---- */
+    /* Usa _visualCache.rawRow.valor para garantir que são os valores
+       do JSONB, não colunas diretas que possam ter sido sobrescritas */
     var jsonb = (_visualCache.rawRow && _visualCache.rawRow.valor) ? _visualCache.rawRow.valor : cfg;
 
     function globalBool(keys, fallback){
@@ -358,6 +359,7 @@
                     ? (jsonb.layer_orbs !== false)
                     : (_num(jsonb.orbs_intensity, 50) > 0);
 
+    /* ---- HERANÇA da página ---- */
     var herdar = pickBool(
       prefixes.map(function(px){ return px+'_herdar_camadas'; }),
       true
@@ -374,8 +376,10 @@
       cta:       gCta
     };
 
+    /* se herda, retorna globais direto */
     if (herdar) return out;
 
+    /* se NÃO herda, sobrepõe com toggles específicos da página */
     out.motion    = pickBool(pageKeys('motion'),    out.motion);
     out.aurora    = pickBool(pageKeys('aurora'),    out.aurora);
     out.fog       = pickBool(pageKeys('fog'),       out.fog);
@@ -517,7 +521,7 @@
   window.sbPost       = sbPost;
   window.sbGet        = sbGet;
 
-  console.log('[432UP] Core v2.6.4 carregado');
+  console.log('[432UP] Core v2.6.3 carregado');
 
   loadContatos();
 
