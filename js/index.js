@@ -1,4 +1,4 @@
- /* ========== 432UP INDEX v2.1.1 — 2026-07-25 ========== */
+/* ========== 432UP INDEX v2.1.2 — 2026-07-25 ========== */
 
 (function () {
   'use strict';
@@ -13,18 +13,17 @@
   async function sbGetIndex(t, q) {
     var creds = getSbCredentials();
     try {
-      var r = await fetch(creds.url + '/rest/v1/' + t + '?' + q, {
+      var finalUrl = creds.url + '/rest/v1/' + t + '?' + q + '&apikey=' + creds.key;
+      var r = await fetch(finalUrl, {
         method: 'GET',
         headers: {
           'apikey': creds.key,
-          'Authorization': 'Bearer ' + creds.key,
-          'Content-Type': 'application/json'
+          'Authorization': 'Bearer ' + creds.key
         }
       });
       if (!r.ok) return [];
       return await r.json();
     } catch (e) {
-      console.warn('[index.js] Falha na busca de ' + t + ', usando fallback local.');
       return [];
     }
   }
@@ -32,7 +31,6 @@
   function renderHero(secMap) {
     var heroTitle = document.querySelector('#heroTitle');
     var heroSub = document.querySelector('#heroSub');
-
     if (!heroTitle) return;
 
     if (secMap && secMap.hero && secMap.hero.titulo) {
@@ -47,17 +45,14 @@
   async function loadAll() {
     try {
       var secoes = await sbGetIndex('co_secoes', 'select=*&order=ordem');
-      
       var secMap = {};
       if (Array.isArray(secoes)) {
         secoes.forEach(function (s) {
           if (s.chave) secMap[s.chave] = s;
         });
       }
-
       renderHero(secMap);
     } catch (err) {
-      console.error('[loadAll] Erro ao renderizar index:', err);
       renderHero(null);
     }
   }
@@ -66,7 +61,6 @@
     try {
       var hour = new Date().getHours();
       var isDayTime = hour >= 6 && hour < 18;
-      
       if (isDayTime) {
         document.documentElement.classList.add('theme-day');
         document.documentElement.classList.remove('theme-night');
@@ -74,9 +68,7 @@
         document.documentElement.classList.add('theme-night');
         document.documentElement.classList.remove('theme-day');
       }
-    } catch (e) {
-      console.warn('[applyTheme] Usando tema padrão.');
-    }
+    } catch (e) {}
   }
 
   document.addEventListener('DOMContentLoaded', function () {
