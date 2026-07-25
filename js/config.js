@@ -13,11 +13,12 @@
  window.CONFIG_432UP = {
     version: 'v2.1',
 
-    /* SUPABASE */
+       /* SUPABASE */
     supabase: {
-      url: 'https://paetksphfejtjkngqej.supabase.co',
+      url: 'https://paetkspbfejtjjkngqej.supabase.co',
       key: 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InBhZXRrc3BiZmVqdGpqa25ncWVqIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzA5MDU2OTgsImV4cCI6MjA4NjQ4MTY5OH0.IiYweZ2g3bP7b0o7VvBW5LLb6d1oHtSNFUZlVkIsdsA'
     },
+
 
 
 
