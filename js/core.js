@@ -1,9 +1,8 @@
-/* ========== 432UP CORE v2.1.1 — 2026-02-26 ========== */
+/* ========== 432UP CORE v2.1.1 — 2026-07-25 ========== */
 
 (function(){
   'use strict';
 
-  // Helper centralizador de credenciais para garantir que NUNCA saiam cabeçalhos vazios
   function getCredentials() {
     var cfg = window.CONFIG_432UP || window.C || {};
     var url = (cfg.supabase && cfg.supabase.url) ? cfg.supabase.url : 'https://paetkspbfejtjjkngqej.supabase.co';
@@ -11,7 +10,6 @@
     return { url: url, key: key };
   }
 
-  // Função sbGet global corrigida
   window.sbGet = async function(t, q) {
     var creds = getCredentials();
     try {
@@ -25,28 +23,27 @@
       });
 
       if (!r.ok) {
-        console.warn('[sbGet] Status ' + r.status + ' para tabela:', t);
+        console.warn('[sbGet] Status ' + r.status + ' para:', t);
         return [];
       }
 
       return await r.json();
     } catch (e) {
-      console.error('[sbGet] Erro de rede na tabela ' + t + ':', e);
+      console.error('[sbGet] Erro de rede em ' + t + ':', e);
       return [];
     }
   };
 
-  // Carregamento de Configurações Visuais sem travar caso o banco retorne vazio
   window.loadVisualConfig = async function() {
     try {
       var rows = await window.sbGet('co_configuracoes', 'id=eq.1&select=*');
       
       if (!rows || rows.length === 0) {
-        console.warn('[Core] Nenhuma linha encontrada em co_configuracoes (ID 1). Usando fallback.');
+        console.warn('[Core] Config ID 1 ausente. Usando padrões visuais.');
         return {
           aurora_opacity: 0.6,
           fog_opacity: 0.4,
-          valor: {}
+          valor: { tema_ativo: 'auto' }
         };
       }
 
@@ -54,11 +51,11 @@
       return {
         aurora_opacity: row.aurora_opacity ?? 0.6,
         fog_opacity: row.fog_opacity ?? 0.4,
-        valor: typeof row.valor === 'string' ? JSON.parse(row.valor) : (row.valor || {})
+        valor: typeof row.valor === 'string' ? JSON.parse(row.valor) : (row.valor || { tema_ativo: 'auto' })
       };
     } catch (e) {
-      console.error('[Core] Erro ao carregar configurações visuais:', e);
-      return { aurora_opacity: 0.6, fog_opacity: 0.4, valor: {} };
+      console.error('[Core] Erro em loadVisualConfig:', e);
+      return { aurora_opacity: 0.6, fog_opacity: 0.4, valor: { tema_ativo: 'auto' } };
     }
   };
 
