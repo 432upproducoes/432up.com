@@ -1,3 +1,13 @@
+/* TIMER DE SEGURANÇA: Destrava a interface se o banco/Safari falhar */
+setTimeout(function(){
+  var heroTitle = document.getElementById('heroTitle');
+  if (heroTitle && (!heroTitle.textContent || heroTitle.textContent.indexOf('Carregando') > -1)) {
+    console.warn('[432UP] Ativando renderização de Fallback por timeout');
+    renderSecoes([]);
+    renderServicos(FB_SRV);
+    renderPacotes(FB_PKG);
+  }
+}, 2000);
 /* ========== v3.10.0 BUILD 2026-03-05 — CORE VISUAL ENGINE (HOME) ========== */
 /* Base: js/index.js v3.9.9-2
    Patch: visual config centralizado no CORE (core.js v2.6)
