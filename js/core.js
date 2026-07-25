@@ -1,4 +1,4 @@
-/* ==========  432UP CORE v2.1.1 — 2026-07-25 ========== */
+/* ========== 432UP CORE v2.1.2 — 2026-07-25 ========== */
 
 (function(){
   'use strict';
@@ -13,7 +13,10 @@
   window.sbGet = async function(t, q) {
     var creds = getCredentials();
     try {
-      var r = await fetch(creds.url + '/rest/v1/' + t + '?' + q, {
+      // Anexa a apikey na URL para garantir autorização mesmo se o browser omitir os Request Headers
+      var finalUrl = creds.url + '/rest/v1/' + t + '?' + q + '&apikey=' + creds.key;
+      
+      var r = await fetch(finalUrl, {
         method: 'GET',
         headers: {
           'apikey': creds.key,
@@ -22,11 +25,7 @@
         }
       });
 
-      if (!r.ok) {
-        console.warn('[sbGet] Status ' + r.status + ' para:', t);
-        return [];
-      }
-
+      if (!r.ok) return [];
       return await r.json();
     } catch (e) {
       console.error('[sbGet] Erro de rede em ' + t + ':', e);
@@ -37,16 +36,9 @@
   window.loadVisualConfig = async function() {
     try {
       var rows = await window.sbGet('co_configuracoes', 'id=eq.1&select=*');
-      
       if (!rows || rows.length === 0) {
-        console.warn('[Core] Config ID 1 ausente. Usando padrões visuais.');
-        return {
-          aurora_opacity: 0.6,
-          fog_opacity: 0.4,
-          valor: { tema_ativo: 'auto' }
-        };
+        return { aurora_opacity: 0.6, fog_opacity: 0.4, valor: { tema_ativo: 'auto' } };
       }
-
       var row = rows[0];
       return {
         aurora_opacity: row.aurora_opacity ?? 0.6,
@@ -54,10 +46,9 @@
         valor: typeof row.valor === 'string' ? JSON.parse(row.valor) : (row.valor || { tema_ativo: 'auto' })
       };
     } catch (e) {
-      console.error('[Core] Erro em loadVisualConfig:', e);
       return { aurora_opacity: 0.6, fog_opacity: 0.4, valor: { tema_ativo: 'auto' } };
     }
   };
 
-  console.log('[432UP] Core v2.1.1 inicializado com headers de segurança.');
+  console.log('[432UP] Core v2.1.2 inicializado.');
 })();
