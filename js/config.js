@@ -1,4 +1,4 @@
-/* ========== 432UP CONFIG v2.1.1 — 2026-02-26 ========== */
+/* ========== 432UP CONFIG v2.1.1 — 2026-07-25 ========== */
 /* ÚNICO LUGAR COM CREDENCIAIS E DADOS GLOBAIS */
 
 (function(){
@@ -22,14 +22,14 @@
       bucket: '432up_galeria'
     },
 
-    /* CONTATOS (carregados do banco) */
+    /* CONTATOS */
     contatos: {
       whatsapp:  null,
       instagram: null,
       email:     null
     },
 
-    /* FALLBACK (se banco falhar) */
+    /* FALLBACK */
     fallback: {
       whatsapp:  '5511948564577',
       instagram: '@432up.producoes',
