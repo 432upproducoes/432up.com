@@ -13,7 +13,7 @@
     };
   }
 
-  /* sbGet blindado contra DOMException/SecurityError (Safari Anônimo) */
+  /* sbGet protegido contra DOMException no Safari Anônimo */
   async function sbGet(table, query) {
     try {
       var url = C.supabase.url + '/rest/v1/' + table + '?' + (query || '');
@@ -35,7 +35,7 @@
     }
   }
 
-  /* sbPost blindado */
+  /* sbPost protegido */
   async function sbPost(table, body) {
     try {
       var r = await fetch(C.supabase.url + '/rest/v1/' + table, {
@@ -249,9 +249,7 @@
     else boot();
   })();
 
-  /* ==========================================================
-   * VISUAL ENGINE
-   * ========================================================== */
+  /* VISUAL ENGINE */
   var _visualCache = { loadedAt:0, rawRow:null, cfg:null, lastPageApplied:null };
   var _visualInFlight = null;
 
