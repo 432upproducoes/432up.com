@@ -1,4 +1,4 @@
-/* ========== 432UP CONFIG v2.1.1 — 2026-07-25 ========== */
+/* ========== 432UP CONFIG v2.1.1 — 2026-07-25 ======== == */
 /* ÚNICO LUGAR COM CREDENCIAIS E DADOS GLOBAIS */
 
 (function(){
