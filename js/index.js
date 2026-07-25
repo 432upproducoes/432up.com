@@ -1,7 +1,18 @@
-/* ========== 432UP INDEX v2.1.2 — 2026-07-25 ========== */
+/* ========== 432UP INDEX v2.1.3 — 2026-07-25 ========== */
 
 (function () {
   'use strict';
+
+  // Declara openCalc globalmente para evitar o erro do botão "Simule"
+  window.openCalc = function () {
+    var modal = document.querySelector('#calcModal') || document.querySelector('#simuladorModal');
+    if (modal) {
+      modal.classList.add('active', 'open');
+      modal.style.display = 'block';
+    } else {
+      window.location.href = 'calculadora.html';
+    }
+  };
 
   function getSbCredentials() {
     var cfg = window.CONFIG_432UP || window.C || {};
