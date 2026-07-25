@@ -1,19 +1,17 @@
-/* ========== 432UP CONFIG v2.1 — 2026-02-26 ========== */
+/* ========== 432UP CONFIG v2.1.1 — 2026-02-26 ========== */
 /* ÚNICO LUGAR COM CREDENCIAIS E DADOS GLOBAIS */
 
 (function(){
   'use strict';
 
-  /* Guarda: evita re-execução se o arquivo for carregado mais de uma vez */
   if (window.CONFIG_432UP && window.CONFIG_432UP.version === 'v2.1.1') {
-    console.log('[432UP] Config v2.1.1 já carregado — ignorando duplicata');
     return;
   }
 
   window.CONFIG_432UP = {
     version: 'v2.1.1',
 
-    /* SUPABASE - URL E CHAVE OFICIAIS CORRIGIDAS */
+    /* SUPABASE - URL E CHAVE OFICIAIS */
     supabase: {
       url: 'https://paetkspbfejtjjkngqej.supabase.co',
       key: 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InBhZXRrc3BiZmVqdGpqa25ncWVqIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzA5MDU2OTgsImV4cCI6MjA4NjQ4MTY5OH0.IiYweZ2g3bP7b0o7VvBW5LLb6d1oHtSNFUZlVkIsdsA'
@@ -56,6 +54,6 @@
   /* ALIAS GLOBAL */
   window.C = window.CONFIG_432UP;
 
-  console.log('[432UP] Config v2.1.1 carregado com credenciais ativas');
+  console.log('[432UP] Config v2.1.1 carregado com sucesso.');
 
 })();
