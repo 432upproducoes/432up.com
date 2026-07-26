@@ -12,7 +12,13 @@
 
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
-  <meta name="version" content="20.0">
+  <meta name="version" content="21.0">
+  
+  <!-- INTEGRAÇÃO CROMÁTICA TRANSLÚCIDA COM O SAFARI / IOS -->
+  <meta name="theme-color" content="#08080A">
+  <meta name="apple-mobile-web-app-capable" content="yes">
+  <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+
   <link class="js-site-favicon" rel="icon" type="image/png" href="imagens/favicon.png">
   <title>432UP! Produções | Alta Engenharia Audiovisual</title>
   <meta name="description" content="Experiências audiovisuais exclusivas e de alto padrão. Arquitetura de som de alta fidelidade e cenografia de luz.">
@@ -64,30 +70,35 @@
 
     * { margin: 0; padding: 0; box-sizing: border-box; }
 
+    /* OPÇÃO A: PISTA DE SCROLL CALCULADA PARA DAR CURSO AO MOUSE NO IPAD */
     html, body {
       width: 100%;
-      height: calc(100dvh + 1px);
-      overflow: hidden;
+      min-height: 118vh;
+      min-height: 118dvh;
+      overflow-x: hidden;
+      overflow-y: auto;
       background-color: var(--bg-pure);
       color: var(--text-main);
       font-family: var(--font-base);
       line-height: 1.6;
       transition: background-color 0.6s ease;
       -webkit-text-size-adjust: 100%;
+      scroll-behavior: smooth;
     }
 
-    /* CANVAS DE BACKGROUND NEBULOSA */
+    /* CANVAS DE BACKGROUND NEBULOSA FIXO NA RETINA */
     #orbit-canvas {
-      position: absolute;
+      position: fixed;
       top: 0;
       left: 0;
-      width: 100%;
-      height: 100%;
+      width: 100vw;
+      height: 100vh;
+      height: 100dvh;
       z-index: 1;
       pointer-events: none;
     }
 
-    /* VIEWPORT CONTAINER */
+    /* VIEWPORT CONTAINER COM ESPAÇAMENTO PISTA A */
     .viewport-wrapper {
       position: relative;
       z-index: 2;
@@ -95,15 +106,15 @@
       flex-direction: column;
       justify-content: space-between;
       align-items: stretch;
-      height: 100vh;
-      height: 100dvh;
+      min-height: 100vh;
+      min-height: 100dvh;
       width: 100%;
       max-width: 1200px;
       margin: 0 auto;
-      padding: 70px 24px 12px 24px;
+      padding: 70px 24px 24px 24px;
     }
 
-    /* HEADER FIXO NO TOPO */
+    /* HEADER FIXO NO TOPO COM FUSÃO CROMÁTICA */
     header {
       position: fixed;
       top: 0;
@@ -114,7 +125,7 @@
       justify-content: space-between;
       align-items: center;
       padding: 12px 32px;
-      background: rgba(8, 8, 10, 0.65);
+      background: rgba(8, 8, 10, 0.55);
       backdrop-filter: blur(16px);
       -webkit-backdrop-filter: blur(16px);
       border-bottom: 1px solid rgba(255, 255, 255, 0.05);
@@ -231,7 +242,7 @@
       text-align: center;
       max-width: 900px;
       margin: 0 auto;
-      padding: 10px 0;
+      padding: 40px 0;
     }
     .tagline {
       display: inline-block;
@@ -345,7 +356,7 @@
       text-shadow: 0 1px 4px rgba(0,0,0,0.8);
     }
 
-    /* FILAMENTO AURORA (SOBREPOSIÇÃO NO TOPO DE TODAS AS BORDAS) */
+    /* FILAMENTO AURORA */
     .aurora-border-glow {
       position: relative;
     }
@@ -523,7 +534,7 @@
 </head>
 <body>
 
-  <!-- CANVAS ANIMADO NEBULOSA -->
+  <!-- CANVAS ANIMADO NEBULOSA FIXO -->
   <canvas id="orbit-canvas"></canvas>
 
   <!-- OVERLAY DE BACKDROP DISCRETO -->
@@ -626,22 +637,17 @@
     function applySystemTheme(e) {
       isUranoActive = e.matches;
       document.documentElement.setAttribute('data-theme', isUranoActive ? 'light' : 'dark');
+      
+      // SINCRONIZA A META-TAG DE COR DA BARRA DO SAFARI COM O TEMA DO SISTEMA
+      const themeColorMeta = document.querySelector('meta[name="theme-color"]');
+      if (themeColorMeta) {
+        themeColorMeta.setAttribute('content', isUranoActive ? '#161822' : '#08080A');
+      }
     }
 
     const colorSchemeQuery = window.matchMedia('(prefers-color-scheme: light)');
     applySystemTheme(colorSchemeQuery);
     colorSchemeQuery.addEventListener('change', applySystemTheme);
-
-    /* RECOLHIMENTO DA BARRA DO SAFARI AO PRIMEIRA INTERAÇÃO DO USUÁRIO */
-    let hasExpandedSafari = false;
-    function triggerSafariFullscreen() {
-      if (!hasExpandedSafari) {
-        window.scrollTo(0, 1);
-        hasExpandedSafari = true;
-      }
-    }
-    document.addEventListener('touchstart', triggerSafariFullscreen, { passive: true });
-    document.addEventListener('click', triggerSafariFullscreen, { passive: true });
 
     /* SCRIPT DE SEGURANÇA - BLOQUEIO DE COPIAR / INSPECIONAR */
     document.addEventListener('contextmenu', e => e.preventDefault());
@@ -651,7 +657,7 @@
 
     /* SUPABASE CLIENT INTEGRATION */
     const SUPABASE_URL = "https://www.432up.com/supabase-api";
-    const SUPABASE_ANON_KEY = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InBhZXRrc3BiZmVqdGpqa25ncWVqIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzA5MDU2OTgsImV4cCI6MjA4NjQ4MTY5OH0.IiYweZ2g3bP7b0o7VvBW5LLb6d1oHtSNFUZlVkIsdsA";
+    const SUPABASE_ANON_KEY = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InBhZXRrc3BiZmVqdGpqa25ncWVqIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzA5MDU2OTgsImV4cCI6MjA8NjQ4MTY5OH0.IiYweZ2g3bP7b0o7VvBW5LLb6d1oHtSNFUZlVkIsdsA";
     let supabaseClient = null;
 
     if (typeof supabase !== 'undefined' && window.supabase) { supabaseClient = window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY); }
