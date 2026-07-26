@@ -1,0 +1,1302 @@
+<!DOCTYPE html>
+<html lang="pt-BR" data-theme="dark">
+<head>
+  <!-- Google Analytics GA4 -->
+  <script async src="https://www.googletagmanager.com/gtag/js?id=G-7SWNCP1NV6"></script>
+  <script>
+    window.dataLayer = window.dataLayer || [];
+    function gtag(){dataLayer.push(arguments);}
+    gtag('js', new Date());
+    gtag('config', 'G-7SWNCP1NV6');
+  </script>
+
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
+  <link class="js-site-favicon" rel="icon" type="image/png" href="/imagens/favicon.png">
+  <title>Simulador de Atmosfera Audiovisual | 432UP! Produções</title>
+  <meta name="description" content="Dimensionamento avançado e estudo estrutural de áudio e iluminação cênica para projetos de alta exigência.">
+
+  <!-- Google Fonts (Inter - Padrão Home) -->
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&display=swap" rel="stylesheet">
+
+  <!-- Dependências: Supabase e Biblioteca de Exportação de PDF -->
+  <script src="https://unpkg.com/@supabase/supabase-js@2"></script>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/html2pdf.js/0.10.1/html2pdf.bundle.min.js"></script>
+
+  <!-- SELO DE AUTORIDADE GOOGLE: DADOS ESTRUTURADOS JSON-LD -->
+  <script type="application/ld+json">
+  {
+    "@context": "https://schema.org",
+    "@type": "WebApplication",
+    "name": "Simulador de Atmosfera Audiovisual 432UP!",
+    "url": "https://www.432up.com/calculadora.html",
+    "applicationCategory": "BusinessApplication",
+    "operatingSystem": "All",
+    "browserRequirements": "Requires JavaScript. Requires HTML5.",
+    "author": {
+      "@type": "LocalBusiness",
+      "name": "432UP! Produções",
+      "image": "https://www.432up.com/imagens/favicon.png",
+      "address": {
+        "@type": "PostalAddress",
+        "addressLocality": "São Paulo",
+        "addressRegion": "SP",
+        "addressCountry": "BR"
+      }
+    }
+  }
+  </script>
+
+  <style>
+    :root {
+      --bg-pure: #08080A;
+      --bg-surface: #0D0D12;
+      --bg-card: rgba(18, 18, 26, 0.55);
+      --text-main: #F3F4F6;
+      --text-muted: #A3A3A3;
+      --text-bright: #E5E7EB;
+      --primary-lime: #00FF66;
+      --secondary-lilac: #8A2BE2;
+      --glass-border: rgba(0, 255, 102, 0.18);
+      --glass-border-subtle: rgba(255, 255, 255, 0.08);
+      --input-bg: rgba(255, 255, 255, 0.04);
+      --danger: #FF4D4D;
+      --font-base: 'Inter', -apple-system, sans-serif;
+      --transition-smooth: all 0.4s cubic-bezier(0.25, 1, 0.5, 1);
+    }
+
+    * { margin: 0; padding: 0; box-sizing: border-box; }
+
+    html, body {
+      width: 100%;
+      min-height: 100vh;
+      background-color: var(--bg-pure);
+      color: var(--text-main);
+      font-family: var(--font-base);
+      line-height: 1.6;
+      position: relative;
+      overflow-x: hidden;
+    }
+
+    body.embed-mode #calc-header { display: none !important; }
+    body.embed-mode { background: transparent !important; }
+
+    /* CANVAS DE BACKGROUND PADRÃO HOME */
+    #orbit-canvas {
+      position: fixed;
+      top: 0;
+      left: 0;
+      width: 100vw;
+      height: 100vh;
+      z-index: 1;
+      pointer-events: none;
+    }
+
+    .viewport-wrapper {
+      position: relative;
+      z-index: 2;
+      width: 100%;
+      max-width: 1200px;
+      margin: 0 auto;
+      padding: 0 24px 40px 24px;
+    }
+
+    /* HEADER FIXO ESTILO HOME */
+    header {
+      position: fixed;
+      top: 0;
+      left: 0;
+      width: 100%;
+      z-index: 1000;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      padding: 12px 32px;
+      background: rgba(255, 255, 255, 0.003);
+      backdrop-filter: blur(10px);
+      -webkit-backdrop-filter: blur(10px);
+      border-bottom: 1px solid rgba(255, 255, 255, 0.03);
+      box-shadow: 0 4px 20px rgba(0, 0, 0, 0.1);
+    }
+
+    .logo-container {
+      display: flex;
+      flex-direction: column;
+    }
+    .logo {
+      font-weight: 700;
+      font-size: 1.35rem;
+      letter-spacing: -0.5px;
+      text-shadow: 0 0 10px rgba(255, 255, 255, 0.2);
+    }
+    .logo span { color: var(--primary-lime); }
+    .logo-sub {
+      font-size: 0.55rem;
+      text-transform: uppercase;
+      letter-spacing: 2px;
+      color: var(--text-muted);
+      margin-top: -3px;
+    }
+
+    /* NAV DESKTOP E EFEITO DE BRILHO ESTRELADO */
+    nav.desktop-nav {
+      display: flex;
+      align-items: center;
+    }
+    nav.desktop-nav a {
+      color: var(--text-main);
+      text-decoration: none;
+      font-size: 0.85rem;
+      font-weight: 500;
+      margin-left: 32px;
+      position: relative;
+      padding: 4px 0;
+      transition: var(--transition-smooth);
+      animation: starGlintText 7s infinite ease-in-out;
+      cursor: pointer;
+    }
+
+    @keyframes starGlintText {
+      0%, 85%, 100% { text-shadow: none; }
+      92% {
+        color: #FFF;
+        text-shadow: 0 0 12px rgba(0, 255, 102, 0.6), 0 0 20px rgba(255, 255, 255, 0.8);
+      }
+    }
+    
+    nav.desktop-nav a::after {
+      content: '';
+      position: absolute;
+      bottom: 0;
+      left: 50%;
+      width: 0%;
+      height: 2px;
+      background: linear-gradient(90deg, var(--primary-lime), var(--secondary-lilac));
+      transition: var(--transition-smooth);
+      transform: translateX(-50%);
+      box-shadow: 0 0 10px var(--primary-lime);
+    }
+    nav.desktop-nav a:hover, nav.desktop-nav a.active {
+      color: var(--primary-lime);
+      text-shadow: 0 0 8px rgba(0, 255, 102, 0.4);
+    }
+    nav.desktop-nav a:hover::after, nav.desktop-nav a.active::after {
+      width: 100%;
+    }
+
+    /* BOTÃO HAMBÚRGUER MOBILE */
+    .mobile-hamburger {
+      display: none;
+      background: rgba(255, 255, 255, 0.03);
+      border: 1px solid rgba(255, 255, 255, 0.1);
+      color: var(--text-main);
+      padding: 8px 12px;
+      border-radius: 8px;
+      font-size: 1.2rem;
+      cursor: pointer;
+      backdrop-filter: blur(8px);
+    }
+
+    /* GAVETA MOBILE */
+    .mobile-menu-overlay {
+      position: fixed;
+      inset: 0;
+      background: rgba(8, 8, 10, 0.92);
+      backdrop-filter: blur(24px);
+      -webkit-backdrop-filter: blur(24px);
+      z-index: 1001;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      gap: 28px;
+      opacity: 0;
+      pointer-events: none;
+      transition: var(--transition-smooth);
+    }
+    .mobile-menu-overlay.active {
+      opacity: 1;
+      pointer-events: auto;
+    }
+    .mobile-menu-overlay a {
+      color: var(--text-main);
+      text-decoration: none;
+      font-size: 1.2rem;
+      font-weight: 500;
+      transition: var(--transition-smooth);
+    }
+    .mobile-menu-overlay a:hover, .mobile-menu-overlay a.active {
+      color: var(--primary-lime);
+      text-shadow: 0 0 12px rgba(0, 255, 102, 0.6);
+    }
+
+    /* HERO DA CALCULADORA */
+    .hero-center {
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      text-align: center;
+      max-width: 900px;
+      margin: 0 auto;
+      padding-top: 120px;
+      padding-bottom: 20px;
+      animation: heroTideMotion 12s ease-in-out infinite alternate;
+    }
+
+    @keyframes heroTideMotion {
+      0% { transform: translateY(0px) scale(1); }
+      50% { transform: translateY(-4px) scale(1.002); }
+      100% { transform: translateY(3px) scale(0.998); }
+    }
+
+    .tagline {
+      display: inline-block;
+      font-size: 0.75rem;
+      font-weight: 600;
+      text-transform: uppercase;
+      letter-spacing: 4px;
+      color: #A855F7;
+      margin-bottom: 16px;
+      text-shadow: 0 0 12px rgba(138, 43, 226, 0.4);
+    }
+    h1 {
+      font-size: clamp(2.2rem, 4.5vw, 3.8rem);
+      font-weight: 700;
+      letter-spacing: -1.5px;
+      line-height: 1.1;
+      margin-bottom: 16px;
+      text-shadow: 0 2px 10px rgba(0,0,0,0.5);
+    }
+    h1 span {
+      color: var(--primary-lime);
+      text-shadow: 0 0 20px rgba(0, 255, 102, 0.35);
+    }
+    .simulator-desc {
+      font-size: 1.05rem;
+      color: var(--text-bright);
+      max-width: 680px;
+      margin: 0 auto;
+      font-weight: 300;
+      text-shadow: 0 1px 4px rgba(0,0,0,0.8);
+    }
+
+    /* LAYOUT DA CALCULADORA */
+    .simulator-layout { 
+      display: grid; 
+      grid-template-columns: 1fr 420px; 
+      gap: 32px; 
+      align-items: start; 
+      margin: 30px 0 60px; 
+    }
+    @media (max-width: 992px) { 
+      .simulator-layout { grid-template-columns: 1fr; margin-bottom: 140px; } 
+    }
+
+    .setup-box { 
+      background: rgba(12, 12, 16, 0.58); 
+      backdrop-filter: blur(20px); 
+      -webkit-backdrop-filter: blur(20px);
+      border-radius: 24px; 
+      padding: 36px; 
+      border: 1px solid var(--glass-border); 
+      box-shadow: 0 0 35px rgba(0, 255, 102, 0.04);
+    }
+    @media (max-width: 576px) { .setup-box { padding: 20px; } }
+
+    .step-section { margin-bottom: 36px; }
+    .step-title { 
+      font-size: 1.15rem; 
+      font-weight: 700; 
+      margin-bottom: 20px; 
+      display: flex; 
+      align-items: center; 
+      gap: 12px; 
+    }
+    .step-number { 
+      font-size: 0.8rem; 
+      background: rgba(0, 255, 102, 0.1); 
+      color: var(--primary-lime); 
+      border: 1px solid rgba(0, 255, 102, 0.3); 
+      width: 28px; 
+      height: 28px; 
+      border-radius: 50%; 
+      display: inline-flex; 
+      align-items: center; 
+      justify-content: center; 
+      font-weight: 700; 
+    }
+
+    /* CARDS DA CALCULADORA */
+    .option-cards { display: grid; grid-template-columns: repeat(auto-fit, minmax(180px, 1fr)); gap: 16px; }
+    .option-card { 
+      background: var(--bg-card); 
+      border: 1px solid var(--glass-border-subtle); 
+      padding: 20px; 
+      border-radius: 16px; 
+      cursor: pointer; 
+      text-align: left; 
+      transition: var(--transition-smooth); 
+    }
+    .option-card:hover { 
+      border-color: rgba(138, 43, 226, 0.5); 
+      transform: translateY(-2px); 
+    }
+    .option-card.selected { 
+      border-color: var(--primary-lime); 
+      background: rgba(0, 255, 102, 0.06); 
+      box-shadow: 0 0 20px rgba(0, 255, 102, 0.15);
+    }
+    .option-card .label { font-size: 0.95rem; font-weight: 700; display: block; margin-bottom: 4px; color: #fff; }
+    .option-card .sub { font-size: 0.82rem; color: var(--text-bright); display: block; }
+
+    .tech-insight-box { 
+      background: rgba(138, 43, 226, 0.08); 
+      border-left: 3px solid var(--secondary-lilac); 
+      padding: 12px 16px; 
+      border-radius: 8px; 
+      margin-top: 16px; 
+      font-size: 0.85rem; 
+      color: var(--text-main); 
+      display: none; 
+    }
+
+    /* ADICIONAIS */
+    .extra-list { display: grid; grid-template-columns: 1fr; gap: 12px; }
+    .extra-item { 
+      display: flex; 
+      justify-content: space-between; 
+      align-items: center; 
+      background: var(--bg-card); 
+      border: 1px solid var(--glass-border-subtle); 
+      padding: 18px 20px; 
+      border-radius: 16px; 
+      cursor: pointer; 
+      transition: var(--transition-smooth); 
+    }
+    .extra-item:hover { border-color: rgba(138, 43, 226, 0.5); }
+    .extra-item.selected { 
+      border-color: var(--primary-lime); 
+      background: rgba(0, 255, 102, 0.04); 
+    }
+    .extra-item h5 { font-size: 0.9rem; font-weight: 600; margin-bottom: 2px; }
+    .extra-item p { font-size: 0.8rem; color: var(--text-bright); }
+    .checkbox-custom { 
+      width: 22px; 
+      height: 22px; 
+      border-radius: 6px; 
+      border: 2px solid var(--glass-border-subtle); 
+      transition: var(--transition-smooth); 
+      flex-shrink: 0; 
+    }
+    .extra-item.selected .checkbox-custom { 
+      background-color: var(--primary-lime); 
+      border-color: var(--primary-lime); 
+      box-shadow: 0 0 10px rgba(0, 255, 102, 0.5); 
+    }
+
+    /* SIDEBAR RESUMO ESTILO APPLE GLASS */
+    .summary-sidebar { 
+      background: rgba(12, 12, 18, 0.55); 
+      backdrop-filter: blur(20px); 
+      -webkit-backdrop-filter: blur(20px);
+      border: 1px solid var(--glass-border); 
+      border-radius: 24px; 
+      padding: 28px; 
+      position: sticky; 
+      top: 100px; 
+      box-shadow: 0 20px 40px rgba(0, 0, 0, 0.4), 0 0 30px rgba(0, 255, 102, 0.04);
+    }
+    .summary-title { 
+      font-size: 1rem; 
+      font-weight: 700; 
+      text-transform: uppercase; 
+      margin-bottom: 20px; 
+      border-bottom: 1px solid var(--glass-border-subtle); 
+      padding-bottom: 12px; 
+      letter-spacing: 1px; 
+      color: #FFF;
+    }
+    .summary-row { display: flex; justify-content: space-between; font-size: 0.88rem; margin-bottom: 12px; color: var(--text-bright); }
+    .summary-row strong { color: #FFF; text-align: right; font-weight: 600; }
+
+    /* CAMPOS DO FORMULÁRIO COM PADDING COMPACTO */
+    .form-group { display: flex; flex-direction: column; gap: 6px; text-align: left; }
+    .form-group label { font-size: 0.72rem; text-transform: uppercase; letter-spacing: 0.5px; color: var(--text-bright); font-weight: 600; }
+    .form-group label .optional-tag { text-transform: none; opacity: 0.7; font-weight: 400; }
+    .form-group input, .form-group textarea { 
+      width: 100%; 
+      background: var(--input-bg); 
+      border: 1px solid var(--glass-border-subtle); 
+      padding: 10px 12px; 
+      border-radius: 10px; 
+      color: var(--text-main); 
+      font-family: var(--font-base); 
+      font-size: 0.85rem; 
+      outline: none; 
+      transition: var(--transition-smooth); 
+    }
+    .form-group input:focus, .form-group textarea:focus { 
+      border-color: rgba(0, 255, 102, 0.5); 
+      box-shadow: 0 0 15px rgba(0, 255, 102, 0.15); 
+    }
+    .form-group input.field-error { border-color: var(--danger); }
+    .form-group textarea { resize: none; height: 65px; }
+    .field-hint { font-size: 0.72rem; color: var(--text-muted); }
+    .field-hint.field-error-text { color: var(--danger); display: none; }
+    
+    .btn-internal-send { 
+      background: rgba(0, 255, 102, 0.1); 
+      color: var(--text-main); 
+      border: 1px solid rgba(0, 255, 102, 0.4); 
+      padding: 12px; 
+      border-radius: 12px; 
+      font-weight: 600; 
+      font-size: 0.85rem; 
+      text-transform: uppercase; 
+      letter-spacing: 1px; 
+      cursor: pointer; 
+      backdrop-filter: blur(8px); 
+      transition: var(--transition-smooth); 
+    }
+    .btn-internal-send:hover { 
+      background: var(--primary-lime); 
+      color: #000; 
+      border-color: var(--primary-lime); 
+      box-shadow: 0 0 25px rgba(0, 255, 102, 0.5); 
+      transform: translateY(-1px); 
+    }
+
+    /* ESPECIFICAÇÕES */
+    .summary-details-box { background: rgba(255,255,255,0.02); border: 1px solid var(--glass-border-subtle); padding: 16px; border-radius: 12px; margin: 20px 0; }
+    .summary-details-box h5 { font-size: 0.75rem; text-transform: uppercase; letter-spacing: 1px; color: #A855F7; margin-bottom: 10px; font-weight: 700; }
+    .summary-details-list { list-style: none; }
+    .summary-details-list li { font-size: 0.82rem; color: var(--text-bright); margin-bottom: 6px; padding-left: 14px; position: relative; }
+    .summary-details-list li::before { content: "•"; color: var(--primary-lime); position: absolute; left: 0; font-size: 0.9rem; }
+
+    .price-block { margin-top: 20px; padding-top: 20px; border-top: 1px solid var(--glass-border-subtle); text-align: center; }
+    .price-value { font-size: 2.2rem; font-weight: 700; color: var(--primary-lime); text-shadow: 0 0 20px rgba(0,255,102,0.35); margin: 4px 0; letter-spacing: -1px; }
+    .price-label { font-size: 0.72rem; text-transform: uppercase; letter-spacing: 1px; color: var(--text-bright); }
+
+    /* BOTÕES DE AÇÃO DA CALCULADORA */
+    .action-buttons { display: flex; flex-direction: column; gap: 10px; margin-top: 20px; }
+    .btn-submit { 
+      width: 100%; 
+      background: #FFFFFF; 
+      color: var(--bg-pure); 
+      border: none; 
+      padding: 14px 20px; 
+      border-radius: 24px; 
+      font-weight: 700; 
+      cursor: pointer; 
+      transition: var(--transition-smooth); 
+      text-align: center; 
+      text-decoration: none; 
+      display: block; 
+      font-size: 0.85rem; 
+      letter-spacing: 0.5px;
+    }
+    .btn-submit:hover { 
+      background-color: var(--primary-lime); 
+      color: #000; 
+      box-shadow: 0 0 25px rgba(0, 255, 102, 0.5); 
+      transform: translateY(-2px); 
+    }
+
+    .btn-request-callback { 
+      width: 100%; 
+      background: rgba(0, 255, 102, 0.05); 
+      color: var(--text-main); 
+      border: 1px solid rgba(0, 255, 102, 0.3); 
+      padding: 12px; 
+      border-radius: 24px; 
+      font-size: 0.82rem; 
+      font-weight: 600; 
+      cursor: pointer; 
+      transition: var(--transition-smooth); 
+    }
+    .btn-request-callback:hover { 
+      border-color: var(--primary-lime); 
+      color: var(--primary-lime); 
+      box-shadow: 0 0 15px rgba(0, 255, 102, 0.25);
+    }
+
+    .btn-secondary { 
+      width: 100%; 
+      background: rgba(255, 255, 255, 0.02); 
+      color: var(--text-bright); 
+      border: 1px solid var(--glass-border-subtle); 
+      padding: 12px; 
+      border-radius: 24px; 
+      font-size: 0.8rem; 
+      cursor: pointer; 
+      transition: var(--transition-smooth); 
+    }
+    .btn-secondary:hover { color: #fff; border-color: rgba(255,255,255,0.3); background: rgba(255, 255, 255, 0.06); }
+
+    footer {
+      padding: 20px 0;
+      text-align: center;
+      font-size: 0.75rem;
+      color: var(--text-muted);
+      opacity: 0.8;
+    }
+
+    /* BARRA MOBILE FLUTUANTE */
+    .sticky-bottom-bar {
+      position: fixed; bottom: 0; left: 0; right: 0;
+      background: rgba(8, 8, 10, 0.92); backdrop-filter: blur(20px);
+      border-top: 1px solid var(--glass-border); padding: 16px 20px;
+      display: none; justify-content: space-between; align-items: center; z-index: 999;
+      transform: translateY(100%); transition: transform 0.4s ease;
+      padding-bottom: calc(16px + env(safe-area-inset-bottom));
+    }
+    .sticky-bottom-bar.visible { transform: translateY(0); }
+    .sticky-price-value { font-size: 1.3rem; font-weight: 700; color: var(--primary-lime); text-shadow: 0 0 10px rgba(0,255,102,0.3); }
+    .sticky-action-container { display: flex; gap: 8px; }
+    .sticky-btn-callback { background: transparent; border: 1px solid var(--glass-border-subtle); color: var(--text-main); padding: 10px 12px; border-radius: 20px; font-size: 0.75rem; cursor: pointer; }
+    .sticky-btn-action { background: var(--primary-lime); color: #000; text-decoration: none; padding: 10px 16px; border-radius: 20px; font-size: 0.8rem; font-weight: 700; box-shadow: 0 0 15px rgba(0,255,102,0.4); }
+
+    @media (max-width: 992px) { .sticky-bottom-bar { display: flex; } }
+
+    /* MODAL POP-UP ESTILO HOME */
+    .contact-modal-overlay { 
+      position: fixed; inset: 0; background: rgba(0, 0, 0, 0.7); 
+      backdrop-filter: blur(12px); -webkit-backdrop-filter: blur(12px); 
+      z-index: 2000; display: none; justify-content: center; align-items: center; 
+      opacity: 0; transition: var(--transition-smooth); 
+    }
+    .contact-modal-overlay.open { display: flex; opacity: 1; }
+    .contact-modal { 
+      background: rgba(12, 12, 16, 0.88); 
+      backdrop-filter: blur(20px); -webkit-backdrop-filter: blur(20px); 
+      border: 1px solid var(--glass-border); 
+      box-shadow: 0 0 35px rgba(0, 255, 102, 0.08); 
+      border-radius: 24px; padding: 32px; width: 90%; max-width: 460px; 
+      position: relative; max-height: 90vh; overflow-y: auto; 
+    }
+    .contact-modal-close { position: absolute; top: 20px; right: 20px; background: none; border: none; color: var(--text-muted); font-size: 1.3rem; cursor: pointer; transition: var(--transition-smooth); }
+    .contact-modal-close:hover { color: var(--primary-lime); }
+    .modal-channels-row { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; margin-bottom: 16px; }
+    .channel-mini-card { background: var(--bg-card); border: 1px solid var(--glass-border-subtle); padding: 12px; border-radius: 12px; text-decoration: none; color: inherit; }
+    .modal-form-divider { font-size: 0.68rem; text-transform: uppercase; color: var(--text-bright); text-align: center; display: flex; align-items: center; gap: 10px; margin: 16px 0; }
+    .modal-form-divider::before, .modal-form-divider::after { content: ""; flex: 1; height: 1px; background: var(--glass-border-subtle); }
+
+    /* OPORTUNIDADE TÉCNICA OTIMIZADA PARA PDF EXECUTIVO */
+    #pdf-render-template {
+      display: none; background: #FFFFFF !important; color: #111111 !important;
+      padding: 40px; font-family: var(--font-base);
+    }
+    .pdf-header { display: flex; justify-content: space-between; align-items: center; border-bottom: 2px solid #111111; padding-bottom: 16px; margin-bottom: 24px; }
+    .pdf-logo { font-size: 1.8rem; font-weight: 800; }
+    .pdf-logo span { color: #00FF66; }
+    .pdf-table { width: 100%; border-collapse: collapse; margin-bottom: 24px; }
+    .pdf-table th { background: #F3F4F6; text-align: left; padding: 10px; font-size: 0.85rem; border-bottom: 1px solid #E5E7EB; }
+    .pdf-table td { padding: 10px; border-bottom: 1px solid #E5E7EB; font-size: 0.9rem; }
+    .pdf-footer-price { background: #F9FAFB; border: 1px solid #E5E7EB; padding: 16px; text-align: center; margin-top: 30px; border-radius: 8px; }
+
+    @media (max-width: 768px) {
+      nav.desktop-nav { display: none; }
+      .mobile-hamburger { display: block; }
+      header { padding: 12px 20px; }
+      .viewport-wrapper { padding: 0 16px 16px 16px; }
+      .hero-center { padding-top: 100px; }
+    }
+  </style>
+</head>
+<body>
+
+  <!-- CANVAS ANIMADO PADRÃO HOME -->
+  <canvas id="orbit-canvas"></canvas>
+
+  <div class="viewport-wrapper">
+    <!-- CABEÇALHO TÉCNICO ESTILO HOME -->
+    <header id="calc-header">
+      <div class="logo-container">
+        <div class="logo">432UP<span>!</span></div>
+        <div class="logo-sub">Produções & Eventos</div>
+      </div>
+
+      <nav class="desktop-nav" id="calc-nav">
+        <a href="index.html">Início</a>
+        <a href="calculadora.html" class="active">Simulador de Atmosfera</a>
+        <a href="galeria.html">Portfólio</a>
+        <a id="nav-trigger-modal">Contato</a>
+      </nav>
+
+      <button class="mobile-hamburger" id="mobile-menu-btn" aria-label="Abrir Menu">☰</button>
+    </header>
+
+    <!-- GAVETA MOBILE -->
+    <div class="mobile-menu-overlay" id="mobile-menu">
+      <button id="mobile-menu-close" style="position: absolute; top: 20px; right: 20px; background: transparent; border: none; color: #fff; font-size: 1.5rem; cursor: pointer;">✕</button>
+      <a href="index.html">Início</a>
+      <a href="calculadora.html" class="active">Simulador de Atmosfera</a>
+      <a href="galeria.html">Portfólio</a>
+      <a id="nav-trigger-modal-mobile">Contato</a>
+    </div>
+
+    <!-- HERO CENTRALIZADO DA CALCULADORA -->
+    <section class="hero-center" id="calc-hero">
+      <span class="tagline">Dimensionamento Avançado</span>
+      <h1>Estudo Estrutural <span>Personalizado</span></h1>
+      <p class="simulator-desc">Calibre a densidade volumétrica e a escala temporal para projetarmos o equilíbrio acústico e visual ideal.</p>
+    </section>
+
+    <main>
+      <div class="simulator-layout">
+
+        <div class="setup-box">
+          <!-- PASSO 1: VOLUMETRIA -->
+          <div class="step-section">
+            <div class="step-title"><span class="step-number">1</span><h3>Volumetria de Escala (Convidados)</h3></div>
+            <div class="option-cards" id="group-scale">
+              <div class="option-card selected" data-value="small"><span class="label">Intimista</span><span class="sub">Até 100 pessoas</span></div>
+              <div class="option-card" data-value="medium"><span class="label">Intermediário</span><span class="sub">100 a 250 pessoas</span></div>
+              <div class="option-card" data-value="large"><span class="label">High Scale</span><span class="sub">Mais de 250 pessoas</span></div>
+            </div>
+            <div id="insight-stage" class="tech-insight-box">⚠️ <strong>Linha de Visão (Sightline):</strong> Palco elevado necessário.</div>
+            <div id="insight-acoustic" class="tech-insight-box">🔊 <strong>Reforço de Sub-Grave:</strong> Subwoofers extras adicionados.</div>
+          </div>
+
+          <!-- PASSO 2: TEMPO OPERACIONAL -->
+          <div class="step-section">
+            <div class="step-title"><span class="step-number">2</span><h3>Duração Operacional</h3></div>
+            <div class="option-cards" id="group-hours">
+              <div class="option-card selected" data-value="3"><span class="label">Lounge / Receptivo</span><span class="sub">Até 3 horas de execução</span></div>
+              <div class="option-card" data-value="5"><span class="label">Cronograma Padrão</span><span class="sub">5 horas operacionais</span></div>
+              <div class="option-card" data-value="8"><span class="label">Imersão Prolongada</span><span class="sub">8 horas de performance</span></div>
+            </div>
+          </div>
+
+          <!-- PASSO 3: MATRIZ BASE -->
+          <div class="step-section">
+            <div class="step-title"><span class="step-number">3</span><h3>Matriz Acústica & Cenografia</h3></div>
+            <div class="option-cards" id="group-package">
+              <div class="option-card selected" data-value="bronze"><span class="label">Bronze</span><span class="sub">Fidelidade Essencial</span></div>
+              <div class="option-card" data-value="prata"><span class="label">Prata</span><span class="sub">Imersão Ampliada</span></div>
+              <div class="option-card" data-value="ouro"><span class="label">Ouro AA+</span><span class="sub">Impacto Tecnológico</span></div>
+            </div>
+          </div>
+
+          <!-- PASSO 4: ADICIONAIS -->
+          <div class="step-section">
+            <div class="step-title"><span class="step-number">4</span><h3>Engenharia Atmosférica Adicional</h3></div>
+            <div class="extra-list" id="dynamic-addons-list">
+              <!-- Injeção estável via JS -->
+            </div>
+          </div>
+        </div>
+
+        <aside class="summary-sidebar" id="sidebar-target">
+          <h4 class="summary-title">Projeto Estimado</h4>
+          <div class="summary-row"><span>Densidade de público:</span><strong id="sum-guests">Até 100 pessoas</strong></div>
+          <div class="summary-row"><span>Tempo de operação:</span><strong id="sum-hours">3 horas</strong></div>
+          <div class="summary-row"><span>Rider estrutural:</span><strong id="sum-package">BRONZE</strong></div>
+          <div class="summary-row"><span>Variáveis de palco:</span><strong id="sum-stage-needed">Padrão Plano</strong></div>
+
+          <!-- CAIXA DE PROJETO ESTIMADO TÉCNICO -->
+          <div class="summary-details-box">
+            <h5>Especificações Incluídas</h5>
+            <ul class="summary-details-list" id="sum-service-details"></ul>
+          </div>
+
+          <div class="price-block">
+            <span class="price-label">Investimento Estimado</span>
+            <div class="price-value" id="total-price">R$ --</div>
+          </div>
+
+          <!-- BOTÕES OPERACIONAIS -->
+          <div class="action-buttons">
+            <a href="#" class="btn-submit" id="btn-whatsapp">Garantir Alocação via WhatsApp →</a>
+            <button class="btn-request-callback" id="btn-trigger-modal-call">Ligamos para Você</button>
+            <button class="btn-secondary" id="btn-pdf-trigger">Salvar Proposta como PDF</button>
+          </div>
+        </aside>
+
+      </div>
+    </main>
+
+    <footer>
+      <p>© 2026 432UP! Produções — Curadoria Artística e Engenharia Estrutural (v1.1)</p>
+    </footer>
+  </div>
+
+  <!-- BARRA FLUTUANTE MOBILE -->
+  <div class="sticky-bottom-bar" id="mobile-sticky-bar">
+    <div>
+      <div style="font-size: 0.65rem; text-transform: uppercase; color: var(--text-bright);">Investimento</div>
+      <div class="sticky-price-value" id="sticky-total-price">R$ --</div>
+    </div>
+    <div class="sticky-action-container">
+      <button class="sticky-btn-callback" id="sticky-btn-trigger-modal">Ligamos</button>
+      <a href="#" class="sticky-btn-action" id="sticky-btn-whatsapp">Avançar →</a>
+    </div>
+  </div>
+
+  <!-- POP-UP MODAL DE CONTATO INTEGRADO (OVERLAY MANTIDO NO PADRÃO HOME) -->
+  <div class="contact-modal-overlay" id="contact-overlay">
+    <div class="contact-modal">
+      <button class="contact-modal-close" id="contact-modal-close-btn">&times;</button>
+      <h3 style="font-size: 1.25rem; font-weight: 700; margin-bottom: 4px; color: #FFF;">Qual o melhor número e horário para te ligarmos?</h3>
+      <p style="font-size: 0.8rem; color: var(--text-bright); margin-bottom: 16px;">Informe seus dados para a mesa de produção retornar seu contato.</p>
+
+      <div class="modal-channels-row">
+        <a href="https://wa.me/5511948564577" class="channel-mini-card" target="_blank">
+          <span style="font-size: 0.6rem; color: var(--text-bright); text-transform: uppercase;">WhatsApp Direct</span>
+          <strong style="display: block; font-size: 0.85rem; margin-top: 2px;">(11) 94856-4577</strong>
+        </a>
+        <div class="channel-mini-card">
+          <span style="font-size: 0.6rem; color: var(--text-bright); text-transform: uppercase;">E-mail Interno</span>
+          <strong style="display: block; font-size: 0.85rem; margin-top: 2px;">contato@432up.com</strong>
+        </div>
+      </div>
+
+      <div class="modal-form-divider">Ou agende o retorno</div>
+
+      <div style="display: flex; flex-direction: column; gap: 10px;">
+        <div class="form-group">
+          <label for="mod-name">Seu nome ou empresa</label>
+          <input type="text" id="mod-name" placeholder="Ex: Roberto Silva">
+        </div>
+        <div class="form-group">
+          <label for="mod-phone">Telefone ou WhatsApp <span class="optional-tag">(preencha este ou o e-mail)</span></label>
+          <input type="tel" id="mod-phone" placeholder="(11) 99999-9999" inputmode="numeric" maxlength="15">
+          <span class="field-hint field-error-text" id="mod-phone-error">Telefone inválido. Use o formato (11) 99999-9999.</span>
+        </div>
+        <div class="form-group">
+          <label for="mod-email">Seu e-mail <span class="optional-tag">(preencha este ou o telefone)</span></label>
+          <input type="email" id="mod-email" placeholder="contato@empresa.com">
+          <span class="field-hint field-error-text" id="mod-email-error">E-mail inválido.</span>
+        </div>
+        <div class="form-group">
+          <label for="mod-msg">Melhor horário ou detalhes <span class="optional-tag">(opcional)</span></label>
+          <textarea id="mod-msg" placeholder="Qual o melhor horário para ligarmos ou observações sobre o local..."></textarea>
+        </div>
+        <button class="btn-internal-send" id="btn-submit-general-contact" style="margin-top: 6px;">Solicitar Ligação</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- CONTAINER PARA HTML2PDF -->
+  <div id="pdf-render-template">
+    <div class="pdf-header">
+      <div>
+        <div class="pdf-logo">432UP<span>!</span></div>
+        <div style="font-size: 0.7rem; text-transform: uppercase; color: #555;">Produções & Eventos</div>
+      </div>
+      <div style="text-align: right; font-size: 0.8rem; color: #555;">
+        <strong>Estudo de Viabilidade Técnico-Estrutural</strong><br>
+        Documento Emitido via Simulador Digital
+      </div>
+    </div>
+    <h3 style="font-size: 1.4rem; font-weight: 700; margin-bottom: 16px;">Proposta de Escopo Estrutural</h3>
+    <table class="pdf-table">
+      <thead>
+        <tr><th>Parâmetro Técnico</th><th>Configuração Selecionada</th></tr>
+      </thead>
+      <tbody>
+        <tr><td>Matriz Base (Rider)</td><td id="pdf-package">--</td></tr>
+        <tr><td>Volumetria de Escala</td><td id="pdf-guests">--</td></tr>
+        <tr><td>Tempo de Operação Crítica</td><td id="pdf-hours">--</td></tr>
+        <tr><td>Infraestrutura de Palco</td><td id="pdf-stage">--</td></tr>
+      </tbody>
+    </table>
+    <div>
+      <h4 style="font-size: 0.95rem; text-transform: uppercase; margin-bottom: 10px;">Especificações Incluídas</h4>
+      <ul style="padding-left: 16px; font-size: 0.85rem; color: #333;" id="pdf-specs-items"></ul>
+    </div>
+    <div class="pdf-footer-price">
+      <div style="font-size: 0.75rem; text-transform: uppercase; color: #666;">Investimento Global Estimado</div>
+      <div style="font-size: 1.8rem; font-weight: 700; color: #111;" id="pdf-total-val">R$ --</div>
+    </div>
+  </div>
+
+  <script>
+    /* ENGINE DO CANVAS v1.1 - ESTRELAS CROMÁTICAS & CONSTELAÇÕES (PADRÃO HOME) */
+    const canvas = document.getElementById('orbit-canvas');
+    const ctx = canvas.getContext('2d');
+
+    let width, height;
+    let stars = [];
+    let angle = 0;
+
+    const starColors = [
+      { r: 255, g: 255, b: 255 },
+      { r: 185, g: 220, b: 255 },
+      { r: 255, g: 235, b: 180 },
+      { r: 255, g: 190, b: 170 }
+    ];
+
+    function resizeCanvas() {
+      width = canvas.width = window.innerWidth;
+      height = canvas.height = window.innerHeight;
+      initClusterStars();
+    }
+
+    function initClusterStars() {
+      stars = [];
+      const totalStars = Math.floor((width * height) / 2800);
+      
+      const clusters = [
+        { x: width * 0.2, y: height * 0.3, radius: 200 },
+        { x: width * 0.8, y: height * 0.25, radius: 250 },
+        { x: width * 0.5, y: height * 0.75, radius: 220 }
+      ];
+
+      for (let i = 0; i < totalStars; i++) {
+        let x, y;
+        if (Math.random() < 0.6) {
+          const cluster = clusters[Math.floor(Math.random() * clusters.length)];
+          const r = Math.random() * cluster.radius;
+          const theta = Math.random() * Math.PI * 2;
+          x = cluster.x + r * Math.cos(theta);
+          y = cluster.y + r * Math.sin(theta);
+        } else {
+          x = Math.random() * width;
+          y = Math.random() * height;
+        }
+
+        stars.push({
+          x: x,
+          y: y,
+          size: Math.random() * 1.35,
+          alpha: Math.random(),
+          speed: 0.006 + Math.random() * 0.018,
+          color: starColors[Math.floor(Math.random() * starColors.length)]
+        });
+      }
+    }
+
+    function drawOrbitBackground() {
+      ctx.clearRect(0, 0, width, height);
+
+      const centerX = width / 2;
+      const centerY = height / 2;
+
+      // Glow Verde Neon
+      const g1X = centerX + Math.cos(angle) * 120;
+      const g1Y = centerY + Math.sin(angle * 0.8) * 80;
+      const grad1 = ctx.createRadialGradient(g1X, g1Y, 10, g1X, g1Y, width * 0.45);
+      grad1.addColorStop(0, 'rgba(0, 255, 102, 0.11)');
+      grad1.addColorStop(1, 'rgba(8, 8, 10, 0)');
+
+      ctx.fillStyle = grad1;
+      ctx.beginPath();
+      ctx.arc(g1X, g1Y, width * 0.45, 0, Math.PI * 2);
+      ctx.fill();
+
+      // Glow Lilás
+      const g2X = centerX + Math.sin(-angle * 0.7) * 150;
+      const g2Y = centerY + Math.cos(-angle * 0.5) * 100;
+      const grad2 = ctx.createRadialGradient(g2X, g2Y, 10, g2X, g2Y, width * 0.5);
+      grad2.addColorStop(0, 'rgba(138, 43, 226, 0.13)');
+      grad2.addColorStop(1, 'rgba(8, 8, 10, 0)');
+
+      ctx.fillStyle = grad2;
+      ctx.beginPath();
+      ctx.arc(g2X, g2Y, width * 0.5, 0, Math.PI * 2);
+      ctx.fill();
+
+      // Cintilação
+      for (let star of stars) {
+        star.alpha += star.speed;
+        const currentAlpha = Math.abs(Math.sin(star.alpha));
+        
+        ctx.fillStyle = `rgba(${star.color.r}, ${star.color.g}, ${star.color.b}, ${currentAlpha * 0.85})`;
+        ctx.beginPath();
+        ctx.arc(star.x, star.y, star.size, 0, Math.PI * 2);
+        ctx.fill();
+      }
+
+      angle += 0.0025;
+      requestAnimationFrame(drawOrbitBackground);
+    }
+
+    window.addEventListener('resize', resizeCanvas);
+    resizeCanvas();
+    drawOrbitBackground();
+
+    /* ENGINE COMPLETO DA CALCULADORA DA SUA EMPRESA */
+    const SUPABASE_URL = "https://www.432up.com/supabase-api";
+    const SUPABASE_ANON_KEY = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InBhZXRrc3BiZmVqdGpqa25ncWVqIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzA5MDU2OTgsImV4cCI6MjA4NjQ4MTY5OH0.IiYweZ2g3bP7b0o7VvBW5LLb6d1oHtSNFUZlVkIsdsA";
+    let supabaseClient = null;
+
+    if (typeof supabase !== 'undefined' && window.supabase && SUPABASE_URL.indexOf("SEU_PROJETO") === -1) {
+      supabaseClient = window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
+    }
+
+    const urlParams = new URLSearchParams(window.location.search);
+    if (urlParams.get('mode') === 'embed') {
+      document.body.classList.add('embed-mode');
+      const hero = document.getElementById('calc-hero');
+      if (hero) hero.style.display = 'none';
+    }
+
+    let prices = { price_bronze: 3500, price_prata: 6200, price_ouro: 11800, factor_small: 1.0, factor_medium: 1.3, factor_large: 1.6, add_extra_hour: 800 };
+
+    let dbAddons = [
+      { id: 'd1', nome: "Montagem de Palco Elevado", description: "Estrutura técnica com saia de acabamento pantográfica.", preco_base: 1200, varia_com_pessoas: true, varia_com_horas: false },
+      { id: 'd2', nome: "Performance de Sax Solo", description: "Intervenção de alto requinte para receptivos e welcome-drinks.", preco_base: 1500, varia_com_pessoas: false, varia_com_horas: false },
+      { id: 'd3', nome: "Upgrade de Iluminação Cênica DMX", description: "Varas de LED inteligentes controladas por mesa digital em tempo real.", preco_base: 2200, varia_com_pessoas: false, varia_com_horas: false }
+    ];
+
+    let selectedAddons = {};
+    let selection = { scale: 'small', hours: 3, package: 'bronze', guestsText: "Até 100 pessoas" };
+    let fallbackWhatsapp = "5511948564577";
+    let hasInteracted = false;
+    let globalFormattedPrice = "R$ --";
+    let globalSpecsList = [];
+
+    const matrixSpecifications = {
+      bronze: ["Sistemas Lineares Discretos Compactos", "Microfonia Digital Sem Fio", "Engenheiro Operacional Dedicado"],
+      prata: ["Pressão Acústica Ampliada com Subwoofers", "Arquitetura de Luz Inteligente DMX", "Suporte Técnico Integral"],
+      ouro: ["Rider Completo para Alta Performance e Bandas AA+", "Line Array de Alta Definição", "Cenografia de Iluminação de Gala"]
+    };
+
+    const neuroExitMessages = [
+      "Antes de sair: sua simulação ainda não foi salva. Deseja registrar esta configuração com nossa equipe?",
+      "Notamos que você está prestes a sair. Se quiser, podemos salvar os parâmetros técnicos que você calibrou.",
+      "Sua simulação está pronta. Você pode salvá-la em PDF ou enviá-la para nossa equipe antes de sair.",
+      "Se preferir, podemos manter esta configuração salva e entrar em contato para dar continuidade.",
+      "Antes de fechar esta página, você pode registrar seu orçamento estimado com a nossa equipe."
+    ];
+
+    let exitTriggered = false;
+    document.addEventListener("mouseleave", function (e) {
+      if (e.clientY < 0 && !exitTriggered && hasInteracted) {
+        exitTriggered = true;
+        const randomIndex = Math.floor(Math.random() * neuroExitMessages.length);
+        alert(neuroExitMessages[randomIndex]);
+      }
+    });
+
+    // MENU MOBILE LISTENERS
+    const mobileMenuBtn = document.getElementById('mobile-menu-btn');
+    const mobileMenuClose = document.getElementById('mobile-menu-close');
+    const mobileMenu = document.getElementById('mobile-menu');
+
+    function toggleMobileMenu() {
+      if (mobileMenu) mobileMenu.classList.toggle('active');
+    }
+
+    if (mobileMenuBtn) mobileMenuBtn.addEventListener('click', toggleMobileMenu);
+    if (mobileMenuClose) mobileMenuClose.addEventListener('click', toggleMobileMenu);
+
+    // MODAL DE CONTATO INTEGRADO (DISPARO UNIFICADO)
+    const navTriggerModal = document.getElementById('nav-trigger-modal');
+    const navTriggerModalMobile = document.getElementById('nav-trigger-modal-mobile');
+    const btnTriggerModalCall = document.getElementById('btn-trigger-modal-call');
+    const stickyBtnTriggerModal = document.getElementById('sticky-btn-trigger-modal');
+    const contactOverlay = document.getElementById('contact-overlay');
+    const contactModalCloseBtn = document.getElementById('contact-modal-close-btn');
+
+    function openContactModal() {
+      triggerInteraction();
+      if (contactOverlay) contactOverlay.classList.add('open');
+      if (mobileMenu && mobileMenu.classList.contains('active')) toggleMobileMenu();
+    }
+
+    if (navTriggerModal) navTriggerModal.addEventListener('click', openContactModal);
+    if (navTriggerModalMobile) navTriggerModalMobile.addEventListener('click', openContactModal);
+    if (btnTriggerModalCall) btnTriggerModalCall.addEventListener('click', openContactModal);
+    if (stickyBtnTriggerModal) stickyBtnTriggerModal.addEventListener('click', openContactModal);
+
+    if (contactModalCloseBtn) contactModalCloseBtn.addEventListener('click', () => contactOverlay.classList.remove('open'));
+    if (contactOverlay) contactOverlay.addEventListener('click', (e) => { if(e.target === contactOverlay) contactOverlay.classList.remove('open'); });
+
+    async function setupSimulator() {
+      try {
+        if (supabaseClient) {
+          const { data: calcData } = await supabaseClient.from('config_calculadora').select('*').eq('id', 1).single();
+          if (calcData) prices = calcData;
+          const { data: geralData } = await supabaseClient.from('config_geral').select('whatsapp').eq('id', 1).single();
+          if (geralData) fallbackWhatsapp = geralData.whatsapp;
+
+          const { data: addons } = await supabaseClient.from('servicos_adicionais').select('*').order('id', { ascending: true });
+          if (addons && addons.length > 0) {
+            dbAddons = [...addons];
+          }
+        }
+      } catch(e) {}
+
+      renderAddons();
+      calculateAtmosphere();
+    }
+
+    function escapeHtml(str) {
+      if (str === null || str === undefined) return '';
+      return String(str)
+        .replace(/&/g, '&amp;')
+        .replace(/</g, '&lt;')
+        .replace(/>/g, '&gt;')
+        .replace(/"/g, '&quot;')
+        .replace(/'/g, '&#39;');
+    }
+
+    function renderAddons() {
+      const listContainer = document.getElementById('dynamic-addons-list');
+      listContainer.innerHTML = '';
+      listContainer.innerHTML = dbAddons.map(addon => `
+        <div class="extra-item" data-id="${escapeHtml(addon.id)}" onclick="handleDynamicAddonClick('${escapeHtml(addon.id)}', this)">
+          <div>
+            <h5>${escapeHtml(addon.nome)}</h5>
+            <p>${escapeHtml(addon.description || '')}</p>
+          </div>
+          <div class="checkbox-custom"></div>
+        </div>
+      `).join('');
+    }
+
+    function handleDynamicAddonClick(id, element) {
+      triggerInteraction();
+      element.classList.toggle('selected');
+      selectedAddons[id] = element.classList.contains('selected');
+      calculateAtmosphere();
+    }
+
+    function triggerInteraction() {
+      if (!hasInteracted) {
+        hasInteracted = true;
+        document.getElementById('mobile-sticky-bar').classList.add('visible');
+      }
+    }
+
+    function applyPhoneMask(input) {
+      if (!input) return;
+      input.addEventListener('input', () => {
+        let digits = input.value.replace(/\D/g, '').slice(0, 11);
+        let formatted = digits;
+        if (digits.length > 0) {
+          formatted = '(' + digits.slice(0, 2);
+        }
+        if (digits.length >= 3) {
+          formatted += ') ' + digits.slice(2, digits.length <= 10 ? 6 : 7);
+        }
+        if (digits.length > 6) {
+          const breakpoint = digits.length <= 10 ? 6 : 7;
+          formatted += '-' + digits.slice(breakpoint, digits.length <= 10 ? 10 : 11);
+        }
+        input.value = formatted;
+      });
+    }
+    applyPhoneMask(document.getElementById('mod-phone'));
+
+    function isValidEmail(value) {
+      if (!value) return false;
+      return /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(value.trim());
+    }
+
+    function isValidPhone(value) {
+      if (!value) return false;
+      const digits = value.replace(/\D/g, '');
+      return digits.length === 10 || digits.length === 11;
+    }
+
+    function validateContactFields(prefix, { requireName = true } = {}) {
+      const nameEl = document.getElementById(`${prefix}-name`);
+      const phoneEl = document.getElementById(`${prefix}-phone`);
+      const emailEl = document.getElementById(`${prefix}-email`);
+      const phoneErrorEl = document.getElementById(`${prefix}-phone-error`);
+      const emailErrorEl = document.getElementById(`${prefix}-email-error`);
+
+      phoneEl.classList.remove('field-error');
+      emailEl.classList.remove('field-error');
+      if (phoneErrorEl) phoneErrorEl.style.display = 'none';
+      if (emailErrorEl) emailErrorEl.style.display = 'none';
+
+      const name = nameEl.value.trim();
+      const phone = phoneEl.value.trim();
+      const email = emailEl.value.trim();
+
+      if (requireName && !name) {
+        alert("Por favor, informe seu nome.");
+        nameEl.focus();
+        return null;
+      }
+
+      const hasPhone = phone.length > 0;
+      const hasEmail = email.length > 0;
+
+      if (!hasPhone && !hasEmail) {
+        alert("Informe ao menos um contato: telefone ou e-mail.");
+        phoneEl.focus();
+        return null;
+      }
+
+      if (hasPhone && !isValidPhone(phone)) {
+        phoneEl.classList.add('field-error');
+        if (phoneErrorEl) phoneErrorEl.style.display = 'block';
+        phoneEl.focus();
+        return null;
+      }
+
+      if (hasEmail && !isValidEmail(email)) {
+        emailEl.classList.add('field-error');
+        if (emailErrorEl) emailErrorEl.style.display = 'block';
+        emailEl.focus();
+        return null;
+      }
+
+      return { name, phone, email };
+    }
+
+    function calculateAtmosphere() {
+      let basePrice = prices[`price_${selection.package}`];
+      let factor = prices[`factor_${selection.scale}`];
+      let addonsTotal = 0;
+      let hourOver = (selection.hours > 5) ? (selection.hours - 5) * prices.add_extra_hour : 0;
+
+      globalSpecsList = [...matrixSpecifications[selection.package]];
+
+      dbAddons.forEach(addon => {
+        if (selectedAddons[addon.id]) {
+          let itemCost = addon.preco_base;
+          if (addon.varia_com_pessoas) itemCost *= factor;
+          if (addon.varia_com_horas) itemCost *= selection.hours;
+          addonsTotal += itemCost;
+          globalSpecsList.push(`${addon.nome}`);
+        }
+      });
+
+      let finalTotal = (basePrice * factor) + hourOver + addonsTotal;
+      let stageText = "Padrão Plano";
+
+      if (selection.scale === 'large') {
+        document.getElementById('insight-stage').style.display = 'block';
+        stageText = "Elevado (Mín. 60cm)";
+      } else {
+        document.getElementById('insight-stage').style.display = 'none';
+      }
+      document.getElementById('insight-acoustic').style.display = (selection.scale !== 'small') ? 'block' : 'none';
+
+      document.getElementById('sum-guests').innerText = selection.guestsText;
+      document.getElementById('sum-hours').innerText = `${selection.hours} horas`;
+      document.getElementById('sum-package').innerText = selection.package.toUpperCase();
+      document.getElementById('sum-stage-needed').innerText = stageText;
+
+      if (selection.hours > 5) globalSpecsList.push(`Adicional Operacional (+${selection.hours - 5}h)`);
+      document.getElementById('sum-service-details').innerHTML = globalSpecsList.map(item => `<li>${escapeHtml(item)}</li>`).join('');
+
+      globalFormattedPrice = finalTotal.toLocaleString('pt-BR', { style: 'currency', currency: 'BRL', minimumFractionDigits: 0, maximumFractionDigits: 0 });
+
+      document.getElementById('total-price').innerText = globalFormattedPrice;
+      document.getElementById('sticky-total-price').innerText = globalFormattedPrice;
+
+      const msg = encodeURIComponent(`Olá! Realizei o dimensionamento técnico no simulador 432UP! e gostaria de validar o escopo:\n- Rider Base: ${selection.package.toUpperCase()}\n- Escala: ${selection.guestsText}\n- Horas: ${selection.hours}\n- Investimento Estimado: R$ ${finalTotal.toLocaleString('pt-BR', {minimumFractionDigits:0})}`);
+
+      const targetWhatsappUrl = `https://wa.me/${fallbackWhatsapp}?text=${msg}`;
+      document.getElementById('btn-whatsapp').href = targetWhatsappUrl;
+      document.getElementById('sticky-btn-whatsapp').href = targetWhatsappUrl;
+    }
+
+    const btnSubmitGeneralContact = document.getElementById('btn-submit-general-contact');
+    if (btnSubmitGeneralContact) {
+      btnSubmitGeneralContact.addEventListener('click', async () => {
+        const msgText = document.getElementById('mod-msg').value;
+
+        const fields = validateContactFields('mod');
+        if (!fields) return;
+
+        if(!supabaseClient) {
+          alert("Ambiente de homologação detectado ou chaves do Supabase ausentes. Por favor, acione nosso WhatsApp.");
+          return;
+        }
+
+        btnSubmitGeneralContact.innerText = "Registrando Solicitação...";
+        btnSubmitGeneralContact.disabled = true;
+
+        try {
+          const { error } = await supabaseClient.from('leads_simulador').insert([{
+            nome: fields.name,
+            whatsapp: fields.phone,
+            email: fields.email,
+            observacoes: msgText,
+            rider: selection.package.toUpperCase(),
+            escala: selection.guestsText,
+            duracao: `${selection.hours} horas`,
+            investimento_estimado: globalFormattedPrice,
+            data_registro: new Date().toISOString()
+          }]);
+          if (error) throw error;
+
+          alert("Solicitação registrada com sucesso! Nossa equipe entrará em contato em breve.");
+          contactOverlay.classList.remove('open');
+          document.getElementById('mod-name').value = '';
+          document.getElementById('mod-phone').value = '';
+          document.getElementById('mod-email').value = '';
+          document.getElementById('mod-msg').value = '';
+        } catch(e) {
+          alert("Erro técnico ao registrar contato. Se preferir, acione nosso WhatsApp.");
+        } finally {
+          btnSubmitGeneralContact.innerText = "Solicitar Ligação";
+          btnSubmitGeneralContact.disabled = false;
+        }
+      });
+    }
+
+    document.getElementById('btn-pdf-trigger').addEventListener('click', (e) => {
+      e.preventDefault();
+
+      document.getElementById('pdf-package').innerText = selection.package.toUpperCase();
+      document.getElementById('pdf-guests').innerText = selection.guestsText;
+      document.getElementById('pdf-hours').innerText = `${selection.hours} horas`;
+      document.getElementById('pdf-stage').innerText = document.getElementById('sum-stage-needed').innerText;
+      document.getElementById('pdf-total-val').innerText = globalFormattedPrice;
+      document.getElementById('pdf-specs-items').innerHTML = globalSpecsList.map(item => `<li>${escapeHtml(item)}</li>`).join('');
+
+      const element = document.getElementById('pdf-render-template');
+      element.style.display = 'block';
+
+      const opt = {
+        margin:       15,
+        filename:     `Proposta_Estrutural_432UP.pdf`,
+        image:        { type: 'jpeg', quality: 0.98 },
+        html2canvas:  { scale: 2, useCORS: true, letterRendering: true },
+        jsPDF:        { unit: 'mm', format: 'a4', orientation: 'portrait' }
+      };
+
+      html2pdf().set(opt).from(element).save().then(() => {
+        element.style.display = 'none';
+      }).catch(err => {
+        element.style.display = 'none';
+      });
+    });
+
+    document.querySelectorAll('#group-scale .option-card').forEach(card => {
+      card.addEventListener('click', () => {
+        triggerInteraction();
+        document.querySelectorAll('#group-scale .option-card').forEach(c => c.classList.remove('selected'));
+        card.classList.add('selected');
+        selection.scale = card.dataset.value;
+        selection.guestsText = card.querySelector('.sub').innerText;
+        calculateAtmosphere();
+      });
+    });
+
+    document.querySelectorAll('#group-hours .option-card').forEach(card => {
+      card.addEventListener('click', () => {
+        triggerInteraction();
+        document.querySelectorAll('#group-hours .option-card').forEach(c => c.classList.remove('selected'));
+        card.classList.add('selected');
+        selection.hours = parseInt(card.dataset.value);
+        calculateAtmosphere();
+      });
+    });
+
+    document.querySelectorAll('#group-package .option-card').forEach(card => {
+      card.addEventListener('click', () => {
+        triggerInteraction();
+        document.querySelectorAll('#group-package .option-card').forEach(c => c.classList.remove('selected'));
+        card.classList.add('selected');
+        selection.package = card.dataset.value;
+        calculateAtmosphere();
+      });
+    });
+
+    window.addEventListener('DOMContentLoaded', setupSimulator);
+  </script>
+</body>
+</html>
