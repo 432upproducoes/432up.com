@@ -12,7 +12,7 @@
 
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
-  <meta name="version" content="19.0">
+  <meta name="version" content="20.0">
   <link class="js-site-favicon" rel="icon" type="image/png" href="imagens/favicon.png">
   <title>432UP! Produções | Alta Engenharia Audiovisual</title>
   <meta name="description" content="Experiências audiovisuais exclusivas e de alto padrão. Arquitetura de som de alta fidelidade e cenografia de luz.">
@@ -47,12 +47,12 @@
       --cyan-glacial: #00F0FF;
       --glass-border: rgba(0, 255, 102, 0.22);
       --font-base: 'Inter', -apple-system, sans-serif;
-      --transition-smooth: all 0.4s cubic-bezier(0.25, 1, 0.5, 1);
+      --transition-smooth: all 0.5s cubic-bezier(0.25, 1, 0.5, 1);
       
       --tagline-color: var(--secondary-lilac);
     }
 
-    /* MODO DIA */
+    /* MODO DIA AUTOMÁTICO */
     html[data-theme="light"] {
       --bg-pure: #161822;
       --text-main: #FFFFFF;
@@ -72,7 +72,7 @@
       color: var(--text-main);
       font-family: var(--font-base);
       line-height: 1.6;
-      transition: background-color 0.5s ease;
+      transition: background-color 0.6s ease;
       -webkit-text-size-adjust: 100%;
     }
 
@@ -165,39 +165,6 @@
       text-shadow: 0 0 8px rgba(0, 255, 102, 0.4);
     }
     nav.desktop-nav a:hover::after { width: 100%; }
-
-    /* BOTÃO MODO DIA / NOITE */
-    .btn-urano-toggle {
-      background: rgba(0, 240, 255, 0.05);
-      color: #00F0FF;
-      border: 1px solid rgba(0, 240, 255, 0.25);
-      padding: 6px 14px;
-      border-radius: 20px;
-      font-size: 0.7rem;
-      font-weight: 600;
-      letter-spacing: 1px;
-      margin-left: 24px;
-      cursor: pointer;
-      backdrop-filter: blur(8px);
-      -webkit-backdrop-filter: blur(8px);
-      transition: var(--transition-smooth);
-      display: flex;
-      align-items: center;
-      gap: 6px;
-    }
-    .btn-urano-toggle.active {
-      background: rgba(0, 240, 255, 0.18);
-      border-color: #00F0FF;
-      box-shadow: 0 0 15px rgba(0, 240, 255, 0.4);
-      color: #FFF;
-    }
-    .btn-urano-toggle .dot {
-      width: 6px;
-      height: 6px;
-      border-radius: 50%;
-      background: #00F0FF;
-      box-shadow: 0 0 8px #00F0FF;
-    }
 
     /* BOTÃO CTA HEADER */
     .btn-header-cta {
@@ -551,8 +518,6 @@
       
       .footer-bar { flex-direction: column; align-items: flex-start; gap: 4px; text-align: left; }
       .footer-left { flex-direction: column; align-items: flex-start; gap: 2px; }
-      
-      .btn-urano-toggle { margin-left: 0 !important; opacity: 0.85; }
     }
   </style>
 </head>
@@ -592,11 +557,6 @@
       <nav class="desktop-nav">
         <a href="calculadora.html">Simulador de Atmosfera</a>
         <a href="galeria.html">Portfólio</a>
-
-        <button id="urano-toggle" class="btn-urano-toggle" onclick="toggleUranoMode()">
-          <span class="dot"></span> DIA / NOITE <span id="urano-status">[NOITE]</span>
-        </button>
-
         <button onclick="openLeadModal()" class="btn-header-cta">Iniciar Projeto</button>
       </nav>
 
@@ -607,11 +567,6 @@
       <button onclick="toggleMobileMenu()" style="position: absolute; top: 20px; right: 20px; background: transparent; border: none; color: #fff; font-size: 1.5rem; cursor: pointer;">✕</button>
       <a href="calculadora.html" onclick="toggleMobileMenu()">Simulador de Atmosfera</a>
       <a href="galeria.html" onclick="toggleMobileMenu()">Portfólio</a>
-      
-      <button class="btn-urano-toggle" onclick="toggleUranoMode()" style="margin: 8px 0;">
-        <span class="dot"></span> DIA / NOITE <span id="urano-status-mobile">[NOITE]</span>
-      </button>
-
       <button onclick="toggleMobileMenu(); openLeadModal();" class="btn-header-cta" style="margin-left: 0; padding: 12px 28px;">Iniciar Projeto</button>
     </div>
 
@@ -665,12 +620,28 @@
   </div>
 
   <script>
-    /* AUTO-FULLSCREEN TRIGGER PARA SAFARI (ENCOLHER BARRAS AO CARREGAR) */
-    window.addEventListener('load', () => {
-      setTimeout(() => {
+    /* ATIVAÇÃO DO MODO DIA/NOITE AUTOMÁTICO PELO SISTEMA */
+    let isUranoActive = false;
+
+    function applySystemTheme(e) {
+      isUranoActive = e.matches;
+      document.documentElement.setAttribute('data-theme', isUranoActive ? 'light' : 'dark');
+    }
+
+    const colorSchemeQuery = window.matchMedia('(prefers-color-scheme: light)');
+    applySystemTheme(colorSchemeQuery);
+    colorSchemeQuery.addEventListener('change', applySystemTheme);
+
+    /* RECOLHIMENTO DA BARRA DO SAFARI AO PRIMEIRA INTERAÇÃO DO USUÁRIO */
+    let hasExpandedSafari = false;
+    function triggerSafariFullscreen() {
+      if (!hasExpandedSafari) {
         window.scrollTo(0, 1);
-      }, 100);
-    });
+        hasExpandedSafari = true;
+      }
+    }
+    document.addEventListener('touchstart', triggerSafariFullscreen, { passive: true });
+    document.addEventListener('click', triggerSafariFullscreen, { passive: true });
 
     /* SCRIPT DE SEGURANÇA - BLOQUEIO DE COPIAR / INSPECIONAR */
     document.addEventListener('contextmenu', e => e.preventDefault());
@@ -680,7 +651,7 @@
 
     /* SUPABASE CLIENT INTEGRATION */
     const SUPABASE_URL = "https://www.432up.com/supabase-api";
-    const SUPABASE_ANON_KEY = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InBhZXRrc3BiZmVqdGpqa25ncWVqIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzA5MDU2OTgsImV4cCI6MjA8NjQ4MTY5OH0.IiYweZ2g3bP7b0o7VvBW5LLb6d1oHtSNFUZlVkIsdsA";
+    const SUPABASE_ANON_KEY = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InBhZXRrc3BiZmVqdGpqa25ncWVqIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzA5MDU2OTgsImV4cCI6MjA4NjQ4MTY5OH0.IiYweZ2g3bP7b0o7VvBW5LLb6d1oHtSNFUZlVkIsdsA";
     let supabaseClient = null;
 
     if (typeof supabase !== 'undefined' && window.supabase) { supabaseClient = window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY); }
@@ -701,7 +672,6 @@
     let width, height;
     let stars = [];
     let angle = 0;
-    let isUranoActive = false;
 
     const starColors = [ { r: 255, g: 255, b: 255 }, { r: 185, g: 220, b: 255 }, { r: 255, g: 235, b: 180 }, { r: 255, g: 190, b: 170 } ];
 
@@ -756,19 +726,6 @@
         ctx.beginPath(); ctx.arc(star.x, star.y, star.size, 0, Math.PI * 2); ctx.fill();
       }
       angle += 0.0025; requestAnimationFrame(drawOrbitBackground);
-    }
-
-    /* MODO DIA / NOITE */
-    function toggleUranoMode() {
-      isUranoActive = !isUranoActive;
-      const htmlEl = document.documentElement;
-      const btn = document.getElementById('urano-toggle');
-      const label = document.getElementById('urano-status');
-      const labelMobile = document.getElementById('urano-status-mobile');
-
-      if (isUranoActive) {
-        htmlEl.setAttribute('data-theme', 'light'); btn.classList.add('active'); label.innerText = '[DIA]'; if (labelMobile) labelMobile.innerText = '[DIA]';
-      } else { htmlEl.setAttribute('data-theme', 'dark'); btn.classList.remove('active'); label.innerText = '[NOITE]'; if (labelMobile) labelMobile.innerText = '[NOITE]'; }
     }
 
     /* ACCORDION DAS LPs */
