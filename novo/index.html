@@ -12,7 +12,7 @@
 
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
-  <meta name="version" content="25.0">
+  <meta name="version" content="26.0">
   
   <!-- INTEGRAÇÃO CROMÁTICA TRANSLÚCIDA COM O SAFARI / IOS -->
   <meta name="theme-color" content="#08080A">
@@ -71,6 +71,7 @@
       color: var(--text-main);
       font-family: var(--font-base);
       line-height: 1.6;
+      transition: background-color 0.6s ease;
       -webkit-text-size-adjust: 100%;
       overflow-x: hidden;
       -webkit-user-select: none;
@@ -82,20 +83,20 @@
       user-select: text;
     }
 
-    /* PIXEL DE ROLAGEM ESTABILIZADO */
+    /* PIXEL DE ROLAGEM ESTABILIZADO PARA O SAFARI */
     .scroll-stretcher-pixel {
       position: absolute;
       top: 0;
       left: 0;
       width: 1px;
-      height: 120vh;
-      height: 120dvh;
+      height: 125vh;
+      height: 125dvh;
       pointer-events: none;
       opacity: 0;
       z-index: -1;
     }
 
-    /* CANVAS DE BACKGROUND */
+    /* CANVAS DE BACKGROUND FIXO */
     #orbit-canvas {
       position: fixed;
       top: 0;
@@ -104,10 +105,11 @@
       height: 100vh;
       height: 100dvh;
       z-index: 1;
-      pointer-events: none;
+      pointer-events: auto; /* PERMITE CAPTURAR O TOQUE DE MARÉ NAS ESTRELAS */
+      touch-action: pan-y;
     }
 
-    /* HEADER COM ACELERAÇÃO DE HARDWARE PURA */
+    /* HEADER ORIGINAL EXATO COM TRANSPARÊNCIA PURA */
     header {
       position: fixed;
       top: 0;
@@ -117,11 +119,12 @@
       display: flex;
       justify-content: space-between;
       align-items: center;
-      padding: 14px 32px;
-      background: rgba(8, 8, 10, 0.5);
+      padding: 12px 32px;
+      background: rgba(255, 255, 255, 0.003);
       backdrop-filter: blur(12px);
       -webkit-backdrop-filter: blur(12px);
-      border-bottom: 1px solid rgba(255, 255, 255, 0.06);
+      border-bottom: 1px solid rgba(255, 255, 255, 0.05);
+      box-shadow: 0 4px 20px rgba(0, 0, 0, 0.1);
       transform: translateZ(0);
       will-change: transform;
     }
@@ -129,11 +132,16 @@
     .logo-container { display: flex; align-items: center; }
     .logo-link { display: inline-block; text-decoration: none; transition: var(--transition-smooth); }
     .logo-img {
-      height: 36px;
+      height: 38px;
       width: auto;
       object-fit: contain;
       mix-blend-mode: screen;
       filter: drop-shadow(0 0 8px rgba(255, 255, 255, 0.15));
+      transition: var(--transition-smooth);
+    }
+    .logo-link:hover .logo-img {
+      filter: drop-shadow(0 0 12px rgba(255, 0, 127, 0.6));
+      transform: scale(1.02);
     }
 
     nav.desktop-nav { display: flex; align-items: center; }
@@ -157,8 +165,12 @@
       background: linear-gradient(90deg, var(--primary-lime), var(--magenta-neon));
       transition: var(--transition-smooth);
       transform: translateX(-50%);
+      box-shadow: 0 0 10px var(--magenta-neon);
     }
-    nav.desktop-nav a:hover { color: var(--primary-lime); }
+    nav.desktop-nav a:hover {
+      color: var(--primary-lime);
+      text-shadow: 0 0 8px rgba(0, 255, 102, 0.4);
+    }
     nav.desktop-nav a:hover::after { width: 100%; }
 
     .btn-header-cta {
@@ -182,6 +194,7 @@
       color: #000;
       border-color: var(--primary-lime);
       box-shadow: 0 0 20px rgba(0, 255, 102, 0.5);
+      transform: translateY(-1px);
     }
 
     .mobile-hamburger {
@@ -198,7 +211,7 @@
     .mobile-menu-overlay {
       position: fixed;
       inset: 0;
-      background: rgba(8, 8, 10, 0.94);
+      background: rgba(8, 8, 10, 0.92);
       backdrop-filter: blur(24px);
       -webkit-backdrop-filter: blur(24px);
       z-index: 105;
@@ -214,7 +227,7 @@
     .mobile-menu-overlay.active { opacity: 1; pointer-events: auto; }
     .mobile-menu-overlay a { color: var(--text-main); text-decoration: none; font-size: 1.2rem; font-weight: 500; }
 
-    /* HERO CENTRALIZADO E TRAVADO NO SUBPÍXEL EXATO */
+    /* HERO CENTRALIZADO ORIGINAL EXATO */
     .hero-center {
       position: fixed;
       inset: 0;
@@ -260,7 +273,6 @@
       font-weight: 400;
     }
     
-    /* ENVOLTÓRIO DO BOTÃO CENTRAL */
     .btn-fire-wrapper {
       position: relative;
       display: inline-block;
@@ -284,10 +296,10 @@
       background: rgba(10, 10, 16, 0.85);
       color: #FFFFFF;
       text-decoration: none;
-      padding: 12px 28px;
+      padding: 10px 26px;
       border-radius: 22px;
       font-weight: 700;
-      font-size: 0.85rem;
+      font-size: 0.82rem;
       letter-spacing: 0.8px;
       backdrop-filter: blur(20px);
       -webkit-backdrop-filter: blur(20px);
@@ -333,7 +345,6 @@
       text-shadow: none;
     }
 
-    /* GAVETA POP-UP DAS LPs */
     .drawer-backdrop-overlay {
       position: fixed;
       inset: 0;
@@ -347,22 +358,22 @@
 
     .lps-drawer-root {
       position: fixed;
-      bottom: 56px;
+      bottom: 48px;
       left: 50%;
       transform: translateX(-50%) translateY(20px);
-      width: calc(100% - 32px);
+      width: calc(100% - 48px);
       max-width: 1200px;
-      background: rgba(10, 10, 16, 0.96);
+      background: rgba(10, 10, 16, 0.94);
       backdrop-filter: blur(20px);
       -webkit-backdrop-filter: blur(20px);
       border-radius: 16px;
-      border: 1px solid rgba(255, 255, 255, 0.08);
-      box-shadow: 0 20px 50px rgba(0, 0, 0, 0.95);
+      border: 1px solid transparent;
+      box-shadow: 0 20px 50px rgba(0, 0, 0, 0.95), 0 0 25px rgba(0, 255, 102, 0.15);
       opacity: 0;
       pointer-events: none;
       transition: all 0.4s cubic-bezier(0.25, 1, 0.5, 1);
       z-index: 1000;
-      padding: 20px;
+      padding: 22px;
     }
     .lps-drawer-root.open { opacity: 1; pointer-events: auto !important; transform: translateX(-50%) translateY(0); }
     .lps-grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 12px; }
@@ -379,23 +390,23 @@
     }
     .lps-grid a:hover { color: var(--primary-lime) !important; transform: translateX(4px); }
 
-    /* RODAPÉ ESTABILIZADO SEM VAZAMENTOS DE LINHA */
+    /* RODAPÉ ORIGINAL EXATO COM TRANSPARÊNCIA PURA */
     footer {
       position: fixed;
       bottom: 0;
       left: 0;
       width: 100%;
-      padding: 10px 32px;
+      padding: 12px 32px;
       display: flex;
       flex-direction: column;
       align-items: center;
       font-size: 0.72rem;
       color: var(--text-muted);
       z-index: 100;
-      background: rgba(8, 8, 10, 0.5);
+      background: rgba(255, 255, 255, 0.003);
       backdrop-filter: blur(12px);
       -webkit-backdrop-filter: blur(12px);
-      border-top: 1px solid rgba(255, 255, 255, 0.06);
+      border-top: 1px solid rgba(255, 255, 255, 0.05);
       transform: translateZ(0);
       will-change: transform;
     }
@@ -458,10 +469,10 @@
       nav.desktop-nav { display: none; }
       .mobile-hamburger { display: block; }
       header { padding: 12px 20px; }
-      footer { padding: 10px 16px; }
+      footer { padding: 12px 20px; }
       .hero-center { padding: 0 16px; }
       .lps-grid { grid-template-columns: 1fr 1fr; }
-      .lps-drawer-root { width: calc(100% - 24px); bottom: 50px; }
+      .lps-drawer-root { width: calc(100% - 32px); bottom: 55px; }
       .footer-bar { flex-direction: column; align-items: flex-start; gap: 4px; }
       .footer-left { flex-direction: column; align-items: flex-start; gap: 2px; }
     }
@@ -469,7 +480,7 @@
 </head>
 <body>
 
-  <!-- PIXEL DE SCROLL ESTABILIZADO -->
+  <!-- PIXEL DE ROLAGEM ESTABILIZADO -->
   <div class="scroll-stretcher-pixel"></div>
 
   <!-- CANVAS ANIMADO -->
@@ -629,16 +640,50 @@
       }
     }
 
+    /* ==================== BLOCO DO MOVIMENTO COM DEDO (INÉRCIA ESTELAR) ==================== */
+    let touchImpulseAngle = 0;
+    let touchImpulseSpeed = 0;
+    let lastClientX = 0;
+    let lastClientY = 0;
+
+    canvas.addEventListener('pointerdown', (e) => {
+      lastClientX = e.clientX;
+      lastClientY = e.clientY;
+    });
+
+    canvas.addEventListener('pointermove', (e) => {
+      if (e.buttons === 0 && e.pressure === 0) return; // Apenas quando houver arrasto ativo
+      const deltaX = e.clientX - lastClientX;
+      const deltaY = e.clientY - lastClientY;
+      
+      // Converte o vetor de arrasto em impulso leve de rotação (maré)
+      touchImpulseSpeed = (deltaX - deltaY) * 0.0008;
+      lastClientX = e.clientX;
+      lastClientY = e.clientY;
+    });
+    /* ==================================================================================== */
+
     function drawOrbitBackground() {
       ctx.clearRect(0, 0, width, height);
       const cx = width / 2, cy = height / 2;
-      const g1X = cx + Math.cos(angle * 0.8) * 180, g1Y = cy + Math.sin(angle * 0.6) * 130;
+
+      // Aplica a inércia do impulso do dedo e desacopla suavemente (atrito natural)
+      if (Math.abs(touchImpulseSpeed) > 0.00001) {
+        touchImpulseAngle += touchImpulseSpeed;
+        touchImpulseSpeed *= 0.95; // Fricção para parar sozinho após alguns instantes
+      } else {
+        touchImpulseSpeed = 0;
+      }
+
+      const effectiveAngle = angle + touchImpulseAngle;
+
+      const g1X = cx + Math.cos(effectiveAngle * 0.8) * 180, g1Y = cy + Math.sin(effectiveAngle * 0.6) * 130;
       const grad1 = ctx.createRadialGradient(g1X, g1Y, 60, g1X, g1Y, width * 0.7);
       grad1.addColorStop(0, `rgba(0, 210, 255, ${isUranoActive ? 0.28 : 0.14})`);
       grad1.addColorStop(1, 'rgba(8, 8, 10, 0)');
       ctx.fillStyle = grad1; ctx.beginPath(); ctx.arc(g1X, g1Y, width * 0.7, 0, Math.PI * 2); ctx.fill();
 
-      const g2X = cx + Math.sin(-angle * 0.7) * 200, g2Y = cy + Math.cos(-angle * 0.5) * 150;
+      const g2X = cx + Math.sin(-effectiveAngle * 0.7) * 200, g2Y = cy + Math.cos(-effectiveAngle * 0.5) * 150;
       const grad2 = ctx.createRadialGradient(g2X, g2Y, 60, g2X, g2Y, width * 0.75);
       grad2.addColorStop(0, `rgba(255, 0, 127, ${isUranoActive ? 0.25 : 0.12})`);
       grad2.addColorStop(0.5, `rgba(147, 51, 234, ${isUranoActive ? 0.30 : 0.14})`);
