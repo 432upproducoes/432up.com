@@ -12,512 +12,213 @@
 
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
-  <meta name="version" content="1.0-OFFICIAL">
+  <meta name="version" content="Enterprise-1.2.2-Perfect">
   
-  <!-- INTEGRAÇÃO CROMÁTICA TRANSLÚCIDA SAFARI/IOS -->
   <meta name="theme-color" content="#08080A">
   <meta name="apple-mobile-web-app-capable" content="yes">
   <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
 
   <link class="js-site-favicon" rel="icon" type="image/png" href="imagens/favicon.png">
-  <title>Simulador de Atmosfera Audiovisual | 432UP! Produções</title>
-  <meta name="description" content="Dimensionamento avançado e estudo estrutural de áudio e iluminação cênica para projetos de alta exigência.">
-  <meta name="robots" content="index, follow">
-  <link rel="canonical" href="https://432up.com/calculadora.html">
+  <title>Simulador de Atmosfera | 432UP! Produções</title>
+  <meta name="description" content="Projete a atmosfera sensorial, sonora e visual ideal para o seu evento de alto padrão.">
 
-  <!-- Google Fonts (Inter) -->
+  <!-- Google Fonts -->
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&display=swap" rel="stylesheet">
 
-  <!-- Dependências: Supabase e PDF -->
+  <!-- SEU CSS DO SERVIDOR (GLOBALS + COMPLEMENTO DA CALCULADORA) -->
+  <link rel="stylesheet" href="caminho-para-seu-css-global.css">
+
+  <!-- Dependências: Supabase e Biblioteca de Exportação de PDF -->
   <script src="https://unpkg.com/@supabase/supabase-js@2"></script>
   <script src="https://cdnjs.cloudflare.com/ajax/libs/html2pdf.js/0.10.1/html2pdf.bundle.min.js"></script>
 
-  <!-- ESTILOS OFICIAIS UNIFICADOS -->
-  <link rel="stylesheet" href="style.css">
-
-  <style>
-    body.embed-mode #calc-header { display: none !important; }
-    body.embed-mode { background: transparent !important; }
-
-    .simulator-layout { 
-      display: grid; 
-      grid-template-columns: 1fr 420px; 
-      gap: 32px; 
-      align-items: start; 
-      margin: 30px 0 60px; 
+  <!-- SELO DE AUTORIDADE GOOGLE: DADOS ESTRUTURADOS JSON-LD -->
+  <script type="application/ld+json">
+  {
+    "@context": "https://schema.org",
+    "@type": "WebApplication",
+    "name": "Simulador de Atmosfera 432UP!",
+    "url": "https://www.432up.com/calculadora.html",
+    "applicationCategory": "BusinessApplication",
+    "operatingSystem": "All",
+    "browserRequirements": "Requires JavaScript. Requires HTML5.",
+    "author": {
+      "@type": "LocalBusiness",
+      "name": "432UP! Produções",
+      "image": "https://www.432up.com/imagens/favicon.png",
+      "address": {
+        "@type": "PostalAddress",
+        "addressLocality": "São Paulo",
+        "addressRegion": "SP",
+        "addressCountry": "BR"
+      }
     }
-    @media (max-width: 992px) { 
-      .simulator-layout { grid-template-columns: 1fr; margin-bottom: 140px; } 
-    }
-
-    /* SETUP BOX MOLDURA GLASS COM TRANSPARÊNCIA ADAPTÁVEL */
-    .setup-box { 
-      background: var(--card-bg); 
-      backdrop-filter: blur(20px); 
-      -webkit-backdrop-filter: blur(20px);
-      border-radius: 24px; 
-      padding: 36px; 
-      border: 1px solid var(--card-border); 
-      box-shadow: 0 0 30px rgba(168, 85, 247, 0.08), inset 0 1px 1px rgba(255, 255, 255, 0.1);
-      transition: var(--transition-smooth);
-    }
-    @media (max-width: 576px) { .setup-box { padding: 20px; } }
-
-    .step-section { margin-bottom: 36px; }
-    .step-title { 
-      font-size: 1.15rem; 
-      font-weight: 700; 
-      margin-bottom: 20px; 
-      display: flex; 
-      align-items: center; 
-      gap: 12px; 
-      color: var(--card-text-title);
-    }
-    .step-number { 
-      font-size: 0.8rem; 
-      background: rgba(0, 255, 102, 0.1); 
-      color: var(--primary-lime); 
-      border: 1px solid rgba(0, 255, 102, 0.4); 
-      width: 28px; 
-      height: 28px; 
-      border-radius: 50%; 
-      display: inline-flex; 
-      align-items: center; 
-      justify-content: center; 
-      font-weight: 700; 
-    }
-
-    /* CARDS DE OPÇÃO COM REATIVIDADE TÁTIL & MOUSE */
-    .option-cards { display: grid; grid-template-columns: repeat(auto-fit, minmax(180px, 1fr)); gap: 16px; }
-    .option-card { 
-      background: rgba(255, 255, 255, 0.04); 
-      border: 1px solid var(--card-border); 
-      padding: 20px; 
-      border-radius: 16px; 
-      cursor: pointer; 
-      text-align: left; 
-      transition: all 0.3s cubic-bezier(0.25, 1, 0.5, 1); 
-      user-select: none;
-      -webkit-tap-highlight-color: transparent;
-    }
-    .option-card:hover { 
-      border-color: rgba(0, 255, 102, 0.6); 
-      background: rgba(255, 255, 255, 0.08);
-      transform: translateY(-3px); 
-      box-shadow: 0 8px 20px rgba(0, 255, 102, 0.15), inset 0 0 8px rgba(0, 255, 102, 0.1);
-    }
-    .option-card:active { transform: scale(0.97); }
-    .option-card.selected { 
-      border-color: var(--primary-lime); 
-      background: rgba(0, 255, 102, 0.12); 
-      box-shadow: 0 0 25px rgba(0, 255, 102, 0.28), inset 0 0 10px rgba(0, 255, 102, 0.15);
-    }
-    .option-card .label { font-size: 0.95rem; font-weight: 700; display: block; margin-bottom: 4px; color: var(--card-text-title); }
-    .option-card .sub { font-size: 0.82rem; color: var(--card-text-sub); display: block; }
-
-    .tech-insight-box { 
-      background: rgba(168, 85, 247, 0.12); 
-      border-left: 3px solid var(--secondary-lilac); 
-      padding: 12px 16px; 
-      border-radius: 8px; 
-      margin-top: 16px; 
-      font-size: 0.85rem; 
-      color: var(--text-main); 
-      display: none; 
-    }
-
-    .extra-list { display: grid; grid-template-columns: 1fr; gap: 12px; }
-    .extra-item { 
-      display: flex; 
-      justify-content: space-between; 
-      align-items: center; 
-      background: rgba(255, 255, 255, 0.04); 
-      border: 1px solid var(--card-border); 
-      padding: 18px 20px; 
-      border-radius: 16px; 
-      cursor: pointer; 
-      transition: all 0.3s cubic-bezier(0.25, 1, 0.5, 1); 
-      user-select: none;
-      -webkit-tap-highlight-color: transparent;
-    }
-    .extra-item:hover { border-color: rgba(168, 85, 247, 0.6); background: rgba(255, 255, 255, 0.08); transform: translateY(-2px); box-shadow: 0 0 15px rgba(168, 85, 247, 0.2); }
-    .extra-item:active { transform: scale(0.98); }
-    .extra-item.selected { 
-      border-color: var(--primary-lime); 
-      background: rgba(0, 255, 102, 0.08); 
-      box-shadow: 0 0 18px rgba(0, 255, 102, 0.18);
-    }
-    .extra-item h5 { font-size: 0.9rem; font-weight: 600; margin-bottom: 2px; color: var(--card-text-title); }
-    .extra-item p { font-size: 0.8rem; color: var(--card-text-sub); }
-    .checkbox-custom { 
-      width: 22px; 
-      height: 22px; 
-      border-radius: 6px; 
-      border: 2px solid rgba(255, 255, 255, 0.25); 
-      transition: var(--transition-smooth); 
-      flex-shrink: 0; 
-    }
-    .extra-item.selected .checkbox-custom { 
-      background-color: var(--primary-lime); 
-      border-color: var(--primary-lime); 
-      box-shadow: 0 0 10px rgba(0, 255, 102, 0.5); 
-    }
-
-    /* SIDEBAR PAINEL LATERAL DE RESUMO */
-    .summary-sidebar { 
-      background: var(--card-bg); 
-      backdrop-filter: blur(20px); 
-      -webkit-backdrop-filter: blur(20px);
-      border: 1px solid var(--glass-border); 
-      border-radius: 24px; 
-      padding: 28px; 
-      position: sticky; 
-      top: 90px; 
-      box-shadow: 0 20px 50px rgba(0, 0, 0, 0.8), 0 0 35px rgba(0, 255, 102, 0.12);
-    }
-    .summary-title { 
-      font-size: 1rem; 
-      font-weight: 700; 
-      text-transform: uppercase; 
-      margin-bottom: 20px; 
-      border-bottom: 1px solid rgba(255, 255, 255, 0.1); 
-      padding-bottom: 12px; 
-      letter-spacing: 1px; 
-      color: var(--card-text-title);
-    }
-    .summary-row { display: flex; justify-content: space-between; font-size: 0.88rem; margin-bottom: 12px; color: var(--card-text-sub); }
-    .summary-row strong { color: var(--card-text-title); text-align: right; font-weight: 600; }
-
-    .summary-details-box { background: rgba(255,255,255,0.03); border: 1px solid rgba(255, 255, 255, 0.08); padding: 16px; border-radius: 12px; margin: 20px 0; }
-    .summary-details-box h5 { font-size: 0.75rem; text-transform: uppercase; letter-spacing: 1px; color: var(--secondary-lilac); margin-bottom: 10px; font-weight: 700; }
-    .summary-details-list { list-style: none; }
-    .summary-details-list li { font-size: 0.82rem; color: var(--text-main); margin-bottom: 6px; padding-left: 14px; position: relative; }
-    .summary-details-list li::before { content: "•"; color: var(--primary-lime); position: absolute; left: 0; font-size: 0.9rem; }
-
-    .price-block { margin-top: 20px; padding-top: 20px; border-top: 1px solid rgba(255, 255, 255, 0.1); text-align: center; }
-    
-    .price-value { 
-      font-size: 1.8rem; 
-      font-weight: 700; 
-      color: var(--primary-lime); 
-      text-shadow: 0 0 20px rgba(0,255,102,0.35); 
-      margin: 6px 0; 
-      letter-spacing: -0.5px; 
-      min-height: 48px;
-      display: flex;
-      align-items: center;
-      justify-content: center;
-    }
-    .price-value.message-prompt {
-      font-size: 1.05rem;
-      color: var(--secondary-lilac);
-      text-shadow: 0 0 12px rgba(168, 85, 247, 0.4);
-      font-weight: 600;
-      letter-spacing: 0px;
-    }
-
-    .price-label { font-size: 0.72rem; text-transform: uppercase; letter-spacing: 1px; color: var(--card-text-sub); }
-
-    /* BOTÕES OPERACIONAIS */
-    .action-buttons { display: flex; flex-direction: column; gap: 12px; margin-top: 20px; }
-    
-    .btn-submit { 
-      width: 100%; 
-      background: #FFFFFF; 
-      color: #000; 
-      border: 1px solid transparent; 
-      padding: 14px 20px; 
-      border-radius: 24px; 
-      font-weight: 700; 
-      cursor: pointer; 
-      transition: all 0.3s cubic-bezier(0.25, 1, 0.5, 1); 
-      text-align: center; 
-      text-decoration: none; 
-      display: block; 
-      font-size: 0.85rem; 
-      letter-spacing: 0.5px;
-      box-shadow: 0 4px 15px rgba(255, 255, 255, 0.15);
-      user-select: none;
-      -webkit-tap-highlight-color: transparent;
-    }
-    .btn-submit:hover { 
-      background-color: var(--primary-lime); 
-      color: #000; 
-      box-shadow: 0 0 30px rgba(0, 255, 102, 0.6); 
-      transform: translateY(-2px) scale(1.01); 
-    }
-    .btn-submit:active { transform: scale(0.97); }
-
-    .btn-request-callback { 
-      width: 100%; 
-      background: rgba(0, 255, 102, 0.05); 
-      color: var(--text-main); 
-      border: 1px solid rgba(0, 255, 102, 0.35); 
-      padding: 12px; 
-      border-radius: 24px; 
-      font-size: 0.82rem; 
-      font-weight: 600; 
-      cursor: pointer; 
-      transition: all 0.3s cubic-bezier(0.25, 1, 0.5, 1); 
-      user-select: none;
-      -webkit-tap-highlight-color: transparent;
-    }
-    .btn-request-callback:hover { 
-      border-color: var(--primary-lime); 
-      color: var(--primary-lime); 
-      background: rgba(0, 255, 102, 0.12);
-      box-shadow: 0 0 20px rgba(0, 255, 102, 0.3);
-      transform: translateY(-2px);
-    }
-    .btn-request-callback:active { transform: scale(0.97); }
-
-    .btn-secondary { 
-      width: 100%; 
-      background: rgba(255, 255, 255, 0.03); 
-      color: var(--card-text-sub); 
-      border: 1px solid rgba(255, 255, 255, 0.12); 
-      padding: 12px; 
-      border-radius: 24px; 
-      font-size: 0.8rem; 
-      cursor: pointer; 
-      transition: all 0.3s cubic-bezier(0.25, 1, 0.5, 1); 
-      user-select: none;
-      -webkit-tap-highlight-color: transparent;
-    }
-    .btn-secondary:hover { 
-      color: #fff; 
-      border-color: var(--secondary-lilac); 
-      background: rgba(168, 85, 247, 0.1); 
-      box-shadow: 0 0 18px rgba(168, 85, 247, 0.3);
-      transform: translateY(-2px);
-    }
-    .btn-secondary:active { transform: scale(0.97); }
-
-    .sticky-bottom-bar {
-      position: fixed; bottom: 0; left: 0; right: 0;
-      background: rgba(8, 8, 10, 0.94); backdrop-filter: blur(20px);
-      border-top: 1px solid var(--glass-border); padding: 16px 20px;
-      display: none; justify-content: space-between; align-items: center; z-index: 999;
-      transform: translateY(100%); transition: transform 0.4s ease;
-      padding-bottom: calc(16px + env(safe-area-inset-bottom));
-    }
-    .sticky-bottom-bar.visible { transform: translateY(0); }
-    .sticky-price-value { font-size: 1.1rem; font-weight: 700; color: var(--primary-lime); text-shadow: 0 0 10px rgba(0,255,102,0.3); }
-    .sticky-action-container { display: flex; gap: 8px; }
-    .sticky-btn-callback { background: transparent; border: 1px solid rgba(255,255,255,0.15); color: var(--text-main); padding: 10px 12px; border-radius: 20px; font-size: 0.75rem; cursor: pointer; }
-    .sticky-btn-action { background: var(--primary-lime); color: #000; text-decoration: none; padding: 10px 16px; border-radius: 20px; font-size: 0.8rem; font-weight: 700; box-shadow: 0 0 15px rgba(0,255,102,0.4); }
-
-    @media (max-width: 992px) { .sticky-bottom-bar { display: flex; } }
-
-    #pdf-render-template {
-      display: none; background: #FFFFFF !important; color: #111111 !important;
-      padding: 40px; font-family: var(--font-base);
-    }
-    .pdf-header { display: flex; justify-content: space-between; align-items: center; border-bottom: 2px solid #111111; padding-bottom: 16px; margin-bottom: 24px; }
-    .pdf-logo { font-size: 1.8rem; font-weight: 800; }
-    .pdf-logo span { color: #00FF66; }
-    .pdf-table { width: 100%; border-collapse: collapse; margin-bottom: 24px; }
-    .pdf-table th { background: #F3F4F6; text-align: left; padding: 10px; font-size: 0.85rem; border-bottom: 1px solid #E5E7EB; }
-    .pdf-table td { padding: 10px; border-bottom: 1px solid #E5E7EB; font-size: 0.9rem; }
-    .pdf-footer-price { background: #F9FAFB; border: 1px solid #E5E7EB; padding: 16px; text-align: center; margin-top: 30px; border-radius: 8px; }
-  </style>
+  }
+  </script>
 </head>
 <body>
 
-  <!-- PISTA DE SCROLL FANTASMA -->
-  <div class="virtual-scroll-track"></div>
-
-  <!-- CANVAS ANIMADO NEBULOSA -->
+  <div class="scroll-stretcher-pixel"></div>
   <canvas id="orbit-canvas"></canvas>
 
-  <!-- OVERLAY DE BACKDROP DISCRETO -->
-  <div class="drawer-backdrop-overlay" id="drawer-backdrop" onclick="closeLpsDrawer()"></div>
-
-  <!-- GAVETA POP-UP DAS LPs -->
-  <div class="lps-drawer-root plasma-glow-overlay aurora-border-glow" id="lps-drawer">
-    <div class="lps-grid">
-      <a href="casamento-sp.html">• Casamento SP</a>
-      <a href="casamento-interior.html">• Casamento Interior</a>
-      <a href="corporativo.html">• Eventos Corporativos</a>
-      <a href="debutante.html">• Festas de 15 Anos</a>
-      <a href="formatura.html">• Formaturas & Gala</a>
-      <a href="aniversario.html">• Aniversários Premium</a>
-      <a href="copa.html">• Arena & Copa 2026</a>
-      <a href="reveillon.html">• Réveillon & Festivais</a>
-      <a href="halloween.html">• Eventos Temáticos</a>
-      <a href="mesa-de-producao.html">• Mesa de Produção (B2B)</a>
-      <a href="galeria.html">• Portfólio Completo</a>
-    </div>
-  </div>
-
-  <!-- HEADER FIXO LARGURA TOTAL -->
-  <header id="calc-header">
-    <div class="header-inner">
+  <div class="viewport-wrapper">
+    <header id="calc-header">
       <div class="logo-container">
         <a href="index.html" class="logo-link" aria-label="Página Inicial 432UP">
           <img src="imagens/logo.png" alt="432UP! Produções" class="logo-img">
         </a>
       </div>
 
-      <nav class="desktop-nav">
+      <nav class="desktop-nav" id="calc-nav">
         <a href="index.html">Início</a>
         <a href="calculadora.html" class="active">Simulador de Atmosfera</a>
         <a href="galeria.html">Portfólio</a>
-        <button onclick="openLeadModal()" class="btn-header-cta">Iniciar Projeto</button>
+        <a id="nav-trigger-modal">Contato</a>
       </nav>
 
-      <button class="mobile-hamburger" onclick="toggleMobileMenu()">☰</button>
+      <button class="mobile-hamburger" id="mobile-menu-btn" aria-label="Abrir Menu">☰</button>
+    </header>
+
+    <div class="mobile-menu-overlay" id="mobile-menu">
+      <button id="mobile-menu-close" style="position: absolute; top: 20px; right: 20px; background: transparent; border: none; color: #fff; font-size: 1.5rem; cursor: pointer;">✕</button>
+      <a href="index.html">Início</a>
+      <a href="calculadora.html" class="active">Simulador de Atmosfera</a>
+      <a href="galeria.html">Portfólio</a>
+      <a id="nav-trigger-modal-mobile">Contato</a>
     </div>
-  </header>
 
-  <!-- MENU MOBILE -->
-  <div class="mobile-menu-overlay" id="mobile-menu">
-    <button onclick="toggleMobileMenu()" class="mobile-menu-close">✕</button>
-    <a href="index.html" onclick="toggleMobileMenu()">Início</a>
-    <a href="calculadora.html" onclick="toggleMobileMenu()" class="active">Simulador de Atmosfera</a>
-    <a href="galeria.html" onclick="toggleMobileMenu()">Portfólio</a>
-    <button onclick="toggleMobileMenu(); openLeadModal();" class="btn-header-cta" style="margin-left: 0; padding: 12px 28px;">Iniciar Projeto</button>
-  </div>
-
-  <!-- CONTAINER DE CONTEÚDO EM FLUXO LIVRE -->
-  <div class="page-content-wrapper">
-    <!-- HERO CENTRALIZADO DA CALCULADORA -->
-    <section class="hero-center" id="calc-hero" style="padding-top: 10px;">
-      <span class="tagline">Dimensionamento Avançado</span>
-      <h1>Estudo Estrutural <span>Personalizado</span></h1>
-      <p class="hero-desc">Calibre a densidade volumétrica e a escala temporal para projetarmos o equilíbrio acústico e visual ideal.</p>
+    <section class="hero-center" id="calc-hero">
+      <span class="tagline">Curadoria Sensorial</span>
+      <h1>Simulador de <span>Atmosfera</span></h1>
+      <p class="simulator-desc">Personalize a escala, a duração e a assinatura acústica para projetarmos a experiência ideal do seu evento.</p>
     </section>
 
     <main>
       <div class="simulator-layout">
-
         <div class="setup-box">
-          <!-- PASSO 1: VOLUMETRIA -->
           <div class="step-section">
-            <div class="step-title"><span class="step-number">1</span><h3>Volumetria de Escala (Convidados)</h3></div>
+            <div class="step-title"><span class="step-number">1</span><h3>Escala da Experiência (Convidados)</h3></div>
             <div class="option-cards" id="group-scale">
-              <div class="option-card" data-value="small"><span class="label">Intimista</span><span class="sub">Até 100 pessoas</span></div>
+              <div class="option-card selected" data-value="small"><span class="label">Intimista</span><span class="sub">Até 100 pessoas</span></div>
               <div class="option-card" data-value="medium"><span class="label">Intermediário</span><span class="sub">100 a 250 pessoas</span></div>
               <div class="option-card" data-value="large"><span class="label">High Scale</span><span class="sub">Mais de 250 pessoas</span></div>
             </div>
-            <div id="insight-stage" class="tech-insight-box">⚠️ <strong>Linha de Visão (Sightline):</strong> Palco elevado necessário.</div>
-            <div id="insight-acoustic" class="tech-insight-box">🔊 <strong>Reforço de Sub-Grave:</strong> Subwoofers extras adicionados.</div>
+            <div id="insight-stage" class="tech-insight-box">⚠️ <strong>Linha de Visão (Sightline):</strong> Palco elevado recomendado para esta proporção.</div>
+            <div id="insight-acoustic" class="tech-insight-box">🔊 <strong>Imersão Sonora:</strong> Reforço de graves integrado para preenchimento ideal.</div>
           </div>
 
-          <!-- PASSO 2: TEMPO OPERACIONAL -->
           <div class="step-section">
             <div class="step-title"><span class="step-number">2</span><h3>Duração Operacional</h3></div>
             <div class="option-cards" id="group-hours">
-              <div class="option-card" data-value="3"><span class="label">Lounge / Receptivo</span><span class="sub">Até 3 horas de execução</span></div>
+              <div class="option-card selected" data-value="3"><span class="label">Lounge / Receptivo</span><span class="sub">Até 3 horas de execução</span></div>
               <div class="option-card" data-value="5"><span class="label">Cronograma Padrão</span><span class="sub">5 horas operacionais</span></div>
               <div class="option-card" data-value="8"><span class="label">Imersão Prolongada</span><span class="sub">8 horas de performance</span></div>
             </div>
           </div>
 
-          <!-- PASSO 3: MATRIZ BASE -->
           <div class="step-section">
-            <div class="step-title"><span class="step-number">3</span><h3>Matriz Acústica & Cenografia</h3></div>
+            <div class="step-title"><span class="step-number">3</span><h3>Assinatura Acústica & Cenografia</h3></div>
             <div class="option-cards" id="group-package">
-              <div class="option-card" data-value="bronze"><span class="label">Bronze</span><span class="sub">Fidelidade Essencial</span></div>
+              <div class="option-card selected" data-value="bronze"><span class="label">Bronze</span><span class="sub">Fidelidade Essencial</span></div>
               <div class="option-card" data-value="prata"><span class="label">Prata</span><span class="sub">Imersão Ampliada</span></div>
               <div class="option-card" data-value="ouro"><span class="label">Ouro AA+</span><span class="sub">Impacto Tecnológico</span></div>
             </div>
           </div>
 
-          <!-- PASSO 4: ADICIONAIS -->
           <div class="step-section">
-            <div class="step-title"><span class="step-number">4</span><h3>Engenharia Atmosférica Adicional</h3></div>
-            <div class="extra-list" id="dynamic-addons-list">
-              <!-- Injeção via JS -->
-            </div>
+            <div class="step-title"><span class="step-number">4</span><h3>Complementos Exclusivos</h3></div>
+            <div class="extra-list" id="dynamic-addons-list"></div>
           </div>
         </div>
 
         <aside class="summary-sidebar" id="sidebar-target">
           <h4 class="summary-title">Projeto Estimado</h4>
-          <div class="summary-row"><span>Densidade de público:</span><strong id="sum-guests">A definir</strong></div>
-          <div class="summary-row"><span>Tempo de operação:</span><strong id="sum-hours">A definir</strong></div>
-          <div class="summary-row"><span>Rider estrutural:</span><strong id="sum-package">A DEFINIR</strong></div>
+          <div class="summary-row"><span>Densidade de público:</span><strong id="sum-guests">Até 100 pessoas</strong></div>
+          <div class="summary-row"><span>Tempo de operação:</span><strong id="sum-hours">3 horas</strong></div>
+          <div class="summary-row"><span>Assinatura base:</span><strong id="sum-package">BRONZE</strong></div>
           <div class="summary-row"><span>Variáveis de palco:</span><strong id="sum-stage-needed">Padrão Plano</strong></div>
 
           <div class="summary-details-box">
-            <h5>Especificações Incluídas</h5>
-            <ul class="summary-details-list" id="sum-service-details">
-              <li>Selecione as opções ao lado para calcular</li>
-            </ul>
+            <h5>Elementos Inclusos</h5>
+            <ul class="summary-details-list" id="sum-service-details"></ul>
           </div>
 
           <div class="price-block">
             <span class="price-label">Investimento Estimado</span>
-            <!-- VALOR / MENSAGEM PROMPT SE ZERADO -->
-            <div class="price-value message-prompt" id="total-price">Selecione as opções</div>
+            <div class="price-value hint-mode" id="total-price">Selecione os parâmetros ao lado para calcular o investimento.</div>
           </div>
 
           <div class="action-buttons">
             <a href="#" class="btn-submit" id="btn-whatsapp">Garantir Alocação via WhatsApp →</a>
-            <button class="btn-request-callback" onclick="openLeadModal()">Ligamos para Você</button>
+            <button class="btn-request-callback" id="btn-trigger-modal-call">Ligamos para Você</button>
             <button class="btn-secondary" id="btn-pdf-trigger">Salvar Proposta como PDF</button>
           </div>
         </aside>
-
       </div>
     </main>
-
-    <footer>
-      <div class="footer-bar">
-        <div class="footer-left">
-          <button class="btn-accordion-lps" id="btn-toggle-lps" onclick="toggleLpsDrawer()">
-            <span class="desktop-only">[+] Atendimentos Especializados</span>
-            <span class="mobile-only" style="display:none;">[+] Especialidades</span>
-          </button>
-          <span>© 2026 432UP! Produções</span>
-        </div>
-        <div style="opacity: 0.7;">Curadoria Artística & Engenharia Estrutural</div>
-      </div>
-    </footer>
   </div>
 
-  <!-- BARRA MOBILE FLUTUANTE -->
+  <footer>
+    <p>© 2026 432UP! Produções — Curadoria Artística e Engenharia Estrutural</p>
+  </footer>
+
   <div class="sticky-bottom-bar" id="mobile-sticky-bar">
     <div>
       <div style="font-size: 0.65rem; text-transform: uppercase; color: var(--text-muted);">Investimento</div>
-      <div class="sticky-price-value" id="sticky-total-price">Selecione as opções</div>
+      <div class="sticky-price-value hint-mode" id="sticky-total-price">Selecione os itens ao lado.</div>
     </div>
     <div class="sticky-action-container">
-      <button class="sticky-btn-callback" onclick="openLeadModal()">Ligamos</button>
+      <button class="sticky-btn-callback" id="sticky-btn-trigger-modal">Ligamos</button>
       <a href="#" class="sticky-btn-action" id="sticky-btn-whatsapp">Avançar →</a>
     </div>
   </div>
 
-  <!-- MODAL DE CAPTURA COM UX & NEUROMARKETING REFORMULADOS -->
-  <div class="modal-overlay" id="lead-modal">
-    <div class="modal-box plasma-glow-overlay aurora-border-glow">
-      <button class="modal-close" onclick="closeLeadModal()">✕</button>
-      <div class="modal-header-text">
-        <h3>Iniciar Alinhamento Técnico</h3>
-        <p>Informe seus dados para direcionamento imediato à mesa de produção.</p>
+  <!-- POP-UP MODAL DE CONTATO -->
+  <div class="contact-modal-overlay" id="contact-overlay">
+    <div class="contact-modal">
+      <button class="contact-modal-close" id="contact-modal-close-btn">&times;</button>
+      <h3 style="font-size: 1.2rem; font-weight: 700; margin-bottom: 4px; color: #FFF;">Qual o melhor número e horário para te ligarmos?</h3>
+      <p style="font-size: 0.78rem; color: var(--text-muted); margin-bottom: 14px;">Informe seus dados para a mesa de produção retornar.</p>
+
+      <div class="modal-channels-row">
+        <a href="https://wa.me/5511948564577" class="channel-mini-card" target="_blank">
+          <span style="font-size: 0.58rem; color: var(--text-muted); text-transform: uppercase;">WhatsApp Direct</span>
+          <strong style="display: block; font-size: 0.8rem; margin-top: 2px; color: #FFF;">(11) 94856-4577</strong>
+        </a>
+        <a href="mailto:contato@432up.com" class="channel-mini-card">
+          <span style="font-size: 0.58rem; color: var(--text-muted); text-transform: uppercase;">E-mail Interno</span>
+          <strong style="display: block; font-size: 0.8rem; margin-top: 2px; color: #FFF;">contato@432up.com</strong>
+        </a>
       </div>
-      <form onsubmit="handleProgressFormSubmit(event)">
+
+      <div class="modal-form-divider">Ou agende o retorno</div>
+
+      <div>
         <div class="form-group">
-          <label for="modal-lead-name">Seu Nome ou Empresa</label>
-          <input type="text" id="modal-lead-name" required placeholder="Ex: Roberto Silva / Eventos Ltda">
+          <label for="mod-name">Seu nome ou empresa</label>
+          <input type="text" id="mod-name" placeholder="Ex: Roberto Silva">
         </div>
         <div class="form-group">
-          <label for="modal-lead-phone">WhatsApp para Contato</label>
-          <input type="tel" id="modal-lead-phone" required placeholder="(11) 99999-9999">
+          <label for="mod-phone">Telefone / WhatsApp</label>
+          <input type="tel" id="mod-phone" placeholder="(11) 99999-9999" inputmode="numeric" maxlength="15">
+          <span class="field-hint" id="mod-phone-error">Informe um telefone válido com DDD.</span>
         </div>
         <div class="form-group">
-          <label for="modal-lead-msg">Perfil ou Detalhes do Projeto</label>
-          <textarea id="modal-lead-msg" placeholder="Data estimada, local ou infraestrutura necessária..."></textarea>
+          <label for="mod-email">E-mail <span class="optional-tag">(opcional)</span></label>
+          <input type="email" id="mod-email" placeholder="contato@empresa.com">
+          <span class="field-hint" id="mod-email-error">Informe um e-mail válido.</span>
         </div>
-        <button type="submit" id="btn-submit-modal" class="btn-modal-submit">Enviar Solicitação Direta</button>
-      </form>
+        <div class="form-group">
+          <label for="mod-msg">Melhor horário ou detalhes <span class="optional-tag">(opcional)</span></label>
+          <textarea id="mod-msg" placeholder="Qual o melhor horário para ligarmos..."></textarea>
+        </div>
+        <button class="btn-internal-send" id="btn-submit-general-contact">Solicitar Ligação</button>
+      </div>
     </div>
   </div>
 
-  <!-- RENDER TEMPLATE DO PDF -->
   <div id="pdf-render-template">
     <div class="pdf-header">
       <div>
@@ -525,24 +226,24 @@
         <div style="font-size: 0.7rem; text-transform: uppercase; color: #555;">Produções & Eventos</div>
       </div>
       <div style="text-align: right; font-size: 0.8rem; color: #555;">
-        <strong>Estudo de Viabilidade Técnico-Estrutural</strong><br>
+        <strong>Estudo de Viabilidade Sensorial & Estrutural</strong><br>
         Documento Emitido via Simulador Digital
       </div>
     </div>
-    <h3 style="font-size: 1.4rem; font-weight: 700; margin-bottom: 16px;">Proposta de Escopo Estrutural</h3>
+    <h3 style="font-size: 1.4rem; font-weight: 700; margin-bottom: 16px;">Proposta de Escopo da Atmosfera</h3>
     <table class="pdf-table">
       <thead>
-        <tr><th>Parâmetro Técnico</th><th>Configuração Selecionada</th></tr>
+        <tr><th>Parâmetro do Projeto</th><th>Configuração Selecionada</th></tr>
       </thead>
       <tbody>
-        <tr><td>Matriz Base (Rider)</td><td id="pdf-package">--</td></tr>
-        <tr><td>Volumetria de Escala</td><td id="pdf-guests">--</td></tr>
-        <tr><td>Tempo de Operação Crítica</td><td id="pdf-hours">--</td></tr>
+        <tr><td>Assinatura Base (Rider)</td><td id="pdf-package">--</td></tr>
+        <tr><td>Escala da Experiência</td><td id="pdf-guests">--</td></tr>
+        <tr><td>Duração Operacional</td><td id="pdf-hours">--</td></tr>
         <tr><td>Infraestrutura de Palco</td><td id="pdf-stage">--</td></tr>
       </tbody>
     </table>
     <div>
-      <h4 style="font-size: 0.95rem; text-transform: uppercase; margin-bottom: 10px;">Especificações Incluídas</h4>
+      <h4 style="font-size: 0.95rem; text-transform: uppercase; margin-bottom: 10px;">Elementos Inclusos</h4>
       <ul style="padding-left: 16px; font-size: 0.85rem; color: #333;" id="pdf-specs-items"></ul>
     </div>
     <div class="pdf-footer-price">
@@ -551,234 +252,7 @@
     </div>
   </div>
 
-  <!-- SCRIPT UNIFICADO DA ENGINE -->
-  <script src="script.js"></script>
-
-  <!-- LÓGICA DA CALCULADORA COM TRATAMENTO DE VALOR ZERADO -->
-  <script>
-    let prices = { price_bronze: 3500, price_prata: 6200, price_ouro: 11800, factor_small: 1.0, factor_medium: 1.3, factor_large: 1.6, add_extra_hour: 800 };
-
-    let dbAddons = [
-      { id: 'd1', nome: "Montagem de Palco Elevado", description: "Estrutura técnica com saia de acabamento pantográfica.", preco_base: 1200, varia_com_pessoas: true, varia_com_horas: false },
-      { id: 'd2', nome: "Performance de Sax Solo", description: "Intervenção de alto requinte para receptivos e welcome-drinks.", preco_base: 1500, varia_com_pessoas: false, varia_com_horas: false },
-      { id: 'd3', nome: "Upgrade de Iluminação Cênica DMX", description: "Varas de LED inteligentes controladas por mesa digital em tempo real.", preco_base: 2200, varia_com_pessoas: false, varia_com_horas: false }
-    ];
-
-    let selectedAddons = {};
-    let selection = { scale: null, hours: null, package: null, guestsText: "A definir" };
-    let hasInteracted = false;
-    let globalFormattedPrice = "";
-    let globalSpecsList = [];
-
-    const matrixSpecifications = {
-      bronze: ["Sistemas Lineares Discretos Compactos", "Microfonia Digital Sem Fio", "Engenheiro Operacional Dedicado"],
-      prata: ["Pressão Acústica Ampliada com Subwoofers", "Arquitetura de Luz Inteligente DMX", "Suporte Técnico Integral"],
-      ouro: ["Rider Completo para Alta Performance e Bandas AA+", "Line Array de Alta Definição", "Cenografia de Iluminação de Gala"]
-    };
-
-    function escapeHtml(str) {
-      if (str === null || str === undefined) return '';
-      return String(str)
-        .replace(/&/g, '&amp;')
-        .replace(/</g, '&lt;')
-        .replace(/>/g, '&gt;')
-        .replace(/"/g, '&quot;')
-        .replace(/'/g, '&#39;');
-    }
-
-    async function setupSimulator() {
-      try {
-        if (supabaseClient) {
-          const { data: calcData } = await supabaseClient.from('config_calculadora').select('*').eq('id', 1).single();
-          if (calcData) prices = calcData;
-
-          const { data: addons } = await supabaseClient.from('servicos_adicionais').select('*').order('id', { ascending: true });
-          if (addons && addons.length > 0) {
-            dbAddons = [...addons];
-          }
-        }
-      } catch(e) {}
-
-      renderAddons();
-      calculateAtmosphere();
-    }
-
-    function renderAddons() {
-      const listContainer = document.getElementById('dynamic-addons-list');
-      if (!listContainer) return;
-      listContainer.innerHTML = dbAddons.map(addon => `
-        <div class="extra-item" data-id="${escapeHtml(addon.id)}" onclick="handleDynamicAddonClick('${escapeHtml(addon.id)}', this)">
-          <div>
-            <h5>${escapeHtml(addon.nome)}</h5>
-            <p>${escapeHtml(addon.description || '')}</p>
-          </div>
-          <div class="checkbox-custom"></div>
-        </div>
-      `).join('');
-    }
-
-    function handleDynamicAddonClick(id, element) {
-      triggerInteraction();
-      element.classList.toggle('selected');
-      selectedAddons[id] = element.classList.contains('selected');
-      calculateAtmosphere();
-    }
-
-    function triggerInteraction() {
-      if (!hasInteracted) {
-        hasInteracted = true;
-        const bar = document.getElementById('mobile-sticky-bar');
-        if (bar) bar.classList.add('visible');
-      }
-    }
-
-    function calculateAtmosphere() {
-      const priceDisplay = document.getElementById('total-price');
-      const stickyPriceDisplay = document.getElementById('sticky-total-price');
-
-      if (!selection.package || !selection.scale || !selection.hours) {
-        if (priceDisplay) {
-          priceDisplay.innerText = "Selecione as opções";
-          priceDisplay.classList.add('message-prompt');
-        }
-        if (stickyPriceDisplay) stickyPriceDisplay.innerText = "Selecione as opções";
-        
-        document.getElementById('sum-service-details').innerHTML = '<li>Selecione as opções ao lado para calcular</li>';
-        return;
-      }
-
-      let basePrice = prices[`price_${selection.package}`];
-      let factor = prices[`factor_${selection.scale}`];
-      let addonsTotal = 0;
-      let hourOver = (selection.hours > 5) ? (selection.hours - 5) * prices.add_extra_hour : 0;
-
-      globalSpecsList = [...matrixSpecifications[selection.package]];
-
-      dbAddons.forEach(addon => {
-        if (selectedAddons[addon.id]) {
-          let itemCost = addon.preco_base;
-          if (addon.varia_com_pessoas) itemCost *= factor;
-          if (addon.varia_com_horas) itemCost *= selection.hours;
-          addonsTotal += itemCost;
-          globalSpecsList.push(`${addon.nome}`);
-        }
-      });
-
-      let finalTotal = (basePrice * factor) + hourOver + addonsTotal;
-
-      if (finalTotal <= 0) {
-        if (priceDisplay) {
-          priceDisplay.innerText = "Selecione as opções";
-          priceDisplay.classList.add('message-prompt');
-        }
-        if (stickyPriceDisplay) stickyPriceDisplay.innerText = "Selecione as opções";
-        return;
-      }
-
-      let stageText = "Padrão Plano";
-      if (selection.scale === 'large') {
-        const stageEl = document.getElementById('insight-stage');
-        if (stageEl) stageEl.style.display = 'block';
-        stageText = "Elevado (Mín. 60cm)";
-      } else {
-        const stageEl = document.getElementById('insight-stage');
-        if (stageEl) stageEl.style.display = 'none';
-      }
-      
-      const acEl = document.getElementById('insight-acoustic');
-      if (acEl) acEl.style.display = (selection.scale !== 'small') ? 'block' : 'none';
-
-      document.getElementById('sum-guests').innerText = selection.guestsText;
-      document.getElementById('sum-hours').innerText = `${selection.hours} horas`;
-      document.getElementById('sum-package').innerText = selection.package.toUpperCase();
-      document.getElementById('sum-stage-needed').innerText = stageText;
-
-      if (selection.hours > 5) globalSpecsList.push(`Adicional Operacional (+${selection.hours - 5}h)`);
-      document.getElementById('sum-service-details').innerHTML = globalSpecsList.map(item => `<li>${escapeHtml(item)}</li>`).join('');
-
-      globalFormattedPrice = finalTotal.toLocaleString('pt-BR', { style: 'currency', currency: 'BRL', minimumFractionDigits: 0, maximumFractionDigits: 0 });
-
-      if (priceDisplay) {
-        priceDisplay.innerText = globalFormattedPrice;
-        priceDisplay.classList.remove('message-prompt');
-      }
-      if (stickyPriceDisplay) stickyPriceDisplay.innerText = globalFormattedPrice;
-
-      const msg = encodeURIComponent(`Olá! Realizei o dimensionamento técnico no simulador 432UP! e gostaria de validar o escopo:\n- Rider Base: ${selection.package.toUpperCase()}\n- Escala: ${selection.guestsText}\n- Horas: ${selection.hours}\n- Investimento Estimado: ${globalFormattedPrice}`);
-
-      const targetWhatsappUrl = `https://wa.me/${fallbackWhatsapp}?text=${msg}`;
-      document.getElementById('btn-whatsapp').href = targetWhatsappUrl;
-      document.getElementById('sticky-btn-whatsapp').href = targetWhatsappUrl;
-    }
-
-    const pdfBtn = document.getElementById('btn-pdf-trigger');
-    if (pdfBtn) {
-      pdfBtn.addEventListener('click', (e) => {
-        e.preventDefault();
-
-        if (!selection.package) {
-          alert("Por favor, selecione as opções do projeto antes de gerar o PDF.");
-          return;
-        }
-
-        document.getElementById('pdf-package').innerText = selection.package.toUpperCase();
-        document.getElementById('pdf-guests').innerText = selection.guestsText;
-        document.getElementById('pdf-hours').innerText = `${selection.hours} horas`;
-        document.getElementById('pdf-stage').innerText = document.getElementById('sum-stage-needed').innerText;
-        document.getElementById('pdf-total-val').innerText = globalFormattedPrice;
-        document.getElementById('pdf-specs-items').innerHTML = globalSpecsList.map(item => `<li>${escapeHtml(item)}</li>`).join('');
-
-        const element = document.getElementById('pdf-render-template');
-        element.style.display = 'block';
-
-        const opt = {
-          margin:       15,
-          filename:     `Proposta_Estrutural_432UP.pdf`,
-          image:        { type: 'jpeg', quality: 0.98 },
-          html2canvas:  { scale: 2, useCORS: true, letterRendering: true },
-          jsPDF:        { unit: 'mm', format: 'a4', orientation: 'portrait' }
-        };
-
-        html2pdf().set(opt).from(element).save().then(() => {
-          element.style.display = 'none';
-        }).catch(err => {
-          element.style.display = 'none';
-        });
-      });
-    }
-
-    document.querySelectorAll('#group-scale .option-card').forEach(card => {
-      card.addEventListener('click', () => {
-        triggerInteraction();
-        document.querySelectorAll('#group-scale .option-card').forEach(c => c.classList.remove('selected'));
-        card.classList.add('selected');
-        selection.scale = card.dataset.value;
-        selection.guestsText = card.querySelector('.sub').innerText;
-        calculateAtmosphere();
-      });
-    });
-
-    document.querySelectorAll('#group-hours .option-card').forEach(card => {
-      card.addEventListener('click', () => {
-        triggerInteraction();
-        document.querySelectorAll('#group-hours .option-card').forEach(c => c.classList.remove('selected'));
-        card.classList.add('selected');
-        selection.hours = parseInt(card.dataset.value);
-        calculateAtmosphere();
-      });
-    });
-
-    document.querySelectorAll('#group-package .option-card').forEach(card => {
-      card.addEventListener('click', () => {
-        triggerInteraction();
-        document.querySelectorAll('#group-package .option-card').forEach(c => c.classList.remove('selected'));
-        card.classList.add('selected');
-        selection.package = card.dataset.value;
-        calculateAtmosphere();
-      });
-    });
-
-    window.addEventListener('DOMContentLoaded', setupSimulator);
-  </script>
+  <!-- SCRIPT EXTERNO ISOLADO -->
+  <script src="calculadora.js"></script>
 </body>
 </html>
