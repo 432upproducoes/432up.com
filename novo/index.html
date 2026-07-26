@@ -12,7 +12,7 @@
 
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
-  <meta name="version" content="22.1">
+  <meta name="version" content="24.0">
   
   <!-- INTEGRAÇÃO CROMÁTICA TRANSLÚCIDA COM O SAFARI / IOS -->
   <meta name="theme-color" content="#08080A">
@@ -80,21 +80,34 @@
       transition: background-color 0.6s ease;
       -webkit-text-size-adjust: 100%;
       overflow-x: hidden;
+      -webkit-user-select: none;
+      -moz-user-select: none;
+      -ms-user-select: none;
+      user-select: none;
     }
 
-    /* PISTA DE SCROLL FANTASMA APENAS PARA ACIONAR O SAFARI */
-    .virtual-scroll-track {
+    /* CAMPOS DE FORMULÁRIO PERMANECEM SELECIONÁVEIS/EDITÁVEIS */
+    input, textarea {
+      -webkit-user-select: text;
+      -moz-user-select: text;
+      -ms-user-select: text;
+      user-select: text;
+    }
+
+    /* PIXEL FANTASMA QUE PERMITE O SCROLL DO SAFARI */
+    .scroll-stretcher-pixel {
       position: absolute;
       top: 0;
       left: 0;
-      width: 100%;
-      height: 125vh;
-      height: 125dvh;
-      pointer-events: auto;
-      z-index: 0;
+      width: 1px;
+      height: 130vh;
+      height: 130dvh;
+      pointer-events: none;
+      opacity: 0;
+      z-index: -1;
     }
 
-    /* CANVAS DE BACKGROUND NEBULOSA FIXO */
+    /* CANVAS DE BACKGROUND NEBULOSA FIXO AO FUNDO */
     #orbit-canvas {
       position: fixed;
       top: 0;
@@ -106,28 +119,7 @@
       pointer-events: none;
     }
 
-    /* VIEWPORT CONTAINER ABSOLUTO / FIXO TRAVADO NA RETINA */
-    .viewport-wrapper {
-      position: fixed;
-      inset: 0;
-      z-index: 2;
-      display: flex;
-      flex-direction: column;
-      justify-content: space-between;
-      align-items: stretch;
-      width: 100%;
-      max-width: 1200px;
-      margin: 0 auto;
-      padding: 0 24px 12px 24px;
-      pointer-events: none; /* PERMITE O SCROLL PASSAR PARA A PISTA FANTASMA POR TRÁS */
-    }
-
-    /* REATIVA A INTERAÇÃO APENAS NOS ELEMENTOS CLICÁVEIS */
-    header, main, footer, .lps-drawer-root, .modal-box {
-      pointer-events: auto;
-    }
-
-    /* HEADER FIXO FULL-BLEED (BORDA NA LATERAL REAL DA TELA) */
+    /* HEADER FIXO FULL-BLEED (COLADO NAS BORDAS REAL DA TELA) */
     header {
       position: fixed;
       top: 0;
@@ -137,8 +129,8 @@
       display: flex;
       justify-content: space-between;
       align-items: center;
-      padding: 12px 32px;
-      background: rgba(255, 255, 255, 0.003);
+      padding: 16px 32px;
+      background: rgba(8, 8, 10, 0.3);
       backdrop-filter: blur(12px);
       -webkit-backdrop-filter: blur(12px);
       border-bottom: 1px solid rgba(255, 255, 255, 0.05);
@@ -245,9 +237,11 @@
     .mobile-menu-overlay.active { opacity: 1; pointer-events: auto; }
     .mobile-menu-overlay a { color: var(--text-main); text-decoration: none; font-size: 1.2rem; font-weight: 500; }
 
-    /* HERO CENTRALIZADO PERFEITO NO CENTRO GEOMÉTRICO */
+    /* HERO CENTRALIZADO PERFEITO E PARADO NO CENTRO GEOMÉTRICO */
     .hero-center {
-      flex: 1;
+      position: fixed;
+      inset: 0;
+      z-index: 10;
       display: flex;
       flex-direction: column;
       align-items: center;
@@ -255,7 +249,8 @@
       text-align: center;
       max-width: 900px;
       margin: 0 auto;
-      padding: 80px 0 0 0;
+      padding: 0 24px;
+      pointer-events: auto;
     }
     .tagline {
       display: inline-block;
@@ -291,6 +286,7 @@
     .btn-fire-wrapper {
       position: relative;
       display: inline-block;
+      z-index: 20;
     }
 
     /* PLASMA DO BOTÃO CENTRAL */
@@ -354,10 +350,10 @@
       background: rgba(10, 10, 16, 0.85);
       color: #FFFFFF;
       text-decoration: none;
-      padding: 10px 26px;
+      padding: 12px 28px;
       border-radius: 22px;
       font-weight: 700;
-      font-size: 0.82rem;
+      font-size: 0.85rem;
       letter-spacing: 0.8px;
       backdrop-filter: blur(20px);
       -webkit-backdrop-filter: blur(20px);
@@ -365,8 +361,8 @@
       box-shadow: inset 0 1px 1px rgba(255, 255, 255, 0.35), 0 10px 25px rgba(0, 0, 0, 0.7);
       transition: var(--transition-smooth);
       display: inline-block;
-      z-index: 1;
       text-shadow: 0 1px 4px rgba(0,0,0,0.8);
+      cursor: pointer;
     }
 
     /* FILAMENTO AURORA */
@@ -402,6 +398,12 @@
       box-shadow: 0 0 35px rgba(0, 255, 102, 0.6);
       transform: translateY(-2px);
       text-shadow: none;
+    }
+
+    .btn-primary:active {
+      transform: scale(0.96) translateY(0);
+      box-shadow: 0 0 45px rgba(0, 255, 102, 0.85), inset 0 1px 1px rgba(255, 255, 255, 0.35);
+      transition: all 0.12s ease;
     }
 
     /* OVERLAY PASSIVO */
@@ -455,16 +457,22 @@
       text-shadow: 0 0 10px rgba(0, 255, 102, 0.6);
     }
 
-    /* RODAPÉ FIXO NA BASE ABSOLUTA */
+    /* RODAPÉ FIXO FULL-BLEED COLADO NA BASE DA TELA */
     footer {
-      position: relative;
-      padding: 12px 0;
+      position: fixed;
+      bottom: 0;
+      left: 0;
+      width: 100%;
+      padding: 12px 32px;
       display: flex;
       flex-direction: column;
       align-items: center;
       font-size: 0.72rem;
       color: var(--text-muted);
       z-index: 100;
+      background: rgba(8, 8, 10, 0.2);
+      backdrop-filter: blur(8px);
+      -webkit-backdrop-filter: blur(8px);
     }
     .footer-bar {
       width: 100%;
@@ -499,7 +507,7 @@
       background: rgba(10, 10, 16, 0.95);
       backdrop-filter: blur(20px);
       -webkit-backdrop-filter: blur(20px);
-      border: 1px solid transparent;
+      border: 1px solid var(--glass-border);
       box-shadow: 0 0 35px rgba(0, 255, 102, 0.1);
       width: 90%;
       max-width: 420px;
@@ -535,8 +543,8 @@
       nav.desktop-nav { display: none; }
       .mobile-hamburger { display: block; }
       header { padding: 12px 20px; }
-      .viewport-wrapper { padding: 0 16px 10px 16px; }
-      .hero-center { padding-top: 100px; }
+      footer { padding: 10px 20px; }
+      .hero-center { padding: 0 16px; }
       .lps-grid { grid-template-columns: 1fr 1fr; }
       .lps-drawer-root { width: calc(100% - 32px); bottom: 55px; }
       
@@ -547,8 +555,8 @@
 </head>
 <body>
 
-  <!-- PISTA DE SCROLL FANTASMA APENAS PARA EXPANDIR O SAFARI -->
-  <div class="virtual-scroll-track"></div>
+  <!-- PIXEL PARADO ATRÁS PARA DEIXAR O SAFARI EXPANDIR O SCROLL -->
+  <div class="scroll-stretcher-pixel"></div>
 
   <!-- CANVAS ANIMADO NEBULOSA FIXO -->
   <canvas id="orbit-canvas"></canvas>
@@ -573,56 +581,54 @@
     </div>
   </div>
 
-  <!-- CONTAINER DE VIEWPORT FIXO E MILIMETRICAMENTE DISTRIBUÍDO -->
-  <div class="viewport-wrapper">
-    <header>
-      <div class="logo-container">
-        <a href="index.html" class="logo-link" aria-label="Página Inicial 432UP">
-          <img src="imagens/logo.png" alt="432UP! Produções" class="logo-img">
-        </a>
-      </div>
-
-      <nav class="desktop-nav">
-        <a href="calculadora.html">Simulador de Atmosfera</a>
-        <a href="galeria.html">Portfólio</a>
-        <button onclick="openLeadModal()" class="btn-header-cta">Iniciar Projeto</button>
-      </nav>
-
-      <button class="mobile-hamburger" onclick="toggleMobileMenu()">☰</button>
-    </header>
-
-    <div class="mobile-menu-overlay" id="mobile-menu">
-      <button onclick="toggleMobileMenu()" style="position: absolute; top: 20px; right: 20px; background: transparent; border: none; color: #fff; font-size: 1.5rem; cursor: pointer;">✕</button>
-      <a href="calculadora.html" onclick="toggleMobileMenu()">Simulador de Atmosfera</a>
-      <a href="galeria.html" onclick="toggleMobileMenu()">Portfólio</a>
-      <button onclick="toggleMobileMenu(); openLeadModal();" class="btn-header-cta" style="margin-left: 0; padding: 12px 28px;">Iniciar Projeto</button>
+  <!-- HEADER FIXO FULL-BLEED -->
+  <header>
+    <div class="logo-container">
+      <a href="index.html" class="logo-link" aria-label="Página Inicial 432UP">
+        <img src="imagens/logo.png" alt="432UP! Produções" class="logo-img">
+      </a>
     </div>
 
-    <!-- HERO CENTRALIZADO PERFEITO NO CENTRO DA TELA -->
-    <main class="hero-center">
-      <span class="tagline">ALTA ENGENHARIA AUDIOVISUAL & ARQUITETURA DE SOM</span>
-      <h1>Não Criamos Eventos.<br>Projetamos <span>Atmosferas</span>.</h1>
-      <p class="hero-desc">Sinergia matemática entre precisão acústica, iluminação cênica integrada e curadoria artística para projetos de elevada complexidade & escala.</p>
-      
-      <div class="btn-fire-wrapper">
-        <a href="calculadora.html" class="btn-primary aurora-border-glow">Simular Atmosfera</a>
-      </div>
-    </main>
+    <nav class="desktop-nav">
+      <a href="calculadora.html">Simulador de Atmosfera</a>
+      <a href="galeria.html">Portfólio</a>
+      <button onclick="openLeadModal()" class="btn-header-cta">Iniciar Projeto</button>
+    </nav>
 
-    <!-- RODAPÉ FIXO NA BASE ABSOLUTA -->
-    <footer>
-      <div class="footer-bar">
-        <div class="footer-left">
-          <button class="btn-accordion-lps" id="btn-toggle-lps" onclick="toggleLpsDrawer()">
-            <span class="desktop-only">[+] Atendimentos Especializados</span>
-            <span class="mobile-only" style="display:none;">[+] Especialidades</span>
-          </button>
-          <span>© 2026 432UP! Produções</span>
-        </div>
-        <div style="opacity: 0.7;">Curadoria Artística & Engenharia Estrutural</div>
-      </div>
-    </footer>
+    <button class="mobile-hamburger" onclick="toggleMobileMenu()">☰</button>
+  </header>
+
+  <div class="mobile-menu-overlay" id="mobile-menu">
+    <button onclick="toggleMobileMenu()" style="position: absolute; top: 20px; right: 20px; background: transparent; border: none; color: #fff; font-size: 1.5rem; cursor: pointer;">✕</button>
+    <a href="calculadora.html" onclick="toggleMobileMenu()">Simulador de Atmosfera</a>
+    <a href="galeria.html" onclick="toggleMobileMenu()">Portfólio</a>
+    <button onclick="toggleMobileMenu(); openLeadModal();" class="btn-header-cta" style="margin-left: 0; padding: 12px 28px;">Iniciar Projeto</button>
   </div>
+
+  <!-- HERO FIXO NO CENTRO EXATO -->
+  <main class="hero-center">
+    <span class="tagline">ALTA ENGENHARIA AUDIOVISUAL & ARQUITETURA DE SOM</span>
+    <h1>Não Criamos Eventos.<br>Projetamos <span>Atmosferas</span>.</h1>
+    <p class="hero-desc">Sinergia matemática entre precisão acústica, iluminação cênica integrada e curadoria artística para projetos de elevada complexidade & escala.</p>
+    
+    <div class="btn-fire-wrapper">
+      <a href="calculadora.html" class="btn-primary aurora-border-glow">Simular Atmosfera</a>
+    </div>
+  </main>
+
+  <!-- RODAPÉ FIXO FULL-BLEED NO PE DA TELA -->
+  <footer>
+    <div class="footer-bar">
+      <div class="footer-left">
+        <button class="btn-accordion-lps" id="btn-toggle-lps" onclick="toggleLpsDrawer()">
+          <span class="desktop-only">[+] Atendimentos Especializados</span>
+          <span class="mobile-only" style="display:none;">[+] Especialidades</span>
+        </button>
+        <span>© 2026 432UP! Produções</span>
+      </div>
+      <div style="opacity: 0.7;">Curadoria Artística & Engenharia Estrutural</div>
+    </div>
+  </footer>
 
   <!-- MODAL DE CAPTURA -->
   <div class="modal-overlay" id="lead-modal">
@@ -668,7 +674,9 @@
     /* SCRIPT DE SEGURANÇA - BLOQUEIO DE COPIAR / INSPECIONAR */
     document.addEventListener('contextmenu', e => e.preventDefault());
     document.addEventListener('keydown', e => {
-      if (e.key === 'F12' || (e.ctrlKey && e.shiftKey && (e.key === 'I' || e.key === 'J' || e.key === 'C')) || (e.ctrlKey && e.key === 'U')) { e.preventDefault(); }
+      if (e.key === 'F12' || (e.ctrlKey && e.shiftKey && (e.key === 'I' || e.key === 'J' || e.key === 'C')) || (e.ctrlKey && e.key === 'U')) { 
+        e.preventDefault(); 
+      }
     });
 
     /* SUPABASE CLIENT INTEGRATION */
@@ -676,13 +684,17 @@
     const SUPABASE_ANON_KEY = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InBhZXRrc3BiZmVqdGpqa25ncWVqIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzA5MDU2OTgsImV4cCI6MjA4NjQ4MTY5OH0.IiYweZ2g3bP7b0o7VvBW5LLb6d1oHtSNFUZlVkIsdsA";
     let supabaseClient = null;
 
-    if (typeof supabase !== 'undefined' && window.supabase) { supabaseClient = window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY); }
+    if (typeof supabase !== 'undefined' && window.supabase) { 
+      supabaseClient = window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY); 
+    }
 
     /* AJUSTE RESPONSIVO DE RÓTULOS */
     function checkResponsiveLabels() {
       const isMobile = window.innerWidth <= 768;
-      document.querySelector('.desktop-only').style.display = isMobile ? 'none' : 'inline';
-      document.querySelector('.mobile-only').style.display = isMobile ? 'inline' : 'none';
+      const deskLabel = document.querySelector('.desktop-only');
+      const mobLabel = document.querySelector('.mobile-only');
+      if (deskLabel) deskLabel.style.display = isMobile ? 'none' : 'inline';
+      if (mobLabel) mobLabel.style.display = isMobile ? 'inline' : 'none';
     }
     window.addEventListener('resize', checkResponsiveLabels);
     document.addEventListener('DOMContentLoaded', checkResponsiveLabels);
@@ -697,12 +709,20 @@
 
     const starColors = [ { r: 255, g: 255, b: 255 }, { r: 185, g: 220, b: 255 }, { r: 255, g: 235, b: 180 }, { r: 255, g: 190, b: 170 } ];
 
-    function resizeCanvas() { width = canvas.width = window.innerWidth; height = canvas.height = window.innerHeight; initClusterStars(); }
+    function resizeCanvas() { 
+      width = canvas.width = window.innerWidth; 
+      height = canvas.height = window.innerHeight; 
+      initClusterStars(); 
+    }
 
     function initClusterStars() {
       stars = [];
       const totalStars = Math.floor((width * height) / 2100);
-      const clusters = [ { x: width * 0.2, y: height * 0.3, radius: 200 }, { x: width * 0.8, y: height * 0.25, radius: 250 }, { x: width * 0.5, y: height * 0.75, radius: 220 } ];
+      const clusters = [ 
+        { x: width * 0.2, y: height * 0.3, radius: 200 }, 
+        { x: width * 0.8, y: height * 0.25, radius: 250 }, 
+        { x: width * 0.5, y: height * 0.75, radius: 220 } 
+      ];
 
       for (let i = 0; i < totalStars; i++) {
         let x, y;
@@ -712,9 +732,19 @@
           const theta = Math.random() * Math.PI * 2;
           x = cluster.x + r * Math.cos(theta);
           y = cluster.y + r * Math.sin(theta);
-        } else { x = Math.random() * width; y = Math.random() * height; }
+        } else { 
+          x = Math.random() * width; 
+          y = Math.random() * height; 
+        }
 
-        stars.push({ x: x, y: y, size: Math.random() * 1.35, alpha: Math.random(), speed: 0.006 + Math.random() * 0.018, color: starColors[Math.floor(Math.random() * starColors.length)] });
+        stars.push({ 
+          x: x, 
+          y: y, 
+          size: Math.random() * 1.35, 
+          alpha: Math.random(), 
+          speed: 0.006 + Math.random() * 0.018, 
+          color: starColors[Math.floor(Math.random() * starColors.length)] 
+        });
       }
     }
 
@@ -723,11 +753,12 @@
       const centerX = width / 2;
       const centerY = height / 2;
 
-      // GLOW 1 - CIANO GLAXIAL
+      // GLOW 1 - CIANO GLACIAL
       const g1X = centerX + Math.cos(angle * 0.8) * 180;
       const g1Y = centerY + Math.sin(angle * 0.6) * 130;
       const grad1 = ctx.createRadialGradient(g1X, g1Y, 60, g1X, g1Y, width * 0.7);
-      grad1.addColorStop(0, `rgba(0, 210, 255, ${isUranoActive ? 0.28 : 0.14})`); grad1.addColorStop(1, 'rgba(8, 8, 10, 0)');
+      grad1.addColorStop(0, `rgba(0, 210, 255, ${isUranoActive ? 0.28 : 0.14})`); 
+      grad1.addColorStop(1, 'rgba(8, 8, 10, 0)');
       ctx.fillStyle = grad1; ctx.beginPath(); ctx.arc(g1X, g1Y, width * 0.7, 0, Math.PI * 2); ctx.fill();
 
       // GLOW 2 - VIOLETA & MAGENTA CÊNICO
@@ -747,7 +778,8 @@
         ctx.fillStyle = `rgba(${star.color.r}, ${star.color.g}, ${star.color.b}, ${currentAlpha * boostAlpha})`;
         ctx.beginPath(); ctx.arc(star.x, star.y, star.size, 0, Math.PI * 2); ctx.fill();
       }
-      angle += 0.0025; requestAnimationFrame(drawOrbitBackground);
+      angle += 0.0025; 
+      requestAnimationFrame(drawOrbitBackground);
     }
 
     /* ACCORDION DAS LPs */
@@ -757,11 +789,15 @@
       const deskLabel = document.querySelector('.desktop-only');
       const mobLabel = document.querySelector('.mobile-only');
 
-      const isOpen = drawer.classList.toggle('open'); backdrop.classList.toggle('active', isOpen);
+      const isOpen = drawer.classList.toggle('open'); 
+      backdrop.classList.toggle('active', isOpen);
       if (isOpen) {
         if (deskLabel) deskLabel.innerText = '[✕] Fechar Menu';
         if (mobLabel) mobLabel.innerText = '[✕] Fechar';
-      } else { if (deskLabel) deskLabel.innerText = '[+] Atendimentos Especializados'; if (mobLabel) mobLabel.innerText = '[+] Especialidades'; }
+      } else { 
+        if (deskLabel) deskLabel.innerText = '[+] Atendimentos Especializados'; 
+        if (mobLabel) mobLabel.innerText = '[+] Especialidades'; 
+      }
     }
 
     function closeLpsDrawer() {
@@ -769,14 +805,18 @@
       const backdrop = document.getElementById('drawer-backdrop');
       const deskLabel = document.querySelector('.desktop-only');
       const mobLabel = document.querySelector('.mobile-only');
-      drawer.classList.remove('open'); backdrop.classList.remove('active');
-      if (deskLabel) deskLabel.innerText = '[+] Atendimentos Especializados'; if (mobLabel) mobLabel.innerText = '[+] Especialidades';
+      drawer.classList.remove('open'); 
+      backdrop.classList.remove('active');
+      if (deskLabel) deskLabel.innerText = '[+] Atendimentos Especializados'; 
+      if (mobLabel) mobLabel.innerText = '[+] Especialidades';
     }
 
     /* ESC KEY TO CLOSE DRAWER */
     document.addEventListener('keydown', (e) => { if (e.key === 'Escape') closeLpsDrawer(); });
 
-    window.addEventListener('resize', resizeCanvas); resizeCanvas(); drawOrbitBackground();
+    window.addEventListener('resize', resizeCanvas); 
+    resizeCanvas(); 
+    drawOrbitBackground();
 
     /* MODAL DE LEAD & ENVIO DUPLO */
     let fallbackWhatsapp = "5511948564577";
@@ -790,13 +830,26 @@
       const phone = document.getElementById('modal-lead-phone').value;
       const msg = document.getElementById('modal-lead-msg').value;
       const btn = document.getElementById('btn-submit-modal');
-      btn.innerText = "Registrando..."; btn.disabled = true;
+      btn.innerText = "Registrando..."; 
+      btn.disabled = true;
 
-      if (supabaseClient) { try { await supabaseClient.from('leads_simulador').insert([{ nome: name, whatsapp: phone, observacoes: msg, origem: "Modal Home (Iniciar Projeto)", data_registro: new Date().toISOString() }]); } catch(err) {} }
+      if (supabaseClient) { 
+        try { 
+          await supabaseClient.from('leads_simulador').insert([{ 
+            nome: name, 
+            whatsapp: phone, 
+            observacoes: msg, 
+            origem: "Modal Home (Iniciar Projeto)", 
+            data_registro: new Date().toISOString() 
+          }]); 
+        } catch(err) {} 
+      }
 
       const encodedMsg = encodeURIComponent(`Olá! Meu nome é ${name}.\nGostaria de iniciar um alinhamento técnico para meu evento.\n\nDetalhes: ${msg || 'Sem observações adicionais.'}`);
       window.open(`https://wa.me/${fallbackWhatsapp}?text=${encodedMsg}`, '_blank');
-      btn.innerText = "Enviar Solicitação"; btn.disabled = false; closeLeadModal();
+      btn.innerText = "Enviar Solicitação"; 
+      btn.disabled = false; 
+      closeLeadModal();
     }
   </script>
 </body>
