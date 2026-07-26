@@ -12,7 +12,7 @@
 
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
-  <meta name="version" content="1.0-Enterprise">
+  <meta name="version" content="1.0-Enterprise-Fluid">
   
   <!-- INTEGRAÇÃO CROMÁTICA TRANSLÚCIDA COM O SAFARI / IOS -->
   <meta name="theme-color" content="#08080A">
@@ -421,7 +421,7 @@
     .btn-accordion-lps { background: transparent; border: none; color: var(--secondary-lilac); font-size: 0.72rem; font-weight: 600; cursor: pointer; transition: var(--transition-smooth); }
     .btn-accordion-lps:hover { color: var(--magenta-neon); }
 
-    /* MODAL DE CAPTURA - REENGINHARIA NEUROMARKETING (MAIS LEVE E ELEGANTE) */
+    /* MODAL DE CAPTURA - NEUROMARKETING LEVE E ELEGANTE */
     .modal-overlay {
       position: fixed;
       inset: 0;
@@ -605,7 +605,7 @@
     </div>
   </footer>
 
-  <!-- MODAL DE CAPTURA (REENGINHEIRADO) -->
+  <!-- MODAL DE CAPTURA -->
   <div class="modal-overlay" id="lead-modal">
     <div class="modal-box plasma-glow-overlay aurora-border-glow">
       <button class="modal-close" onclick="closeLeadModal()">✕</button>
@@ -691,9 +691,10 @@
       }
     }
 
-    /* ==================== BLOCO DO MOVIMENTO COM DEDO (INÉRCIA ESTELAR COM CLAMP E AMORTECIMENTO SUAVE) ==================== */
+    /* ==================== BLOCO DO MOVIMENTO COM DEDO (INÉRCIA ULTRA-SUAVE / FUMAÇA CÓSMICA) ==================== */
+    let targetImpulseSpeed = 0;
+    let currentImpulseSpeed = 0;
     let touchImpulseAngle = 0;
-    let touchImpulseSpeed = 0;
     let lastClientX = 0;
     let lastClientY = 0;
 
@@ -707,28 +708,27 @@
       const deltaX = e.clientX - lastClientX;
       const deltaY = e.clientY - lastClientY;
       
-      // Cálculo calibrado com limite máximo (clamp) para evitar picos de velocidade exagerados
-      let rawSpeed = (deltaX - deltaY) * 0.0004;
-      const maxClamp = 0.012; // Limite máximo para manter a manteiga fluida
-      if (rawSpeed > maxClamp) rawSpeed = maxClamp;
-      if (rawSpeed < -maxClamp) rawSpeed = -maxClamp;
-
-      touchImpulseSpeed = rawSpeed;
+      // Fator microscópico para densidade de fumaça (extremamente lento e sutil)
+      targetImpulseSpeed = (deltaX - deltaY) * 0.00012;
       lastClientX = e.clientX;
       lastClientY = e.clientY;
     });
+
+    canvas.addEventListener('pointerup', () => { targetImpulseSpeed = 0; });
+    canvas.addEventListener('pointercancel', () => { targetImpulseSpeed = 0; });
     /* ===================================================================================================================== */
 
     function drawOrbitBackground() {
       ctx.clearRect(0, 0, width, height);
       const cx = width / 2, cy = height / 2;
 
-      // Curva de amortecimento progressivo (fricção orgânica)
-      if (Math.abs(touchImpulseSpeed) > 0.00001) {
-        touchImpulseAngle += touchImpulseSpeed;
-        touchImpulseSpeed *= 0.92; // Fricção ajustada para desaceleração suave
-      } else {
-        touchImpulseSpeed = 0;
+      // Interpolação linear (Lerp) pesada para dar a sensação de massa fluida (fumaça/manteiga)
+      currentImpulseSpeed += (targetImpulseSpeed - currentImpulseSpeed) * 0.05;
+      touchImpulseAngle += currentImpulseSpeed;
+
+      // Amortecimento natural suave quando solto
+      if (targetImpulseSpeed === 0) {
+        currentImpulseSpeed *= 0.94;
       }
 
       const effectiveAngle = angle + touchImpulseAngle;
@@ -778,7 +778,7 @@
       const desk = document.querySelector('.desktop-only');
       const mob = document.querySelector('.mobile-only');
       if (desk) desk.innerText = '[+] Atendimentos Especializados';
-      if (mob) mob.innerText = '[+] Especialidades';
+      if (mob) desk.innerText = '[+] Especialidades';
     }
 
     document.addEventListener('keydown', (e) => { if (e.key === 'Escape') closeLpsDrawer(); });
