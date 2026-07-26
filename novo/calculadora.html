@@ -12,8 +12,9 @@
 
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
-  <meta name="version" content="Enterprise-1.2.2-Perfect">
+  <meta name="version" content="Enterprise-1.2.1-Magic">
   
+  <!-- INTEGRAÇÃO CROMÁTICA TRANSLÚCIDA COM O SAFARI / IOS -->
   <meta name="theme-color" content="#08080A">
   <meta name="apple-mobile-web-app-capable" content="yes">
   <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
@@ -27,14 +28,11 @@
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&display=swap" rel="stylesheet">
 
-  <!-- SEU CSS DO SERVIDOR (GLOBALS + COMPLEMENTO DA CALCULADORA) -->
-  <link rel="stylesheet" href="caminho-para-seu-css-global.css">
-
-  <!-- Dependências: Supabase e Biblioteca de Exportação de PDF -->
+  <!-- Dependências Externas (Supabase e HTML2PDF) -->
   <script src="https://unpkg.com/@supabase/supabase-js@2"></script>
   <script src="https://cdnjs.cloudflare.com/ajax/libs/html2pdf.js/0.10.1/html2pdf.bundle.min.js"></script>
 
-  <!-- SELO DE AUTORIDADE GOOGLE: DADOS ESTRUTURADOS JSON-LD -->
+  <!-- DADOS ESTRUTURADOS JSON-LD -->
   <script type="application/ld+json">
   {
     "@context": "https://schema.org",
@@ -47,23 +45,43 @@
     "author": {
       "@type": "LocalBusiness",
       "name": "432UP! Produções",
-      "image": "https://www.432up.com/imagens/favicon.png",
-      "address": {
-        "@type": "PostalAddress",
-        "addressLocality": "São Paulo",
-        "addressRegion": "SP",
-        "addressCountry": "BR"
-      }
+      "image": "https://www.432up.com/imagens/favicon.png"
     }
   }
   </script>
+
+  <!-- CSS Modularizado -->
+  <link rel="stylesheet" href="css/style.css">
 </head>
 <body>
 
+  <!-- PIXEL DE ROLAGEM ESTABILIZADO PARA O SAFARI -->
   <div class="scroll-stretcher-pixel"></div>
+
+  <!-- CANVAS ANIMADO (FIXO E ESTÁVEL) -->
   <canvas id="orbit-canvas"></canvas>
 
+  <div class="drawer-backdrop-overlay" id="drawer-backdrop" onclick="closeLpsDrawer()"></div>
+
+  <!-- GAVETA POP-UP DAS LPs -->
+  <div class="lps-drawer-root plasma-glow-overlay aurora-border-glow" id="lps-drawer">
+    <div class="lps-grid">
+      <a href="casamento-sp.html">• Casamento SP</a>
+      <a href="casamento-interior.html">• Casamento Interior</a>
+      <a href="corporativo.html">• Eventos Corporativos</a>
+      <a href="debutante.html">• Festas de 15 Anos</a>
+      <a href="formatura.html">• Formaturas & Gala</a>
+      <a href="aniversario.html">• Aniversários Premium</a>
+      <a href="copa.html">• Arena & Copa 2026</a>
+      <a href="reveillon.html">• Réveillon & Festivais</a>
+      <a href="halloween.html">• Eventos Temáticos</a>
+      <a href="mesa-de-producao.html">• Mesa de Produção (B2B)</a>
+      <a href="galeria.html">• Portfólio Completo</a>
+    </div>
+  </div>
+
   <div class="viewport-wrapper">
+    <!-- HEADER -->
     <header id="calc-header">
       <div class="logo-container">
         <a href="index.html" class="logo-link" aria-label="Página Inicial 432UP">
@@ -78,17 +96,19 @@
         <a id="nav-trigger-modal">Contato</a>
       </nav>
 
-      <button class="mobile-hamburger" id="mobile-menu-btn" aria-label="Abrir Menu">☰</button>
+      <button class="mobile-hamburger" id="mobile-menu-btn" onclick="toggleMobileMenu()">☰</button>
     </header>
 
+    <!-- GAVETA MOBILE -->
     <div class="mobile-menu-overlay" id="mobile-menu">
-      <button id="mobile-menu-close" style="position: absolute; top: 20px; right: 20px; background: transparent; border: none; color: #fff; font-size: 1.5rem; cursor: pointer;">✕</button>
-      <a href="index.html">Início</a>
-      <a href="calculadora.html" class="active">Simulador de Atmosfera</a>
-      <a href="galeria.html">Portfólio</a>
-      <a id="nav-trigger-modal-mobile">Contato</a>
+      <button onclick="toggleMobileMenu()" style="position: absolute; top: 20px; right: 20px; background: transparent; border: none; color: #fff; font-size: 1.5rem; cursor: pointer;">✕</button>
+      <a href="index.html" onclick="toggleMobileMenu()">Início</a>
+      <a href="calculadora.html" class="active" onclick="toggleMobileMenu()">Simulador de Atmosfera</a>
+      <a href="galeria.html" onclick="toggleMobileMenu()">Portfólio</a>
+      <a id="nav-trigger-modal-mobile" onclick="toggleMobileMenu()">Contato</a>
     </div>
 
+    <!-- HERO DA CALCULADORA -->
     <section class="hero-center" id="calc-hero">
       <span class="tagline">Curadoria Sensorial</span>
       <h1>Simulador de <span>Atmosfera</span></h1>
@@ -97,7 +117,9 @@
 
     <main>
       <div class="simulator-layout">
+
         <div class="setup-box">
+          <!-- PASSO 1: ESCALA -->
           <div class="step-section">
             <div class="step-title"><span class="step-number">1</span><h3>Escala da Experiência (Convidados)</h3></div>
             <div class="option-cards" id="group-scale">
@@ -109,8 +131,9 @@
             <div id="insight-acoustic" class="tech-insight-box">🔊 <strong>Imersão Sonora:</strong> Reforço de graves integrado para preenchimento ideal.</div>
           </div>
 
+          <!-- PASSO 2: TEMPO DO RITUAL -->
           <div class="step-section">
-            <div class="step-title"><span class="step-number">2</span><h3>Duração Operacional</h3></div>
+            <div class="step-title"><span class="step-number">2</span><h3>Duração do Ritual</h3></div>
             <div class="option-cards" id="group-hours">
               <div class="option-card selected" data-value="3"><span class="label">Lounge / Receptivo</span><span class="sub">Até 3 horas de execução</span></div>
               <div class="option-card" data-value="5"><span class="label">Cronograma Padrão</span><span class="sub">5 horas operacionais</span></div>
@@ -118,6 +141,7 @@
             </div>
           </div>
 
+          <!-- PASSO 3: ASSINATURA ACÚSTICA & CENOGRAFIA -->
           <div class="step-section">
             <div class="step-title"><span class="step-number">3</span><h3>Assinatura Acústica & Cenografia</h3></div>
             <div class="option-cards" id="group-package">
@@ -127,9 +151,12 @@
             </div>
           </div>
 
+          <!-- PASSO 4: ADICIONAIS -->
           <div class="step-section">
             <div class="step-title"><span class="step-number">4</span><h3>Complementos Exclusivos</h3></div>
-            <div class="extra-list" id="dynamic-addons-list"></div>
+            <div class="extra-list" id="dynamic-addons-list">
+              <!-- Injeção estável via JS -->
+            </div>
           </div>
         </div>
 
@@ -140,6 +167,7 @@
           <div class="summary-row"><span>Assinatura base:</span><strong id="sum-package">BRONZE</strong></div>
           <div class="summary-row"><span>Variáveis de palco:</span><strong id="sum-stage-needed">Padrão Plano</strong></div>
 
+          <!-- CAIXA DE ESPECIFICAÇÕES -->
           <div class="summary-details-box">
             <h5>Elementos Inclusos</h5>
             <ul class="summary-details-list" id="sum-service-details"></ul>
@@ -150,20 +178,33 @@
             <div class="price-value hint-mode" id="total-price">Selecione os parâmetros ao lado para calcular o investimento.</div>
           </div>
 
+          <!-- BOTÕES OPERACIONAIS -->
           <div class="action-buttons">
             <a href="#" class="btn-submit" id="btn-whatsapp">Garantir Alocação via WhatsApp →</a>
             <button class="btn-request-callback" id="btn-trigger-modal-call">Ligamos para Você</button>
             <button class="btn-secondary" id="btn-pdf-trigger">Salvar Proposta como PDF</button>
           </div>
         </aside>
+
       </div>
     </main>
+
+    <!-- RODAPÉ -->
+    <footer>
+      <div class="footer-bar">
+        <div class="footer-left">
+          <button class="btn-accordion-lps" id="btn-toggle-lps" onclick="toggleLpsDrawer()">
+            <span class="desktop-only">[+] Atendimentos Especializados</span>
+            <span class="mobile-only" style="display:none;">[+] Especialidades</span>
+          </button>
+          <span>© 2026 432UP! Produções</span>
+        </div>
+        <div style="opacity: 0.7;">Curadoria Artística & Engenharia Estrutural</div>
+      </div>
+    </footer>
   </div>
 
-  <footer>
-    <p>© 2026 432UP! Produções — Curadoria Artística e Engenharia Estrutural</p>
-  </footer>
-
+  <!-- BARRA FLUTUANTE MOBILE -->
   <div class="sticky-bottom-bar" id="mobile-sticky-bar">
     <div>
       <div style="font-size: 0.65rem; text-transform: uppercase; color: var(--text-muted);">Investimento</div>
@@ -175,50 +216,46 @@
     </div>
   </div>
 
-  <!-- POP-UP MODAL DE CONTATO -->
+  <!-- POP-UP MODAL DE CONTATO INTEGRADO -->
   <div class="contact-modal-overlay" id="contact-overlay">
     <div class="contact-modal">
       <button class="contact-modal-close" id="contact-modal-close-btn">&times;</button>
-      <h3 style="font-size: 1.2rem; font-weight: 700; margin-bottom: 4px; color: #FFF;">Qual o melhor número e horário para te ligarmos?</h3>
-      <p style="font-size: 0.78rem; color: var(--text-muted); margin-bottom: 14px;">Informe seus dados para a mesa de produção retornar.</p>
+      <h3 style="font-size: 1.25rem; font-weight: 700; margin-bottom: 4px; color: #FFF;">Qual o melhor número e horário para te ligarmos?</h3>
+      <p style="font-size: 0.8rem; color: var(--text-muted); margin-bottom: 16px;">Informe seus dados para a mesa de produção retornar seu contato.</p>
 
       <div class="modal-channels-row">
         <a href="https://wa.me/5511948564577" class="channel-mini-card" target="_blank">
-          <span style="font-size: 0.58rem; color: var(--text-muted); text-transform: uppercase;">WhatsApp Direct</span>
-          <strong style="display: block; font-size: 0.8rem; margin-top: 2px; color: #FFF;">(11) 94856-4577</strong>
+          <span style="font-size: 0.6rem; color: var(--text-muted); text-transform: uppercase;">WhatsApp Direct</span>
+          <strong style="display: block; font-size: 0.85rem; margin-top: 2px; color: #FFF;">(11) 94856-4577</strong>
         </a>
         <a href="mailto:contato@432up.com" class="channel-mini-card">
-          <span style="font-size: 0.58rem; color: var(--text-muted); text-transform: uppercase;">E-mail Interno</span>
-          <strong style="display: block; font-size: 0.8rem; margin-top: 2px; color: #FFF;">contato@432up.com</strong>
+          <span style="font-size: 0.6rem; color: var(--text-muted); text-transform: uppercase;">E-mail Interno</span>
+          <strong style="display: block; font-size: 0.85rem; margin-top: 2px; color: #FFF;">contato@432up.com</strong>
         </a>
       </div>
 
       <div class="modal-form-divider">Ou agende o retorno</div>
 
-      <div>
+      <div style="display: flex; flex-direction: column; gap: 10px;">
         <div class="form-group">
           <label for="mod-name">Seu nome ou empresa</label>
           <input type="text" id="mod-name" placeholder="Ex: Roberto Silva">
         </div>
         <div class="form-group">
-          <label for="mod-phone">Telefone / WhatsApp</label>
-          <input type="tel" id="mod-phone" placeholder="(11) 99999-9999" inputmode="numeric" maxlength="15">
-          <span class="field-hint" id="mod-phone-error">Informe um telefone válido com DDD.</span>
-        </div>
-        <div class="form-group">
-          <label for="mod-email">E-mail <span class="optional-tag">(opcional)</span></label>
-          <input type="email" id="mod-email" placeholder="contato@empresa.com">
-          <span class="field-hint" id="mod-email-error">Informe um e-mail válido.</span>
+          <label for="mod-contact">WhatsApp (com DDD) ou E-mail <span class="optional-tag">(obrigatório)</span></label>
+          <input type="text" id="mod-contact" placeholder="(11) 99999-9999 ou e-mail">
+          <span class="field-hint field-error-text" id="mod-contact-error">Por favor, insira um e-mail válido ou um telefone/WhatsApp com DDD.</span>
         </div>
         <div class="form-group">
           <label for="mod-msg">Melhor horário ou detalhes <span class="optional-tag">(opcional)</span></label>
-          <textarea id="mod-msg" placeholder="Qual o melhor horário para ligarmos..."></textarea>
+          <textarea id="mod-msg" placeholder="Qual o melhor horário para ligarmos ou observações sobre o local..."></textarea>
         </div>
-        <button class="btn-internal-send" id="btn-submit-general-contact">Solicitar Ligação</button>
+        <button class="btn-internal-send" id="btn-submit-general-contact" style="margin-top: 6px;">Solicitar Ligação</button>
       </div>
     </div>
   </div>
 
+  <!-- CONTAINER PARA HTML2PDF -->
   <div id="pdf-render-template">
     <div class="pdf-header">
       <div>
@@ -238,7 +275,7 @@
       <tbody>
         <tr><td>Assinatura Base (Rider)</td><td id="pdf-package">--</td></tr>
         <tr><td>Escala da Experiência</td><td id="pdf-guests">--</td></tr>
-        <tr><td>Duração Operacional</td><td id="pdf-hours">--</td></tr>
+        <tr><td>Duração do Ritual</td><td id="pdf-hours">--</td></tr>
         <tr><td>Infraestrutura de Palco</td><td id="pdf-stage">--</td></tr>
       </tbody>
     </table>
@@ -252,7 +289,8 @@
     </div>
   </div>
 
-  <!-- SCRIPT EXTERNO ISOLADO -->
-  <script src="calculadora.js"></script>
+  <!-- JS Modularizado (Inclui o script global da Home + a lógica específica do simulador) -->
+  <script src="script/script.js" defer></script>
+  <script src="script/calculadora.js" defer></script>
 </body>
 </html>
