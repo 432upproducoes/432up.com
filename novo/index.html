@@ -2,15 +2,15 @@
 <!-- 
   ================================================================
   PROJECT: 432UP! Produções
-  VERSION: 1.2 (AURORA CELESTIAL & MODO ILUMINADO EFICIENTE)
+  VERSION: 1.3 (MODO URANO TESTE - CHAVE SELETORA E AURORA INTENSA)
   DATE: 2026
-  CHANGES:
-  - Implementação de focos centrais de Aurora Celestial via Radial Gradient no Canvas.
-  - Otimização extrema de GPU: mistura de luzes via blend-modes nativos.
-  - Contraste aprimorado e vidros cromáticos refinados.
+  CHANGES: 
+  - Adicionado botão seletor de "Modo Urano" para alternar visibilidade.
+  - Intensificação substancial do gradiente de auroras celestiais.
+  - Fidelidade total ao código-fonte original fornecido.
   ================================================================
 -->
-<html lang="pt-BR" data-theme="nebula">
+<html lang="pt-BR" data-theme="dark">
 <head>
   <!-- Google Analytics GA4 -->
   <script async src="https://www.googletagmanager.com/gtag/js?id=G-7SWNCP1NV6"></script>
@@ -23,7 +23,7 @@
 
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
-  <meta name="version" content="1.2">
+  <meta name="version" content="1.3">
   <link class="js-site-favicon" rel="icon" type="image/png" href="/imagens/favicon.png">
   <title>432UP! Produções | Alta Engenharia Audiovisual</title>
   <meta name="description" content="Experiências audiovisuais exclusivas e de alto padrão. Som de alta fidelidade e iluminação cênica.">
@@ -40,14 +40,12 @@
 
   <style>
     :root {
-      /* Fundo profundo mas levemente azulado para a Aurora se destacar */
-      --bg-pure: #0A0B10;
-      --text-main: #FFFFFF;
-      --text-muted: #A3A8B8;
+      --bg-pure: #08080A;
+      --text-main: #F3F4F6;
+      --text-muted: #9CA3AF;
       --primary-lime: #00FF66;
-      --secondary-lilac: #A855F7;
-      --aurora-cyan: #00F0FF;
-      --glass-border: rgba(0, 255, 102, 0.22);
+      --secondary-lilac: #8A2BE2;
+      --glass-border: rgba(0, 255, 102, 0.18);
       --font-base: 'Inter', -apple-system, sans-serif;
       --transition-smooth: all 0.4s cubic-bezier(0.25, 1, 0.5, 1);
     }
@@ -100,11 +98,11 @@
       justify-content: space-between;
       align-items: center;
       padding: 12px 32px;
-      background: rgba(10, 11, 16, 0.4);
-      backdrop-filter: blur(14px);
-      -webkit-backdrop-filter: blur(14px);
-      border-bottom: 1px solid rgba(255, 255, 255, 0.06);
-      box-shadow: 0 4px 30px rgba(0, 0, 0, 0.2);
+      background: rgba(255, 255, 255, 0.003);
+      backdrop-filter: blur(10px);
+      -webkit-backdrop-filter: blur(10px);
+      border-bottom: 1px solid rgba(255, 255, 255, 0.03);
+      box-shadow: 0 4px 20px rgba(0, 0, 0, 0.1);
     }
 
     .logo-container {
@@ -115,7 +113,7 @@
       font-weight: 700;
       font-size: 1.35rem;
       letter-spacing: -0.5px;
-      text-shadow: 0 0 12px rgba(255, 255, 255, 0.3);
+      text-shadow: 0 0 10px rgba(255, 255, 255, 0.2);
     }
     .logo span { color: var(--primary-lime); }
     .logo-sub {
@@ -136,20 +134,21 @@
       text-decoration: none;
       font-size: 0.85rem;
       font-weight: 500;
-      margin-left: 32px;
+      margin-left: 28px;
       position: relative;
       padding: 4px 0;
       transition: var(--transition-smooth);
       animation: starGlintText 7s infinite ease-in-out;
     }
 
+    /* Animação de piscadinha/brilho estrelado sutil nas letras */
     @keyframes starGlintText {
       0%, 85%, 100% {
         text-shadow: none;
       }
       92% {
         color: #FFF;
-        text-shadow: 0 0 12px rgba(0, 255, 102, 0.7), 0 0 20px rgba(255, 255, 255, 0.9);
+        text-shadow: 0 0 12px rgba(0, 255, 102, 0.6), 0 0 20px rgba(255, 255, 255, 0.8);
       }
     }
     
@@ -160,31 +159,62 @@
       left: 50%;
       width: 0%;
       height: 2px;
-      background: linear-gradient(90deg, var(--primary-lime), var(--aurora-cyan), var(--secondary-lilac));
+      background: linear-gradient(90deg, var(--primary-lime), var(--secondary-lilac));
       transition: var(--transition-smooth);
       transform: translateX(-50%);
       box-shadow: 0 0 10px var(--primary-lime);
     }
     nav.desktop-nav a:hover {
       color: var(--primary-lime);
-      text-shadow: 0 0 10px rgba(0, 255, 102, 0.6);
+      text-shadow: 0 0 8px rgba(0, 255, 102, 0.4);
     }
     nav.desktop-nav a:hover::after {
       width: 100%;
     }
 
-    /* BOTÃO HEADER CTA */
+    /* SELETOR MODO URANO (TESTE) */
+    .btn-urano-toggle {
+      background: rgba(0, 240, 255, 0.08);
+      color: #00F0FF;
+      border: 1px solid rgba(0, 240, 255, 0.4);
+      padding: 6px 14px;
+      border-radius: 20px;
+      font-size: 0.7rem;
+      font-weight: 700;
+      letter-spacing: 1px;
+      margin-left: 24px;
+      cursor: pointer;
+      transition: var(--transition-smooth);
+      display: flex;
+      align-items: center;
+      gap: 6px;
+    }
+    .btn-urano-toggle.active {
+      background: rgba(0, 240, 255, 0.22);
+      border-color: #00F0FF;
+      box-shadow: 0 0 15px rgba(0, 240, 255, 0.5);
+      color: #FFF;
+    }
+    .btn-urano-toggle .dot {
+      width: 6px;
+      height: 6px;
+      border-radius: 50%;
+      background: #00F0FF;
+      box-shadow: 0 0 8px #00F0FF;
+    }
+
+    /* BOTÃO HEADER CTA COM BRILHO PULSANTE SUTIL */
     .btn-header-cta {
-      background: rgba(0, 255, 102, 0.06);
+      background: rgba(0, 255, 102, 0.04);
       color: var(--text-main);
-      border: 1px solid rgba(0, 255, 102, 0.35);
+      border: 1px solid rgba(0, 255, 102, 0.25);
       padding: 8px 20px;
       border-radius: 20px;
       font-size: 0.75rem;
       font-weight: 600;
       text-transform: uppercase;
       letter-spacing: 1px;
-      margin-left: 32px;
+      margin-left: 20px;
       cursor: pointer;
       backdrop-filter: blur(8px);
       transition: var(--transition-smooth);
@@ -194,11 +224,11 @@
     @keyframes starGlintButton {
       0%, 88%, 100% {
         box-shadow: none;
-        border-color: rgba(0, 255, 102, 0.35);
+        border-color: rgba(0, 255, 102, 0.25);
       }
       94% {
         border-color: var(--primary-lime);
-        box-shadow: 0 0 18px rgba(0, 255, 102, 0.5), inset 0 0 12px rgba(255, 255, 255, 0.4);
+        box-shadow: 0 0 15px rgba(0, 255, 102, 0.4), inset 0 0 10px rgba(255, 255, 255, 0.3);
       }
     }
 
@@ -206,15 +236,15 @@
       background: var(--primary-lime);
       color: #000;
       border-color: var(--primary-lime);
-      box-shadow: 0 0 22px rgba(0, 255, 102, 0.6);
+      box-shadow: 0 0 20px rgba(0, 255, 102, 0.5);
       transform: translateY(-1px);
     }
 
     /* BOTÃO HAMBÚRGUER MOBILE */
     .mobile-hamburger {
       display: none;
-      background: rgba(255, 255, 255, 0.05);
-      border: 1px solid rgba(255, 255, 255, 0.15);
+      background: rgba(255, 255, 255, 0.03);
+      border: 1px solid rgba(255, 255, 255, 0.1);
       color: var(--text-main);
       padding: 8px 12px;
       border-radius: 8px;
@@ -223,13 +253,13 @@
       backdrop-filter: blur(8px);
     }
 
-    /* GAVETA MOBILE ILUMINADA */
+    /* GAVETA MOBILE */
     .mobile-menu-overlay {
       position: fixed;
       inset: 0;
-      background: rgba(10, 11, 16, 0.92);
-      backdrop-filter: blur(28px);
-      -webkit-backdrop-filter: blur(28px);
+      background: rgba(8, 8, 10, 0.88);
+      backdrop-filter: blur(24px);
+      -webkit-backdrop-filter: blur(24px);
       z-index: 99;
       display: flex;
       flex-direction: column;
@@ -253,10 +283,10 @@
     }
     .mobile-menu-overlay a:hover {
       color: var(--primary-lime);
-      text-shadow: 0 0 14px rgba(0, 255, 102, 0.8);
+      text-shadow: 0 0 12px rgba(0, 255, 102, 0.6);
     }
 
-    /* HERO CENTRALIZADO */
+    /* HERO CENTRALIZADO COM MOVIMENTO DE MARÉ SUTIL */
     .hero-center {
       display: flex;
       flex-direction: column;
@@ -269,10 +299,17 @@
       animation: heroTideMotion 12s ease-in-out infinite alternate;
     }
 
+    /* Animação de maré/respiração orgânica do texto */
     @keyframes heroTideMotion {
-      0% { transform: translateY(0px) scale(1); }
-      50% { transform: translateY(-4px) scale(1.002); }
-      100% { transform: translateY(3px) scale(0.998); }
+      0% {
+        transform: translateY(0px) scale(1);
+      }
+      50% {
+        transform: translateY(-4px) scale(1.002);
+      }
+      100% {
+        transform: translateY(3px) scale(0.998);
+      }
     }
 
     .tagline {
@@ -281,9 +318,9 @@
       font-weight: 600;
       text-transform: uppercase;
       letter-spacing: 4px;
-      color: var(--secondary-lilac);
+      color: #A855F7;
       margin-bottom: 20px;
-      text-shadow: 0 0 16px rgba(168, 85, 247, 0.6);
+      text-shadow: 0 0 12px rgba(138, 43, 226, 0.4);
     }
     h1 {
       font-size: clamp(2.3rem, 5.2vw, 4.2rem);
@@ -291,11 +328,11 @@
       letter-spacing: -2px;
       line-height: 1.1;
       margin-bottom: 20px;
-      text-shadow: 0 4px 20px rgba(0, 0, 0, 0.6);
+      text-shadow: 0 2px 10px rgba(0,0,0,0.5);
     }
     h1 span {
       color: var(--primary-lime);
-      text-shadow: 0 0 25px rgba(0, 255, 102, 0.5);
+      text-shadow: 0 0 20px rgba(0, 255, 102, 0.35);
     }
     .hero-desc {
       font-size: 1.1rem;
@@ -303,13 +340,13 @@
       max-width: 720px;
       margin: 0 auto 36px auto;
       font-weight: 300;
-      text-shadow: 0 2px 8px rgba(0,0,0,0.8);
+      text-shadow: 0 1px 4px rgba(0,0,0,0.8);
     }
 
-    /* BOTÃO DO HERO HARMONIZADO COM EFEITO AURORA HOVER */
+    /* BOTÃO DO HERO HARMONIZADO (REDUZIDO E PROPORCIONAL v1.1) */
     .btn-primary {
       background-color: #FFFFFF;
-      color: #0A0B10;
+      color: var(--bg-pure);
       text-decoration: none;
       padding: 12px 30px;
       border-radius: 24px;
@@ -318,12 +355,11 @@
       letter-spacing: 0.5px;
       transition: var(--transition-smooth);
       display: inline-block;
-      box-shadow: 0 0 20px rgba(255, 255, 255, 0.15);
     }
     .btn-primary:hover {
       background-color: var(--primary-lime);
       color: #000;
-      box-shadow: 0 0 30px rgba(0, 255, 102, 0.6), 0 0 10px rgba(0, 240, 255, 0.4);
+      box-shadow: 0 0 25px rgba(0, 255, 102, 0.5);
       transform: translateY(-2px);
     }
 
@@ -332,16 +368,16 @@
       text-align: center;
       font-size: 0.75rem;
       color: var(--text-muted);
-      opacity: 0.7;
+      opacity: 0.6;
     }
 
-    /* MODAL DE CONTATO VIDRO AURORA */
+    /* MODAL DE CONTATO RE-EQUILIBRADO */
     .modal-overlay {
       position: fixed;
       inset: 0;
-      background: rgba(5, 6, 10, 0.65);
-      backdrop-filter: blur(16px);
-      -webkit-backdrop-filter: blur(16px);
+      background: rgba(0, 0, 0, 0.6);
+      backdrop-filter: blur(12px);
+      -webkit-backdrop-filter: blur(12px);
       z-index: 1000;
       display: flex;
       align-items: center;
@@ -355,11 +391,11 @@
       pointer-events: auto;
     }
     .modal-box {
-      background: rgba(14, 16, 24, 0.65);
-      backdrop-filter: blur(24px);
-      -webkit-backdrop-filter: blur(24px);
+      background: rgba(12, 12, 16, 0.58);
+      backdrop-filter: blur(20px);
+      -webkit-backdrop-filter: blur(20px);
       border: 1px solid var(--glass-border);
-      box-shadow: 0 0 45px rgba(0, 255, 102, 0.12), inset 0 0 20px rgba(255, 255, 255, 0.05);
+      box-shadow: 0 0 35px rgba(0, 255, 102, 0.08), inset 0 0 15px rgba(255, 255, 255, 0.03);
       width: 90%;
       max-width: 440px;
       padding: 36px;
@@ -391,8 +427,8 @@
     }
     .form-group input {
       width: 100%;
-      background: rgba(255, 255, 255, 0.06);
-      border: 1px solid rgba(255, 255, 255, 0.15);
+      background: rgba(255, 255, 255, 0.05);
+      border: 1px solid rgba(255, 255, 255, 0.12);
       padding: 14px 18px;
       border-radius: 12px;
       color: var(--text-main);
@@ -401,16 +437,16 @@
       transition: var(--transition-smooth);
     }
     .form-group input:focus {
-      border-color: var(--primary-lime);
-      box-shadow: 0 0 18px rgba(0, 255, 102, 0.2);
-      background: rgba(255, 255, 255, 0.1);
+      border-color: rgba(0, 255, 102, 0.5);
+      box-shadow: 0 0 15px rgba(0, 255, 102, 0.15);
+      background: rgba(255, 255, 255, 0.08);
     }
 
     .btn-submit-lead {
       width: 100%;
-      background: rgba(0, 255, 102, 0.1);
+      background: rgba(0, 255, 102, 0.08);
       color: var(--text-main);
-      border: 1px solid rgba(0, 255, 102, 0.45);
+      border: 1px solid rgba(0, 255, 102, 0.4);
       padding: 14px;
       border-radius: 12px;
       font-weight: 600;
@@ -425,7 +461,7 @@
       background: var(--primary-lime);
       color: #000;
       border-color: var(--primary-lime);
-      box-shadow: 0 0 28px rgba(0, 255, 102, 0.6);
+      box-shadow: 0 0 25px rgba(0, 255, 102, 0.5);
       transform: translateY(-1px);
     }
 
@@ -440,7 +476,7 @@
 </head>
 <body>
 
-  <!-- CANVAS ANIMADO (AURORA CELESTIAL & ESTRELAS CROMÁTICAS) -->
+  <!-- CANVAS ANIMADO -->
   <canvas id="orbit-canvas"></canvas>
 
   <div class="viewport-wrapper">
@@ -453,6 +489,12 @@
       <nav class="desktop-nav">
         <a href="calculadora.html">Simulador de Atmosfera</a>
         <a href="galeria.html">Portfólio</a>
+
+        <!-- CHAVE SELETORA MODO URANO -->
+        <button id="urano-toggle" class="btn-urano-toggle" onclick="toggleUranoMode()">
+          <span class="dot"></span> URANO <span id="urano-status">[OFF]</span>
+        </button>
+
         <button onclick="openLeadModal()" class="btn-header-cta">Iniciar Projeto</button>
       </nav>
 
@@ -463,10 +505,15 @@
       <button onclick="toggleMobileMenu()" style="position: absolute; top: 20px; right: 20px; background: transparent; border: none; color: #fff; font-size: 1.5rem; cursor: pointer;">✕</button>
       <a href="calculadora.html" onclick="toggleMobileMenu()">Simulador de Atmosfera</a>
       <a href="galeria.html" onclick="toggleMobileMenu()">Portfólio</a>
+      
+      <button class="btn-urano-toggle" onclick="toggleUranoMode()" style="margin: 10px 0;">
+        <span class="dot"></span> URANO <span id="urano-status-mobile">[OFF]</span>
+      </button>
+
       <button onclick="toggleMobileMenu(); openLeadModal();" class="btn-header-cta" style="margin-left: 0; padding: 12px 28px;">Iniciar Projeto</button>
     </div>
 
-    <!-- HERO CENTRALIZADO -->
+    <!-- HERO CENTRALIZADO (COM MARÉ DE MOVIMENTO SLOW) -->
     <main class="hero-center">
       <span class="tagline">Engenharia Audiovisual Premium</span>
       <h1>Não Criamos Eventos.<br>Projetamos <span>Atmosferas</span>.</h1>
@@ -477,7 +524,7 @@
     </main>
 
     <footer>
-      <p>© 2026 432UP! Produções — Curadoria Artística e Engenharia Estrutural (v1.2)</p>
+      <p>© 2026 432UP! Produções — Curadoria Artística e Engenharia Estrutural (v1.3)</p>
     </footer>
   </div>
 
@@ -500,20 +547,20 @@
   </div>
 
   <script>
-    /* ENGINE DO CANVAS v1.2 - AURORAS CELESTIAIS & ESTRELAS CROMÁTICAS (ZERO GPU OVERHEAD) */
+    /* ENGINE DO CANVAS v1.3 - MODO URANO & ESTRELAS CROMÁTICAS */
     const canvas = document.getElementById('orbit-canvas');
     const ctx = canvas.getContext('2d');
 
     let width, height;
     let stars = [];
     let angle = 0;
+    let isUranoActive = false;
 
-    /* PALETA CROMÁTICA DAS ESTRELAS */
     const starColors = [
-      { r: 255, g: 255, b: 255 }, // Branco puro
-      { r: 0,   g: 240, b: 255 }, // Cyan Aurora
-      { r: 0,   g: 255, b: 102 }, // Verde Limão
-      { r: 168, g: 85,  b: 247 }  // Lilás Cênico
+      { r: 255, g: 255, b: 255 },
+      { r: 185, g: 220, b: 255 },
+      { r: 0,   g: 240, b: 255 }, // Ciano Urano
+      { r: 255, g: 190, b: 170 }
     ];
 
     function resizeCanvas() {
@@ -524,12 +571,12 @@
 
     function initClusterStars() {
       stars = [];
-      const totalStars = Math.floor((width * height) / 2600);
+      const totalStars = Math.floor((width * height) / 2800);
       
       const clusters = [
-        { x: width * 0.2, y: height * 0.3, radius: 220 },
-        { x: width * 0.8, y: height * 0.25, radius: 260 },
-        { x: width * 0.5, y: height * 0.75, radius: 240 }
+        { x: width * 0.2, y: height * 0.3, radius: 200 },
+        { x: width * 0.8, y: height * 0.25, radius: 250 },
+        { x: width * 0.5, y: height * 0.75, radius: 220 }
       ];
 
       for (let i = 0; i < totalStars; i++) {
@@ -548,9 +595,9 @@
         stars.push({
           x: x,
           y: y,
-          size: Math.random() * 1.4,
+          size: Math.random() * 1.35,
           alpha: Math.random(),
-          speed: 0.005 + Math.random() * 0.015,
+          speed: 0.006 + Math.random() * 0.018,
           color: starColors[Math.floor(Math.random() * starColors.length)]
         });
       }
@@ -562,45 +609,90 @@
       const centerX = width / 2;
       const centerY = height / 2;
 
-      /* 1. AURORA CELESTIAL CENTRAL - NÓ 1 (VERDE & CYAN NEON) */
-      const g1X = centerX + Math.cos(angle * 0.6) * (width * 0.15);
-      const g1Y = centerY + Math.sin(angle * 0.4) * (height * 0.12);
-      const grad1 = ctx.createRadialGradient(g1X, g1Y, 20, g1X, g1Y, Math.max(width, height) * 0.55);
-      grad1.addColorStop(0, 'rgba(0, 255, 102, 0.16)');
-      grad1.addColorStop(0.4, 'rgba(0, 240, 255, 0.08)');
-      grad1.addColorStop(1, 'rgba(10, 11, 16, 0)');
+      /* MODO URANO INTENSIFICADO - AURORAS CELESTIAIS */
+      if (isUranoActive) {
+        // NÓ 1 - CIANO / VERDE NEON EXPANSIVO
+        const g1X = centerX + Math.cos(angle * 0.8) * 160;
+        const g1Y = centerY + Math.sin(angle * 0.6) * 120;
+        const grad1 = ctx.createRadialGradient(g1X, g1Y, 30, g1X, g1Y, width * 0.6);
+        grad1.addColorStop(0, 'rgba(0, 240, 255, 0.28)');
+        grad1.addColorStop(0.35, 'rgba(0, 255, 102, 0.18)');
+        grad1.addColorStop(1, 'rgba(8, 8, 10, 0)');
 
-      ctx.fillStyle = grad1;
-      ctx.beginPath();
-      ctx.arc(g1X, g1Y, Math.max(width, height) * 0.55, 0, Math.PI * 2);
-      ctx.fill();
-
-      /* 2. AURORA CELESTIAL CENTRAL - NÓ 2 (LILÁS & MAGENTA CÊNICO) */
-      const g2X = centerX + Math.sin(-angle * 0.5) * (width * 0.18);
-      const g2Y = centerY + Math.cos(-angle * 0.3) * (height * 0.15);
-      const grad2 = ctx.createRadialGradient(g2X, g2Y, 20, g2X, g2Y, Math.max(width, height) * 0.6);
-      grad2.addColorStop(0, 'rgba(168, 85, 247, 0.18)');
-      grad2.addColorStop(0.5, 'rgba(120, 40, 200, 0.06)');
-      grad2.addColorStop(1, 'rgba(10, 11, 16, 0)');
-
-      ctx.fillStyle = grad2;
-      ctx.beginPath();
-      ctx.arc(g2X, g2Y, Math.max(width, height) * 0.6, 0, Math.PI * 2);
-      ctx.fill();
-
-      /* 3. CINTILAÇÃO E RENDER DAS ESTRELAS CROMÁTICAS */
-      for (let star of stars) {
-        star.alpha += star.speed;
-        const currentAlpha = Math.abs(Math.sin(star.alpha));
-        
-        ctx.fillStyle = `rgba(${star.color.r}, ${star.color.g}, ${star.color.b}, ${currentAlpha * 0.9})`;
+        ctx.fillStyle = grad1;
         ctx.beginPath();
-        ctx.arc(star.x, star.y, star.size, 0, Math.PI * 2);
+        ctx.arc(g1X, g1Y, width * 0.6, 0, Math.PI * 2);
+        ctx.fill();
+
+        // NÓ 2 - LILÁS / MAGENTA DE ALTA INTENSIDADE
+        const g2X = centerX + Math.sin(-angle * 0.7) * 180;
+        const g2Y = centerY + Math.cos(-angle * 0.5) * 140;
+        const grad2 = ctx.createRadialGradient(g2X, g2Y, 30, g2X, g2Y, width * 0.65);
+        grad2.addColorStop(0, 'rgba(168, 85, 247, 0.30)');
+        grad2.addColorStop(0.4, 'rgba(120, 40, 200, 0.12)');
+        grad2.addColorStop(1, 'rgba(8, 8, 10, 0)');
+
+        ctx.fillStyle = grad2;
+        ctx.beginPath();
+        ctx.arc(g2X, g2Y, width * 0.65, 0, Math.PI * 2);
+        ctx.fill();
+      } else {
+        /* MODO NOITE PADRÃO (SUTIL) */
+        const g1X = centerX + Math.cos(angle) * 120;
+        const g1Y = centerY + Math.sin(angle * 0.8) * 80;
+        const grad1 = ctx.createRadialGradient(g1X, g1Y, 10, g1X, g1Y, width * 0.45);
+        grad1.addColorStop(0, 'rgba(0, 255, 102, 0.11)');
+        grad1.addColorStop(1, 'rgba(8, 8, 10, 0)');
+
+        ctx.fillStyle = grad1;
+        ctx.beginPath();
+        ctx.arc(g1X, g1Y, width * 0.45, 0, Math.PI * 2);
+        ctx.fill();
+
+        const g2X = centerX + Math.sin(-angle * 0.7) * 150;
+        const g2Y = centerY + Math.cos(-angle * 0.5) * 100;
+        const grad2 = ctx.createRadialGradient(g2X, g2Y, 10, g2X, g2Y, width * 0.5);
+        grad2.addColorStop(0, 'rgba(138, 43, 226, 0.13)');
+        grad2.addColorStop(1, 'rgba(8, 8, 10, 0)');
+
+        ctx.fillStyle = grad2;
+        ctx.beginPath();
+        ctx.arc(g2X, g2Y, width * 0.5, 0, Math.PI * 2);
         ctx.fill();
       }
 
-      angle += 0.002;
+      /* RENDER DAS ESTRELAS */
+      for (let star of stars) {
+        star.alpha += star.speed;
+        const currentAlpha = Math.abs(Math.sin(star.alpha));
+        const boostAlpha = isUranoActive ? 1.0 : 0.85;
+
+        ctx.fillStyle = `rgba(${star.color.r}, ${star.color.g}, ${star.color.b}, ${currentAlpha * boostAlpha})`;
+        ctx.beginPath();
+        ctx.arc(star.x, star.y, isUranoActive ? star.size * 1.2 : star.size, 0, Math.PI * 2);
+        ctx.fill();
+      }
+
+      angle += 0.0025;
       requestAnimationFrame(drawOrbitBackground);
+    }
+
+    /* FUNÇÃO DE ALTERNÂNCIA DO MODO URANO */
+    function toggleUranoMode() {
+      isUranoActive = !isUranoActive;
+      const btn = document.getElementById('urano-toggle');
+      const label = document.getElementById('urano-status');
+      const labelMobile = document.getElementById('urano-status-mobile');
+
+      if (isUranoActive) {
+        btn.classList.add('active');
+        label.innerText = '[ON]';
+        if (labelMobile) labelMobile.innerText = '[ON]';
+      } else {
+        btn.classList.remove('active');
+        label.innerText = '[OFF]';
+        if (labelMobile) labelMobile.innerText = '[OFF]';
+      }
     }
 
     window.addEventListener('resize', resizeCanvas);
