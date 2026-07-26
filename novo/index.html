@@ -12,7 +12,7 @@
 
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
-  <meta name="version" content="1.0-Enterprise-Fluid">
+  <meta name="version" content="Enterprise-1.2.0-Launch">
   
   <!-- INTEGRAÇÃO CROMÁTICA TRANSLÚCIDA COM O SAFARI / IOS -->
   <meta name="theme-color" content="#08080A">
@@ -105,8 +105,7 @@
       height: 100vh;
       height: 100dvh;
       z-index: 1;
-      pointer-events: auto;
-      touch-action: pan-y;
+      pointer-events: none;
     }
 
     /* HEADER ORIGINAL EXATO COM TRANSPARÊNCIA PURA */
@@ -605,7 +604,7 @@
     </div>
   </footer>
 
-  <!-- MODAL DE CAPTURA -->
+  <!-- MODAL DE CAPTURA COM CAMPO INTELIGENTE (WHATSAPP OU E-MAIL) -->
   <div class="modal-overlay" id="lead-modal">
     <div class="modal-box plasma-glow-overlay aurora-border-glow">
       <button class="modal-close" onclick="closeLeadModal()">✕</button>
@@ -615,7 +614,7 @@
       </div>
       <form onsubmit="handleProgressFormSubmit(event)">
         <input type="text" id="modal-lead-name" required placeholder="Seu nome ou empresa">
-        <input type="tel" id="modal-lead-phone" required placeholder="WhatsApp (11) 99999-9999">
+        <input type="text" id="modal-lead-contact" required placeholder="WhatsApp (com DDD) ou E-mail">
         <textarea id="modal-lead-msg" placeholder="Observações sobre o evento (data, local ou perfil)..." style="height: 65px; resize: none;"></textarea>
         <button type="submit" id="btn-submit-modal" class="btn-header-cta" style="width:100%; margin-left:0; padding:12px; margin-top:4px;">Enviar Solicitação</button>
       </form>
@@ -691,55 +690,17 @@
       }
     }
 
-    /* ==================== BLOCO DO MOVIMENTO COM DEDO (INÉRCIA ULTRA-SUAVE / FUMAÇA CÓSMICA) ==================== */
-    let targetImpulseSpeed = 0;
-    let currentImpulseSpeed = 0;
-    let touchImpulseAngle = 0;
-    let lastClientX = 0;
-    let lastClientY = 0;
-
-    canvas.addEventListener('pointerdown', (e) => {
-      lastClientX = e.clientX;
-      lastClientY = e.clientY;
-    });
-
-    canvas.addEventListener('pointermove', (e) => {
-      if (e.buttons === 0 && e.pressure === 0) return;
-      const deltaX = e.clientX - lastClientX;
-      const deltaY = e.clientY - lastClientY;
-      
-      // Fator microscópico para densidade de fumaça (extremamente lento e sutil)
-      targetImpulseSpeed = (deltaX - deltaY) * 0.00012;
-      lastClientX = e.clientX;
-      lastClientY = e.clientY;
-    });
-
-    canvas.addEventListener('pointerup', () => { targetImpulseSpeed = 0; });
-    canvas.addEventListener('pointercancel', () => { targetImpulseSpeed = 0; });
-    /* ===================================================================================================================== */
-
     function drawOrbitBackground() {
       ctx.clearRect(0, 0, width, height);
       const cx = width / 2, cy = height / 2;
 
-      // Interpolação linear (Lerp) pesada para dar a sensação de massa fluida (fumaça/manteiga)
-      currentImpulseSpeed += (targetImpulseSpeed - currentImpulseSpeed) * 0.05;
-      touchImpulseAngle += currentImpulseSpeed;
-
-      // Amortecimento natural suave quando solto
-      if (targetImpulseSpeed === 0) {
-        currentImpulseSpeed *= 0.94;
-      }
-
-      const effectiveAngle = angle + touchImpulseAngle;
-
-      const g1X = cx + Math.cos(effectiveAngle * 0.8) * 180, g1Y = cy + Math.sin(effectiveAngle * 0.6) * 130;
+      const g1X = cx + Math.cos(angle * 0.8) * 180, g1Y = cy + Math.sin(angle * 0.6) * 130;
       const grad1 = ctx.createRadialGradient(g1X, g1Y, 60, g1X, g1Y, width * 0.7);
       grad1.addColorStop(0, `rgba(0, 210, 255, ${isUranoActive ? 0.28 : 0.14})`);
       grad1.addColorStop(1, 'rgba(8, 8, 10, 0)');
       ctx.fillStyle = grad1; ctx.beginPath(); ctx.arc(g1X, g1Y, width * 0.7, 0, Math.PI * 2); ctx.fill();
 
-      const g2X = cx + Math.sin(-effectiveAngle * 0.7) * 200, g2Y = cy + Math.cos(-effectiveAngle * 0.5) * 150;
+      const g2X = cx + Math.sin(-angle * 0.7) * 200, g2Y = cy + Math.cos(-angle * 0.5) * 150;
       const grad2 = ctx.createRadialGradient(g2X, g2Y, 60, g2X, g2Y, width * 0.75);
       grad2.addColorStop(0, `rgba(255, 0, 127, ${isUranoActive ? 0.25 : 0.12})`);
       grad2.addColorStop(0.5, `rgba(147, 51, 234, ${isUranoActive ? 0.30 : 0.14})`);
@@ -778,7 +739,7 @@
       const desk = document.querySelector('.desktop-only');
       const mob = document.querySelector('.mobile-only');
       if (desk) desk.innerText = '[+] Atendimentos Especializados';
-      if (mob) desk.innerText = '[+] Especialidades';
+      if (mob) mob.innerText = '[+] Especialidades';
     }
 
     document.addEventListener('keydown', (e) => { if (e.key === 'Escape') closeLpsDrawer(); });
@@ -794,18 +755,18 @@
     async function handleProgressFormSubmit(e) {
       e.preventDefault();
       const name = document.getElementById('modal-lead-name').value;
-      const phone = document.getElementById('modal-lead-phone').value;
+      const contact = document.getElementById('modal-lead-contact').value;
       const msg = document.getElementById('modal-lead-msg').value;
       const btn = document.getElementById('btn-submit-modal');
       btn.innerText = "Registrando..."; btn.disabled = true;
 
       if (supabaseClient) {
         try {
-          await supabaseClient.from('leads_simulador').insert([{ nome: name, whatsapp: phone, observacoes: msg, origem: "Modal Home", data_registro: new Date().toISOString() }]);
+          await supabaseClient.from('leads_simulador').insert([{ nome: name, whatsapp: contact, observacoes: msg, origem: "Modal Home", data_registro: new Date().toISOString() }]);
         } catch(err) {}
       }
 
-      const encoded = encodeURIComponent(`Olá! Meu nome é ${name}.\nGostaria de iniciar um alinhamento técnico.\n\nDetalhes: ${msg || 'Nenhum'}`);
+      const encoded = encodeURIComponent(`Olá! Meu nome é ${name}.\nContato: ${contact}\nGostaria de iniciar um alinhamento técnico.\n\nDetalhes: ${msg || 'Nenhum'}`);
       window.open(`https://wa.me/${fallbackWhatsapp}?text=${encoded}`, '_blank');
       btn.innerText = "Enviar Solicitação"; btn.disabled = false; closeLeadModal();
     }
