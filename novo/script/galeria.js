@@ -1,163 +1,149 @@
-<!DOCTYPE html>
-<html lang="pt-BR" data-theme="dark">
-<head>
-  <!-- Google Analytics GA4 -->
-  <script async src="https://www.googletagmanager.com/gtag/js?id=G-7SWNCP1NV6"></script>
-  <script>
-    window.dataLayer = window.dataLayer || [];
-    function gtag(){dataLayer.push(arguments);}
-    gtag('js', new Date());
-    gtag('config', 'G-7SWNCP1NV6');
-  </script>
+/* O canvas de fundo (#orbit-canvas) já é desenhado globalmente por script.js,
+   que é carregado antes deste arquivo em galeria.html. Não redeclarar aqui
+   (isso evitava um erro de "canvas já declarado" que quebrava toda a galeria). */
 
-  <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
-  <meta name="version" content="Enterprise-1.2.2-Perfect">
-  
-  <meta name="theme-color" content="#08080A">
-  <meta name="apple-mobile-web-app-capable" content="yes">
-  <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+/* ========== script/galeria.js · 432UP · v3.0 · integração real co_galeria_fotos ========== */
 
-  <link class="js-site-favicon" rel="icon" type="image/png" href="imagens/favicon.png">
-  <title>Memórias Visuais & Portfólio | 432UP! Produções</title>
-  <meta name="description" content="Crônicas visuais, registros de alta performance e bastidores de engenharia audiovisual para eventos de alto padrão.">
+/* MENU MOBILE (toggleMobileMenu já existe em script.js) */
+document.addEventListener('DOMContentLoaded', () => {
+  const menuBtn = document.getElementById('mobile-menu-btn');
+  const menuClose = document.getElementById('mobile-menu-close');
+  if (menuBtn) menuBtn.addEventListener('click', toggleMobileMenu);
+  if (menuClose) menuClose.addEventListener('click', toggleMobileMenu);
+});
 
-  <!-- Google Fonts -->
-  <link rel="preconnect" href="https://fonts.googleapis.com">
-  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&display=swap" rel="stylesheet">
+/* CARREGAMENTO E SINCRO DA GALERIA (dados reais gravados pelo admin) */
+document.addEventListener('DOMContentLoaded', () => {
+  // Mesmo projeto/URL usados pelo admin.js — conexão direta ao Supabase.
+  const SUPABASE_URL = "https://paetkspbfejtjjkngqej.supabase.co";
+  const SUPABASE_ANON_KEY = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InBhZXRrc3BiZmVqdGpqa25ncWVqIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzA5MDU2OTgsImV4cCI6MjA4NjQ4MTY5OH0.IiYweZ2g3bP7b0o7VvBW5LLb6d1oHtSNFUZlVkIsdsA";
 
-  <script src="https://unpkg.com/@supabase/supabase-js@2"></script>
+  const REST = SUPABASE_URL + '/rest/v1/';
+  const HEADERS = { apikey: SUPABASE_ANON_KEY, Authorization: 'Bearer ' + SUPABASE_ANON_KEY };
 
-  <!-- CSS Único e Modular -->
-  <link rel="stylesheet" href="css/style.css">
-  
-  <!-- Scripts Desacoplados -->
-  <script src="script/script.js" defer></script>
-  <script src="script/galeria.js" defer></script>
+  // Itens de reserva, usados SOMENTE se a conexão com o banco falhar de vez.
+  // Não recebem categoria (ficam visíveis apenas em "Ver Todas") para não
+  // conflitar com os slugs reais cadastrados no admin.
+  const fallbackItems = [
+    { cat: '', tipo: 'foto', titulo: 'Swing Tropical: Imersão em Brasilidade', descricao: 'Direção artística e de palco refinada, misturando axé conceitual, samba-rock e pop sob uma roupagem instrumental AA+.', url: 'https://images.unsplash.com/photo-1516450360452-9312f5e86fc7' },
+    { cat: '', tipo: 'foto', titulo: 'Inauguração Corporativa Internacional', descricao: 'Dimensionamento de som milimétrico para lounge e discursos institucionais em São Paulo.', url: 'https://images.unsplash.com/photo-1511578314322-379afb476865' },
+    { cat: '', tipo: 'foto', titulo: 'Gala Social High Standard', descricao: 'Projeto luminotécnico para harmonização de ambientes e valorização de arquitetura em festa privada de alto luxo.', url: 'https://images.unsplash.com/photo-1465847899084-d164df4dedc6' }
+  ];
 
-  <!-- Ajustes exclusivos desta página (não alteram o css/style.css compartilhado) -->
-  <style>
-    /* Trava o "elástico" (bounce) do Safari no topo/rodapé, que estava
-       revelando uma fresta transparente sobre o header ao puxar além do topo */
-    html, body { overscroll-behavior-y: none; }
+  let categorias = [];   // co_galeria_categorias: {slug, nome, emoji, ordem}
+  let itens = [];        // co_galeria_fotos
 
-    /* Folga extra pro rodapé fixo não sobrepor a última fileira de cards */
-    .masonry-gallery { padding-bottom: 140px; }
+  function escapeHtml(str) {
+    if (!str) return '';
+    return String(str).replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;').replace(/'/g, '&#39;');
+  }
 
-    /* ================================================================
-       COLUNAS DA GALERIA — duas opções, alterne comentando/descomentando
+  function ytId(url) {
+    if (!url) return '';
+    const m = url.match(/(?:youtu\.be\/|youtube\.com\/(?:watch\?v=|embed\/|shorts\/|live\/))([a-zA-Z0-9_-]{11})/);
+    return m ? m[1] : '';
+  }
+  function ytThumb(url) {
+    const id = ytId(url);
+    return id ? 'https://img.youtube.com/vi/' + id + '/hqdefault.jpg' : '';
+  }
 
-       OPÇÃO 1 (ATIVA agora): 4 colunas no tablet, 5 no notebook
-       OPÇÃO 2 (ORIGINAL, 3 colunas fixas): descomente o bloco abaixo e
-       comente o bloco da OPÇÃO 1 pra voltar como estava antes.
-       ================================================================ */
-
-    /* OPÇÃO 1 — ATIVA: 4 colunas (tablet ~10") / 5 colunas (notebook 15")
-    @media (min-width: 900px) and (max-width: 1299px) {
-      .masonry-gallery { grid-template-columns: repeat(4, 1fr); }
+  async function sbGet(table, qs) {
+    try {
+      const r = await fetch(REST + table + '?' + qs, { headers: HEADERS });
+      if (!r.ok) throw new Error('HTTP ' + r.status);
+      return await r.json();
+    } catch (e) {
+      console.warn('[galeria] falha ao buscar ' + table, e);
+      return null;
     }
-    @media (min-width: 1300px) {
-      .masonry-gallery { max-width: 1400px; grid-template-columns: repeat(5, 1fr); }
-    } */
+  }
 
-    /* OPÇÃO 2 — ORIGINAL (3 colunas fixas), hoje desativada:  */
-    @media (min-width: 900px) {
-      .masonry-gallery { max-width: 1200px; grid-template-columns: repeat(3, 1fr); }
-    }
-   
+  function thumbFor(item) {
+    if (item.tipo === 'video_yt') return item.url_thumb || ytThumb(item.video_url) || '';
+    if (item.tipo === 'video_up') return item.url_thumb || item.url || '';
+    return item.url_thumb || item.url || '';
+  }
 
-  </style>
-</head>
-<body>
+  function isVideo(item) {
+    return item.tipo === 'video_yt' || item.tipo === 'video_up';
+  }
 
-  <canvas id="orbit-canvas"></canvas>
+  function renderFilters() {
+    const wrap = document.querySelector('.filter-wrapper');
+    if (!wrap) return;
+    let html = '<button class="filter-btn active" data-cat="all">Ver Todas</button>';
+    categorias.forEach(c => {
+      html += `<button class="filter-btn" data-cat="${escapeHtml(c.slug)}">${escapeHtml(c.emoji || '')} ${escapeHtml(c.nome)}</button>`;
+    });
+    wrap.innerHTML = html;
 
-  <div class="viewport-wrapper">
-    <header>
-      <div class="logo-container">
-        <a href="index.html" class="logo-link" aria-label="Página Inicial 432UP">
-          <img src="imagens/logo.png" alt="432UP! Produções" class="logo-img">
-        </a>
-      </div>
+    wrap.querySelectorAll('.filter-btn').forEach(btn => {
+      btn.addEventListener('click', (e) => {
+        wrap.querySelectorAll('.filter-btn').forEach(b => b.classList.remove('active'));
+        e.currentTarget.classList.add('active');
+        const cat = e.currentTarget.dataset.cat;
+        document.querySelectorAll('.gallery-card').forEach(card => {
+          card.style.display = (cat === 'all' || card.dataset.cat === cat) ? 'flex' : 'none';
+        });
+      });
+    });
+  }
 
-      <nav class="desktop-nav">
-        <a href="index.html">Início</a>
-        <a href="calculadora.html">Simulador de Atmosfera</a>
-        <a href="galeria.html" class="active">Memórias</a>
-        <a id="nav-trigger-modal">Contato</a>
-      </nav>
-
-      <button class="mobile-hamburger" id="mobile-menu-btn" aria-label="Abrir Menu">☰</button>
-    </header>
-
-    <div class="mobile-menu-overlay" id="mobile-menu">
-      <button id="mobile-menu-close" style="position: absolute; top: 20px; right: 20px; background: transparent; border: none; color: #fff; font-size: 1.5rem; cursor: pointer;">✕</button>
-      <a href="index.html">Início</a>
-      <a href="calculadora.html">Simulador de Atmosfera</a>
-      <a href="galeria.html" class="active">Memórias</a>
-      <a id="nav-trigger-modal-mobile">Contato</a>
-    </div>
-
-    <section class="gallery-hero">
-      <span class="tagline">Registros & Bastidores</span>
-      <h1>Crônicas <span>Visuais</span></h1>
-      <p>Uma imersão estética pelos nossos projetos, cenografias e entregas de alta fidelidade técnica.</p>
-
-      <div class="filter-wrapper">
-        <button class="filter-btn active" data-cat="all">Ver Todas</button>
-      </div>
-    </section>
-
-    <main class="masonry-gallery" id="main-gallery-grid"></main>
-  </div>
-
-  <footer>
-    <p>© 2026 432UP! Produções — Curadoria Artística e Engenharia Estrutural</p>
-  </footer>
-
-  <!-- POP-UP MODAL DE CONTATO -->
-  <div class="contact-modal-overlay" id="contact-overlay">
-    <div class="contact-modal">
-      <button class="contact-modal-close" id="contact-modal-close-btn">&times;</button>
-      <h3 style="font-size: 1.2rem; font-weight: 700; margin-bottom: 4px; color: #FFF;">Qual o melhor número e horário para te ligarmos?</h3>
-      <p style="font-size: 0.78rem; color: var(--text-muted); margin-bottom: 14px;">Informe seus dados para a mesa de produção retornar.</p>
-
-      <div class="modal-channels-row">
-        <a href="https://wa.me/5511948564577" class="channel-mini-card" target="_blank">
-          <span style="font-size: 0.58rem; color: var(--text-muted); text-transform: uppercase;">WhatsApp Direct</span>
-          <strong style="display: block; font-size: 0.8rem; margin-top: 2px; color: #FFF;">(11) 94856-4577</strong>
-        </a>
-        <a href="mailto:contato@432up.com" class="channel-mini-card">
-          <span style="font-size: 0.58rem; color: var(--text-muted); text-transform: uppercase;">E-mail Interno</span>
-          <strong style="display: block; font-size: 0.8rem; margin-top: 2px; color: #FFF;">contato@432up.com</strong>
-        </a>
-      </div>
-
-      <div class="modal-form-divider">Ou agende o retorno</div>
-
-      <div>
-        <div class="form-group">
-          <label for="mod-name">Seu nome ou empresa</label>
-          <input type="text" id="mod-name" placeholder="Ex: Roberto Silva">
+  function renderGrid(list) {
+    const grid = document.getElementById('main-gallery-grid');
+    if (!grid) return;
+    grid.innerHTML = list.map((item) => {
+      const thumb = thumbFor(item);
+      const badgeParts = [];
+      if (item.local) badgeParts.push(item.local);
+      if (item.destaque) badgeParts.push('⭐ Destaque');
+      const badge = badgeParts.join(' · ');
+      const playIcon = isVideo(item) ? '<span class="tag-badge" style="right:auto;left:12px;top:12px;">▶</span>' : '';
+      return `
+      <article class="gallery-card" data-cat="${escapeHtml(item.cat)}">
+        <div class="img-box" ${item.tipo === 'video_yt' && item.video_url ? `onclick="window.open('${escapeHtml(item.video_url)}','_blank')" style="cursor:pointer;"` : ''}>
+          <img src="${escapeHtml(thumb)}" alt="${escapeHtml(item.titulo)}" loading="lazy">
+          <div class="img-box-overlay"></div>
+          ${playIcon}
+          ${badge ? `<span class="tag-badge">${escapeHtml(badge)}</span>` : ''}
         </div>
-        <div class="form-group">
-          <label for="mod-phone">Telefone / WhatsApp</label>
-          <input type="tel" id="mod-phone" placeholder="(11) 99999-9999" inputmode="numeric" maxlength="15">
-          <span class="field-hint" id="mod-phone-error">Informe um telefone válido com DDD.</span>
+        <div class="card-body">
+          <h3>${escapeHtml(item.titulo)}</h3>
+          <p>${escapeHtml(item.descricao)}</p>
         </div>
-        <div class="form-group">
-          <label for="mod-email">E-mail <span class="optional-tag">(opcional)</span></label>
-          <input type="email" id="mod-email" placeholder="contato@empresa.com">
-          <span class="field-hint" id="mod-email-error">Informe um e-mail válido.</span>
-        </div>
-        <div class="form-group">
-          <label for="mod-msg">Melhor horário ou detalhes <span class="optional-tag">(opcional)</span></label>
-          <textarea id="mod-msg" placeholder="Qual o melhor horário para ligarmos..."></textarea>
-        </div>
-        <button class="btn-internal-send" id="btn-submit-general-contact">Solicitar Ligação</button>
-      </div>
-    </div>
-  </div>
-</body>
-</html>
+      </article>
+    `;
+    }).join('');
+  }
+
+  async function loadGallery() {
+    const [cats, fotos] = await Promise.all([
+      sbGet('co_galeria_categorias', 'select=*&order=ordem'),
+      sbGet('co_galeria_fotos', 'select=*&order=ordem')
+    ]);
+
+    categorias = cats || [];
+    itens = (fotos && fotos.length > 0) ? fotos : fallbackItems;
+
+    renderFilters();
+    renderGrid(itens);
+  }
+
+  // MODAL DE CONTATO
+  const navTriggerModal = document.getElementById('nav-trigger-modal');
+  const navTriggerModalMobile = document.getElementById('nav-trigger-modal-mobile');
+  const contactOverlay = document.getElementById('contact-overlay');
+  const contactModalCloseBtn = document.getElementById('contact-modal-close-btn');
+
+  function openContactModal() {
+    if (contactOverlay) contactOverlay.classList.add('open');
+  }
+
+  if (navTriggerModal) navTriggerModal.addEventListener('click', openContactModal);
+  if (navTriggerModalMobile) navTriggerModalMobile.addEventListener('click', openContactModal);
+  if (contactModalCloseBtn) contactModalCloseBtn.addEventListener('click', () => contactOverlay.classList.remove('open'));
+  if (contactOverlay) contactOverlay.addEventListener('click', (e) => { if (e.target === contactOverlay) contactOverlay.classList.remove('open'); });
+
+  loadGallery();
+});
