@@ -1,106 +1,163 @@
-/* O canvas de fundo (#orbit-canvas) já é desenhado globalmente por script.js,
-   que é carregado antes deste arquivo em galeria.html. Não redeclarar aqui
-   (isso evitava um erro de "canvas já declarado" que quebrava toda a galeria). */
+<!DOCTYPE html>
+<html lang="pt-BR" data-theme="dark">
+<head>
+  <!-- Google Analytics GA4 -->
+  <script async src="https://www.googletagmanager.com/gtag/js?id=G-7SWNCP1NV6"></script>
+  <script>
+    window.dataLayer = window.dataLayer || [];
+    function gtag(){dataLayer.push(arguments);}
+    gtag('js', new Date());
+    gtag('config', 'G-7SWNCP1NV6');
+  </script>
 
-/* MENU MOBILE (toggleMobileMenu já existe em script.js) */
-document.addEventListener('DOMContentLoaded', () => {
-  const menuBtn = document.getElementById('mobile-menu-btn');
-  const menuClose = document.getElementById('mobile-menu-close');
-  if (menuBtn) menuBtn.addEventListener('click', toggleMobileMenu);
-  if (menuClose) menuClose.addEventListener('click', toggleMobileMenu);
-});
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
+  <meta name="version" content="Enterprise-1.2.2-Perfect">
+  
+  <meta name="theme-color" content="#08080A">
+  <meta name="apple-mobile-web-app-capable" content="yes">
+  <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
 
-/* CARREGAMENTO E SINCRO DA GALERIA */
-document.addEventListener('DOMContentLoaded', () => {
-  const SUPABASE_URL = "https://www.432up.com/supabase-api";
-  const SUPABASE_ANON_KEY = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InBhZXRrc3BiZmVqdGpqa25ncWVqIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzA5MDU2OTgsImV4cCI6MjA4NjQ4MTY5OH0.IiYweZ2g3bP7b0o7VvBW5LLb6d1oHtSNFUZlVkIsdsA";
-  let supabaseClient = null;
+  <link class="js-site-favicon" rel="icon" type="image/png" href="imagens/favicon.png">
+  <title>Memórias Visuais & Portfólio | 432UP! Produções</title>
+  <meta name="description" content="Crônicas visuais, registros de alta performance e bastidores de engenharia audiovisual para eventos de alto padrão.">
 
-  if (typeof supabase !== 'undefined' && window.supabase && SUPABASE_URL.indexOf("SEU_PROJETO") === -1) {
-    supabaseClient = window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
-  }
+  <!-- Google Fonts -->
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&display=swap" rel="stylesheet">
 
-  let localItems = [
-    { category: 'casting', tag: 'Rider Sennheiser Active', title: 'Swing Tropical: Imersão em Brasilidade', desc: 'Direção artística e de palco refinada, misturando axé conceitual, samba-rock e pop sob uma roupagem instrumental AA+.', url: 'https://images.unsplash.com/photo-1516450360452-9312f5e86fc7' },
-    { category: 'corp', tag: 'Electro-Voice Arrays', title: 'Inauguração Corporativa Internacional', desc: 'Dimensionamento de som milimétrico para lounge e discursos institucionais em São Paulo. Sonorização limpa e integrada à arquitetura.', url: 'https://images.unsplash.com/photo-1511578314322-379afb476865' },
-    { category: 'social', tag: 'Iluminação Cênica DMX', title: 'Gala Social High Standard', desc: 'Projeto luminotécnico para harmonização de ambientes e valorização de arquitetura em festa privada de alto luxo.', url: 'https://images.unsplash.com/photo-1465847899084-d164df4dedc6' }
-  ];
+  <script src="https://unpkg.com/@supabase/supabase-js@2"></script>
 
-  function escapeHtml(str) {
-    if (!str) return '';
-    return String(str).replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;').replace(/'/g, '&#39;');
-  }
+  <!-- CSS Único e Modular -->
+  <link rel="stylesheet" href="css/style.css">
+  
+  <!-- Scripts Desacoplados -->
+  <script src="script/script.js" defer></script>
+  <script src="script/galeria.js" defer></script>
 
-  function renderGrid(list) {
-    const grid = document.getElementById('main-gallery-grid');
-    if (!grid) return;
-    grid.innerHTML = list.map((item) => `
-      <article class="gallery-card" data-cat="${escapeHtml(item.category)}">
-        <div class="img-box">
-          <img src="${escapeHtml(item.url)}" alt="${escapeHtml(item.title)}" loading="lazy">
-          <div class="img-box-overlay"></div>
-          <span class="tag-badge">${escapeHtml(item.tag)}</span>
-        </div>
-        <div class="card-body">
-          <h3>${escapeHtml(item.title)}</h3>
-          <p>${escapeHtml(item.desc)}</p>
-        </div>
-      </article>
-    `).join('');
-  }
+  <!-- Ajustes exclusivos desta página (não alteram o css/style.css compartilhado) -->
+  <style>
+    /* Trava o "elástico" (bounce) do Safari no topo/rodapé, que estava
+       revelando uma fresta transparente sobre o header ao puxar além do topo */
+    html, body { overscroll-behavior-y: none; }
 
-  async function loadGallery() {
-    renderGrid(localItems);
-    if (supabaseClient) {
-      try {
-        const { data } = await supabaseClient.from('portfolio').select('*').order('created_at', { ascending: false });
-        if (data && data.length > 0) {
-          let dynamicItems = data.map(i => ({ category: i.category, tag: i.tag, title: i.title, desc: i.description, url: i.img_url }));
-          renderGrid([...localItems, ...dynamicItems]);
-        }
-      } catch(e) {}
+    /* Folga extra pro rodapé fixo não sobrepor a última fileira de cards */
+    .masonry-gallery { padding-bottom: 140px; }
+
+    /* ================================================================
+       COLUNAS DA GALERIA — duas opções, alterne comentando/descomentando
+
+       OPÇÃO 1 (ATIVA agora): 4 colunas no tablet, 5 no notebook
+       OPÇÃO 2 (ORIGINAL, 3 colunas fixas): descomente o bloco abaixo e
+       comente o bloco da OPÇÃO 1 pra voltar como estava antes.
+       ================================================================ */
+
+    /* OPÇÃO 1 — ATIVA: 4 colunas (tablet ~10") / 5 colunas (notebook 15")
+    @media (min-width: 900px) and (max-width: 1299px) {
+      .masonry-gallery { grid-template-columns: repeat(4, 1fr); }
     }
-  }
+    @media (min-width: 1300px) {
+      .masonry-gallery { max-width: 1400px; grid-template-columns: repeat(5, 1fr); }
+    } */
 
-  // EVENTOS DOS BOTOES DE FILTRO
-  const filterBtns = [
-    { id: 'btn-filter-all', cat: 'all' },
-    { id: 'btn-filter-corp', cat: 'corp' },
-    { id: 'btn-filter-social', cat: 'social' },
-    { id: 'btn-filter-casting', cat: 'casting' }
-  ];
-
-  filterBtns.forEach(btnInfo => {
-    const btn = document.getElementById(btnInfo.id);
-    if (btn) {
-      btn.addEventListener('click', (e) => {
-        document.querySelectorAll('.filter-btn').forEach(b => b.classList.remove('active'));
-        e.currentTarget.classList.add('active');
-        document.querySelectorAll('.gallery-card').forEach(card => {
-          if (btnInfo.cat === 'all' || card.dataset.cat === btnInfo.cat) {
-            card.style.display = 'flex';
-          } else {
-            card.style.display = 'none';
-          }
-        });
-      });
+    /* OPÇÃO 2 — ORIGINAL (3 colunas fixas), hoje desativada:  */
+    @media (min-width: 900px) {
+      .masonry-gallery { max-width: 1200px; grid-template-columns: repeat(3, 1fr); }
     }
-  });
+   
 
-  // MODAL DE CONTATO
-  const navTriggerModal = document.getElementById('nav-trigger-modal');
-  const navTriggerModalMobile = document.getElementById('nav-trigger-modal-mobile');
-  const contactOverlay = document.getElementById('contact-overlay');
-  const contactModalCloseBtn = document.getElementById('contact-modal-close-btn');
+  </style>
+</head>
+<body>
 
-  function openContactModal() {
-    if (contactOverlay) contactOverlay.classList.add('open');
-  }
+  <canvas id="orbit-canvas"></canvas>
 
-  if (navTriggerModal) navTriggerModal.addEventListener('click', openContactModal);
-  if (navTriggerModalMobile) navTriggerModalMobile.addEventListener('click', openContactModal);
-  if (contactModalCloseBtn) contactModalCloseBtn.addEventListener('click', () => contactOverlay.classList.remove('open'));
-  if (contactOverlay) contactOverlay.addEventListener('click', (e) => { if(e.target === contactOverlay) contactOverlay.classList.remove('open'); });
+  <div class="viewport-wrapper">
+    <header>
+      <div class="logo-container">
+        <a href="index.html" class="logo-link" aria-label="Página Inicial 432UP">
+          <img src="imagens/logo.png" alt="432UP! Produções" class="logo-img">
+        </a>
+      </div>
 
-  loadGallery();
-});
+      <nav class="desktop-nav">
+        <a href="index.html">Início</a>
+        <a href="calculadora.html">Simulador de Atmosfera</a>
+        <a href="galeria.html" class="active">Memórias</a>
+        <a id="nav-trigger-modal">Contato</a>
+      </nav>
+
+      <button class="mobile-hamburger" id="mobile-menu-btn" aria-label="Abrir Menu">☰</button>
+    </header>
+
+    <div class="mobile-menu-overlay" id="mobile-menu">
+      <button id="mobile-menu-close" style="position: absolute; top: 20px; right: 20px; background: transparent; border: none; color: #fff; font-size: 1.5rem; cursor: pointer;">✕</button>
+      <a href="index.html">Início</a>
+      <a href="calculadora.html">Simulador de Atmosfera</a>
+      <a href="galeria.html" class="active">Memórias</a>
+      <a id="nav-trigger-modal-mobile">Contato</a>
+    </div>
+
+    <section class="gallery-hero">
+      <span class="tagline">Registros & Bastidores</span>
+      <h1>Crônicas <span>Visuais</span></h1>
+      <p>Uma imersão estética pelos nossos projetos, cenografias e entregas de alta fidelidade técnica.</p>
+
+      <div class="filter-wrapper">
+        <button class="filter-btn active" data-cat="all">Ver Todas</button>
+      </div>
+    </section>
+
+    <main class="masonry-gallery" id="main-gallery-grid"></main>
+  </div>
+
+  <footer>
+    <p>© 2026 432UP! Produções — Curadoria Artística e Engenharia Estrutural</p>
+  </footer>
+
+  <!-- POP-UP MODAL DE CONTATO -->
+  <div class="contact-modal-overlay" id="contact-overlay">
+    <div class="contact-modal">
+      <button class="contact-modal-close" id="contact-modal-close-btn">&times;</button>
+      <h3 style="font-size: 1.2rem; font-weight: 700; margin-bottom: 4px; color: #FFF;">Qual o melhor número e horário para te ligarmos?</h3>
+      <p style="font-size: 0.78rem; color: var(--text-muted); margin-bottom: 14px;">Informe seus dados para a mesa de produção retornar.</p>
+
+      <div class="modal-channels-row">
+        <a href="https://wa.me/5511948564577" class="channel-mini-card" target="_blank">
+          <span style="font-size: 0.58rem; color: var(--text-muted); text-transform: uppercase;">WhatsApp Direct</span>
+          <strong style="display: block; font-size: 0.8rem; margin-top: 2px; color: #FFF;">(11) 94856-4577</strong>
+        </a>
+        <a href="mailto:contato@432up.com" class="channel-mini-card">
+          <span style="font-size: 0.58rem; color: var(--text-muted); text-transform: uppercase;">E-mail Interno</span>
+          <strong style="display: block; font-size: 0.8rem; margin-top: 2px; color: #FFF;">contato@432up.com</strong>
+        </a>
+      </div>
+
+      <div class="modal-form-divider">Ou agende o retorno</div>
+
+      <div>
+        <div class="form-group">
+          <label for="mod-name">Seu nome ou empresa</label>
+          <input type="text" id="mod-name" placeholder="Ex: Roberto Silva">
+        </div>
+        <div class="form-group">
+          <label for="mod-phone">Telefone / WhatsApp</label>
+          <input type="tel" id="mod-phone" placeholder="(11) 99999-9999" inputmode="numeric" maxlength="15">
+          <span class="field-hint" id="mod-phone-error">Informe um telefone válido com DDD.</span>
+        </div>
+        <div class="form-group">
+          <label for="mod-email">E-mail <span class="optional-tag">(opcional)</span></label>
+          <input type="email" id="mod-email" placeholder="contato@empresa.com">
+          <span class="field-hint" id="mod-email-error">Informe um e-mail válido.</span>
+        </div>
+        <div class="form-group">
+          <label for="mod-msg">Melhor horário ou detalhes <span class="optional-tag">(opcional)</span></label>
+          <textarea id="mod-msg" placeholder="Qual o melhor horário para ligarmos..."></textarea>
+        </div>
+        <button class="btn-internal-send" id="btn-submit-general-contact">Solicitar Ligação</button>
+      </div>
+    </div>
+  </div>
+</body>
+</html>
