@@ -49,9 +49,14 @@ let width, height, stars = [], angle = 0;
 const starColors = [ { r: 255, g: 255, b: 255 }, { r: 185, g: 220, b: 255 }, { r: 255, g: 235, b: 180 }, { r: 255, g: 190, b: 170 } ];
 
 function resizeCanvas() {
-  width = canvas.width = window.innerWidth;
-  height = canvas.height = window.innerHeight;
-  initClusterStars();
+  const newWidth = window.innerWidth;
+  const newHeight = window.innerHeight;
+  const widthChanged = newWidth !== width;
+  width = canvas.width = newWidth;
+  height = canvas.height = newHeight;
+  if (widthChanged || stars.length === 0) {
+    initClusterStars();
+  }
 }
 
 function initClusterStars() {
@@ -101,7 +106,11 @@ function drawOrbitBackground() {
   requestAnimationFrame(drawOrbitBackground);
 }
 
-window.addEventListener('resize', resizeCanvas);
+let resizeDebounce;
+window.addEventListener('resize', () => {
+  clearTimeout(resizeDebounce);
+  resizeDebounce = setTimeout(resizeCanvas, 150);
+});
 resizeCanvas();
 drawOrbitBackground();
 
