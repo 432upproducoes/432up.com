@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Teste de Efeitos de Plasma / Universo</title>
+    <title>Efeitos de Plasma Corrigidos</title>
     <style>
         * {
             box-sizing: border-box;
@@ -45,10 +45,10 @@
             background: transparent;
             border: none;
             color: #a1a1aa;
-            padding: 10px 20px;
+            padding: 10px 16px;
             border-radius: 20px;
             cursor: pointer;
-            font-size: 14px;
+            font-size: 13px;
             transition: all 0.3s ease;
         }
 
@@ -72,20 +72,21 @@
             align-items: center;
             justify-content: center;
             box-shadow: 0 20px 40px rgba(0,0,0,0.5);
+            touch-action: none; /* Melhora toque em celulares */
         }
 
         /* Caixa simulando a Calculadora */
         .calculator-mock {
             position: relative;
             z-index: 5;
-            background: rgba(18, 18, 24, 0.7);
+            background: rgba(18, 18, 24, 0.75);
             backdrop-filter: blur(16px);
-            border: 1px solid rgba(255, 255, 255, 0.1);
+            border: 1px solid rgba(255, 255, 255, 0.12);
             padding: 30px;
             border-radius: 16px;
             width: 80%;
             text-align: center;
-            box-shadow: 0 8px 32px rgba(0,0,0,0.3);
+            box-shadow: 0 8px 32px rgba(0,0,0,0.4);
         }
 
         .calculator-mock p {
@@ -110,128 +111,129 @@
             background: #7c3aed;
         }
 
-        /* --- EFEITO 1: Glow Fluido (Segue o Toque) --- */
+        /* --- EFEITO 1: Glow Fluido Aprimorado --- */
         .effect-glow {
             position: absolute;
-            width: 250px;
-            height: 250px;
-            background: radial-gradient(circle, rgba(139, 92, 246, 0.35) 0%, rgba(0,0,0,0) 70%);
+            width: 300px;
+            height: 300px;
+            background: radial-gradient(circle, rgba(139, 92, 246, 0.4) 0%, rgba(99, 102, 241, 0.15) 40%, transparent 70%);
             border-radius: 50%;
             pointer-events: none;
             transform: translate(-50%, -50%);
-            filter: blur(30px);
+            filter: blur(25px);
             z-index: 1;
             transition: opacity 0.3s;
         }
 
-        /* --- EFEITO 2: Pulso de Onda ao Clicar/Tocar --- */
+        /* --- EFEITO 2: Onda de Clique (Ripple corrigido) --- */
         .ripple {
             position: absolute;
+            width: 20px;
+            height: 20px;
             border-radius: 50%;
-            background: radial-gradient(circle, rgba(236, 72, 153, 0.4) 0%, rgba(124, 58, 237, 0.1) 60%, transparent 100%);
+            background: radial-gradient(circle, rgba(236, 72, 153, 0.8) 0%, rgba(124, 58, 237, 0.4) 50%, transparent 100%);
             transform: translate(-50%, -50%) scale(0);
             pointer-events: none;
-            animation: ripple-anim 0.8s cubic-bezier(0, 0.2, 0.8, 1) forwards;
-            z-index: 2;
+            animation: ripple-anim 0.6s cubic-bezier(0, 0, 0.2, 1) forwards;
+            z-index: 6; /* Acima da calculadora para ver bem o toque */
         }
 
         @keyframes ripple-anim {
-            to {
-                transform: translate(-50%, -50%) scale(4);
+            0% {
+                transform: translate(-50%, -50%) scale(0);
+                opacity: 1;
+            }
+            100% {
+                transform: translate(-50%, -50%) scale(25);
                 opacity: 0;
             }
         }
 
-        /* --- EFEITO 3: Nebulosa/Plasma Estático Dinâmico --- */
-        .plasma-bg {
+        /* --- EFEITO 3: Plasma Multicor Interativo ao Toque --- */
+        .plasma-touch {
             position: absolute;
-            inset: 0;
-            background: 
-                radial-gradient(circle at 20% 30%, rgba(79, 70, 229, 0.15) 0%, transparent 40%),
-                radial-gradient(circle at 80% 70%, rgba(236, 72, 153, 0.1) 0%, transparent 40%);
-            z-index: 1;
-            opacity: 0.8;
-            animation: plasma-shift 8s ease infinite alternate;
+            width: 350px;
+            height: 350px;
+            background: radial-gradient(circle, rgba(236, 72, 153, 0.35) 0%, rgba(59, 130, 246, 0.2) 50%, transparent 70%);
+            border-radius: 50%;
             pointer-events: none;
-        }
-
-        @keyframes plasma-shift {
-            0% { transform: scale(1) rotate(0deg); }
-            100% { transform: scale(1.1) rotate(5deg); }
+            transform: translate(-50%, -50%);
+            filter: blur(35px);
+            z-index: 1;
+            mix-blend-mode: screen;
+            transition: background 0.5s;
         }
     </style>
 </head>
 <body>
 
-    <h2>Seletor de Efeitos de Toque</h2>
+    <h2>Seletor de Efeitos de Plasma</h2>
 
     <!-- Chave Seletora -->
     <div class="selector-bar">
-        <button class="tab-btn active" onclick="switchEffect('glow')">1. Glow Magnético</button>
-        <button class="tab-btn" onclick="switchEffect('ripple')">2. Onda ao Tocar</button>
-        <button class="tab-btn" onclick="switchEffect('nebula')">3. Nebulosa Viva</button>
+        <button class="tab-btn active" onclick="switchEffect('glow', event)">1. Glow Aprimorado</button>
+        <button class="tab-btn" onclick="switchEffect('ripple', event)">2. Onda de Toque</button>
+        <button class="tab-btn" onclick="switchEffect('plasma', event)">3. Plasma Interativo</button>
     </div>
 
     <!-- Área Interativa -->
     <div class="universe-stage" id="stage">
-        <!-- Elemento dinâmico para o efeito 1 -->
-        <div class="effect-glow" id="glowCursor" style="display: none;"></div>
-        
-        <!-- Elemento dinâmico para o efeito 3 -->
-        <div class="plasma-bg" id="plasmaBg" style="display: none;"></div>
+        <!-- Elemento dinâmico para os efeitos -->
+        <div class="effect-glow" id="dynamicEffect" style="display: block;"></div>
 
         <!-- Simulador da Calculadora -->
         <div class="calculator-mock">
-            <p>Toque ou clique em qualquer lugar para testar o efeito escolhido.</p>
-            <button class="test-btn">Simular Orçamento</button>
+            <p id="instructionText">Arraste ou clique para testar o Glow Aprimorado.</p>
+            <button class="test-btn">Calcular Preço</button>
         </div>
     </div>
 
     <script>
         const stage = document.getElementById('stage');
-        const glowCursor = document.getElementById('glowCursor');
-        const plasmaBg = document.getElementById('plasmaBg');
+        const dynamicEffect = document.getElementById('dynamicEffect');
+        const instructionText = document.getElementById('instructionText');
         let currentEffect = 'glow';
 
-        function switchEffect(effectName) {
+        function switchEffect(effectName, eventObj) {
             currentEffect = effectName;
             
-            // Atualiza botões da chave seletora
+            // Atualiza botões
             document.querySelectorAll('.tab-btn').forEach(btn => btn.classList.remove('active'));
-            event.target.classList.add('active');
+            eventObj.target.classList.add('active');
 
-            // Reseta estados visuais
-            glowCursor.style.display = 'none';
-            plasmaBg.style.display = 'none';
-
+            // Configurações específicas por aba
             if (effectName === 'glow') {
-                glowCursor.style.display = 'block';
-            } else if (effectName === 'nebula') {
-                plasmaBg.style.display = 'block';
+                dynamicEffect.className = 'effect-glow';
+                dynamicEffect.style.display = 'block';
+                instructionText.textContent = "Arraste ou clique para testar o Glow Aprimorado.";
+            } else if (effectName === 'ripple') {
+                dynamicEffect.style.display = 'none'; // No ripple usamos elementos criados dinamicamente no clique
+                instructionText.textContent = "Clique em qualquer ponto para ver a Onda de Toque.";
+            } else if (effectName === 'plasma') {
+                dynamicEffect.className = 'plasma-touch';
+                dynamicEffect.style.display = 'block';
+                instructionText.textContent = "Toque e arraste para mover o Plasma pelo universo.";
             }
         }
 
-        // Inicializa com o primeiro efeito ativo
-        glowCursor.style.display = 'block';
-
-        // Evento unificado de toque/mouse
+        // Movimento do cursor/toque para o Glow e o Plasma
         stage.addEventListener('pointermove', (e) => {
-            if (currentEffect === 'glow') {
+            if (currentEffect === 'glow' || currentEffect === 'plasma') {
                 const rect = stage.getBoundingClientRect();
                 const x = e.clientX - rect.left;
                 const y = e.clientY - rect.top;
-                glowCursor.style.left = `${x}px`;
-                glowCursor.style.top = `${y}px`;
+                dynamicEffect.style.left = `${x}px`;
+                dynamicEffect.style.top = `${y}px`;
             }
         });
 
-        // Efeito de clique / toque direto criando a onda (Ripple)
+        // Clique / Toque para disparar a onda (Ripple) ou interagir
         stage.addEventListener('pointerdown', (e) => {
-            if (currentEffect === 'ripple') {
-                const rect = stage.getBoundingClientRect();
-                const x = e.clientX - rect.left;
-                const y = e.clientY - rect.top;
+            const rect = stage.getBoundingClientRect();
+            const x = e.clientX - rect.left;
+            const y = e.clientY - rect.top;
 
+            if (currentEffect === 'ripple') {
                 const ripple = document.createElement('div');
                 ripple.classList.add('ripple');
                 ripple.style.left = `${x}px`;
@@ -239,10 +241,10 @@
                 
                 stage.appendChild(ripple);
 
-                // Remove o elemento após a animação acabar para não acumular lixo no DOM
+                // Remove o elemento após a animação acabar para limpar a memória
                 setTimeout(() => {
                     ripple.remove();
-                }, 800);
+                }, 600);
             }
         });
     </script>
