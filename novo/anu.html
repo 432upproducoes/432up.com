@@ -8,6 +8,7 @@
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;600;700;800&display=swap" rel="stylesheet">
   <script src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js"></script>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
   <style>
     :root {
       --bg-workspace: #08080A;
@@ -46,8 +47,12 @@
       user-select: none;
     }
 
-    /* HEADER CONTROLES RESPONSIVO */
+    /* HEADER CONTROLES FIXO NO TOPO */
     .top-bar {
+      position: fixed;
+      top: 0;
+      left: 0;
+      width: 100%;
       height: 64px;
       background: var(--panel-bg);
       border-bottom: 1px solid var(--panel-border);
@@ -55,7 +60,7 @@
       align-items: center;
       justify-content: space-between;
       padding: 0 16px;
-      z-index: 100;
+      z-index: 1000;
       backdrop-filter: blur(12px);
       gap: 12px;
       overflow-x: auto;
@@ -104,10 +109,16 @@
 
     .pill-btn.active.festa { background: var(--festa-champagne); color: #000; border-color: var(--festa-champagne); font-weight: 700; }
     .pill-btn.active.enterprise { background: linear-gradient(135deg, var(--ent-lilac), var(--ent-magenta)); color: #fff; border-color: var(--ent-lilac); font-weight: 700; }
-    .pill-btn.active.mode, .pill-btn.active.layout, .pill-btn.active.pill-style { background: rgba(255, 255, 255, 0.22); border-color: #fff; }
+    .pill-btn.active.mode, .pill-btn.active.layout, .pill-btn.active.pill-style, .pill-btn.active.aspect { background: rgba(255, 255, 255, 0.22); border-color: #fff; }
+
+    .export-actions {
+      display: flex;
+      gap: 8px;
+      flex-shrink: 0;
+    }
 
     .btn-export {
-      padding: 9px 16px;
+      padding: 9px 14px;
       border-radius: 20px;
       border: none;
       background: linear-gradient(135deg, #10b981, #059669);
@@ -116,6 +127,19 @@
       font-weight: 700;
       cursor: pointer;
       box-shadow: 0 4px 15px rgba(16, 185, 129, 0.3);
+      flex-shrink: 0;
+    }
+
+    .btn-export-pdf {
+      padding: 9px 14px;
+      border-radius: 20px;
+      border: none;
+      background: linear-gradient(135deg, #ef4444, #dc2626);
+      color: #fff;
+      font-size: 0.82rem;
+      font-weight: 700;
+      cursor: pointer;
+      box-shadow: 0 4px 15px rgba(239, 68, 68, 0.3);
       flex-shrink: 0;
     }
 
@@ -147,7 +171,7 @@
       display: flex;
       align-items: center;
       justify-content: center;
-      padding: 20px 10px;
+      padding: 84px 10px 20px 10px;
       overflow: auto;
       position: relative;
       z-index: 2;
@@ -161,7 +185,6 @@
     /* CARD DO ANÚNCIO */
     .ad-card {
       width: 440px;
-      max-width: 94vw;
       min-height: 630px;
       border-radius: 24px;
       padding: 24px 20px;
@@ -170,10 +193,23 @@
       justify-content: space-between;
       position: relative;
       box-shadow: 0 25px 60px -15px rgba(0, 0, 0, 0.7);
-      transition: all 0.3s ease;
+      transition: background 0.3s ease, border 0.3s ease;
       box-sizing: border-box;
       overflow: hidden;
       margin: auto;
+      transform-origin: center center;
+    }
+
+    /* PROPORÇÕES */
+    .ad-card.aspect-original { width: 440px; min-height: 630px; }
+    .ad-card.aspect-story { width: 440px; min-height: 782px; padding: 32px 20px; }
+    .ad-card.aspect-feed { width: 440px; min-height: 550px; padding: 18px 20px; }
+
+    @media (max-width: 460px) {
+      .ad-card { transform: scale(0.85); }
+    }
+    @media (max-width: 380px) {
+      .ad-card { transform: scale(0.75); }
     }
 
     /* PALETA FLUTUANTE DE TEXTO */
@@ -185,7 +221,7 @@
       border-radius: 30px;
       padding: 6px 12px;
       gap: 8px;
-      z-index: 1000;
+      z-index: 2000;
       box-shadow: 0 10px 25px rgba(0,0,0,0.5);
       backdrop-filter: blur(10px);
     }
@@ -200,36 +236,74 @@
     }
     .color-dot-btn:hover { transform: scale(1.25); }
 
-    /* BOTÕES DE REMOÇÃO TOTAL */
+    /* CONTROLES FLUTUANTES NAS CAIXAS */
     .removable-wrapper {
       position: relative;
       width: 100%;
+      cursor: grab;
+      touch-action: none;
     }
 
-    .btn-delete-element {
+    .removable-wrapper:active { cursor: grabbing; }
+
+    .floating-box-controls {
       position: absolute;
       right: -6px;
-      top: -6px;
-      width: 22px;
-      height: 22px;
-      border-radius: 50%;
-      background: #ef4444;
-      color: white;
-      border: none;
-      font-weight: bold;
-      font-size: 0.7rem;
-      cursor: pointer;
+      top: -12px;
       display: none;
       align-items: center;
-      justify-content: center;
-      box-shadow: 0 2px 8px rgba(0,0,0,0.4);
+      gap: 4px;
       z-index: 40;
     }
 
-    .removable-wrapper:hover .btn-delete-element { display: flex; }
+    .removable-wrapper:hover .floating-box-controls { display: flex; }
 
-    [contenteditable="true"] { outline: none; border: 1px dashed transparent; border-radius: 4px; padding: 2px 4px; }
+    .btn-control-box {
+      width: 22px;
+      height: 22px;
+      border-radius: 50%;
+      background: #3b82f6;
+      color: white;
+      border: none;
+      font-weight: bold;
+      font-size: 0.68rem;
+      cursor: pointer;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      box-shadow: 0 2px 8px rgba(0,0,0,0.4);
+    }
+
+    .btn-delete-element {
+      background: #ef4444 !important;
+    }
+
+    /* REGRAS DE TEXTO EDITÁVEL CORRIGIDAS */
+    [contenteditable="true"] { 
+      outline: none; 
+      border: 1px dashed transparent; 
+      border-radius: 4px; 
+      padding: 2px 4px;
+    }
+
     [contenteditable="true"]:hover { border-color: rgba(212, 176, 104, 0.5); background: rgba(255, 255, 255, 0.05); }
+
+    /* TRAVA DE LINHA APENAS NAS CAIXAS QUE DEVEM FICAR EM LINHA ÚNICA */
+    .urgency-badge, .item-pill, .cta-box, .card-site-link, .btn-add-item-canvas {
+      white-space: nowrap;
+    }
+
+    /* O RODAPÉ EXPLICATIVO AGORA DOBRA DE LINHA NATURALMENTE */
+    .card-promo-text {
+      white-space: normal !important;
+      word-wrap: break-word;
+      overflow-wrap: break-word;
+      line-height: 1.35;
+      font-size: 0.72rem;
+      opacity: 0.88;
+      text-align: center;
+      margin-top: 2px;
+    }
 
     .urgency-badge {
       align-self: center;
@@ -254,7 +328,7 @@
 
     .logo-container img {
       object-fit: contain;
-      transition: all 0.2s ease;
+      transition: filter 0.2s ease;
     }
 
     .logo-container img.logo-glow {
@@ -305,7 +379,7 @@
     .ad-card.magic-mode .cta-box { background: transparent !important; border: 1.5px solid currentColor !important; }
     .ad-card.magic-mode .urgency-badge { background: transparent !important; border: 1px solid currentColor !important; }
 
-    /* ESTRUTURA FOTO E ITENS */
+    /* ESTRUTURA FOTO COM ALÇA DE REDIMENSIONAMENTO NA BORDA */
     .photo-area {
       width: 100%;
       height: 160px;
@@ -319,6 +393,7 @@
       justify-content: center;
       background: rgba(0,0,0,0.03);
       cursor: pointer;
+      resize: vertical;
     }
 
     .photo-area img { width: 100%; height: 100%; object-fit: cover; }
@@ -391,9 +466,8 @@
       text-align: center !important;
     }
 
-    .card-footer-box { text-align: center !important; }
+    .card-footer-box { text-align: center !important; width: 100%; }
     .card-site-link { font-weight: 800; font-size: 0.88rem; letter-spacing: 0.5px; margin-bottom: 2px; }
-    .card-promo-text { font-size: 0.72rem; opacity: 0.85; line-height: 1.3; }
 
     .ad-card.layout-2 .photo-area { height: 210px; order: 1; }
     .ad-card.layout-2 .urgency-badge { order: 2; margin-top: 10px; }
@@ -444,13 +518,25 @@
 
       <span style="color: var(--panel-border);">|</span>
 
-      <!-- 2. MODO AMBIENTE (MOVIDO PARA O INÍCIO DO FLUXO) -->
+      <!-- 2. MODO AMBIENTE -->
       <button class="pill-btn active mode" id="btn-mode-light" onclick="setMode('light')">☀️ Dia</button>
       <button class="pill-btn mode" id="btn-mode-dark" onclick="setMode('dark')">🌙 Noite</button>
 
+      <!-- BOTÃO TIPO TOGGLE ÚNICO PARA CREME / MARROM -->
+      <div id="festa-box-options" style="display: flex;">
+        <button class="pill-btn active pill-style" id="btn-toggle-pill-style" onclick="togglePillStyle()">☕ Mudar para Marrom</button>
+      </div>
+
       <span style="color: var(--panel-border);">|</span>
 
-      <!-- 3. LAYOUTS E ELEMENTOS VISUAIS (COM FOTO POSICIONADA LOGO APÓS O LAYOUT 3) -->
+      <!-- 3. PROPORÇÕES -->
+      <button class="pill-btn active aspect" id="btn-aspect-original" onclick="setAspectRatio('original')">📄 Original</button>
+      <button class="pill-btn aspect" id="btn-aspect-story" onclick="setAspectRatio('story')">📱 Story / WhatsApp (9:16)</button>
+      <button class="pill-btn aspect" id="btn-aspect-feed" onclick="setAspectRatio('feed')">🖼️ Feed Insta (4:5)</button>
+
+      <span style="color: var(--panel-border);">|</span>
+
+      <!-- 4. LAYOUTS E FOTO -->
       <button class="pill-btn active layout" id="btn-layout-1" onclick="setLayout(1)">Layout 1 (Lista)</button>
       <button class="pill-btn layout" id="btn-layout-2" onclick="setLayout(2)">Layout 2 (Foto Destaque)</button>
       <button class="pill-btn layout" id="btn-layout-3" onclick="setLayout(3)">Layout 3 (Oferta/Valor)</button>
@@ -458,51 +544,68 @@
 
       <span style="color: var(--panel-border);">|</span>
 
-      <!-- 4. ALINHAMENTO E BOTÕES DA FESTA -->
+      <!-- 5. ALINHAMENTO DOS ITENS -->
       <div class="align-selector" title="Alinhamento dos Itens">
         <button class="align-btn-item" onclick="setItemAlign('left', this)">⬅️</button>
         <button class="align-btn-item active" onclick="setItemAlign('center', this)">↔️</button>
         <button class="align-btn-item" onclick="setItemAlign('right', this)">➡️</button>
       </div>
 
-      <div id="festa-box-options" style="display: flex; gap: 6px;">
-        <button class="pill-btn active pill-style" id="btn-style-creme" onclick="setPillStyle('creme')">🍦 Creme</button>
-        <button class="pill-btn pill-style" id="btn-style-marrom" onclick="setPillStyle('marrom')">☕ Marrom</button>
-      </div>
-
       <span style="color: var(--panel-border);">|</span>
 
-      <!-- 5. EFEITOS ESPECIAIS -->
+      <!-- 6. EFEITOS ESPECIAIS -->
       <button class="pill-btn" id="btn-toggle-magic" onclick="toggleMagicPNG()">✨ Magic PNG: OFF</button>
     </div>
 
-    <button class="btn-export" onclick="exportPNG()">Baixar PNG</button>
+    <div class="export-actions">
+      <button class="btn-export" onclick="exportPNG()">Baixar PNG</button>
+      <button class="btn-export-pdf" onclick="exportPDF()">Baixar PDF</button>
+    </div>
   </header>
 
   <main class="stage festa-light" id="preview-stage">
 
-    <div id="ad-card" class="ad-card festa light layout-1">
+    <div id="ad-card" class="ad-card festa light layout-1 aspect-original">
       
       <div class="removable-wrapper" id="wrap-badge" style="display: flex; justify-content: center;">
-        <div class="urgency-badge" contenteditable="true" id="card-badge">✦ DATA DISPONÍVEL • BRAGANÇA & ATIBAIA ✦</div>
-        <button class="btn-delete-element" title="Remover Caixa" onclick="removeElement('wrap-badge')">✕</button>
+        <div class="floating-box-controls">
+          <button class="btn-control-box" onclick="changeElementFontSize('wrap-badge', 1)" title="Aumentar fonte">A+</button>
+          <button class="btn-control-box" onclick="changeElementFontSize('wrap-badge', -1)" title="Diminuir fonte">A-</button>
+          <button class="btn-control-box btn-delete-element" title="Remover Caixa" onclick="removeElement('wrap-badge')">✕</button>
+        </div>
+        <div class="urgency-badge" contenteditable="true" id="card-badge">✦ BRAGANÇA PAULISTA & REGIÃO ✦</div>
       </div>
 
-      <!-- LOGO FESTA NO CONDOMÍNIO -->
+      <!-- LOGO -->
       <div class="removable-wrapper" id="wrap-logo">
-        <div class="logo-container" id="card-logo">
-          <img id="img-logo-element" src="logofesta.png" alt="Logo Marca" style="max-width: 198px; max-height: none;" onerror="this.style.display='none'" />
-
+        <div class="floating-box-controls">
+          <button class="btn-control-box" onclick="changeLogoSize(10)" title="Aumentar logo">A+</button>
+          <button class="btn-control-box" onclick="changeLogoSize(-10)" title="Diminuir logo">A-</button>
+          <button class="btn-control-box btn-delete-element" title="Remover Logo" onclick="removeElement('wrap-logo')">✕</button>
         </div>
-        <button class="btn-delete-element" title="Remover Logo" onclick="removeElement('wrap-logo')">✕</button>
+        <div class="logo-container" id="card-logo">
+          <img id="img-logo-element" src="imagens/logofesta.png" alt="Logo Marca" style="max-width: 198px; max-height: none;" onerror="this.style.display='none'" />
+        </div>
       </div>
 
-      <div class="removable-wrapper" id="wrap-header">
-        <div class="header-box">
-          <div class="header-subtitle" contenteditable="true" id="card-subtitle">SUA CELEBRAÇÃO COMPLETA</div>
-          <h1 class="header-title" contenteditable="true" id="card-title">Festa no Condomínio</h1>
+      <!-- SUBTÍTULO SEPARADO -->
+      <div class="removable-wrapper" id="wrap-subtitle" style="display: flex; justify-content: center; width: 100%;">
+        <div class="floating-box-controls">
+          <button class="btn-control-box" onclick="changeElementFontSize('wrap-subtitle', 1)" title="Aumentar fonte">A+</button>
+          <button class="btn-control-box" onclick="changeElementFontSize('wrap-subtitle', -1)" title="Diminuir fonte">A-</button>
+          <button class="btn-control-box btn-delete-element" title="Remover Subtítulo" onclick="removeElement('wrap-subtitle')">✕</button>
         </div>
-        <button class="btn-delete-element" title="Remover Título" onclick="removeElement('wrap-header')">✕</button>
+        <div class="header-subtitle" contenteditable="true" id="card-subtitle">SUA CELEBRAÇÃO COMPLETA</div>
+      </div>
+
+      <!-- TÍTULO PRINCIPAL SEPARADO -->
+      <div class="removable-wrapper" id="wrap-title" style="display: flex; justify-content: center; width: 100%;">
+        <div class="floating-box-controls">
+          <button class="btn-control-box" onclick="changeElementFontSize('wrap-title', 1)" title="Aumentar fonte">A+</button>
+          <button class="btn-control-box" onclick="changeElementFontSize('wrap-title', -1)" title="Diminuir fonte">A-</button>
+          <button class="btn-control-box btn-delete-element" title="Remover Título" onclick="removeElement('wrap-title')">✕</button>
+        </div>
+        <h1 class="header-title" contenteditable="true" id="card-title">Festa no Condomínio</h1>
       </div>
 
       <div class="photo-area" id="card-photo-area" style="display: none;" onclick="triggerPhotoUpload()">
@@ -514,34 +617,50 @@
       </div>
 
       <div class="removable-wrapper" id="wrap-offer" style="display: none;">
+        <div class="floating-box-controls">
+          <button class="btn-control-box" onclick="changeElementFontSize('wrap-offer', 1)" title="Aumentar fonte">A+</button>
+          <button class="btn-control-box" onclick="changeElementFontSize('wrap-offer', -1)" title="Diminuir fonte">A-</button>
+          <button class="btn-control-box btn-delete-element" title="Remover Oferta" onclick="removeElement('wrap-offer')">✕</button>
+        </div>
         <div class="offer-highlight-box" id="offer-box">
           <div class="offer-title" contenteditable="true" id="card-offer-title">FORMATO POCKET SESSION</div>
           <div class="offer-value" contenteditable="true" id="card-offer-val">R$ 1.290,00</div>
           <div style="font-size: 0.68rem; opacity: 0.8;" contenteditable="true" id="card-offer-sub">Especial para Áreas Gourmet</div>
         </div>
-        <button class="btn-delete-element" title="Remover Oferta" onclick="removeElement('wrap-offer')">✕</button>
       </div>
 
       <div class="items-list-wrapper" id="wrap-items" style="display: flex; flex-direction: column; gap: 4px;">
         <div class="items-list" id="card-items"></div>
         
         <div class="removable-wrapper" id="wrap-btn-add">
-          <div class="btn-add-item-canvas" id="btn-add-item" contenteditable="true">+ Adicionar Diferencial</div>
-          <button class="btn-delete-element" title="Remover esta tag" onclick="removeElement('wrap-btn-add')">✕</button>
+          <div class="floating-box-controls">
+            <button class="btn-control-box" onclick="changeElementFontSize('wrap-btn-add', 1)" title="Aumentar fonte">A+</button>
+            <button class="btn-control-box" onclick="changeElementFontSize('wrap-btn-add', -1)" title="Diminuir fonte">A-</button>
+            <button class="btn-control-box btn-delete-element" title="Remover esta tag" onclick="removeElement('wrap-btn-add')">✕</button>
+          </div>
+          <div class="btn-add-item-canvas" id="btn-add-item" contenteditable="true">Atendemos condomínio horizontais e verticais.</div>
         </div>
       </div>
 
       <div class="removable-wrapper" id="wrap-cta">
-        <div class="cta-box" contenteditable="true" id="card-cta">VEJA VALORES E MONTE SEU PACOTE!</div>
-        <button class="btn-delete-element" title="Remover Botão CTA" onclick="removeElement('wrap-cta')">✕</button>
+        <div class="floating-box-controls">
+          <button class="btn-control-box" onclick="changeElementFontSize('wrap-cta', 1)" title="Aumentar fonte">A+</button>
+          <button class="btn-control-box" onclick="changeElementFontSize('wrap-cta', -1)" title="Diminuir fonte">A-</button>
+          <button class="btn-control-box btn-delete-element" title="Remover Botão CTA" onclick="removeElement('wrap-cta')">✕</button>
+        </div>
+        <div class="cta-box" contenteditable="true" id="card-cta">VEJA VALORES E ESCOLHA SEU PACOTE!</div>
       </div>
 
       <div class="removable-wrapper" id="wrap-footer">
+        <div class="floating-box-controls">
+          <button class="btn-control-box" onclick="changeElementFontSize('wrap-footer', 1)" title="Aumentar fonte">A+</button>
+          <button class="btn-control-box" onclick="changeElementFontSize('wrap-footer', -1)" title="Diminuir fonte">A-</button>
+          <button class="btn-control-box btn-delete-element" title="Remover Rodapé" onclick="removeElement('wrap-footer')">✕</button>
+        </div>
         <div class="card-footer-box">
           <div class="card-site-link" contenteditable="true" id="card-site">WWW.FESTANOCONDOMINIO.COM.BR</div>
           <div class="card-promo-text" contenteditable="true" id="card-promo">Estrutura completa, som, luz e atrações com a melhor experiência para o seu evento.</div>
         </div>
-        <button class="btn-delete-element" title="Remover Rodapé" onclick="removeElement('wrap-footer')">✕</button>
       </div>
 
     </div>
@@ -554,25 +673,36 @@
     let currentTheme = 'festa';
     let currentMode = 'light';
     let currentLayout = 1;
+    let currentAspect = 'original';
     let pillStyle = 'creme';
     let showPhoto = false;
     let isMagicPNG = false;
     let itemAlignment = 'center';
     let activeEditableTarget = null;
 
-    let items = [
+    /* LISTA PADRÃO FESTA NO CONDOMÍNIO */
+    let itemsFesta = [
+      "DJs & MÚSICA AO VIVO DE ALTO NÍVEL",
+      "ESTRUTURA DE SOM E ILUMINAÇÃO CÊNICA",
+      "ATMOSFERA EM HARMONIA COM O SEU ESPAÇO"
+    ];
+
+    /* LISTA PADRÃO 432UP ENTERPRISE */
+    let itemsEnterprise = [
       "DJs & MÚSICA AO VIVO DE ALTO NÍVEL",
       "ESTRUTURA DE SOM E ILUMINAÇÃO CÊNICA",
       "PACOTES 100% PERSONALIZADOS"
     ];
 
+    let items = [...itemsFesta];
+
     function generateSpaceBackground(isDark) {
       const c = document.getElementById('star-generator');
       c.width = 440;
-      c.height = 630;
+      c.height = 782;
       const ctx = c.getContext('2d');
 
-      let bgGrad = ctx.createLinearGradient(0, 0, 440, 630);
+      let bgGrad = ctx.createLinearGradient(0, 0, 440, 782);
       if (isDark) {
         bgGrad.addColorStop(0, '#130C25');
         bgGrad.addColorStop(0.5, '#0B0716');
@@ -583,7 +713,7 @@
         bgGrad.addColorStop(1, '#DDD6FE');
       }
       ctx.fillStyle = bgGrad;
-      ctx.fillRect(0, 0, 440, 630);
+      ctx.fillRect(0, 0, 440, 782);
 
       let auroraGrad = ctx.createRadialGradient(220, 100, 10, 220, 100, 300);
       if (isDark) {
@@ -596,11 +726,11 @@
         auroraGrad.addColorStop(1, 'rgba(255,255,255,0)');
       }
       ctx.fillStyle = auroraGrad;
-      ctx.fillRect(0, 0, 440, 630);
+      ctx.fillRect(0, 0, 440, 782);
 
       for (let i = 0; i < 90; i++) {
         let x = Math.random() * 440;
-        let y = Math.random() * 630;
+        let y = Math.random() * 782;
         let r = Math.random() * 1.5;
         ctx.fillStyle = isDark ? 'rgba(0, 255, 102, ' + (0.3 + Math.random() * 0.7) + ')' : 'rgba(147, 51, 234, ' + (0.4 + Math.random() * 0.6) + ')';
         ctx.beginPath();
@@ -614,6 +744,25 @@
     function removeElement(wrapperId) {
       const el = document.getElementById(wrapperId);
       if (el) el.style.display = 'none';
+    }
+
+    function changeElementFontSize(wrapperId, delta) {
+      const parent = document.getElementById(wrapperId);
+      if (!parent) return;
+      const target = parent.querySelector('[contenteditable="true"]') || parent.querySelector('.urgency-badge') || parent.querySelector('.header-title') || parent.querySelector('.header-subtitle') || parent.querySelector('.cta-box') || parent.querySelector('.card-promo-text');
+      if (target) {
+        const style = window.getComputedStyle(target);
+        let currentSize = parseFloat(style.fontSize);
+        target.style.fontSize = (currentSize + delta) + 'px';
+      }
+    }
+
+    function changeLogoSize(delta) {
+      const logoImg = document.getElementById('img-logo-element');
+      if (logoImg) {
+        let currentWidth = parseInt(logoImg.style.maxWidth) || 198;
+        logoImg.style.maxWidth = (currentWidth + delta) + 'px';
+      }
     }
 
     function toggleMagicPNG() {
@@ -654,32 +803,30 @@
 
       items.forEach((text, idx) => {
         const wrapper = document.createElement('div');
-        wrapper.className = 'item-pill-wrapper';
+        wrapper.className = 'removable-wrapper item-pill-wrapper';
+        wrapper.id = `item-wrapper-${idx}`;
 
         let justify = 'center';
         if (itemAlignment === 'left') justify = 'flex-start';
         if (itemAlignment === 'right') justify = 'flex-end';
 
         wrapper.innerHTML = `
+          <div class="floating-box-controls">
+            <button class="btn-control-box" onclick="changeElementFontSize('item-wrapper-${idx}', 1)" title="Aumentar fonte">A+</button>
+            <button class="btn-control-box" onclick="changeElementFontSize('item-wrapper-${idx}', -1)" title="Diminuir fonte">A-</button>
+            <button class="btn-control-box btn-delete-element" type="button" onclick="removeItem(${idx})" title="Remover item">✕</button>
+          </div>
           <div class="item-pill style-${pillStyle}" style="justify-content: ${justify}">
             <span class="pill-dot">✦</span>
             <span contenteditable="true" onblur="items[${idx}] = this.innerText">${text}</span>
             ${idx === items.length - 1 && items.length < 6 ? `<button type="button" class="btn-add-inline" onclick="addItem()" title="Adicionar mais um diferencial">+</button>` : ''}
           </div>
-          <button class="btn-delete-element" style="display:none;" type="button" onclick="removeItem(${idx})" title="Remover item">✕</button>
         `;
-
-        wrapper.addEventListener('mouseenter', () => {
-          const btn = wrapper.querySelector('.btn-delete-element');
-          if (btn) btn.style.display = 'flex';
-        });
-        wrapper.addEventListener('mouseleave', () => {
-          const btn = wrapper.querySelector('.btn-delete-element');
-          if (btn) btn.style.display = 'none';
-        });
 
         container.appendChild(wrapper);
       });
+
+      initDraggableElements();
     }
 
     function addItem() {
@@ -702,10 +849,10 @@
       btnEl.classList.add('active');
     }
 
-    function setPillStyle(style) {
-      pillStyle = style;
-      document.getElementById('btn-style-creme').className = `pill-btn pill-style ${style === 'creme' ? 'active' : ''}`;
-      document.getElementById('btn-style-marrom').className = `pill-btn pill-style ${style === 'marrom' ? 'active' : ''}`;
+    function togglePillStyle() {
+      pillStyle = pillStyle === 'creme' ? 'marrom' : 'creme';
+      const btn = document.getElementById('btn-toggle-pill-style');
+      btn.innerText = pillStyle === 'creme' ? '☕ Mudar para Marrom' : '🍦 Mudar para Creme';
       renderItems();
     }
 
@@ -720,23 +867,42 @@
       logoImg.style.display = 'block';
 
       if (theme === 'festa') {
-        logoImg.src = 'logofesta.png';
+        logoImg.src = 'imagens/logofesta.png';
         logoImg.style.maxWidth = '198px';
         logoImg.style.maxHeight = 'none';
+
+        document.getElementById('card-badge').innerText = "✦ BRAGANÇA PAULISTA & REGIÃO ✦";
         document.getElementById('card-title').innerText = "Festa no Condomínio";
         document.getElementById('card-subtitle').innerText = "SUA CELEBRAÇÃO COMPLETA";
+        document.getElementById('card-cta').innerText = "VEJA VALORES E ESCOLHA SEU PACOTE!";
+        document.getElementById('btn-add-item').innerText = "Atendemos condomínio horizontais e verticais.";
         document.getElementById('card-site').innerText = "WWW.FESTANOCONDOMINIO.COM.BR";
         document.getElementById('card-promo').innerText = "Estrutura completa, som, luz e atrações com a melhor experiência para o seu evento.";
+        
+        items = [...itemsFesta];
       } else {
-        logoImg.src = 'logo.png';
+        logoImg.src = 'imagens/logo432.png';
         logoImg.style.maxWidth = '260px';
         logoImg.style.maxHeight = '100px';
+
+        document.getElementById('card-badge').innerText = "✦ DATA DISPONÍVEL • BRAGANÇA & ATIBAIA ✦";
         document.getElementById('card-title').innerHTML = "432UP <span>PRODUÇÕES</span>";
         document.getElementById('card-subtitle').innerText = "ALTA ENGENHARIA AUDIOVISUAL";
+        document.getElementById('card-cta').innerText = "VEJA VALORES E MONTE SEU PACOTE!";
+        document.getElementById('btn-add-item').innerText = "+ Adicionar Diferencial";
         document.getElementById('card-site').innerText = "WWW.432UP.COM";
         document.getElementById('card-promo').innerText = "Precisão acústica, iluminação cênica e curadoria artística de alto padrão.";
+
+        items = [...itemsEnterprise];
       }
 
+      updateCardStyle();
+    }
+
+    function setAspectRatio(aspect) {
+      currentAspect = aspect;
+      document.querySelectorAll('.controls-group .pill-btn.aspect').forEach(btn => btn.classList.remove('active'));
+      document.getElementById(`btn-aspect-${aspect}`).classList.add('active');
       updateCardStyle();
     }
 
@@ -769,7 +935,7 @@
       const stage = document.getElementById('preview-stage');
       const logoImg = document.getElementById('img-logo-element');
 
-      card.className = `ad-card ${currentTheme} ${currentMode} layout-${currentLayout}`;
+      card.className = `ad-card ${currentTheme} ${currentMode} layout-${currentLayout} aspect-${currentAspect}`;
       stage.className = `stage ${currentTheme}-${currentMode}`;
 
       if (currentMode === 'dark') {
@@ -825,6 +991,49 @@
       }
     }
 
+    /* LÓGICA DE ARRASTE LIVRE (DRAG & DROP) */
+    function initDraggableElements() {
+      document.querySelectorAll('.removable-wrapper').forEach(el => {
+        let isDragging = false;
+        let startY, currentY, initialTranslateY = 0;
+
+        el.addEventListener('pointerdown', (e) => {
+          if (e.target.isContentEditable || e.target.classList.contains('btn-control-box') || e.target.classList.contains('btn-add-inline')) return;
+          
+          isDragging = true;
+          startY = e.clientY;
+          
+          const style = window.getComputedStyle(el);
+          const matrix = new WebKitCSSMatrix(style.transform);
+          initialTranslateY = matrix.f;
+          
+          el.setPointerCapture(e.pointerId);
+        });
+
+        el.addEventListener('pointermove', (e) => {
+          if (!isDragging) return;
+          const deltaY = e.clientY - startY;
+          currentY = initialTranslateY + deltaY;
+          el.style.transform = `translateY(${currentY}px)`;
+        });
+
+        const stopDrag = (e) => {
+          if (isDragging) {
+            isDragging = false;
+            try { el.releasePointerCapture(e.pointerId); } catch (err) {}
+          }
+        };
+
+        el.addEventListener('pointerup', stopDrag);
+        el.addEventListener('pointercancel', stopDrag);
+      });
+    }
+
+    function getFileName() {
+      const brandName = currentTheme === 'festa' ? 'Festa-no-Condomínio' : '432UP-Enterprise';
+      return `Proposta-de-Evento-${brandName}-${currentAspect}`;
+    }
+
     function exportPNG() {
       const card = document.getElementById('ad-card');
       const btn = document.querySelector('.btn-export');
@@ -832,7 +1041,7 @@
 
       btn.innerHTML = '⚡ Gerando...';
 
-      document.querySelectorAll('.btn-delete-element, .btn-add-inline').forEach(b => b.style.visibility = 'hidden');
+      document.querySelectorAll('.floating-box-controls, .btn-add-inline').forEach(b => b.style.visibility = 'hidden');
 
       html2canvas(card, {
         scale: 3,
@@ -840,19 +1049,58 @@
         backgroundColor: null
       }).then(canvas => {
         const link = document.createElement('a');
-        link.download = `anuncio-${currentTheme}-layout${currentLayout}-${currentMode}${isMagicPNG ? '-magic' : ''}.png`;
+        link.download = `${getFileName()}.png`;
         link.href = canvas.toDataURL('image/png');
         link.click();
         btn.innerHTML = originalText;
-        document.querySelectorAll('.btn-delete-element, .btn-add-inline').forEach(b => b.style.visibility = 'visible');
+        document.querySelectorAll('.floating-box-controls, .btn-add-inline').forEach(b => b.style.visibility = 'visible');
       }).catch(err => {
-        alert("Erro ao exportar a arte: " + err);
+        alert("Erro ao exportar PNG: " + err);
         btn.innerHTML = originalText;
-        document.querySelectorAll('.btn-delete-element, .btn-add-inline').forEach(b => b.style.visibility = 'visible');
+        document.querySelectorAll('.floating-box-controls, .btn-add-inline').forEach(b => b.style.visibility = 'visible');
+      });
+    }
+
+    function exportPDF() {
+      const card = document.getElementById('ad-card');
+      const btn = document.querySelector('.btn-export-pdf');
+      const originalText = btn.innerHTML;
+
+      btn.innerHTML = '⚡ Gerando PDF...';
+
+      document.querySelectorAll('.floating-box-controls, .btn-add-inline').forEach(b => b.style.visibility = 'hidden');
+
+      html2canvas(card, {
+        scale: 3,
+        useCORS: true,
+        backgroundColor: null
+      }).then(canvas => {
+        const imgData = canvas.toDataURL('image/png');
+        const { jsPDF } = window.jspdf;
+        
+        const pdfWidth = canvas.width / 3;
+        const pdfHeight = canvas.height / 3;
+
+        const pdf = new jsPDF({
+          orientation: pdfWidth > pdfHeight ? 'landscape' : 'portrait',
+          unit: 'px',
+          format: [pdfWidth, pdfHeight]
+        });
+
+        pdf.addImage(imgData, 'PNG', 0, 0, pdfWidth, pdfHeight);
+        pdf.save(`${getFileName()}.pdf`);
+
+        btn.innerHTML = originalText;
+        document.querySelectorAll('.floating-box-controls, .btn-add-inline').forEach(b => b.style.visibility = 'visible');
+      }).catch(err => {
+        alert("Erro ao exportar PDF: " + err);
+        btn.innerHTML = originalText;
+        document.querySelectorAll('.floating-box-controls, .btn-add-inline').forEach(b => b.style.visibility = 'visible');
       });
     }
 
     renderItems();
+    setTheme('festa');
   </script>
 </body>
 </html>
