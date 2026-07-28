@@ -274,6 +274,10 @@
       box-shadow: 0 2px 8px rgba(0,0,0,0.4);
     }
 
+    .btn-control-box.btn-layer {
+      background: #8b5cf6 !important;
+    }
+
     .btn-delete-element {
       background: #ef4444 !important;
     }
@@ -293,7 +297,7 @@
       white-space: nowrap;
     }
 
-    /* O RODAPÉ EXPLICATIVO AGORA DOBRA DE LINHA NATURALMENTE */
+    /* O RODAPÉ EXPLICATIVO DOBRA DE LINHA NATURALMENTE */
     .card-promo-text {
       white-space: normal !important;
       word-wrap: break-word;
@@ -379,7 +383,7 @@
     .ad-card.magic-mode .cta-box { background: transparent !important; border: 1.5px solid currentColor !important; }
     .ad-card.magic-mode .urgency-badge { background: transparent !important; border: 1px solid currentColor !important; }
 
-    /* ESTRUTURA FOTO COM ALÇA DE REDIMENSIONAMENTO NA BORDA */
+    /* ESTRUTURA FOTO ARRASTÁVEL COM REDIMENSIONAMENTO SOLTO (LARGURA + ALTURA) */
     .photo-area {
       width: 100%;
       height: 160px;
@@ -393,7 +397,7 @@
       justify-content: center;
       background: rgba(0,0,0,0.03);
       cursor: pointer;
-      resize: vertical;
+      resize: both; /* REDIMENSIONAMENTO TOTALMENTE SOLTO */
     }
 
     .photo-area img { width: 100%; height: 100%; object-fit: cover; }
@@ -466,7 +470,7 @@
       text-align: center !important;
     }
 
-    .card-footer-box { text-align: center !important; width: 100%; }
+    .card-footer-box { text-align: center !important; width: 100%; padding: 4px 0; }
     .card-site-link { font-weight: 800; font-size: 0.88rem; letter-spacing: 0.5px; margin-bottom: 2px; }
 
     .ad-card.layout-2 .photo-area { height: 210px; order: 1; }
@@ -571,6 +575,8 @@
         <div class="floating-box-controls">
           <button class="btn-control-box" onclick="changeElementFontSize('wrap-badge', 1)" title="Aumentar fonte">A+</button>
           <button class="btn-control-box" onclick="changeElementFontSize('wrap-badge', -1)" title="Diminuir fonte">A-</button>
+          <button class="btn-control-box btn-layer" onclick="changeZIndex('wrap-badge', 1)" title="Trazer para frente">⬆️</button>
+          <button class="btn-control-box btn-layer" onclick="changeZIndex('wrap-badge', -1)" title="Enviar para trás">⬇️</button>
           <button class="btn-control-box btn-delete-element" title="Remover Caixa" onclick="removeElement('wrap-badge')">✕</button>
         </div>
         <div class="urgency-badge" contenteditable="true" id="card-badge">✦ BRAGANÇA PAULISTA & REGIÃO ✦</div>
@@ -581,6 +587,8 @@
         <div class="floating-box-controls">
           <button class="btn-control-box" onclick="changeLogoSize(10)" title="Aumentar logo">A+</button>
           <button class="btn-control-box" onclick="changeLogoSize(-10)" title="Diminuir logo">A-</button>
+          <button class="btn-control-box btn-layer" onclick="changeZIndex('wrap-logo', 1)" title="Trazer para frente">⬆️</button>
+          <button class="btn-control-box btn-layer" onclick="changeZIndex('wrap-logo', -1)" title="Enviar para trás">⬇️</button>
           <button class="btn-control-box btn-delete-element" title="Remover Logo" onclick="removeElement('wrap-logo')">✕</button>
         </div>
         <div class="logo-container" id="card-logo">
@@ -593,6 +601,8 @@
         <div class="floating-box-controls">
           <button class="btn-control-box" onclick="changeElementFontSize('wrap-subtitle', 1)" title="Aumentar fonte">A+</button>
           <button class="btn-control-box" onclick="changeElementFontSize('wrap-subtitle', -1)" title="Diminuir fonte">A-</button>
+          <button class="btn-control-box btn-layer" onclick="changeZIndex('wrap-subtitle', 1)" title="Trazer para frente">⬆️</button>
+          <button class="btn-control-box btn-layer" onclick="changeZIndex('wrap-subtitle', -1)" title="Enviar para trás">⬇️</button>
           <button class="btn-control-box btn-delete-element" title="Remover Subtítulo" onclick="removeElement('wrap-subtitle')">✕</button>
         </div>
         <div class="header-subtitle" contenteditable="true" id="card-subtitle">SUA CELEBRAÇÃO COMPLETA</div>
@@ -603,23 +613,35 @@
         <div class="floating-box-controls">
           <button class="btn-control-box" onclick="changeElementFontSize('wrap-title', 1)" title="Aumentar fonte">A+</button>
           <button class="btn-control-box" onclick="changeElementFontSize('wrap-title', -1)" title="Diminuir fonte">A-</button>
+          <button class="btn-control-box btn-layer" onclick="changeZIndex('wrap-title', 1)" title="Trazer para frente">⬆️</button>
+          <button class="btn-control-box btn-layer" onclick="changeZIndex('wrap-title', -1)" title="Enviar para trás">⬇️</button>
           <button class="btn-control-box btn-delete-element" title="Remover Título" onclick="removeElement('wrap-title')">✕</button>
         </div>
         <h1 class="header-title" contenteditable="true" id="card-title">Festa no Condomínio</h1>
       </div>
 
-      <div class="photo-area" id="card-photo-area" style="display: none;" onclick="triggerPhotoUpload()">
-        <div class="photo-placeholder" id="photo-placeholder">
-          <span style="font-size: 1.3rem;">📷</span>
-          <span>Clique para carregar sua foto</span>
+      <!-- CONTAINER DA FOTO ARRASTÁVEL COM RESIZE LIVRE -->
+      <div class="removable-wrapper" id="wrap-photo" style="display: none;">
+        <div class="floating-box-controls">
+          <button class="btn-control-box btn-layer" onclick="changeZIndex('wrap-photo', 1)" title="Trazer para frente">⬆️</button>
+          <button class="btn-control-box btn-layer" onclick="changeZIndex('wrap-photo', -1)" title="Enviar para trás">⬇️</button>
+          <button class="btn-control-box btn-delete-element" title="Remover Foto" onclick="removeElement('wrap-photo')">✕</button>
         </div>
-        <img id="card-photo-img" src="" style="display: none;" alt="Destaque" />
+        <div class="photo-area" id="card-photo-area" onclick="triggerPhotoUpload()">
+          <div class="photo-placeholder" id="photo-placeholder">
+            <span style="font-size: 1.3rem;">📷</span>
+            <span>Clique para carregar sua foto</span>
+          </div>
+          <img id="card-photo-img" src="" style="display: none;" alt="Destaque" />
+        </div>
       </div>
 
       <div class="removable-wrapper" id="wrap-offer" style="display: none;">
         <div class="floating-box-controls">
           <button class="btn-control-box" onclick="changeElementFontSize('wrap-offer', 1)" title="Aumentar fonte">A+</button>
           <button class="btn-control-box" onclick="changeElementFontSize('wrap-offer', -1)" title="Diminuir fonte">A-</button>
+          <button class="btn-control-box btn-layer" onclick="changeZIndex('wrap-offer', 1)" title="Trazer para frente">⬆️</button>
+          <button class="btn-control-box btn-layer" onclick="changeZIndex('wrap-offer', -1)" title="Enviar para trás">⬇️</button>
           <button class="btn-control-box btn-delete-element" title="Remover Oferta" onclick="removeElement('wrap-offer')">✕</button>
         </div>
         <div class="offer-highlight-box" id="offer-box">
@@ -636,6 +658,8 @@
           <div class="floating-box-controls">
             <button class="btn-control-box" onclick="changeElementFontSize('wrap-btn-add', 1)" title="Aumentar fonte">A+</button>
             <button class="btn-control-box" onclick="changeElementFontSize('wrap-btn-add', -1)" title="Diminuir fonte">A-</button>
+            <button class="btn-control-box btn-layer" onclick="changeZIndex('wrap-btn-add', 1)" title="Trazer para frente">⬆️</button>
+            <button class="btn-control-box btn-layer" onclick="changeZIndex('wrap-btn-add', -1)" title="Enviar para trás">⬇️</button>
             <button class="btn-control-box btn-delete-element" title="Remover esta tag" onclick="removeElement('wrap-btn-add')">✕</button>
           </div>
           <div class="btn-add-item-canvas" id="btn-add-item" contenteditable="true">Atendemos condomínio horizontais e verticais.</div>
@@ -646,15 +670,20 @@
         <div class="floating-box-controls">
           <button class="btn-control-box" onclick="changeElementFontSize('wrap-cta', 1)" title="Aumentar fonte">A+</button>
           <button class="btn-control-box" onclick="changeElementFontSize('wrap-cta', -1)" title="Diminuir fonte">A-</button>
+          <button class="btn-control-box btn-layer" onclick="changeZIndex('wrap-cta', 1)" title="Trazer para frente">⬆️</button>
+          <button class="btn-control-box btn-layer" onclick="changeZIndex('wrap-cta', -1)" title="Enviar para trás">⬇️</button>
           <button class="btn-control-box btn-delete-element" title="Remover Botão CTA" onclick="removeElement('wrap-cta')">✕</button>
         </div>
         <div class="cta-box" contenteditable="true" id="card-cta">VEJA VALORES E ESCOLHA SEU PACOTE!</div>
       </div>
 
+      <!-- RODAPÉ CORRIGIDO PARA ARRASTE LIVRE -->
       <div class="removable-wrapper" id="wrap-footer">
         <div class="floating-box-controls">
           <button class="btn-control-box" onclick="changeElementFontSize('wrap-footer', 1)" title="Aumentar fonte">A+</button>
           <button class="btn-control-box" onclick="changeElementFontSize('wrap-footer', -1)" title="Diminuir fonte">A-</button>
+          <button class="btn-control-box btn-layer" onclick="changeZIndex('wrap-footer', 1)" title="Trazer para frente">⬆️</button>
+          <button class="btn-control-box btn-layer" onclick="changeZIndex('wrap-footer', -1)" title="Enviar para trás">⬇️</button>
           <button class="btn-control-box btn-delete-element" title="Remover Rodapé" onclick="removeElement('wrap-footer')">✕</button>
         </div>
         <div class="card-footer-box">
@@ -757,6 +786,14 @@
       }
     }
 
+    function changeZIndex(wrapperId, delta) {
+      const parent = document.getElementById(wrapperId);
+      if (!parent) return;
+      const style = window.getComputedStyle(parent);
+      let currentZ = parseInt(style.zIndex) || 1;
+      parent.style.zIndex = Math.max(1, currentZ + delta);
+    }
+
     function changeLogoSize(delta) {
       const logoImg = document.getElementById('img-logo-element');
       if (logoImg) {
@@ -814,6 +851,8 @@
           <div class="floating-box-controls">
             <button class="btn-control-box" onclick="changeElementFontSize('item-wrapper-${idx}', 1)" title="Aumentar fonte">A+</button>
             <button class="btn-control-box" onclick="changeElementFontSize('item-wrapper-${idx}', -1)" title="Diminuir fonte">A-</button>
+            <button class="btn-control-box btn-layer" onclick="changeZIndex('item-wrapper-${idx}', 1)" title="Trazer para frente">⬆️</button>
+            <button class="btn-control-box btn-layer" onclick="changeZIndex('item-wrapper-${idx}', -1)" title="Enviar para trás">⬇️</button>
             <button class="btn-control-box btn-delete-element" type="button" onclick="removeItem(${idx})" title="Remover item">✕</button>
           </div>
           <div class="item-pill style-${pillStyle}" style="justify-content: ${justify}">
@@ -965,11 +1004,11 @@
     function togglePhotoSpace() {
       showPhoto = !showPhoto;
       const btn = document.getElementById('btn-toggle-photo');
-      const photoArea = document.getElementById('card-photo-area');
+      const photoWrap = document.getElementById('wrap-photo');
 
       btn.innerText = `📷 Foto: ${showPhoto ? 'ON' : 'OFF'}`;
       btn.style.borderColor = showPhoto ? '#10b981' : 'var(--panel-border)';
-      photoArea.style.display = showPhoto ? 'flex' : 'none';
+      photoWrap.style.display = showPhoto ? 'block' : 'none';
     }
 
     function triggerPhotoUpload() {
@@ -991,14 +1030,15 @@
       }
     }
 
-    /* LÓGICA DE ARRASTE LIVRE (DRAG & DROP) */
+    /* LÓGICA DE ARRASTE LIVRE MELHORADA COM TOLERÂNCIA DE CLIQUE */
     function initDraggableElements() {
       document.querySelectorAll('.removable-wrapper').forEach(el => {
         let isDragging = false;
         let startY, currentY, initialTranslateY = 0;
 
         el.addEventListener('pointerdown', (e) => {
-          if (e.target.isContentEditable || e.target.classList.contains('btn-control-box') || e.target.classList.contains('btn-add-inline')) return;
+          if (e.target.isContentEditable && e.target.offsetWidth > 0) return;
+          if (e.target.classList.contains('btn-control-box') || e.target.classList.contains('btn-add-inline')) return;
           
           isDragging = true;
           startY = e.clientY;
