@@ -208,3 +208,152 @@ async function handleProgressFormSubmit(e) {
   btn.disabled = false; 
   closeLeadModal();
 }
+
+
+
+
+
+
+
+
+
+
+
+
+
+//teste de toque 
+/* --- 1. LÓGICA DO TOQUE DE PLASMA (SEUS PARÂMETROS CALIBRADOS) --- */
+function trigger432upPlasma(x, y) {
+  const plasmaLayer = document.getElementById('plasmaLayer');
+  if (!plasmaLayer) return;
+
+  const group = document.createElement('div');
+  group.className = 'ripple-group';
+  group.style.left = `${x}px`;
+  group.style.top = `${y}px`;
+
+  const wave = document.createElement('div');
+  wave.className = 'plasma-wave';
+
+  // Parâmetros calibrados do print
+  const colorRgb = '168, 85, 247'; // Lilás oficial
+  const alpha = 0.65;              // Opacidade
+  const borderPx = 8;              // Espessura
+  const blurPx = 31;               // Blur
+  const radiusPx = 350;            // Raio de alcance
+  const durationSec = 2.7;         // Duração (~67 BPM)
+
+  wave.style.border = `${borderPx}px solid rgba(${colorRgb}, ${alpha})`;
+  wave.style.background = `radial-gradient(circle, rgba(${colorRgb}, ${alpha * 0.4}) 0%, transparent 80%)`;
+  wave.style.boxShadow = `0 0 ${blurPx}px rgba(${colorRgb}, ${alpha * 0.8})`;
+
+  wave.animate([
+    {
+      width: '10px',
+      height: '10px',
+      opacity: alpha * 1.4,
+      filter: `blur(${blurPx * 0.1}px)`
+    },
+    {
+      width: `${radiusPx * 0.35}px`,
+      height: `${radiusPx * 0.35}px`,
+      opacity: alpha,
+      filter: `blur(${blurPx * 0.4}px)`,
+      offset: 0.3
+    },
+    {
+      width: `${radiusPx}px`,
+      height: `${radiusPx}px`,
+      opacity: 0,
+      filter: `blur(${blurPx * 1.3}px)`
+    }
+  ], {
+    duration: durationSec * 1000,
+    easing: 'cubic-bezier(0.12, 0.8, 0.32, 1)', // Curva V3
+    fill: 'forwards'
+  });
+
+  group.appendChild(wave);
+  plasmaLayer.appendChild(group);
+
+  setTimeout(() => group.remove(), (durationSec + 0.5) * 1000);
+}
+
+// Escuta o toque ou clique do usuário em qualquer lugar da tela
+window.addEventListener('pointerdown', (e) => {
+  trigger432upPlasma(e.clientX, e.clientY);
+});
+
+/* --- 2. RENDERIZADOR DAS FIBRAS DIAGONAIS EM CANVAS --- */
+function initDiagonalCanvas() {
+  const canvas = document.getElementById('diagonalCanvas');
+  if (!canvas) return;
+  const ctx = canvas.getContext('2d');
+  
+  let width = canvas.width = window.innerWidth;
+  let height = canvas.height = window.innerHeight;
+
+  window.addEventListener('resize', () => {
+    width = canvas.width = window.innerWidth;
+    height = canvas.height = window.innerHeight;
+  });
+
+  const fibers = [];
+  for (let i = 0; i < 5; i++) {
+    fibers.push({
+      startX: (i * (width / 3)) - (width * 0.15),
+      angle: -Math.PI / 4,
+      amplitude: 45 + Math.random() * 60,
+      frequency: 0.001 + Math.random() * 0.001,
+      speed: 0.0015 + Math.random() * 0.003,
+      phase: Math.random() * Math.PI * 2,
+      coreThickness: 3 + Math.random() * 2,
+      glowBlur: 30 + Math.random() * 20,
+      color: i % 2 === 0 ? 'rgba(0, 230, 118, ' : 'rgba(192, 132, 252, ',
+      alpha: 0.22 + Math.random() * 0.18
+    });
+  }
+
+  function render() {
+    ctx.clearRect(0, 0, width, height);
+    fibers.forEach(f => {
+      f.phase += f.speed;
+      ctx.save();
+      ctx.translate(f.startX, 0);
+      ctx.rotate(f.angle);
+
+      ctx.beginPath();
+      ctx.lineWidth = f.coreThickness * 4.5;
+      ctx.strokeStyle = f.color + (f.alpha * 0.2) + ')';
+      ctx.shadowBlur = f.glowBlur;
+      ctx.shadowColor = f.color + '0.8)';
+
+      for (let y = -height; y < height * 2; y += 25) {
+        let x = Math.sin(y * f.frequency + f.phase) * f.amplitude;
+        if (y === -height) ctx.moveTo(x, y);
+        else ctx.lineTo(x, y);
+      }
+      ctx.stroke();
+
+      ctx.beginPath();
+      ctx.lineWidth = f.coreThickness;
+      ctx.strokeStyle = 'rgba(255, 255, 255, ' + (f.alpha * 0.7) + ')';
+      ctx.shadowBlur = 10;
+      ctx.shadowColor = f.color + '1)';
+
+      for (let y = -height; y < height * 2; y += 25) {
+        let x = Math.sin(y * f.frequency + f.phase) * f.amplitude;
+        if (y === -height) ctx.moveTo(x, y);
+        else ctx.lineTo(x, y);
+      }
+      ctx.stroke();
+      ctx.restore();
+    });
+    requestAnimationFrame(render);
+  }
+  render();
+}
+
+window.addEventListener('DOMContentLoaded', () => {
+  initDiagonalCanvas();
+});
