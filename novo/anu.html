@@ -25,6 +25,7 @@
       /* 432UP Enterprise */
       --ent-lime: #00FF66;
       --ent-lilac: #A855F7;
+      --ent-magenta: #FF007F;
     }
 
     * {
@@ -67,7 +68,7 @@
     }
 
     .brand-title span {
-      background: linear-gradient(135deg, var(--festa-champagne), var(--ent-lilac));
+      background: linear-gradient(135deg, var(--festa-champagne), var(--ent-magenta));
       -webkit-background-clip: text;
       -webkit-text-fill-color: transparent;
     }
@@ -93,7 +94,7 @@
     .pill-btn:hover { background: rgba(255, 255, 255, 0.12); }
 
     .pill-btn.active.festa { background: var(--festa-champagne); color: #000; border-color: var(--festa-champagne); font-weight: 700; }
-    .pill-btn.active.enterprise { background: linear-gradient(135deg, var(--ent-lilac), #FF007F); color: #fff; border-color: var(--ent-lilac); font-weight: 700; }
+    .pill-btn.active.enterprise { background: linear-gradient(135deg, var(--ent-lilac), var(--ent-magenta)); color: #fff; border-color: var(--ent-lilac); font-weight: 700; }
     .pill-btn.active.mode, .pill-btn.active.layout, .pill-btn.active.pill-style { background: rgba(255, 255, 255, 0.22); border-color: #fff; }
 
     .btn-export {
@@ -162,7 +163,7 @@
       overflow: hidden;
     }
 
-    /* BARRA DE CORES FLUTUANTE DE TEXTO */
+    /* PALETA FLUTUANTE DE TEXTO COM MAGENTA ADICIONADO */
     #text-color-palette {
       position: absolute;
       display: none;
@@ -186,7 +187,7 @@
     }
     .color-dot-btn:hover { transform: scale(1.25); }
 
-    /* BOTÕES DE REMOÇÃO GENÉRICOS DE ELEMENTOS DO CARD */
+    /* BOTÕES DE REMOÇÃO TOTAL DE ELEMENTOS */
     .removable-wrapper {
       position: relative;
       width: 100%;
@@ -229,18 +230,18 @@
       text-align: center;
     }
 
-    /* CONTAINER DA LOGO EM IMAGEM HOSPESDADA (REDIMENSIONADO / DOBRO DO TAMANHO) */
+    /* CONTAINER DA LOGO EM IMAGEM (TAMANHO AMPLIADO) */
     .logo-container {
       display: flex;
       justify-content: center;
       align-items: center;
       margin-bottom: 8px;
-      height: 80px; /* Aumentado de 48px para 80px */
+      height: 80px;
     }
 
     .logo-container img {
       max-height: 100%;
-      max-width: 260px; /* Aumentado de 180px para 260px */
+      max-width: 260px;
       object-fit: contain;
     }
 
@@ -281,7 +282,7 @@
     .ad-card.enterprise.dark .item-pill .pill-dot { color: #00FF66; }
     .ad-card.enterprise.dark .cta-box { background: rgba(0, 255, 102, 0.15); border: 1px solid rgba(0, 255, 102, 0.5); color: #FFFFFF; text-align: center; }
 
-    /* MODO DIA NO 432UP (HARMONIZADO COM LILÁS / ROXO / CÉU) */
+    /* MODO DIA NO 432UP (HARMONIZADO COM ROXO/LILÁS/CÉU) */
     .ad-card.enterprise.light {
       border: 1.5px solid var(--ent-lilac);
       color: #1E1035;
@@ -390,10 +391,11 @@
 </head>
 <body>
 
-  <!-- PALETA DE CORES FLUTUANTE DE TEXTO -->
+  <!-- PALETA DE CORES FLUTUANTE DE TEXTO (COM MAGENTA #FF007F INCLUÍDO) -->
   <div id="text-color-palette">
     <div class="color-dot-btn" style="background: #00FF66;" onclick="applyTextColor('#00FF66')" title="Verde Lime"></div>
     <div class="color-dot-btn" style="background: #A855F7;" onclick="applyTextColor('#A855F7')" title="Lilás"></div>
+    <div class="color-dot-btn" style="background: #FF007F;" onclick="applyTextColor('#FF007F')" title="Magenta 432UP"></div>
     <div class="color-dot-btn" style="background: #D4B068;" onclick="applyTextColor('#D4B068')" title="Champagne"></div>
     <div class="color-dot-btn" style="background: #FFFFFF;" onclick="applyTextColor('#FFFFFF')" title="Branco"></div>
     <div class="color-dot-btn" style="background: #110D0A;" onclick="applyTextColor('#110D0A')" title="Escuro"></div>
@@ -437,6 +439,8 @@
 
       <span style="color: var(--panel-border);">|</span>
 
+      <!-- BOTÃO TOGGLE PNG MÁGICO / TRANSPARENTE -->
+      <button class="pill-btn" id="btn-toggle-magic" onclick="toggleMagicPNG()">✨ Magic PNG: OFF</button>
       <button class="pill-btn" id="btn-toggle-photo" onclick="togglePhotoSpace()">📷 Foto: OFF</button>
     </div>
 
@@ -494,15 +498,17 @@
         <button type="button" class="btn-add-item-canvas" id="btn-add-item" onclick="addItem()">+ Adicionar Diferencial</button>
       </div>
 
-      <!-- RODAPÉ COMPLETO REMOVÍVEL -->
+      <!-- BOTÃO CTA REMOVÍVEL INDIVIDUALMENTE -->
+      <div class="removable-wrapper" id="wrap-cta">
+        <div class="cta-box" contenteditable="true" id="card-cta">VEJA VALORES E MONTE SEU PACOTE!</div>
+        <button class="btn-delete-element" title="Remover Botão CTA" onclick="removeElement('wrap-cta')">✕</button>
+      </div>
+
+      <!-- RODAPÉ COMPLETO REMOVÍVEL INDIVIDUALMENTE -->
       <div class="removable-wrapper" id="wrap-footer">
-        <div class="footer-wrapper">
-          <div class="cta-box" contenteditable="true" id="card-cta">VEJA VALORES E MONTE SEU PACOTE!</div>
-          
-          <div class="card-footer-box">
-            <div class="card-site-link" contenteditable="true" id="card-site">WWW.FESTANOCONDOMINIO.COM.BR</div>
-            <div class="card-promo-text" contenteditable="true" id="card-promo">Estrutura completa, som, luz e atrações com a melhor experiência para o seu evento.</div>
-          </div>
+        <div class="card-footer-box">
+          <div class="card-site-link" contenteditable="true" id="card-site">WWW.FESTANOCONDOMINIO.COM.BR</div>
+          <div class="card-promo-text" contenteditable="true" id="card-promo">Estrutura completa, som, luz e atrações com a melhor experiência para o seu evento.</div>
         </div>
         <button class="btn-delete-element" title="Remover Rodapé" onclick="removeElement('wrap-footer')">✕</button>
       </div>
@@ -519,6 +525,7 @@
     let currentLayout = 1;
     let pillStyle = 'creme';
     let showPhoto = false;
+    let isMagicPNG = false;
     let itemAlignment = 'center';
     let activeEditableTarget = null;
 
@@ -528,7 +535,6 @@
       "PACOTES 100% PERSONALIZADOS"
     ];
 
-    // GERADOR DE FUNDO ESPACIAL (AJUSTADO PARA O MODO DIA COM ROXO/LILÁS/CÉU)
     function generateSpaceBackground(isDark) {
       const c = document.getElementById('star-generator');
       c.width = 440;
@@ -541,7 +547,6 @@
         bgGrad.addColorStop(0.5, '#0B0716');
         bgGrad.addColorStop(1, '#05030A');
       } else {
-        /* Fundo modo dia: Céu suave puxando para lilás e roxo */
         bgGrad.addColorStop(0, '#F3E8FF');
         bgGrad.addColorStop(0.5, '#E9D5FF');
         bgGrad.addColorStop(1, '#DDD6FE');
@@ -562,7 +567,6 @@
       ctx.fillStyle = auroraGrad;
       ctx.fillRect(0, 0, 440, 630);
 
-      // Estrelas
       for (let i = 0; i < 90; i++) {
         let x = Math.random() * 440;
         let y = Math.random() * 630;
@@ -576,13 +580,19 @@
       return c.toDataURL();
     }
 
-    // REMOÇÃO DE ELEMENTOS GERAIS DO CARD
     function removeElement(wrapperId) {
       const el = document.getElementById(wrapperId);
       if (el) el.style.display = 'none';
     }
 
-    // PALETA FLUTUANTE DE CORES PARA TEXTOS
+    function toggleMagicPNG() {
+      isMagicPNG = !isMagicPNG;
+      const btn = document.getElementById('btn-toggle-magic');
+      btn.innerText = `✨ Magic PNG: ${isMagicPNG ? 'ON' : 'OFF'}`;
+      btn.style.borderColor = isMagicPNG ? '#FF007F' : 'var(--panel-border)';
+      updateCardStyle();
+    }
+
     document.addEventListener('selectionchange', () => {
       const activeEl = document.activeElement;
       if (activeEl && activeEl.isContentEditable) {
@@ -591,7 +601,7 @@
         const palette = document.getElementById('text-color-palette');
         palette.style.display = 'flex';
         palette.style.top = (rect.top + window.scrollY - 36) + 'px';
-        palette.style.left = (rect.left + window.scrollX + (rect.width / 2) - 60) + 'px';
+        palette.style.left = (rect.left + window.scrollX + (rect.width / 2) - 70) + 'px';
       }
     });
 
@@ -727,7 +737,11 @@
       card.className = `ad-card ${currentTheme} ${currentMode} layout-${currentLayout}`;
       stage.className = `stage ${currentTheme}-${currentMode}`;
 
-      if (currentTheme === 'enterprise') {
+      if (isMagicPNG) {
+        card.style.background = 'transparent';
+        card.style.backgroundImage = 'none';
+        card.style.boxShadow = 'none';
+      } else if (currentTheme === 'enterprise') {
         const bgDataUrl = generateSpaceBackground(currentMode === 'dark');
         card.style.backgroundImage = `url('${bgDataUrl}')`;
       } else {
@@ -773,7 +787,6 @@
 
       btn.innerHTML = '⚡ Gerando...';
 
-      // Esconde botões de remoção durante a exportação
       document.querySelectorAll('.btn-delete-element').forEach(b => b.style.visibility = 'hidden');
 
       html2canvas(card, {
@@ -782,7 +795,7 @@
         backgroundColor: null
       }).then(canvas => {
         const link = document.createElement('a');
-        link.download = `anuncio-${currentTheme}-layout${currentLayout}-${currentMode}.png`;
+        link.download = `anuncio-${currentTheme}-layout${currentLayout}-${currentMode}${isMagicPNG ? '-magic' : ''}.png`;
         link.href = canvas.toDataURL('image/png');
         link.click();
         btn.innerHTML = originalText;
