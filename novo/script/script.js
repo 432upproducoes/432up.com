@@ -1,5 +1,5 @@
 /* ==========================================================
-   432UP! - SCRIPT ENTERPRISE 1.2.0 (MODULARIZADO)
+   432UP! - SCRIPT ENTERPRISE 1.2.0 (MODULARIZADO & CORRIGIDO)
    ========================================================== */
 
 let isUranoActive = false;
@@ -13,7 +13,9 @@ function applySystemTheme(e) {
 
 const schemeQuery = window.matchMedia('(prefers-color-scheme: light)');
 applySystemTheme(schemeQuery);
-schemeQuery.addEventListener('change', applySystemTheme);
+if (schemeQuery.addEventListener) {
+  schemeQuery.addEventListener('change', applySystemTheme);
+}
 
 /* SEGURANÇA BÁSICA */
 document.addEventListener('contextmenu', e => e.preventDefault());
@@ -23,11 +25,12 @@ document.addEventListener('keydown', e => {
   }
 });
 
-/* SUPABASE INTEGRATION */
-const SUPABASE_URL = "https://www.432up.com/supabase-api";
+/* SUPABASE INTEGRATION (URL OFICIAL DO PROJETO CORRIGIDA) */
+const SUPABASE_URL = "https://paetkspbfejtjjkngqej.supabase.co";
 const SUPABASE_ANON_KEY = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InBhZXRrc3BiZmVqdGpqa25ncWVqIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzA5MDU2OTgsImV4cCI6MjA4NjQ4MTY5OH0.IiYweZ2g3bP7b0o7VvBW5LLb6d1oHtSNFUZlVkIsdsA";
 let supabaseClient = null;
-if (typeof supabase !== 'undefined' && window.supabase) {
+
+if (typeof supabase !== 'undefined' && window.supabase && window.supabase.createClient) {
   supabaseClient = window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
 }
 
@@ -40,15 +43,19 @@ function checkResponsiveLabels() {
   if (mob) mob.style.display = isMobile ? 'inline' : 'none';
 }
 window.addEventListener('resize', checkResponsiveLabels);
-document.addEventListener('DOMContentLoaded', checkResponsiveLabels);
 
 /* CANVAS ENGINE (ÓRBITA ESTELAR LIMPA E ESTÁVEL) */
 const canvas = document.getElementById('orbit-canvas');
-const ctx = canvas.getContext('2d');
+let ctx = null;
 let width, height, stars = [], angle = 0;
 const starColors = [ { r: 255, g: 255, b: 255 }, { r: 185, g: 220, b: 255 }, { r: 255, g: 235, b: 180 }, { r: 255, g: 190, b: 170 } ];
 
+if (canvas) {
+  ctx = canvas.getContext('2d');
+}
+
 function resizeCanvas() {
+  if (!canvas) return;
   const newWidth = window.innerWidth;
   const newHeight = window.innerHeight;
   const widthChanged = newWidth !== width;
@@ -80,6 +87,7 @@ function initClusterStars() {
 }
 
 function drawOrbitBackground() {
+  if (!ctx) return;
   ctx.clearRect(0, 0, width, height);
   const cx = width / 2, cy = height / 2;
 
@@ -111,13 +119,17 @@ window.addEventListener('resize', () => {
   clearTimeout(resizeDebounce);
   resizeDebounce = setTimeout(resizeCanvas, 150);
 });
-resizeCanvas();
-drawOrbitBackground();
+
+if (canvas) {
+  resizeCanvas();
+  drawOrbitBackground();
+}
 
 /* GAVETA DE LPs & MENU MOBILE */
 function toggleLpsDrawer() {
   const drawer = document.getElementById('lps-drawer');
   const backdrop = document.getElementById('drawer-backdrop');
+  if (!drawer || !backdrop) return;
   const desk = document.querySelector('.desktop-only');
   const mob = document.querySelector('.mobile-only');
   const isOpen = drawer.classList.toggle('open');
@@ -132,8 +144,10 @@ function toggleLpsDrawer() {
 }
 
 function closeLpsDrawer() {
-  document.getElementById('lps-drawer').classList.remove('open');
-  document.getElementById('drawer-backdrop').classList.remove('active');
+  const drawer = document.getElementById('lps-drawer');
+  const backdrop = document.getElementById('drawer-backdrop');
+  if (drawer) drawer.classList.remove('open');
+  if (backdrop) backdrop.classList.remove('active');
   const desk = document.querySelector('.desktop-only');
   const mob = document.querySelector('.mobile-only');
   if (desk) desk.innerText = '[+] Atendimentos Especializados';
@@ -143,27 +157,28 @@ function closeLpsDrawer() {
 document.addEventListener('keydown', (e) => { if (e.key === 'Escape') closeLpsDrawer(); });
 
 function toggleMobileMenu() { 
-  document.getElementById('mobile-menu').classList.toggle('active'); 
+  const mob = document.getElementById('mobile-menu');
+  if (mob) mob.classList.toggle('active'); 
 }
 
 /* MODAL & VALIDAÇÃO INTELIGENTE DE CONTATO (E-MAIL OU TELEFONE) */
 let fallbackWhatsapp = "5511948564577";
 
 function openLeadModal() { 
-  document.getElementById('lead-modal').classList.add('active'); 
+  const modal = document.getElementById('lead-modal');
+  if (modal) modal.classList.add('active'); 
 }
 
 function closeLeadModal() { 
-  document.getElementById('lead-modal').classList.remove('active');
+  const modal = document.getElementById('lead-modal');
+  if (modal) modal.classList.remove('active');
   const errorMsg = document.getElementById('contact-error-msg');
   if (errorMsg) errorMsg.style.display = 'none';
 }
 
 function validateContact(value) {
   const cleanVal = value.trim();
-  // Regex de e-mail básico válido
   const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
-  // Regex para telefone/WhatsApp (aceita números com DDD, parênteses, espaços e traços, exigindo ao menos 10 dígitos)
   const phoneDigits = cleanVal.replace(/\D/g, '');
   const phoneRegex = /^\d{10,13}$/;
 
@@ -172,22 +187,29 @@ function validateContact(value) {
 
 async function handleProgressFormSubmit(e) {
   e.preventDefault();
-  const name = document.getElementById('modal-lead-name').value;
-  const contact = document.getElementById('modal-lead-contact').value;
-  const msg = document.getElementById('modal-lead-msg').value;
+  const nameEl = document.getElementById('modal-lead-name');
+  const contactEl = document.getElementById('modal-lead-contact');
+  const msgEl = document.getElementById('modal-lead-msg');
   const errorMsg = document.getElementById('contact-error-msg');
   const btn = document.getElementById('btn-submit-modal');
 
-  // Validação estrita do campo unificado (E-mail ou Telefone)
+  if (!nameEl || !contactEl) return;
+
+  const name = nameEl.value;
+  const contact = contactEl.value;
+  const msg = msgEl ? msgEl.value : '';
+
   if (!validateContact(contact)) {
-    errorMsg.style.display = 'block';
-    document.getElementById('modal-lead-contact').focus();
+    if (errorMsg) errorMsg.style.display = 'block';
+    contactEl.focus();
     return;
   }
-  errorMsg.style.display = 'none';
+  if (errorMsg) errorMsg.style.display = 'none';
 
-  btn.innerText = "Registrando..."; 
-  btn.disabled = true;
+  if (btn) {
+    btn.innerText = "Registrando..."; 
+    btn.disabled = true;
+  }
 
   if (supabaseClient) {
     try {
@@ -198,31 +220,22 @@ async function handleProgressFormSubmit(e) {
         origem: "Modal Home Modular", 
         data_registro: new Date().toISOString() 
       }]);
-    } catch(err) {}
+    } catch(err) {
+      console.error('Erro ao salvar lead:', err);
+    }
   }
 
   const encoded = encodeURIComponent(`Olá! Meu nome é ${name}.\nContato: ${contact}\nGostaria de iniciar um alinhamento técnico.\n\nDetalhes: ${msg || 'Nenhum'}`);
   window.open(`https://wa.me/${fallbackWhatsapp}?text=${encoded}`, '_blank');
   
-  btn.innerText = "Enviar Solicitação"; 
-  btn.disabled = false; 
+  if (btn) {
+    btn.innerText = "Enviar Solicitação"; 
+    btn.disabled = false; 
+  }
   closeLeadModal();
 }
 
-
-
-
-
-
-
-
-
-
-
-
-
-//teste de toque 
-/* --- 1. LÓGICA DO TOQUE DE PLASMA (SEUS PARÂMETROS CALIBRADOS) --- */
+/* LÓGICA DO TOQUE DE PLASMA */
 function trigger432upPlasma(x, y) {
   const plasmaLayer = document.getElementById('plasmaLayer');
   if (!plasmaLayer) return;
@@ -235,13 +248,12 @@ function trigger432upPlasma(x, y) {
   const wave = document.createElement('div');
   wave.className = 'plasma-wave';
 
-  // Parâmetros calibrados do print
-  const colorRgb = '168, 85, 247'; // Lilás oficial
-  const alpha = 0.65;              // Opacidade
-  const borderPx = 8;              // Espessura
-  const blurPx = 31;               // Blur
-  const radiusPx = 350;            // Raio de alcance
-  const durationSec = 2.7;         // Duração (~67 BPM)
+  const colorRgb = '168, 85, 247';
+  const alpha = 0.65;
+  const borderPx = 8;
+  const blurPx = 31;
+  const radiusPx = 350;
+  const durationSec = 2.7;
 
   wave.style.border = `${borderPx}px solid rgba(${colorRgb}, ${alpha})`;
   wave.style.background = `radial-gradient(circle, rgba(${colorRgb}, ${alpha * 0.4}) 0%, transparent 80%)`;
@@ -269,7 +281,7 @@ function trigger432upPlasma(x, y) {
     }
   ], {
     duration: durationSec * 1000,
-    easing: 'cubic-bezier(0.12, 0.8, 0.32, 1)', // Curva V3
+    easing: 'cubic-bezier(0.12, 0.8, 0.32, 1)',
     fill: 'forwards'
   });
 
@@ -279,29 +291,28 @@ function trigger432upPlasma(x, y) {
   setTimeout(() => group.remove(), (durationSec + 0.5) * 1000);
 }
 
-// Escuta o toque ou clique do usuário em qualquer lugar da tela
 window.addEventListener('pointerdown', (e) => {
   trigger432upPlasma(e.clientX, e.clientY);
 });
 
-/* --- 2. RENDERIZADOR DAS FIBRAS DIAGONAIS EM CANVAS --- */
+/* RENDERIZADOR DAS FIBRAS DIAGONAIS EM CANVAS */
 function initDiagonalCanvas() {
-  const canvas = document.getElementById('diagonalCanvas');
-  if (!canvas) return;
-  const ctx = canvas.getContext('2d');
+  const diagCanvas = document.getElementById('diagonalCanvas');
+  if (!diagCanvas) return;
+  const diagCtx = diagCanvas.getContext('2d');
   
-  let width = canvas.width = window.innerWidth;
-  let height = canvas.height = window.innerHeight;
+  let dWidth = diagCanvas.width = window.innerWidth;
+  let dHeight = diagCanvas.height = window.innerHeight;
 
   window.addEventListener('resize', () => {
-    width = canvas.width = window.innerWidth;
-    height = canvas.height = window.innerHeight;
+    dWidth = diagCanvas.width = window.innerWidth;
+    dHeight = diagCanvas.height = window.innerHeight;
   });
 
   const fibers = [];
   for (let i = 0; i < 5; i++) {
     fibers.push({
-      startX: (i * (width / 3)) - (width * 0.15),
+      startX: (i * (dWidth / 3)) - (dWidth * 0.15),
       angle: -Math.PI / 4,
       amplitude: 45 + Math.random() * 60,
       frequency: 0.001 + Math.random() * 0.001,
@@ -315,45 +326,86 @@ function initDiagonalCanvas() {
   }
 
   function render() {
-    ctx.clearRect(0, 0, width, height);
+    diagCtx.clearRect(0, 0, dWidth, dHeight);
     fibers.forEach(f => {
       f.phase += f.speed;
-      ctx.save();
-      ctx.translate(f.startX, 0);
-      ctx.rotate(f.angle);
+      diagCtx.save();
+      diagCtx.translate(f.startX, 0);
+      diagCtx.rotate(f.angle);
 
-      ctx.beginPath();
-      ctx.lineWidth = f.coreThickness * 4.5;
-      ctx.strokeStyle = f.color + (f.alpha * 0.2) + ')';
-      ctx.shadowBlur = f.glowBlur;
-      ctx.shadowColor = f.color + '0.8)';
+      diagCtx.beginPath();
+      diagCtx.lineWidth = f.coreThickness * 4.5;
+      diagCtx.strokeStyle = f.color + (f.alpha * 0.2) + ')';
+      diagCtx.shadowBlur = f.glowBlur;
+      diagCtx.shadowColor = f.color + '0.8)';
 
-      for (let y = -height; y < height * 2; y += 25) {
+      for (let y = -dHeight; y < dHeight * 2; y += 25) {
         let x = Math.sin(y * f.frequency + f.phase) * f.amplitude;
-        if (y === -height) ctx.moveTo(x, y);
-        else ctx.lineTo(x, y);
+        if (y === -dHeight) diagCtx.moveTo(x, y);
+        else diagCtx.lineTo(x, y);
       }
-      ctx.stroke();
+      diagCtx.stroke();
 
-      ctx.beginPath();
-      ctx.lineWidth = f.coreThickness;
-      ctx.strokeStyle = 'rgba(255, 255, 255, ' + (f.alpha * 0.7) + ')';
-      ctx.shadowBlur = 10;
-      ctx.shadowColor = f.color + '1)';
+      diagCtx.beginPath();
+      diagCtx.lineWidth = f.coreThickness;
+      diagCtx.strokeStyle = 'rgba(255, 255, 255, ' + (f.alpha * 0.7) + ')';
+      diagCtx.shadowBlur = 10;
+      diagCtx.shadowColor = f.color + '1)';
 
-      for (let y = -height; y < height * 2; y += 25) {
+      for (let y = -dHeight; y < dHeight * 2; y += 25) {
         let x = Math.sin(y * f.frequency + f.phase) * f.amplitude;
-        if (y === -height) ctx.moveTo(x, y);
-        else ctx.lineTo(x, y);
+        if (y === -dHeight) diagCtx.moveTo(x, y);
+        else diagCtx.lineTo(x, y);
       }
-      ctx.stroke();
-      ctx.restore();
+      diagCtx.stroke();
+      diagCtx.restore();
     });
     requestAnimationFrame(render);
   }
   render();
 }
 
-window.addEventListener('DOMContentLoaded', () => {
+/* INICIALIZAÇÃO NO CARREGAMENTO DO DOM */
+document.addEventListener('DOMContentLoaded', () => {
+  checkResponsiveLabels();
   initDiagonalCanvas();
+
+  const formModal = document.getElementById('lead-form-modal');
+  if (formModal) {
+    formModal.addEventListener('submit', handleProgressFormSubmit);
+  }
 });
+
+// Funções expostas globalmente para botões HTML (onClick)
+window.toggleLpsDrawer = toggleLpsDrawer;
+window.closeLpsDrawer = closeLpsDrawer;
+window.toggleMobileMenu = toggleMobileMenu;
+window.openLeadModal = openLeadModal;
+window.closeLeadModal = closeLeadModal;
+window.handleProgressFormSubmit = handleProgressFormSubmit;
+
+
+
+
+
+
+
+
+
+
+
+// Pausa animações de maré quando o elemento não está visível
+const animatedEls = document.querySelectorAll(
+  '.hero-center, .setup-box, .summary-sidebar, .option-card, .extra-item'
+);
+
+const observer = new IntersectionObserver(
+  (entries) => {
+    entries.forEach((entry) => {
+      entry.target.style.animationPlayState = entry.isIntersecting ? 'running' : 'paused';
+    });
+  },
+  { threshold: 0.1 } // começa a rodar quando 10% do elemento aparece
+);
+
+animatedEls.forEach((el) => observer.observe(el));
