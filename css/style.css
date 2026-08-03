@@ -1353,64 +1353,115 @@ input:checked + .slider:before { transform: translateX(16px); }
 
 
 
+/* =========================================================
+   FIX CHROME ANDROID — scroll + clique (TODAS AS PÁGINAS)
+   Testado: calculadora OK · aplicar em galeria / aessencia / mesa / home
+   ========================================================= */
 
-/* ===== FIX CHROME ANDROID — scroll + clique (calculadora + global) ===== */
-
+/* 1) Root: evita o bug clássico overflow-x no html+body */
 html {
   max-width: 100%;
   overflow-x: clip;
+  height: auto;
 }
 
 body {
   max-width: 100%;
   overflow-x: hidden;
   overflow-y: auto;
-  overscroll-behavior-y: auto; /* none estava ajudando a travar o gesto */
+  overscroll-behavior-y: auto; /* era none — travava o gesto no Android */
+  -webkit-overflow-scrolling: touch;
   touch-action: pan-y;
 }
 
-/* Stretcher no fluxo (home ainda precisa; calculadora não depende, mas não atrapalha) */
+/* 2) Stretcher: no fluxo (home precisa de altura; nas outras páginas 1px não atrapalha) */
 .scroll-stretcher-pixel {
   position: relative !important;
   display: block;
   width: 1px;
-  height: 1px; /* na calculadora não precisa de 125vh */
+  height: 125vh;
+  height: 125dvh;
   pointer-events: none !important;
+  opacity: 0;
+  z-index: -1;
 }
 
-/* Camadas decorativas nunca capturam toque */
+/* Páginas com conteúdo real não precisam de 125vh */
+body:has(.about-page-wrapper) .scroll-stretcher-pixel,
+body:has(.gallery-hero) .scroll-stretcher-pixel,
+body:has(.simulator-layout) .scroll-stretcher-pixel {
+  height: 1px !important;
+}
+
+/* 3) Camadas decorativas — nunca capturam toque */
 #orbit-canvas,
 .plasma-top-layer,
 .ripple-group,
-.plasma-wave {
+.plasma-wave,
+.aurora-viewport {
   pointer-events: none !important;
   touch-action: none !important;
 }
 
-/* Cards e CTAs: clique imediato, sem espera de double-tap */
-.option-card,
-.extra-item,
+/* 4) Clique imediato em tudo interativo */
+a,
+button,
+[role="button"],
+.btn-primary,
+.btn-header-cta,
+.btn-b2b-cyan,
+.btn-fire-wrapper,
 .btn-submit,
 .btn-secondary,
 .btn-request-callback,
-.btn-header-cta,
+.btn-modal-wa-direct,
 .sticky-btn-action,
 .sticky-btn-callback,
-.btn-modal-wa-direct,
-a, button, [role="button"] {
+.option-card,
+.extra-item,
+.filter-btn,
+.card,
+.masonry-item,
+input,
+textarea,
+select,
+label {
   touch-action: manipulation;
   -webkit-tap-highlight-color: transparent;
 }
 
-/* Espaço para sticky + safe area no mobile */
+/* 5) Hero fixed (HOME): deixa o pan vertical passar pro documento */
+.hero-center:not(#calc-hero):not(.gallery-hero) {
+  touch-action: pan-y;
+}
+
+/* 6) Mobile — home: hero no fluxo (mais estável que fixed full-screen) */
 @media (max-width: 768px) {
-  .viewport-wrapper {
-    padding-bottom: calc(100px + env(safe-area-inset-bottom, 0px));
+  /* HOME: tira fixed do hero para o Chrome Android rolar/clicar */
+  body:not(:has(.simulator-layout)):not(:has(.about-page-wrapper)):not(:has(.gallery-hero)) .hero-center,
+  .hero-center:not(#calc-hero):not(.gallery-hero) {
+    position: relative;
+    inset: auto;
+    min-height: 100dvh;
+    min-height: 100vh;
+    padding: 100px 16px 90px;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    text-align: center;
   }
 
+  /* Espaço inferior nas páginas longas (footer fixed + safe area) */
+  .viewport-wrapper,
+  .about-page-wrapper {
+    padding-bottom: calc(88px + env(safe-area-inset-bottom, 0px));
+  }
+
+  /* Footer fixed compete com sticky/gesto na base — no mobile vira relative */
   footer {
-    /* na calculadora o footer fixed compete com a sticky — melhor relativo no mobile */
-    position: relative;
+    position: relative !important;
     width: 100%;
+    bottom: auto;
   }
 }
