@@ -1354,166 +1354,49 @@ input:checked + .slider:before { transform: translateX(16px); }
 
 
 
-/* =========================================================
-   FIX CHROME ANDROID — scroll + clique (TODAS AS PÁGINAS)
-   Testado: calculadora OK · aplicar em galeria / aessencia / mesa / home
-   ========================================================= */
 
-/* 1) Root: evita o bug clássico overflow-x no html+body */
+
+
+
+
+
+
+
+
+/* Chrome Android: scroll/clique — SEM alterar hero nem footer */
 html {
   max-width: 100%;
   overflow-x: clip;
-  height: auto;
 }
-
 body {
   max-width: 100%;
   overflow-x: hidden;
   overflow-y: auto;
-  overscroll-behavior-y: auto; /* era none — travava o gesto no Android */
-  -webkit-overflow-scrolling: touch;
+  overscroll-behavior-y: auto;
   touch-action: pan-y;
 }
 
-/* 2) Stretcher: no fluxo (home precisa de altura; nas outras páginas 1px não atrapalha) */
-.scroll-stretcher-pixel {
-  position: relative !important;
-  display: block;
-  width: 1px;
-  height: 125vh;
-  height: 125dvh;
-  pointer-events: none !important;
-  opacity: 0;
-  z-index: -1;
-}
-
-/* Páginas com conteúdo real não precisam de 125vh */
-body:has(.about-page-wrapper) .scroll-stretcher-pixel,
-body:has(.gallery-hero) .scroll-stretcher-pixel,
-body:has(.simulator-layout) .scroll-stretcher-pixel {
-  height: 1px !important;
-}
-
-/* 3) Camadas decorativas — nunca capturam toque */
 #orbit-canvas,
 .plasma-top-layer,
 .ripple-group,
-.plasma-wave,
-.aurora-viewport {
+.plasma-wave {
   pointer-events: none !important;
-  touch-action: none !important;
 }
 
-/* 4) Clique imediato em tudo interativo */
-a,
-button,
-[role="button"],
-.btn-primary,
-.btn-header-cta,
-.btn-b2b-cyan,
-.btn-fire-wrapper,
-.btn-submit,
-.btn-secondary,
-.btn-request-callback,
-.btn-modal-wa-direct,
-.sticky-btn-action,
-.sticky-btn-callback,
-.option-card,
-.extra-item,
-.filter-btn,
-.card,
-.masonry-item,
-input,
-textarea,
-select,
-label {
+a, button, [role="button"],
+.btn-primary, .btn-header-cta, .option-card, .extra-item, .filter-btn {
   touch-action: manipulation;
-  -webkit-tap-highlight-color: transparent;
 }
 
-/* 5) Hero fixed (HOME): deixa o pan vertical passar pro documento */
-.hero-center:not(#calc-hero):not(.gallery-hero) {
-  touch-action: pan-y;
+/* Home: stretcher moderado (só esconder barra, sem página fantasma) */
+.scroll-stretcher-pixel {
+  position: relative;
+  height: 112vh;
+  height: 112dvh;
 }
-
-/* 6) Mobile — home: hero no fluxo (mais estável que fixed full-screen) */
-@media (max-width: 768px) {
-  /* HOME: tira fixed do hero para o Chrome Android rolar/clicar */
-  body:not(:has(.simulator-layout)):not(:has(.about-page-wrapper)):not(:has(.gallery-hero)) .hero-center,
-  .hero-center:not(#calc-hero):not(.gallery-hero) {
-    position: relative;
-    inset: auto;
-    min-height: 100dvh;
-    min-height: 100vh;
-    padding: 100px 16px 90px;
-    display: flex;
-    flex-direction: column;
-    align-items: center;
-    justify-content: center;
-    text-align: center;
-  }
-
-  /* Espaço inferior nas páginas longas (footer fixed + safe area) */
-  .viewport-wrapper,
-  .about-page-wrapper {
-    padding-bottom: calc(88px + env(safe-area-inset-bottom, 0px));
-  }
-
-  /* Footer fixed compete com sticky/gesto na base — no mobile vira relative */
-  footer {
-    position: relative !important;
-    width: 100%;
-    bottom: auto;
-  }
+/* Outras páginas: sem falso espaço (se o pixel existir no HTML) */
+body:has(.about-page-wrapper) .scroll-stretcher-pixel,
+body:has(.gallery-hero) .scroll-stretcher-pixel,
+body:has(.simulator-layout) .scroll-stretcher-pixel {
+  height: 1px;
 }
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-/* HOME: scroll mínimo só para esconder a barra do browser */
-body.page-home .scroll-stretcher-pixel,
-body:has(> .hero-center) .scroll-stretcher-pixel {
-  position: relative !important;
-  display: block;
-  width: 1px;
-  height: calc(100dvh + 64px) !important;
-  height: calc(100svh + 64px) !important;
-  pointer-events: none !important;
-  opacity: 0;
-  z-index: -1;
-}
-
-/* Hero da home continua fixo */
-.hero-center:not(#calc-hero):not(.gallery-hero) {
-  position: fixed;
-  inset: 0;
-  touch-action: pan-y;
-}
-
-
-
-
-
-
-
-
-
-
-
-
-
-
