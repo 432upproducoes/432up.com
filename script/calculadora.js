@@ -6,7 +6,6 @@ let dbItems = [];
 let selectedAddons = {};
 let packageComponents = { bronze: [], prata: [], ouro: [] };
 
-// Estado limpo inicial (nenhum card pré-selecionado)
 let selection = { scale: null, hours: null, package: null, guestsText: "", guestsCount: 0 };
 let calcFallbackWhatsapp = "5511948564577";
 let globalFormattedPrice = "";
@@ -14,7 +13,6 @@ let globalSpecsList = [];
 let activeIdForPrice = null;
 let calcDebounceTimer = null;
 
-// Controle da animação dos números
 let currentNumericPrice = 0;
 let priceAnimationTimer = null;
 let isPriceBlockInView = false;
@@ -30,42 +28,18 @@ function ensureToastStyles() {
   style.id = 'toast-432up-styles';
   style.textContent = `
     #toast-432up-container {
-      position: fixed;
-      bottom: 24px;
-      left: 50%;
-      transform: translateX(-50%);
-      z-index: 99999;
-      display: flex;
-      flex-direction: column;
-      align-items: center;
-      gap: 10px;
-      pointer-events: none;
-      width: 100%;
-      padding: 0 16px;
-      box-sizing: border-box;
+      position: fixed; bottom: 24px; left: 50%; transform: translateX(-50%);
+      z-index: 99999; display: flex; flex-direction: column; align-items: center;
+      gap: 10px; pointer-events: none; width: 100%; padding: 0 16px; box-sizing: border-box;
     }
     .toast-432up {
-      pointer-events: auto;
-      max-width: 420px;
-      width: 100%;
-      padding: 14px 18px;
-      border-radius: 10px;
-      font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
-      font-size: 0.88rem;
-      font-weight: 600;
-      color: #08080A;
-      box-shadow: 0 8px 28px rgba(0,0,0,0.35);
-      display: flex;
-      align-items: center;
-      gap: 10px;
-      opacity: 0;
-      transform: translateY(16px);
-      transition: opacity 0.28s ease, transform 0.28s ease;
+      pointer-events: auto; max-width: 420px; width: 100%; padding: 14px 18px;
+      border-radius: 10px; font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+      font-size: 0.88rem; font-weight: 600; color: #08080A;
+      box-shadow: 0 8px 28px rgba(0,0,0,0.35); display: flex; align-items: center; gap: 10px;
+      opacity: 0; transform: translateY(16px); transition: opacity 0.28s ease, transform 0.28s ease;
     }
-    .toast-432up.show {
-      opacity: 1;
-      transform: translateY(0);
-    }
+    .toast-432up.show { opacity: 1; transform: translateY(0); }
     .toast-432up.success { background: #00FF66; }
     .toast-432up.error { background: #FF4D6D; color: #fff; }
     .toast-432up .toast-icon { font-size: 1.05rem; line-height: 1; }
@@ -95,15 +69,23 @@ function showToast(message, type) {
   }, 4200);
 }
 
-/* ---------- MÁSCARA DE MOEDA & PARSER BRL ---------- */
+
+
+
 function formatBRLInput(input) {
-  let raw = input.value.replace(/[^\d,]/g, '');
-  if (!raw) { input.value = ''; return; }
-  const parts = raw.split(',');
-  let intPart = parts[0].replace(/^0+(?=\d)/, '') || '0';
-  intPart = intPart.replace(/\B(?=(\d{3})+(?!\d))/g, '.');
-  input.value = parts.length > 1 ? 'R$ ' + intPart + ',' + parts[1].slice(0, 2) : 'R$ ' + intPart + ',00';
+  let value = input.value.replace(/\D/g, ''); // Remove tudo que não for dígito
+  if (!value) { input.value = ''; return; }
+  
+  // Converte para valor numérico decimal (ex: "21" vira 0.21)
+  let floatValue = parseFloat(value) / 100;
+  
+  // Formata de volta para BRL
+  input.value = floatValue.toLocaleString('pt-BR', {
+    style: 'currency',
+    currency: 'BRL'
+  });
 }
+
 
 function parseBRLValue(valueStr) {
   if (typeof valueStr === 'number') return isNaN(valueStr) ? 0 : valueStr;
@@ -115,10 +97,8 @@ function parseBRLValue(valueStr) {
 
 function formatCurrencyBRL(num) {
   return num.toLocaleString('pt-BR', {
-    style: 'currency',
-    currency: 'BRL',
-    minimumFractionDigits: 0,
-    maximumFractionDigits: 0
+    style: 'currency', currency: 'BRL',
+    minimumFractionDigits: 0, maximumFractionDigits: 0
   });
 }
 
@@ -133,7 +113,6 @@ function setupMoneyMasks() {
   });
 }
 
-/* ---------- ANIMAÇÃO RÁPIDA DOS NÚMEROS (ODOMETER 450ms) ---------- */
 function animateValue(start, end, duration, elements) {
   if (start === end) {
     const formatted = formatCurrencyBRL(end);
@@ -148,7 +127,6 @@ function animateValue(start, end, duration, elements) {
   function updateNumber(currentTime) {
     const elapsed = currentTime - startTime;
     const progress = Math.min(elapsed / duration, 1);
-
     const easeProgress = 1 - Math.pow(1 - progress, 3);
     const currentValue = Math.floor(start + (end - start) * easeProgress);
 
@@ -177,7 +155,6 @@ document.addEventListener('DOMContentLoaded', () => {
   setupClickOutsideHandlers();
   setupMoneyMasks();
   setupStickyScrollObserver();
-
   resetAllSelectionsInDOM();
 });
 
@@ -214,11 +191,7 @@ async function saveFieldToSupabase(itemIdentifier, colName, novoTexto, isId = fa
 
   try {
     let query = supabaseClient.from('calculadora_valores').select('id, categoria');
-    if (isId) {
-      query = query.eq('id', itemIdentifier);
-    } else {
-      query = query.eq('slug', itemIdentifier);
-    }
+    query = isId ? query.eq('id', itemIdentifier) : query.eq('slug', itemIdentifier);
 
     const { data: existing } = await query.maybeSingle();
 
@@ -226,21 +199,14 @@ async function saveFieldToSupabase(itemIdentifier, colName, novoTexto, isId = fa
     if (existing) {
       if (existing.categoria) updateData.categoria = existing.categoria;
       let updateQuery = supabaseClient.from('calculadora_valores').update(updateData);
-      if (isId) {
-        updateQuery = updateQuery.eq('id', itemIdentifier);
-      } else {
-        updateQuery = updateQuery.eq('slug', itemIdentifier);
-      }
+      updateQuery = isId ? updateQuery.eq('id', itemIdentifier) : updateQuery.eq('slug', itemIdentifier);
       const res = await updateQuery;
       error = res.error;
     } else {
       const isLayoutText = String(itemIdentifier).includes('hero') || String(itemIdentifier).includes('step') || String(itemIdentifier).includes('title');
       const cat = isLayoutText ? 'texto_layout' : 'adicional';
       const res = await supabaseClient.from('calculadora_valores').insert([{
-        slug: isId ? 'addon_' + itemIdentifier : itemIdentifier,
-        categoria: cat,
-        ativo: true,
-        ...updateData
+        slug: isId ? 'addon_' + itemIdentifier : itemIdentifier, categoria: cat, ativo: true, ...updateData
       }]);
       error = res.error;
     }
@@ -288,19 +254,14 @@ async function handleGlobalFocusOut(e) {
   }
 
   if ((itemId || itemSlug) && novoTexto !== '') {
-    if (itemId) {
-      await saveFieldToSupabase(itemId, colName, novoTexto, true);
-    } else {
-      await saveFieldToSupabase(itemSlug, colName, novoTexto, false);
-    }
+    if (itemId) await saveFieldToSupabase(itemId, colName, novoTexto, true);
+    else await saveFieldToSupabase(itemSlug, colName, novoTexto, false);
   }
 }
 
 function debouncedCalculate() {
   if (calcDebounceTimer) clearTimeout(calcDebounceTimer);
-  calcDebounceTimer = setTimeout(() => {
-    calculateAtmosphere();
-  }, 80);
+  calcDebounceTimer = setTimeout(() => { calculateAtmosphere(); }, 80);
 }
 
 function setupMultipliersListeners() {
@@ -343,11 +304,8 @@ async function loadDynamicContentFromDatabase() {
               else if (col === 'qtd_pessoas' && item.valor_por_pessoa != null) el.innerText = item.valor_por_pessoa;
               else if (col === 'descricao' && item.descricao != null) el.innerText = item.descricao;
               else if (col === 'nome' && (item.nome || item.nome_exibicao)) {
-                if (item.slug === 'titulo_hero') {
-                  el.innerHTML = item.nome || item.nome_exibicao;
-                } else {
-                  el.innerText = item.nome || item.nome_exibicao;
-                }
+                if (item.slug === 'titulo_hero') el.innerHTML = item.nome || item.nome_exibicao;
+                else el.innerText = item.nome || item.nome_exibicao;
               }
               return;
             }
@@ -361,9 +319,7 @@ async function loadDynamicContentFromDatabase() {
         if (step4Visibility) {
           const isVisible = step4Visibility.ativo !== false;
           if (step4ToggleInput) step4ToggleInput.checked = isVisible;
-          if (!isAdminMode() && step4Container) {
-            step4Container.style.display = isVisible ? 'block' : 'none';
-          }
+          if (!isAdminMode() && step4Container) step4Container.style.display = isVisible ? 'block' : 'none';
         }
 
         const { data: pkgComp } = await supabaseClient.from('pacote_componentes').select('*');
@@ -456,6 +412,7 @@ async function toggleStep4MasterVisibility(isChecked) {
   }
 }
 
+/* ---------- DROPDOWN DE PACOTES (PORTAL + VISUAL DO ESCOPO) ---------- */
 function renderPackageDropdowns(filterText) {
   filterText = filterText || '';
   const admin = isAdminMode();
@@ -485,19 +442,74 @@ function renderPackageDropdowns(filterText) {
 
       if (wasActive) {
         dropMenu.classList.add('active');
-        const card = dropMenu.closest('.option-card');
-        if (card) card.style.zIndex = '1000';
+        positionPkgDropdown(pkg);
       }
     }
+
     if (selectedList) {
       const selectedIds = packageComponents[pkg] || [];
-      const itemsInPkg = allAddons.filter(function(i) { return selectedIds.includes(i.id) || selectedIds.includes(String(i.id)); });
-      selectedList.innerHTML = itemsInPkg.map(function(addon) {
-        var n = String(addon.nome || addon.nome_exibicao || '').replace(/\s*\(R\$\s*[\d.,]+\)\s*/g, '').trim();
-        return '<div class="pkg-selected-tag glass-card"><span>' + escapeHtml(n) + '</span>' + (admin ? '<span style="cursor:pointer; color:#FF4444;" onclick="removeItemFromPackage(event, \'' + pkg + '\', \'' + escapeHtml(addon.id) + '\')">&times;</span>' : '') + '</div>';
-      }).join('');
+      const itemsInPkg = allAddons.filter(function(i) {
+        return selectedIds.includes(i.id) || selectedIds.includes(String(i.id));
+      });
+
+      selectedList.innerHTML = '<ul class="pkg-specs-list">' +
+        itemsInPkg.map(function(addon) {
+          var n = String(addon.nome || addon.nome_exibicao || '').replace(/\s*\(R\$\s*[\d.,]+\)\s*/g, '').trim();
+          return '<li><span class="dot"></span><span>' + escapeHtml(n) + '</span>' +
+            (admin ? '<span class="btn-remove-pkg" onclick="removeItemFromPackage(event, \'' + pkg + '\', \'' + escapeHtml(addon.id) + '\')">&times;</span>' : '') +
+            '</li>';
+        }).join('') +
+      '</ul>';
     }
   });
+}
+
+function positionPkgDropdown(pkg) {
+  const menu = document.getElementById('dropdown-' + pkg);
+  if (!menu) return;
+  const anchorBtn = document.querySelector(
+    '.option-card[data-slug="' + pkg + '"] .btn-add-pkg-item, .option-card[data-value="' + pkg + '"] .btn-add-pkg-item'
+  );
+  const anchor = anchorBtn || menu.closest('.option-card') || menu._originalParent;
+  if (!anchor) return;
+
+  if (menu.parentElement !== document.body) {
+    menu._originalParent = menu.parentElement;
+    document.body.appendChild(menu);
+  }
+
+  const rect = anchor.getBoundingClientRect();
+  const menuWidth = Math.min(300, window.innerWidth - 16);
+  let left = rect.left;
+  let top = rect.bottom + 6;
+
+  if (left + menuWidth > window.innerWidth - 8) left = window.innerWidth - menuWidth - 8;
+  if (left < 8) left = 8;
+  if (top + 240 > window.innerHeight) top = Math.max(8, rect.top - 240);
+
+  menu.style.position = 'fixed';
+  menu.style.left = left + 'px';
+  menu.style.top = top + 'px';
+  menu.style.width = menuWidth + 'px';
+  menu.style.maxWidth = 'calc(100vw - 16px)';
+  menu.style.right = 'auto';
+  menu.style.zIndex = '999999';
+}
+
+function restorePkgDropdown(pkg) {
+  const menu = document.getElementById('dropdown-' + pkg);
+  if (!menu) return;
+  menu.classList.remove('active');
+  if (menu._originalParent) {
+    menu._originalParent.appendChild(menu);
+    menu.style.position = '';
+    menu.style.left = '';
+    menu.style.top = '';
+    menu.style.width = '';
+    menu.style.maxWidth = '';
+    menu.style.right = '';
+    menu.style.zIndex = '';
+  }
 }
 
 function filterPackageDropdown(pkg, text) {
@@ -505,6 +517,7 @@ function filterPackageDropdown(pkg, text) {
   const menu = document.getElementById('dropdown-' + pkg);
   if (menu) {
     menu.classList.add('active');
+    positionPkgDropdown(pkg);
     const input = menu.querySelector('.pkg-search-input');
     if (input) { input.focus(); input.setSelectionRange(input.value.length, input.value.length); }
   }
@@ -535,17 +548,18 @@ async function removeItemFromPackage(event, pkgSlug, itemId) {
 function togglePkgDropdown(event, pkg) {
   event.stopPropagation();
   const target = document.getElementById('dropdown-' + pkg);
-  const card = target ? target.closest('.option-card') : null;
   const isActive = target && target.classList.contains('active');
 
-  document.querySelectorAll('.pkg-dropdown-menu').forEach(function(m) { m.classList.remove('active'); });
+  ['bronze', 'prata', 'ouro'].forEach(function(p) { if (p !== pkg) restorePkgDropdown(p); });
   document.querySelectorAll('.option-card').forEach(function(c) { c.style.zIndex = ''; });
 
   if (target && !isActive) {
     renderPackageDropdowns();
     target.classList.add('active');
-    if (card) card.style.zIndex = '1000';
+    positionPkgDropdown(pkg);
     setTimeout(function() { const input = target.querySelector('.pkg-search-input'); if (input) input.focus(); }, 50);
+  } else if (target) {
+    restorePkgDropdown(pkg);
   }
 }
 
@@ -559,14 +573,15 @@ async function deleteAddonItem(event, id) {
   }
 }
 
+/* ---------- TOGGLE DE SELEÇÃO UNIFICADO ---------- */
 function handleDynamicAddonClick(id, event, element) {
-  if (event.target.tagName === 'INPUT' || event.target.tagName === 'LABEL' || event.target.getAttribute('contenteditable') === 'true' || event.target.closest('.admin-toggle-wrapper') || event.target.classList.contains('btn-edit-price-tag') || event.target.closest('.btn-edit-price-tag')) return;
+  if (event.target.closest('.admin-toggle-wrapper, .btn-edit-price-tag, [contenteditable="true"]')) return;
   element.classList.toggle('selected');
   selectedAddons[id] = element.classList.contains('selected');
   calculateAtmosphere();
 }
 
-/* ---------- CÁLCULO PROGRESSIVO, ANIMAÇÃO E BOTÃO GUIA DINÂMICO ---------- */
+/* ---------- CÁLCULO DE VALORES E PERSISTÊNCIA ---------- */
 function calculateAtmosphere() {
   const priceEl = document.getElementById('total-price');
   const stickyPriceEl = document.getElementById('sticky-total-price');
@@ -777,6 +792,17 @@ function calculateAtmosphere() {
 
   currentNumericPrice = finalTotal;
 
+  // Salva as escolhas do usuário no navegador a cada clique
+  try {
+    localStorage.setItem('432up_user_project', JSON.stringify({
+      selection: selection,
+      selectedAddons: selectedAddons,
+      timestamp: new Date().getTime()
+    }));
+  } catch (e) {
+    console.warn('Não foi possível salvar a seleção local:', e);
+  }
+
   const msg = encodeURIComponent(
     'Olá! Montei um projeto no simulador da 432UP!:\n' +
     (pkg ? '- Rider: ' + pkg.toUpperCase() + '\n' : '') +
@@ -927,7 +953,7 @@ function escapeHtml(str) {
   return String(str).replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;');
 }
 
-/* ---------- SELEÇÃO DE CARDS (COM SUPORTE A DESELECIONAR) ---------- */
+/* ---------- SELEÇÃO DE CARDS (DESELECIONÁVEIS) ---------- */
 document.querySelectorAll('#group-scale .option-card').forEach(function(card) {
   card.addEventListener('click', function(e) {
     if (e.target.getAttribute('contenteditable') === 'true' || e.target.classList.contains('btn-edit-price-tag')) return;
@@ -936,9 +962,7 @@ document.querySelectorAll('#group-scale .option-card').forEach(function(card) {
     document.querySelectorAll('#group-scale .option-card').forEach(function(c) { c.classList.remove('selected'); });
 
     if (isAlreadySelected) {
-      selection.scale = null;
-      selection.guestsCount = 0;
-      selection.guestsText = "";
+      selection.scale = null; selection.guestsCount = 0; selection.guestsText = "";
     } else {
       card.classList.add('selected');
       selection.scale = card.dataset.value || card.dataset.slug;
@@ -993,7 +1017,7 @@ function setupClickOutsideHandlers() {
     if (e.target.getAttribute('contenteditable') === 'true' || e.target.tagName === 'INPUT' || e.target.tagName === 'TEXTAREA') return;
 
     if (!e.target.closest('.btn-add-pkg-item') && !e.target.closest('.pkg-dropdown-menu')) {
-      document.querySelectorAll('.pkg-dropdown-menu').forEach(m => m.classList.remove('active'));
+      ['bronze', 'prata', 'ouro'].forEach(function(p) { restorePkgDropdown(p); });
       document.querySelectorAll('.option-card').forEach(c => c.style.zIndex = '');
     }
     const pop1 = document.getElementById('price-popover');
@@ -1002,9 +1026,22 @@ function setupClickOutsideHandlers() {
     if (pop1 && !pop1.contains(e.target) && !e.target.classList.contains('btn-edit-price-tag')) pop1.classList.remove('active');
     if (pop2 && !pop2.contains(e.target) && btn && !btn.contains(e.target)) pop2.classList.remove('active');
   });
+
+  window.addEventListener('scroll', function() {
+    ['bronze', 'prata', 'ouro'].forEach(function(pkg) {
+      const menu = document.getElementById('dropdown-' + pkg);
+      if (menu && menu.classList.contains('active')) positionPkgDropdown(pkg);
+    });
+  }, true);
+
+  window.addEventListener('resize', function() {
+    ['bronze', 'prata', 'ouro'].forEach(function(pkg) {
+      const menu = document.getElementById('dropdown-' + pkg);
+      if (menu && menu.classList.contains('active')) positionPkgDropdown(pkg);
+    });
+  });
 }
 
-/* ---------- OBSERVADOR DE SCROLL PARA ESCONDER A BARRA STICKY ---------- */
 function setupStickyScrollObserver() {
   const targetPriceBlock = document.getElementById('total-price') || document.querySelector('.summary-sidebar');
   if (!targetPriceBlock) return;
@@ -1014,14 +1051,11 @@ function setupStickyScrollObserver() {
       isPriceBlockInView = entry.isIntersecting;
       calculateAtmosphere();
     });
-  }, {
-    threshold: 0.2
-  });
+  }, { threshold: 0.2 });
 
   observer.observe(targetPriceBlock);
 }
 
-// Inicializa o banco de dados logo após carregar a estrutura DOM
 window.addEventListener('DOMContentLoaded', async function() {
   await loadDynamicContentFromDatabase();
 });
@@ -1030,7 +1064,7 @@ window.addEventListener('DOMContentLoaded', async function() {
 function setupContactFormCalc() {
   const btn = document.getElementById('btn-submit-general-contact');
   if (!btn) return;
-  if (btn.dataset.listenerAttached === 'true') return; // evita duplo listener
+  if (btn.dataset.listenerAttached === 'true') return;
   btn.dataset.listenerAttached = 'true';
 
   btn.addEventListener('click', async function () {
@@ -1061,20 +1095,11 @@ function setupContactFormCalc() {
     if (typeof supabaseClient !== 'undefined' && supabaseClient) {
       try {
         const { error } = await supabaseClient.from('co_leads').insert([{
-          nome: name,
-          whatsapp: contact,
-          mensagem: msg || 'Contato pela calculadora',
-          origem: 'modal_calculadora',
-          created_at: new Date().toISOString()
+          nome: name, whatsapp: contact, mensagem: msg || 'Contato pela calculadora',
+          origem: 'modal_calculadora', created_at: new Date().toISOString()
         }]);
-        if (error) {
-          console.error('Erro Supabase (calculadora):', error);
-          leadSaved = false;
-        }
-      } catch (err) {
-        console.error('Erro ao salvar lead (calculadora):', err);
-        leadSaved = false;
-      }
+        if (error) { console.error('Erro Supabase (calculadora):', error); leadSaved = false; }
+      } catch (err) { console.error('Erro ao salvar lead (calculadora):', err); leadSaved = false; }
     }
 
     const encoded = encodeURIComponent(
@@ -1099,23 +1124,15 @@ function setupContactFormCalc() {
   });
 }
 
-/* ==========================================================
-   432UP! - GERADOR DE PDF (VERSÃO FINAL LIMPA E CORRIGIDA)
-   ========================================================== */
+/* ---------- EXPORTADOR DE PROPOSTA (PDF / RESUMO) ---------- */
 function setupPdfExporter() {
   const btnPdfTrigger = document.getElementById('btn-pdf-trigger');
-  if (!btnPdfTrigger) {
-    console.warn('[432UP PDF] Botão #btn-pdf-trigger não encontrado.');
-    return;
-  }
-  if (btnPdfTrigger.dataset.listenerAttached === 'true') return; // evita duplo listener
+  if (!btnPdfTrigger) return;
+  if (btnPdfTrigger.dataset.listenerAttached === 'true') return;
   btnPdfTrigger.dataset.listenerAttached = 'true';
 
   function loadHtml2PdfScript(callback) {
-    if (typeof html2pdf !== 'undefined') {
-      callback();
-      return;
-    }
+    if (typeof html2pdf !== 'undefined') { callback(); return; }
 
     const existing = document.querySelector('script[src*="html2pdf"]');
     if (existing) {
@@ -1130,9 +1147,7 @@ function setupPdfExporter() {
     const script = document.createElement('script');
     script.src = 'https://cdnjs.cloudflare.com/ajax/libs/html2pdf.js/0.10.1/html2pdf.bundle.min.js';
     script.onload = callback;
-    script.onerror = () => {
-      showToast('Não foi possível carregar a biblioteca de PDF. Verifique sua conexão.', 'error');
-    };
+    script.onerror = () => showToast('Não foi possível carregar a biblioteca de PDF. Verifique sua conexão.', 'error');
     document.head.appendChild(script);
   }
 
@@ -1146,7 +1161,6 @@ function setupPdfExporter() {
     btnPdfTrigger.disabled = true;
     btnPdfTrigger.style.pointerEvents = 'none';
 
-    // Timeout de segurança: se em 15s nada resolveu, destrava o botão e avisa o usuário
     const safetyTimeout = setTimeout(() => {
       resetBtn();
       showToast('A geração do PDF demorou demais e foi cancelada. Tente novamente.', 'error');
@@ -1227,7 +1241,6 @@ function setupPdfExporter() {
           return;
         }
 
-        // Torna o template visível e mensurável ANTES de capturar
         element.style.display = 'block';
         element.style.visibility = 'visible';
         element.style.position = 'absolute';
@@ -1235,30 +1248,17 @@ function setupPdfExporter() {
         element.style.top = '0';
         element.style.width = '210mm';
 
-        // CORREÇÃO: aguarda um frame + pequeno delay para o Safari/iPad
-        // concluir o reflow do layout antes do html2canvas capturar o elemento.
-        // Sem essa espera, o botão fica em "Gerando PDF..." e nunca finaliza.
         requestAnimationFrame(() => {
           setTimeout(() => {
             const opt = {
               margin: [10, 10, 12, 10],
               filename: `Proposta_Atmosfera_432UP_${refId}.pdf`,
               image: { type: 'jpeg', quality: 0.98 },
-              html2canvas: {
-                scale: 2,
-                useCORS: true,
-                allowTaint: true,
-                logging: false,
-                backgroundColor: '#ffffff',
-                windowWidth: 794
-              },
+              html2canvas: { scale: 2, useCORS: true, allowTaint: true, logging: false, backgroundColor: '#ffffff', windowWidth: 794 },
               jsPDF: { unit: 'mm', format: 'a4', orientation: 'portrait' }
             };
 
-            html2pdf()
-              .set(opt)
-              .from(element)
-              .save()
+            html2pdf().set(opt).from(element).save()
               .then(() => {
                 element.style.display = 'none';
                 element.style.visibility = '';
@@ -1285,7 +1285,6 @@ function setupPdfExporter() {
   });
 }
 
-// ========== CHAMADAS DE INICIALIZAÇÃO (ÚNICA, SEM DUPLICATAS) ==========
 document.addEventListener('DOMContentLoaded', () => {
   setupContactFormCalc();
   setupPdfExporter();
