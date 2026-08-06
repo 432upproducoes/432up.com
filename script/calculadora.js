@@ -90,7 +90,11 @@ function formatBRLInput(input) {
 function parseBRLValue(valueStr) {
   if (typeof valueStr === 'number') return isNaN(valueStr) ? 0 : valueStr;
   if (!valueStr) return 0;
-  const clean = String(valueStr).replace(/[^\d,.-]/g, '').replace(',', '.');
+
+
+	const clean = String(valueStr).replace(/[^\d,.-]/g, '').replace(/\./g, '').replace(',', '.');
+
+
   const parsed = parseFloat(clean);
   return isNaN(parsed) ? 0 : parsed;
 }
@@ -492,7 +496,11 @@ function renderPackageDropdowns(filterText) {
       selectedList.innerHTML = '<ul class="pkg-specs-list">' +
         itemsInPkg.map(function(addon) {
           var n = String(addon.nome || addon.nome_exibicao || '').replace(/\s*\(R\$\s*[\d.,]+\)\s*/g, '').trim();
-          return '<li><span class="dot"></span><span>' + escapeHtml(n) + '</span>' +
+          
+
+
+
+return '<li data-id="' + escapeHtml(addon.id) + '"><span class="dot"></span><span>' + escapeHtml(n) + '</span>' +
             (admin ? '<span class="btn-remove-pkg" onclick="removeItemFromPackage(event, \'' + pkg + '\', \'' + escapeHtml(addon.id) + '\')">&times;</span>' : '') +
             '</li>';
         }).join('') +
@@ -1161,6 +1169,9 @@ function setupContactFormCalc() {
   });
 }
 
+
+
+
 /* ---------- EXPORTADOR DE PROPOSTA (PDF / RESUMO) ---------- */
 function setupPdfExporter() {
   const btnPdfTrigger = document.getElementById('btn-pdf-trigger');
@@ -1326,3 +1337,152 @@ document.addEventListener('DOMContentLoaded', () => {
   setupContactFormCalc();
   setupPdfExporter();
 });
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+/* ---------- SISTEMA DRAG & DROP COM GRAVAÇÃO ROBUSTA NO SUPABASE ---------- */
+(function inicializarDragDropSupabase() {
+  function ativarSortable() {
+    // 🛑 TRAVA DE SEGURANÇA: Se NÃO for admin, não ativa o Drag & Drop
+    if (!isAdminMode()) return;
+    
+    if (typeof Sortable === 'undefined') return;
+
+    // Seleciona as listas onde os itens ficam
+    const containers = document.querySelectorAll('#dynamic-addons-list, .pkg-specs-list');
+
+    containers.forEach(container => {
+      // Evita inicializar duas vezes no mesmo lugar
+      if (container.dataset.sortableAtivo) return;
+      container.dataset.sortableAtivo = 'true';
+
+      new Sortable(container, {
+        animation: 150,
+        ghostClass: 'item-arrastando',
+        handle: 'li, .extra-item',
+        onEnd: async function (evt) {
+          // 🔍 LOGS DE DIAGNÓSTICO — remover depois de identificar o bug
+          const elementos = Array.from(evt.to.children);
+          console.log('🔍 Container (evt.to):', evt.to.id || evt.to.className);
+          console.log('🔍 IDs capturados no drag:', elementos.map(el => el.getAttribute('data-id')));
+          console.log('🔍 Total de elementos:', elementos.length);
+
+          const syncStatus = document.getElementById('admin-sync-text');
+          if (syncStatus) syncStatus.innerText = 'Atualizando ordem no banco...';
+
+          try {
+            if (typeof supabaseClient !== 'undefined' && supabaseClient) {
+              // Dispara as atualizações no banco
+              const atualizacoes = elementos.map(async (el, index) => {
+                const idItem = el.getAttribute('data-id') || el.dataset.id;
+                if (!idItem) {
+                  console.warn('⚠️ Elemento sem data-id:', el);
+                  return;
+                }
+
+                // Força o ID a ser número inteiro para bater com a tabela
+                const numericId = parseInt(idItem, 10);
+                const novaPosicao = index + 1; // Posição 1, 2, 3...
+
+                console.log(`🔍 Atualizando ID ${numericId} para ordem ${novaPosicao}`);
+
+                const { data, error } = await supabaseClient
+                  .from('calculadora_valores')
+                  .update({ ordem: novaPosicao })
+                  .eq('id', numericId)
+                  .select(); // Obriga o Supabase a devolver a linha alterada
+
+                if (error) {
+                  throw new Error(`Erro SQL no ID ${numericId}: ${error.message}`);
+                }
+
+                // Se o Supabase não devolveu a linha, ele não atualizou nada!
+                if (!data || data.length === 0) {
+                  throw new Error(`ID ${numericId} não encontrado no banco ou bloqueado.`);
+                }
+
+                console.log(`✅ ID ${numericId} atualizado:`, data);
+              });
+
+              // Aguarda todas as atualizações terminarem
+              await Promise.all(atualizacoes);
+
+              if (syncStatus) syncStatus.innerText = 'Nova ordem salva no banco!';
+              if (typeof showToast === 'function') showToast('Ordem atualizada com sucesso!', 'success');
+            }
+          } catch (err) {
+            console.error('❌ ERRO AO SALVAR ORDEM:', err.message);
+            if (syncStatus) syncStatus.innerText = 'Falha ao salvar ordem.';
+            if (typeof showToast === 'function') showToast('Falha ao gravar ordem. Veja o console(F12).', 'error');
+            return; // Aborta aqui para não bagunçar a memória do site
+          }
+
+          // Só atualiza o simulador na memória se tudo deu certo no banco
+          if (evt.to.id === 'dynamic-addons-list' && Array.isArray(dbItems)) {
+            const IDsReordenados = elementos.map(el => String(el.getAttribute('data-id')));
+            const addonsReordenados = [];
+
+            IDsReordenados.forEach(id => {
+              const item = dbItems.find(i => String(i.id) === id);
+              if (item) addonsReordenados.push(item);
+            });
+
+            const outrosItens = dbItems.filter(i => (i.categoria || '').toLowerCase().trim() !== 'adicional');
+            dbItems = [...outrosItens, ...addonsReordenados];
+          }
+
+          if (typeof calculateAtmosphere === 'function') {
+            calculateAtmosphere();
+          }
+        }
+      });
+    });
+  }
+
+  // Auto-inicializador
+  if (!isAdminMode()) return; // 🛑 Trava na carga inicial para evitar carregar script desnecessário no cliente
+
+  if (typeof Sortable === 'undefined') {
+    const script = document.createElement('script');
+    script.src = 'https://cdnjs.cloudflare.com/ajax/libs/Sortable/1.15.7/Sortable.min.js';
+    script.onload = () => {
+      ativarSortable();
+      setInterval(ativarSortable, 1500); // Fica checando caso a lista recarregue
+    };
+    document.head.appendChild(script);
+  } else {
+    ativarSortable();
+    setInterval(ativarSortable, 1500);
+  }
+})();
