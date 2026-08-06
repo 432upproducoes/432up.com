@@ -156,7 +156,44 @@ document.addEventListener('DOMContentLoaded', () => {
   setupMoneyMasks();
   setupStickyScrollObserver();
   resetAllSelectionsInDOM();
+  setupReturnBanner();
 });
+
+/* ---------- BANNER "QUE BOM TER VOCÊ DE VOLTA" ---------- */
+function setupReturnBanner() {
+  const banner = document.getElementById('return-banner');
+  const resetBtn = document.getElementById('btn-top-reset');
+  if (!banner) return;
+
+  try {
+    const saved = localStorage.getItem('432up_user_project');
+    if (saved) {
+      const parsed = JSON.parse(saved);
+      // Só mostra o banner se o projeto salvo tiver menos de 30 dias
+      const THIRTY_DAYS_MS = 30 * 24 * 60 * 60 * 1000;
+      const isRecent = parsed.timestamp && (new Date().getTime() - parsed.timestamp) < THIRTY_DAYS_MS;
+      if (isRecent) {
+        banner.style.display = 'flex';
+      }
+    }
+  } catch (e) {
+    console.warn('Não foi possível ler o projeto salvo:', e);
+  }
+
+  if (resetBtn) {
+    resetBtn.addEventListener('click', () => {
+      try {
+        localStorage.removeItem('432up_user_project');
+      } catch (e) {
+        console.warn('Não foi possível limpar o projeto salvo:', e);
+      }
+      resetAllSelectionsInDOM();
+      banner.style.display = 'none';
+      // Recalcula o resumo/preço para refletir o estado zerado
+      if (typeof updateSummaryAndPrice === 'function') updateSummaryAndPrice();
+    });
+  }
+}
 
 function resetAllSelectionsInDOM() {
   document.querySelectorAll('.option-card').forEach(card => card.classList.remove('selected'));
@@ -804,7 +841,7 @@ function calculateAtmosphere() {
   }
 
   const msg = encodeURIComponent(
-    'Olá! Montei um projeto no simulador da 432UP!:\n' +
+    'Olá! Montei um projeto técnico na calculadora da 432UP!:\n' +
     (pkg ? '- Rider: ' + pkg.toUpperCase() + '\n' : '') +
     (selection.guestsText ? '- Escala: ' + selection.guestsText + '\n' : '') +
     (hours !== null ? '- Duração: ' + hours + 'h\n' : '') +
