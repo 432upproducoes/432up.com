@@ -597,3 +597,32 @@ window.toggleMobileMenu = toggleMobileMenu;
 window.openLeadModal = openLeadModal;
 window.closeLeadModal = closeLeadModal;
 window.handleProgressFormSubmit = handleProgressFormSubmit;
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+// Fecha o dropdown de "Projetos" ao clicar em qualquer lugar fora dele
+document.addEventListener('click', function(event) {
+  const desktopDetails = document.querySelector('.nav-dropdown-desktop');
+  
+  if (desktopDetails && desktopDetails.hasAttribute('open')) {
+    // Se o clique NAO foi dentro da tag <details>, fecha ela
+    if (!desktopDetails.contains(event.target)) {
+      desktopDetails.removeAttribute('open');
+    }
+  }
+});

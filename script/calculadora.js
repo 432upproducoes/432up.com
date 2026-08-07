@@ -16,6 +16,7 @@ let calcDebounceTimer = null;
 let currentNumericPrice = 0;
 let priceAnimationTimer = null;
 let isPriceBlockInView = false;
+let currentVipCode = '';
 
 function isAdminMode() {
   return !!document.querySelector('.admin-bar-top');
@@ -69,32 +70,20 @@ function showToast(message, type) {
   }, 4200);
 }
 
-
-
-
 function formatBRLInput(input) {
-  let value = input.value.replace(/\D/g, ''); // Remove tudo que não for dígito
+  let value = input.value.replace(/\D/g, ''); 
   if (!value) { input.value = ''; return; }
-  
-  // Converte para valor numérico decimal (ex: "21" vira 0.21)
   let floatValue = parseFloat(value) / 100;
-  
-  // Formata de volta para BRL
   input.value = floatValue.toLocaleString('pt-BR', {
     style: 'currency',
     currency: 'BRL'
   });
 }
 
-
 function parseBRLValue(valueStr) {
   if (typeof valueStr === 'number') return isNaN(valueStr) ? 0 : valueStr;
   if (!valueStr) return 0;
-
-
-	const clean = String(valueStr).replace(/[^\d,.-]/g, '').replace(/\./g, '').replace(',', '.');
-
-
+  const clean = String(valueStr).replace(/[^\d,.-]/g, '').replace(/\./g, '').replace(',', '.');
   const parsed = parseFloat(clean);
   return isNaN(parsed) ? 0 : parsed;
 }
@@ -152,7 +141,20 @@ function animateValue(start, end, duration, elements) {
   requestAnimationFrame(updateNumber);
 }
 
+function initVipCode() {
+  let savedCode = sessionStorage.getItem('432up_vip_code');
+  if (!savedCode) {
+    const randomNum = Math.floor(Math.random() * 9000 + 1000);
+    savedCode = '#UP-' + randomNum;
+    sessionStorage.setItem('432up_vip_code', savedCode);
+  }
+  currentVipCode = savedCode;
+  const vipEl = document.getElementById('vip-reservation-code');
+  if (vipEl) vipEl.innerText = currentVipCode;
+}
+
 document.addEventListener('DOMContentLoaded', () => {
+  initVipCode();
   setupModalHandlers();
   setupInlineEditableListeners();
   setupMultipliersListeners();
@@ -163,7 +165,45 @@ document.addEventListener('DOMContentLoaded', () => {
   setupReturnBanner();
 });
 
-/* ---------- BANNER "QUE BOM TER VOCÊ DE VOLTA" ---------- */
+/* ---------- BANNER "QUE BOM TER VOCÊ DE VOLTA" & RESTAURAÇÃO ---------- */
+function restoreSavedUserSelection() {
+  try {
+    const saved = localStorage.getItem('432up_user_project');
+    if (saved) {
+      const parsed = JSON.parse(saved);
+      const THIRTY_DAYS_MS = 30 * 24 * 60 * 60 * 1000;
+      if (parsed.timestamp && (new Date().getTime() - parsed.timestamp) < THIRTY_DAYS_MS) {
+        
+        if (parsed.selection) {
+          selection = parsed.selection;
+          
+          if (selection.scale) {
+            document.querySelectorAll('#group-scale .option-card').forEach(c => {
+              if (c.dataset.value === selection.scale || c.dataset.slug === selection.scale) c.classList.add('selected');
+            });
+          }
+          if (selection.hours !== null) {
+            document.querySelectorAll('#group-hours .option-card').forEach(c => {
+              if (parseInt(c.dataset.value, 10) === selection.hours) c.classList.add('selected');
+            });
+          }
+          if (selection.package) {
+            document.querySelectorAll('#group-package .option-card').forEach(c => {
+              if (c.dataset.value === selection.package || c.dataset.slug === selection.package) c.classList.add('selected');
+            });
+          }
+        }
+
+        if (parsed.selectedAddons) {
+          selectedAddons = parsed.selectedAddons;
+        }
+      }
+    }
+  } catch (e) {
+    console.warn('Erro ao restaurar seleções do projeto:', e);
+  }
+}
+
 function setupReturnBanner() {
   const banner = document.getElementById('return-banner');
   const resetBtn = document.getElementById('btn-top-reset');
@@ -173,7 +213,6 @@ function setupReturnBanner() {
     const saved = localStorage.getItem('432up_user_project');
     if (saved) {
       const parsed = JSON.parse(saved);
-      // Só mostra o banner se o projeto salvo tiver menos de 30 dias
       const THIRTY_DAYS_MS = 30 * 24 * 60 * 60 * 1000;
       const isRecent = parsed.timestamp && (new Date().getTime() - parsed.timestamp) < THIRTY_DAYS_MS;
       if (isRecent) {
@@ -191,10 +230,11 @@ function setupReturnBanner() {
       } catch (e) {
         console.warn('Não foi possível limpar o projeto salvo:', e);
       }
+      selection = { scale: null, hours: null, package: null, guestsText: "", guestsCount: 0 };
       resetAllSelectionsInDOM();
       banner.style.display = 'none';
-      // Recalcula o resumo/preço para refletir o estado zerado
       if (typeof updateSummaryAndPrice === 'function') updateSummaryAndPrice();
+      calculateAtmosphere();
     });
   }
 }
@@ -370,6 +410,8 @@ async function loadDynamicContentFromDatabase() {
             if (packageComponents[c.pacote_slug]) packageComponents[c.pacote_slug].push(c.item_id);
           });
         }
+        
+        restoreSavedUserSelection();
         renderAddonsFromMainTable();
         renderPackageDropdowns();
       }
@@ -410,7 +452,7 @@ function renderAddonsFromMainTable() {
       '<div style="flex: 1;">' +
       '<h5 style="display:flex; align-items:baseline; flex-wrap:wrap; gap:4px;">' +
       '<span ' + (admin ? 'contenteditable="true" data-db-id="' + escapeHtml(addon.id) + '" data-db-col="nome"' : '') + '>' + escapeHtml(nome) + '</span>' +
-      '<span class="addon-price-tag">(' + preco + ')</span></h5>' +
+      (admin ? '<span class="addon-price-tag">(' + preco + ')</span>' : '') + '</h5>' +
       '<p ' + (admin ? 'contenteditable="true" data-db-id="' + escapeHtml(addon.id) + '" data-db-col="descricao"' : '') + '>' + escapeHtml(desc) + '</p>' +
       (admin ? '<div class="admin-toggle-wrapper" onclick="event.stopPropagation()"><span>Exibir no Front:</span><label class="switch"><input type="checkbox" ' + (isAtivo ? 'checked' : '') + ' onchange="toggleAddonVisibility(\'' + escapeHtml(addon.id) + '\', this.checked)"><span class="slider"></span></label></div>' : '') +
       '</div><div style="display:flex; align-items:center; gap:8px;">' +
@@ -496,11 +538,7 @@ function renderPackageDropdowns(filterText) {
       selectedList.innerHTML = '<ul class="pkg-specs-list">' +
         itemsInPkg.map(function(addon) {
           var n = String(addon.nome || addon.nome_exibicao || '').replace(/\s*\(R\$\s*[\d.,]+\)\s*/g, '').trim();
-          
-
-
-
-return '<li data-id="' + escapeHtml(addon.id) + '"><span class="dot"></span><span>' + escapeHtml(n) + '</span>' +
+          return '<li data-id="' + escapeHtml(addon.id) + '"><span class="dot"></span><span>' + escapeHtml(n) + '</span>' +
             (admin ? '<span class="btn-remove-pkg" onclick="removeItemFromPackage(event, \'' + pkg + '\', \'' + escapeHtml(addon.id) + '\')">&times;</span>' : '') +
             '</li>';
         }).join('') +
@@ -738,21 +776,25 @@ function calculateAtmosphere() {
   let totalItensAdicionais = 0;
   globalSpecsList = [];
 
-  const processItemCost = (item) => {
+
+    const processItemCost = (item) => {
     const vBase = parseBRLValue(item.valor_base);
     const vExtraHora = parseBRLValue(item.valor_por_hora);
     const vPorPessoa = parseBRLValue(item.valor_por_pessoa);
     const aCada = parseBRLValue(item.a_cada_pessoas) || 100;
+const hMin = parseBRLValue(item.hora_minima) || 1;
 
     let custoHoras = 0;
-    if (hours !== null && hours > 0 && vExtraHora > 0) {
-      custoHoras = hours * vExtraHora;
+    if (hours !== null && hours > hMin && vExtraHora > 0) {
+const horasExcedentes = hours - hMin;
+custoHoras = horasExcedentes * vExtraHora;
     }
 
     let custoPessoas = 0;
-    if (guests > 0 && vPorPessoa > 0 && aCada > 0) {
-      const blocos = Math.ceil(guests / aCada);
-      custoPessoas = blocos * vPorPessoa;
+    if (guests > aCada && vPorPessoa > 0 && aCada > 0) {
+      const pessoasExcedentes = guests - aCada;
+      const blocosExcedentes = Math.ceil(pessoasExcedentes / aCada);
+      custoPessoas = blocosExcedentes * vPorPessoa;
     }
 
     return vBase + custoHoras + custoPessoas;
@@ -837,7 +879,6 @@ function calculateAtmosphere() {
 
   currentNumericPrice = finalTotal;
 
-  // Salva as escolhas do usuário no navegador a cada clique
   try {
     localStorage.setItem('432up_user_project', JSON.stringify({
       selection: selection,
@@ -849,7 +890,8 @@ function calculateAtmosphere() {
   }
 
   const msg = encodeURIComponent(
-    'Olá! Montei um projeto técnico na calculadora da 432UP!:\n' +
+    'Olá! Gostaria de validar meu Projeto de Atmosfera 432UP!:\n' +
+    (currentVipCode ? 'Código de Reserva VIP: *' + currentVipCode + '*\n\n' : '') +
     (pkg ? '- Rider: ' + pkg.toUpperCase() + '\n' : '') +
     (selection.guestsText ? '- Escala: ' + selection.guestsText + '\n' : '') +
     (hours !== null ? '- Duração: ' + hours + 'h\n' : '') +
@@ -1169,221 +1211,20 @@ function setupContactFormCalc() {
   });
 }
 
-
-
-
-/* ---------- EXPORTADOR DE PROPOSTA (PDF / RESUMO) ---------- */
-function setupPdfExporter() {
-  const btnPdfTrigger = document.getElementById('btn-pdf-trigger');
-  if (!btnPdfTrigger) return;
-  if (btnPdfTrigger.dataset.listenerAttached === 'true') return;
-  btnPdfTrigger.dataset.listenerAttached = 'true';
-
-  function loadHtml2PdfScript(callback) {
-    if (typeof html2pdf !== 'undefined') { callback(); return; }
-
-    const existing = document.querySelector('script[src*="html2pdf"]');
-    if (existing) {
-      existing.addEventListener('load', callback);
-      setTimeout(() => {
-        if (typeof html2pdf !== 'undefined') callback();
-        else showToast('Biblioteca de PDF não carregou. Verifique sua conexão.', 'error');
-      }, 4000);
-      return;
-    }
-
-    const script = document.createElement('script');
-    script.src = 'https://cdnjs.cloudflare.com/ajax/libs/html2pdf.js/0.10.1/html2pdf.bundle.min.js';
-    script.onload = callback;
-    script.onerror = () => showToast('Não foi possível carregar a biblioteca de PDF. Verifique sua conexão.', 'error');
-    document.head.appendChild(script);
-  }
-
-  btnPdfTrigger.addEventListener('click', (e) => {
-    e.preventDefault();
-    e.stopPropagation();
-
-    const originalText = btnPdfTrigger.innerText;
-    btnPdfTrigger.innerText = 'Gerando PDF...';
-    btnPdfTrigger.style.opacity = '0.65';
-    btnPdfTrigger.disabled = true;
-    btnPdfTrigger.style.pointerEvents = 'none';
-
-    const safetyTimeout = setTimeout(() => {
-      resetBtn();
-      showToast('A geração do PDF demorou demais e foi cancelada. Tente novamente.', 'error');
-    }, 15000);
-
-    const resetBtn = () => {
-      clearTimeout(safetyTimeout);
-      btnPdfTrigger.innerText = originalText;
-      btnPdfTrigger.style.opacity = '1';
-      btnPdfTrigger.disabled = false;
-      btnPdfTrigger.style.pointerEvents = '';
-    };
-
-    loadHtml2PdfScript(() => {
-      try {
-        const sumGuests  = (document.getElementById('sum-guests')?.innerText || '').trim() || 'A definir';
-        const sumHours   = (document.getElementById('sum-hours')?.innerText || '').trim() || 'A definir';
-        const sumPackage = (document.getElementById('sum-package')?.innerText || '').trim() || 'A definir';
-        const sumStage   = (document.getElementById('sum-stage-needed')?.innerText || '').trim() || 'Padrão Plano';
-        let totalPrice   = (document.getElementById('total-price')?.innerText || '').trim();
-
-        if (!totalPrice || totalPrice.toLowerCase().includes('selecione') || totalPrice.toLowerCase().includes('aguardando')) {
-          totalPrice = 'Sob consulta';
-        }
-
-        const serviceListItems = document.querySelectorAll('#sum-service-details li');
-        const pdfSpecsContainer = document.getElementById('pdf-specs-items');
-
-        if (pdfSpecsContainer) {
-          pdfSpecsContainer.innerHTML = '';
-          let hasRealItems = false;
-
-          serviceListItems.forEach(li => {
-            const txt = (li.innerText || '').trim();
-            if (txt && !txt.toLowerCase().includes('aguardando') && !txt.toLowerCase().includes('selecione')) {
-              const cloneLi = document.createElement('li');
-              cloneLi.style.cssText = 'font-size: 11.5px; color: #1f2937; margin-bottom: 7px; line-height: 1.45;';
-              cloneLi.innerText = txt;
-              pdfSpecsContainer.appendChild(cloneLi);
-              hasRealItems = true;
-            }
-          });
-
-          if (!hasRealItems) {
-            const defaultLi = document.createElement('li');
-            defaultLi.style.cssText = 'font-size: 11.5px; color: #4b5563; margin-bottom: 7px;';
-            defaultLi.innerText = 'Rider técnico e engenharia de atmosfera conforme parâmetros selecionados.';
-            pdfSpecsContainer.appendChild(defaultLi);
-          }
-        }
-
-        const setText = (id, value) => {
-          const el = document.getElementById(id);
-          if (el) el.innerText = value;
-        };
-
-        setText('pdf-package', sumPackage);
-        setText('pdf-guests', sumGuests);
-        setText('pdf-hours', sumHours);
-        setText('pdf-stage', sumStage);
-        setText('pdf-total-val', totalPrice);
-
-        const agora = new Date();
-        const dataFormatada = agora.toLocaleDateString('pt-BR', { day: '2-digit', month: 'long', year: 'numeric' });
-        const horaFormatada = agora.toLocaleTimeString('pt-BR', { hour: '2-digit', minute: '2-digit' });
-        setText('pdf-date-print', `Emitido em ${dataFormatada} às ${horaFormatada}`);
-
-        const refId = 'REF-' + agora.getFullYear().toString().slice(-2) +
-                      String(agora.getMonth() + 1).padStart(2, '0') +
-                      String(agora.getDate()).padStart(2, '0') + '-' +
-                      Math.floor(Math.random() * 900 + 100);
-        setText('pdf-ref-id', refId);
-
-        const element = document.getElementById('pdf-render-template');
-        if (!element) {
-          showToast('Erro interno: template de PDF não encontrado.', 'error');
-          resetBtn();
-          return;
-        }
-
-        element.style.display = 'block';
-        element.style.visibility = 'visible';
-        element.style.position = 'absolute';
-        element.style.left = '-9999px';
-        element.style.top = '0';
-        element.style.width = '210mm';
-
-        requestAnimationFrame(() => {
-          setTimeout(() => {
-            const opt = {
-              margin: [10, 10, 12, 10],
-              filename: `Proposta_Atmosfera_432UP_${refId}.pdf`,
-              image: { type: 'jpeg', quality: 0.98 },
-              html2canvas: { scale: 2, useCORS: true, allowTaint: true, logging: false, backgroundColor: '#ffffff', windowWidth: 794 },
-              jsPDF: { unit: 'mm', format: 'a4', orientation: 'portrait' }
-            };
-
-            html2pdf().set(opt).from(element).save()
-              .then(() => {
-                element.style.display = 'none';
-                element.style.visibility = '';
-                element.style.position = '';
-                element.style.left = '';
-                resetBtn();
-                showToast('PDF gerado com sucesso!', 'success');
-              })
-              .catch(err => {
-                console.error('[432UP PDF] Erro:', err);
-                element.style.display = 'none';
-                showToast('Erro ao gerar o PDF. Tente novamente.', 'error');
-                resetBtn();
-              });
-          }, 150);
-        });
-
-      } catch (err) {
-        console.error('[432UP PDF] Exceção:', err);
-        showToast('Erro inesperado ao preparar o PDF.', 'error');
-        resetBtn();
-      }
-    });
-  });
-}
-
 document.addEventListener('DOMContentLoaded', () => {
   setupContactFormCalc();
-  setupPdfExporter();
 });
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
 
 /* ---------- SISTEMA DRAG & DROP COM GRAVAÇÃO ROBUSTA NO SUPABASE ---------- */
 (function inicializarDragDropSupabase() {
   function ativarSortable() {
-    // 🛑 TRAVA DE SEGURANÇA: Se NÃO for admin, não ativa o Drag & Drop
     if (!isAdminMode()) return;
     
     if (typeof Sortable === 'undefined') return;
 
-    // Seleciona as listas onde os itens ficam
     const containers = document.querySelectorAll('#dynamic-addons-list, .pkg-specs-list');
 
     containers.forEach(container => {
-      // Evita inicializar duas vezes no mesmo lugar
       if (container.dataset.sortableAtivo) return;
       container.dataset.sortableAtivo = 'true';
 
@@ -1392,7 +1233,6 @@ document.addEventListener('DOMContentLoaded', () => {
         ghostClass: 'item-arrastando',
         handle: 'li, .extra-item',
         onEnd: async function (evt) {
-          // 🔍 LOGS DE DIAGNÓSTICO — remover depois de identificar o bug
           const elementos = Array.from(evt.to.children);
           console.log('🔍 Container (evt.to):', evt.to.id || evt.to.className);
           console.log('🔍 IDs capturados no drag:', elementos.map(el => el.getAttribute('data-id')));
@@ -1403,7 +1243,6 @@ document.addEventListener('DOMContentLoaded', () => {
 
           try {
             if (typeof supabaseClient !== 'undefined' && supabaseClient) {
-              // Dispara as atualizações no banco
               const atualizacoes = elementos.map(async (el, index) => {
                 const idItem = el.getAttribute('data-id') || el.dataset.id;
                 if (!idItem) {
@@ -1411,9 +1250,8 @@ document.addEventListener('DOMContentLoaded', () => {
                   return;
                 }
 
-                // Força o ID a ser número inteiro para bater com a tabela
                 const numericId = parseInt(idItem, 10);
-                const novaPosicao = index + 1; // Posição 1, 2, 3...
+                const novaPosicao = index + 1;
 
                 console.log(`🔍 Atualizando ID ${numericId} para ordem ${novaPosicao}`);
 
@@ -1421,13 +1259,12 @@ document.addEventListener('DOMContentLoaded', () => {
                   .from('calculadora_valores')
                   .update({ ordem: novaPosicao })
                   .eq('id', numericId)
-                  .select(); // Obriga o Supabase a devolver a linha alterada
+                  .select();
 
                 if (error) {
                   throw new Error(`Erro SQL no ID ${numericId}: ${error.message}`);
                 }
 
-                // Se o Supabase não devolveu a linha, ele não atualizou nada!
                 if (!data || data.length === 0) {
                   throw new Error(`ID ${numericId} não encontrado no banco ou bloqueado.`);
                 }
@@ -1435,7 +1272,6 @@ document.addEventListener('DOMContentLoaded', () => {
                 console.log(`✅ ID ${numericId} atualizado:`, data);
               });
 
-              // Aguarda todas as atualizações terminarem
               await Promise.all(atualizacoes);
 
               if (syncStatus) syncStatus.innerText = 'Nova ordem salva no banco!';
@@ -1445,10 +1281,9 @@ document.addEventListener('DOMContentLoaded', () => {
             console.error('❌ ERRO AO SALVAR ORDEM:', err.message);
             if (syncStatus) syncStatus.innerText = 'Falha ao salvar ordem.';
             if (typeof showToast === 'function') showToast('Falha ao gravar ordem. Veja o console(F12).', 'error');
-            return; // Aborta aqui para não bagunçar a memória do site
+            return; 
           }
 
-          // Só atualiza o simulador na memória se tudo deu certo no banco
           if (evt.to.id === 'dynamic-addons-list' && Array.isArray(dbItems)) {
             const IDsReordenados = elementos.map(el => String(el.getAttribute('data-id')));
             const addonsReordenados = [];
@@ -1470,15 +1305,14 @@ document.addEventListener('DOMContentLoaded', () => {
     });
   }
 
-  // Auto-inicializador
-  if (!isAdminMode()) return; // 🛑 Trava na carga inicial para evitar carregar script desnecessário no cliente
+  if (!isAdminMode()) return;
 
   if (typeof Sortable === 'undefined') {
     const script = document.createElement('script');
     script.src = 'https://cdnjs.cloudflare.com/ajax/libs/Sortable/1.15.7/Sortable.min.js';
     script.onload = () => {
       ativarSortable();
-      setInterval(ativarSortable, 1500); // Fica checando caso a lista recarregue
+      setInterval(ativarSortable, 1500); 
     };
     document.head.appendChild(script);
   } else {
