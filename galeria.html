@@ -1,4 +1,4 @@
-	<!DOCTYPE html>
+<!DOCTYPE html>
 <html lang="pt-BR" data-theme="dark">
 <head>
   <!-- Google Analytics GA4 -->
@@ -14,17 +14,16 @@
     posthog.init('phc_t76fhhCgdrhmPwLXSxXD79vv7sX3yBK3w7V57wQqxccw', {
         api_host: 'https://us.i.posthog.com',
         defaults: '2026-05-30',
-        person_profiles: 'identified_only', // or 'always' to create profiles for anonymous users as well
+        person_profiles: 'identified_only',
     })
 </script>
 
   <script src="https://unpkg.com/@supabase/supabase-js@2"></script>
-<!-- Tracker unificado -->
-<script src="https://www.432up.com/script/tracker.js"></script>
+  <script src="https://www.432up.com/script/tracker.js"></script>
 
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
-  <meta name="version" content="Enterprise-1.2.2-Perfect">
+  <meta name="version" content="Enterprise-1.2.2-Galeria-v5">
   
   <meta name="theme-color" content="#08080A">
   <meta name="apple-mobile-web-app-capable" content="yes">
@@ -34,30 +33,193 @@
   <title>Memórias Visuais & Portfólio | 432UP! Produções</title>
   <meta name="description" content="Crônicas visuais, registros de alta performance e bastidores de engenharia audiovisual para eventos de alto padrão.">
 
-  <!-- Google Fonts -->
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&display=swap" rel="stylesheet">
 
-
-
-  <!-- CSS Único e Modular -->
   <link rel="stylesheet" href="css/style.css">
   
-  <!-- Scripts Desacoplados -->
   <script src="script/script.js" defer></script>
   <script src="script/galeria.js" defer></script>
 
-  <!-- Ajustes exclusivos desta página -->
+  <!-- Galeria espacial v5 — flutuação + masonry + glow ametista -->
   <style>
- 
-    .masonry-gallery { padding-bottom: 140px; }
+    .masonry-gallery {
+      padding-bottom: 140px;
+      display: columns;
+      columns: 1;
+      column-gap: 22px;
+    }
+    @media (min-width: 640px) {
+      .masonry-gallery { columns: 2; }
+    }
+    @media (min-width: 1000px) {
+      .masonry-gallery {
+        max-width: 1200px;
+        columns: 3;
+      }
+    }
 
-    @media (min-width: 900px) {
-      .masonry-gallery { max-width: 1200px; grid-template-columns: repeat(3, 1fr); }
+    .gallery-card {
+      break-inside: avoid;
+      margin-bottom: 22px;
+      display: flex;
+      flex-direction: column;
+      position: relative;
+      background: rgba(14, 14, 22, 0.55);
+      backdrop-filter: blur(16px);
+      -webkit-backdrop-filter: blur(16px);
+      border: 1px solid rgba(168, 85, 247, 0.22);
+      border-radius: 18px;
+      overflow: hidden;
+      transition: border-color 0.4s ease, box-shadow 0.45s ease;
+      will-change: transform;
+    }
+
+    .gallery-card::before {
+      content: '';
+      position: absolute;
+      inset: -10% -8%;
+      border-radius: 28px;
+      background:
+        radial-gradient(ellipse at 50% 35%, rgba(168, 85, 247, 0.18) 0%, transparent 65%),
+        radial-gradient(ellipse at 25% 85%, rgba(0, 255, 102, 0.06) 0%, transparent 55%);
+      filter: blur(20px);
+      opacity: 0;
+      z-index: -1;
+      pointer-events: none;
+      transition: opacity 0.5s ease;
+    }
+    .gallery-card:hover {
+      border-color: rgba(168, 85, 247, 0.5);
+      box-shadow:
+        0 20px 45px rgba(0, 0, 0, 0.5),
+        0 0 28px rgba(168, 85, 247, 0.18);
+    }
+    .gallery-card:hover::before { opacity: 1; }
+
+    .img-box {
+      position: relative;
+      width: 100%;
+      overflow: hidden;
+      cursor: pointer;
+      line-height: 0;
+    }
+    .img-box img {
+      width: 100%;
+      height: auto;
+      display: block;
+      transition: transform 0.65s cubic-bezier(0.22, 1, 0.36, 1);
+    }
+    .gallery-card:hover .img-box img {
+      transform: scale(1.045);
+    }
+
+    .img-box-overlay {
+      position: absolute;
+      inset: 0;
+      background: linear-gradient(
+        180deg,
+        rgba(8, 8, 10, 0) 40%,
+        rgba(12, 8, 22, 0.5) 75%,
+        rgba(8, 6, 14, 0.88) 100%
+      );
+      pointer-events: none;
+    }
+
+    .tag-badge {
+      position: absolute;
+      left: 12px;
+      bottom: 12px;
+      background: rgba(8, 8, 10, 0.55);
+      border: 1px solid rgba(168, 85, 247, 0.3);
+      color: #00FF66;
+      font-size: 0.66rem;
+      font-weight: 700;
+      text-transform: uppercase;
+      letter-spacing: 0.5px;
+      padding: 4px 10px;
+      border-radius: 16px;
+      backdrop-filter: blur(8px);
+    }
+    .tag-badge.play-badge {
+      left: 12px;
+      top: 12px;
+      bottom: auto;
+      width: 34px;
+      height: 34px;
+      padding: 0;
+      border-radius: 50%;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 0.8rem;
+      color: #fff;
+      background: rgba(168, 85, 247, 0.55);
+      border-color: rgba(168, 85, 247, 0.7);
+      box-shadow: 0 0 14px rgba(168, 85, 247, 0.4);
+    }
+
+    .card-body {
+      padding: 14px 16px 16px;
+      background: rgba(22, 18, 33, 0.88);
+      border-top: 1px solid rgba(168, 85, 247, 0.18);
+    }
+    .card-body h3 {
+      font-size: 0.95rem;
+      font-weight: 700;
+      color: #fff;
+      margin: 0 0 4px 0;
+    }
+    .card-body p {
+      font-size: 0.8rem;
+      color: #9CA3AF;
+      line-height: 1.45;
+      margin: 0;
+    }
+    .card-body p:empty { display: none; }
+
+    .float-card {
+      animation: galFloat 7s ease-in-out infinite;
+    }
+    .float-card:nth-child(3n+1) { animation-duration: 6.2s; animation-delay: 0.1s; }
+    .float-card:nth-child(3n+2) { animation-duration: 7.5s; animation-delay: 0.4s; }
+    .float-card:nth-child(3n+3) { animation-duration: 8.1s; animation-delay: 0.7s; }
+
+    @keyframes galFloat {
+      0%, 100% { transform: translateY(0); }
+      50%      { transform: translateY(-7px); }
+    }
+
+    .gallery-card {
+      animation: galFloat 7s ease-in-out infinite, galCardIn 0.75s cubic-bezier(0.22, 1, 0.36, 1) both;
+    }
+    .gallery-card:nth-child(1) { animation-delay: 0s, 0.05s; }
+    .gallery-card:nth-child(2) { animation-delay: 0.3s, 0.1s; }
+    .gallery-card:nth-child(3) { animation-delay: 0.6s, 0.15s; }
+    .gallery-card:nth-child(4) { animation-delay: 0.15s, 0.2s; }
+    .gallery-card:nth-child(5) { animation-delay: 0.45s, 0.25s; }
+    .gallery-card:nth-child(6) { animation-delay: 0.75s, 0.3s; }
+    .gallery-card:nth-child(n+7) { animation-delay: 0.2s, 0.35s; }
+
+    @keyframes galCardIn {
+      from { opacity: 0; transform: translateY(24px) scale(0.97); }
+      to   { opacity: 1; transform: translateY(0) scale(1); }
+    }
+
+    @media (prefers-reduced-motion: reduce) {
+      .gallery-card,
+      .float-card {
+        animation: none !important;
+      }
+      .img-box img { transition: none !important; }
+    }
+
+    @media (max-width: 639px) {
+      .masonry-gallery { column-gap: 14px; }
+      .gallery-card { margin-bottom: 14px; border-radius: 14px; }
     }
   </style>
-
 
 <script type="application/ld+json">
 {
@@ -88,27 +250,14 @@
   ]
 }
 </script>
-
-
-
-
 </head>
 <body>
 
   <canvas id="orbit-canvas"></canvas>
   <div id="plasmaLayer" class="plasma-top-layer"></div>
 
-
   <div class="viewport-wrapper">
-    
 
-
-
-
-
-
-
-  <!-- HEADER -->
   <header id="calc-header">
     <div class="logo-container">
       <a href="index" class="logo-link" aria-label="Página Inicial 432UP">
@@ -116,42 +265,24 @@
       </a>
     </div>
 
-
-    <!-- MENU DESKTOP -->
     <nav class="desktop-nav">
       <a href="aessencia">A Essência</a>
       <a href="calculadora">Experiências & Valores</a>
-      <a href="galeria">Galeria</a>
-
-
-
+      <a href="galeria.html" class="active">Galeria</a>
 
       <details class="nav-dropdown-desktop">
         <summary class="nav-link-like">Projetos ▾</summary>
         <div class="lps-grid-dropdown plasma-glow-overlay aurora-border-glow">
-     <!--      <a href="/casamento-sp/">• Casamentos</a>
-          <a href="/corporativo/">• Eventos Corporativos</a>
-          <a href="/debutante/">• Festas de 15 Anos</a>
-          <a href="/aniversario/">• Aniversários</a>
-          <a href="/formatura/">• Formaturas & Gala</a>
-          <a href="/reveillon/">• Réveillon</a>
-          <a href="/halloween/">• Eventos Temáticos</a> -->
           <a href="mesa-de-producao">• Mesa de Produção (B2B)</a>
-			
-
-         </div>
+        </div>
       </details>
 
       <button onclick="openLeadModal()" class="btn-header-cta">Iniciar Projeto</button>
     </nav>
 
-
-
-
     <button class="mobile-hamburger" onclick="toggleMobileMenu()">☰</button>
   </header>
 
-  <!-- MENU MOBILE HAMBÚRGUER -->
   <div class="mobile-menu-overlay" id="mobile-menu">
     <button onclick="toggleMobileMenu()" style="position: absolute; top: 20px; right: 20px; background: transparent; border: none; color: #fff; font-size: 1.5rem; cursor: pointer;">✕</button>
     
@@ -159,35 +290,15 @@
     <a href="calculadora" onclick="toggleMobileMenu()">Experiências & Valores</a>
     <a href="galeria" onclick="toggleMobileMenu()">Galeria</a>
 
-    <!-- ACCORDION/DROPDOWN FECHADO PARA AS LPs NO MOBILE -->
     <details style="width: 100%; text-align: center; margin: 10px 0; cursor: pointer;">
       <summary style="font-size: 1.1rem; color: #fff; opacity: 0.9; padding: 10px 0; outline: none; list-style: none;">Projetos & LPs ▾</summary>
       <div class="lps-grid" style="display: grid; grid-template-columns: 1fr; gap: 10px; padding: 10px 0; background: rgba(255, 255, 255, 0.02); border-radius: 8px;">
-     <!--    <a href="/casamento-sp/" onclick="toggleMobileMenu()">• Casamentos</a>
-        <a href="/corporativo/" onclick="toggleMobileMenu()">• Eventos Corporativos</a>
-        <a href="/debutante/" onclick="toggleMobileMenu()">• Festas de 15 Anos</a>
-        <a href="/formatura/" onclick="toggleMobileMenu()">• Formaturas & Gala</a>
-        <a href="/aniversario/" onclick="toggleMobileMenu()">• Aniversários Premium</a>
-        <a href="/reveillon/" onclick="toggleMobileMenu()">• Réveillon</a>
-        <a href="/halloween/" onclick="toggleMobileMenu()">• Eventos Temáticos</a> -->
         <a href="mesa-de-producao" onclick="toggleMobileMenu()">• Mesa de Produção (B2B)</a>
-		
-
       </div>
     </details>
 
     <button onclick="toggleMobileMenu(); openLeadModal();" class="btn-header-cta" style="margin-left: 0; padding: 12px 28px; width: 100%;">Iniciar Projeto</button>
   </div>
-
-
-
-
-
-
-
-
-
-
 
     <section class="gallery-hero">
       <span class="tagline">Registros & Bastidores</span>
@@ -204,10 +315,8 @@
     <footer>
       <p>© 2026 432UP! Produções — Curadoria Artística e Engenharia Estrutural</p>
     </footer>
-  </div> <!-- Fecha a div .viewport-wrapper -->
+  </div>
 
-  
-  <!-- MODAL DE CAPTURA / CONTATO (PADRÃO CALCULADORA) -->
   <div class="modal-overlay" id="contact-overlay">
     <div class="modal-box plasma-glow-overlay aurora-border-glow">
       <button class="modal-close" id="contact-modal-close-btn">&times;</button>
@@ -227,52 +336,27 @@
 
       <form id="lead-form-calc" onsubmit="event.preventDefault();">
         <input type="text" id="mod-name" required placeholder="Seu nome ou empresa">
-        
         <input type="text" id="mod-contact" required placeholder="WhatsApp (com DDD) ou E-mail">
         <span id="mod-contact-error" style="display: none; color: #FF007F; font-size: 0.72rem; margin-top: -4px; margin-bottom: 8px;">Por favor, insira um e-mail válido ou um telefone/WhatsApp com DDD.</span>
-
         <textarea id="mod-msg" placeholder="Observações sobre o evento (data, local ou perfil)..." style="height: 65px; resize: none;"></textarea>
         <button type="button" id="btn-submit-general-contact" class="btn-header-cta" style="width:100%; margin-left:0; padding:12px; margin-top:4px;">Enviar Solicitação</button>
       </form>
     </div>
   </div>
 
-
-
   <script>
     document.addEventListener('DOMContentLoaded', () => {
       const modal = document.getElementById('contact-overlay');
       const closeBtn = document.getElementById('contact-modal-close-btn');
-      const triggerDesktop = document.getElementById('nav-trigger-modal');
-      const triggerMobile = document.getElementById('nav-trigger-modal-mobile');
-
-      // Função para abrir o modal
-      const openModal = () => {
-        if (modal) modal.classList.add('active');
-      };
-
-      // Disparadores de abertura
-      if (triggerDesktop) triggerDesktop.addEventListener('click', openModal);
-      if (triggerMobile) {
-        triggerMobile.addEventListener('click', () => {
-          openModal();
-          const mobileMenu = document.getElementById('mobile-menu');
-          if (mobileMenu) mobileMenu.classList.remove('active');
-        });
-      }
-
-      // Fechar no 'X'
       if (closeBtn && modal) {
         closeBtn.addEventListener('click', () => {
-          modal.classList.remove('active');
+          modal.classList.remove('active', 'open');
         });
       }
-
-      // Fechar ao clicar fora da caixa
       if (modal) {
         modal.addEventListener('click', (e) => {
           if (e.target === modal) {
-            modal.classList.remove('active');
+            modal.classList.remove('active', 'open');
           }
         });
       }
