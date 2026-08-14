@@ -1327,25 +1327,35 @@ document.addEventListener('DOMContentLoaded', () => {
 
 
 
-
-
-/* ---------- DISPARO DIRETO PARA O TELEGRAM (SOLUÇÃO IMEDIATA) ---------- */
+/* ---------- DISPARO DIRETO PARA O TELEGRAM ---------- */
 async function dispararLeadTelegram(nome, telefone, mensagem) {
   try {
-    const BOT_TOKEN = "AAFGe18Mxm7Z_P_GIRPPRzv8cUWb17mHX00";
-    const CHAT_ID = "8996965457"; // Cole o seu número exato de ID aqui
+    // Token completo extraído do BotFather
+    const BOT_TOKEN = "8835958314:AAFGe18Mxm7Z_P_GlRPPRzv8cUWbi7mHX00"; 
     
+    // Seu ID pessoal do Telegram
+    const CHAT_ID = "8996965457"; 
+
     const texto = `🔥 *NOVO LEAD NA 432UP!*\n\n` +
                   `👤 *Nome:* ${nome}\n` +
                   `📞 *Contato:* ${telefone}\n` +
                   `💬 *Detalhes:* ${mensagem}`;
 
-    // Monta a requisição direta na API oficial
-    const url = `https://api.telegram.org/bot${BOT_TOKEN}/sendMessage?chat_id=${CHAT_ID}&parse_mode=Markdown&text=${encodeURIComponent(texto)}`;
-    
-    // O modo 'no-cors' envia o alerta instantaneamente sem bloqueios do navegador
-    await fetch(url, { method: 'GET', mode: 'no-cors' });
+    const response = await fetch(`https://api.telegram.org/bot${BOT_TOKEN}/sendMessage`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        chat_id: CHAT_ID,
+        text: texto,
+        parse_mode: 'Markdown'
+      })
+    });
+
+    if (!response.ok) {
+      const errorData = await response.json();
+      console.error("432UP! Erro no Telegram:", errorData);
+    }
   } catch (err) {
-    console.warn('Falha no alerta:', err);
+    console.error('Falha de rede ao disparar alerta:', err);
   }
 }
