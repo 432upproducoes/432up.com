@@ -3,7 +3,7 @@ export async function onRequestPost(context) {
     const lead = await context.request.json(); 
     
     const BOT_TOKEN = "AAFGe18Mxm7Z_P_GIRPPRzv8cUWb17mHX00";
-    const CHAT_ID = "lead432up_bot";
+    const CHAT_ID = "8996965457";
 
     const texto = `🔥 *NOVO LEAD NO SITE!*\n\n` +
                   `👤 *Nome:* ${lead.nome}\n` +
