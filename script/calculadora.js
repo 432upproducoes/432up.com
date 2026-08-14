@@ -1329,35 +1329,23 @@ document.addEventListener('DOMContentLoaded', () => {
 
 
 
-
-/* ---------- DISPARO UNIFICADO PARA O TELEGRAM (VIA CLOUDFLARE) ---------- */
+/* ---------- DISPARO DIRETO PARA O TELEGRAM (SOLUÇÃO IMEDIATA) ---------- */
 async function dispararLeadTelegram(nome, telefone, mensagem) {
   try {
-    await fetch('/lead', {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ nome: nome, telefone: telefone, mensagem: mensagem })
-    });
+    const BOT_TOKEN = "AAFGe18Mxm7Z_P_GIRPPRzv8cUWb17mHX00";
+    const CHAT_ID = "8996965457"; // Cole o seu número exato de ID aqui
+    
+    const texto = `🔥 *NOVO LEAD NA 432UP!*\n\n` +
+                  `👤 *Nome:* ${nome}\n` +
+                  `📞 *Contato:* ${telefone}\n` +
+                  `💬 *Detalhes:* ${mensagem}`;
+
+    // Monta a requisição direta na API oficial
+    const url = `https://api.telegram.org/bot${BOT_TOKEN}/sendMessage?chat_id=${CHAT_ID}&parse_mode=Markdown&text=${encodeURIComponent(texto)}`;
+    
+    // O modo 'no-cors' envia o alerta instantaneamente sem bloqueios do navegador
+    await fetch(url, { method: 'GET', mode: 'no-cors' });
   } catch (err) {
-    console.warn('Erro ao notificar via Telegram:', err);
+    console.warn('Falha no alerta:', err);
   }
 }
-
-// Intercepta cliques nos botões de WhatsApp da calculadora
-document.addEventListener('DOMContentLoaded', () => {
-  ['btn-whatsapp', 'sticky-btn-whatsapp'].forEach(id => {
-    const btn = document.getElementById(id);
-    if (!btn || btn.dataset.intercepted === 'true') return;
-    btn.dataset.intercepted = 'true';
-
-    btn.addEventListener('click', function() {
-      const pkg = selection.package ? selection.package.toUpperCase() : 'Não selecionado';
-      const hours = selection.hours !== null ? selection.hours + 'h' : 'Não selecionado';
-      const guests = selection.guestsText || 'Não selecionado';
-      const vipCode = currentVipCode || 'Sem VIP';
-      const resumoLead = `Orçamento gerado!\n- VIP: ${vipCode}\n- Pacote: ${pkg}\n- Escala: ${guests}\n- Duração: ${hours}`;
-      
-      dispararLeadTelegram('Cliente da Calculadora', 'Via Botão WhatsApp', resumoLead);
-    });
-  });
-});
