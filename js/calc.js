@@ -899,4 +899,55 @@ function initPhoneMask(id){
 window.toggleNav = toggleNav;
 window.closeNav  = closeNav;
 
+
+
+
+
+
+/* ---------- DISPARO UNIFICADO PARA O TELEGRAM (VIA CLOUDFLARE) ---------- */
+async function dispararLeadTelegram(nome, telefone, mensagem) {
+  try {
+    await fetch('/lead', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ nome: nome, telefone: telefone, mensagem: mensagem })
+    });
+  } catch (err) {
+    console.warn('Erro ao notificar via Telegram:', err);
+  }
+}
+
+// Intercepta cliques nos botões de WhatsApp da calculadora
+document.addEventListener('DOMContentLoaded', () => {
+  ['btn-whatsapp', 'sticky-btn-whatsapp'].forEach(id => {
+    const btn = document.getElementById(id);
+    if (!btn || btn.dataset.intercepted === 'true') return;
+    btn.dataset.intercepted = 'true';
+
+    btn.addEventListener('click', function() {
+      const pkg = selection.package ? selection.package.toUpperCase() : 'Não selecionado';
+      const hours = selection.hours !== null ? selection.hours + 'h' : 'Não selecionado';
+      const guests = selection.guestsText || 'Não selecionado';
+      const vipCode = currentVipCode || 'Sem VIP';
+      const resumoLead = `Orçamento gerado!\n- VIP: ${vipCode}\n- Pacote: ${pkg}\n- Escala: ${guests}\n- Duração: ${hours}`;
+      
+      dispararLeadTelegram('Cliente da Calculadora', 'Via Botão WhatsApp', resumoLead);
+    });
+  });
+});
+
+
+
+
+
 /* ===== FIM DO ARQUIVO calc.js v2.9.2 ===== */
+
+
+
+
+
+
+
+
+
+
