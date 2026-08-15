@@ -351,7 +351,7 @@ async function handleProgressFormSubmit(e) {
 
 
 
-await dispararLeadTelegram(name, contact, msg || 'Contato pela calculadora');
+await dispararLeadTelegram(name, contact, msg || 'Contato pelo Site');
 
 
    
