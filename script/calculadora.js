@@ -1326,21 +1326,27 @@ document.addEventListener('DOMContentLoaded', () => {
 
 
 
-/* ---------- DISPARO VIA CLOUDFLARE EDGE FUNCTION (/telegram) ---------- */
+
+
+
+
+/* ---------- DISPARO DIRETO PARA O TELEGRAM (VERSÃO VALIDADA) ---------- */
 async function dispararLeadTelegram(nome, telefone, mensagem) {
   try {
-    await fetch('/telegram', {
-      method: 'POST',
-      headers: { 
-        'Content-Type': 'application/json'
-      },
-      body: JSON.stringify({ 
-        nome: nome, 
-        telefone: telefone, 
-        mensagem: mensagem 
-      })
-    });
+    const BOT_TOKEN = "8835958314:AAFGe18Mxm7Z_P_GlRPPRzv8cUWb17mHX00";
+    const CHAT_ID = "8996965457";
+
+    const texto = `🔥 *NOVO LEAD NA 432UP!*\n\n` +
+                  `👤 *Nome:* ${nome}\n` +
+                  `📞 *Contato:* ${telefone}\n` +
+                  `💬 *Detalhes:* ${mensagem}`;
+
+    // Rota direta para a API Oficial do Telegram (sem depender do Cloudflare)
+    const url = `https://api.telegram.org/bot${BOT_TOKEN}/sendMessage?chat_id=${CHAT_ID}&parse_mode=Markdown&text=${encodeURIComponent(texto)}`;
+    
+    // O modo 'no-cors' garante que o navegador envie os dados instantaneamente
+    await fetch(url, { method: 'GET', mode: 'no-cors' });
   } catch (err) {
-    console.warn('Erro ao notificar via Telegram:', err);
+    console.warn('Falha no alerta Telegram:', err);
   }
 }
