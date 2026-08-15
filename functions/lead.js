@@ -1,16 +1,17 @@
 export async function onRequestPost(context) {
   try {
-    const lead = await context.request.json(); 
+    const data = await context.request.json();
     
-    const BOT_TOKEN = "AAFGe18Mxm7Z_P_GIRPPRzv8cUWb17mHX00";
+    // Credenciais oficiais e validadas
+    const BOT_TOKEN = "8835958314:AAFGe18Mxm7Z_P_GIRPPRzv8cUWb17mHX00";
     const CHAT_ID = "8996965457";
 
-    const texto = `🔥 *NOVO LEAD NO SITE!*\n\n` +
-                  `👤 *Nome:* ${lead.nome}\n` +
-                  `📞 *Telefone:* ${lead.telefone}\n` +
-                  `💬 *Mensagem:* ${lead.mensagem}`;
+    const texto = `🔥 *NOVO LEAD NA 432UP!*\n\n` +
+                  `👤 *Nome:* ${data.nome || 'Não informado'}\n` +
+                  `📞 *Contato:* ${data.telefone || 'Não informado'}\n` +
+                  `💬 *Detalhes:* ${data.mensagem || 'Nenhum'}`;
 
-    await fetch(`https://api.telegram.org/bot${BOT_TOKEN}/sendMessage`, {
+    const response = await fetch(`https://api.telegram.org/bot${BOT_TOKEN}/sendMessage`, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({
@@ -19,6 +20,11 @@ export async function onRequestPost(context) {
         parse_mode: 'Markdown'
       })
     });
+
+    if (!response.ok) {
+      const errBody = await response.text();
+      return new Response(JSON.stringify({ error: errBody }), { status: 500 });
+    }
 
     return new Response(JSON.stringify({ success: true }), { status: 200 });
   } catch (err) {
