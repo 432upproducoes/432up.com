@@ -1,0 +1,592 @@
+<!DOCTYPE html>
+<html lang="pt-BR" data-theme="dark">
+<head>
+
+<meta name="robots" content="noindex, nofollow">
+
+<meta charset="UTF-8">
+<link rel="icon" type="image/png" href="/imagens/favicon.png">
+<link rel="apple-touch-icon" href="/imagens/favicon.png">
+
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>432UP Admin v2.1</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="css/admin.css">
+</head>
+<body>
+<!-- ========== LOGIN OVERLAY ========== -->
+<div id="loginOverlay">
+  <div class="login-box">
+    <div class="login-logo">
+      <h1>432UP</h1>
+      <span>Admin Panel</span>
+    </div>
+
+    <div id="loginError" class="login-error">❌ Senha incorreta. Tente novamente.</div>
+
+    <form id="loginForm" onsubmit="adminLogin(event)">
+      <div class="login-field">
+        <label>Senha</label>
+        <input type="password" id="loginSenha" placeholder="••••••••"
+               autofocus autocomplete="current-password">
+      </div>
+      <button type="submit" id="loginBtn" class="login-btn">Entrar no painel →</button>
+    </form>
+
+    <p class="login-attempt" id="loginAttempt"></p>
+  </div>
+</div>
+<!-- ========== /LOGIN OVERLAY ========== -->
+
+<!-- TOAST -->
+<div id="toastBox"></div>
+
+<!-- CONFIRM DIALOG -->
+<div id="confirmDlg" class="confirm-overlay" style="display:none">
+  <div class="confirm-box">
+    <p id="confirmMsg"></p>
+    <div class="confirm-actions">
+      <button onclick="confirmClose(true)" class="btn-accent">Sim, excluir</button>
+      <button onclick="confirmClose(false)" class="btn-ghost">Cancelar</button>
+    </div>
+  </div>
+</div>
+
+
+<!-- TOP BAR -->
+<div class="top-bar">
+  <div class="top-left">
+    <h1>432UP</h1>
+    <span class="top-version">Admin v2.1</span>
+    <span id="dbSt" class="top-status">...</span>
+  </div>
+  <div class="top-right">
+    <button onclick="adminLogout()" class="btn-icon" title="Sair" style="color:#ff8080">🚪</button>
+
+    <span id="lastSave" class="last-save"></span>
+    <button id="btnTheme" onclick="toggleTheme()" class="btn-icon" title="Tema">🌙</button>
+    <button onclick="loadAll()" class="btn-icon" title="Recarregar">🔄</button>
+    <a href="index.html" class="btn-icon" title="Ver site">🌐</a>
+  </div>
+</div>
+
+<!-- NAV TABS -->
+<nav class="nav">
+  <button data-tab="visual" class="active">🎨 Visual</button>
+  <button data-tab="secoes">📄 Seções</button>
+  <button data-tab="servicos">🎧 Serviços</button>
+  <button data-tab="pacotes">📦 Pacotes</button>
+  <button data-tab="depoimentos">💬 Depoimentos</button>
+  <button data-tab="faq">❓ FAQ</button>
+  <button data-tab="galeria">📷 Galeria</button>
+  <button data-tab="leads">📊 Leads</button>
+  <button data-tab="config">⚙️ Config</button>
+</nav>
+
+<!-- ========== PANEL: VISUAL ========== -->
+<div id="p-visual" class="panel active">
+  <div class="panel-header">
+    <h2>Aparência e Movimento</h2>
+    <div class="panel-actions">
+      <button onclick="restaurarVisual()" class="btn-ghost">🔄 Restaurar original</button>
+      <button onclick="saveVisual(this)" class="btn-save btn-accent" data-label="Salvar visual">Salvar visual</button>
+    </div>
+  </div>
+
+  <div class="visual-grid">
+
+    <!-- CARD 1: GLOBAL — Glass & Blur -->
+    <div class="visual-card">
+      <h3>Glass & Blur</h3>
+      <div class="slider-group">
+        <label>Transparência global <span id="vGlassVal">82%</span></label>
+        <input type="range" id="vGlass" min="30" max="100" value="82" oninput="$('#vGlassVal').textContent=this.value+'%'">
+      </div>
+      <div class="slider-group">
+        <label>Blur (px) <span id="vBlurVal">16px</span></label>
+        <input type="range" id="vBlur" min="0" max="40" value="16" oninput="$('#vBlurVal').textContent=this.value+'px'">
+      </div>
+    </div>
+
+    <!-- CARD 2: GLOBAL — Movimento & Camadas -->
+    <div class="visual-card">
+      <h3>Movimento &amp; Camadas</h3>
+      <div class="slider-group">
+        <label>BPM <span id="vBpmVal">74</span></label>
+        <input type="range" id="vBpm" min="40" max="140" value="74" oninput="$('#vBpmVal').textContent=this.value">
+      </div>
+      <div class="slider-group">
+        <label>Intensidade Orbs <span id="vOrbsVal">50%</span></label>
+        <input type="range" id="vOrbs" min="0" max="100" value="50" oninput="$('#vOrbsVal').textContent=this.value+'%'">
+      </div>
+      <div class="slider-group">
+        <label>Densidade partículas <span id="vPartVal">50%</span></label>
+        <input type="range" id="vPart" min="0" max="100" value="50" oninput="$('#vPartVal').textContent=this.value+'%'">
+      </div>
+      <div class="slider-group" style="margin-top:12px">
+        <label>Opacidade Aurora <span id="vAuroraOpacityVal">0.6</span></label>
+        <input type="range" id="vAuroraOpacity" min="0" max="1" step="0.05" value="0.6" oninput="document.getElementById('vAuroraOpacityVal').textContent=this.value">
+      </div>
+      <div class="slider-group">
+        <label>Opacidade Fog <span id="vFogOpacityVal">0.4</span></label>
+        <input type="range" id="vFogOpacity" min="0" max="1" step="0.05" value="0.4" oninput="document.getElementById('vFogOpacityVal').textContent=this.value">
+      </div>
+      <div style="margin-top:12px">
+        <div class="toggle-wrap"><label class="toggle"><input type="checkbox" id="vMotion" checked><span class="track"></span><span class="thumb"></span></label><span>Movimento global</span></div>
+        <div class="toggle-wrap"><label class="toggle"><input type="checkbox" id="vAurora" checked><span class="track"></span><span class="thumb"></span></label><span>Aurora</span></div>
+        <div class="toggle-wrap"><label class="toggle"><input type="checkbox" id="vAlgae" checked><span class="track"></span><span class="thumb"></span></label><span>Confetti / Algae</span></div>
+        <div class="toggle-wrap"><label class="toggle"><input type="checkbox" id="vParticlesOn" checked><span class="track"></span><span class="thumb"></span></label><span>Partículas</span></div>
+        <div class="toggle-wrap"><label class="toggle"><input type="checkbox" id="vCta" checked><span class="track"></span><span class="thumb"></span></label><span>Pulso nos CTAs</span></div>
+      </div>
+    </div>
+
+    <!-- CARD 3: GLOBAL — Tema & Animação -->
+    <div class="visual-card">
+      <h3>Tema &amp; Animação</h3>
+      <div class="field">
+        <label>Tema ativo</label>
+        <select id="vTema">
+          <option value="auto">Automático (sistema do visitante)</option>
+          <option value="gloomvale">Gloomvale (dark padrão)</option>
+          <option value="light">Light</option>
+          <option value="up">432UP</option>
+        </select>
+      </div>
+      <div class="field">
+        <label>Animação do hero</label>
+        <select id="vHeroAnim">
+          <option value="breathe">Respirar</option>
+          <option value="fade">Fade suave</option>
+          <option value="none">Sem animação</option>
+        </select>
+      </div>
+      <div class="field">
+        <label>Nível de movimento</label>
+        <select id="vMotionLevel">
+          <option value="subtle">Sutil</option>
+          <option value="normal">Normal</option>
+          <option value="intense">Intenso</option>
+        </select>
+      </div>
+    </div>
+
+    <!-- CARD 4: index.html — Maré / Tide -->
+    <div class="visual-card">
+      <h3>Home — Maré / Tide</h3>
+      <p style="font-size:.78rem;color:var(--fg-secondary);margin:0 0 12px">Controla o carrossel infinito de fotos da <code>index.html</code>.</p>
+      <div class="toggle-wrap" style="margin-bottom:12px">
+        <label class="toggle"><input type="checkbox" id="vHomeHerdar" checked onchange="toggleHerdarCamadas('home',this.checked)"><span class="track"></span><span class="thumb"></span></label>
+        <span>Herdar animações globais</span>
+      </div>
+      <div id="vHomeCamadas" style="display:none">
+        <div class="toggle-wrap"><label class="toggle"><input type="checkbox" id="vHomeMotion" checked><span class="track"></span><span class="thumb"></span></label><span>Movimento global</span></div>
+        <div class="toggle-wrap"><label class="toggle"><input type="checkbox" id="vHomeAurora" checked><span class="track"></span><span class="thumb"></span></label><span>Aurora</span></div>
+        <div class="toggle-wrap"><label class="toggle"><input type="checkbox" id="vHomeAlgae" checked><span class="track"></span><span class="thumb"></span></label><span>Confetti / Algae</span></div>
+        <div class="toggle-wrap"><label class="toggle"><input type="checkbox" id="vHomeParticles" checked><span class="track"></span><span class="thumb"></span></label><span>Partículas</span></div>
+        <div class="toggle-wrap" style="margin-bottom:12px"><label class="toggle"><input type="checkbox" id="vHomeCta" checked><span class="track"></span><span class="thumb"></span></label><span>Pulso nos CTAs</span></div>
+      </div>
+      <div class="slider-group">
+        <label>Velocidade <span id="vTideVal">1.0</span></label>
+        <input type="range" id="vTide" min="1" max="30" value="10" oninput="$('#vTideVal').textContent=(this.value/10).toFixed(1)">
+      </div>
+      <div class="slider-group">
+        <label>Amplitude <span id="vAmpVal">50%</span></label>
+        <input type="range" id="vAmp" min="0" max="100" value="50" oninput="$('#vAmpVal').textContent=this.value+'%'">
+      </div>
+    </div>
+
+    <!-- CARD 5: galeria.html — Galeria & Masonry -->
+    <div class="visual-card">
+      <h3>Galeria &amp; Masonry</h3>
+      <p style="font-size:.78rem;color:var(--fg-secondary);margin:0 0 12px">Controla a página <code>galeria.html</code>.</p>
+      <div class="toggle-wrap" style="margin-bottom:12px">
+        <label class="toggle"><input type="checkbox" id="vGalHerdar" checked onchange="toggleHerdarCamadas('gal',this.checked)"><span class="track"></span><span class="thumb"></span></label>
+        <span>Herdar animações globais</span>
+      </div>
+      <div id="vGalCamadas" style="display:none">
+        <div class="toggle-wrap"><label class="toggle"><input type="checkbox" id="vGalMotion" checked><span class="track"></span><span class="thumb"></span></label><span>Movimento global</span></div>
+        <div class="toggle-wrap"><label class="toggle"><input type="checkbox" id="vGalAurora" checked><span class="track"></span><span class="thumb"></span></label><span>Aurora</span></div>
+        <div class="toggle-wrap"><label class="toggle"><input type="checkbox" id="vGalAlgae" checked><span class="track"></span><span class="thumb"></span></label><span>Confetti / Algae</span></div>
+        <div class="toggle-wrap"><label class="toggle"><input type="checkbox" id="vGalParticles" checked><span class="track"></span><span class="thumb"></span></label><span>Partículas</span></div>
+        <div class="toggle-wrap" style="margin-bottom:12px"><label class="toggle"><input type="checkbox" id="vGalCta" checked><span class="track"></span><span class="thumb"></span></label><span>Pulso nos CTAs</span></div>
+      </div>
+      <div class="toggle-wrap" style="margin-bottom:12px">
+        <label class="toggle"><input type="checkbox" id="vGalCarrossel" checked><span class="track"></span><span class="thumb"></span></label>
+        <span>Exibir carrossel na galeria</span>
+      </div>
+      <div style="border-top:1px solid var(--glass-border);margin:12px 0;padding-top:12px">
+        <div style="font-size:.78rem;font-weight:600;color:var(--fg-secondary);text-transform:uppercase;letter-spacing:.5px;margin-bottom:10px">Masonry</div>
+        <div class="slider-group">
+          <label>Colunas Mobile <span id="vMasonMobVal">1</span></label>
+          <input type="range" id="vMasonMob" min="1" max="3" step="1" value="1" oninput="document.getElementById('vMasonMobVal').textContent=this.value">
+        </div>
+        <div class="slider-group">
+          <label>Colunas Tablet <span id="vMasonTabVal">2</span></label>
+          <input type="range" id="vMasonTab" min="1" max="4" step="1" value="2" oninput="document.getElementById('vMasonTabVal').textContent=this.value">
+        </div>
+        <div class="slider-group">
+          <label>Colunas Desktop <span id="vMasonDeskVal">3</span></label>
+          <input type="range" id="vMasonDesk" min="1" max="6" step="1" value="3" oninput="document.getElementById('vMasonDeskVal').textContent=this.value">
+        </div>
+        <div class="slider-group">
+          <label>Espaçamento (px) <span id="vMasonGapVal">16</span></label>
+          <input type="range" id="vMasonGap" min="0" max="48" step="4" value="16" oninput="document.getElementById('vMasonGapVal').textContent=this.value">
+        </div>
+        <div class="field">
+          <label>Animação de entrada</label>
+          <select id="vMasonFx">
+            <option value="fx-fade">Fade</option>
+            <option value="fx-slide-up">Slide Up</option>
+            <option value="fx-zoom">Zoom</option>
+            <option value="fx-flip">Flip</option>
+          </select>
+        </div>
+      </div>
+    </div>
+
+    <!-- CARD 6: calculadora.html — Calculadora -->
+    <div class="visual-card">
+      <h3>Calculadora</h3>
+      <p style="font-size:.78rem;color:var(--fg-secondary);margin:0 0 12px">Controla a página <code>calculadora.html</code>.</p>
+      <div class="toggle-wrap" style="margin-bottom:12px">
+        <label class="toggle"><input type="checkbox" id="vCalcHerdar" checked onchange="toggleHerdarCamadas('calc',this.checked)"><span class="track"></span><span class="thumb"></span></label>
+        <span>Herdar animações globais</span>
+      </div>
+      <div id="vCalcCamadas" style="display:none">
+        <div class="toggle-wrap"><label class="toggle"><input type="checkbox" id="vCalcMotion2" checked><span class="track"></span><span class="thumb"></span></label><span>Movimento global</span></div>
+        <div class="toggle-wrap"><label class="toggle"><input type="checkbox" id="vCalcAurora" checked><span class="track"></span><span class="thumb"></span></label><span>Aurora</span></div>
+        <div class="toggle-wrap"><label class="toggle"><input type="checkbox" id="vCalcAlgae" checked><span class="track"></span><span class="thumb"></span></label><span>Confetti / Algae</span></div>
+        <div class="toggle-wrap"><label class="toggle"><input type="checkbox" id="vCalcParticles" checked><span class="track"></span><span class="thumb"></span></label><span>Partículas</span></div>
+        <div class="toggle-wrap" style="margin-bottom:12px"><label class="toggle"><input type="checkbox" id="vCalcCta" checked><span class="track"></span><span class="thumb"></span></label><span>Pulso nos CTAs</span></div>
+      </div>
+      <div class="field">
+        <label>Tema</label>
+        <select id="vCalcTema">
+          <option value="auto">Automático (sistema)</option>
+          <option value="dark">Dark</option>
+          <option value="light">Light</option>
+        </select>
+      </div>
+      <div class="toggle-wrap"><label class="toggle"><input type="checkbox" id="vCalcMotion" checked><span class="track"></span><span class="thumb"></span></label><span>Animações internas ativas</span></div>
+    </div>
+
+  </div>
+</div>
+
+<!-- ========== PANEL: SEÇÕES ========== -->
+<div id="p-secoes" class="panel">
+  <div class="panel-header">
+    <h2>Seções do Site</h2>
+    <button onclick="saveSecoes(this)" class="btn-save btn-accent" data-label="Salvar seções">Salvar seções</button>
+  </div>
+  <p class="panel-desc">Cada seção tem título e subtítulo. Seções com itens (Dor, Como Funciona, Números, Contato) têm editores próprios abaixo do card.</p>
+  <div id="secoesContainer"></div>
+</div>
+
+<!-- ========== PANEL: SERVIÇOS (UNIFICADO) ========== -->
+<div id="p-servicos" class="panel">
+  <div class="panel-header">
+    <h2>Serviços</h2>
+    <div class="panel-actions">
+      <button onclick="addItem('servicos')" class="btn-ghost">+ Adicionar</button>
+      <button onclick="saveTable('co_calculadora_valores','servicosContainer',this)" class="btn-save btn-accent" data-label="Salvar serviços">Salvar serviços</button>
+    </div>
+  </div>
+  <p class="panel-desc">Cada serviço aparece na home (visual) e na calculadora (preços). Edite tudo num lugar só.</p>
+  <div id="servicosContainer"></div>
+</div>
+
+<!-- ========== PANEL: PACOTES ========== -->
+<div id="p-pacotes" class="panel">
+  <div class="panel-header">
+    <h2>Pacotes</h2>
+    <div class="panel-actions">
+      <button onclick="addItem('pacotes')" class="btn-ghost">+ Adicionar</button>
+      <button onclick="saveTable('co_calc_pacotes','pacotesContainer',this)" class="btn-save btn-accent" data-label="Salvar pacotes">Salvar pacotes</button>
+    </div>
+  </div>
+  <div id="pacotesContainer"></div>
+</div>
+
+<!-- ========== PANEL: DEPOIMENTOS ========== -->
+<div id="p-depoimentos" class="panel">
+  <div class="panel-header">
+    <h2>Depoimentos</h2>
+    <div class="panel-actions">
+      <button onclick="addItem('depoimentos')" class="btn-ghost">+ Adicionar</button>
+      <button onclick="saveTable('co_depoimentos','depoimentosContainer',this)" class="btn-save btn-accent" data-label="Salvar depoimentos">Salvar depoimentos</button>
+    </div>
+  </div>
+  <div class="field" style="max-width:200px;margin-bottom:16px">
+    <label>Máximo na home</label>
+    <input type="number" id="depMaxHome" min="1" max="50" value="4" onchange="saveConfigField('depoimentos_max_home',this.value)">
+  </div>
+  <div id="depoimentosContainer"></div>
+</div>
+
+<!-- ========== PANEL: FAQ ========== -->
+<div id="p-faq" class="panel">
+  <div class="panel-header">
+    <h2>FAQ</h2>
+    <div class="panel-actions">
+      <button onclick="addItem('faq')" class="btn-ghost">+ Adicionar</button>
+      <button onclick="saveTable('co_faq','faqContainer',this)" class="btn-save btn-accent" data-label="Salvar FAQ">Salvar FAQ</button>
+    </div>
+  </div>
+  <div class="field" style="max-width:200px;margin-bottom:16px">
+    <label>Máximo na home</label>
+    <input type="number" id="faqMaxHome" min="1" max="50" value="5" onchange="saveConfigField('faq_max_home',this.value)">
+  </div>
+  <div id="faqContainer"></div>
+</div>
+
+<!-- ========== PANEL: GALERIA ========== -->
+<div id="p-galeria" class="panel">
+  <div class="panel-header">
+    <h2>Galeria</h2>
+  </div>
+
+  <div class="gal-btn-section" style="margin-bottom:20px">
+    <div class="field" style="max-width:400px">
+      <label>Texto do botão "Ver galeria" (home)</label>
+      <input id="galBtnTexto" placeholder="Ver galeria completa →" onchange="saveConfigField('galeria_btn_texto',this.value)">
+    </div>
+  </div>
+
+  <div class="gal-upload-section">
+    <h3>Publicar nova mídia</h3>
+    <div class="gal-tipo-wrap">
+      <label class="gal-tipo-opt"><input type="radio" name="galTipo" value="foto" checked onchange="toggleGalTipo()"> 📷 Foto</label>
+      <label class="gal-tipo-opt"><input type="radio" name="galTipo" value="video_yt" onchange="toggleGalTipo()"> ▶ YouTube</label>
+      <label class="gal-tipo-opt"><input type="radio" name="galTipo" value="video_up" onchange="toggleGalTipo()"> 🎥 Vídeo Upload</label>
+    </div>
+
+    <div id="galUploadFoto">
+      <div id="galUploadZone" class="upload-zone" onclick="document.getElementById('galFileInput').click()">
+        Arraste fotos aqui ou toque para selecionar
+      </div>
+      <input type="file" id="galFileInput" accept="image/*" multiple style="display:none" onchange="handleGalFiles(this.files)">
+    </div>
+
+    <div id="galUploadYt" style="display:none">
+      <div class="field"><label>URL do YouTube</label><input type="url" id="galVideoUrl" placeholder="https://youtube.com/watch?v=..."></div>
+    </div>
+
+    <div id="galUploadVid" style="display:none">
+      <div id="galUploadZoneVid" class="upload-zone" onclick="document.getElementById('galVidInput').click()">
+        Arraste vídeo aqui ou toque para selecionar (máx 50MB)
+      </div>
+      <input type="file" id="galVidInput" accept="video/*" style="display:none" onchange="handleGalVidFile(this.files)">
+    </div>
+
+    <div class="gal-fields">
+      <div class="field"><label>Título</label><input id="galTitulo" placeholder="Nome da mídia"></div>
+      <div class="field-row">
+        <div class="field"><label>Categoria</label><select id="galCat"></select></div>
+        <div class="field"><label>Local</label><input id="galLocal" placeholder="Ex: Vila Madalena, SP"></div>
+      </div>
+      <div class="field"><label>Descrição</label><input id="galDesc" placeholder="Descrição curta (opcional)"></div>
+      <div class="toggle-wrap"><label class="toggle"><input type="checkbox" id="galDest"><span class="track"></span><span class="thumb"></span></label><span>Destaque ⭐</span></div>
+      <button id="btnGalPublicar" onclick="galPublicar()" class="btn-accent" style="width:100%;margin-top:8px">📤 Publicar</button>
+    </div>
+  </div>
+
+  <div class="gal-cat-section">
+    <h3>Categorias</h3>
+    <div id="galCatList" class="cat-tags"></div>
+    <div class="field-row" style="margin-top:8px">
+      <div class="field"><label>Nova categoria</label><input id="galCatNome" placeholder="Nome"></div>
+      <div class="field" style="max-width:80px"><label>Emoji</label><input id="galCatEmoji" placeholder="📌" maxlength="4"></div>
+      <button onclick="galAddCat()" class="btn-ghost" style="align-self:flex-end;margin-bottom:2px">+ Adicionar</button>
+    </div>
+  </div>
+
+  <div class="gal-list-section">
+    <h3>Mídias publicadas (<span id="galCount">0</span>)</h3>
+    <div id="galListContainer"></div>
+  </div>
+</div>
+
+<!-- ========== PANEL: LEADS ========== -->
+<div id="p-leads" class="panel">
+  <div class="panel-header">
+    <h2>Leads</h2>
+    <div class="panel-actions">
+      <button onclick="exportCSV()" class="btn-ghost">📥 Exportar CSV</button>
+      <button onclick="deleteSelectedLeads()" class="btn-danger" id="btnDeleteLeads" style="display:none">🗑 Excluir selecionados</button>
+    </div>
+  </div>
+
+  <div class="leads-filters">
+    <div class="field"><label>Busca</label><input id="leadSearch" placeholder="Nome ou WhatsApp..." oninput="filterLeads()"></div>
+    <div class="field"><label>Status</label>
+      <select id="leadStatusFilter" onchange="filterLeads()">
+        <option value="">Todos</option>
+        <option value="novo">Novo</option>
+        <option value="em_contato">Em contato</option>
+        <option value="fechado">Fechado</option>
+        <option value="perdido">Perdido</option>
+      </select>
+    </div>
+    <div class="field"><label>Origem</label>
+      <select id="leadOrigemFilter" onchange="filterLeads()">
+        <option value="">Todas</option>
+        <option value="landing_contato">Landing</option>
+        <option value="email_calculadora_overlay">Calculadora email</option>
+        <option value="calculadora">Calculadora WA</option>
+      </select>
+    </div>
+    <div class="field"><label>Selecionar</label>
+      <button onclick="toggleSelectAll()" class="btn-ghost btn-sm">☑ Todos</button>
+    </div>
+  </div>
+
+  <div class="leads-summary">
+    Total: <b id="leadsTotal">0</b> leads
+    <span id="leadsSelectedCount" style="display:none"> | <b id="leadsSelCount">0</b> selecionados</span>
+  </div>
+
+  <div id="leadsContainer"></div>
+</div>
+
+<!-- ========== PANEL: CONFIG ========== -->
+<div id="p-config" class="panel">
+  <div class="panel-header">
+    <h2>Configurações Gerais</h2>
+    <button onclick="saveConfig(this)" class="btn-save btn-accent" data-label="Salvar configurações">Salvar configurações</button>
+  </div>
+
+  <div class="config-grid">
+    <div class="config-card">
+      <h3>Dados da Empresa</h3>
+      <div class="field"><label>Nome do site</label><input id="cfgNome" placeholder="432UP Produções"></div>
+      <div class="field"><label>WhatsApp</label><input id="cfgWa" placeholder="5511948564577"></div>
+      <div class="field"><label>Instagram</label><input id="cfgInsta" placeholder="@432up.producoes"></div>
+      <div class="field"><label>E-mail</label><input id="cfgEmail" placeholder="contato@432up.com"></div>
+      <div class="field"><label>Descrição curta</label><textarea id="cfgDesc" rows="2" placeholder="Produtora premium de eventos em SP"></textarea></div>
+    </div>
+
+    <div class="config-card">
+      <h3>Mensagens do WhatsApp</h3>
+      <div class="field"><label>Mensagem padrão do FAB (home)</label><textarea id="cfgWaMsg" rows="3" placeholder="Olá! Vi o site da 432UP e quero saber mais."></textarea></div>
+      <div class="field"><label>Mensagem pós-orçamento</label><textarea id="cfgWaOrcamento" rows="3" placeholder="Mensagem enviada após gerar orçamento"></textarea></div>
+      <div class="field"><label>Mensagem da galeria</label><textarea id="cfgWaGaleria" rows="2" placeholder="Olá! Vi a galeria da 432UP..."></textarea></div>
+    </div>
+
+    <div class="config-card">
+      <h3>Textos do Site</h3>
+      <div class="field"><label>Texto pós-email ("Deseja contato pelo WhatsApp?")</label><textarea id="cfgTxtPosEmail" rows="2"></textarea></div>
+      <div class="field"><label>Texto botão formulário</label><input id="cfgTxtBtnForm" placeholder="Garantir minha data"></div>
+      <div class="field"><label>Texto de urgência (footer)</label><input id="cfgTxtUrgencia" placeholder="🎵 Sua data ainda está disponível — por enquanto."></div>
+    </div>
+  </div>
+</div>
+
+<script src="js/admin.js"></script>
+<script>
+function toggleHerdarCamadas(scope, herdar) {
+  var el = document.getElementById('v' + scope.charAt(0).toUpperCase() + scope.slice(1) + 'Camadas');
+  if (!el) {
+    if (scope === 'home') el = document.getElementById('vHomeCamadas');
+    else if (scope === 'gal') el = document.getElementById('vGalCamadas');
+    else if (scope === 'calc') el = document.getElementById('vCalcCamadas');
+  }
+  if (el) el.style.display = herdar ? 'none' : '';
+}
+</script>
+
+
+<script>
+// ================================================
+// 🔐 ADMIN AUTH — configurações
+const ADMIN_PASSWORD   = "0533";  // 👈 troque aqui
+const MAX_TENTATIVAS   = 5;
+const BLOQUEIO_MINUTOS = 5;
+// ================================================
+
+(function iniciarAuth() {
+  // Já está logado? Some o overlay imediatamente (sem animação)
+  if (sessionStorage.getItem("adminAuth") === "ok") {
+    const ov = document.getElementById("loginOverlay");
+    ov.style.transition = "none";
+    ov.classList.add("hide");
+    return;
+  }
+  // Foca no campo senha
+  setTimeout(() => {
+    const inp = document.getElementById("loginSenha");
+    if (inp) inp.focus();
+  }, 100);
+})();
+
+function adminLogin(e) {
+  e.preventDefault();
+
+  // Verifica bloqueio
+  const bloqueioAte = parseInt(localStorage.getItem("adminBloqueioAte") || "0");
+  if (Date.now() < bloqueioAte) {
+    const restante = Math.ceil((bloqueioAte - Date.now()) / 60000);
+    document.getElementById("loginAttempt").textContent =
+      `⛔ Bloqueado. Aguarde ${restante} minuto(s).`;
+    return;
+  }
+
+  const senha = document.getElementById("loginSenha").value;
+
+  if (senha === ADMIN_PASSWORD) {
+    // ✅ Sucesso
+    localStorage.removeItem("adminTentativas");
+    localStorage.removeItem("adminBloqueioAte");
+    sessionStorage.setItem("adminAuth", "ok");
+
+    // Fade out do overlay
+    const ov = document.getElementById("loginOverlay");
+    ov.classList.add("hide");
+
+  } else {
+    // ❌ Erro
+    let tentativas = parseInt(localStorage.getItem("adminTentativas") || "0") + 1;
+    localStorage.setItem("adminTentativas", tentativas);
+
+    document.getElementById("loginError").classList.add("show");
+    document.getElementById("loginSenha").value = "";
+    document.getElementById("loginSenha").focus();
+
+    if (tentativas >= MAX_TENTATIVAS) {
+      const ate = Date.now() + BLOQUEIO_MINUTOS * 60 * 1000;
+      localStorage.setItem("adminBloqueioAte", ate);
+      document.getElementById("loginBtn").disabled = true;
+      document.getElementById("loginSenha").disabled = true;
+      document.getElementById("loginAttempt").textContent =
+        `⛔ Bloqueado por ${BLOQUEIO_MINUTOS} minuto(s).`;
+    } else {
+      const restam = MAX_TENTATIVAS - tentativas;
+      document.getElementById("loginAttempt").textContent =
+        `⚠️ ${restam} tentativa(s) restante(s).`;
+    }
+  }
+}
+
+function adminLogout() {
+  sessionStorage.removeItem("adminAuth");
+  // Mostra o overlay novamente com animação
+  const ov = document.getElementById("loginOverlay");
+  ov.style.transition = "";
+  ov.classList.remove("hide");
+  document.getElementById("loginSenha").value = "";
+  document.getElementById("loginError").classList.remove("show");
+  document.getElementById("loginAttempt").textContent = "";
+  setTimeout(() => document.getElementById("loginSenha").focus(), 100);
+}
+</script>
+
+</body>
+</html>
+
+
+
+
+
+
+
