@@ -1,5 +1,4 @@
 export async function onRequest(context) {
-  // Trata requisições de checagem do navegador (OPTIONS)
   if (context.request.method === "OPTIONS") {
     return new Response(null, {
       headers: {
@@ -11,7 +10,6 @@ export async function onRequest(context) {
   }
 
   try {
-    // Lê os dados enviados no corpo da requisição
     const data = await context.request.json();
     
     const BOT_TOKEN = "8835958314:AAFGe18Mxm7Z_P_GlRPPRzv8cUWb17mHX00";
@@ -22,7 +20,6 @@ export async function onRequest(context) {
                   `📞 *Contato:* ${data.telefone || 'Não informado'}\n` +
                   `💬 *Detalhes:* ${data.mensagem || 'Nenhum'}`;
 
-    // Envia a mensagem para a API oficial do Telegram
     const resTelegram = await fetch(`https://api.telegram.org/bot${BOT_TOKEN}/sendMessage`, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
@@ -33,8 +30,10 @@ export async function onRequest(context) {
       })
     });
 
-    return new Response(JSON.stringify({ success: true }), {
-      status: 200,
+    const resBody = await resTelegram.text();
+
+    return new Response(resBody, {
+      status: resTelegram.status,
       headers: { 
         "Content-Type": "application/json",
         "Access-Control-Allow-Origin": "*" 
