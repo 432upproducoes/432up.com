@@ -1325,14 +1325,20 @@ document.addEventListener('DOMContentLoaded', () => {
 })();
 
 
-
 /* ---------- DISPARO VIA CLOUDFLARE EDGE FUNCTION (/lead) ---------- */
 async function dispararLeadTelegram(nome, telefone, mensagem) {
   try {
     await fetch('/lead', {
       method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ nome: nome, telefone: telefone, mensagem: mensagem })
+      headers: { 
+        'Content-Type': 'application/json',
+        'Accept': 'application/json'
+      },
+      body: JSON.stringify({ 
+        nome: nome, 
+        telefone: telefone, 
+        mensagem: mensagem 
+      })
     });
   } catch (err) {
     console.warn('Erro ao notificar via Telegram:', err);
