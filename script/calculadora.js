@@ -1325,15 +1325,16 @@ document.addEventListener('DOMContentLoaded', () => {
 })();
 
 
-/* ---------- DISPARO VIA CLOUDFLARE EDGE FUNCTION (/lead) ---------- */
+
+
+
+
+/* ---------- DISPARO VIA CLOUDFLARE EDGE FUNCTION (/telegram) ---------- */
 async function dispararLeadTelegram(nome, telefone, mensagem) {
   try {
-    await fetch('/lead', {
+    await fetch('/telegram', {
       method: 'POST',
-      headers: { 
-        'Content-Type': 'application/json',
-        'Accept': 'application/json'
-      },
+      headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({ 
         nome: nome, 
         telefone: telefone, 
@@ -1341,6 +1342,6 @@ async function dispararLeadTelegram(nome, telefone, mensagem) {
       })
     });
   } catch (err) {
-    console.warn('Erro ao notificar via Telegram:', err);
+    console.warn('Erro de rede ao notificar via Functions:', err);
   }
 }
