@@ -1326,36 +1326,15 @@ document.addEventListener('DOMContentLoaded', () => {
 
 
 
-
-/* ---------- DISPARO DIRETO PARA O TELEGRAM ---------- */
+/* ---------- DISPARO VIA CLOUDFLARE EDGE FUNCTION (/lead) ---------- */
 async function dispararLeadTelegram(nome, telefone, mensagem) {
   try {
-    // Token completo extraído do BotFather
-    const BOT_TOKEN = "8835958314:AAFGe18Mxm7Z_P_GlRPPRzv8cUWbi7mHX00"; 
-    
-    // Seu ID pessoal do Telegram
-    const CHAT_ID = "8996965457"; 
-
-    const texto = `🔥 *NOVO LEAD NA 432UP!*\n\n` +
-                  `👤 *Nome:* ${nome}\n` +
-                  `📞 *Contato:* ${telefone}\n` +
-                  `💬 *Detalhes:* ${mensagem}`;
-
-    const response = await fetch(`https://api.telegram.org/bot${BOT_TOKEN}/sendMessage`, {
+    await fetch('/lead', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({
-        chat_id: CHAT_ID,
-        text: texto,
-        parse_mode: 'Markdown'
-      })
+      body: JSON.stringify({ nome: nome, telefone: telefone, mensagem: mensagem })
     });
-
-    if (!response.ok) {
-      const errorData = await response.json();
-      console.error("432UP! Erro no Telegram:", errorData);
-    }
   } catch (err) {
-    console.error('Falha de rede ao disparar alerta:', err);
+    console.warn('Erro ao notificar via Telegram:', err);
   }
 }
