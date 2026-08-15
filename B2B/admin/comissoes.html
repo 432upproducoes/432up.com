@@ -1,0 +1,313 @@
+<!DOCTYPE html>
+<html lang="pt-BR" class="min-h-screen">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
+  <title>432UP Admin | Baixa e Liberação de Comissões</title>
+  <link rel="stylesheet" href="../../css/style.css">
+  <script src="https://cdn.tailwindcss.com"></script>
+  <style>
+    .glass-b2b {
+      background: linear-gradient(135deg, rgba(10, 18, 28, 0.75) 0%, rgba(14, 22, 35, 0.5) 100%);
+      backdrop-filter: blur(24px);
+      -webkit-backdrop-filter: blur(24px);
+      border: 1px solid rgba(0, 240, 255, 0.25);
+      box-shadow: 0 20px 50px rgba(0, 0, 0, 0.8), inset 0 0 15px rgba(0, 240, 255, 0.05);
+    }
+    .glass-amber {
+      background: linear-gradient(135deg, rgba(245, 158, 11, 0.08) 0%, rgba(10, 18, 28, 0.85) 100%);
+      backdrop-filter: blur(20px);
+      -webkit-backdrop-filter: blur(20px);
+      border: 1px solid rgba(245, 158, 11, 0.35);
+      box-shadow: 0 0 25px rgba(245, 158, 11, 0.15);
+    }
+
+    /* PREVENÇÃO DE TARJA BRANCA NO CABEÇALHO DA TABELA */
+    table thead tr, table thead th {
+      background-color: transparent !important;
+      color: #94a3b8 !important;
+    }
+  </style>
+</head>
+<body class="min-h-screen text-slate-200 font-sans antialiased bg-[#06080c]">
+
+  <!-- CANVAS DO FUNDO ESPACIAL INTEGRADO AO PROJETO -->
+  <canvas id="orbit-canvas"></canvas>
+  <div id="plasmaLayer" class="plasma-top-layer"></div>
+
+  <div class="flex flex-col md:flex-row min-h-screen relative z-10">
+    
+    <!-- HEADER MOBILE (GAVETA RESPONSIVA) -->
+    <header class="md:hidden flex items-center justify-between p-4 glass-b2b border-b border-cyan-500/20 shrink-0 z-30">
+      <a href="index.html" class="inline-block">
+        <img src="../../imagens/logo.png" alt="432UP! Produções" class="h-8 w-auto object-contain" onerror="this.src='../imagens/logo.png'">
+      </a>
+      <button id="btnToggleMobileMenu" class="p-2 rounded-lg bg-white/10 text-cyan-400 font-bold text-lg focus:outline-none">
+        ☰
+      </button>
+    </header>
+
+    <!-- SIDEBAR MASTER ADMIN -->
+    <aside id="sidebarMenu" class="hidden md:flex w-full md:w-64 glass-b2b flex-col justify-between p-5 shrink-0 z-20 transition-all duration-300">
+      <div>
+        <div class="hidden md:flex items-center space-x-3 mb-8">
+          <a href="index.html" class="inline-block">
+            <img src="../../imagens/logo.png" alt="432UP! Produções" class="h-9 w-auto object-contain" onerror="this.src='../imagens/logo.png'">
+          </a>
+          <span class="text-xs font-bold px-2 py-0.5 rounded bg-amber-500/20 text-amber-300 border border-amber-500/30">MASTER ADMIN</span>
+        </div>
+
+        <nav class="space-y-1.5">
+          <a href="index.html" class="flex items-center space-x-3 px-3.5 py-2.5 rounded-xl text-slate-400 hover:bg-white/5 hover:text-white transition">
+            <span>📊</span><span>Visão Geral Vendas</span>
+          </a>
+          <a href="parceiros.html" class="flex items-center space-x-3 px-3.5 py-2.5 rounded-xl text-slate-400 hover:bg-white/5 hover:text-white transition">
+            <span>👥</span><span>Gestão de Usuários</span>
+          </a>
+          <a href="comissoes.html" class="flex items-center space-x-3 px-3.5 py-2.5 rounded-xl bg-amber-500/10 text-amber-400 font-bold border border-amber-500/30">
+            <span>💰</span><span>Baixa de Comissões</span>
+          </a>
+        </nav>
+      </div>
+
+      <div class="pt-4 border-t border-white/10 mt-6 md:mt-0">
+        <div class="flex items-center gap-2.5 mb-3">
+          <div class="w-8 h-8 rounded-full bg-cyan-500/20 border border-cyan-500/40 flex items-center justify-center font-bold text-cyan-300 text-xs shrink-0">AD</div>
+          <span class="text-xs font-semibold text-white truncate">Administração Master</span>
+        </div>
+        <a href="../index.html" class="block w-full text-left text-xs text-slate-500 hover:text-amber-400 transition">Voltar ao Painel Partner</a>
+      </div>
+    </aside>
+
+    <!-- CONTEÚDO PRINCIPAL -->
+    <main class="flex-1 p-4 md:p-8 space-y-6">
+      
+      <!-- HEADER CONTEXTUAL -->
+      <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+        <div>
+          <span class="text-xs font-bold text-amber-400 uppercase tracking-widest">Gestão Financeira</span>
+          <h1 class="text-2xl md:text-3xl font-bold text-white tracking-tight mt-1">Liberação de Comissões (PIX)</h1>
+          <p class="text-sm text-slate-400 mt-1">Acompanhe os repasses devidos aos vendedores e confirme as liquidações efetuadas.</p>
+        </div>
+      </div>
+
+      <!-- CARDS RESUMO FINANCEIRO -->
+      <div class="grid grid-cols-1 md:grid-cols-3 gap-4">
+        <div class="glass-amber p-5 rounded-2xl">
+          <span class="text-xs font-semibold uppercase tracking-wider text-amber-300">A Liquidar (Pendente)</span>
+          <div id="kpiComissaoPendente" class="text-2xl font-bold text-amber-400 mt-2">R$ 0,00</div>
+        </div>
+        <div class="glass-b2b p-5 rounded-2xl">
+          <span class="text-xs font-semibold uppercase tracking-wider text-emerald-400">Total Liquidado (Pago)</span>
+          <div id="kpiComissaoPaga" class="text-2xl font-bold text-emerald-300 mt-2">R$ 0,00</div>
+        </div>
+        <div class="glass-b2b p-5 rounded-2xl">
+          <span class="text-xs font-semibold uppercase tracking-wider text-cyan-400">Vendas Fechadas</span>
+          <div id="kpiQtdAprovadas" class="text-2xl font-bold text-white mt-2">0 eventos</div>
+        </div>
+      </div>
+
+      <!-- TABELA DE COMISSÕES -->
+      <div class="glass-b2b rounded-2xl p-6">
+        <div class="overflow-x-auto">
+          <table class="w-full text-left text-xs min-w-[700px]">
+            <thead>
+              <tr class="border-b border-white/10 text-slate-400 uppercase tracking-wider">
+                <th class="pb-3 px-3">Proposta / Cliente</th>
+                <th class="pb-3 px-3">Vendedor / Repasse</th>
+                <th class="pb-3 px-3 text-right">Valor Venda</th>
+                <th class="pb-3 px-3 text-right">Comissão Devida</th>
+                <th class="pb-3 px-3 text-center">Status do Repasse</th>
+                <th class="pb-3 px-3 text-right">Ação Rápida</th>
+              </tr>
+            </thead>
+            <tbody id="tbodyComissoes" class="divide-y divide-white/5 text-slate-200">
+              <tr>
+                <td colspan="6" class="py-6 text-center text-slate-500">Carregando comissões da base...</td>
+              </tr>
+            </tbody>
+          </table>
+        </div>
+      </div>
+
+    </main>
+  </div>
+
+  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+  <script src="../partner-config.js" onerror="this.src='../../partner-config.js'"></script>
+  <script src="../../script/script.js" onerror="this.src='../script/script.js'" defer></script>
+  
+  <script>
+    (function () {
+      'use strict';
+
+      var listaPropostas = [];
+
+      function fmtMoeda(n) { return 'R$ ' + Number(n || 0).toLocaleString('pt-BR', { minimumFractionDigits: 2 }); }
+      function esc(s) { return String(s == null ? '' : s).replace(/</g, '&lt;').replace(/>/g, '&gt;'); }
+
+      function carregarComissoes() {
+        if (typeof sbPartner === 'undefined') {
+          setTimeout(carregarComissoes, 200);
+          return;
+        }
+
+        sbPartner.from('propostas').select('*, parceiros(nome_completo, email)').order('criado_em', { ascending: false }).then(function (res) {
+          var tbody = document.getElementById('tbodyComissoes');
+          if (res.error) {
+            tbody.innerHTML = '<tr><td colspan="6" class="py-4 text-center text-red-400">Erro ao carregar comissões: ' + esc(res.error.message) + '</td></tr>';
+            return;
+          }
+
+          listaPropostas = res.data || [];
+          atualizarKPIs();
+          renderTabela(listaPropostas);
+        });
+      }
+
+      function atualizarKPIs() {
+        var pendente = 0;
+        var pago = 0;
+        var qtdFechadas = 0;
+
+        listaPropostas.forEach(function (p) {
+          if (p.status === 'aprovada') {
+            qtdFechadas += 1;
+            var val = Number(p.valor_total || 0);
+            var pct = Number(p.comissao_pct_efetiva || 10);
+            var comissaoTotal = (val * pct) / 100;
+
+            var st = p.comissao_status || (p.comissao_paga ? 'liquidado' : 'pendente');
+            var valPagoParcial = Number(p.comissao_paga_valor || 0);
+
+            if (st === 'liquidado') {
+              pago += comissaoTotal;
+            } else if (st === 'parcial') {
+              pago += valPagoParcial;
+              pendente += Math.max(0, comissaoTotal - valPagoParcial);
+            } else if (st !== 'cancelado') {
+              pendente += comissaoTotal;
+            }
+          }
+        });
+
+        document.getElementById('kpiComissaoPendente').textContent = fmtMoeda(pendente);
+        document.getElementById('kpiComissaoPaga').textContent = fmtMoeda(pago);
+        document.getElementById('kpiQtdAprovadas').textContent = qtdFechadas + ' eventos';
+      }
+
+      function renderTabela(lista) {
+        var tbody = document.getElementById('tbodyComissoes');
+        if (!lista.length) {
+          tbody.innerHTML = '<tr><td colspan="6" class="py-6 text-center text-slate-500">Nenhuma comissão cadastrada até o momento.</td></tr>';
+          return;
+        }
+
+        tbody.innerHTML = lista.map(function (p) {
+          var valTotal = Number(p.valor_total || 0);
+          var pct = Number(p.comissao_pct_efetiva || 10);
+          var valComissao = (valTotal * pct) / 100;
+          
+          var stComissao = p.comissao_status || (p.comissao_paga ? 'liquidado' : 'pendente');
+          var nomeParceiro = p.parceiros ? (p.parceiros.nome_completo || p.parceiros.email) : 'Vendedor ID ' + p.parceiro_id;
+
+          // COR DINÂMICA DO SELECT E DA BORDA
+          var stColorClass = 'text-amber-400 border-amber-500/40';
+          if (stComissao === 'liquidado') stColorClass = 'text-emerald-400 border-emerald-500/40';
+          if (stComissao === 'parcial') stColorClass = 'text-cyan-400 border-cyan-500/40';
+          if (stComissao === 'cancelado') stColorClass = 'text-red-400 border-red-500/40';
+
+          var subtextoComissao = '';
+          if (stComissao === 'parcial') {
+            var pagoParcial = Number(p.comissao_paga_valor || 0);
+            subtextoComissao = '<span class="block text-[10px] text-cyan-300 font-semibold mt-0.5">Pago: ' + fmtMoeda(pagoParcial) + '</span>';
+          }
+
+          return '<tr class="hover:bg-white/[0.02] transition">' +
+            '<td class="py-4 px-3">' +
+              '<strong class="text-white block text-sm">#' + (p.numero || p.id) + ' — ' + esc(p.cliente_nome) + '</strong>' +
+              '<span class="text-slate-400 text-[11px]">Evento: ' + esc(p.tipo_evento || '—') + '</span>' +
+            '</td>' +
+            '<td class="py-4 px-3">' +
+              '<strong class="text-slate-200 block text-xs">' + esc(nomeParceiro) + '</strong>' +
+              '<span class="text-cyan-400 text-[10px]">' + pct + '% pactuada</span>' +
+            '</td>' +
+            '<td class="py-4 px-3 text-right font-bold text-white">' + fmtMoeda(valTotal) + '</td>' +
+            '<td class="py-4 px-3 text-right font-bold text-amber-400">' +
+              fmtMoeda(valComissao) +
+              subtextoComissao +
+            '</td>' +
+            '<td class="py-4 px-3 text-center">' +
+              '<select onchange="alterarStatusComissao(\'' + p.id + '\', this.value, ' + valComissao + ')" class="bg-slate-900 border rounded-lg px-2.5 py-1.5 text-[11px] font-bold uppercase focus:outline-none ' + stColorClass + '">' +
+                '<option value="pendente" class="text-amber-400" ' + (stComissao === 'pendente' ? 'selected' : '') + '>🟡 Pendente</option>' +
+                '<option value="parcial" class="text-cyan-400" ' + (stComissao === 'parcial' ? 'selected' : '') + '>🔵 Adiantamento / Parcial</option>' +
+                '<option value="liquidado" class="text-emerald-400" ' + (stComissao === 'liquidado' ? 'selected' : '') + '>🟢 Liquidado / PIX</option>' +
+                '<option value="cancelado" class="text-red-400" ' + (stComissao === 'cancelado' ? 'selected' : '') + '>🔴 Cancelado / Estornado</option>' +
+              '</select>' +
+            '</td>' +
+            '<td class="py-4 px-3 text-right whitespace-nowrap">' +
+              (stComissao !== 'liquidado' 
+                ? '<button onclick="darBaixaRapida(\'' + p.id + '\')" class="inline-flex items-center justify-center px-3.5 py-2 rounded-xl bg-amber-500 hover:bg-amber-400 text-slate-950 text-xs font-bold transition shadow-[0_0_12px_rgba(245,158,11,0.3)] whitespace-nowrap">⚡ Dar Baixa (PIX)</button>'
+                : '<span class="text-xs text-emerald-400 font-bold px-2 py-1 rounded bg-emerald-500/10 border border-emerald-500/30">✓ Paid / Liquidado</span>'
+              ) +
+            '</td>' +
+          '</tr>';
+        }).join('');
+      }
+
+      window.alterarStatusComissao = function (id, novoStatus, valComissaoTotal) {
+        var updatePayload = { comissao_status: novoStatus };
+
+        if (novoStatus === 'parcial') {
+          var vStr = prompt('Digite o valor em R$ já pago como adiantamento parcial ao vendedor:', '0');
+          if (vStr === null) {
+            carregarComissoes();
+            return;
+          }
+          var vNum = parseFloat(vStr.replace(',', '.')) || 0;
+          updatePayload.comissao_paga_valor = vNum;
+          updatePayload.comissao_paga = false;
+        } else if (novoStatus === 'liquidado') {
+          updatePayload.comissao_paga = true;
+          updatePayload.comissao_paga_valor = valComissaoTotal;
+          updatePayload.comissao_paga_em = new Date().toISOString();
+        } else {
+          updatePayload.comissao_paga = false;
+          updatePayload.comissao_paga_valor = 0;
+        }
+
+        sbPartner.from('propostas').update(updatePayload).eq('id', id).then(function (res) {
+          if (!res.error) carregarComissoes();
+        });
+      };
+
+      window.darBaixaRapida = function (id) {
+        if (confirm('Confirmar o pagamento/PIX integral desta comissão ao vendedor?')) {
+          sbPartner.from('propostas').update({ 
+            comissao_status: 'liquidado',
+            comissao_paga: true, 
+            comissao_paga_em: new Date().toISOString() 
+          }).eq('id', id).then(function (res) {
+            if (!res.error) {
+              carregarComissoes();
+            } else {
+              alert('Erro ao registrar baixa: ' + res.error.message);
+            }
+          });
+        }
+      };
+
+      var btnToggle = document.getElementById('btnToggleMobileMenu');
+      var sidebar = document.getElementById('sidebarMenu');
+      if (btnToggle && sidebar) {
+        btnToggle.addEventListener('click', function () {
+          sidebar.classList.toggle('hidden');
+          sidebar.classList.toggle('flex');
+        });
+      }
+
+      carregarComissoes();
+    })();
+  </script>
+</body>
+</html>
