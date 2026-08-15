@@ -1326,8 +1326,6 @@ document.addEventListener('DOMContentLoaded', () => {
 
 
 
-
-
 /* ---------- DISPARO VIA CLOUDFLARE EDGE FUNCTION (/telegram) ---------- */
 async function dispararLeadTelegram(nome, telefone, mensagem) {
   try {
