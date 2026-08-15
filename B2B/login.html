@@ -1,0 +1,171 @@
+<!DOCTYPE html>
+<html lang="pt-BR" class="h-full">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
+  <title>432UP Partner | Acesso Restrito</title>
+  <link rel="stylesheet" href="../css/style.css">
+  <script src="https://cdn.tailwindcss.com"></script>
+  <style>
+    .glass-b2b-box {
+      background: linear-gradient(135deg, rgba(10, 18, 28, 0.88) 0%, rgba(14, 22, 35, 0.7) 100%);
+      backdrop-filter: blur(24px);
+      -webkit-backdrop-filter: blur(24px);
+      border: 1px solid rgba(0, 240, 255, 0.22);
+      box-shadow: 0 25px 60px rgba(0, 0, 0, 0.85), 0 0 30px rgba(0, 240, 255, 0.12);
+    }
+    .field-error { border-color: #EF4444 !important; }
+    .btn-loading { opacity: .6; pointer-events: none; }
+    #formAlert { display: none; }
+    #formAlert.show { display: block; }
+  </style>
+</head>
+<body class="h-full text-slate-200 font-sans antialiased bg-[#06080c] flex items-center justify-center p-4">
+
+  <!-- Fundo Espacial Integrado ao CSS do Projeto -->
+  <canvas id="orbit-canvas"></canvas>
+  <div id="plasmaLayer" class="plasma-top-layer"></div>
+
+  <div class="w-full max-w-md glass-b2b-box p-8 rounded-3xl relative z-10">
+    <div class="text-center mb-8">
+      <img src="../imagens/logo.png" alt="432UP! Produções" class="h-10 w-auto mx-auto mb-3 object-contain">
+      <span class="text-xs font-bold px-2.5 py-1 rounded bg-cyan-500/20 text-cyan-300 border border-cyan-500/30 uppercase tracking-widest">Portal B2B Partner</span>
+    </div>
+
+    <div id="formAlert" class="mb-4 p-3 rounded-xl text-xs font-semibold"></div>
+
+    <form id="loginForm" class="space-y-4">
+      <div>
+        <label class="block text-xs uppercase tracking-wider text-slate-400 font-semibold mb-1">E-mail corporativo</label>
+        <input type="email" id="fEmail" required placeholder="seuemail@parceiro.com" class="w-full bg-white/5 border border-white/15 rounded-xl px-4 py-3 text-sm text-white focus:border-cyan-400 focus:outline-none transition">
+      </div>
+
+      <div>
+        <div class="flex justify-between items-center mb-1">
+          <label class="text-xs uppercase tracking-wider text-slate-400 font-semibold">Senha</label>
+          <a href="#" id="linkEsqueceu" class="text-xs text-cyan-400 hover:underline">Esqueceu?</a>
+        </div>
+        <input type="password" id="fSenha" required placeholder="••••••••" class="w-full bg-white/5 border border-white/15 rounded-xl px-4 py-3 text-sm text-white focus:border-cyan-400 focus:outline-none transition">
+      </div>
+
+      <button type="submit" id="btnEntrar" class="w-full py-3.5 rounded-xl bg-amber-500 hover:bg-amber-400 text-slate-950 font-bold text-xs uppercase tracking-wider transition shadow-[0_0_20px_rgba(245,158,11,0.3)] mt-2">
+        Acessar Portal
+      </button>
+    </form>
+
+    <div class="mt-6 pt-6 border-t border-white/10 text-center text-xs text-slate-400">
+      Ainda não é parceiro credenciado?
+      <a href="solicitar-acesso.html" class="text-cyan-400 font-semibold hover:underline">Solicitar Acesso B2B</a>
+    </div>
+
+    <div class="mt-3 text-center text-xs text-slate-500">
+      Problemas para acessar?
+      <a id="linkSuporteWA" href="#" target="_blank" class="text-slate-400 hover:text-cyan-400 hover:underline">Falar com o suporte</a>
+    </div>
+  </div>
+
+  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+  <script src="partner-config.js"></script>
+  <script src="../script/script.js" defer></script>
+  <script>
+    (function () {
+      'use strict';
+
+      var linkWA = document.getElementById('linkSuporteWA');
+      linkWA.href = 'https://wa.me/' + PARTNER_CFG.WHATSAPP_SUPORTE + '?text=' + encodeURIComponent('Olá! Preciso de ajuda para acessar o Portal B2B Partner 432UP.');
+
+      /* ── se já tem sessão válida, pula direto pro painel ── */
+      sbPartner.auth.getSession().then(function (res) {
+        if (res.data && res.data.session) {
+          window.location.href = 'index.html';
+        }
+      });
+
+      /* ── mensagem de acesso negado vinda de redirect ── */
+      var params = new URLSearchParams(window.location.search);
+      if (params.get('erro') === 'acesso_negado') {
+        showAlert('Seu acesso foi bloqueado ou recusado. Fale com o suporte se acredita que isso é um engano.', 'error');
+      }
+      if (params.get('confirmado') === '1') {
+        showAlert('E-mail confirmado! Você já pode entrar com sua senha.', 'success');
+      }
+
+      function showAlert(msg, type) {
+        var el = document.getElementById('formAlert');
+        el.textContent = msg;
+        el.className = 'mb-4 p-3 rounded-xl text-xs font-semibold show ' +
+          (type === 'success'
+            ? 'bg-emerald-500/15 text-emerald-300 border border-emerald-500/30'
+            : 'bg-red-500/15 text-red-300 border border-red-500/30');
+      }
+      function hideAlert() {
+        document.getElementById('formAlert').classList.remove('show');
+      }
+
+      document.getElementById('loginForm').addEventListener('submit', function (e) {
+        e.preventDefault();
+        hideAlert();
+        var btn = document.getElementById('btnEntrar');
+        var email = document.getElementById('fEmail').value.trim();
+        var senha = document.getElementById('fSenha').value;
+
+        btn.classList.add('btn-loading');
+        btn.textContent = 'Entrando...';
+
+        sbPartner.auth.signInWithPassword({ email: email, password: senha })
+          .then(function (res) {
+            if (res.error) {
+              var msg = res.error.message === 'Invalid login credentials'
+                ? 'E-mail ou senha incorretos.'
+                : 'Erro ao entrar: ' + res.error.message;
+              showAlert(msg, 'error');
+              btn.classList.remove('btn-loading');
+              btn.textContent = 'Acessar Portal';
+              return;
+            }
+            /* login ok — verifica se o parceiro existe e está aprovado */
+            return sbPartner.from('parceiros').select('status').eq('user_id', res.data.user.id).single()
+              .then(function (r) {
+                if (r.error || !r.data) {
+                  showAlert('Cadastro de parceiro não encontrado para este login.', 'error');
+                  sbPartner.auth.signOut();
+                  btn.classList.remove('btn-loading');
+                  btn.textContent = 'Acessar Portal';
+                  return;
+                }
+                if (r.data.status === 'pendente') {
+                  window.location.href = 'pendente.html';
+                } else if (r.data.status === 'bloqueado' || r.data.status === 'recusado') {
+                  showAlert('Seu acesso está bloqueado. Fale com o suporte.', 'error');
+                  sbPartner.auth.signOut();
+                  btn.classList.remove('btn-loading');
+                  btn.textContent = 'Acessar Portal';
+                } else {
+                  window.location.href = 'index.html';
+                }
+              });
+          });
+      });
+
+      document.getElementById('linkEsqueceu').addEventListener('click', function (e) {
+        e.preventDefault();
+        var email = document.getElementById('fEmail').value.trim();
+        if (!email) {
+          showAlert('Digite seu e-mail no campo acima primeiro, depois clique em "Esqueceu?" novamente.', 'error');
+          document.getElementById('fEmail').focus();
+          return;
+        }
+        sbPartner.auth.resetPasswordForEmail(email, {
+          redirectTo: window.location.origin + window.location.pathname.replace('login.html', 'redefinir-senha.html')
+        }).then(function (res) {
+          if (res.error) {
+            showAlert('Erro ao enviar e-mail de recuperação: ' + res.error.message, 'error');
+          } else {
+            showAlert('Enviamos um link de recuperação para ' + email + '. Verifique sua caixa de entrada (e o spam).', 'success');
+          }
+        });
+      });
+    })();
+  </script>
+</body>
+</html>

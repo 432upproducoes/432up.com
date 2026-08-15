@@ -1,0 +1,298 @@
+<!DOCTYPE html>
+<html lang="pt-BR" class="h-full">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
+  <title>432UP Partner | Comissões</title>
+  <link rel="stylesheet" href="../css/style.css">
+  <script src="https://cdn.tailwindcss.com"></script>
+  <style>
+    .glass-b2b {
+      background: linear-gradient(135deg, rgba(10, 18, 28, 0.75) 0%, rgba(14, 22, 35, 0.5) 100%);
+      backdrop-filter: blur(24px);
+      -webkit-backdrop-filter: blur(24px);
+      border: 1px solid rgba(0, 240, 255, 0.25);
+      box-shadow: 0 20px 50px rgba(0, 0, 0, 0.8), inset 0 0 15px rgba(0, 240, 255, 0.05);
+    }
+    .glass-amber {
+      background: linear-gradient(135deg, rgba(245, 158, 11, 0.08) 0%, rgba(10, 18, 28, 0.85) 100%);
+      backdrop-filter: blur(20px);
+      border: 1px solid rgba(245, 158, 11, 0.35);
+      box-shadow: 0 0 30px rgba(245, 158, 11, 0.15);
+    }
+    #formAlert { display: none; }
+    #formAlert.show { display: block; }
+    .btn-loading { opacity: .6; pointer-events: none; }
+  </style>
+</head>
+<body class="h-full text-slate-200 font-sans antialiased bg-[#06080c] overflow-x-hidden">
+
+  <!-- Fundo Espacial Integrado ao CSS do Projeto -->
+  <canvas id="orbit-canvas"></canvas>
+  <div id="plasmaLayer" class="plasma-top-layer"></div>
+
+  <div class="flex flex-col md:flex-row min-h-screen relative z-10">
+    
+    <!-- HEADER MOBILE (GAVETA RESPONSIVA) -->
+    <header class="md:hidden flex items-center justify-between p-4 glass-b2b border-b border-cyan-500/20 shrink-0 z-30">
+      <a href="index.html" class="inline-block">
+        <img src="../imagens/logo.png" alt="432UP! Produções" class="h-8 w-auto object-contain">
+      </a>
+      <button id="btnToggleMobileMenu" class="p-2 rounded-lg bg-white/10 text-cyan-400 font-bold text-lg focus:outline-none">
+        ☰
+      </button>
+    </header>
+
+    <!-- SIDEBAR B2B -->
+    <aside id="sidebarMenu" class="hidden md:flex w-full md:w-64 glass-b2b flex-col justify-between p-5 shrink-0 z-20 transition-all duration-300">
+      <div>
+        <div class="hidden md:flex items-center space-x-3 mb-8">
+          <a href="index.html" class="inline-block">
+            <img src="../imagens/logo.png" alt="432UP! Produções" class="h-9 w-auto object-contain">
+          </a>
+          <span class="text-xs font-bold px-2 py-0.5 rounded bg-cyan-500/20 text-cyan-300 border border-cyan-500/30">PARTNER</span>
+        </div>
+
+        <nav class="space-y-1.5">
+          <a href="index.html" class="flex items-center space-x-3 px-3.5 py-2.5 rounded-xl text-slate-400 hover:bg-white/5 hover:text-white transition">
+            <span>❖</span><span>Meu Painel</span>
+          </a>
+          <a href="nova-proposta.html" class="flex items-center space-x-3 px-3.5 py-2.5 rounded-xl text-amber-400 font-semibold hover:bg-white/5 transition">
+            <span>⚡</span><span>Nova Proposta</span>
+          </a>
+          <a href="propostas.html" class="flex items-center space-x-3 px-3.5 py-2.5 rounded-xl text-slate-400 hover:bg-white/5 hover:text-white transition">
+            <span>▤</span><span>Minhas Propostas</span>
+          </a>
+          <a href="comissoes.html" class="flex items-center space-x-3 px-3.5 py-2.5 rounded-xl bg-amber-500/10 text-amber-400 font-bold border border-amber-500/30">
+            <span>$</span><span>Comissões</span>
+          </a>
+          <a href="materiais.html" class="flex items-center space-x-3 px-3.5 py-2.5 rounded-xl text-slate-400 hover:bg-white/5 hover:text-white transition">
+            <span>📁</span><span>Materiais</span>
+          </a>
+          <a href="perfil.html" class="flex items-center space-x-3 px-3.5 py-2.5 rounded-xl text-slate-400 hover:bg-white/5 hover:text-white transition">
+            <span>👤</span><span>Meu Perfil</span>
+          </a>
+        </nav>
+      </div>
+
+      <div class="pt-4 border-t border-white/10 mt-6 md:mt-0">
+        <div class="flex items-center gap-2.5 mb-3">
+          <div data-partner-avatar class="w-8 h-8 rounded-full bg-white/10 bg-cover bg-center shrink-0"></div>
+          <span data-partner-nome class="text-xs font-semibold text-white truncate">—</span>
+        </div>
+        <button id="btnLogout" class="w-full text-left text-xs text-slate-500 hover:text-red-400 transition">Sair da conta</button>
+      </div>
+    </aside>
+
+    <!-- CONTEÚDO PRINCIPAL -->
+    <main class="flex-1 overflow-y-auto p-4 md:p-8 space-y-6">
+      <div>
+        <h1 class="text-2xl md:text-3xl font-bold text-white tracking-tight">Painel de Comissões</h1>
+        <p class="text-sm text-slate-400 mt-1">Transparência total dos seus retornos comerciais.</p>
+      </div>
+
+      <div id="formAlert" class="p-3 rounded-xl text-xs font-semibold"></div>
+
+      <!-- CARDS DE RESUMO FINANCEIRO (ALINHAMENTO EM GRADE EQUILIBRADA) -->
+      <div class="grid grid-cols-1 sm:grid-cols-3 gap-4 items-stretch">
+        
+        <div class="glass-amber p-5 rounded-2xl border-l-4 border-l-amber-500 flex flex-col justify-between">
+          <div>
+            <span class="text-xs uppercase font-semibold text-slate-400">Saldo Disponível</span>
+            <div id="txtSaldoDisponivel" class="text-2xl font-bold text-amber-400 mt-1">R$ 0,00</div>
+          </div>
+          <button id="btnSolicitarResgate" class="mt-4 w-full py-2.5 rounded-xl bg-amber-500 hover:bg-amber-400 text-slate-950 font-bold text-xs uppercase tracking-wider transition shadow-[0_0_15px_rgba(245,158,11,0.3)]">
+            Solicitar Resgate
+          </button>
+        </div>
+
+        <div class="glass-b2b p-5 rounded-2xl border-l-4 border-l-cyan-500 flex flex-col justify-between">
+          <div>
+            <span class="text-xs uppercase font-semibold text-slate-400">Pendente de Evento</span>
+            <div id="txtPendenteEvento" class="text-2xl font-bold text-cyan-300 mt-1">R$ 0,00</div>
+          </div>
+          <span class="text-[11px] text-slate-400 mt-4 block border-t border-white/5 pt-2">Liberado 48h após a realização do evento</span>
+        </div>
+
+        <div class="glass-b2b p-5 rounded-2xl border-l-4 border-l-emerald-500 flex flex-col justify-between">
+          <div>
+            <span class="text-xs uppercase font-semibold text-slate-400">Total Já Pago</span>
+            <div id="txtTotalPago" class="text-2xl font-bold text-emerald-400 mt-1">R$ 0,00</div>
+          </div>
+          <span class="text-[11px] text-slate-400 mt-4 block border-t border-white/5 pt-2">Acumulado histórico do parceiro</span>
+        </div>
+
+      </div>
+
+      <!-- EXTRATO DETALHADO -->
+      <div class="glass-b2b rounded-2xl p-6 border border-cyan-500/20">
+        <h2 class="text-base font-bold text-white mb-4">Extrato Recente</h2>
+        <div id="listaExtrato" class="space-y-3">
+          <p class="text-xs text-slate-500 py-4 text-center">Carregando extrato de comissões...</p>
+        </div>
+      </div>
+    </main>
+  </div>
+
+  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+  <script src="partner-config.js"></script>
+  <script src="../script/script.js" defer></script>
+  <script>
+    (function () {
+      'use strict';
+
+      var parceiroAtual = null;
+
+      var STATUS_LABEL = {
+        liberada: { text: 'Liberado', cls: 'text-emerald-400 font-semibold' },
+        pendente_evento: { text: 'Aguardando Evento', cls: 'text-cyan-400 font-semibold' },
+        resgatada: { text: 'Resgatada', cls: 'text-slate-400 font-semibold' },
+        cancelada: { text: 'Cancelada', cls: 'text-red-400 font-semibold' }
+      };
+
+      function fmtMoeda(n) { return 'R$ ' + Number(n || 0).toLocaleString('pt-BR', { minimumFractionDigits: 2 }); }
+      function esc(s) { return String(s == null ? '' : s).replace(/</g, '&lt;').replace(/>/g, '&gt;'); }
+      function showAlert(msg, type) {
+        var el = document.getElementById('formAlert');
+        el.textContent = msg;
+        el.className = 'p-3 rounded-xl text-xs font-semibold show ' +
+          (type === 'success' ? 'bg-emerald-500/15 text-emerald-300 border border-emerald-500/30' : 'bg-red-500/15 text-red-300 border border-red-500/30');
+      }
+
+      partnerRequireAuth().then(function (parceiro) {
+        parceiroAtual = parceiro;
+        partnerFillSidebar(parceiro);
+        carregarResumo(parceiro.id);
+        carregarExtrato(parceiro.id);
+        bindEvents();
+      });
+
+      function carregarResumo(parceiroId) {
+        sbPartner.from('v_parceiro_dashboard')
+          .select('*')
+          .eq('parceiro_id', parceiroId)
+          .single()
+          .then(function (res) {
+            if (res.data) {
+              var d = res.data;
+              document.getElementById('txtSaldoDisponivel').textContent = fmtMoeda(d.comissao_disponivel);
+              document.getElementById('txtPendenteEvento').textContent = fmtMoeda(d.comissao_pendente);
+              document.getElementById('txtTotalPago').textContent = fmtMoeda(d.comissao_total_paga);
+            } else {
+              carregarResumoDirecto(parceiroId);
+            }
+          }).catch(function() {
+            carregarResumoDirecto(parceiroId);
+          });
+      }
+
+      function carregarResumoDirecto(parceiroId) {
+        sbPartner.from('propostas')
+          .select('valor_total, comissao_pct_efetiva, status')
+          .eq('parceiro_id', parceiroId)
+          .eq('status', 'aprovada')
+          .then(function (res) {
+            if (res.data) {
+              var totalComissao = res.data.reduce(function (acc, p) {
+                var val = p.valor_total || 0;
+                var pct = p.comissao_pct_efetiva || 10;
+                return acc + (val * pct / 100);
+              }, 0);
+
+              document.getElementById('txtSaldoDisponivel').textContent = fmtMoeda(totalComissao);
+              document.getElementById('txtPendenteEvento').textContent = fmtMoeda(0);
+              document.getElementById('txtTotalPago').textContent = fmtMoeda(0);
+            }
+          });
+      }
+
+      function carregarExtrato(parceiroId) {
+        sbPartner.from('comissoes')
+          .select('*, propostas(numero, cliente_nome)')
+          .eq('parceiro_id', parceiroId)
+          .order('criado_em', { ascending: false })
+          .then(function (res) {
+            var container = document.getElementById('listaExtrato');
+            if (res.error || !res.data || !res.data.length) {
+              carregarExtratoViaPropostas(parceiroId, container);
+              return;
+            }
+
+            container.innerHTML = res.data.map(function (c) {
+              var propNum = c.propostas ? c.propostas.numero : '—';
+              var propCliente = c.propostas ? c.propostas.cliente_nome : 'Proposta';
+              var st = STATUS_LABEL[c.status] || STATUS_LABEL.pendente_evento;
+              var isLiberada = c.status === 'liberada';
+              var valCls = isLiberada ? 'text-amber-400' : 'text-slate-300';
+
+              return '<div class="flex justify-between items-center p-3.5 rounded-xl bg-white/[0.02] border border-white/10 hover:bg-white/[0.04] transition">' +
+                '<div>' +
+                  '<div class="font-bold text-white text-sm">#' + propNum + ' — ' + esc(propCliente) + '</div>' +
+                  '<span class="text-xs text-slate-400">Venda: ' + fmtMoeda(c.valor_venda) + ' (Comissão ' + Number(c.comissao_pct).toFixed(0) + '%)</span>' +
+                '</div>' +
+                '<div class="text-right">' +
+                  '<span class="font-bold ' + valCls + ' text-sm">+ ' + fmtMoeda(c.comissao_valor) + '</span>' +
+                  '<span class="block text-[10px] ' + st.cls + '">' + st.text + '</span>' +
+                '</div>' +
+              '</div>';
+            }).join('');
+          });
+      }
+
+      function carregarExtratoViaPropostas(parceiroId, container) {
+        sbPartner.from('propostas')
+          .select('*')
+          .eq('parceiro_id', parceiroId)
+          .eq('status', 'aprovada')
+          .order('criado_em', { ascending: false })
+          .then(function (res) {
+            if (res.error || !res.data || !res.data.length) {
+              container.innerHTML = '<p class="text-xs text-slate-500 py-4 text-center">Nenhuma comissão gerada até o momento.</p>';
+              return;
+            }
+
+            container.innerHTML = res.data.map(function (p) {
+              var valComissao = (p.valor_total * (p.comissao_pct_efetiva || 10)) / 100;
+              return '<div class="flex justify-between items-center p-3.5 rounded-xl bg-white/[0.02] border border-white/10 hover:bg-white/[0.04] transition">' +
+                '<div>' +
+                  '<div class="font-bold text-white text-sm">#' + p.numero + ' — ' + esc(p.cliente_nome) + '</div>' +
+                  '<span class="text-xs text-slate-400">Venda Aprovada: ' + fmtMoeda(p.valor_total) + ' (Comissão ' + Number(p.comissao_pct_efetiva || 10).toFixed(0) + '%)</span>' +
+                '</div>' +
+                '<div class="text-right">' +
+                  '<span class="font-bold text-amber-400 text-sm">+ ' + fmtMoeda(valComissao) + '</span>' +
+                  '<span class="block text-[10px] text-emerald-400 font-semibold">Liberado</span>' +
+                '</div>' +
+              '</div>';
+            }).join('');
+          });
+      }
+
+      function bindEvents() {
+        document.getElementById('btnSolicitarResgate').addEventListener('click', function () {
+          var btn = this;
+          btn.classList.add('btn-loading');
+          
+          var msg = 'Olá! Gostaria de solicitar o resgate do meu saldo de comissões disponíveis no Portal Partner 432UP (' + parceiroAtual.nome_completo + ').';
+          window.open('https://wa.me/' + PARTNER_CFG.WHATSAPP_SUPORTE + '?text=' + encodeURIComponent(msg), '_blank');
+          
+          setTimeout(function () {
+            btn.classList.remove('btn-loading');
+            showAlert('Solicitação encaminhada ao suporte via WhatsApp.', 'success');
+          }, 1000);
+        });
+
+        document.getElementById('btnLogout').addEventListener('click', partnerLogout);
+
+        var btnToggle = document.getElementById('btnToggleMobileMenu');
+        var sidebar = document.getElementById('sidebarMenu');
+        if (btnToggle && sidebar) {
+          btnToggle.addEventListener('click', function () {
+            sidebar.classList.toggle('hidden');
+            sidebar.classList.toggle('flex');
+          });
+        }
+      }
+    })();
+  </script>
+</body>
+</html>
