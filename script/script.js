@@ -349,6 +349,12 @@ async function handleProgressFormSubmit(e) {
   }
   if (errorMsg) errorMsg.style.display = 'none';
 
+
+
+await dispararLeadTelegram(name, contact, msg || 'Contato pela calculadora');
+
+
+   
   if (btn) {
     btn.innerText = "Registrando...";
     btn.disabled = true;
