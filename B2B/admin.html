@@ -3,65 +3,270 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
-  <title>432UP Partner | Acesso Restrito</title>
+  <title>432UP Partner | Meu Perfil</title>
+  
   <link rel="stylesheet" href="../css/style.css">
   <script src="https://cdn.tailwindcss.com"></script>
+
   <style>
-    .glass-b2b-box {
-      background: linear-gradient(135deg, rgba(10, 18, 28, 0.88) 0%, rgba(14, 22, 35, 0.7) 100%);
+    /* FUNDO VIDRO B2B CIANO PADRÃO ORIGINAL */
+    .glass-b2b {
+      background: linear-gradient(135deg, rgba(10, 18, 28, 0.75) 0%, rgba(14, 22, 35, 0.5) 100%);
       backdrop-filter: blur(24px);
       -webkit-backdrop-filter: blur(24px);
-      border: 1px solid rgba(0, 240, 255, 0.22);
-      box-shadow: 0 25px 60px rgba(0, 0, 0, 0.85), 0 0 30px rgba(0, 240, 255, 0.12);
+      border: 1px solid rgba(0, 240, 255, 0.25);
+      box-shadow: 0 20px 50px rgba(0, 0, 0, 0.8), inset 0 0 15px rgba(0, 240, 255, 0.05);
     }
-    .field-error { border-color: #EF4444 !important; }
-    .btn-loading { opacity: .6; pointer-events: none; }
+
+    /* HEADER B2B CIANO TECH */
+    #calc-header.b2b-header-cyan {
+      display: flex !important;
+      align-items: center !important;
+      justify-content: space-between !important;
+      height: 68px !important;
+      padding: 0 1.5rem !important;
+      background: linear-gradient(180deg, rgba(0, 240, 255, 0.08) 0%, rgba(10, 18, 28, 0.88) 100%) !important;
+      backdrop-filter: blur(24px) !important;
+      -webkit-backdrop-filter: blur(24px) !important;
+      border-bottom: 1px solid rgba(0, 240, 255, 0.22) !important;
+      box-shadow: 0 10px 30px rgba(0, 0, 0, 0.6), 0 0 20px rgba(0, 240, 255, 0.12) !important;
+    }
+
+    @media (min-width: 1024px) {
+      #calc-header.b2b-header-cyan .desktop-nav {
+        display: flex !important;
+        align-items: center !important;
+        gap: 1rem !important;
+        height: 100% !important;
+        margin: 0 !important;
+      }
+      #calc-header.b2b-header-cyan .desktop-nav a,
+      #calc-header.b2b-header-cyan .desktop-nav span {
+        display: inline-flex !important;
+        align-items: center !important;
+      }
+    }
+
+    /* WIDGET DO PERFIL (FOTO CLICÁVEL) */
+    .b2b-user-widget {
+      display: inline-flex !important;
+      align-items: center !important;
+      gap: 0.75rem !important;
+      padding-left: 0.75rem !important;
+      border-left: 1px solid rgba(0, 240, 255, 0.2) !important;
+      height: 32px !important;
+    }
+
+    .b2b-avatar-link {
+      display: block;
+      position: relative;
+      border-radius: 50%;
+      transition: all 0.2s ease;
+    }
+
+    .b2b-avatar-link:hover {
+      transform: scale(1.08);
+      box-shadow: 0 0 12px rgba(0, 240, 255, 0.6);
+    }
+
+    .b2b-avatar-img {
+      width: 34px !important;
+      height: 34px !important;
+      border-radius: 50% !important;
+      border: 1.5px solid rgba(0, 240, 255, 0.8) !important;
+      background-color: rgba(0, 240, 255, 0.15) !important;
+      background-size: cover !important;
+      background-position: center !important;
+      box-shadow: 0 0 12px rgba(0, 240, 255, 0.4) !important;
+      flex-shrink: 0 !important;
+    }
+
+    /* INDICADOR DE PÁGINA ATIVA NO PERFIL */
+    .b2b-avatar-link.active-page .b2b-avatar-img {
+      border-color: #00f0ff !important;
+      box-shadow: 0 0 16px rgba(0, 240, 255, 0.8) !important;
+    }
+
     #formAlert { display: none; }
     #formAlert.show { display: block; }
+    .btn-loading { opacity: .6; pointer-events: none; }
+    #avatarPreview { background-size: cover; background-position: center; }
   </style>
 </head>
-<body class="h-full text-slate-200 font-sans antialiased bg-[#06080c] flex items-center justify-center p-4">
+<body class="h-full text-slate-200 font-sans antialiased bg-[#06080c] overflow-x-hidden">
 
   <!-- Fundo Espacial Integrado ao CSS do Projeto -->
   <canvas id="orbit-canvas"></canvas>
   <div id="plasmaLayer" class="plasma-top-layer"></div>
 
-  <div class="w-full max-w-md glass-b2b-box p-8 rounded-3xl relative z-10">
-    <div class="text-center mb-8">
-      <img src="../imagens/logo.png" alt="432UP! Produções" class="h-10 w-auto mx-auto mb-3 object-contain">
-      <span class="text-xs font-bold px-2.5 py-1 rounded bg-cyan-500/20 text-cyan-300 border border-cyan-500/30 uppercase tracking-widest">Portal B2B Partner</span>
+  <!-- HEADER TOPO PARCEIROS -->
+  <header id="calc-header" class="b2b-header-cyan">
+    <div class="logo-container flex items-center">
+      <a href="../index.html" class="logo-link flex items-center" aria-label="Página Inicial 432UP">
+        <img src="../imagens/logo.png" alt="432UP! Produções" class="logo-img" onerror="this.src='imagens/logo.png'">
+      </a>
     </div>
 
-    <div id="formAlert" class="mb-4 p-3 rounded-xl text-xs font-semibold"></div>
+    <!-- NAV DESKTOP PARCEIROS -->
+    <nav class="desktop-nav">
+      <a href="index.html">Meu Painel</a>
+      <a href="nova-proposta.html" style="color: #f59e0b; font-weight: 700;">⚡ Nova Proposta</a>
+      <a href="propostas.html">Minhas Propostas</a>
+      <a href="comissoes.html">Comissões</a>
+      <a href="materiais.html">Materiais</a>
 
-    <form id="loginForm" class="space-y-4">
+      <!-- CRACHÁ DOURADO MASTER ADMIN -->
+      <span id="navAdminLinkContainer">
+        <a href="admin/index.html" style="color: #f59e0b; font-weight: 700; border: 1px solid rgba(245,158,11,0.4); padding: 4px 10px; border-radius: 8px; background: rgba(245,158,11,0.1); font-size: 0.75rem;">👑 Master Admin</a>
+      </span>
+
+      <!-- WIDGET DE PERFIL (FOTO CLICÁVEL ATIVA E DESTAQUE DE PÁGINA) -->
+      <div class="b2b-user-widget">
+        <a href="perfil.html" title="Meu Perfil" class="b2b-avatar-link active-page">
+          <div data-partner-avatar class="b2b-avatar-img"></div>
+        </a>
+        <button id="btnLogoutDesk" title="Sair do Portal" class="text-xs text-slate-400 hover:text-red-400 transition p-1 cursor-pointer">
+          🔒 Sair
+        </button>
+      </div>
+    </nav>
+
+    <!-- BOTÃO HAMBÚRGUER MOBILE -->
+    <button class="mobile-hamburger" onclick="toggleMobileMenu()" aria-label="Abrir menu">☰</button>
+  </header>
+
+  <!-- OVERLAY MENU MOBILE PARCEIROS -->
+  <div class="mobile-menu-overlay" id="mobile-menu">
+    <button onclick="toggleMobileMenu()" style="position: absolute; top: 20px; right: 20px; background: transparent; border: none; color: #fff; font-size: 1.5rem; cursor: pointer;" aria-label="Fechar menu">✕</button>
+    
+    <a href="perfil.html" onclick="toggleMobileMenu()" class="flex items-center gap-3 mb-4 border-b border-cyan-500/20 pb-3 hover:opacity-80 transition">
+      <div data-partner-avatar class="w-10 h-10 rounded-full bg-cyan-500/20 border border-cyan-500/40 bg-cover bg-center shrink-0"></div>
+      <div class="text-left">
+        <span data-partner-nome class="text-sm font-bold text-white block">—</span>
+        <span class="text-[10px] text-cyan-400 font-bold uppercase tracking-wider">Ver Meu Perfil ➔</span>
+      </div>
+    </a>
+
+    <div id="navAdminLinkContainerMobile" class="w-full mb-2">
+      <a href="admin/index.html" onclick="toggleMobileMenu()" style="color: #f59e0b; font-weight: 700; display: block; text-align: center; border: 1px solid rgba(245,158,11,0.4); padding: 8px; border-radius: 8px; background: rgba(245,158,11,0.1);">👑 Painel Master Admin</a>
+    </div>
+
+    <a href="index.html" onclick="toggleMobileMenu()">❖ Meu Painel</a>
+    <a href="nova-proposta.html" onclick="toggleMobileMenu()" style="color: #f59e0b; font-weight: 700;">⚡ Nova Proposta</a>
+    <a href="propostas.html" onclick="toggleMobileMenu()">▤ Minhas Propostas</a>
+    <a href="comissoes.html" onclick="toggleMobileMenu()">$ Comissões</a>
+    <a href="materiais.html" onclick="toggleMobileMenu()">📁 Materiais</a>
+
+    <button id="btnLogoutMob" class="btn-header-cta" style="margin-left: 0; margin-top: 15px; padding: 12px 28px; width: 100%; border-color: rgba(239, 68, 68, 0.4); color: #f87171;">
+      🔒 Sair do Portal
+    </button>
+  </div>
+
+  <!-- CONTAINER DE CONTEÚDO EM FLUXO VERTICAL -->
+  <div class="flex flex-col min-h-screen relative z-10">
+
+    <!-- CONTEÚDO PRINCIPAL -->
+    <main class="flex-1 p-4 lg:p-8 space-y-6 pt-12 lg:pt-14 pb-16 w-full max-w-3xl mx-auto">
       <div>
-        <label class="block text-xs uppercase tracking-wider text-slate-400 font-semibold mb-1">E-mail corporativo</label>
-        <input type="email" id="fEmail" required placeholder="seuemail@parceiro.com" class="w-full bg-white/5 border border-white/15 rounded-xl px-4 py-3 text-sm text-white focus:border-cyan-400 focus:outline-none transition">
+        <span class="text-xs font-bold text-cyan-400 uppercase tracking-widest">Configurações da Conta</span>
+        <h1 class="text-2xl md:text-3xl font-bold text-white tracking-tight mt-1">Meu Perfil</h1>
       </div>
 
-      <div>
-        <div class="flex justify-between items-center mb-1">
-          <label class="text-xs uppercase tracking-wider text-slate-400 font-semibold">Senha</label>
-          <a href="#" id="linkEsqueceu" class="text-xs text-cyan-400 hover:underline">Esqueceu?</a>
+      <div id="formAlert" class="p-3 rounded-xl text-xs font-semibold"></div>
+
+      <!-- STATUS DA CONTA -->
+      <div class="glass-b2b p-5 rounded-2xl flex items-center justify-between border border-cyan-500/20">
+        <div>
+          <span class="text-[10px] uppercase font-bold text-slate-400 tracking-wider block">Status do Credenciamento</span>
+          <span id="statusBadge" class="inline-block mt-1.5 px-2.5 py-1 rounded-full text-xs font-bold">—</span>
         </div>
-        <input type="password" id="fSenha" required placeholder="••••••••" class="w-full bg-white/5 border border-white/15 rounded-xl px-4 py-3 text-sm text-white focus:border-cyan-400 focus:outline-none transition">
+        <div class="text-right">
+          <span class="text-[10px] uppercase font-bold text-slate-400 tracking-wider block">Comissão Padrão</span>
+          <span id="comissaoBadge" class="text-lg font-bold text-amber-400">—</span>
+        </div>
       </div>
 
-      <button type="submit" id="btnEntrar" class="w-full py-3.5 rounded-xl bg-amber-500 hover:bg-amber-400 text-slate-950 font-bold text-xs uppercase tracking-wider transition shadow-[0_0_20px_rgba(245,158,11,0.3)] mt-2">
-        Acessar Portal
-      </button>
-    </form>
+      <!-- FOTO -->
+      <div class="glass-b2b p-6 rounded-2xl border border-cyan-500/20">
+        <h2 class="text-sm font-bold text-white mb-4">Foto de Perfil</h2>
+        <div class="flex flex-col sm:flex-row items-center gap-5">
+          <div id="avatarPreview" class="w-20 h-20 rounded-full bg-white/5 border border-cyan-500/30 flex items-center justify-center text-3xl text-slate-500 shrink-0 overflow-hidden shadow-[0_0_15px_rgba(0,240,255,0.15)]">
+            <span id="avatarPlaceholder">📷</span>
+          </div>
+          <div class="flex-1 space-y-2.5 w-full text-center sm:text-left flex flex-col justify-center">
+            <input type="file" id="fAvatar" accept="image/png,image/jpeg,image/webp" class="w-full text-xs text-slate-300 file:mr-3 file:py-2 file:px-3 file:rounded-lg file:border-0 file:text-xs file:font-semibold file:bg-cyan-500/20 file:text-cyan-300 hover:file:bg-cyan-500/30 transition cursor-pointer">
+            <p class="text-[11px] text-slate-400">JPG, PNG ou WEBP · máximo 5MB. Aparece no header e no seu perfil.</p>
+            <button id="btnSalvarAvatar" class="hidden self-start px-4 py-2 rounded-lg bg-cyan-500 hover:bg-cyan-400 text-slate-950 text-xs font-bold transition shadow-[0_0_10px_rgba(0,240,255,0.2)]">Salvar Nova Foto</button>
+          </div>
+        </div>
+      </div>
 
-    <div class="mt-6 pt-6 border-t border-white/10 text-center text-xs text-slate-400">
-      Ainda não é parceiro credenciado?
-      <a href="solicitar-acesso.html" class="text-cyan-400 font-semibold hover:underline">Solicitar Acesso B2B</a>
-    </div>
+      <!-- DADOS PESSOAIS -->
+      <form id="dadosForm" method="POST" class="glass-b2b p-6 pb-8 rounded-2xl space-y-5 border border-cyan-500/20">
+        <h2 class="text-sm font-bold text-white border-b border-white/10 pb-3">Dados Cadastrais</h2>
 
-    <div class="mt-3 text-center text-xs text-slate-500">
-      Problemas para acessar?
-      <a id="linkSuporteWA" href="#" target="_blank" class="text-slate-400 hover:text-cyan-400 hover:underline">Falar com o suporte</a>
-    </div>
+        <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
+          <div>
+            <label for="fNome" class="block text-xs uppercase tracking-wider text-slate-300 font-semibold mb-1.5">Nome Completo</label>
+            <input type="text" id="fNome" name="name" required autocomplete="name" class="w-full bg-slate-900/80 border border-white/20 rounded-xl px-4 py-2.5 text-sm text-white focus:border-cyan-400 focus:outline-none transition">
+          </div>
+          <div>
+            <label for="fEmpresa" class="block text-xs uppercase tracking-wider text-slate-300 font-semibold mb-1.5">Empresa / Agência</label>
+            <input type="text" id="fEmpresa" name="organization" required autocomplete="organization" class="w-full bg-slate-900/80 border border-white/20 rounded-xl px-4 py-2.5 text-sm text-white focus:border-cyan-400 focus:outline-none transition">
+          </div>
+        </div>
+
+        <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
+          <div>
+            <label for="fEmail" class="block text-xs uppercase tracking-wider text-slate-300 font-semibold mb-1.5">E-mail</label>
+            <input type="email" id="fEmail" name="email" disabled autocomplete="email" class="w-full bg-slate-950/80 border border-white/10 rounded-xl px-4 py-2.5 text-sm text-slate-300 cursor-not-allowed">
+            <p class="text-[11px] text-slate-400 mt-1">O e-mail de login não pode ser alterado aqui. Fale com o suporte se precisar mudar.</p>
+          </div>
+          <div>
+            <label for="fWhatsapp" class="block text-xs uppercase tracking-wider text-slate-300 font-semibold mb-1.5">WhatsApp</label>
+            <input type="tel" id="fWhatsapp" name="tel" required placeholder="(11) 99999-9999" maxlength="15" autocomplete="tel" class="w-full bg-slate-900/80 border border-white/20 rounded-xl px-4 py-2.5 text-sm text-white focus:border-cyan-400 focus:outline-none transition">
+          </div>
+        </div>
+
+        <div>
+          <label for="fPerfil" class="block text-xs uppercase tracking-wider text-slate-300 font-semibold mb-1.5">Perfil de Atuação</label>
+          <select id="fPerfil" name="perfil" class="w-full bg-slate-900 border border-white/20 rounded-xl px-4 py-2.5 text-sm text-white focus:border-cyan-400 focus:outline-none transition">
+            <option value="cerimonialista">Cerimonialista / Assessoria de Eventos</option>
+            <option value="agencia_corporativa">Agência de Eventos Corporativos</option>
+            <option value="produtor_independente">Produtor Independente / Arquiteto Cênico</option>
+            <option value="hotelaria_espaco">Hotelaria de Luxo / Espaço de Eventos</option>
+            <option value="outro">Outro</option>
+          </select>
+        </div>
+
+        <div class="pt-2">
+          <button type="submit" id="btnSalvarDados" class="w-full sm:w-auto px-6 py-3 rounded-xl bg-amber-500 hover:bg-amber-400 text-slate-950 font-bold text-xs uppercase tracking-wider transition shadow-[0_0_15px_rgba(245,158,11,0.25)]">
+            Salvar Alterações
+          </button>
+        </div>
+      </form>
+
+      <!-- SENHA -->
+      <form id="senhaForm" method="POST" class="glass-b2b p-6 pb-8 rounded-2xl space-y-5 border border-cyan-500/20">
+        <h2 class="text-sm font-bold text-white border-b border-white/10 pb-3">Alterar Senha</h2>
+        <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
+          <div>
+            <label for="fSenha1" class="block text-xs uppercase tracking-wider text-slate-300 font-semibold mb-1.5">Nova senha</label>
+            <input type="password" id="fSenha1" name="new-password" minlength="8" placeholder="Mínimo 8 caracteres" autocomplete="new-password" class="w-full bg-slate-900/80 border border-white/20 rounded-xl px-4 py-2.5 text-sm text-white focus:border-cyan-400 focus:outline-none transition">
+          </div>
+          <div>
+            <label for="fSenha2" class="block text-xs uppercase tracking-wider text-slate-300 font-semibold mb-1.5">Confirme</label>
+            <input type="password" id="fSenha2" name="confirm-password" minlength="8" placeholder="Repita a senha" autocomplete="new-password" class="w-full bg-slate-900/80 border border-white/20 rounded-xl px-4 py-2.5 text-sm text-white focus:border-cyan-400 focus:outline-none transition">
+          </div>
+        </div>
+        <div class="pt-2">
+          <button type="submit" id="btnSalvarSenha" class="w-full sm:w-auto px-6 py-3 rounded-xl bg-white/10 hover:bg-white/20 text-white font-bold text-xs uppercase tracking-wider border border-white/10 transition">
+            Atualizar Senha
+          </button>
+        </div>
+      </form>
+
+    </main>
   </div>
 
   <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
@@ -71,98 +276,200 @@
     (function () {
       'use strict';
 
-      var linkWA = document.getElementById('linkSuporteWA');
-      linkWA.href = 'https://wa.me/' + PARTNER_CFG.WHATSAPP_SUPORTE + '?text=' + encodeURIComponent('Olá! Preciso de ajuda para acessar o Portal B2B Partner 432UP.');
+      var parceiroAtual = null;
+      var novoAvatarFile = null;
 
-      /* ── se já tem sessão válida, pula direto pro painel ── */
-      sbPartner.auth.getSession().then(function (res) {
-        if (res.data && res.data.session) {
-          window.location.href = 'index.html';
+      var STATUS_LABEL = {
+        aprovado: { text: 'Aprovado', cls: 'bg-emerald-500/20 text-emerald-300 border border-emerald-500/40' },
+        pendente: { text: 'Pendente', cls: 'bg-amber-500/20 text-amber-300 border border-amber-500/40' },
+        bloqueado: { text: 'Bloqueado', cls: 'bg-red-500/20 text-red-300 border border-red-500/40' },
+        recusado: { text: 'Recusado', cls: 'bg-red-500/20 text-red-300 border border-red-500/40' }
+      };
+
+      /* FORMATAÇÃO E MÁSCARA DO WHATSAPP */
+      function formatWhatsApp(v) {
+        if (!v) return '';
+        v = v.replace(/\D/g, '');
+        if (v.length > 11) v = v.substring(0, 11);
+        if (v.length > 10) return v.replace(/^(\d{2})(\d{5})(\d{4})$/, '($1) $2-$3');
+        if (v.length > 6) return v.replace(/^(\d{2})(\d{4})(\d{0,4})$/, '($1) $2-$3');
+        if (v.length > 2) return v.replace(/^(\d{2})(\d{0,5})$/, '($1) $2');
+        return v;
+      }
+
+      var inputWhatsapp = document.getElementById('fWhatsapp');
+      if (inputWhatsapp) {
+        inputWhatsapp.addEventListener('input', function (e) {
+          e.target.value = formatWhatsApp(e.target.value);
+        });
+      }
+
+      /* MENU MOBILE TOGGLE */
+      window.toggleMobileMenu = function () {
+        var mobNav = document.getElementById('mobile-menu');
+        if (mobNav) {
+          mobNav.classList.toggle('active');
         }
-      });
-
-      /* ── mensagem de acesso negado vinda de redirect ── */
-      var params = new URLSearchParams(window.location.search);
-      if (params.get('erro') === 'acesso_negado') {
-        showAlert('Seu acesso foi bloqueado ou recusado. Fale com o suporte se acredita que isso é um engano.', 'error');
-      }
-      if (params.get('confirmado') === '1') {
-        showAlert('E-mail confirmado! Você já pode entrar com sua senha.', 'success');
-      }
+      };
 
       function showAlert(msg, type) {
         var el = document.getElementById('formAlert');
+        if (!el) return;
         el.textContent = msg;
-        el.className = 'mb-4 p-3 rounded-xl text-xs font-semibold show ' +
+        el.className = 'p-3 rounded-xl text-xs font-semibold show ' +
           (type === 'success'
             ? 'bg-emerald-500/15 text-emerald-300 border border-emerald-500/30'
             : 'bg-red-500/15 text-red-300 border border-red-500/30');
-      }
-      function hideAlert() {
-        document.getElementById('formAlert').classList.remove('show');
+        window.scrollTo({ top: 0, behavior: 'smooth' });
       }
 
-      document.getElementById('loginForm').addEventListener('submit', function (e) {
-        e.preventDefault();
-        hideAlert();
-        var btn = document.getElementById('btnEntrar');
-        var email = document.getElementById('fEmail').value.trim();
-        var senha = document.getElementById('fSenha').value;
+      partnerRequireAuth().then(function (parceiro) {
+        parceiroAtual = parceiro;
+        partnerFillSidebar(parceiro);
 
+        document.getElementById('fNome').value = parceiro.nome_completo || '';
+        document.getElementById('fEmpresa').value = parceiro.empresa || '';
+        document.getElementById('fEmail').value = parceiro.email || '';
+        document.getElementById('fWhatsapp').value = formatWhatsApp(parceiro.whatsapp || '');
+        document.getElementById('fPerfil').value = parceiro.perfil || 'cerimonialista';
+
+        var keyStatus = (parceiro.status || 'pendente').toLowerCase();
+        var st = STATUS_LABEL[keyStatus] || STATUS_LABEL.pendente;
+        var badge = document.getElementById('statusBadge');
+        badge.textContent = st.text;
+        badge.className = 'inline-block mt-1.5 px-2.5 py-1 rounded-full text-xs font-bold ' + st.cls;
+
+        document.getElementById('comissaoBadge').textContent = Number(parceiro.comissao_padrao_pct || 10).toFixed(1) + '%';
+
+        if (parceiro.avatar_url) {
+          document.getElementById('avatarPlaceholder').style.display = 'none';
+          document.getElementById('avatarPreview').style.backgroundImage = 'url(' + parceiro.avatar_url + ')';
+        }
+
+        bindEvents();
+      }).catch(function (err) {
+        console.error('[432UP Partner] Erro ao autenticar parceiro:', err);
+      });
+
+      function bindEvents() {
+        var btnDesk = document.getElementById('btnLogoutDesk');
+        var btnMob = document.getElementById('btnLogoutMob');
+        if (btnDesk) btnDesk.addEventListener('click', partnerLogout);
+        if (btnMob) btnMob.addEventListener('click', partnerLogout);
+      }
+
+      /* ── Troca de Foto ── */
+      document.getElementById('fAvatar').addEventListener('change', function (e) {
+        var file = e.target.files[0];
+        if (!file) return;
+        if (file.size > 5 * 1024 * 1024) {
+          showAlert('A foto precisa ter no máximo 5MB.', 'error');
+          e.target.value = '';
+          return;
+        }
+        novoAvatarFile = file;
+        var reader = new FileReader();
+        reader.onload = function (ev) {
+          document.getElementById('avatarPlaceholder').style.display = 'none';
+          document.getElementById('avatarPreview').style.backgroundImage = 'url(' + ev.target.result + ')';
+        };
+        reader.readAsDataURL(file);
+        document.getElementById('btnSalvarAvatar').classList.remove('hidden');
+      });
+
+      document.getElementById('btnSalvarAvatar').addEventListener('click', function () {
+        if (!novoAvatarFile || !parceiroAtual) return;
+        var btn = this;
         btn.classList.add('btn-loading');
-        btn.textContent = 'Entrando...';
+        btn.textContent = 'Salvando...';
 
-        sbPartner.auth.signInWithPassword({ email: email, password: senha })
-          .then(function (res) {
-            if (res.error) {
-              var msg = res.error.message === 'Invalid login credentials'
-                ? 'E-mail ou senha incorretos.'
-                : 'Erro ao entrar: ' + res.error.message;
-              showAlert(msg, 'error');
-              btn.classList.remove('btn-loading');
-              btn.textContent = 'Acessar Portal';
-              return;
-            }
-            /* login ok — verifica se o parceiro existe e está aprovado */
-            return sbPartner.from('parceiros').select('status').eq('user_id', res.data.user.id).single()
-              .then(function (r) {
-                if (r.error || !r.data) {
-                  showAlert('Cadastro de parceiro não encontrado para este login.', 'error');
-                  sbPartner.auth.signOut();
-                  btn.classList.remove('btn-loading');
-                  btn.textContent = 'Acessar Portal';
-                  return;
-                }
-                if (r.data.status === 'pendente') {
-                  window.location.href = 'pendente.html';
-                } else if (r.data.status === 'bloqueado' || r.data.status === 'recusado') {
-                  showAlert('Seu acesso está bloqueado. Fale com o suporte.', 'error');
-                  sbPartner.auth.signOut();
-                  btn.classList.remove('btn-loading');
-                  btn.textContent = 'Acessar Portal';
-                } else {
-                  window.location.href = 'index.html';
-                }
-              });
+        sbPartner.storage
+          .from(PARTNER_CFG.AVATAR_BUCKET)
+          .upload(parceiroAtual.user_id + '/avatar.jpg', novoAvatarFile, { upsert: true, contentType: novoAvatarFile.type })
+          .then(function (upRes) {
+            if (upRes.error) throw upRes.error;
+            var novaUrl = partnerAvatarUrl(parceiroAtual.user_id, true);
+            return sbPartner.from('parceiros').update({ avatar_url: novaUrl }).eq('id', parceiroAtual.id);
+          })
+          .then(function () {
+            showAlert('Foto atualizada com sucesso!', 'success');
+            btn.classList.add('hidden');
+            btn.classList.remove('btn-loading');
+            btn.textContent = 'Salvar Nova Foto';
+
+            var novaUrl = partnerAvatarUrl(parceiroAtual.user_id, true);
+            document.querySelectorAll('[data-partner-avatar]').forEach(function(el) {
+              el.style.backgroundImage = 'url(' + novaUrl + ')';
+            });
+          })
+          .catch(function (err) {
+            console.error('[432UP Partner] Erro ao salvar avatar:', err);
+            showAlert('Erro ao salvar a foto. Tente novamente.', 'error');
+            btn.classList.remove('btn-loading');
+            btn.textContent = 'Salvar Nova Foto';
           });
       });
 
-      document.getElementById('linkEsqueceu').addEventListener('click', function (e) {
+      /* ── Dados Cadastrais ── */
+      document.getElementById('dadosForm').addEventListener('submit', function (e) {
         e.preventDefault();
-        var email = document.getElementById('fEmail').value.trim();
-        if (!email) {
-          showAlert('Digite seu e-mail no campo acima primeiro, depois clique em "Esqueceu?" novamente.', 'error');
-          document.getElementById('fEmail').focus();
-          return;
-        }
-        sbPartner.auth.resetPasswordForEmail(email, {
-          redirectTo: window.location.origin + window.location.pathname.replace('login.html', 'redefinir-senha.html')
-        }).then(function (res) {
+        var btn = document.getElementById('btnSalvarDados');
+        btn.classList.add('btn-loading');
+        btn.textContent = 'Salvando...';
+
+        var novoNome = document.getElementById('fNome').value.trim();
+
+        sbPartner.from('parceiros').update({
+          nome_completo: novoNome,
+          empresa: document.getElementById('fEmpresa').value.trim(),
+          whatsapp: document.getElementById('fWhatsapp').value.replace(/\D/g, ''),
+          perfil: document.getElementById('fPerfil').value
+        }).eq('id', parceiroAtual.id).then(function (res) {
+          btn.classList.remove('btn-loading');
+          btn.textContent = 'Salvar Alterações';
           if (res.error) {
-            showAlert('Erro ao enviar e-mail de recuperação: ' + res.error.message, 'error');
+            showAlert('Erro ao salvar: ' + res.error.message, 'error');
           } else {
-            showAlert('Enviamos um link de recuperação para ' + email + '. Verifique sua caixa de entrada (e o spam).', 'success');
+            showAlert('Dados atualizados com sucesso!', 'success');
+            
+            document.querySelectorAll('[data-partner-nome]').forEach(function(el) {
+              el.textContent = novoNome;
+            });
           }
+        }).catch(function (err) {
+          btn.classList.remove('btn-loading');
+          btn.textContent = 'Salvar Alterações';
+          showAlert('Erro inesperado ao salvar os dados.', 'error');
+        });
+      });
+
+      /* ── Senha ── */
+      document.getElementById('senhaForm').addEventListener('submit', function (e) {
+        e.preventDefault();
+        var s1 = document.getElementById('fSenha1').value;
+        var s2 = document.getElementById('fSenha2').value;
+
+        if (!s1 || !s2) { showAlert('Preencha os dois campos de senha.', 'error'); return; }
+        if (s1 !== s2) { showAlert('As senhas não coincidem.', 'error'); return; }
+        if (s1.length < 8) { showAlert('A senha precisa ter no mínimo 8 caracteres.', 'error'); return; }
+
+        var btn = document.getElementById('btnSalvarSenha');
+        btn.classList.add('btn-loading');
+        btn.textContent = 'Atualizando...';
+
+        sbPartner.auth.updateUser({ password: s1 }).then(function (res) {
+          btn.classList.remove('btn-loading');
+          btn.textContent = 'Atualizar Senha';
+          if (res.error) {
+            showAlert('Erro ao atualizar senha: ' + res.error.message, 'error');
+          } else {
+            showAlert('Senha atualizada com sucesso!', 'success');
+            document.getElementById('senhaForm').reset();
+          }
+        }).catch(function (err) {
+          btn.classList.remove('btn-loading');
+          btn.textContent = 'Atualizar Senha';
+          showAlert('Erro inesperado ao atualizar senha.', 'error');
         });
       });
     })();

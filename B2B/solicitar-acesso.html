@@ -175,12 +175,19 @@
         btn.classList.add('btn-loading');
         btn.textContent = 'Enviando...';
 
-        /* 1) cria o usuário de autenticação */
+        /* 1) cria o usuário enviando os metadados para o trigger do banco lidar com o insert */
         sbPartner.auth.signUp({
           email: email,
           password: senha1,
           options: {
-            emailRedirectTo: window.location.origin + window.location.pathname.replace('solicitar-acesso.html', 'login.html?confirmado=1')
+            emailRedirectTo: window.location.origin + window.location.pathname.replace('solicitar-acesso.html', 'login.html?confirmado=1'),
+            data: {
+              origem: 'b2b_partner',
+              nome_completo: nome,
+              empresa: empresa,
+              whatsapp: whatsapp,
+              perfil: perfil
+            }
           }
         }).then(function (authRes) {
           if (authRes.error) {
@@ -195,42 +202,24 @@
 
           var userId = authRes.data.user ? authRes.data.user.id : null;
 
-          /* 2) cria o registro em parceiros, status pendente */
-          return sbPartner.from('parceiros').insert({
-            user_id: userId,
-            nome_completo: nome,
-            empresa: empresa,
-            email: email,
-            whatsapp: whatsapp,
-            perfil: perfil,
-            status: 'pendente'
-          }).then(function (insRes) {
-            if (insRes.error) {
-              showAlert('Conta criada, mas houve um erro ao salvar seu cadastro: ' + insRes.error.message + '. Fale com o suporte.', 'error');
-              btn.classList.remove('btn-loading');
-              btn.textContent = 'Enviar Solicitação B2B';
-              return Promise.reject('insert error');
-            }
-
-            /* 3) se tem foto, sobe pro storage (não bloqueia o fluxo se falhar) */
-            if (avatarFile && userId) {
-              return sbPartner.storage
-                .from(PARTNER_CFG.AVATAR_BUCKET)
-                .upload(userId + '/avatar.jpg', avatarFile, { upsert: true, contentType: avatarFile.type })
-                .then(function () {
-                  return sbPartner.from('parceiros')
-                    .update({ avatar_url: partnerAvatarUrl(userId) })
-                    .eq('user_id', userId);
-                })
-                .catch(function (err) {
-                  console.warn('[432UP Partner] Upload de avatar falhou, seguindo sem foto:', err);
-                });
-            }
-          });
+          /* 2) se enviou foto, faz upload no storage */
+          if (avatarFile && userId) {
+            return sbPartner.storage
+              .from(PARTNER_CFG.AVATAR_BUCKET)
+              .upload(userId + '/avatar.jpg', avatarFile, { upsert: true, contentType: avatarFile.type })
+              .then(function () {
+                return sbPartner.from('parceiros')
+                  .update({ avatar_url: partnerAvatarUrl(userId) })
+                  .eq('user_id', userId);
+              })
+              .catch(function (err) {
+                console.warn('[432UP Partner] Upload de avatar falhou, seguindo sem foto:', err);
+              });
+          }
         }).then(function () {
           window.location.href = 'pendente.html';
         }).catch(function (err) {
-          if (err !== 'auth error' && err !== 'insert error') {
+          if (err !== 'auth error') {
             console.error('[432UP Partner] Erro inesperado no cadastro:', err);
           }
         });
@@ -238,50 +227,47 @@
     })();
   </script>
 
-<!-- INTEGRAÇÃO TELEGRAM: NOVO PARCEIRO B2B -->
-<script>
-(function() {
-  const TELEGRAM_BOT_TOKEN = '8835958314:AAFGe18Mxm7Z_P_GIRPPRzv8cUWb17mHX00';
-  const TELEGRAM_CHAT_ID = '8996965457';
+  <!-- INTEGRAÇÃO TELEGRAM: NOVO PARCEIRO B2B -->
+  <script>
+  (function() {
+    const TELEGRAM_BOT_TOKEN = '8835958314:AAFGe18Mxm7Z_P_GIRPPRzv8cUWb17mHX00';
+    const TELEGRAM_CHAT_ID = '8996965457';
 
-  async function enviarNotificacaoTelegram(texto) {
-    try {
-      await fetch(`https://api.telegram.org/bot${TELEGRAM_BOT_TOKEN}/sendMessage`, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          chat_id: TELEGRAM_CHAT_ID,
-          text: texto,
-          parse_mode: 'HTML'
-        })
-      });
-    } catch (e) {
-      console.error('Erro ao enviar alerta ao Telegram:', e);
+    async function enviarNotificacaoTelegram(texto) {
+      try {
+        await fetch(`https://api.telegram.org/bot${TELEGRAM_BOT_TOKEN}/sendMessage`, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            chat_id: TELEGRAM_CHAT_ID,
+            text: texto,
+            parse_mode: 'HTML'
+          })
+        });
+      } catch (e) {
+        console.error('Erro ao enviar alerta ao Telegram:', e);
+      }
     }
-  }
 
-  const formCadastro = document.getElementById('cadastroForm');
-  if (formCadastro) {
-    formCadastro.addEventListener('submit', function() {
-      const nome = document.getElementById('fNome')?.value.trim() || 'Não informado';
-      const email = document.getElementById('fEmail')?.value.trim() || '';
-      const whatsapp = document.getElementById('fWhatsapp')?.value.trim() || '';
-      const contato = whatsapp || email || 'Não informado';
+    const formCadastro = document.getElementById('cadastroForm');
+    if (formCadastro) {
+      formCadastro.addEventListener('submit', function() {
+        const nome = document.getElementById('fNome')?.value.trim() || 'Não informado';
+        const email = document.getElementById('fEmail')?.value.trim() || '';
+        const whatsapp = document.getElementById('fWhatsapp')?.value.trim() || '';
+        const contato = whatsapp || email || 'Não informado';
 
-      const mensagem = 
-`👤 <b>NOVO CADASTRO B2B</b>
-Nome: ${nome}
-Contato: ${contato}
-🟡 Pendente de aprovação`;
+        const mensagem = 
+  `👤 <b>NOVO CADASTRO B2B</b>
+  Nome: ${nome}
+  Contato: ${contato}
+  🟡 Pendente de aprovação`;
 
-      enviarNotificacaoTelegram(mensagem);
-    });
-  }
-})();
-</script>
-
-
-
+        enviarNotificacaoTelegram(mensagem);
+      });
+    }
+  })();
+  </script>
 
 </body>
 </html>
