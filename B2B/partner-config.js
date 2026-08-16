@@ -1,4 +1,4 @@
-/* ========== partner-config.js · 432UP Partner · v1.1 · 2026-08-15 ========== */
+/* ========== partner-config.js · 432UP Partner · v1.2.1 · 2026-08-16 ========== */
 /* Cliente Supabase único do painel B2B. Inclua este script ANTES de
    qualquer outro script de página (login.js, cadastro.js, admin.js etc).
    Depende do CDN @supabase/supabase-js@2 já carregado antes dele. */
@@ -50,11 +50,22 @@ function partnerRequireAuth(opts) {
           window.location.href = 'login.html?erro=acesso_negado';
           return Promise.reject('acesso negado');
         }
+
+        /* TRAVA DE SEGURANÇA: Se a página exigir nível 'admin', bloqueia se for apenas 'partner' */
+        if (opts.requireAdmin) {
+          var isAdmin = parceiro.role === 'admin' || parceiro.is_admin === true;
+          if (!isAdmin) {
+            console.warn('[432UP Partner] Acesso negado: Requer perfil Master Admin.');
+            window.location.href = '../index.html';
+            return Promise.reject('requer admin');
+          }
+        }
+
         return parceiro;
       });
   }).catch(function (err) {
     console.error('[432UP Partner] Erro na verificação de auth:', err);
-    if (err !== 'sem sessão' && err !== 'pendente de aprovação' && err !== 'acesso negado') {
+    if (err !== 'sem sessão' && err !== 'pendente de aprovação' && err !== 'acesso negado' && err !== 'requer admin') {
       window.location.href = 'login.html';
     }
     return Promise.reject(err);
@@ -68,15 +79,17 @@ function partnerLogout() {
   });
 }
 
-/* ── Helper: preenche nome + avatar na sidebar ── */
+/* ── Helper: preenche nome + avatar na sidebar e gerencia menus do Admin (BLINDADO) ── */
 function partnerFillSidebar(parceiro) {
   if (!parceiro) return;
 
+  /* 1. Nome */
   var nomeEl = document.querySelector('[data-partner-nome]');
   if (nomeEl && parceiro.nome_completo) {
     nomeEl.textContent = parceiro.nome_completo.split(' ')[0];
   }
 
+  /* 2. Avatar */
   var avatarEls = document.querySelectorAll('[data-partner-avatar]');
   var urlAvatar = parceiro.avatar_url || partnerAvatarUrl(parceiro.user_id, true);
 
@@ -87,6 +100,23 @@ function partnerFillSidebar(parceiro) {
       } else {
         el.style.backgroundImage = 'url(' + urlAvatar + ')';
       }
+    }
+  });
+
+  /* 3. Controle Centralizado de Exibição do Master Admin no Menu */
+  var isAdmin = parceiro.role === 'admin' || parceiro.is_admin === true;
+  
+  var elAdminDesk = document.getElementById('navAdminLinkContainer') || document.querySelector('[data-admin-menu-desk]');
+  var elAdminMob = document.getElementById('navAdminLinkContainerMobile') || document.querySelector('[data-admin-menu-mob]');
+
+  [elAdminDesk, elAdminMob].forEach(function(el) {
+    if (!el) return;
+    if (isAdmin) {
+      el.style.setProperty('display', 'inline-flex', 'important');
+      el.classList.remove('hidden');
+    } else {
+      el.style.setProperty('display', 'none', 'important');
+      el.classList.add('hidden');
     }
   });
 }
