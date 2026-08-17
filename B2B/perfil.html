@@ -195,7 +195,7 @@
           </div>
           <div class="flex-1 space-y-2.5 w-full text-center sm:text-left flex flex-col justify-center">
             <input type="file" id="fAvatar" accept="image/png,image/jpeg,image/webp" class="w-full text-xs text-slate-300 file:mr-3 file:py-2 file:px-3 file:rounded-lg file:border-0 file:text-xs file:font-semibold file:bg-cyan-500/20 file:text-cyan-300 hover:file:bg-cyan-500/30 transition cursor-pointer">
-            <p class="text-[11px] text-slate-400">JPG, PNG ou WEBP · máximo 5MB. Aparece no header e no seu perfil.</p>
+            <p class="text-[11px] text-slate-400">Sua foto será otimizada automaticamente para o carregamento rápido do painel.</p>
             <button id="btnSalvarAvatar" class="hidden self-start px-4 py-2 rounded-lg bg-cyan-500 hover:bg-cyan-400 text-slate-950 text-xs font-bold transition shadow-[0_0_10px_rgba(0,240,255,0.2)]">Salvar Nova Foto</button>
           </div>
         </div>
@@ -358,23 +358,61 @@
         if (btnMob) btnMob.addEventListener('click', partnerLogout);
       }
 
-      /* ── Troca de Foto ── */
+      /* ── Troca de Foto (Com Compressão Automática JPEG) ── */
       document.getElementById('fAvatar').addEventListener('change', function (e) {
         var file = e.target.files[0];
         if (!file) return;
-        if (file.size > 5 * 1024 * 1024) {
-          showAlert('A foto precisa ter no máximo 5MB.', 'error');
+
+        if (file.size > 10 * 1024 * 1024) {
+          showAlert('A foto é muito pesada (máximo 10MB).', 'error');
           e.target.value = '';
           return;
         }
-        novoAvatarFile = file;
+
         var reader = new FileReader();
         reader.onload = function (ev) {
-          document.getElementById('avatarPlaceholder').style.display = 'none';
-          document.getElementById('avatarPreview').style.backgroundImage = 'url(' + ev.target.result + ')';
+          var img = new Image();
+          img.onload = function() {
+            var canvas = document.createElement('canvas');
+            var MAX_WIDTH = 400;
+            var MAX_HEIGHT = 400;
+            var width = img.width;
+            var height = img.height;
+
+            if (width > height) {
+              if (width > MAX_WIDTH) {
+                height *= MAX_WIDTH / width;
+                width = MAX_WIDTH;
+              }
+            } else {
+              if (height > MAX_HEIGHT) {
+                width *= MAX_HEIGHT / height;
+                height = MAX_HEIGHT;
+              }
+            }
+
+            canvas.width = width;
+            canvas.height = height;
+            var ctx = canvas.getContext('2d');
+            ctx.drawImage(img, 0, 0, width, height);
+
+            // Ajustado para JPEG com 80% de qualidade para bater exato com o seu Supabase
+            canvas.toBlob(function(blob) {
+              novoAvatarFile = new File([blob], "avatar.jpg", {
+                type: "image/jpeg",
+                lastModified: Date.now()
+              });
+
+              var compressedUrl = URL.createObjectURL(blob);
+              document.getElementById('avatarPlaceholder').style.display = 'none';
+              document.getElementById('avatarPreview').style.backgroundImage = 'url(' + compressedUrl + ')';
+              
+              document.getElementById('btnSalvarAvatar').classList.remove('hidden');
+            }, 'image/jpeg', 0.8); 
+          };
+          img.src = ev.target.result;
         };
         reader.readAsDataURL(file);
-        document.getElementById('btnSalvarAvatar').classList.remove('hidden');
       });
 
       document.getElementById('btnSalvarAvatar').addEventListener('click', function () {
