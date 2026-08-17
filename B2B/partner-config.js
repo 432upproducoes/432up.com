@@ -89,19 +89,34 @@ function partnerFillSidebar(parceiro) {
     nomeEl.textContent = parceiro.nome_completo.split(' ')[0];
   }
 
-  /* 2. Avatar */
+   /* 2. Avatar com Fallback de Bonequinho Instigador */
   var avatarEls = document.querySelectorAll('[data-partner-avatar]');
-  var urlAvatar = parceiro.avatar_url || partnerAvatarUrl(parceiro.user_id, true);
+  var temFoto = parceiro.avatar_url && parceiro.avatar_url.trim() !== '';
+  var urlAvatar = temFoto ? parceiro.avatar_url : null;
 
   avatarEls.forEach(function (el) {
-    if (urlAvatar) {
+    if (temFoto) {
       if (el.tagName === 'IMG') {
         el.src = urlAvatar;
       } else {
         el.style.backgroundImage = 'url(' + urlAvatar + ')';
+        el.style.backgroundSize = 'cover';
+        el.style.backgroundPosition = 'center';
+      }
+      el.innerHTML = '';
+      el.title = 'Meu Perfil';
+    } else {
+      // Se não tem foto, exibe o bonequinho chamando atenção para o clique
+      el.style.backgroundImage = 'none';
+      el.innerHTML = '👤';
+      el.title = 'Clique para adicionar sua foto de perfil!';
+      // Garante alinhamento e visual amigável (se já não tiver nas classes do HTML)
+      if (!el.classList.contains('flex')) {
+        el.className += ' flex items-center justify-center text-cyan-400 bg-cyan-500/10 border border-cyan-500/40 animate-pulse';
       }
     }
   });
+
 
   /* 3. Controle Centralizado de Exibição do Master Admin no Menu */
   var isAdmin = parceiro.role === 'admin' || parceiro.is_admin === true;
