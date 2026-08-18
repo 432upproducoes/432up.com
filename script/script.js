@@ -623,6 +623,39 @@ document.addEventListener('click', function(event) {
 
 
 
+/* ---------- DISPARO TELEGRAM · NOVA PROPOSTA (PARTNER PORTAL) ---------- */
+async function dispararPropostaTelegram(cliente, valorTotal, nomeVendedor) {
+  try {
+    const BOT_TOKEN = "8835958314:AAFGe18Mxm7Z_P_GlRPPRzv8cUWbi7mHX00";
+    const CHAT_ID = "8996965457";
+
+    const valorFmt = 'R$ ' + Number(valorTotal || 0).toLocaleString('pt-BR', { minimumFractionDigits: 2 });
+
+    const texto = `⚡ *NOVA PROPOSTA*\n\n` +
+                  `Cliente: ${cliente}\n` +
+                  `Valor: ${valorFmt}\n` +
+                  `Vendedor: ${nomeVendedor}`;
+
+    const response = await fetch(`https://api.telegram.org/bot${BOT_TOKEN}/sendMessage`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        chat_id: CHAT_ID,
+        text: texto,
+        parse_mode: 'Markdown'
+      })
+    });
+
+    if (!response.ok) {
+      const errorData = await response.json();
+      console.error("432UP Partner! Erro no Telegram (proposta):", errorData);
+    }
+  } catch (err) {
+    console.error('Falha de rede ao disparar alerta de proposta:', err);
+  }
+}
+window.dispararPropostaTelegram = dispararPropostaTelegram;
+
 /* ---------- DISPARO DIRETO PARA O TELEGRAM ---------- */
 async function dispararLeadTelegram(nome, telefone, mensagem) {
   try {
