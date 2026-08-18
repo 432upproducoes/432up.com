@@ -1,33 +1,50 @@
 export async function onRequest(context) {
   const { env, request } = context;
 
+  // Trata requisição Preflight (CORS)
+  if (request.method === "OPTIONS") {
+    return new Response(null, {
+      status: 204,
+      headers: {
+        "Access-Control-Allow-Origin": "*",
+        "Access-Control-Allow-Methods": "GET, POST, OPTIONS",
+        "Access-Control-Allow-Headers": "Content-Type",
+      },
+    });
+  }
+
   // 1. Verifica se a variável de ambiente existe
   if (!env.GOOGLE_SERVICE_ACCOUNT) {
     return new Response(
-      JSON.stringify({ error: "Variável GOOGLE_SERVICE_ACCOUNT não configurada." }),
-      { status: 500, headers: { "Content-Type": "application/json" } }
+      JSON.stringify({ error: "Variável GOOGLE_SERVICE_ACCOUNT não configurada no Cloudflare." }),
+      { status: 500, headers: { "Content-Type": "application/json", "Access-Control-Allow-Origin": "*" } }
     );
   }
 
   try {
     // Parse das credenciais JSON salvas no Cloudflare
-    const credentials = JSON.parse(env.GOOGLE_SERVICE_ACCOUNT);
+    const credentials = typeof env.GOOGLE_SERVICE_ACCOUNT === "string" 
+      ? JSON.parse(env.GOOGLE_SERVICE_ACCOUNT) 
+      : env.GOOGLE_SERVICE_ACCOUNT;
 
-    // 2. Extrai parâmetros da requisição (ex: siteUrl, startDate, endDate)
+    // 2. Extrai parâmetros da requisição
     const url = new URL(request.url);
-    const siteUrl = url.searchParams.get("siteUrl");
-
-    if (!siteUrl) {
-      return new Response(
-        JSON.stringify({ error: "Parâmetro siteUrl é obrigatório." }),
-        { status: 400, headers: { "Content-Type": "application/json" } }
-      );
-    }
+    // IMPORTANTE: propriedade no Search Console é do tipo "prefixo de URL" (cadeado),
+    // então o siteUrl precisa ser a URL completa, não "sc-domain:...".
+    // Travado em festanocondominio.com.br conforme confirmado — pode ser
+    // sobrescrito via querystring ?siteUrl= se precisar consultar outro site depois.
+    const siteUrl = url.searchParams.get("siteUrl") || "https://432up.com/";
+    const startDate = url.searchParams.get("startDate") || defaultStartDate();
+    const endDate = url.searchParams.get("endDate") || new Date().toISOString().split("T")[0];
 
     // 3. Obter Access Token usando as credenciais da Service Account
     const accessToken = await getGoogleAccessToken(credentials);
 
     // 4. Faz a requisição para a API do Search Console
+    // CORREÇÃO: dimensions apenas "query" — antes vinha ["date","query","page"],
+    // o que fazia o Google devolver uma linha por combinação de data+termo+página,
+    // fazendo o mesmo termo aparecer repetido dezenas de vezes e a tabela do
+    // dashboard ler a coluna errada como se fosse o termo pesquisado.
     const gscResponse = await fetch(
       `https://www.googleapis.com/webmasters/v3/sites/${encodeURIComponent(siteUrl)}/searchAnalytics/query`,
       {
@@ -37,15 +54,27 @@ export async function onRequest(context) {
           "Content-Type": "application/json",
         },
         body: JSON.stringify({
-          startDate: url.searchParams.get("startDate") || "2026-01-01",
-          endDate: url.searchParams.get("endDate") || "2026-08-18",
-          dimensions: ["date", "query", "page"],
+          startDate: startDate,
+          endDate: endDate,
+          dimensions: ["query"],
           rowLimit: 100,
         }),
       }
     );
 
     const data = await gscResponse.json();
+
+    if (!gscResponse.ok) {
+      // Repassa o erro real do Google (ex: propriedade não verificada, sem permissão, etc)
+      return new Response(JSON.stringify({
+        error: "Google Search Console retornou erro",
+        status: gscResponse.status,
+        details: data
+      }), {
+        status: gscResponse.status,
+        headers: { "Content-Type": "application/json", "Access-Control-Allow-Origin": "*" }
+      });
+    }
 
     return new Response(JSON.stringify(data), {
       status: gscResponse.status,
@@ -56,13 +85,19 @@ export async function onRequest(context) {
     });
   } catch (err) {
     return new Response(
-      JSON.stringify({ error: "Erro interno", details: err.message }),
-      { status: 500, headers: { "Content-Type": "application/json" } }
+      JSON.stringify({ error: "Erro interno no worker", details: err.message }),
+      { status: 500, headers: { "Content-Type": "application/json", "Access-Control-Allow-Origin": "*" } }
     );
   }
 }
 
-// Função auxiliar para gerar JWT e obter token de acesso do Google
+function defaultStartDate() {
+  const d = new Date();
+  d.setDate(d.getDate() - 30);
+  return d.toISOString().split("T")[0];
+}
+
+// Gerar JWT e obter token de acesso do Google
 async function getGoogleAccessToken(credentials) {
   const header = { alg: "RS256", typ: "JWT" };
   const now = Math.floor(Date.now() / 1000);
@@ -78,7 +113,10 @@ async function getGoogleAccessToken(credentials) {
   const base64UrlClaimSet = base64UrlEncode(JSON.stringify(claimSet));
   const signatureInput = `${base64UrlHeader}.${base64UrlClaimSet}`;
 
-  const signature = await signRS256(signatureInput, credentials.private_key);
+  // Corrige formatação da chave privada (substitui \n literais por quebras reais)
+  const formattedPrivateKey = credentials.private_key.replace(/\\n/g, "\n");
+  
+  const signature = await signRS256(signatureInput, formattedPrivateKey);
   const jwt = `${signatureInput}.${signature}`;
 
   const tokenResponse = await fetch("https://oauth2.googleapis.com/token", {
@@ -91,6 +129,11 @@ async function getGoogleAccessToken(credentials) {
   });
 
   const tokenData = await tokenResponse.json();
+  
+  if (!tokenData.access_token) {
+    throw new Error(tokenData.error_description || tokenData.error || "Falha ao obter token no Google");
+  }
+
   return tokenData.access_token;
 }
 
@@ -104,6 +147,7 @@ function base64UrlEncode(str) {
 async function signRS256(message, privateKeyPem) {
   const pemHeader = "-----BEGIN PRIVATE KEY-----";
   const pemFooter = "-----END PRIVATE KEY-----";
+  
   const pemContents = privateKeyPem
     .replace(pemHeader, "")
     .replace(pemFooter, "")
