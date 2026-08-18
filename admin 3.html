@@ -1,0 +1,638 @@
+<!DOCTYPE html>
+<html lang="pt-BR" data-theme="dark">
+<head>
+  <script async src="https://www.googletagmanager.com/gtag/js?id=G-7SWNCP1NV6"></script>
+  <script>
+    window.dataLayer = window.dataLayer || [];
+    function gtag(){dataLayer.push(arguments);}
+    gtag('js', new Date());
+    gtag('config', 'G-7SWNCP1NV6');
+  </script>
+
+  <!-- Biblioteca para Drag and Drop -->
+  <script src="https://cdn.jsdelivr.net/npm/sortablejs@latest/Sortable.min.js"></script>
+
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
+  <meta name="robots" content="noindex, nofollow">
+  <meta name="theme-color" content="#08080A">
+  <meta name="apple-mobile-web-app-capable" content="yes">
+  <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+
+  <link rel="canonical" href="https://www.432up.com/admin.html">
+  <link class="js-site-favicon" rel="icon" type="image/png" href="imagens/favicon.png">
+  <title>Painel Admin - Simulador & Gestão | 432UP! Produções</title>
+
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&display=swap" rel="stylesheet">
+
+  <script src="https://unpkg.com/@supabase/supabase-js@2"></script>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/html2pdf.js/0.10.1/html2pdf.bundle.min.js"></script>
+  <link rel="stylesheet" href="css/style.css">
+
+  <style>
+    /* ================================================================
+       OVERLAY E CARD DE AUTHENTICAÇÃO (GLASSMORPHISM DARK)
+       ================================================================ */
+    #auth-overlay-admin {
+      position: fixed; inset: 0; z-index: 99999;
+      background: rgba(8, 8, 10, 0.94);
+      backdrop-filter: blur(20px); -webkit-backdrop-filter: blur(20px);
+      display: flex; align-items: center; justify-content: center; padding: 20px;
+    }
+    .auth-card-admin {
+      width: 100%; max-width: 420px;
+      background: linear-gradient(135deg, rgba(14,14,22,0.95), rgba(10,10,16,0.9));
+      border: 1px solid rgba(0,255,102,0.25);
+      border-radius: 24px; padding: 36px; text-align: center;
+      box-shadow: 0 25px 60px rgba(0,0,0,0.85), 0 0 30px rgba(0,255,102,0.12);
+    }
+    .auth-card-admin h2 { font-size: 1.4rem; font-weight: 800; margin-bottom: 6px; color: #fff; }
+    .auth-card-admin p { font-size: 0.82rem; color: rgba(255,255,255,0.55); margin-bottom: 24px; }
+    .adm-field-admin { text-align: left; margin-bottom: 16px; }
+    .adm-field-admin label {
+      display: block; font-size: 0.72rem; font-weight: 700; text-transform: uppercase;
+      letter-spacing: 0.8px; color: #00FF66; margin-bottom: 6px;
+    }
+    .adm-input-admin {
+      width: 100%; background: rgba(255,255,255,0.05);
+      border: 1px solid rgba(0,255,102,0.25);
+      padding: 12px 14px; border-radius: 12px; color: #fff; font-size: 0.88rem;
+      outline: none; box-sizing: border-box; transition: all 0.2s ease;
+    }
+    .adm-input-admin:focus { border-color: #00FF66; box-shadow: 0 0 12px rgba(0,255,102,0.3); }
+    .btn-adm-primary-admin {
+      width: 100%; padding: 12px 20px; margin-top: 4px;
+      background: rgba(10,10,16,0.85); border: 1px solid #00FF66;
+      border-radius: 20px; color: #00FF66; font-weight: 700; font-size: 0.9rem; cursor: pointer;
+      transition: all 0.2s ease;
+    }
+    .btn-adm-primary-admin:hover { background: #00FF66; color: #000; box-shadow: 0 0 25px rgba(0,255,102,0.5); }
+    .btn-adm-primary-admin:disabled { opacity: 0.5; cursor: not-allowed; }
+    .auth-error-admin { color: #FF4D4D; font-size: 0.78rem; margin-top: 10px; display: none; }
+
+    #painel-conteudo-admin { display: none; }
+
+    .btn-logout-top {
+      background: rgba(255, 77, 77, 0.15);
+      border: 1px solid rgba(255, 77, 77, 0.4);
+      color: #FF4D4D;
+      padding: 4px 10px;
+      border-radius: 8px;
+      font-size: 0.72rem;
+      font-weight: 700;
+      cursor: pointer;
+      margin-left: 10px;
+      transition: all 0.2s ease;
+    }
+    .btn-logout-top:hover { background: #FF4D4D; color: #FFF; }
+
+    /* ================================================================
+       ESTILOS ESCOPADOS ABAS GALERIA & LEADS
+       ================================================================ */
+    #tab-galeria .field,
+    #tab-leads .field {
+      display: flex; flex-direction: column; gap: 6px; margin-bottom: 14px;
+    }
+    #tab-galeria .field label,
+    #tab-leads .field label {
+      font-size: 0.75rem; text-transform: uppercase; letter-spacing: 0.5px; color: var(--text-muted); font-weight: 600;
+    }
+    #tab-galeria .field-row,
+    #tab-leads .field-row {
+      display: grid; grid-template-columns: 1fr 1fr; gap: 12px;
+    }
+    @media (max-width: 576px) {
+      #tab-galeria .field-row, #tab-leads .field-row { grid-template-columns: 1fr; }
+    }
+
+    #tab-galeria .admin-input, #tab-galeria .admin-select, #tab-galeria textarea,
+    #tab-leads .admin-input, #tab-leads .admin-select, #tab-leads textarea {
+      width: 100%; background: rgba(8, 8, 10, 0.6); border: 1px solid rgba(255, 255, 255, 0.12);
+      border-radius: 12px; padding: 10px 14px; color: #FFF; font-family: var(--font-base); font-size: 0.88rem;
+      outline: none; transition: var(--transition-smooth); box-sizing: border-box;
+    }
+    #tab-galeria .admin-input:focus, #tab-galeria .admin-select:focus, #tab-galeria textarea:focus,
+    #tab-leads .admin-input:focus, #tab-leads .admin-select:focus, #tab-leads textarea:focus {
+      border-color: var(--primary-lime); box-shadow: 0 0 12px rgba(0, 255, 102, 0.2);
+    }
+
+    #tab-galeria .visual-card, #tab-leads .visual-card {
+      background: rgba(14, 14, 22, 0.82); backdrop-filter: blur(24px); -webkit-backdrop-filter: blur(24px);
+      border: 1px solid rgba(0, 255, 102, 0.22); border-radius: 20px; padding: 22px; box-shadow: 0 15px 35px rgba(0, 0, 0, 0.6);
+    }
+    #tab-galeria .visual-card h3, #tab-leads .visual-card h3 {
+      font-size: 1.05rem; font-weight: 700; color: #FFF; margin-bottom: 14px; border-bottom: 1px solid rgba(255, 255, 255, 0.08); padding-bottom: 8px;
+    }
+    #tab-galeria .margin-b-20 { margin-bottom: 20px; }
+
+    #tab-galeria .gal-tipo-wrap { display: flex; gap: 16px; margin: 15px 0; flex-wrap: wrap; }
+    #tab-galeria .gal-tipo-opt { font-size: 0.85rem; cursor: pointer; color: var(--text-main); display: inline-flex; align-items: center; gap: 6px; }
+
+    #tab-galeria .upload-zone {
+      border: 2px dashed rgba(0, 255, 102, 0.3); border-radius: 14px; padding: 24px; text-align: center;
+      color: var(--text-muted); font-size: 0.88rem; cursor: pointer; transition: var(--transition-smooth); margin-bottom: 14px;
+    }
+    #tab-galeria .upload-zone:hover { border-color: var(--primary-lime); background: rgba(0, 255, 102, 0.04); color: #FFF; }
+
+    #tab-galeria .cat-tags { display: flex; flex-wrap: wrap; gap: 10px; }
+    #tab-galeria .cat-tag {
+      background: rgba(255, 255, 255, 0.04); border: 1px solid rgba(255, 255, 255, 0.12); color: #FFF;
+      padding: 6px 12px; border-radius: 20px; font-size: 0.82rem; display: inline-flex; align-items: center; gap: 8px;
+    }
+    #tab-galeria .cat-tag .cat-tag-remove { cursor: pointer; color: rgba(255,255,255,0.5); font-weight: 700; }
+    #tab-galeria .cat-tag .cat-tag-remove:hover { color: var(--danger); }
+
+    #tab-galeria .toggle-wrap, #tab-leads .toggle-wrap { display: flex; align-items: center; gap: 10px; font-size: 0.85rem; color: #FFF; margin-bottom: 10px; }
+    #tab-galeria .toggle, #tab-leads .toggle { position: relative; display: inline-block; width: 38px; height: 20px; flex-shrink: 0; }
+    #tab-galeria .toggle input, #tab-leads .toggle input { opacity: 0; width: 0; height: 0; }
+    #tab-galeria .toggle .track, #tab-leads .toggle .track { position: absolute; inset: 0; background: rgba(255, 255, 255, 0.15); border-radius: 20px; transition: .3s; }
+    #tab-galeria .toggle .thumb, #tab-leads .toggle .thumb { position: absolute; height: 14px; width: 14px; left: 3px; bottom: 3px; background: #FFF; border-radius: 50%; transition: .3s; }
+    #tab-galeria .toggle input:checked + .track, #tab-leads .toggle input:checked + .track { background: var(--primary-lime); }
+    #tab-galeria .toggle input:checked ~ .thumb, #tab-leads .toggle input:checked ~ .thumb { transform: translateX(18px); background: #000; }
+
+    #tab-galeria .btn-accent, #tab-leads .btn-accent {
+      background: var(--primary-lime); color: #000; border: none; padding: 10px 20px; border-radius: 14px;
+      font-weight: 700; font-size: 0.82rem; cursor: pointer; transition: var(--transition-smooth); box-shadow: 0 0 15px rgba(0, 255, 102, 0.3);
+    }
+    #tab-galeria .btn-accent:hover, #tab-leads .btn-accent:hover { transform: translateY(-1px); box-shadow: 0 0 25px rgba(0, 255, 102, 0.6); }
+
+    #tab-galeria .btn-ghost, #tab-leads .btn-ghost {
+      background: rgba(255, 255, 255, 0.04); border: 1px solid rgba(255, 255, 255, 0.15); color: #FFF;
+      padding: 10px 16px; border-radius: 14px; font-size: 0.82rem; font-weight: 600; cursor: pointer; transition: var(--transition-smooth);
+    }
+    #tab-galeria .btn-ghost:hover, #tab-leads .btn-ghost:hover { border-color: var(--primary-lime); color: var(--primary-lime); }
+
+    #tab-leads .btn-danger {
+      background: rgba(255, 77, 77, 0.15); border: 1px solid rgba(255, 77, 77, 0.4); color: var(--danger);
+      padding: 8px 14px; border-radius: 10px; font-size: 0.78rem; font-weight: 600; cursor: pointer; transition: var(--transition-smooth);
+    }
+    #tab-leads .btn-danger:hover { background: var(--danger); color: #FFF; }
+
+    #tab-galeria .btn-sm, #tab-leads .btn-sm { padding: 4px 10px; font-size: 0.72rem; }
+    #tab-galeria .w-100, #tab-leads .w-100 { width: 100%; }
+
+    #tab-galeria .panel-header, #tab-leads .panel-header { display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 12px; }
+    #tab-galeria .panel-header h2, #tab-leads .panel-header h2 { font-size: 1.4rem; font-weight: 700; color: #FFF; }
+    #tab-leads .panel-desc { font-size: 0.85rem; color: var(--text-muted); margin-top: 2px; }
+    #tab-leads .panel-actions { display: flex; gap: 10px; flex-wrap: wrap; }
+
+    #tab-galeria .gal-list-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(240px, 1fr)); gap: 16px; margin-top: 14px; }
+    #tab-galeria .gal-item {
+      background: rgba(0, 0, 0, 0.4); border: 1px solid rgba(255, 255, 255, 0.08); border-radius: 14px;
+      overflow: hidden; padding: 10px; display: flex; flex-direction: column; gap: 8px;
+    }
+    #tab-galeria .gal-item img { width: 100%; aspect-ratio: 4/3; object-fit: cover; border-radius: 8px; }
+    #tab-galeria .gal-item-actions { display: flex; gap: 6px; justify-content: flex-end; }
+    #tab-galeria .gal-item-actions button {
+      background: rgba(255,255,255,0.06); border: 1px solid rgba(255,255,255,0.1); color: #FFF;
+      padding: 4px 8px; border-radius: 6px; cursor: pointer;
+    }
+
+    #tab-leads .leads-filters { display: grid; grid-template-columns: repeat(auto-fit, minmax(180px, 1fr)); gap: 12px; }
+    #tab-leads .leads-summary { font-size: 0.85rem; color: var(--text-muted); }
+    #tab-leads .lead-card { background: rgba(14, 14, 22, 0.7); border: 1px solid rgba(255,255,255,0.08); border-radius: 14px; padding: 14px; margin-bottom: 10px; }
+    #tab-leads .lead-card.selected { border-color: var(--primary-lime); background: rgba(0, 255, 102, 0.04); }
+    #tab-leads .lead-top { display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 6px; margin-bottom: 8px; }
+    #tab-leads .lead-name { font-weight: 700; color: #FFF; font-size: 0.95rem; }
+    #tab-leads .lead-tag {
+      display: inline-block; font-size: 0.7rem; background: rgba(255,255,255,0.06);
+      border: 1px solid rgba(255,255,255,0.1); padding: 2px 8px; border-radius: 10px; margin-right: 6px; color: var(--text-muted);
+    }
+    #tab-leads .lead-tag.wa { border-color: rgba(0,255,102,0.4); color: var(--primary-lime); cursor: pointer; }
+
+    #tab-galeria #toastBox, #tab-leads #toastBox { position: fixed; bottom: 24px; right: 24px; z-index: 100000; display: flex; flex-direction: column; gap: 8px; }
+    #tab-galeria .toast, #tab-leads .toast {
+      padding: 12px 20px; border-radius: 12px; font-size: 0.85rem; font-weight: 600;
+      color: #000; background: var(--primary-lime); box-shadow: 0 10px 25px rgba(0,0,0,0.5);
+    }
+    #tab-galeria .toast.err, #tab-leads .toast.err { background: var(--danger); color: #FFF; }
+  </style>
+</head>
+<body>
+
+  <!-- ================= OVERLAY DE AUTENTICAÇÃO ================= -->
+  <div id="auth-overlay-admin">
+    <div class="auth-card-admin">
+      <h2>Painel Admin 432UP!</h2>
+      <p>Acesse com suas credenciais para gerenciar o sistema</p>
+      <form onsubmit="event.preventDefault(); autenticarAdmin();">
+        <div class="adm-field-admin">
+          <label for="auth-email-admin">E-mail</label>
+          <input type="email" id="auth-email-admin" class="adm-input-admin" placeholder="seu@email.com" required>
+        </div>
+        <div class="adm-field-admin">
+          <label for="auth-pass-admin">Senha</label>
+          <input type="password" id="auth-pass-admin" class="adm-input-admin" placeholder="••••••••" required>
+        </div>
+        <button type="submit" id="btn-login-admin" class="btn-adm-primary-admin">Entrar no Painel</button>
+        <div id="auth-error-admin" class="auth-error-admin"></div>
+      </form>
+    </div>
+  </div>
+
+  <!-- ================= PAINEL DE CONTEÚDO PROTEGIDO ================= -->
+  <div id="painel-conteudo-admin">
+
+    <div class="admin-bar-top">
+      <div class="admin-bar-title">🎧 432UP<span>!</span> Painel de Gestão e Edição Direta (Modo Admin)</div>
+      <div class="admin-status-pill">
+        <span class="admin-status-dot"></span>
+        <span id="admin-sync-text">Sistema Sincronizado</span>
+        <button type="button" class="btn-logout-top" onclick="deslogarAdmin()">Sair 🚪</button>
+      </div>
+    </div>
+
+    <div class="popover-bottom-up" id="new-item-popover">
+      <div style="font-size: 0.82rem; font-weight: 700; color: #00FF66; margin-bottom: 12px; display: flex; justify-content: space-between;">
+        <span>➕ Cadastrar Item / Atração</span>
+        <span style="cursor: pointer; font-size: 1.1rem;" onclick="closeNewItemModal()">&times;</span>
+      </div>
+      <label>Nome do Item / Atração</label>
+      <input type="text" id="new-item-nome" placeholder="ex: Performance de Sax / Som EV">
+      <label>Descrição Curta</label>
+      <input type="text" id="new-item-desc" placeholder="ex: Atração para receptivo">
+      <label>Valor Base de Saída (R$)</label>
+      <input type="text" id="new-item-vbase" placeholder="R$ 1.500,00">
+      <label>Valor por Hora Extra (R$/h)</label>
+      <input type="text" id="new-item-vextra" placeholder="R$ 200,00">
+      <label>Hora Mínima Inclusa (h)</label>
+      <input type="number" id="new-item-hmin" value="2" placeholder="2">
+      <label>Valor a Cobrar por Bloco de Pessoas (R$)</label>
+      <input type="text" id="new-item-vpessoa" placeholder="R$ 400,00">
+      <label>A cada quantas pessoas?</label>
+      <input type="number" id="new-item-acada" value="100" placeholder="100">
+      <button type="button" class="btn-pop-save" onclick="saveNewItemToDatabase()">💾 Cadastrar no Banco</button>
+    </div>
+
+    <div class="scroll-stretcher-pixel"></div>
+    <canvas id="orbit-canvas"></canvas>
+    <div id="plasmaLayer" class="plasma-top-layer"></div>
+
+    <div class="viewport-wrapper">
+      <header id="calc-header">
+        <div class="logo-container">
+          <a href="index.html" class="logo-link" aria-label="Página Inicial 432UP">
+            <img src="imagens/logo.png" alt="432UP! Produções" class="logo-img">
+          </a>
+        </div>
+        <nav class="desktop-nav" id="calc-nav">
+          <a href="index.html">Início</a>
+          <a href="calculadora.html">Simulador de Atmosfera</a>
+          <a href="galeria.html">Portfólio</a>
+          <a id="nav-trigger-modal">Contato</a>
+        </nav>
+        <button class="mobile-hamburger" id="mobile-menu-btn" onclick="toggleMobileMenu()">☰</button>
+      </header>
+
+      <!-- MENU DE ABAS UNIFICADO -->
+      <div style="display: flex; gap: 10px; justify-content: center; margin: 25px auto; flex-wrap: wrap; max-width: 900px;">
+        <button type="button" class="admin-tab-btn active" onclick="switchAdminTab('calculadora', event)" style="background: rgba(0, 255, 102, 0.15); border: 1px solid #00FF66; color: #00FF66; padding: 10px 20px; border-radius: 8px; cursor: pointer; font-weight: 600;">📊 Simulador & Preços</button>
+        <button type="button" class="admin-tab-btn" onclick="switchAdminTab('galeria', event)" style="background: rgba(255, 255, 255, 0.04); border: 1px solid rgba(255,255,255,0.1); color: #fff; padding: 10px 20px; border-radius: 8px; cursor: pointer; font-weight: 600;">📷 Gestão de Galeria</button>
+        <button type="button" class="admin-tab-btn" onclick="switchAdminTab('leads', event)" style="background: rgba(255, 255, 255, 0.04); border: 1px solid rgba(255,255,255,0.1); color: #fff; padding: 10px 20px; border-radius: 8px; cursor: pointer; font-weight: 600;">📥 Leads & Orçamentos</button>
+      </div>
+
+      <main>
+        <!-- ================= ABA 1: CALCULADORA ================= -->
+        <div id="tab-calculadora" class="admin-panel-content" style="display: block;">
+          <section class="hero-center" id="calc-hero">
+            <span class="tagline" contenteditable="true" data-db-item="tagline_hero" data-db-col="nome">ENGENHARIA DE ATMOSFERA & CURATORIA DE LUXO</span>
+            <h1 style="display: flex; justify-content: center; align-items: center; gap: 0.3em; flex-wrap: wrap; margin: 0 auto;">
+              <span contenteditable="true" data-db-item="titulo_hero_parte1" data-db-col="nome" style="color: #FFFFFF !important; text-shadow: none !important;">Simulador de</span>
+              <span contenteditable="true" data-db-item="titulo_hero_parte2" data-db-col="nome" style="color: #00FF66 !important; text-shadow: 0 0 12px rgba(0, 255, 102, 0.6), 0 0 25px rgba(0, 255, 102, 0.3) !important; font-weight: 800;">Atmosfera</span>
+            </h1>
+            <p class="simulator-desc" contenteditable="true" data-db-item="descricao_hero" data-db-col="descricao">Configure a escala do público, o tempo operacional e a assinatura técnica para projetarmos a experiência cênica do seu evento.</p>
+          </section>
+
+          <div class="simulator-layout">
+            <div class="setup-box">
+              <div class="step-section">
+                <div class="step-title"><span class="step-number">1</span><h3 contenteditable="true" data-db-item="step1_title" data-db-col="nome">Escala do Evento (Público)</h3></div>
+                <div class="option-cards" id="group-scale">
+                  <div class="option-card" data-value="small" data-slug="small">
+                    <span class="label" contenteditable="true" data-db-item="small" data-db-col="nome">Intimista</span>
+                    <span class="sub">Até <strong contenteditable="true" data-db-item="small" data-db-col="qtd_pessoas">100</strong> pessoas</span>
+                  </div>
+                  <div class="option-card" data-value="medium" data-slug="medium">
+                    <span class="label" contenteditable="true" data-db-item="medium" data-db-col="nome">Intermediário</span>
+                    <span class="sub"><strong contenteditable="true" data-db-item="medium" data-db-col="qtd_pessoas">250</strong> pessoas</span>
+                  </div>
+                  <div class="option-card" data-value="large" data-slug="large">
+                    <span class="label" contenteditable="true" data-db-item="large" data-db-col="nome">High Scale</span>
+                    <span class="sub">Mais de <strong contenteditable="true" data-db-item="large" data-db-col="qtd_pessoas">500</strong> pessoas</span>
+                  </div>
+                </div>
+              </div>
+
+              <div class="step-section">
+                <div class="step-title"><span class="step-number">2</span><h3 contenteditable="true" data-db-item="step2_title" data-db-col="nome">Cronograma de Performance</h3></div>
+                <div class="option-cards" id="group-hours">
+                  <div class="option-card" data-value="3" data-slug="3">
+                    <span class="label" contenteditable="true" data-db-item="3" data-db-col="nome">Receptivo / Lounge</span>
+                    <span class="sub">Até <strong contenteditable="true" data-db-item="3" data-db-col="qtd_horas">3</strong> horas</span>
+                  </div>
+                  <div class="option-card" data-value="5" data-slug="5">
+                    <span class="label" contenteditable="true" data-db-item="5" data-db-col="nome">Cronograma Padrão</span>
+                    <span class="sub"><strong contenteditable="true" data-db-item="5" data-db-col="qtd_horas">5</strong> horas operacionais</span>
+                  </div>
+                  <div class="option-card" data-value="8" data-slug="8">
+                    <span class="label" contenteditable="true" data-db-item="8" data-db-col="nome">Performance Prolongada</span>
+                    <span class="sub"><strong contenteditable="true" data-db-item="8" data-db-col="qtd_horas">8</strong> horas de operação</span>
+                  </div>
+                </div>
+              </div>
+
+              <div class="step-section">
+                <div class="step-title"><span class="step-number">3</span><h3 contenteditable="true" data-db-item="step3_title" data-db-col="nome">Curadoria de Rider & Cenografia</h3></div>
+                <div class="option-cards" id="group-package">
+                  <div class="option-card" data-value="bronze" data-slug="bronze">
+                    <span class="label" contenteditable="true" data-db-item="bronze" data-db-col="nome">Bronze</span>
+                    <span class="sub" contenteditable="true" data-db-item="bronze" data-db-col="descricao">Fidelidade Compacta</span>
+                    <button type="button" class="btn-add-pkg-item" onclick="togglePkgDropdown(event, 'bronze')">➕ Adicionar Item</button>
+                    <div class="pkg-dropdown-menu" id="dropdown-bronze"></div>
+                    <div class="pkg-selected-list" id="selected-bronze"></div>
+                  </div>
+                  <div class="option-card" data-value="prata" data-slug="prata">
+                    <span class="label" contenteditable="true" data-db-item="prata" data-db-col="nome">Prata</span>
+                    <span class="sub" contenteditable="true" data-db-item="prata" data-db-col="descricao">Pressão Acústica & Luz DMX</span>
+                    <button type="button" class="btn-add-pkg-item" onclick="togglePkgDropdown(event, 'prata')">➕ Adicionar Item</button>
+                    <div class="pkg-dropdown-menu" id="dropdown-prata"></div>
+                    <div class="pkg-selected-list" id="selected-prata"></div>
+                  </div>
+                  <div class="option-card" data-value="ouro" data-slug="ouro">
+                    <span class="label" contenteditable="true" data-db-item="ouro" data-db-col="nome">Ouro AA+</span>
+                    <span class="sub" contenteditable="true" data-db-item="ouro" data-db-col="descricao">High Performance Total</span>
+                    <button type="button" class="btn-add-pkg-item" onclick="togglePkgDropdown(event, 'ouro')">➕ Adicionar Item</button>
+                    <div class="pkg-dropdown-menu" id="dropdown-ouro"></div>
+                    <div class="pkg-selected-list" id="selected-ouro"></div>
+                  </div>
+                </div>
+              </div>
+
+              <div class="step-section" id="step4-container">
+                <div class="step-title step-title-with-action">
+                  <div class="step-title-left">
+                    <span class="step-number">4</span>
+                    <h3 contenteditable="true" data-db-item="step4_title" data-db-col="nome">Complementos de Infraestrutura</h3>
+                  </div>
+                  <div style="display:flex; align-items:center; gap:12px;">
+                    <div class="admin-toggle-wrapper" style="margin:0; padding:0; border:none;" onclick="event.stopPropagation()">
+                      <span style="font-size:0.75rem; color:rgba(255,255,255,0.7); margin-right:6px;">Exibir Seção:</span>
+                      <label class="switch">
+                        <input type="checkbox" id="step4-master-toggle" checked onchange="toggleStep4MasterVisibility(this.checked)">
+                        <span class="slider"></span>
+                      </label>
+                    </div>
+                    <button type="button" class="btn-add-pkg-item" id="btn-toggle-new-item" onclick="toggleNewItemModal(event)">➕ Cadastrar Item</button>
+                  </div>
+                </div>
+                <div class="extra-list" id="dynamic-addons-list"></div>
+              </div>
+            </div>
+
+            <aside class="summary-sidebar" id="sidebar-target">
+              <h4 class="summary-title" contenteditable="true" data-db-item="sidebar_title" data-db-col="nome">Projeto Estimado</h4>
+              <div class="summary-row"><span>Densidade de público:</span><strong id="sum-guests">Selecione ao lado</strong></div>
+              <div class="summary-row"><span>Tempo operacional:</span><strong id="sum-hours">Selecione ao lado</strong></div>
+              <div class="summary-row"><span>Assinatura do Rider:</span><strong id="sum-package">Selecione ao lado</strong></div>
+              <div class="summary-row"><span>Variáveis de palco:</span><strong id="sum-stage-needed">Padrão Plano</strong></div>
+              <div class="summary-details-box">
+                <h5 contenteditable="true" data-db-item="scope_title" data-db-col="nome">Escopo Técnico Incluso</h5>
+                <ul class="summary-details-list" id="sum-service-details"><li>Selecione os parâmetros ao lado</li></ul>
+              </div>
+              <div class="price-block" id="price-card-box">
+                <span class="price-label" contenteditable="true" data-db-item="invest_title" data-db-col="nome">Investimento Estimado</span>
+                <div class="price-value" id="total-price">R$ 0,00</div>
+              </div>
+            </aside>
+          </div>
+        </div>
+
+        <!-- ================= ABA 2: GALERIA ================= -->
+        <div id="tab-galeria" class="admin-panel-content" style="display: none; max-width: 1200px; margin: 0 auto; padding: 20px;">
+          <div id="p-galeria" class="panel" style="background: rgba(12, 12, 18, 0.85); border: 1px solid rgba(255, 255, 255, 0.08); border-radius: 16px; padding: 30px; box-shadow: 0 20px 40px rgba(0,0,0,0.5);">
+            <div class="panel-header" style="margin-bottom: 25px;">
+              <h2 style="color: #fff; font-size: 1.5rem; font-weight: 700;">Galeria de Fotos & Vídeos</h2>
+            </div>
+
+            <div class="gal-btn-section" style="margin-bottom:20px">
+              <div class="field" style="max-width:400px">
+                <label>Texto do botão "Ver galeria" (home)</label>
+                <input id="galBtnTexto" class="admin-input" placeholder="Ver galeria completa →" onchange="saveConfigField('galeria_btn_texto',this.value)">
+              </div>
+            </div>
+
+            <div class="visual-card margin-b-20" style="margin-bottom: 20px;">
+              <h3>Publicar nova mídia</h3>
+              <div class="gal-tipo-wrap">
+                <label class="gal-tipo-opt"><input type="radio" name="galTipo" value="foto" checked onchange="toggleGalTipo()"> 📷 Foto</label>
+                <label class="gal-tipo-opt"><input type="radio" name="galTipo" value="video_yt" onchange="toggleGalTipo()"> ▶ YouTube</label>
+                <label class="gal-tipo-opt"><input type="radio" name="galTipo" value="video_up" onchange="toggleGalTipo()"> 🎥 Vídeo Upload</label>
+              </div>
+
+              <div id="galUploadFoto">
+                <div id="galUploadZone" class="upload-zone" onclick="document.getElementById('galFileInput').click()">
+                  Arraste fotos aqui ou toque para selecionar
+                </div>
+                <input type="file" id="galFileInput" accept="image/*" multiple style="display:none" onchange="handleGalFiles(this.files)">
+              </div>
+
+              <div id="galUploadYt" style="display:none">
+                <div class="field"><label>URL do YouTube</label><input type="url" id="galVideoUrl" class="admin-input" placeholder="https://youtube.com/watch?v=..."></div>
+              </div>
+
+              <div id="galUploadVid" style="display:none">
+                <div id="galUploadZoneVid" class="upload-zone" onclick="document.getElementById('galVidInput').click()">
+                  Arraste vídeo aqui ou toque para selecionar (máx 50MB)
+                </div>
+                <input type="file" id="galVidInput" accept="video/*" style="display:none" onchange="handleGalVidFile(this.files)">
+              </div>
+
+              <div class="gal-fields" style="margin-top: 15px;">
+                <div class="field"><label>Título</label><input id="galTitulo" class="admin-input" placeholder="Nome da mídia"></div>
+                <div class="field-row">
+                  <div class="field"><label>Categoria</label><select id="galCat" class="admin-select"></select></div>
+                  <div class="field"><label>Local</label><input id="galLocal" class="admin-input" placeholder="Ex: Vila Madalena, SP"></div>
+                </div>
+                <div class="field"><label>Descrição</label><input id="galDesc" class="admin-input" placeholder="Descrição curta (opcional)"></div>
+                <div class="toggle-wrap"><label class="toggle"><input type="checkbox" id="galDest"><span class="track"></span><span class="thumb"></span></label><span>Destaque ⭐</span></div>
+                <button type="button" id="btnGalPublicar" onclick="galPublicar()" class="btn-accent w-100" style="margin-top:12px">📤 Publicar Mídia</button>
+              </div>
+            </div>
+
+            <div class="visual-card margin-b-20" style="margin-bottom: 20px;">
+              <h3>Categorias da Galeria</h3>
+              <div id="galCatList" class="cat-tags"></div>
+              <div class="field-row" style="margin-top:12px">
+                <div class="field"><label>Nova categoria</label><input id="galCatNome" class="admin-input" placeholder="Nome"></div>
+                <div class="field" style="max-width:90px"><label>Emoji</label><input id="galCatEmoji" class="admin-input" placeholder="📌" maxlength="4"></div>
+                <button type="button" onclick="galAddCat()" class="btn-ghost" style="align-self:flex-end;margin-bottom:2px">+ Criar</button>
+              </div>
+            </div>
+
+            <div class="visual-card">
+              <h3>Mídias publicadas (<span id="galCount">0</span>)</h3>
+              <div id="galListContainer" class="gal-list-grid"></div>
+            </div>
+          </div>
+        </div>
+
+        <!-- ================= ABA 3: LEADS ================= -->
+        <div id="tab-leads" class="admin-panel-content" style="display: none; max-width: 1200px; margin: 0 auto; padding: 20px;">
+          <div id="p-leads" class="panel" style="background: rgba(12, 12, 18, 0.85); border: 1px solid rgba(255, 255, 255, 0.08); border-radius: 16px; padding: 30px; box-shadow: 0 20px 40px rgba(0,0,0,0.5);">
+            <div class="panel-header" style="margin-bottom: 25px;">
+              <div>
+                <h2 style="color: #fff; font-size: 1.5rem; font-weight: 700;">Gestão de Leads</h2>
+                <p class="panel-desc" style="color: rgba(255,255,255,0.6);">Contatos e orçamentos registrados.</p>
+              </div>
+              <div class="panel-actions">
+                <button type="button" onclick="exportCSV()" class="btn-ghost">📥 Exportar CSV</button>
+                <button type="button" onclick="deleteSelectedLeads()" class="btn-danger" id="btnDeleteLeads" style="display:none">🗑 Excluir selecionados</button>
+              </div>
+            </div>
+
+            <div class="leads-filters" style="background: rgba(255,255,255,0.02); border: 1px solid rgba(255,255,255,0.08); padding: 20px; border-radius: 12px; margin-bottom: 20px;">
+              <div class="field"><label>Busca</label><input id="leadSearch" class="admin-input" placeholder="Nome, WhatsApp ou evento..." oninput="filterLeads()"></div>
+              <div class="field"><label>Status</label>
+                <select id="leadStatusFilter" class="admin-select" onchange="filterLeads()">
+                  <option value="">Todos</option>
+                  <option value="novo">Novo</option>
+                  <option value="em_contato">Em contato</option>
+                  <option value="fechado">Fechado</option>
+                  <option value="perdido">Perdido</option>
+                </select>
+              </div>
+              <div class="field"><label>Origem</label>
+                <select id="leadOrigemFilter" class="admin-select" onchange="filterLeads()">
+                  <option value="">Todas</option>
+                  <option value="landing_contato">Landing</option>
+                  <option value="email_calculadora_overlay">Calculadora email</option>
+                  <option value="calculadora">Calculadora WA</option>
+                </select>
+              </div>
+              <div class="field"><label>Ações em Massa</label>
+                <button type="button" onclick="toggleSelectAll()" class="btn-ghost btn-sm">☑ Marcar Todos</button>
+              </div>
+            </div>
+
+            <div class="leads-summary" style="margin-bottom: 20px;">
+              Total: <b id="leadsTotal">0</b> leads
+              <span id="leadsSelectedCount" style="display:none"> | <b id="leadsSelCount">0</b> selecionados</span>
+            </div>
+
+            <div id="leadsContainer" class="leads-list"></div>
+          </div>
+        </div>
+      </main>
+
+      <footer>
+        <div class="footer-bar" style="justify-content: flex-end;">
+          <div style="opacity: 0.85; text-align: right; font-size: 0.78rem;" contenteditable="true" data-db-item="footer_text" data-db-col="nome">
+            Curadoria Artística & Engenharia Estrutural
+          </div>
+        </div>
+      </footer>
+    </div>
+
+    <div class="price-popover" id="price-popover">
+      <div style="font-size: 0.78rem; font-weight: 700; color: #00FF66; margin-bottom: 10px;">💰 Editar Valor do Item</div>
+      <label>Valor Base Fixo (R$)</label>
+      <input type="text" id="pop-vbase">
+      <label>Valor por Hora Extra (R$/h)</label>
+      <input type="text" id="pop-vhora">
+      <label>Hora Mínima Inclusa (h)</label>
+      <input type="number" id="pop-hmin" value="1">
+      <label>Valor a Cobrar por Bloco (R$)</label>
+      <input type="text" id="pop-vpessoa">
+      <label>A cada quantas pessoas?</label>
+      <input type="number" id="pop-acada" value="100">
+      <button type="button" class="btn-pop-save" onclick="savePriceFromPopover()">💾 Salvar Preço</button>
+    </div>
+
+  </div><!-- /#painel-conteudo-admin -->
+
+  <!-- ================= LÓGICA DE AUTENTICAÇÃO E ABAS ================= -->
+  <script>
+    const SUPABASE_URL_ADM = 'https://paetkspbfejtjjkngqej.supabase.co';
+    const SUPABASE_KEY_ADM = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InBhZXRrc3BiZmVqdGpqa25ncWVqIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzA5MDU2OTgsImV4cCI6MjA4NjQ4MTY5OH0.IiYweZ2g3bP7b0o7VvBW5LLb6d1oHtSNFUZlVkIsdsA';
+    const _supabaseAdmin = supabase.createClient(SUPABASE_URL_ADM, SUPABASE_KEY_ADM);
+
+    document.addEventListener('DOMContentLoaded', () => {
+      // Monitoramento de Sessão Reativo
+      _supabaseAdmin.auth.onAuthStateChange((event, session) => {
+        if (session) {
+          exibirPainel();
+        } else {
+          exibirLogin();
+        }
+      });
+    });
+
+    async function autenticarAdmin() {
+      const emailInput = document.getElementById('auth-email-admin');
+      const passInput = document.getElementById('auth-pass-admin');
+      const btn = document.getElementById('btn-login-admin');
+      const errBox = document.getElementById('auth-error-admin');
+
+      errBox.style.display = 'none';
+      btn.innerText = 'Autenticando...';
+      btn.disabled = true;
+
+      try {
+        const { data, error } = await _supabaseAdmin.auth.signInWithPassword({
+          email: emailInput.value,
+          password: passInput.value
+        });
+
+        if (error) throw error;
+      } catch (error) {
+        errBox.textContent = 'E-mail ou senha incorretos.';
+        errBox.style.display = 'block';
+      } finally {
+        btn.innerText = 'Entrar no Painel';
+        btn.disabled = false;
+      }
+    }
+
+    function exibirPainel() {
+      document.getElementById('auth-overlay-admin').style.display = 'none';
+      document.getElementById('painel-conteudo-admin').style.display = 'block';
+    }
+
+    function exibirLogin() {
+      document.getElementById('auth-overlay-admin').style.display = 'flex';
+      document.getElementById('painel-conteudo-admin').style.display = 'none';
+    }
+
+    async function deslogarAdmin() {
+      await _supabaseAdmin.auth.signOut();
+    }
+
+    function switchAdminTab(tabName, event) {
+      document.querySelectorAll('.admin-panel-content').forEach(el => el.style.display = 'none');
+      document.querySelectorAll('.admin-tab-btn').forEach(el => {
+        el.style.background = 'rgba(255, 255, 255, 0.04)';
+        el.style.borderColor = 'rgba(255,255,255,0.1)';
+        el.style.color = '#fff';
+      });
+
+      const target = document.getElementById('tab-' + tabName);
+      if (target) target.style.display = 'block';
+
+      if (event && event.currentTarget) {
+        event.currentTarget.style.background = 'rgba(0, 255, 102, 0.15)';
+        event.currentTarget.style.borderColor = '#00FF66';
+        event.currentTarget.style.color = '#00FF66';
+      }
+
+      if (tabName === 'galeria' && typeof carregarGaleria === 'function') carregarGaleria();
+      if (tabName === 'leads' && typeof carregarLeads === 'function') carregarLeads();
+    }
+  </script>
+
+  <script src="script/script.js" defer></script>
+  <script src="script/calculadora.js" defer></script>
+  <script src="script/admin.js" defer></script>
+</body>
+</html>
