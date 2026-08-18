@@ -1,6 +1,4 @@
-/* ========== script/galeria.js · 432UP · v8.0 · Overlay Único + Modal de Case no visual do Lightbox ========== */
-/* O canvas de fundo (#orbit-canvas) já é desenhado globalmente por script.js.
-   Não redeclarar aqui. */
+/* ========== script/galeria.js · 432UP · v9.0 · Tema por Categoria + Autoplay + Overlay Único ========== */
 
 function showGalToast(msg, type) {
   let container = document.getElementById('galToastContainer');
@@ -24,9 +22,20 @@ function showGalToast(msg, type) {
   }, 4200);
 }
 
-/* ========== ESTILOS COMPARTILHADOS DO "VISUAL LIGHTBOX" ==========
-   Usado tanto pelo lightbox simples de imagem/vídeo quanto pelo
-   modal de detalhes do case (mesma linguagem visual). */
+/* ========== TEMA POR CATEGORIA (PNL Color Marketing) ========== */
+var CAT_THEME = {
+  'corporativo':              { accent: '#06B6D4', glow: 'rgba(6, 182, 212, 0.28)',  pig: 'rgba(6, 182, 212, 0.05)',  border: 'rgba(6, 182, 212, 0.30)' },
+  'casamentos':               { accent: '#D4AF37', glow: 'rgba(212, 175, 55, 0.28)', pig: 'rgba(212, 175, 55, 0.05)', border: 'rgba(212, 175, 55, 0.30)' },
+  'shows-festivais':          { accent: '#A855F7', glow: 'rgba(168, 85, 247, 0.28)', pig: 'rgba(168, 85, 247, 0.05)', border: 'rgba(168, 85, 247, 0.30)' },
+  'festas-confraternizacoes': { accent: '#FF8A4C', glow: 'rgba(255, 138, 76, 0.28)', pig: 'rgba(255, 138, 76, 0.05)', border: 'rgba(255, 138, 76, 0.30)' }
+};
+var CAT_THEME_DEFAULT = { accent: '#A855F7', glow: 'rgba(168, 85, 247, 0.28)', pig: 'rgba(168, 85, 247, 0.05)', border: 'rgba(168, 85, 247, 0.30)' };
+
+function getCatTheme(catSlug) {
+  return CAT_THEME[catSlug] || CAT_THEME_DEFAULT;
+}
+
+/* ========== ESTILOS COMPARTILHADOS DO "VISUAL LIGHTBOX" ========== */
 function ensureLightboxStyles() {
   if (document.getElementById('gal-lightbox-styles')) return;
   var style = document.createElement('style');
@@ -103,7 +112,6 @@ function ensureLightboxStyles() {
     .glx-media-in { animation: lbMediaIn 0.35s cubic-bezier(0.22, 1, 0.36, 1); }
     @keyframes lbMediaIn { from { opacity: 0; transform: scale(0.97); } to { opacity: 1; transform: scale(1); } }
 
-    /* ---- Lightbox simples (imagem/vídeo único, sem case) ---- */
     #gal-lightbox {
       position: fixed; inset: 0; z-index: 110000;
       display: flex; align-items: center; justify-content: center;
@@ -123,7 +131,6 @@ function ensureLightboxStyles() {
     .gal-lb-desc { font-size: 0.86rem; color: #9CA3AF; margin: 0 0 6px 0; line-height: 1.45; }
     .gal-lb-meta { font-size: 0.7rem; color: #A855F7; text-transform: uppercase; letter-spacing: 0.7px; font-weight: 600; }
 
-    /* ---- Modal de Case (mesmo visual, conteúdo rico) ---- */
     #case-detail-modal {
       position: fixed; inset: 0; z-index: 100010;
       display: flex; align-items: center; justify-content: center;
@@ -135,7 +142,7 @@ function ensureLightboxStyles() {
     #case-detail-modal .glx-stage { width: min(96vw, 980px); max-height: 90vh; }
     #case-detail-modal .glx-panel { max-height: 90vh; overflow-y: auto; padding: 32px; }
     .cd-header { margin-bottom: 20px; padding-right: 40px; position: relative; z-index: 3; }
-    .cd-eyebrow { font-size: 0.7rem; font-weight: 700; text-transform: uppercase; letter-spacing: 1.5px; color: #c084fc; margin-bottom: 6px; }
+    .cd-eyebrow { font-size: 0.7rem; font-weight: 700; text-transform: uppercase; letter-spacing: 1.5px; color: #c084fc; margin-bottom: 6px; transition: color 0.3s ease; }
     .cd-title { font-size: 1.6rem; font-weight: 800; color: #fff; letter-spacing: -0.5px; margin-bottom: 6px; }
     .cd-subtitle { font-size: 0.9rem; color: #8a8a9e; }
     .cd-media-row {
@@ -152,18 +159,21 @@ function ensureLightboxStyles() {
       background: rgba(0,0,0,0.4); cursor: pointer;
       transition: transform 0.2s ease, border-color 0.2s ease;
     }
-    .cd-media-item:hover { transform: scale(1.02); border-color: #00FF66; box-shadow: 0 0 15px rgba(0, 255, 102, 0.2); }
+    .cd-media-item:hover { transform: scale(1.02); box-shadow: 0 0 15px rgba(0, 255, 102, 0.2); }
     .cd-media-item img, .cd-media-item video { width: 100%; height: 100%; object-fit: cover; display: block; pointer-events: none; }
     .cd-empty-state { font-size: 0.85rem; color: #8a8a9e; padding: 18px 4px; font-style: italic; }
     .cd-empty-state-li { color: #8a8a9e !important; font-style: italic; }
     .cd-empty-state-li::before { content: "" !important; }
     .cd-specs-box {
-      background: rgba(168, 85, 247, 0.08);
+      background: rgba(168, 85, 247, 0.10);
+      backdrop-filter: blur(16px);
+      -webkit-backdrop-filter: blur(16px);
       border: 1px solid rgba(168, 85, 247, 0.22);
       border-radius: 16px; padding: 20px; margin-top: 8px;
       position: relative; z-index: 3;
+      transition: background 0.3s ease, border-color 0.3s ease;
     }
-    .cd-specs-title { font-size: 0.72rem; text-transform: uppercase; letter-spacing: 1px; color: #c084fc; font-weight: 700; margin-bottom: 12px; }
+    .cd-specs-title { font-size: 0.72rem; text-transform: uppercase; letter-spacing: 1px; color: #c084fc; font-weight: 700; margin-bottom: 12px; transition: color 0.3s ease; }
     .cd-specs-list { list-style: none; display: flex; flex-direction: column; gap: 8px; padding-left: 0; }
     .cd-specs-list li { font-size: 0.85rem; color: #E2E8F0; padding-left: 16px; position: relative; }
     .cd-specs-list li::before { content: "•"; color: #00FF66; position: absolute; left: 0; font-weight: bold; }
@@ -183,7 +193,7 @@ function ensureLightboxStyles() {
   document.head.appendChild(style);
 }
 
-/* ========== LIGHTBOX SIMPLES (fotos/vídeos avulsos, sem case_slug) ========== */
+/* ========== LIGHTBOX SIMPLES ========== */
 var lbItems = [];
 var lbIndex = 0;
 
@@ -292,6 +302,9 @@ function prefetchAround(index) {
   }
 }
 
+// No lightbox de tela cheia o vídeo continua com controls (usuário abriu de propósito
+// pra assistir), então autoplay+controls faz sentido aqui; loop fica desligado
+// pra não repetir infinitamente quando o usuário já está com atenção plena nele.
 function renderLbMedia(item) {
   var content = document.querySelector('#gal-lightbox .glx-panel');
   var titleEl = document.querySelector('#gal-lightbox .gal-lb-title');
@@ -374,10 +387,7 @@ function openLightbox(list, startIndex) {
   });
 }
 
-/* ========================================================================
-   NÚCLEO v8: Faixa de logos + Super Cases + Filtros + Overlay Único
-   Modal de case agora usa o mesmo visual do lightbox (glx-*)
-   ======================================================================== */
+/* ======================================================================== */
 document.addEventListener('DOMContentLoaded', function () {
   ensureLightboxStyles();
 
@@ -472,6 +482,13 @@ document.addEventListener('DOMContentLoaded', function () {
     });
   }
 
+  // Vídeo de card na grade: autoplay + loop + muted (silencioso, decorativo, como um "gif vivo")
+  function cardVideoHtml(item, thumbFallback) {
+    var src = item.url || item.video_url || '';
+    if (!src) return '<img src="' + escapeHtml(thumbFallback) + '" alt="" loading="lazy" onerror="this.style.opacity=\'0.3\'">';
+    return '<video src="' + escapeHtml(src) + '" autoplay loop muted playsinline preload="metadata"></video>';
+  }
+
   function cardHtml(item, idx) {
     var thumb = thumbFor(item);
     var badge = item.local ? escapeHtml(item.local) : '';
@@ -483,6 +500,7 @@ document.addEventListener('DOMContentLoaded', function () {
     var destaqueBadge = item.destaque ? '<span class="super-case-badge">Destaque</span>' : '';
     var hasCaseDetail = !!(item.case_slug && item.case_slug.trim());
     var safeCaseSlug = hasCaseDetail ? escapeHtml(item.case_slug) : '';
+    var catSlug = item.cat || '';
 
     var bodyHtml;
     if (hasClient) {
@@ -497,17 +515,22 @@ document.addEventListener('DOMContentLoaded', function () {
     }
 
     var imgBoxAttr = hasCaseDetail
-      ? 'data-open-case="' + safeCaseSlug + '" data-case-title="' + (safeCliente || safeTitulo) + '" data-case-subtitle="' + (hasClient ? safeTitulo : '') + '"'
+      ? 'data-open-case="' + safeCaseSlug + '" data-case-title="' + (safeCliente || safeTitulo) + '" data-case-subtitle="' + (hasClient ? safeTitulo : '') + '" data-case-cat="' + escapeHtml(catSlug) + '"'
       : 'data-open-lb="' + idx + '"';
 
     var caseHint = hasCaseDetail
       ? '<span class="case-hint-badge">🔍 Ver detalhes do projeto</span>'
       : '';
 
+    // Se for vídeo próprio (não YouTube), mostra autoplay direto no card em vez de thumbnail estática
+    var mediaInner = (item.tipo === 'video_up')
+      ? cardVideoHtml(item, thumb)
+      : '<img src="' + escapeHtml(thumb) + '" alt="' + (safeCliente || safeTitulo) + '" loading="lazy" onerror="this.style.opacity=\'0.3\'">';
+
     return (
-      '<article class="gallery-card float-card mode-a' + (hasClient ? ' has-client' : '') + (hasCaseDetail ? ' has-case-detail' : '') + '" data-cat="' + escapeHtml(item.cat || '') + '" data-idx="' + idx + '">' +
+      '<article class="gallery-card float-card mode-a' + (hasClient ? ' has-client' : '') + (hasCaseDetail ? ' has-case-detail' : '') + '" data-cat="' + escapeHtml(catSlug) + '" data-idx="' + idx + '">' +
         '<div class="img-box" ' + imgBoxAttr + '>' +
-          '<img src="' + escapeHtml(thumb) + '" alt="' + (safeCliente || safeTitulo) + '" loading="lazy" onerror="this.style.opacity=\'0.3\'">' +
+          mediaInner +
           '<div class="img-box-overlay"></div>' +
           playIcon +
           destaqueBadge +
@@ -549,7 +572,8 @@ document.addEventListener('DOMContentLoaded', function () {
         if (slug) {
           var title = el.getAttribute('data-case-title') || '';
           var subtitle = el.getAttribute('data-case-subtitle') || '';
-          openCaseDetail(slug, title, subtitle);
+          var cat = el.getAttribute('data-case-cat') || '';
+          openCaseDetail(slug, title, subtitle, cat);
           return;
         }
         var lbIdxAttr = el.getAttribute('data-open-lb');
@@ -580,18 +604,98 @@ document.addEventListener('DOMContentLoaded', function () {
     return data;
   }
 
+  // Mídia dentro do modal de case: vídeo próprio também ganha autoplay+loop+muted (thumb "viva")
   function caseMediaHtml(m) {
     var thumb = thumbFor(m);
-    var playIcon = isVideo(m) ? '<span class="tag-badge play-badge">▶</span>' : '';
-    return '<div class="cd-media-item">' +
-      '<img src="' + escapeHtml(thumb) + '" alt="" loading="lazy" onerror="this.style.opacity=\'0.3\'">' +
+    var video = isVideo(m);
+    var playIcon = video ? '<span class="tag-badge play-badge">▶</span>' : '';
+    var fsBtn = video ? '<button type="button" class="cd-video-fullscreen-btn" data-fs-video aria-label="Assistir em tela cheia">⛶</button>' : '';
+
+    var inner;
+    if (m.tipo === 'video_up' && m.url) {
+      inner = '<video src="' + escapeHtml(m.url) + '" autoplay loop muted playsinline preload="metadata"></video>';
+    } else {
+      inner = '<img src="' + escapeHtml(thumb) + '" alt="" loading="lazy" onerror="this.style.opacity=\'0.3\'">';
+    }
+
+    return '<div class="cd-media-item' + (video ? ' is-video' : '') + '">' +
+      inner +
       playIcon +
+      fsBtn +
       '</div>';
   }
 
-  async function openCaseDetail(slug, title, subtitle) {
+  function removeCaseMediaDots() {
+    var existing = document.getElementById('cd-media-dots');
+    if (existing) existing.remove();
+  }
+
+  function renderCaseMediaDots(count, mediaRow) {
+    removeCaseMediaDots();
+    if (!count || count < 2) return;
+
+    var dotsWrap = document.createElement('div');
+    dotsWrap.id = 'cd-media-dots';
+    dotsWrap.className = 'cd-media-dots';
+    for (var i = 0; i < count; i++) {
+      var dot = document.createElement('span');
+      dot.className = 'cd-media-dot' + (i === 0 ? ' active' : '');
+      dotsWrap.appendChild(dot);
+    }
+    mediaRow.insertAdjacentElement('afterend', dotsWrap);
+
+    var items = mediaRow.querySelectorAll('.cd-media-item');
+    var dots = dotsWrap.querySelectorAll('.cd-media-dot');
+
+    var scrollTimeout = null;
+    mediaRow.addEventListener('scroll', function () {
+      if (scrollTimeout) clearTimeout(scrollTimeout);
+      scrollTimeout = setTimeout(function () {
+        var rowCenter = mediaRow.scrollLeft + mediaRow.clientWidth / 2;
+        var closestIdx = 0;
+        var closestDist = Infinity;
+        items.forEach(function (item, idx) {
+          var itemCenter = item.offsetLeft + item.offsetWidth / 2;
+          var dist = Math.abs(itemCenter - rowCenter);
+          if (dist < closestDist) { closestDist = dist; closestIdx = idx; }
+        });
+        dots.forEach(function (d, idx) { d.classList.toggle('active', idx === closestIdx); });
+      }, 60);
+    }, { passive: true });
+  }
+
+  // Aplica a cor da categoria do case no modal de detalhes (eyebrow, specs-box, dots, media borders)
+  function aplicarTemaCaseDetail(catSlug) {
+    var theme = getCatTheme(catSlug);
     var modal = document.getElementById('case-detail-modal');
     if (!modal) return;
+    modal.style.setProperty('--cd-accent', theme.accent);
+    modal.style.setProperty('--cd-accent-glow', theme.glow);
+    modal.style.setProperty('--cd-accent-pig', theme.pig);
+    modal.style.setProperty('--cd-accent-border', theme.border);
+
+    var eyebrow = document.getElementById('cd-eyebrow');
+    if (eyebrow) eyebrow.style.color = theme.accent;
+
+    var specsTitle = modal.querySelector('.cd-specs-title');
+    if (specsTitle) specsTitle.style.color = theme.accent;
+
+    var specsBox = modal.querySelector('.cd-specs-box');
+    if (specsBox) {
+      specsBox.style.background = theme.pig;
+      specsBox.style.borderColor = theme.border;
+    }
+
+    modal.querySelectorAll('.cd-media-item').forEach(function (el) {
+      el.style.borderColor = theme.border;
+    });
+  }
+
+  async function openCaseDetail(slug, title, subtitle, catSlug) {
+    var modal = document.getElementById('case-detail-modal');
+    if (!modal) return;
+
+    aplicarTemaCaseDetail(catSlug || '');
 
     document.getElementById('cd-eyebrow').textContent = 'Case em Destaque';
     document.getElementById('cd-title').textContent = title || '';
@@ -623,15 +727,32 @@ document.addEventListener('DOMContentLoaded', function () {
         };
       });
       mediaRow.innerHTML = data.midias.map(caseMediaHtml).join('');
+      aplicarTemaCaseDetail(catSlug || '');
       mediaRow.querySelectorAll('.cd-media-item').forEach(function (el, idx) {
         el.addEventListener('click', function () {
           openLightbox(currentCaseMedias, idx);
         });
       });
+      mediaRow.querySelectorAll('[data-fs-video]').forEach(function (btn, idx) {
+        btn.addEventListener('click', function (e) {
+          e.stopPropagation();
+          openLightbox(currentCaseMedias, idx);
+          setTimeout(function () {
+            var vid = document.querySelector('#gal-lightbox .glx-panel video');
+            if (!vid) return;
+            if (vid.requestFullscreen) vid.requestFullscreen();
+            else if (vid.webkitEnterFullscreen) vid.webkitEnterFullscreen();
+            else if (vid.webkitRequestFullscreen) vid.webkitRequestFullscreen();
+          }, 150);
+        });
+      });
+      renderCaseMediaDots(data.midias.length, mediaRow);
     } else if (data.midiasFailed) {
       mediaRow.innerHTML = '<div class="cd-empty-state">Não conseguimos carregar as mídias agora. Volte em instantes.</div>';
+      removeCaseMediaDots();
     } else {
       mediaRow.innerHTML = '<div class="cd-empty-state">Mídias adicionais deste case em breve.</div>';
+      removeCaseMediaDots();
     }
 
     var specsList = document.getElementById('cd-specs-list');
@@ -651,11 +772,14 @@ document.addEventListener('DOMContentLoaded', function () {
     if (!modal) return;
     modal.classList.remove('open', 'glx-open');
     document.body.style.overflow = '';
+    removeCaseMediaDots();
+    // Pausa vídeos do modal ao fechar, para não continuarem tocando/consumindo recursos em segundo plano
+    modal.querySelectorAll('video').forEach(function (v) { v.pause(); });
   }
 
   var cdCloseBtn = document.getElementById('cd-close-btn');
   if (cdCloseBtn) cdCloseBtn.addEventListener('click', closeCaseDetail);
-  var cdBackdrop = document.querySelector('#case-detail-modal .glx-backdrop');
+  var cdBackdrop = document.querySelector('#case-detail-modal .glx-backdrop') || document.getElementById('cd-backdrop');
   if (cdBackdrop) cdBackdrop.addEventListener('click', closeCaseDetail);
   document.addEventListener('keydown', function (e) {
     var modal = document.getElementById('case-detail-modal');
