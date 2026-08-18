@@ -1,4 +1,4 @@
-/* ========== script/galeria.js · 432UP · v9.2 · Dropdown Schumann + Strip Marquee Infinite ========== */
+/* ========== script/galeria.js · 432UP · v9.0 · Tema por Categoria + Autoplay + Overlay Único ========== */
 
 function showGalToast(msg, type) {
   let container = document.getElementById('galToastContainer');
@@ -439,7 +439,6 @@ document.addEventListener('DOMContentLoaded', function () {
     return item.tipo === 'video_yt' || item.tipo === 'video_up';
   }
 
-  /* RENDERIZA O STRIP MARQUEE INFINITO DUP_LOOP */
   function renderBrands() {
     var wrapper = document.getElementById('brands-strip-wrapper');
     var strip = document.getElementById('brands-strip');
@@ -448,9 +447,7 @@ document.addEventListener('DOMContentLoaded', function () {
     var ativos = (marcas || []).filter(function (m) { return m.ativo !== false; });
     if (!ativos.length) { wrapper.style.display = 'none'; return; }
 
-    var marcasLoop = ativos.concat(ativos); // Duplica a lista de marcas para fluxo contínuo
-
-    strip.innerHTML = marcasLoop.map(function (m) {
+    strip.innerHTML = ativos.map(function (m) {
       var nome = escapeHtml(m.nome || '');
       if (m.logo_url) {
         return '<div class="brand-chip" title="' + nome + '">' +
@@ -464,70 +461,22 @@ document.addEventListener('DOMContentLoaded', function () {
     wrapper.style.display = '';
   }
 
-  /* RENDERIZA O SELETOR DROPDOWN SCHUMANN COM CORES PNL */
   function renderFilters() {
     var wrap = document.getElementById('filter-wrapper');
     if (!wrap) return;
-
-    var html =
-      '<button class="drop-btn-schumann" id="dropBtnSchumann" type="button">' +
-        '<span>Categoria: <strong id="selected-cat-name" style="color: var(--primary-lime);">Todas as Categorias</strong></span>' +
-        '<span style="font-size: 0.7rem;">▾</span>' +
-      '</button>' +
-      '<div class="drop-menu-schumann" id="dropMenuSchumann">' +
-        '<div class="drop-item selected" data-cat="all" data-name="Todas as Categorias" data-color="var(--primary-lime)">' +
-          '<span>Todas as Categorias</span> <span class="cat-dot" style="background: var(--primary-lime);"></span>' +
-        '</div>';
-
+    var html = '<button class="filter-btn active" data-cat="all">Ver Todas</button>';
     categorias.forEach(function (c) {
-      var theme = getCatTheme(c.slug);
-      html +=
-        '<div class="drop-item" data-cat="' + escapeHtml(c.slug) + '" data-name="' + escapeHtml(c.nome) + '" data-color="' + theme.accent + '">' +
-          '<span>' + escapeHtml(c.emoji ? c.emoji + ' ' : '') + escapeHtml(c.nome) + '</span> ' +
-          '<span class="cat-dot" style="background: ' + theme.accent + ';"></span>' +
-        '</div>';
+      html += '<button class="filter-btn" data-cat="' + escapeHtml(c.slug) + '">' + escapeHtml(c.emoji || '') + ' ' + escapeHtml(c.nome) + '</button>';
     });
-
-    html += '</div>';
     wrap.innerHTML = html;
-
-    var btn = document.getElementById('dropBtnSchumann');
-    var menu = document.getElementById('dropMenuSchumann');
-
-    if (btn && menu) {
+    wrap.querySelectorAll('.filter-btn').forEach(function (btn) {
       btn.addEventListener('click', function (e) {
-        e.stopPropagation();
-        menu.classList.toggle('open');
+        wrap.querySelectorAll('.filter-btn').forEach(function (b) { b.classList.remove('active'); });
+        e.currentTarget.classList.add('active');
+        currentCat = e.currentTarget.dataset.cat;
+        renderGrid(itens);
       });
-
-      menu.querySelectorAll('.drop-item').forEach(function (item) {
-        item.addEventListener('click', function (e) {
-          e.stopPropagation();
-          menu.querySelectorAll('.drop-item').forEach(function (i) { i.classList.remove('selected'); });
-          item.classList.add('selected');
-
-          var catSlug = item.dataset.cat;
-          var catName = item.dataset.name;
-          var catColor = item.dataset.color;
-
-          var label = document.getElementById('selected-cat-name');
-          if (label) {
-            label.textContent = catName;
-            label.style.color = catColor;
-          }
-
-          menu.classList.remove('open');
-          currentCat = catSlug;
-          renderGrid(itens);
-        });
-      });
-
-      document.addEventListener('click', function (e) {
-        if (!e.target.closest('#filter-wrapper')) {
-          menu.classList.remove('open');
-        }
-      });
-    }
+    });
   }
 
   function cardVideoHtml(item, thumbFallback) {
@@ -743,7 +692,8 @@ document.addEventListener('DOMContentLoaded', function () {
     document.getElementById('cd-subtitle').textContent = subtitle || '';
     document.getElementById('cd-media-row').innerHTML = '<div class="cd-empty-state">Carregando mídias...</div>';
     document.getElementById('cd-specs-list').innerHTML = '';
-
+    
+    // PREENCHE A DESCRIÇÃO NO MODAL ABAIXO DE "O QUE FOI ENTREGUE"
     var descEl = document.getElementById('cd-description');
     if (descEl) {
       if (descText && descText.trim() !== '') {
