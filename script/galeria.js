@@ -1,4 +1,4 @@
-/* ========== script/galeria.js · 432UP · v9.0 · Tema por Categoria + Autoplay + Overlay Único ========== */
+/* ========== script/galeria.js · 432UP · v9.2 · Dropdown Schumann + Strip Marquee Infinite ========== */
 
 function showGalToast(msg, type) {
   let container = document.getElementById('galToastContainer');
@@ -302,9 +302,6 @@ function prefetchAround(index) {
   }
 }
 
-// No lightbox de tela cheia o vídeo continua com controls (usuário abriu de propósito
-// pra assistir), então autoplay+controls faz sentido aqui; loop fica desligado
-// pra não repetir infinitamente quando o usuário já está com atenção plena nele.
 function renderLbMedia(item) {
   var content = document.querySelector('#gal-lightbox .glx-panel');
   var titleEl = document.querySelector('#gal-lightbox .gal-lb-title');
@@ -442,6 +439,7 @@ document.addEventListener('DOMContentLoaded', function () {
     return item.tipo === 'video_yt' || item.tipo === 'video_up';
   }
 
+  /* RENDERIZA O STRIP MARQUEE INFINITO DUP_LOOP */
   function renderBrands() {
     var wrapper = document.getElementById('brands-strip-wrapper');
     var strip = document.getElementById('brands-strip');
@@ -450,7 +448,9 @@ document.addEventListener('DOMContentLoaded', function () {
     var ativos = (marcas || []).filter(function (m) { return m.ativo !== false; });
     if (!ativos.length) { wrapper.style.display = 'none'; return; }
 
-    strip.innerHTML = ativos.map(function (m) {
+    var marcasLoop = ativos.concat(ativos); // Duplica a lista de marcas para fluxo contínuo
+
+    strip.innerHTML = marcasLoop.map(function (m) {
       var nome = escapeHtml(m.nome || '');
       if (m.logo_url) {
         return '<div class="brand-chip" title="' + nome + '">' +
@@ -464,25 +464,72 @@ document.addEventListener('DOMContentLoaded', function () {
     wrapper.style.display = '';
   }
 
+  /* RENDERIZA O SELETOR DROPDOWN SCHUMANN COM CORES PNL */
   function renderFilters() {
     var wrap = document.getElementById('filter-wrapper');
     if (!wrap) return;
-    var html = '<button class="filter-btn active" data-cat="all">Ver Todas</button>';
+
+    var html =
+      '<button class="drop-btn-schumann" id="dropBtnSchumann" type="button">' +
+        '<span>Categoria: <strong id="selected-cat-name" style="color: var(--primary-lime);">Todas as Categorias</strong></span>' +
+        '<span style="font-size: 0.7rem;">▾</span>' +
+      '</button>' +
+      '<div class="drop-menu-schumann" id="dropMenuSchumann">' +
+        '<div class="drop-item selected" data-cat="all" data-name="Todas as Categorias" data-color="var(--primary-lime)">' +
+          '<span>Todas as Categorias</span> <span class="cat-dot" style="background: var(--primary-lime);"></span>' +
+        '</div>';
+
     categorias.forEach(function (c) {
-      html += '<button class="filter-btn" data-cat="' + escapeHtml(c.slug) + '">' + escapeHtml(c.emoji || '') + ' ' + escapeHtml(c.nome) + '</button>';
+      var theme = getCatTheme(c.slug);
+      html +=
+        '<div class="drop-item" data-cat="' + escapeHtml(c.slug) + '" data-name="' + escapeHtml(c.nome) + '" data-color="' + theme.accent + '">' +
+          '<span>' + escapeHtml(c.emoji ? c.emoji + ' ' : '') + escapeHtml(c.nome) + '</span> ' +
+          '<span class="cat-dot" style="background: ' + theme.accent + ';"></span>' +
+        '</div>';
     });
+
+    html += '</div>';
     wrap.innerHTML = html;
-    wrap.querySelectorAll('.filter-btn').forEach(function (btn) {
+
+    var btn = document.getElementById('dropBtnSchumann');
+    var menu = document.getElementById('dropMenuSchumann');
+
+    if (btn && menu) {
       btn.addEventListener('click', function (e) {
-        wrap.querySelectorAll('.filter-btn').forEach(function (b) { b.classList.remove('active'); });
-        e.currentTarget.classList.add('active');
-        currentCat = e.currentTarget.dataset.cat;
-        renderGrid(itens);
+        e.stopPropagation();
+        menu.classList.toggle('open');
       });
-    });
+
+      menu.querySelectorAll('.drop-item').forEach(function (item) {
+        item.addEventListener('click', function (e) {
+          e.stopPropagation();
+          menu.querySelectorAll('.drop-item').forEach(function (i) { i.classList.remove('selected'); });
+          item.classList.add('selected');
+
+          var catSlug = item.dataset.cat;
+          var catName = item.dataset.name;
+          var catColor = item.dataset.color;
+
+          var label = document.getElementById('selected-cat-name');
+          if (label) {
+            label.textContent = catName;
+            label.style.color = catColor;
+          }
+
+          menu.classList.remove('open');
+          currentCat = catSlug;
+          renderGrid(itens);
+        });
+      });
+
+      document.addEventListener('click', function (e) {
+        if (!e.target.closest('#filter-wrapper')) {
+          menu.classList.remove('open');
+        }
+      });
+    }
   }
 
-  // Vídeo de card na grade: autoplay + loop + muted (silencioso, decorativo, como um "gif vivo")
   function cardVideoHtml(item, thumbFallback) {
     var src = item.url || item.video_url || '';
     if (!src) return '<img src="' + escapeHtml(thumbFallback) + '" alt="" loading="lazy" onerror="this.style.opacity=\'0.3\'">';
@@ -497,7 +544,6 @@ document.addEventListener('DOMContentLoaded', function () {
     var safeDesc = escapeHtml(item.descricao || '');
     var hasClient = !!(item.cliente && item.cliente.trim());
     var safeCliente = hasClient ? escapeHtml(item.cliente) : '';
-    var destaqueBadge = item.destaque ? '<span class="super-case-badge">Destaque</span>' : '';
     var hasCaseDetail = !!(item.case_slug && item.case_slug.trim());
     var safeCaseSlug = hasCaseDetail ? escapeHtml(item.case_slug) : '';
     var catSlug = item.cat || '';
@@ -506,23 +552,20 @@ document.addEventListener('DOMContentLoaded', function () {
     if (hasClient) {
       bodyHtml =
         '<div class="client-headline">' + safeCliente + '</div>' +
-        (safeTitulo ? '<div class="service-subline">' + safeTitulo + '</div>' : '') +
-        (safeDesc ? '<p>' + safeDesc + '</p>' : '');
+        (safeTitulo ? '<div class="service-subline">' + safeTitulo + '</div>' : '');
     } else {
       bodyHtml =
-        '<h3>' + safeTitulo + '</h3>' +
-        (safeDesc ? '<p>' + safeDesc + '</p>' : '');
+        '<h3>' + safeTitulo + '</h3>';
     }
 
     var imgBoxAttr = hasCaseDetail
-      ? 'data-open-case="' + safeCaseSlug + '" data-case-title="' + (safeCliente || safeTitulo) + '" data-case-subtitle="' + (hasClient ? safeTitulo : '') + '" data-case-cat="' + escapeHtml(catSlug) + '"'
+      ? 'data-open-case="' + safeCaseSlug + '" data-case-title="' + (safeCliente || safeTitulo) + '" data-case-subtitle="' + (hasClient ? safeTitulo : '') + '" data-case-cat="' + escapeHtml(catSlug) + '" data-case-desc="' + safeDesc + '"'
       : 'data-open-lb="' + idx + '"';
 
     var caseHint = hasCaseDetail
       ? '<span class="case-hint-badge">🔍 Ver detalhes do projeto</span>'
       : '';
 
-    // Se for vídeo próprio (não YouTube), mostra autoplay direto no card em vez de thumbnail estática
     var mediaInner = (item.tipo === 'video_up')
       ? cardVideoHtml(item, thumb)
       : '<img src="' + escapeHtml(thumb) + '" alt="' + (safeCliente || safeTitulo) + '" loading="lazy" onerror="this.style.opacity=\'0.3\'">';
@@ -533,7 +576,6 @@ document.addEventListener('DOMContentLoaded', function () {
           mediaInner +
           '<div class="img-box-overlay"></div>' +
           playIcon +
-          destaqueBadge +
           caseHint +
           (badge ? '<span class="tag-badge loc-badge">' + badge + '</span>' : '') +
         '</div>' +
@@ -573,7 +615,8 @@ document.addEventListener('DOMContentLoaded', function () {
           var title = el.getAttribute('data-case-title') || '';
           var subtitle = el.getAttribute('data-case-subtitle') || '';
           var cat = el.getAttribute('data-case-cat') || '';
-          openCaseDetail(slug, title, subtitle, cat);
+          var desc = el.getAttribute('data-case-desc') || '';
+          openCaseDetail(slug, title, subtitle, cat, desc);
           return;
         }
         var lbIdxAttr = el.getAttribute('data-open-lb');
@@ -604,7 +647,6 @@ document.addEventListener('DOMContentLoaded', function () {
     return data;
   }
 
-  // Mídia dentro do modal de case: vídeo próprio também ganha autoplay+loop+muted (thumb "viva")
   function caseMediaHtml(m) {
     var thumb = thumbFor(m);
     var video = isVideo(m);
@@ -664,7 +706,6 @@ document.addEventListener('DOMContentLoaded', function () {
     }, { passive: true });
   }
 
-  // Aplica a cor da categoria do case no modal de detalhes (eyebrow, specs-box, dots, media borders)
   function aplicarTemaCaseDetail(catSlug) {
     var theme = getCatTheme(catSlug);
     var modal = document.getElementById('case-detail-modal');
@@ -691,7 +732,7 @@ document.addEventListener('DOMContentLoaded', function () {
     });
   }
 
-  async function openCaseDetail(slug, title, subtitle, catSlug) {
+  async function openCaseDetail(slug, title, subtitle, catSlug, descText) {
     var modal = document.getElementById('case-detail-modal');
     if (!modal) return;
 
@@ -702,6 +743,17 @@ document.addEventListener('DOMContentLoaded', function () {
     document.getElementById('cd-subtitle').textContent = subtitle || '';
     document.getElementById('cd-media-row').innerHTML = '<div class="cd-empty-state">Carregando mídias...</div>';
     document.getElementById('cd-specs-list').innerHTML = '';
+
+    var descEl = document.getElementById('cd-description');
+    if (descEl) {
+      if (descText && descText.trim() !== '') {
+        descEl.textContent = descText;
+        descEl.style.display = 'block';
+      } else {
+        descEl.style.display = 'none';
+      }
+    }
+
     currentCaseMedias = [];
 
     document.body.style.overflow = 'hidden';
@@ -773,7 +825,6 @@ document.addEventListener('DOMContentLoaded', function () {
     modal.classList.remove('open', 'glx-open');
     document.body.style.overflow = '';
     removeCaseMediaDots();
-    // Pausa vídeos do modal ao fechar, para não continuarem tocando/consumindo recursos em segundo plano
     modal.querySelectorAll('video').forEach(function (v) { v.pause(); });
   }
 
