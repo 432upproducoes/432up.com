@@ -1,0 +1,865 @@
+<!DOCTYPE html>
+<html lang="pt-BR" data-theme="dark">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
+  <title>Mesa de Produção — Admin Galeria In Loco | 432UP!</title>
+
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&display=swap" rel="stylesheet">
+
+  <!-- Supabase JS -->
+  <script src="https://unpkg.com/@supabase/supabase-js@2"></script>
+  <!-- Browser Image Compression para otimização de imagens no cliente -->
+  <script src="https://cdn.jsdelivr.net/npm/browser-image-compression@2.0.2/dist/browser-image-compression.min.js"></script>
+  
+  <link rel="stylesheet" href="css/style.css">
+  <script src="script/script.js" defer></script>
+
+<style>
+    /* ==========================================================================
+       PAINEL ADMIN — GALERIA IN LOCO
+       Reaproveita 100% do design system de css/style.css (ametista/lime/magenta)
+       ========================================================================== */
+
+    body {
+      min-height: 100vh;
+      margin: 0; padding: 0;
+    }
+
+    /* AUTH OVERLAY — mesmo padrão visual do .modal-box / cd-stage */
+    #auth-overlay {
+      position: fixed; inset: 0; z-index: 99999;
+      background: rgba(8, 8, 10, 0.85);
+      backdrop-filter: var(--efeito-vidro-blur);
+      -webkit-backdrop-filter: var(--efeito-vidro-blur);
+      display: flex; align-items: center; justify-content: center; padding: 20px;
+    }
+    .auth-card {
+      width: 100%; max-width: 420px;
+      background: linear-gradient(135deg, rgba(14, 14, 22, 0.92), var(--pigmento-ametista-suave));
+      backdrop-filter: blur(24px); -webkit-backdrop-filter: blur(24px);
+      border: 1px solid var(--pigmento-ametista-medio);
+      border-radius: 24px; padding: 36px; text-align: center;
+      box-shadow: 0 25px 60px rgba(0,0,0,0.8), 0 0 30px rgba(168,85,247,0.15);
+    }
+    .auth-card h2 { font-size: 1.4rem; font-weight: 800; margin-bottom: 6px; color: #fff; }
+    .auth-card p { font-size: 0.82rem; color: var(--text-muted); margin-bottom: 24px; }
+
+    .adm-field { text-align: left; margin-bottom: 16px; }
+    .adm-field label {
+      display: block; font-size: 0.72rem; font-weight: 700; text-transform: uppercase;
+      letter-spacing: 0.8px; color: var(--secondary-lilac); margin-bottom: 6px;
+    }
+    .adm-input {
+      width: 100%; background: rgba(255, 255, 255, 0.05);
+      border: 1px solid var(--pigmento-ametista-medio);
+      padding: 12px 14px; border-radius: 12px; color: #fff; font-size: 0.88rem;
+      outline: none; box-sizing: border-box; transition: var(--transition-smooth);
+      font-family: var(--font-base);
+    }
+    .adm-input:focus { border-color: var(--secondary-lilac); box-shadow: 0 0 12px rgba(168,85,247,0.3); }
+
+    .btn-adm-primary {
+      padding: 12px 20px;
+      background: rgba(10, 10, 16, 0.85);
+      border: 1px solid transparent;
+      box-shadow: inset 0 1px 1px rgba(255,255,255,0.35), 0 10px 25px rgba(0,0,0,0.7);
+      border-radius: 20px; color: #fff; font-weight: 700; font-size: 0.9rem; cursor: pointer;
+      transition: var(--transition-smooth);
+      display: inline-flex; align-items: center; justify-content: center; gap: 8px;
+      text-shadow: 0 1px 4px rgba(0,0,0,0.8);
+    }
+    .btn-adm-primary:hover {
+      background: var(--primary-lime); color: #000; border-color: var(--primary-lime);
+      box-shadow: 0 0 25px rgba(0,255,102,0.5); transform: translateY(-1px); text-shadow: none;
+    }
+
+    /* LAYOUT DASHBOARD */
+    .admin-wrapper { max-width: 1240px; margin: 0 auto; padding: 130px 24px 100px; display: none; position: relative; z-index: 2; }
+    .top-bar {
+      display: flex; justify-content: space-between; align-items: center; margin-bottom: 24px;
+      border-bottom: 1px solid var(--pigmento-ametista-medio); padding-bottom: 20px; flex-wrap: wrap; gap: 16px;
+    }
+    .top-bar h1 { font-size: 1.6rem; font-weight: 800; margin: 4px 0 0; letter-spacing: -0.5px; color: #fff; }
+
+    .status-badge {
+      background: rgba(0, 255, 102, 0.12); color: var(--primary-lime);
+      border: 1px solid rgba(0,255,102,0.4); font-size: 0.68rem; font-weight: 800;
+      padding: 4px 12px; border-radius: 20px; text-transform: uppercase; letter-spacing: 0.6px;
+    }
+
+    .btn-logout {
+      background: none; border: 1px solid var(--danger); color: var(--danger);
+      padding: 10px 18px; border-radius: 20px; cursor: pointer; font-weight: 700;
+      font-size: 0.8rem; transition: var(--transition-smooth);
+    }
+    .btn-logout:hover { background: var(--danger); color: #fff; box-shadow: 0 0 20px rgba(255,77,77,0.4); }
+
+    /* MARCAS */
+    .marcas-section {
+      background: rgba(14, 14, 22, 0.75); backdrop-filter: blur(20px); -webkit-backdrop-filter: blur(20px);
+      border: 1px solid var(--pigmento-ametista-medio); border-radius: 20px; padding: 22px; margin-bottom: 30px;
+    }
+    .marcas-section h3 { font-size: 0.85rem; text-transform: uppercase; letter-spacing: 1px; color: var(--secondary-lilac); margin-bottom: 14px; font-weight: 700; }
+
+    /* FILTROS E BUSCA */
+    .controls-bar { display: flex; gap: 12px; margin-bottom: 24px; flex-wrap: wrap; align-items: center; justify-content: space-between; }
+    .search-filter-group { display: flex; gap: 12px; flex: 1; min-width: 280px; }
+
+    .section-heading { font-size: 1.05rem; font-weight: 800; color: #fff; margin-bottom: 4px; letter-spacing: -0.3px; }
+
+    /* GRID DE CARDS — mesmo padrão do .gallery-card */
+    .admin-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(300px, 1fr)); gap: 20px; margin-top: 16px; }
+    .adm-card {
+      background: rgba(14, 14, 22, 0.75); backdrop-filter: blur(20px); -webkit-backdrop-filter: blur(20px);
+      border: 1px solid var(--pigmento-ametista-medio); border-radius: 20px;
+      overflow: hidden; display: flex; flex-direction: column; transition: var(--transition-smooth); position: relative;
+    }
+    .adm-card:hover {
+      border-color: var(--secondary-lilac); transform: translateY(-4px);
+      box-shadow: 0 20px 40px rgba(0,0,0,0.6), 0 0 20px rgba(168,85,247,0.15);
+    }
+    .adm-card-media { width: 100%; height: 180px; object-fit: cover; background: #111; cursor: pointer; transition: var(--transition-smooth); }
+    .adm-card:hover .adm-card-media { transform: scale(1.03); }
+    .adm-card-body { padding: 18px; flex: 1; display: flex; flex-direction: column; gap: 8px; background: var(--ametista-fume); border-top: 1px solid var(--pigmento-ametista-medio); }
+    .adm-card-title { font-size: 1rem; font-weight: 800; color: #fff; }
+    .adm-card-sub { font-size: 0.78rem; color: var(--text-muted); text-transform: uppercase; letter-spacing: 0.3px; }
+
+    .adm-card-footer { display: flex; justify-content: space-between; align-items: center; padding-top: 12px; border-top: 1px solid rgba(255,255,255,0.08); margin-top: auto; }
+    .btn-edit-modal {
+      background: var(--pigmento-ametista-medio); color: #fff; border: 1px solid var(--secondary-lilac);
+      padding: 7px 14px; border-radius: 20px; font-weight: 700; font-size: 0.76rem; cursor: pointer;
+      transition: var(--transition-smooth);
+    }
+    .btn-edit-modal:hover { background: var(--secondary-lilac); box-shadow: 0 0 15px rgba(168,85,247,0.4); }
+
+    .btn-icon-action {
+      background: rgba(255,255,255,0.05); border: 1px solid var(--pigmento-ametista-medio); color: #fff;
+      width: 32px; height: 32px; border-radius: 8px; cursor: pointer; font-size: 0.8rem;
+      display: inline-flex; align-items: center; justify-content: center; transition: var(--transition-smooth);
+    }
+    .btn-icon-action:hover { background: var(--pigmento-ametista-medio); border-color: var(--secondary-lilac); }
+
+    /* FAIXA DE MARCAS */
+    .marcas-list { display: flex; gap: 12px; overflow-x: auto; padding: 12px 0; }
+    .marca-chip {
+      display: flex; align-items: center; gap: 10px; background: var(--pigmento-ametista-suave);
+      border: 1px solid var(--pigmento-ametista-medio); padding: 8px 14px; border-radius: 14px;
+      flex: 0 0 auto; backdrop-filter: blur(10px); transition: var(--transition-smooth);
+    }
+    .marca-chip:hover { border-color: var(--secondary-lilac); }
+    .marca-chip img { height: 24px; object-fit: contain; }
+    .marca-chip span { font-size: 0.8rem; font-weight: 600; color: #fff; }
+
+    /* MODAL DE EDIÇÃO — mesmo padrão do cd-stage / #case-detail-modal */
+    #edit-modal-overlay {
+      position: fixed; inset: 0; z-index: 100050;
+      display: flex; align-items: center; justify-content: center;
+      opacity: 0; pointer-events: none; visibility: hidden;
+      transition: opacity 0.3s ease, visibility 0.3s ease;
+      padding: 24px;
+    }
+    #edit-modal-overlay.open { opacity: 1; pointer-events: auto; visibility: visible; }
+    .glx-backdrop {
+      position: absolute; inset: 0;
+      background: rgba(8, 6, 14, 0.85);
+      backdrop-filter: blur(20px); -webkit-backdrop-filter: blur(20px);
+    }
+    .glx-stage {
+      position: relative;
+      width: min(96vw, 900px); max-height: 90vh;
+      display: flex; flex-direction: column;
+      transform: scale(0.95) translateY(16px);
+      transition: transform 0.3s cubic-bezier(0.22, 1, 0.36, 1);
+      z-index: 2;
+    }
+    #edit-modal-overlay.open .glx-stage { transform: scale(1) translateY(0); }
+    .glx-panel {
+      position: relative;
+      max-height: 90vh; overflow-y: auto;
+      background: linear-gradient(135deg, rgba(14, 14, 22, 0.98), rgba(28, 20, 48, 0.92));
+      backdrop-filter: blur(24px); -webkit-backdrop-filter: blur(24px);
+      border: 1px solid var(--pigmento-ametista-medio);
+      border-radius: 24px;
+      box-shadow: 0 25px 60px rgba(0,0,0,0.9), 0 0 40px rgba(168,85,247,0.2);
+      padding: 32px;
+    }
+    .glx-close {
+      position: absolute; top: 20px; right: 20px; z-index: 5;
+      width: 36px; height: 36px; border-radius: 50%;
+      background: rgba(255,255,255,0.08);
+      border: 1px solid rgba(255,255,255,0.15);
+      color: #fff; font-size: 1.2rem; line-height: 1;
+      cursor: pointer; display: flex; align-items: center; justify-content: center;
+      transition: all 0.2s ease;
+    }
+    .glx-close:hover { color: var(--primary-lime); border-color: var(--primary-lime); background: rgba(0,255,102,0.1); }
+
+    .edit-section-title {
+      font-size: 0.72rem; font-weight: 700; text-transform: uppercase; letter-spacing: 1.5px;
+      color: var(--secondary-lilac); margin: 24px 0 12px; position: relative; z-index: 3;
+    }
+    .edit-media-grid { display: flex; gap: 12px; overflow-x: auto; padding-bottom: 12px; position: relative; z-index: 3; }
+    .edit-media-thumb {
+      flex: 0 0 auto; width: 140px; height: 105px; border-radius: 14px; overflow: hidden;
+      position: relative; border: 1px solid var(--pigmento-ametista-medio); background: rgba(0,0,0,0.4);
+      transition: transform 0.2s ease, border-color 0.2s ease;
+    }
+    .edit-media-thumb:hover { transform: scale(1.03); border-color: var(--primary-lime); }
+    .edit-media-thumb img, .edit-media-thumb video { width: 100%; height: 100%; object-fit: cover; }
+    .btn-del-media {
+      position: absolute; top: 6px; right: 6px; background: rgba(255, 77, 77, 0.9); border: none;
+      color: #fff; width: 24px; height: 24px; border-radius: 50%; cursor: pointer; font-weight: 800;
+      font-size: 0.75rem; z-index: 10;
+    }
+
+    .specs-edit-list { display: flex; flex-direction: column; gap: 8px; margin-bottom: 12px; position: relative; z-index: 3; }
+    .spec-edit-item { display: flex; gap: 8px; align-items: center; }
+
+    @media (max-width: 720px) {
+      .admin-wrapper { padding: 100px 16px 90px; }
+      .glx-panel { padding: 22px 18px; }
+      .search-filter-group { flex-direction: column; }
+    }
+  </style>
+</head>
+<body>
+
+  <canvas id="orbit-canvas"></canvas>
+  <div id="plasmaLayer" class="plasma-top-layer"></div>
+
+  <div class="viewport-wrapper">
+
+  <header id="calc-header">
+    <div class="logo-container">
+      <a href="index" class="logo-link" aria-label="Página Inicial 432UP">
+        <img src="imagens/logo.png" alt="432UP! Produções" class="logo-img">
+      </a>
+    </div>
+
+    <nav class="desktop-nav">
+      <a href="aessencia">A Essência</a>
+      <a href="calculadora">Experiências & Valores</a>
+      <a href="galeria.html">Galeria</a>
+
+      <details class="nav-dropdown-desktop">
+        <summary class="nav-link-like">Projetos ▾</summary>
+        <div class="lps-grid-dropdown plasma-glow-overlay aurora-border-glow">
+          <a href="mesa-de-producao">• Mesa de Produção (B2B)</a>
+        </div>
+      </details>
+    </nav>
+
+    <button class="mobile-hamburger" onclick="toggleMobileMenu()">☰</button>
+  </header>
+
+  <div class="mobile-menu-overlay" id="mobile-menu">
+    <button onclick="toggleMobileMenu()" style="position: absolute; top: 20px; right: 20px; background: transparent; border: none; color: #fff; font-size: 1.5rem; cursor: pointer;">✕</button>
+
+    <a href="aessencia" onclick="toggleMobileMenu()">A Essência</a>
+    <a href="calculadora" onclick="toggleMobileMenu()">Experiências & Valores</a>
+    <a href="galeria" onclick="toggleMobileMenu()">Galeria</a>
+  </div>
+
+  <!-- AUTH OVERLAY -->
+  <div id="auth-overlay">
+    <div class="auth-card">
+      <h2>Mesa de Produção 432UP!</h2>
+      <p>Acesse o painel de edição da galeria</p>
+
+      <form onsubmit="event.preventDefault(); autenticar();">
+        <div class="adm-field">
+          <label>E-mail</label>
+          <input type="email" id="auth-email" class="adm-input" placeholder="seu@email.com" required>
+        </div>
+        <div class="adm-field">
+          <label>Senha</label>
+          <input type="password" id="auth-pass" class="adm-input" placeholder="••••••••" required>
+        </div>
+        <button type="submit" id="btn-login" class="btn-adm-primary" style="width: 100%;">Entrar e Editar</button>
+      </form>
+    </div>
+  </div>
+
+  <!-- DASHBOARD PRINCIPAL -->
+  <div id="admin-main" class="admin-wrapper">
+    <div class="top-bar">
+      <div>
+        <span class="status-badge">Modo de Edição Ativo</span>
+        <h1>Galeria & Cases In Loco</h1>
+      </div>
+      <div style="display: flex; gap: 12px; align-items: center;">
+        <button class="btn-adm-primary" onclick="abrirNovoCaseModal()">+ Novo Case</button>
+        <button class="btn-logout" onclick="fazerLogout()">Sair</button>
+      </div>
+    </div>
+
+    <!-- GERENCIADOR DE MARCAS -->
+    <section class="marcas-section">
+      <h3>🏷️ Faixa de Marcas Parceiras (`co_galeria_marcas`)</h3>
+      
+      <form onsubmit="event.preventDefault(); salvarMarca();" style="display: flex; gap: 12px; flex-wrap: wrap; margin-bottom: 16px;">
+        <input type="text" id="marca-nome" class="adm-input" placeholder="Nome da Marca" style="flex: 1; min-width: 200px;" required>
+        <input type="file" id="marca-file" class="adm-input" accept="image/*" style="flex: 1; min-width: 200px;" required>
+        <button type="submit" id="btn-add-marca" class="btn-adm-primary">+ Enviar Logo</button>
+      </form>
+
+      <!-- LISTA DE MARCAS CADASTRADAS -->
+      <div id="marcas-container" class="marcas-list">
+        <span style="font-size: 0.8rem; opacity: 0.5;">Carregando marcas...</span>
+      </div>
+    </section>
+
+    <!-- BARRA DE PESQUISA E FILTROS -->
+    <div class="controls-bar">
+      <div class="search-filter-group">
+        <input type="text" id="filter-search" class="adm-input" placeholder="🔍 Buscar por cliente ou título..." oninput="filtrarCases()">
+        <select id="filter-cat" class="adm-input" style="max-width: 220px;" onchange="filtrarCases()">
+          <option value="">Todas as Categorias</option>
+          <option value="corporativo">Corporativo</option>
+          <option value="casamentos">Casamentos / Luxury</option>
+          <option value="shows-festivais">Shows & Festivais</option>
+          <option value="festas-confraternizacoes">Confraternizações</option>
+        </select>
+      </div>
+    </div>
+
+    <h3 class="section-heading">🖼️ Cases & Mídias da Galeria</h3>
+    <div id="cases-grid" class="admin-grid"></div>
+  </div>
+
+  <footer>
+    <p>© 2026 432UP! Produções — Curadoria Artística e Engenharia Estrutural</p>
+  </footer>
+
+  </div><!-- /.viewport-wrapper -->
+
+  <!-- MODAL DE EDIÇÃO E CRIAÇÃO -->
+  <div id="edit-modal-overlay" role="dialog" aria-modal="true">
+    <div class="glx-backdrop" onclick="fecharModalEdicao()"></div>
+    <div class="glx-stage">
+      <button class="glx-close" onclick="fecharModalEdicao()" aria-label="Fechar">&times;</button>
+      <div class="glx-panel">
+
+        <div class="edit-section-title" id="modal-title-header">01. Dados Principais do Case (`co_galeria_fotos`)</div>
+
+        <div style="display: grid; grid-template-columns: 2fr 1fr; gap: 12px;">
+          <div class="adm-field">
+            <label>Cliente / Marca Headline *</label>
+            <input type="text" id="modal-edit-cliente" class="adm-input" placeholder="Ex: Burger King, Gerdau..." oninput="autoGerarSlug(this.value)">
+          </div>
+          <div class="adm-field">
+            <label>Ordem de Exibição</label>
+            <input type="number" id="modal-edit-ordem" class="adm-input" placeholder="Ex: 10">
+          </div>
+        </div>
+
+        <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 12px;">
+          <div class="adm-field">
+            <label>Serviço / Subtítulo</label>
+            <input type="text" id="modal-edit-titulo" class="adm-input" placeholder="Ex: Pool Party & Iluminação">
+          </div>
+          <div class="adm-field">
+            <label>Categoria</label>
+            <select id="modal-edit-cat" class="adm-input">
+              <option value="corporativo">Corporativo</option>
+              <option value="casamentos">Casamentos / Luxury</option>
+              <option value="shows-festivais">Shows & Festivais</option>
+              <option value="festas-confraternizacoes">Confraternizações</option>
+            </select>
+          </div>
+        </div>
+
+        <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 12px;">
+          <div class="adm-field">
+            <label>Localização</label>
+            <input type="text" id="modal-edit-local" class="adm-input" placeholder="Ex: São Paulo - SP">
+          </div>
+          <div class="adm-field">
+            <label>Case Slug (Link único dos Detalhes)</label>
+            <input type="text" id="modal-edit-slug" class="adm-input" placeholder="Ex: gerdau-pool-party">
+          </div>
+        </div>
+
+        <div class="adm-field">
+          <label>Imagem / Vídeo de Capa do Card</label>
+          <input type="file" id="modal-edit-cover-file" class="adm-input" accept="image/*,video/*">
+        </div>
+
+        <div style="display: flex; gap: 16px; margin-bottom: 16px;">
+          <label style="cursor: pointer; display: flex; align-items: center; gap: 8px; font-size: 0.85rem; color:#fff;">
+            <input type="checkbox" id="modal-edit-destaque" style="accent-color: var(--primary-lime); width: 18px; height: 18px;">
+            ⭐ Exibir nos Super Cases (Destaque Principal)
+          </label>
+        </div>
+
+        <!-- SEÇÕES EXCLUSIVAS DE CASE JÁ EXISTENTE -->
+        <div id="modal-album-section">
+          <div class="edit-section-title">02. Álbum do Modal (`co_galeria_case_midias`)</div>
+          <div id="modal-media-list" class="edit-media-grid"></div>
+
+          <div class="adm-field" style="margin-top: 10px;">
+            <label>Adicionar Mídias em Lote ao Álbum (Fotos são otimizadas automaticamente)</label>
+            <input type="file" id="modal-new-media-files" class="adm-input" accept="image/*,video/*" multiple onchange="uploadMidiasLote(this.files)">
+            <span id="upload-lote-status" style="font-size: 0.75rem; color: var(--primary-lime); display: block; margin-top: 4px;"></span>
+          </div>
+
+          <div class="edit-section-title">03. O Que Foi Entregue (`co_galeria_case_specs`)</div>
+          <div id="modal-specs-list" class="specs-edit-list"></div>
+
+          <div style="display: flex; gap: 8px; margin-top: 8px; position: relative; z-index: 3;">
+            <input type="text" id="new-spec-item" class="adm-input" placeholder="Ex: Som Line Array 12kW, Painel de LED 4x2m">
+            <button type="button" class="btn-adm-primary" style="width: auto;" onclick="adicionarSpecItem()">+ Add</button>
+          </div>
+        </div>
+
+        <div style="display: flex; justify-content: space-between; margin-top: 30px; padding-top: 16px; border-top: 1px solid var(--pigmento-ametista-medio); position: relative; z-index: 3;">
+          <button type="button" id="btn-delete-case" class="btn-adm-primary" style="background: var(--danger); width: auto;" onclick="excluirCaseAtual()">Excluir Case</button>
+          <button type="button" id="btn-save-case" class="btn-adm-primary" style="width: auto;" onclick="salvarAlteracoesCase()">💾 Salvar Alterações</button>
+        </div>
+
+      </div>
+    </div>
+  </div>
+
+  <script>
+    const SUPABASE_URL_ADM = 'https://paetkspbfejtjjkngqej.supabase.co';
+    const SUPABASE_KEY_ADM = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InBhZXRrc3BiZmVqdGpqa25ncWVqIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzA5MDU2OTgsImV4cCI6MjA4NjQ4MTY5OH0.IiYweZ2g3bP7b0o7VvBW5LLb6d1oHtSNFUZlVkIsdsA';
+    const _supabase = supabase.createClient(SUPABASE_URL_ADM, SUPABASE_KEY_ADM);
+
+    let CURRENT_CASE = null;
+    let ALL_CASES_CACHE = [];
+
+    document.addEventListener('DOMContentLoaded', async () => {
+      const { data: { session } } = await _supabase.auth.getSession();
+      if (session) iniciarPainel();
+    });
+
+    async function autenticar() {
+      const email = document.getElementById('auth-email').value;
+      const password = document.getElementById('auth-pass').value;
+      const btn = document.getElementById('btn-login');
+      btn.innerText = 'Autenticando...';
+
+      const { data, error } = await _supabase.auth.signInWithPassword({ email, password });
+      if (error) {
+        alert('Erro ao autenticar: ' + error.message);
+        btn.innerText = 'Entrar e Editar';
+      } else {
+        iniciarPainel();
+      }
+    }
+
+    async function fazerLogout() {
+      await _supabase.auth.signOut();
+      window.location.reload();
+    }
+
+    function iniciarPainel() {
+      document.getElementById('auth-overlay').style.display = 'none';
+      document.getElementById('admin-main').style.display = 'block';
+      carregarGridCases();
+      carregarMarcas();
+    }
+
+    /* ---------- COMPACTAÇÃO AUTOMÁTICA DE IMAGEM (CLIENT-SIDE) ---------- */
+    async function otimizarImagemSeNecessario(file) {
+      if (!file.type.startsWith('image/')) return file;
+      
+      const options = {
+        maxSizeMB: 0.8,
+        maxWidthOrHeight: 1920,
+        useWebWorker: true,
+        fileType: 'image/jpeg'
+      };
+
+      try {
+        return await imageCompression(file, options);
+      } catch (error) {
+        console.warn('Falha na otimização de imagem, enviando original:', error);
+        return file;
+      }
+    }
+
+    function sanitizarNomeArquivo(nomeOriginal) {
+      const ext = nomeOriginal.split('.').pop();
+      const base = nomeOriginal.substring(0, nomeOriginal.lastIndexOf('.'))
+        .toLowerCase()
+        .replace(/[^a-z0-9]/g, '-');
+      return `${Date.now()}_${base}.${ext}`;
+    }
+
+    function autoGerarSlug(valor) {
+      if (!CURRENT_CASE) {
+        const slug = valor.toLowerCase().normalize("NFD").replace(/[\u0300-\u036f]/g, "").replace(/[^a-z0-9]+/g, '-').replace(/(^-|-$)/g, '');
+        document.getElementById('modal-edit-slug').value = slug;
+      }
+    }
+
+    function isVideoTipo(tipo, url) {
+      return tipo === 'video_yt' || tipo === 'video_up' || tipo === 'video' || (url && /\.(mp4|webm|mov)$/i.test(url));
+    }
+
+    function normalizarTipoUpload(file) {
+      return file.type.startsWith('video') ? 'video_up' : 'foto';
+    }
+
+    function videoTagPausado(url, extraStyle) {
+      return `<video src="${url}" controls preload="metadata" muted playsinline style="${extraStyle || ''}"></video>`;
+    }
+
+    /* ---------- GRID E REORDENAÇÃO DE CASES ---------- */
+    async function carregarGridCases() {
+      const grid = document.getElementById('cases-grid');
+      grid.innerHTML = '<div style="opacity:0.6;">Carregando cases...</div>';
+
+      const { data, error } = await _supabase.from('co_galeria_fotos').select('*').order('ordem', { ascending: true });
+      if (error) { grid.innerHTML = 'Erro ao carregar dados: ' + error.message; return; }
+
+      ALL_CASES_CACHE = data || [];
+      renderizarGrid(ALL_CASES_CACHE);
+    }
+
+    function renderizarGrid(lista) {
+      const grid = document.getElementById('cases-grid');
+      if (lista.length === 0) {
+        grid.innerHTML = '<div style="opacity:0.5;">Nenhum case encontrado.</div>';
+        return;
+      }
+
+      grid.innerHTML = lista.map((c, index) => {
+        const video = isVideoTipo(c.tipo, c.url);
+        const mediaHtml = video
+          ? videoTagPausado(c.url, 'width:100%;height:180px;object-fit:cover;background:#111;cursor:pointer;')
+          : `<img src="${c.url || c.url_thumb || 'imagens/favicon.png'}" class="adm-card-media" onclick="abrirEdicaoModal('${c.id}')">`;
+
+        return `
+          <div class="adm-card">
+            <div>${mediaHtml}</div>
+            <div class="adm-card-body">
+              <div style="display:flex; justify-content:space-between; align-items:flex-start;">
+                <div class="adm-card-title">${c.cliente || c.titulo || 'Sem Título'}</div>
+                <span style="font-size:0.7rem; opacity:0.6; font-weight:700;">#${c.ordem ?? index + 1}</span>
+              </div>
+              <div class="adm-card-sub">${c.cat} • ${c.local || 'N/A'}</div>
+              <div class="adm-card-footer">
+                <div style="display:flex; gap:6px;">
+                  <button class="btn-icon-action" title="Alternar Destaque" onclick="toggleDestaqueRapido('${c.id}', ${!c.destaque})">
+                    ${c.destaque ? '⭐' : '☆'}
+                  </button>
+                  <button class="btn-icon-action" title="Mover para Cima" onclick="alterarOrdemRapida('${c.id}', ${(c.ordem || index + 1) - 1})">▲</button>
+                  <button class="btn-icon-action" title="Mover para Baixo" onclick="alterarOrdemRapida('${c.id}', ${(c.ordem || index + 1) + 1})">▼</button>
+                </div>
+                <button class="btn-edit-modal" onclick="abrirEdicaoModal('${c.id}')">✏️ Editar In Loco</button>
+              </div>
+            </div>
+          </div>
+        `;
+      }).join('');
+    }
+
+    function filtrarCases() {
+      const q = document.getElementById('filter-search').value.toLowerCase();
+      const cat = document.getElementById('filter-cat').value;
+
+      const filtrados = ALL_CASES_CACHE.filter(c => {
+        const matchNome = (c.cliente || '').toLowerCase().includes(q) || (c.titulo || '').toLowerCase().includes(q);
+        const matchCat = cat === '' || c.cat === cat;
+        return matchNome && matchCat;
+      });
+
+      renderizarGrid(filtrados);
+    }
+
+    async function toggleDestaqueRapido(id, novoEstado) {
+      await _supabase.from('co_galeria_fotos').update({ destaque: novoEstado }).eq('id', id);
+      carregarGridCases();
+    }
+
+    async function alterarOrdemRapida(id, novaOrdem) {
+      if (novaOrdem < 1) novaOrdem = 1;
+      await _supabase.from('co_galeria_fotos').update({ ordem: novaOrdem }).eq('id', id);
+      carregarGridCases();
+    }
+
+    /* ---------- MODAL: CRIAR / EDITAR CASE ---------- */
+    function abrirNovoCaseModal() {
+      CURRENT_CASE = null;
+      document.getElementById('modal-title-header').innerText = "01. Novo Case da Galeria";
+      document.getElementById('modal-edit-cliente').value = '';
+      document.getElementById('modal-edit-titulo').value = '';
+      document.getElementById('modal-edit-cat').value = 'corporativo';
+      document.getElementById('modal-edit-local').value = '';
+      document.getElementById('modal-edit-slug').value = '';
+      document.getElementById('modal-edit-ordem').value = ALL_CASES_CACHE.length + 1;
+      document.getElementById('modal-edit-destaque').checked = false;
+      document.getElementById('modal-edit-cover-file').value = '';
+      document.getElementById('btn-delete-case').style.display = 'none';
+
+      // Esconde seções de fotos e specs antes de criar
+      document.getElementById('modal-album-section').style.display = 'none';
+
+      const modal = document.getElementById('edit-modal-overlay');
+      document.body.style.overflow = 'hidden';
+      requestAnimationFrame(() => {
+        modal.classList.add('open', 'glx-open');
+      });
+    }
+
+    async function abrirEdicaoModal(id) {
+      const { data, error } = await _supabase.from('co_galeria_fotos').select('*').eq('id', id).single();
+      if (error || !data) { alert('Erro ao carregar case.'); return; }
+
+      CURRENT_CASE = data;
+      document.getElementById('modal-title-header').innerText = "01. Dados Principais do Case (`co_galeria_fotos`)";
+      document.getElementById('modal-edit-cliente').value = data.cliente || '';
+      document.getElementById('modal-edit-titulo').value = data.titulo || '';
+      document.getElementById('modal-edit-cat').value = data.cat || 'corporativo';
+      document.getElementById('modal-edit-local').value = data.local || '';
+      document.getElementById('modal-edit-slug').value = data.case_slug || '';
+      document.getElementById('modal-edit-ordem').value = data.ordem || 1;
+      document.getElementById('modal-edit-destaque').checked = !!data.destaque;
+      document.getElementById('modal-edit-cover-file').value = '';
+      document.getElementById('btn-delete-case').style.display = 'block';
+
+      document.getElementById('modal-album-section').style.display = 'block';
+
+      await carregarMidiasModal(data.case_slug);
+      await carregarSpecsModal(data.case_slug);
+
+      const modal = document.getElementById('edit-modal-overlay');
+      document.body.style.overflow = 'hidden';
+      requestAnimationFrame(() => {
+        modal.classList.add('open', 'glx-open');
+      });
+    }
+
+    function fecharModalEdicao() {
+      const modal = document.getElementById('edit-modal-overlay');
+      modal.classList.remove('open', 'glx-open');
+      document.body.style.overflow = '';
+      CURRENT_CASE = null;
+    }
+
+    async function salvarAlteracoesCase() {
+      const btn = document.getElementById('btn-save-case');
+      btn.innerText = 'Salvando...';
+
+      const cliente = document.getElementById('modal-edit-cliente').value;
+      const titulo = document.getElementById('modal-edit-titulo').value;
+      const cat = document.getElementById('modal-edit-cat').value;
+      const local = document.getElementById('modal-edit-local').value;
+      let case_slug = document.getElementById('modal-edit-slug').value.trim();
+      const ordem = parseInt(document.getElementById('modal-edit-ordem').value) || 1;
+      const destaque = document.getElementById('modal-edit-destaque').checked;
+      const fileInput = document.getElementById('modal-edit-cover-file');
+
+      if (!cliente) {
+        alert('O nome do Cliente é obrigatório.');
+        btn.innerText = '💾 Salvar Alterações';
+        return;
+      }
+
+      if (!case_slug) {
+        case_slug = cliente.toLowerCase().normalize("NFD").replace(/[\u0300-\u036f]/g, "").replace(/[^a-z0-9]+/g, '-').replace(/(^-|-$)/g, '');
+      }
+
+      let payload = { cliente, titulo, cat, local, case_slug, ordem, destaque };
+
+      // Se houver nova imagem/vídeo de capa
+      if (fileInput.files.length > 0) {
+        let file = fileInput.files[0];
+        file = await otimizarImagemSeNecessario(file);
+
+        const fileName = `full/${sanitizarNomeArquivo(file.name)}`;
+        const { error: uploadErr } = await _supabase.storage.from('432up_galeria').upload(fileName, file);
+
+        if (uploadErr) {
+          alert('Erro no upload da foto de capa: ' + uploadErr.message);
+          btn.innerText = '💾 Salvar Alterações';
+          return;
+        }
+
+        const newUrl = `${SUPABASE_URL_ADM}/storage/v1/object/public/432up_galeria/${fileName}`;
+        payload.url = newUrl;
+        payload.url_thumb = newUrl;
+        payload.tipo = normalizarTipoUpload(file);
+      }
+
+      let error;
+      if (CURRENT_CASE) {
+        // Atualiza
+        const res = await _supabase.from('co_galeria_fotos').update(payload).eq('id', CURRENT_CASE.id);
+        error = res.error;
+      } else {
+        // Cria Novo
+        const res = await _supabase.from('co_galeria_fotos').insert([payload]);
+        error = res.error;
+      }
+
+      if (error) {
+        alert('Erro ao salvar no banco: ' + error.message);
+      } else {
+        alert('Case salvo com sucesso!');
+        fecharModalEdicao();
+        carregarGridCases();
+      }
+      btn.innerText = '💾 Salvar Alterações';
+    }
+
+    /* ---------- UPLOAD DE ÁLBUM EM LOTE ---------- */
+    async function carregarMidiasModal(slug) {
+      const wrap = document.getElementById('modal-media-list');
+      if (!slug) { wrap.innerHTML = '<div style="font-size:0.8rem; opacity:0.5;">Defina um Case Slug para gerenciar o álbum.</div>'; return; }
+
+      const { data } = await _supabase.from('co_galeria_case_midias').select('*').eq('case_slug', slug).order('ordem', { ascending: true });
+
+      wrap.innerHTML = (data || []).map(m => {
+        const video = isVideoTipo(m.tipo, m.url);
+        return `
+          <div class="edit-media-thumb">
+            <button type="button" class="btn-del-media" onclick="deletarMidiaModal('${m.id}')">✕</button>
+            ${video
+              ? videoTagPausado(m.url, 'width:100%;height:100%;object-fit:cover;')
+              : `<img src="${m.url}">`}
+          </div>
+        `;
+      }).join('');
+    }
+
+    async function uploadMidiasLote(files) {
+      if (!files || files.length === 0 || !CURRENT_CASE) return;
+      const slug = document.getElementById('modal-edit-slug').value || CURRENT_CASE.case_slug;
+      const statusLabel = document.getElementById('upload-lote-status');
+
+      if (!slug) { alert('Defina um Case Slug antes de adicionar mídias.'); return; }
+
+      let concluidos = 0;
+      for (let originalFile of files) {
+        statusLabel.innerText = `Otimizando e enviando ${concluidos + 1} de ${files.length}...`;
+        
+        const file = await otimizarImagemSeNecessario(originalFile);
+        const path = `midias/${sanitizarNomeArquivo(file.name)}`;
+
+        const { error: uploadErr } = await _supabase.storage.from('432up_galeria').upload(path, file);
+
+        if (!uploadErr) {
+          const url = `${SUPABASE_URL_ADM}/storage/v1/object/public/432up_galeria/${path}`;
+          await _supabase.from('co_galeria_case_midias').insert([{
+            case_slug: slug,
+            url: url,
+            tipo: normalizarTipoUpload(file)
+          }]);
+        }
+        concluidos++;
+      }
+
+      statusLabel.innerText = '✅ Upload em lote concluído!';
+      setTimeout(() => statusLabel.innerText = '', 3000);
+      carregarMidiasModal(slug);
+    }
+
+    async function deletarMidiaModal(id) {
+      await _supabase.from('co_galeria_case_midias').delete().eq('id', id);
+      carregarMidiasModal(CURRENT_CASE.case_slug);
+    }
+
+    /* ---------- SPECS ---------- */
+    async function carregarSpecsModal(slug) {
+      const wrap = document.getElementById('modal-specs-list');
+      if (!slug) { wrap.innerHTML = ''; return; }
+
+      const { data } = await _supabase.from('co_galeria_case_specs').select('*').eq('case_slug', slug).order('ordem');
+      wrap.innerHTML = (data || []).map(s => `
+        <div class="spec-edit-item">
+          <input type="text" value="${s.item}" class="adm-input" readonly>
+          <button type="button" class="btn-adm-primary" style="background:var(--danger); width:auto; padding:8px 12px;" onclick="deletarSpec('${s.id}')">✕</button>
+        </div>
+      `).join('');
+    }
+
+    async function adicionarSpecItem() {
+      const input = document.getElementById('new-spec-item');
+      const slug = document.getElementById('modal-edit-slug').value || CURRENT_CASE?.case_slug;
+
+      if (!input.value || !slug) { alert('Insira o texto da spec.'); return; }
+
+      await _supabase.from('co_galeria_case_specs').insert([{ case_slug: slug, item: input.value }]);
+      input.value = '';
+      carregarSpecsModal(slug);
+    }
+
+    async function deletarSpec(id) {
+      await _supabase.from('co_galeria_case_specs').delete().eq('id', id);
+      carregarSpecsModal(CURRENT_CASE.case_slug);
+    }
+
+    async function excluirCaseAtual() {
+      if (!CURRENT_CASE) return;
+      if (!confirm(`Deseja realmente apagar o case "${CURRENT_CASE.cliente || CURRENT_CASE.titulo}"?`)) return;
+
+      const { error } = await _supabase.from('co_galeria_fotos').delete().eq('id', CURRENT_CASE.id);
+      if (error) alert('Erro ao excluir: ' + error.message);
+      else {
+        fecharModalEdicao();
+        carregarGridCases();
+      }
+    }
+
+    /* ---------- FAIXA DE MARCAS ---------- */
+    async function carregarMarcas() {
+      const wrap = document.getElementById('marcas-container');
+      const { data } = await _supabase.from('co_galeria_marcas').select('*').order('created_at', { ascending: false });
+
+      if (!data || data.length === 0) {
+        wrap.innerHTML = '<span style="font-size:0.8rem; opacity:0.5;">Nenhuma marca cadastrada.</span>';
+        return;
+      }
+
+      wrap.innerHTML = data.map(m => `
+        <div class="marca-chip">
+          <img src="${m.logo_url}" alt="${m.nome}">
+          <span>${m.nome}</span>
+          <button style="background:none; border:none; color:var(--danger); cursor:pointer; font-weight:800;" onclick="deletarMarca('${m.id}')">✕</button>
+        </div>
+      `).join('');
+    }
+
+    async function salvarMarca() {
+      const btn = document.getElementById('btn-add-marca');
+      const nome = document.getElementById('marca-nome').value;
+      const fileInput = document.getElementById('marca-file');
+
+      if (!fileInput.files.length) return;
+      btn.innerText = 'Otimizando...';
+
+      let file = fileInput.files[0];
+      file = await otimizarImagemSeNecessario(file);
+
+      const path = `marcas/${sanitizarNomeArquivo(file.name)}`;
+
+      const { error: uploadErr } = await _supabase.storage.from('432up_galeria').upload(path, file);
+      if (uploadErr) { alert('Erro no envio da imagem: ' + uploadErr.message); btn.innerText = '+ Enviar Logo'; return; }
+
+      const logo_url = `${SUPABASE_URL_ADM}/storage/v1/object/public/432up_galeria/${path}`;
+      const { error: dbErr } = await _supabase.from('co_galeria_marcas').insert([{ nome, logo_url }]);
+
+      if (dbErr) alert('Erro ao salvar marca: ' + dbErr.message);
+      else {
+        document.getElementById('marca-nome').value = '';
+        fileInput.value = '';
+        carregarMarcas();
+      }
+      btn.innerText = '+ Enviar Logo';
+    }
+
+    async function deletarMarca(id) {
+      if (!confirm('Deseja remover este logo de marca?')) return;
+      await _supabase.from('co_galeria_marcas').delete().eq('id', id);
+      carregarMarcas();
+    }
+  </script>
+</body>
+</html>
