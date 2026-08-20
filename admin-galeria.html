@@ -181,19 +181,10 @@
       border: 1px solid var(--pigmento-ametista-medio); border-radius: 20px;
       overflow: hidden; display: flex; flex-direction: column; transition: var(--transition-smooth); position: relative;
     }
-    .adm-card[data-cat="corporativo"] { border-color: rgba(6, 182, 212, 0.35); background: linear-gradient(160deg, rgba(6, 182, 212, 0.06), rgba(14, 14, 22, 0.8) 55%); }
-    .adm-card[data-cat="casamentos"] { border-color: rgba(212, 175, 55, 0.35); background: linear-gradient(160deg, rgba(212, 175, 55, 0.06), rgba(14, 14, 22, 0.8) 55%); }
-    .adm-card[data-cat="shows-festivais"] { border-color: rgba(168, 85, 247, 0.35); background: linear-gradient(160deg, rgba(168, 85, 247, 0.06), rgba(14, 14, 22, 0.8) 55%); }
-    .adm-card[data-cat="festas-confraternizacoes"] { border-color: rgba(255, 138, 76, 0.35); background: linear-gradient(160deg, rgba(255, 138, 76, 0.06), rgba(14, 14, 22, 0.8) 55%); }
-
     .adm-card:hover {
       border-color: var(--secondary-lilac); transform: translateY(-4px);
       box-shadow: 0 20px 40px rgba(0,0,0,0.6), 0 0 20px rgba(168,85,247,0.15);
     }
-    .adm-card[data-cat="corporativo"]:hover { border-color: var(--cat-corporativo); box-shadow: 0 20px 40px rgba(0,0,0,0.6), 0 0 20px var(--cat-corporativo-glow); }
-    .adm-card[data-cat="casamentos"]:hover { border-color: var(--cat-casamentos); box-shadow: 0 20px 40px rgba(0,0,0,0.6), 0 0 20px var(--cat-casamentos-glow); }
-    .adm-card[data-cat="shows-festivais"]:hover { border-color: var(--cat-shows); box-shadow: 0 20px 40px rgba(0,0,0,0.6), 0 0 20px var(--cat-shows-glow); }
-    .adm-card[data-cat="festas-confraternizacoes"]:hover { border-color: var(--cat-festas); box-shadow: 0 20px 40px rgba(0,0,0,0.6), 0 0 20px var(--cat-festas-glow); }
 
     .adm-card-media { width: 100%; height: 180px; object-fit: cover; background: #111; cursor: pointer; transition: var(--transition-smooth); }
     .adm-card:hover .adm-card-media { transform: scale(1.03); }
@@ -453,10 +444,6 @@
         <input type="text" id="filter-search" class="adm-input" placeholder="🔍 Buscar por cliente ou título..." oninput="filtrarCases()">
         <select id="filter-cat" class="adm-input" style="max-width: 220px;" onchange="filtrarCases()">
           <option value="">Todas as Categorias</option>
-          <option value="corporativo">Corporativo</option>
-          <option value="casamentos">Casamentos / Luxury</option>
-          <option value="shows-festivais">Shows & Festivais</option>
-          <option value="festas-confraternizacoes">Confraternizações</option>
         </select>
       </div>
     </div>
@@ -498,10 +485,6 @@
           <div class="adm-field">
             <label>Categoria</label>
             <select id="modal-edit-cat" class="adm-input">
-              <option value="corporativo">Corporativo</option>
-              <option value="casamentos">Casamentos / Luxury</option>
-              <option value="shows-festivais">Shows & Festivais</option>
-              <option value="festas-confraternizacoes">Confraternizações</option>
             </select>
           </div>
         </div>
@@ -578,13 +561,92 @@
     const SUPABASE_KEY_ADM = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InBhZXRrc3BiZmVqdGpqa25ncWVqIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzA5MDU2OTgsImV4cCI6MjA4NjQ4MTY5OH0.IiYweZ2g3bP7b0o7VvBW5LLb6d1oHtSNFUZlVkIsdsA';
     const _supabase = supabase.createClient(SUPABASE_URL_ADM, SUPABASE_KEY_ADM);
 
-    const CAT_THEME = {
-      'corporativo':               { accent: '#06B6D4', glow: 'rgba(6, 182, 212, 0.25)',  pig: 'rgba(6, 182, 212, 0.08)' },
-      'casamentos':                { accent: '#D4AF37', glow: 'rgba(212, 175, 55, 0.25)', pig: 'rgba(212, 175, 55, 0.08)' },
-      'shows-festivais':           { accent: '#A855F7', glow: 'rgba(168, 85, 247, 0.25)', pig: 'rgba(168, 85, 247, 0.08)' },
-      'festas-confraternizacoes':  { accent: '#FF8A4C', glow: 'rgba(255, 138, 76, 0.25)', pig: 'rgba(255, 138, 76, 0.08)' }
-    };
+    // Paleta de fallback usada para categorias que ainda não têm cor explícita definida
+    // (rotaciona entre essas cores conforme novas categorias são cadastradas em co_galeria_categorias)
+    const CAT_COLOR_FALLBACK_POOL = ['#06B6D4', '#D4AF37', '#A855F7', '#FF8A4C', '#00FF66', '#FF4D6D', '#00F0FF', '#F472B6'];
+
+    // Preenchido dinamicamente a partir de co_galeria_categorias (ver carregarCategorias())
+    // Formato: { slug: { accent, glow, pig, nome, emoji } }
+    let CAT_THEME = {};
     const CAT_THEME_DEFAULT = { accent: '#A855F7', glow: 'rgba(168, 85, 247, 0.25)', pig: 'rgba(168, 85, 247, 0.08)' };
+    let CATEGORIAS_CACHE = [];
+
+    function hexToRgba(hex, alpha) {
+      const h = hex.replace('#', '');
+      const r = parseInt(h.substring(0, 2), 16);
+      const g = parseInt(h.substring(2, 4), 16);
+      const b = parseInt(h.substring(4, 6), 16);
+      return `rgba(${r}, ${g}, ${b}, ${alpha})`;
+    }
+
+    // Busca as categorias reais cadastradas em co_galeria_categorias (fonte única de verdade,
+    // compartilhada com a galeria pública) e usa para popular os dois <select> do admin
+    // (filtro de listagem e campo de edição de case), além de montar o CAT_THEME dinamicamente.
+    async function carregarCategorias() {
+      const { data, error } = await _supabase.from('co_galeria_categorias').select('*').order('ordem', { ascending: true });
+      if (error) {
+        console.warn('[admin] falha ao carregar co_galeria_categorias', error);
+        CATEGORIAS_CACHE = [];
+      } else {
+        CATEGORIAS_CACHE = data || [];
+      }
+
+      CAT_THEME = {};
+      CATEGORIAS_CACHE.forEach((c, idx) => {
+        const accent = CAT_COLOR_FALLBACK_POOL[idx % CAT_COLOR_FALLBACK_POOL.length];
+        CAT_THEME[c.slug] = {
+          accent,
+          glow: hexToRgba(accent, 0.25),
+          pig: hexToRgba(accent, 0.08),
+          nome: c.nome,
+          emoji: c.emoji || ''
+        };
+      });
+
+      popularSelectsCategorias();
+      injetarEstilosDinamicosCategorias();
+    }
+
+    function popularSelectsCategorias() {
+      const filterSel = document.getElementById('filter-cat');
+      const modalSel = document.getElementById('modal-edit-cat');
+
+      const optsHtml = CATEGORIAS_CACHE.map(c =>
+        `<option value="${c.slug}">${c.emoji ? c.emoji + ' ' : ''}${c.nome}</option>`
+      ).join('');
+
+      if (filterSel) {
+        const valorAtual = filterSel.value;
+        filterSel.innerHTML = '<option value="">Todas as Categorias</option>' + optsHtml;
+        if ([...filterSel.options].some(o => o.value === valorAtual)) filterSel.value = valorAtual;
+      }
+
+      if (modalSel) {
+        const valorAtual = modalSel.value;
+        modalSel.innerHTML = optsHtml;
+        if ([...modalSel.options].some(o => o.value === valorAtual)) modalSel.value = valorAtual;
+      }
+    }
+
+    // Gera CSS para bordas/temas dos cards do admin (.adm-card[data-cat="slug"]) dinamicamente,
+    // já que as categorias não são mais fixas no HTML/CSS estático.
+    function injetarEstilosDinamicosCategorias() {
+      let styleTag = document.getElementById('cat-dynamic-styles');
+      if (!styleTag) {
+        styleTag = document.createElement('style');
+        styleTag.id = 'cat-dynamic-styles';
+        document.head.appendChild(styleTag);
+      }
+      let css = '';
+      Object.keys(CAT_THEME).forEach(slug => {
+        const t = CAT_THEME[slug];
+        css += `
+          .adm-card[data-cat="${slug}"] { border-color: ${hexToRgba(t.accent, 0.35)}; background: linear-gradient(160deg, ${hexToRgba(t.accent, 0.06)}, rgba(14, 14, 22, 0.8) 55%); }
+          .adm-card[data-cat="${slug}"]:hover { border-color: ${t.accent}; box-shadow: 0 20px 40px rgba(0,0,0,0.6), 0 0 20px ${hexToRgba(t.accent, 0.25)}; }
+        `;
+      });
+      styleTag.textContent = css;
+    }
 
     function aplicarTemaAccent(catSlug) {
       const theme = CAT_THEME[catSlug] || CAT_THEME_DEFAULT;
@@ -644,7 +706,9 @@
     function iniciarPainel() {
       document.getElementById('auth-overlay').style.display = 'none';
       document.getElementById('admin-main').style.display = 'block';
-      carregarGridCases();
+      carregarCategorias().then(() => {
+        carregarGridCases();
+      });
       carregarMarcas();
     }
 
@@ -734,6 +798,12 @@
       renderizarGrid(ALL_CASES_CACHE);
     }
 
+    function nomeCategoria(slug) {
+      const t = CAT_THEME[slug];
+      if (t && t.nome) return (t.emoji ? t.emoji + ' ' : '') + t.nome;
+      return slug || 'Sem categoria';
+    }
+
     function renderizarGrid(lista) {
       const grid = document.getElementById('cases-grid');
 
@@ -765,7 +835,7 @@
                 <div class="adm-card-title">${c.cliente || c.titulo || 'Sem Título'}</div>
                 <span style="font-size:0.7rem; opacity:0.6; font-weight:700;">#${c.ordem ?? index + 1}</span>
               </div>
-              <div class="adm-card-sub">${c.cat} • ${c.local || 'N/A'}</div>
+              <div class="adm-card-sub">${nomeCategoria(c.cat)} • ${c.local || 'N/A'}</div>
               <div class="adm-card-footer">
                 <div class="adm-card-footer-actions">
                   <button class="btn-icon-action" title="Alternar Destaque" onclick="toggleDestaqueRapido('${c.id}', ${!c.destaque})">
@@ -849,7 +919,8 @@
       document.getElementById('modal-title-header').innerText = "01. Novo Case da Galeria";
       document.getElementById('modal-edit-cliente').value = '';
       document.getElementById('modal-edit-titulo').value = '';
-      document.getElementById('modal-edit-cat').value = 'corporativo';
+      const catSel = document.getElementById('modal-edit-cat');
+      if (catSel.options.length > 0) catSel.selectedIndex = 0;
       document.getElementById('modal-edit-local').value = '';
       document.getElementById('modal-edit-slug').value = '';
       document.getElementById('modal-edit-descricao').value = '';
@@ -882,7 +953,12 @@
       document.getElementById('modal-title-header').innerText = "01. Dados Principais do Case (`co_galeria_fotos`)";
       document.getElementById('modal-edit-cliente').value = dataCache.cliente || '';
       document.getElementById('modal-edit-titulo').value = dataCache.titulo || '';
-      document.getElementById('modal-edit-cat').value = dataCache.cat || 'corporativo';
+      const catSel = document.getElementById('modal-edit-cat');
+      if ([...catSel.options].some(o => o.value === dataCache.cat)) {
+        catSel.value = dataCache.cat;
+      } else if (catSel.options.length > 0) {
+        catSel.selectedIndex = 0;
+      }
       document.getElementById('modal-edit-local').value = dataCache.local || '';
       document.getElementById('modal-edit-slug').value = dataCache.case_slug || '';
       document.getElementById('modal-edit-descricao').value = dataCache.descricao || '';
