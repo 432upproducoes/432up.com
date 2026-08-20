@@ -1,4 +1,4 @@
-/* ========== script/galeria.js · 432UP · v9.0 · Tema por Categoria + Autoplay + Overlay Único ========== */
+/* ========== script/galeria.js · 432UP · v10.0 · Categorias Dinâmicas + Strip de Marcas Sincronizada ========== */
 
 function showGalToast(msg, type) {
   let container = document.getElementById('galToastContainer');
@@ -178,6 +178,16 @@ function ensureLightboxStyles() {
     .cd-specs-list li { font-size: 0.85rem; color: #E2E8F0; padding-left: 16px; position: relative; }
     .cd-specs-list li::before { content: "•"; color: #00FF66; position: absolute; left: 0; font-weight: bold; }
     .cd-cta-row { margin-top: 24px; display: flex; gap: 10px; flex-wrap: wrap; position: relative; z-index: 3; }
+
+    /* ===== DROPDOWN SCHUMANN DINÂMICO ===== */
+    .drop-item[data-empty="true"] { opacity: 0.5; font-style: italic; cursor: default; pointer-events: none; }
+
+    /* ===== STRIP DE MARCAS (skeleton enquanto carrega) ===== */
+    .brand-chip { flex: 0 0 auto; display: flex; align-items: center; justify-content: center; height: 26px; }
+    .brand-chip img { height: 26px; width: auto; object-fit: contain; filter: grayscale(1) brightness(1.6); opacity: 0.7; transition: opacity 0.25s ease, filter 0.25s ease; }
+    .brand-chip img:hover { opacity: 1; filter: grayscale(0) brightness(1); }
+    .brand-fallback-text { font-size: 0.95rem; font-weight: 800; letter-spacing: 1px; color: rgba(255,255,255,0.55); white-space: nowrap; }
+    .strip-wrapper[data-empty="true"] { display: none !important; }
 
     @media (max-width: 720px) {
       .glx-prev { left: 6px; }
@@ -439,15 +449,23 @@ document.addEventListener('DOMContentLoaded', function () {
     return item.tipo === 'video_yt' || item.tipo === 'video_up';
   }
 
+  /* ========== STRIP DE MARCAS (marquee) — 100% Supabase, sem fallback fixo ========== */
   function renderBrands() {
     var wrapper = document.getElementById('brands-strip-wrapper');
-    var strip = document.getElementById('brands-strip');
-    if (!wrapper || !strip) return;
+    var track = document.getElementById('brands-strip-track');
+    if (!wrapper || !track) return;
 
-    var ativos = (marcas || []).filter(function (m) { return m.ativo !== false; });
-    if (!ativos.length) { wrapper.style.display = 'none'; return; }
+    var ativos = (marcas || []).filter(function (m) { return m.ativo !== false && (m.nome || m.logo_url); });
 
-    strip.innerHTML = ativos.map(function (m) {
+    if (!ativos.length) {
+      wrapper.setAttribute('data-empty', 'true');
+      track.innerHTML = '';
+      return;
+    }
+
+    wrapper.removeAttribute('data-empty');
+
+    function chip(m) {
       var nome = escapeHtml(m.nome || '');
       if (m.logo_url) {
         return '<div class="brand-chip" title="' + nome + '">' +
@@ -456,27 +474,140 @@ document.addEventListener('DOMContentLoaded', function () {
           '</div>';
       }
       return '<div class="brand-chip"><span class="brand-fallback-text">' + nome + '</span></div>';
-    }).join('');
+    }
 
-    wrapper.style.display = '';
+    // Duplica a lista para o efeito de loop contínuo do marquee (igual ao strip original)
+    var chipsHtml = ativos.map(chip).join('');
+    track.innerHTML = chipsHtml + chipsHtml;
   }
 
+  /* ========== RENDERIZAÇÃO DE FILTROS: Dropdown Schumann + Pills + Select (todos em sync) ========== */
   function renderFilters() {
     var wrap = document.getElementById('filter-wrapper');
-    if (!wrap) return;
-    var html = '<button class="filter-btn active" data-cat="all">Ver Todas</button>';
-    categorias.forEach(function (c) {
-      html += '<button class="filter-btn" data-cat="' + escapeHtml(c.slug) + '">' + escapeHtml(c.emoji || '') + ' ' + escapeHtml(c.nome) + '</button>';
-    });
-    wrap.innerHTML = html;
-    wrap.querySelectorAll('.filter-btn').forEach(function (btn) {
-      btn.addEventListener('click', function (e) {
-        wrap.querySelectorAll('.filter-btn').forEach(function (b) { b.classList.remove('active'); });
-        e.currentTarget.classList.add('active');
-        currentCat = e.currentTarget.dataset.cat;
-        renderGrid(itens);
+    var selectEl = document.getElementById('cat-select') || document.querySelector('select[name="categoria"]');
+    var dropMenu = document.getElementById('dropMenu');
+    var dropLabel = document.getElementById('selected-cat-name');
+
+    var CAT_ALL_COLOR = 'var(--primary-lime)';
+
+    function catColor(slug) {
+      var t = getCatTheme(slug);
+      return t.accent;
+    }
+
+    function applyCurrentToUI(displayName, color) {
+      if (dropLabel) {
+        dropLabel.innerText = displayName;
+        dropLabel.style.color = color;
+      }
+    }
+
+    // 1. Popula os Pills (se existirem no DOM)
+    if (wrap) {
+      var html = '<button class="filter-btn active" data-cat="all">Ver Todas</button>';
+      categorias.forEach(function (c) {
+        html += '<button class="filter-btn" data-cat="' + escapeHtml(c.slug) + '">' + escapeHtml(c.emoji || '') + ' ' + escapeHtml(c.nome) + '</button>';
       });
-    });
+      wrap.innerHTML = html;
+      wrap.querySelectorAll('.filter-btn').forEach(function (btn) {
+        btn.addEventListener('click', function (e) {
+          wrap.querySelectorAll('.filter-btn').forEach(function (b) { b.classList.remove('active'); });
+          e.currentTarget.classList.add('active');
+          currentCat = e.currentTarget.dataset.cat;
+          if (selectEl) selectEl.value = currentCat;
+          syncDropdownSelection(currentCat);
+          renderGrid(itens);
+        });
+      });
+    }
+
+    // 2. Popula o <select> nativo (se existir)
+    if (selectEl) {
+      var selectHtml = '<option value="all">Ver Todas as Categorias</option>';
+      categorias.forEach(function (c) {
+        selectHtml += '<option value="' + escapeHtml(c.slug) + '">' + (c.emoji ? c.emoji + ' ' : '') + escapeHtml(c.nome) + '</option>';
+      });
+      selectEl.innerHTML = selectHtml;
+      selectEl.value = currentCat;
+
+      if (selectEl.dataset.listenerAttached !== 'true') {
+        selectEl.dataset.listenerAttached = 'true';
+        selectEl.addEventListener('change', function (e) {
+          currentCat = e.target.value;
+          if (wrap) {
+            wrap.querySelectorAll('.filter-btn').forEach(function (btn) {
+              btn.classList.toggle('active', btn.dataset.cat === currentCat);
+            });
+          }
+          syncDropdownSelection(currentCat);
+          renderGrid(itens);
+        });
+      }
+    }
+
+    // 3. Popula o Dropdown Schumann (visual customizado do galeria.html), gerado 100% a partir do Supabase
+    function buildDropdownItems() {
+      if (!dropMenu) return;
+
+      var itemsHtml = '<div class="drop-item selected" data-cat="all">' +
+        '<span>Todas as Categorias</span> <span class="cat-dot" style="background: ' + CAT_ALL_COLOR + ';"></span>' +
+        '</div>';
+
+      if (!categorias.length) {
+        itemsHtml += '<div class="drop-item" data-empty="true"><span>Nenhuma categoria cadastrada</span></div>';
+      } else {
+        categorias.forEach(function (c) {
+          var color = catColor(c.slug);
+          itemsHtml += '<div class="drop-item" data-cat="' + escapeHtml(c.slug) + '">' +
+            '<span>' + (c.emoji ? escapeHtml(c.emoji) + ' ' : '') + escapeHtml(c.nome) + '</span>' +
+            '<span class="cat-dot" style="background: ' + color + ';"></span>' +
+            '</div>';
+        });
+      }
+
+      dropMenu.innerHTML = itemsHtml;
+
+      dropMenu.querySelectorAll('.drop-item[data-cat]').forEach(function (el) {
+        el.addEventListener('click', function () {
+          var slug = el.getAttribute('data-cat');
+          var name = el.querySelector('span').textContent.trim();
+          var color = slug === 'all' ? CAT_ALL_COLOR : catColor(slug);
+
+          currentCat = slug;
+
+          dropMenu.querySelectorAll('.drop-item').forEach(function (i) { i.classList.remove('selected'); });
+          el.classList.add('selected');
+          applyCurrentToUI(name, color);
+
+          if (selectEl) selectEl.value = slug;
+          if (wrap) {
+            wrap.querySelectorAll('.filter-btn').forEach(function (btn) {
+              btn.classList.toggle('active', btn.dataset.cat === slug);
+            });
+          }
+
+          if (typeof toggleDrop === 'function') {
+            var menuEl = document.getElementById('dropMenu');
+            if (menuEl) menuEl.classList.remove('open');
+          }
+
+          renderGrid(itens);
+        });
+      });
+    }
+
+    function syncDropdownSelection(slug) {
+      if (!dropMenu) return;
+      var target = dropMenu.querySelector('.drop-item[data-cat="' + slug + '"]');
+      if (!target) return;
+      dropMenu.querySelectorAll('.drop-item').forEach(function (i) { i.classList.remove('selected'); });
+      target.classList.add('selected');
+      var name = target.querySelector('span').textContent.trim();
+      var color = slug === 'all' ? CAT_ALL_COLOR : catColor(slug);
+      applyCurrentToUI(name, color);
+    }
+
+    buildDropdownItems();
   }
 
   function cardVideoHtml(item, thumbFallback) {
@@ -692,8 +823,7 @@ document.addEventListener('DOMContentLoaded', function () {
     document.getElementById('cd-subtitle').textContent = subtitle || '';
     document.getElementById('cd-media-row').innerHTML = '<div class="cd-empty-state">Carregando mídias...</div>';
     document.getElementById('cd-specs-list').innerHTML = '';
-    
-    // PREENCHE A DESCRIÇÃO NO MODAL ABAIXO DE "O QUE FOI ENTREGUE"
+
     var descEl = document.getElementById('cd-description');
     if (descEl) {
       if (descText && descText.trim() !== '') {
@@ -867,6 +997,11 @@ document.addEventListener('DOMContentLoaded', function () {
         return;
       }
       if (errorEl) errorEl.style.display = 'none';
+
+      if (typeof dispararLeadTelegram === 'function') {
+        dispararLeadTelegram(name, contact, msg || 'Contato pela galeria');
+      }
+
       btnSubmitContact.innerText = 'Registrando...';
       btnSubmitContact.disabled = true;
       var leadSaved = true;
