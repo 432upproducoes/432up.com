@@ -1,0 +1,835 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
+    <title>A Gruta — O Portal dos Dossiês | A Quarta Via (432UP)</title>
+    <meta name="description" content="O lobby central do universo narrativo de A Quarta Via. Exposição de Livros Físicos 3D em ambiente dark glassmorphism com código vivo.">
+    
+    <!-- Tipografias: Cinzel, EB Garamond e Fira Code -->
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Cinzel:wght@600;700;900&family=EB+Garamond:ital,wght@0,400;0,600;1,400;1,600&family=Fira+Code:wght@400;600;700&display=swap" rel="stylesheet">
+
+    <style>
+        /* ==========================================================================
+           1. VARIÁVEIS E RESET GLOBAL
+           ========================================================================== */
+        :root {
+            --bg-void: #030204;
+            --bg-chamber: #07060a;
+            --gold-burnt: #b8860b;
+            --gold-bright: #d4af37;
+            --gold-glow: rgba(212, 175, 55, 0.35);
+            --amber-dim: rgba(184, 134, 11, 0.12);
+            --text-primary: #e6d7c3;
+            --text-subtle: #8a7a68;
+            
+            --font-cinzel: 'Cinzel', serif;
+            --font-garamond: 'EB Garamond', serif;
+            --font-mono: 'Fira Code', monospace;
+        }
+
+        *, *::before, *::after {
+            box-sizing: border-box;
+            margin: 0;
+            padding: 0;
+        }
+
+        html, body {
+            width: 100%;
+            height: 100%;
+            background-color: var(--bg-void);
+            color: var(--text-primary);
+            font-family: var(--font-garamond);
+            overflow-x: hidden;
+            -webkit-font-smoothing: antialiased;
+        }
+
+        /* ==========================================================================
+           2. CANVASES DE AMBIENTE (MATRIX RAIN + CANVAS DE EMBER PARTICLES)
+           ========================================================================== */
+        #matrixCanvas, #particlesCanvas {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100vw;
+            height: 100vh;
+            pointer-events: none;
+        }
+
+        #matrixCanvas {
+            z-index: 1;
+            opacity: 0.28;
+            mix-blend-mode: screen;
+        }
+
+        #particlesCanvas {
+            z-index: 2;
+            opacity: 0.6;
+        }
+
+        /* ==========================================================================
+           3. ESTRUTURA PRINCIPAL DA GRUTA & ILUMINAÇÃO ORGÂNICA
+           ========================================================================== */
+        .gruta-chamber {
+            position: relative;
+            z-index: 3;
+            min-height: 100vh;
+            width: 100%;
+            display: flex;
+            flex-direction: column;
+            justify-content: space-between;
+            align-items: center;
+            padding: max(2rem, env(safe-area-inset-top)) 1.5rem max(2rem, env(safe-area-inset-bottom)) 1.5rem;
+            background: 
+                radial-gradient(circle at 50% 35%, rgba(184, 134, 11, 0.15) 0%, rgba(10, 6, 12, 0.85) 50%, var(--bg-void) 90%);
+            animation: chamberBreath 14s ease-in-out infinite alternate;
+        }
+
+        @keyframes chamberBreath {
+            0% {
+                background-size: 100% 100%;
+                filter: brightness(0.92);
+            }
+            100% {
+                background-size: 110% 110%;
+                filter: brightness(1.08);
+            }
+        }
+
+        /* Vignette Sofisticado */
+        .vignette-overlay {
+            position: fixed;
+            inset: 0;
+            pointer-events: none;
+            z-index: 2;
+            background: radial-gradient(circle at 50% 50%, transparent 35%, rgba(3, 2, 4, 0.8) 75%, rgba(0, 0, 0, 0.98) 100%);
+            box-shadow: inset 0 0 120px #000000;
+        }
+
+        /* Inscrições Flutuantes na Parede da Gruta */
+        .wall-inscription-container {
+            position: fixed;
+            inset: 0;
+            pointer-events: none;
+            z-index: 2;
+            overflow: hidden;
+        }
+
+        .wall-inscription {
+            position: absolute;
+            font-family: var(--font-mono);
+            font-size: clamp(0.7rem, 1.5vw, 0.85rem);
+            letter-spacing: 0.2em;
+            text-transform: uppercase;
+            color: var(--gold-burnt);
+            text-shadow: 0 0 12px var(--gold-glow);
+            opacity: 0;
+            transition: opacity 3.5s ease-in-out, transform 4s ease-out;
+            max-width: 320px;
+            line-height: 1.6;
+        }
+
+        .wall-inscription.manifested {
+            opacity: 0.55;
+            transform: translateY(-8px);
+        }
+
+        /* ==========================================================================
+           4. CABEÇALHO DA GRUTA
+           ========================================================================== */
+        .curtains-header {
+            text-align: center;
+            margin-top: 1rem;
+            margin-bottom: 20px;
+            position: relative;
+            z-index: 5;
+        }
+
+        .curtains-tag {
+            font-family: var(--font-mono);
+            font-size: 0.7rem;
+            letter-spacing: 0.4em;
+            text-transform: uppercase;
+            color: var(--gold-bright);
+            opacity: 0.8;
+            margin-bottom: 8px;
+            display: block;
+        }
+
+        .curtains-title {
+            font-family: var(--font-cinzel);
+            font-size: clamp(2rem, 4vw, 3.2rem);
+            font-weight: 900;
+            letter-spacing: 6px;
+            color: #FFFFFF;
+            margin-bottom: 12px;
+            text-transform: uppercase;
+            text-shadow: 0 0 35px rgba(255, 223, 138, 0.3), 0 0 10px var(--gold-bright);
+        }
+
+        .curtains-subtitle {
+            font-family: var(--font-garamond);
+            font-style: italic;
+            font-size: 1.3rem;
+            color: rgba(230, 215, 195, 0.85);
+            line-height: 1.4;
+        }
+
+        /* ==========================================================================
+           5. CARROSSEL INFINITO COM MASK DE ESVANECIMENTO
+           ========================================================================== */
+        .curtains-gallery-mask {
+            width: 100vw;
+            margin-left: calc(-50vw + 50%);
+            margin-right: calc(-50vw + 50%);
+            overflow: hidden;
+            padding: 50px 0 70px 0;
+            position: relative;
+            z-index: 5;
+            -webkit-mask-image: linear-gradient(to right, transparent 0%, black 12%, black 88%, transparent 100%);
+            mask-image: linear-gradient(to right, transparent 0%, black 12%, black 88%, transparent 100%);
+        }
+
+        @keyframes infiniteLoopTrack {
+            0% { transform: translateX(0); }
+            100% { transform: translateX(-50%); }
+        }
+
+        .curtains-gallery-track {
+            display: flex;
+            gap: 56px;
+            width: max-content;
+            animation: infiniteLoopTrack 75s linear infinite;
+            perspective: 1200px;
+            padding: 0 20px;
+        }
+
+        .curtains-gallery-track:hover {
+            animation-play-state: paused;
+        }
+
+        /* ==========================================================================
+           6. EXPOSIÇÃO DE LIVRO FÍSICO 3D (HERITAGE HARDCOVER MOCKUP)
+           ========================================================================== */
+        .book-3d-wrapper {
+            perspective: 1000px;
+            flex: 0 0 230px;
+            height: 360px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            text-decoration: none;
+            position: relative;
+        }
+
+        .book-3d-card {
+            width: 220px;
+            height: 340px;
+            position: relative;
+            border-radius: 3px 10px 10px 3px;
+            background: #0d0f17;
+            transform-style: preserve-3d;
+            transform: rotateY(-18deg) rotateX(6deg);
+            transition: transform 0.6s cubic-bezier(0.16, 1, 0.3, 1), box-shadow 0.6s ease;
+            box-shadow: 
+                -14px 20px 35px rgba(0, 0, 0, 0.9),
+                0 0 25px var(--theme-aura-soft);
+            display: flex;
+            flex-direction: column;
+            justify-content: space-between;
+            padding: 24px 18px;
+            box-sizing: border-box;
+            overflow: visible;
+
+            --theme-aura-color: #00F0FF;
+            --theme-aura-soft: rgba(0, 240, 255, 0.15);
+            --theme-aura-intense: rgba(0, 240, 255, 0.55);
+        }
+
+        /* TEXTURA DE CAPA DURA & FOIL */
+        .book-3d-card::before {
+            content: "";
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            border-radius: inherit;
+            background: 
+                linear-gradient(
+                    to right, 
+                    rgba(255, 255, 255, 0.28) 0px, 
+                    rgba(0, 0, 0, 0.75) 5px, 
+                    rgba(255, 255, 255, 0.12) 8px, 
+                    transparent 16px
+                ),
+                radial-gradient(circle at 50% 50%, rgba(255,255,255,0.03) 0%, transparent 80%);
+            pointer-events: none;
+            z-index: 10;
+        }
+
+        /* LADO DIREITO: PÁGINAS EMPILHADAS (3D PAGE EDGES) */
+        .book-3d-card::after {
+            content: "";
+            position: absolute;
+            top: 4px;
+            right: -12px;
+            width: 12px;
+            height: calc(100% - 8px);
+            background: repeating-linear-gradient(
+                to bottom,
+                #dfd6c6 0px,
+                #b0a490 1px,
+                #dfd6c6 2px
+            );
+            border-radius: 0 2px 2px 0;
+            transform: rotateY(90deg);
+            transform-origin: left center;
+            box-shadow: inset -2px 0 6px rgba(0,0,0,0.6);
+        }
+
+        /* TEMAS VISUAIS DOS DOSSIÊS */
+        .book-3d-wrapper.theme-spiritual .book-3d-card {
+            --theme-aura-color: #C084FC;
+            --theme-aura-soft: rgba(192, 132, 252, 0.2);
+            --theme-aura-intense: rgba(192, 132, 252, 0.6);
+            background: linear-gradient(155deg, #1b1328 0%, #090512 100%);
+            border: 1px solid rgba(192, 132, 252, 0.35);
+        }
+
+        .book-3d-wrapper.theme-existential .book-3d-card {
+            --theme-aura-color: #F59E0B;
+            --theme-aura-soft: rgba(245, 158, 11, 0.2);
+            --theme-aura-intense: rgba(245, 158, 11, 0.6);
+            background: linear-gradient(155deg, #261b0c 0%, #0d0802 100%);
+            border: 1px solid rgba(245, 158, 11, 0.35);
+        }
+
+        .book-3d-wrapper.theme-tech .book-3d-card {
+            --theme-aura-color: #10B981;
+            --theme-aura-soft: rgba(16, 185, 129, 0.2);
+            --theme-aura-intense: rgba(16, 185, 129, 0.6);
+            background: linear-gradient(155deg, #0b221a 0%, #030d09 100%);
+            border: 1px solid rgba(16, 185, 129, 0.35);
+        }
+
+        .book-3d-wrapper.theme-revelation .book-3d-card {
+            --theme-aura-color: #00F0FF;
+            --theme-aura-soft: rgba(0, 240, 255, 0.2);
+            --theme-aura-intense: rgba(0, 240, 255, 0.6);
+            background: linear-gradient(155deg, #0b1f2b 0%, #030b12 100%);
+            border: 1px solid rgba(0, 240, 255, 0.35);
+        }
+
+        /* ELEMENTOS DA CAPA DO LIVRO */
+        .book-cover-header {
+            position: relative;
+            z-index: 2;
+            text-align: center;
+        }
+
+        .book-emblem {
+            width: 26px;
+            height: 26px;
+            margin: 0 auto 12px auto;
+            transform: rotate(45deg);
+            border: 1px solid var(--theme-aura-color);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            box-shadow: 0 0 10px var(--theme-aura-soft);
+        }
+
+        .book-emblem::after {
+            content: "";
+            width: 8px;
+            height: 8px;
+            background: var(--theme-aura-color);
+            box-shadow: 0 0 8px var(--theme-aura-color);
+        }
+
+        .book-cover-title {
+            font-family: var(--font-cinzel);
+            font-size: 0.95rem;
+            font-weight: 700;
+            color: #FFFFFF;
+            letter-spacing: 1px;
+            line-height: 1.35;
+            margin-bottom: 8px;
+            text-transform: uppercase;
+        }
+
+        .book-cover-subtitle {
+            font-family: var(--font-garamond);
+            font-style: italic;
+            font-size: 0.85rem;
+            color: rgba(255, 255, 255, 0.75);
+            line-height: 1.35;
+            margin: 0;
+        }
+
+        .book-cover-footer {
+            position: relative;
+            z-index: 2;
+            text-align: center;
+            padding-top: 10px;
+            border-top: 1px solid rgba(255, 255, 255, 0.12);
+        }
+
+        .book-tag {
+            font-family: var(--font-mono);
+            font-size: 0.62rem;
+            font-weight: 700;
+            letter-spacing: 1.5px;
+            color: var(--theme-aura-color);
+            text-transform: uppercase;
+        }
+
+        /* CAPA DE IMAGEM PARA LIVROS ESPECÍFICOS */
+        .book-image-cover {
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            object-fit: cover;
+            border-radius: inherit;
+            opacity: 0.4;
+            mix-blend-mode: luminosity;
+        }
+
+        /* EFEITO HOVER: LEVANTA DO PEDESTAL, ALINHA E EMITE LUZ */
+        .book-3d-wrapper:hover .book-3d-card {
+            transform: rotateY(0deg) rotateX(0deg) translateY(-16px) scale(1.06);
+            box-shadow: 
+                -22px 32px 55px rgba(0, 0, 0, 0.98),
+                0 0 50px var(--theme-aura-intense);
+        }
+
+        /* ==========================================================================
+           7. BOTÕES DE NAVEGAÇÃO E RODAPÉ DA GRUTA
+           ========================================================================== */
+        .curtains-footer-cta {
+            position: relative;
+            z-index: 5;
+            margin-bottom: 1rem;
+            display: flex;
+            gap: 20px;
+            align-items: center;
+            justify-content: center;
+            flex-wrap: wrap;
+        }
+
+        .curtains-back-link,
+        .reopen-curtains-trigger {
+            font-family: var(--font-mono);
+            font-size: 0.8rem;
+            letter-spacing: 2px;
+            text-transform: uppercase;
+            text-decoration: none;
+            padding: 12px 28px;
+            border-radius: 40px;
+            transition: all 0.4s cubic-bezier(0.16, 1, 0.3, 1);
+            cursor: pointer;
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+        }
+
+        .curtains-back-link {
+            color: rgba(230, 215, 195, 0.85);
+            background: rgba(18, 11, 16, 0.6);
+            border: 1px solid rgba(212, 175, 55, 0.25);
+            backdrop-filter: blur(8px);
+        }
+
+        .curtains-back-link:hover {
+            color: #ffffff;
+            border-color: rgba(212, 175, 55, 0.6);
+            box-shadow: 0 0 25px rgba(212, 175, 55, 0.2);
+            transform: translateY(-2px);
+        }
+
+        .reopen-curtains-trigger {
+            color: #030204;
+            background: var(--gold-bright);
+            border: 1px solid var(--gold-bright);
+            font-weight: 700;
+        }
+
+        .reopen-curtains-trigger:hover {
+            background: #ffeab3;
+            box-shadow: 0 0 30px rgba(212, 175, 55, 0.45);
+            transform: translateY(-2px);
+        }
+
+        /* RESPONSIVIDADE */
+        @media (max-width: 768px) {
+            .curtains-gallery-track {
+                gap: 32px;
+            }
+            .book-3d-wrapper {
+                flex: 0 0 190px;
+                height: 310px;
+            }
+            .book-3d-card {
+                width: 180px;
+                height: 290px;
+                padding: 18px 14px;
+            }
+            .book-cover-title {
+                font-size: 0.8rem;
+            }
+            .book-cover-subtitle {
+                font-size: 0.75rem;
+            }
+        }
+    </style>
+</head>
+<body>
+
+    <!-- CANVASES DE MATRIX CODE E EMBERS/PARTÍCULAS -->
+    <canvas id="matrixCanvas"></canvas>
+    <canvas id="particlesCanvas"></canvas>
+
+    <!-- SOBREPOSIÇÕES ATMOSFÉRICAS -->
+    <div class="vignette-overlay" aria-hidden="true"></div>
+    <div class="wall-inscription-container" id="wallInscriptions" aria-hidden="true"></div>
+
+    <!-- CÂMARA PRINCIPAL DA GRUTA -->
+    <div class="gruta-chamber">
+        
+        <!-- CABEÇALHO -->
+        <header class="curtains-header">
+            <span class="curtains-tag">PORTAL DOS DOSSIÊS · A QUARTA VIA</span>
+            <h2 class="curtains-title">POR TRÁS DAS CORTINAS</h2>
+            <p class="curtains-subtitle">
+                Você chegou até aqui por uma porta.<br>
+                Existem outras.
+            </p>
+        </header>
+
+        <!-- CARROSSEL INFINITO DE LIVROS 3D -->
+        <section id="curtainsPortal" class="curtains-gallery-mask" aria-label="Exposição de Livros Físicos">
+            <div class="curtains-gallery-track">
+                
+                <!-- LIVRO 1: GOTHAM CITY -->
+                <a href="gotham-city.html" class="book-3d-wrapper theme-spiritual">
+                    <div class="book-3d-card">
+                        <div class="book-cover-header">
+                            <div class="book-emblem"></div>
+                            <h3 class="book-cover-title">GOTHAM CITY E O CÓDIGO DO ÉDEN</h3>
+                            <p class="book-cover-subtitle">O Macaco de Maya, o Cavaleiro do Ego e a Anatomia da Mente</p>
+                        </div>
+                        <div class="book-cover-footer">
+                            <span class="book-tag">DOSSIÊ · ESPIRITUAL</span>
+                        </div>
+                    </div>
+                </a>
+
+                <!-- LIVRO 2: CARNAVAL -->
+                <a href="carnaval.html" class="book-3d-wrapper theme-existential">
+                    <div class="book-3d-card">
+                        <div class="book-cover-header">
+                            <div class="book-emblem"></div>
+                            <h3 class="book-cover-title">CARNAVAL: O AVAL DA CARNE</h3>
+                            <p class="book-cover-subtitle">A Teologia Viva do Chassi, o Falso Jejum e a Consciência</p>
+                        </div>
+                        <div class="book-cover-footer">
+                            <span class="book-tag">DOSSIÊ · EXISTENCIAL</span>
+                        </div>
+                    </div>
+                </a>
+
+                <!-- LIVRO 3: O MAESTRO DA IA -->
+                <a href="ia-espelho-meu.html" class="book-3d-wrapper theme-tech">
+                    <div class="book-3d-card">
+                        <img src="../imagens/capa-maestro-ia.png" alt="Capa O Maestro da IA" class="book-image-cover" onerror="this.style.display='none'">
+                        <div class="book-cover-header">
+                            <div class="book-emblem"></div>
+                            <h3 class="book-cover-title">O MAESTRO DA IA</h3>
+                            <p class="book-cover-subtitle">O Voo do Navegador e o Espelho de Cristal</p>
+                        </div>
+                        <div class="book-cover-footer">
+                            <span class="book-tag">DOSSIÊ · ENGENHARIA</span>
+                        </div>
+                    </div>
+                </a>
+
+                <!-- LIVRO 4: QUANDO A CORTINA SE ABRE -->
+                <a href="frequencia-do-eden.html" class="book-3d-wrapper theme-revelation">
+                    <div class="book-3d-card">
+                        <div class="book-cover-header">
+                            <div class="book-emblem"></div>
+                            <h3 class="book-cover-title">QFREQU6ENCIA DO EDEN</h3>
+                            <p class="book-cover-subtitle">A Revelação do Maestro e a Engenharia dos Sentidos</p>
+                        </div>
+                        <div class="book-cover-footer">
+                            <span class="book-tag">LENDO AGORA</span>
+                        </div>
+                    </div>
+                </a>
+
+                <!-- REPETIÇÃO TÁTICA PARA LOOP PERFEITO CONTINUO -->
+                <a href="jardim-o-corpo.html" class="book-3d-wrapper theme-spiritual" aria-hidden="true">
+                    <div class="book-3d-card">
+                        <div class="book-cover-header">
+                            <div class="book-emblem"></div>
+                            <h3 class="book-cover-title">JARDIM O CORPO</h3>
+                            <p class="book-cover-subtitle">O Macaco de Maya, o Cavaleiro do Ego e a Anatomia da Mente</p>
+                        </div>
+                        <div class="book-cover-footer">
+                            <span class="book-tag">DOSSIÊ · ESPIRITUAL</span>
+                        </div>
+                    </div>
+                </a>
+
+            
+
+                <a href="ia-espelho-meu.html" class="book-3d-wrapper theme-tech" aria-hidden="true">
+                    <div class="book-3d-card">
+                        <img src="../imagens/capa-maestro-ia.png" alt="Capa O Maestro da IA" class="book-image-cover" onerror="this.style.display='none'">
+                        <div class="book-cover-header">
+                            <div class="book-emblem"></div>
+                            <h3 class="book-cover-title">O MAESTRO DA IA</h3>
+                            <p class="book-cover-subtitle">O Voo do Navegador e o Espelho de Cristal</p>
+                        </div>
+                        <div class="book-cover-footer">
+                            <span class="book-tag">DOSSIÊ · ENGENHARIA</span>
+                        </div>
+                    </div>
+                </a>
+
+                <a href="frequencia-do-eden.html" class="book-3d-wrapper theme-revelation" aria-hidden="true">
+                    <div class="book-3d-card">
+                        <div class="book-cover-header">
+                            <div class="book-emblem"></div>
+                            <h3 class="book-cover-title">QUANDO A CORTINA SE ABRE</h3>
+                            <p class="book-cover-subtitle">A Revelação do Maestro e a Engenharia dos Sentidos</p>
+                        </div>
+                        <div class="book-cover-footer">
+                            <span class="book-tag">LENDO AGORA</span>
+                        </div>
+                    </div>
+                </a>
+
+
+
+ <a href=" jardim-o-corpo.html" class="book-3d-wrapper theme-revelation" aria-hidden="true">
+                    <div class="book-3d-card">
+                        <div class="book-cover-header">
+                            <div class="book-emblem"></div>
+                            <h3 class="book-cover-title">JARDIM O CORPO</h3>
+                            <p class="book-cover-subtitle">A Revelação do Maestro e a Engenharia dos Sentidos</p>
+                        </div>
+                        <div class="book-cover-footer">
+                            <span class="book-tag">LENDO AGORA</span>
+                        </div>
+                    </div>
+                </a>
+
+
+
+
+
+
+ <a href="o-voo-do-navegador.html" class="book-3d-wrapper theme-revelation" aria-hidden="true">
+                    <div class="book-3d-card">
+                        <div class="book-cover-header">
+                            <div class="book-emblem"></div>
+                            <h3 class="book-cover-title">QUANDO A CORTINA SE ABRE</h3>
+                            <p class="book-cover-subtitle">O VôO dDO NAVEGADOR</p>
+                        </div>
+                        <div class="book-cover-footer">
+                            <span class="book-tag">LENDO AGORA</span>
+                        </div>
+                    </div>
+                </a>
+
+
+
+
+
+ <a href="o-voo-do-navegador.html" class="book-3d-wrapper theme-revelation" aria-hidden="true">
+                    <div class="book-3d-card">
+                        <div class="book-cover-header">
+                            <div class="book-emblem"></div>
+                            <h3 class="book-cover-title">VERDADEIRA RIQUEZA</h3>
+                            <p class="book-cover-subtitle">A Revelação do Maestro e a Engenharia dos Sentidos</p>
+                        </div>
+                        <div class="book-cover-footer">
+                            <span class="book-tag">LENDO AGORA</span>
+                        </div>
+                    </div>
+                </a>
+
+
+
+
+
+
+            </div>
+        </section>
+
+        <!-- BOTÕES DE NAVEGAÇÃO -->
+        <footer class="curtains-footer-cta">
+          
+            <a href="../o-palco.html" class="reopen-curtains-trigger">Atravessar para O Palco</a>
+        </footer>
+    </div>
+
+    <!-- ==========================================================================
+       8. MOTOR JS: MATRIX CODE RAIN, PARTÍCULAS DE NÉVOA E INSCRIÇÕES
+       ========================================================================== -->
+    <script>
+        (function() {
+            'use strict';
+
+            /* --- 1. CHUVA DE CÓDIGO MATRIX (CÓDIGO VIVO DE OURO / CYAN / ROXO) --- */
+            const mCanvas = document.getElementById('matrixCanvas');
+            const mCtx = mCanvas.getContext('2d');
+
+            function resizeMatrixCanvas() {
+                mCanvas.width = window.innerWidth;
+                mCanvas.height = window.innerHeight;
+            }
+            resizeMatrixCanvas();
+            window.addEventListener('resize', resizeMatrixCanvas);
+
+            // Caracteres: Alquimia, Runas, Grego, Binário e Símbolos de Engenharia
+            const chars = '01432UPψℏ∂λΣΔπ×→≥≤†∞√░▒▓𐤀𐤁𐤂𐤃𐤄𐤅𐤆𐤇𐤈𐤉𐤊𐤋𐤌𐤍𐤎𐤏';
+            const fontSize = 14;
+            let columns = Math.floor(mCanvas.width / fontSize);
+            let drops = Array(columns).fill(1);
+
+            function drawMatrix() {
+                // Fundo com leve fade transparente
+                mCtx.fillStyle = 'rgba(3, 2, 4, 0.08)';
+                mCtx.fillRect(0, 0, mCanvas.width, mCanvas.height);
+
+                mCtx.font = fontSize + 'px "Fira Code", monospace';
+
+                for (let i = 0; i < drops.length; i++) {
+                    const text = chars.charAt(Math.floor(Math.random() * chars.length));
+                    
+                    // Gradiente sutil de cores entre Ouro queimado, Dourado vivo e sopros de Cyan/Violeta
+                    const rand = Math.random();
+                    if (rand > 0.95) {
+                        mCtx.fillStyle = '#00F0FF'; // Flash Cyan
+                    } else if (rand > 0.88) {
+                        mCtx.fillStyle = '#C084FC'; // Flash Violeta
+                    } else if (rand > 0.4) {
+                        mCtx.fillStyle = 'rgba(212, 175, 55, 0.85)'; // Ouro Vivo
+                    } else {
+                        mCtx.fillStyle = 'rgba(184, 134, 11, 0.4)'; // Ouro Mágico Dimmed
+                    }
+
+                    mCtx.fillText(text, i * fontSize, drops[i] * fontSize);
+
+                    if (drops[i] * fontSize > mCanvas.height && Math.random() > 0.975) {
+                        drops[i] = 0;
+                    }
+                    drops[i]++;
+                }
+            }
+            setInterval(drawMatrix, 45);
+
+            /* --- 2. SISTEMA DE EMBERS E PARTÍCULAS EM SUSPENSÃO --- */
+            const pCanvas = document.getElementById('particlesCanvas');
+            const pCtx = pCanvas.getContext('2d');
+
+            function resizeParticlesCanvas() {
+                pCanvas.width = window.innerWidth;
+                pCanvas.height = window.innerHeight;
+            }
+            resizeParticlesCanvas();
+            window.addEventListener('resize', resizeParticlesCanvas);
+
+            const particleCount = 45;
+            const particles = [];
+
+            for (let i = 0; i < particleCount; i++) {
+                particles.push({
+                    x: Math.random() * pCanvas.width,
+                    y: Math.random() * pCanvas.height,
+                    radius: Math.random() * 1.8 + 0.4,
+                    color: Math.random() > 0.5 ? 'rgba(212, 175, 55, ' : 'rgba(192, 132, 252, ',
+                    alpha: Math.random() * 0.6 + 0.2,
+                    speedY: - (Math.random() * 0.4 + 0.1),
+                    speedX: (Math.random() - 0.5) * 0.3
+                });
+            }
+
+            function animateParticles() {
+                pCtx.clearRect(0, 0, pCanvas.width, pCanvas.height);
+
+                particles.forEach(p => {
+                    p.y += p.speedY;
+                    p.x += p.speedX;
+
+                    if (p.y < 0) {
+                        p.y = pCanvas.height;
+                        p.x = Math.random() * pCanvas.width;
+                    }
+
+                    pCtx.beginPath();
+                    pCtx.arc(p.x, p.y, p.radius, 0, Math.PI * 2);
+                    pCtx.fillStyle = p.color + p.alpha + ')';
+                    pCtx.shadowBlur = 8;
+                    pCtx.shadowColor = '#d4af37';
+                    pCtx.fill();
+                });
+
+                requestAnimationFrame(animateParticles);
+            }
+            animateParticles();
+
+            /* --- 3. INSCRIÇÕES FILOSÓFICAS QUE SURGEM NAS PAREDES --- */
+            const wallQuestions = [
+                "O QUE RESTA QUANDO A MÁSCARA CAI?",
+                "ONDE COMEÇA A SUA RECLUSÃO?",
+                "QUEM GOVERNA OS SEUS SOMBRIOS?",
+                "E AÍ, ESPELHO MEU?",
+                "O QUE SEU CORPO GUARDA EM SILÊNCIO?",
+                "PARA ONDE VOCÊ NAVEGA QUANDO O CÉU ESCURECE?",
+                "O QUE CONTINUA SEU SE TUDO FOR SUBTRAÍDO?",
+                "A MATÉRIA RECORDA O QUE A MENTE ESQUECE?",
+                "QUEM PENSA QUANDO A MÁQUINA RESPONDE?"
+            ];
+
+            function spawnInscription() {
+                const container = document.getElementById('wallInscriptions');
+                if (!container) return;
+
+                const text = wallQuestions[Math.floor(Math.random() * wallQuestions.length)];
+                const el = document.createElement('div');
+                el.className = 'wall-inscription';
+                el.textContent = text;
+
+                const top = Math.floor(Math.random() * 70) + 15;
+                const left = Math.floor(Math.random() * 70) + 15;
+
+                el.style.top = top + '%';
+                el.style.left = left + '%';
+
+                container.appendChild(el);
+
+                requestAnimationFrame(() => {
+                    setTimeout(() => el.classList.add('manifested'), 100);
+                });
+
+                setTimeout(() => {
+                    el.classList.remove('manifested');
+                    setTimeout(() => el.remove(), 3500);
+                }, 7500);
+            }
+
+            setInterval(spawnInscription, 6500);
+            setTimeout(spawnInscription, 1200);
+
+        })();
+    </script>
+</body>
+</html>
