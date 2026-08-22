@@ -1,0 +1,639 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>FAÇO SITES.</title>
+  <meta name="description" content="Criação de sites profissionais e arquitetura de informação." />
+
+  <style>
+    * {
+      margin: 0;
+      padding: 0;
+      box-sizing: border-box;
+    }
+
+    :root {
+      --bg: #141414;
+      --text: #E5E0D8;
+      --red-dot: #FF3B30;
+      --overlay-bg: rgba(10, 10, 10, 0.88);
+      --modal-bg: #1a1a1a;
+      --border-color: rgba(229, 224, 216, 0.15);
+      --green-status: #34c759;
+    }
+
+    @media (prefers-color-scheme: light) {
+      :root {
+        --bg: #F4F1EA;
+        --text: #1A1A1A;
+        --red-dot: #D32F2F;
+        --overlay-bg: rgba(244, 241, 234, 0.88);
+        --modal-bg: #ffffff;
+        --border-color: rgba(26, 26, 26, 0.15);
+        --green-status: #28a745;
+      }
+    }
+
+    html, body {
+      width: 100%;
+      height: 100vh;
+      overflow: hidden;
+      background-color: var(--bg);
+      color: var(--text);
+      font-family: "Times New Roman", Times, Georgia, serif;
+      -webkit-font-smoothing: antialiased;
+    }
+
+    main {
+      width: 100%;
+      height: 100vh;
+      display: flex;
+      flex-direction: column;
+      justify-content: center;
+      align-items: center;
+      text-align: center;
+      padding: 1.5rem;
+      position: relative;
+    }
+
+    .hero-card {
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      max-width: 850px;
+      width: 100%;
+    }
+
+    .hero-header {
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      width: fit-content;
+    }
+
+    .title {
+      font-size: clamp(2.5rem, 7.5vw, 6rem);
+      font-weight: 700;
+      letter-spacing: -0.02em;
+      line-height: 1;
+      margin-bottom: 0.5rem;
+      text-transform: uppercase;
+      white-space: nowrap;
+      width: 100%;
+    }
+
+    .i-custom {
+      position: relative;
+      display: inline-block;
+      text-transform: lowercase;
+    }
+
+    .i-custom::before {
+      content: "";
+      position: absolute;
+      top: 0.12em;
+      left: 50%;
+      transform: translateX(-50%);
+      width: 0.18em;
+      height: 0.18em;
+      background-color: var(--red-dot);
+      border-radius: 50%;
+    }
+
+    .subtitle {
+      font-size: clamp(0.7rem, 1.25vw, 1.05rem);
+      font-style: italic;
+      font-weight: 400;
+      line-height: 1;
+      opacity: 0.9;
+      letter-spacing: 0.165em;
+      text-align: center;
+      white-space: nowrap;
+      width: 82.5%;
+      margin: 0 auto;
+    }
+
+    .proof {
+      display: flex;
+      justify-content: center;
+      align-items: center;
+      width: 100%;
+      max-width: 680px;
+      font-size: clamp(0.85rem, 1.2vw, 1.1rem);
+      line-height: 1.35;
+      margin-top: 4.5rem;
+      margin-bottom: 4.5rem;
+    }
+
+    .proof-item {
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      text-align: center;
+      white-space: nowrap;
+    }
+
+    /* REMOÇÃO DAS LINHAS PESADAS E APURAÇÃO VISUAL */
+    a, .preview-trigger, .drawer-trigger {
+      color: var(--text);
+      text-decoration: none;
+      transition: opacity 0.2s ease, transform 0.2s ease;
+      cursor: pointer;
+      background: none;
+      border: none;
+      font-family: inherit;
+      font-size: inherit;
+      display: inline-flex;
+      align-items: center;
+      gap: 0.25rem;
+    }
+
+    /* Sublinhado discreto surge apenas no interagir */
+    a:hover, .preview-trigger:hover, .drawer-trigger:hover {
+      opacity: 0.75;
+      text-decoration: underline;
+      text-decoration-color: var(--border-color);
+      text-underline-offset: 4px;
+    }
+
+    /* Seta no mesmo tom de cor do texto (Monocromática) */
+    .arrow-red {
+      color: var(--text);
+      font-style: normal;
+      font-weight: 400;
+      display: inline-block;
+      transition: transform 0.2s ease;
+    }
+
+    a:hover .arrow-red, .preview-trigger:hover .arrow-red {
+      transform: translateX(3px);
+    }
+
+    .cta {
+      font-size: clamp(0.9rem, 1.1vw, 1.1rem);
+      text-align: center;
+    }
+
+    .cta-link {
+      font-size: clamp(1rem, 1.4vw, 1.3rem);
+      font-weight: 700;
+      font-style: normal;
+      text-transform: uppercase;
+      letter-spacing: 0.05em;
+      display: inline-block;
+      margin-top: 0.4rem;
+    }
+
+    /* OVERLAY IFRAME */
+    .tech-overlay {
+      position: fixed;
+      inset: 0;
+      background-color: var(--overlay-bg);
+      backdrop-filter: blur(15px);
+      -webkit-backdrop-filter: blur(15px);
+      z-index: 1000;
+      display: flex;
+      justify-content: center;
+      align-items: center;
+      opacity: 0;
+      pointer-events: none;
+      transition: opacity 0.25s cubic-bezier(0.16, 1, 0.3, 1);
+      padding: 2rem;
+    }
+
+    .tech-overlay.active {
+      opacity: 1;
+      pointer-events: auto;
+    }
+
+    .window-container {
+      width: 90vw;
+      height: 85vh;
+      background-color: var(--modal-bg);
+      border: 1px solid var(--border-color);
+      border-radius: 8px;
+      display: flex;
+      flex-direction: column;
+      box-shadow: 0 30px 60px rgba(0,0,0,0.6);
+      overflow: hidden;
+      transform: scale(0.96);
+      transition: transform 0.3s cubic-bezier(0.16, 1, 0.3, 1);
+    }
+
+    .tech-overlay.active .window-container {
+      transform: scale(1);
+    }
+
+    .window-header {
+      height: 40px;
+      border-bottom: 1px solid var(--border-color);
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      padding: 0 1rem;
+      font-family: monospace;
+      font-size: 0.8rem;
+    }
+
+    .window-title {
+      opacity: 0.7;
+    }
+
+    .close-btn {
+      background: none;
+      border: none;
+      color: var(--text);
+      font-size: 1.2rem;
+      cursor: pointer;
+      opacity: 0.7;
+      transition: opacity 0.2s;
+    }
+
+    .close-btn:hover {
+      opacity: 1;
+    }
+
+    .window-body {
+      flex: 1;
+      position: relative;
+      background-color: #000;
+    }
+
+    .window-iframe {
+      width: 100%;
+      height: 100%;
+      border: none;
+    }
+
+    /* BARRA INFERIOR - BANHO TECNOLÓGICO */
+    .window-footer {
+      min-height: 40px;
+      border-top: 1px solid var(--border-color);
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      padding: 0.4rem 1rem;
+      font-family: monospace;
+      font-size: 0.75rem;
+      opacity: 0.95;
+      background: rgba(0, 0, 0, 0.4);
+      gap: 0.5rem;
+      flex-wrap: wrap;
+    }
+
+    .telemetry-group {
+      display: flex;
+      align-items: center;
+      gap: 0.75rem;
+    }
+
+    .pulse-dot {
+      width: 6px;
+      height: 6px;
+      background-color: var(--green-status);
+      border-radius: 50%;
+      box-shadow: 0 0 8px var(--green-status);
+      animation: pulse 2s infinite;
+    }
+
+    @keyframes pulse {
+      0% { opacity: 0.4; }
+      50% { opacity: 1; }
+      100% { opacity: 0.4; }
+    }
+
+    /* OVERLAY NO OVERLAY - DRAWER ENGENHARIA B2B */
+    .bottom-sheet-overlay {
+      position: fixed;
+      inset: 0;
+      background-color: rgba(0, 0, 0, 0.75);
+      backdrop-filter: blur(12px);
+      -webkit-backdrop-filter: blur(12px);
+      z-index: 1200;
+      opacity: 0;
+      pointer-events: none;
+      transition: opacity 0.3s ease;
+      display: flex;
+      justify-content: center;
+      align-items: flex-end;
+    }
+
+    .bottom-sheet-overlay.active {
+      opacity: 1;
+      pointer-events: auto;
+    }
+
+    .drawer {
+      width: 100%;
+      max-width: 850px;
+      max-height: 82vh;
+      background-color: var(--modal-bg);
+      border: 1px solid var(--border-color);
+      border-bottom: none;
+      border-radius: 16px 16px 0 0;
+      padding: 2.2rem;
+      box-shadow: 0 -20px 40px rgba(0,0,0,0.8);
+      transform: translateY(100%);
+      transition: transform 0.35s cubic-bezier(0.16, 1, 0.3, 1);
+      overflow-y: auto;
+      text-align: left;
+      font-family: monospace;
+    }
+
+    .bottom-sheet-overlay.active .drawer {
+      transform: translateY(0);
+    }
+
+    .drawer-header {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      border-bottom: 1px solid var(--border-color);
+      padding-bottom: 1rem;
+      margin-bottom: 1.8rem;
+    }
+
+    .drawer-title {
+      font-size: 0.85rem;
+      letter-spacing: 0.05em;
+      text-transform: uppercase;
+      opacity: 0.8;
+    }
+
+    .tech-stack-details {
+      font-family: "Times New Roman", Times, Georgia, serif;
+      font-size: 0.98rem;
+      line-height: 1.65;
+      opacity: 0.9;
+      display: flex;
+      flex-direction: column;
+      gap: 1.2rem;
+    }
+
+    .tech-stack-details h4 {
+      font-family: monospace;
+      font-size: 0.8rem;
+      text-transform: uppercase;
+      letter-spacing: 0.05em;
+      opacity: 0.6;
+      margin-bottom: -0.4rem;
+    }
+
+    .drawer-footer-brand {
+      border-top: 1px solid var(--border-color);
+      margin-top: 2rem;
+      padding-top: 1.2rem;
+      display: flex;
+      justify-content: flex-end;
+      align-items: center;
+    }
+
+    .brand-logo-link {
+      font-family: "Times New Roman", Times, Georgia, serif;
+      font-size: 1.1rem;
+      font-weight: 700;
+      text-transform: uppercase;
+      letter-spacing: -0.02em;
+      text-decoration: none;
+      display: inline-flex;
+      align-items: center;
+      transition: opacity 0.2s ease;
+    }
+
+    .brand-logo-link:hover {
+      opacity: 0.7;
+    }
+
+    @media (max-width: 640px) {
+      .subtitle {
+        letter-spacing: 0.08em;
+        width: 90%;
+      }
+
+      .proof {
+        margin-top: 3rem;
+        margin-bottom: 3rem;
+      }
+
+      .window-container {
+        width: 95vw;
+        height: 90vh;
+      }
+
+      .window-footer {
+        font-size: 0.65rem;
+      }
+
+      .drawer {
+        padding: 1.2rem;
+      }
+    }
+  </style>
+</head>
+<body>
+
+  <audio id="bladeAudio" preload="auto" src="katana-draw.mp3"></audio>
+
+  <!-- HOME PURISTA -->
+  <main>
+    <div class="hero-card">
+      
+      <div class="hero-header">
+        <h1 class="title">
+          FAÇO S<span class="i-custom">ı</span>TES.
+        </h1>
+        <p class="subtitle">
+          Não tenho portfólio. Estou ocupado fazendo sites.
+        </p>
+      </div>
+
+      <div class="proof">
+        <div class="proof-item">
+          <span>Quer ver?</span>
+          <button class="preview-trigger" data-url="https://432up.com" data-title="432UP — AGÊNCIA & PRODUÇÕES">
+            Tá aqui, ó <span class="arrow-red">→</span>
+          </button>
+        </div>
+      </div>
+
+      <div class="cta">
+        <p>Quer um?</p>
+        <a href="https://wa.me/5511999999999" class="cta-link">
+          FALE COMIGO <span class="arrow-red">→</span>
+        </a>
+      </div>
+
+    </div>
+  </main>
+
+  <!-- OVERLAY DE VISUALIZAÇÃO -->
+  <div class="tech-overlay" id="techOverlay">
+    <div class="window-container">
+      <div class="window-header">
+        <span class="window-title" id="overlayTitle">SITE_PREVIEW // AMBIENTE DE DEMONSTRAÇÃO</span>
+        <button class="close-btn" id="closeOverlay">✕</button>
+      </div>
+      <div class="window-body">
+        <iframe id="previewIframe" class="window-iframe" src=""></iframe>
+      </div>
+      
+      <!-- BANHO TECNOLÓGICO NA BARRA DO OVERLAY -->
+      <div class="window-footer">
+        <div class="telemetry-group">
+          <span class="pulse-dot"></span>
+          <span id="overlayLocationBadge">--</span>
+        </div>
+        <div class="telemetry-group">
+          <span>LATÊNCIA: <span id="pingVal">--</span>ms</span>
+          <span>//</span>
+          <span>RENDER: <span id="renderVal">--</span>ms</span>
+          <span>//</span>
+          <button class="drawer-trigger" id="openDrawer">Saber mais [+]</button>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- OVERLAY NO OVERLAY (ARQUITETURA & TECNOLOGIA B2B) -->
+  <div class="bottom-sheet-overlay" id="drawerOverlay">
+    <div class="drawer">
+      <div class="drawer-header">
+        <span class="drawer-title">// ESPECIFICAÇÕES TÉCNICAS & ARQUITETURA</span>
+        <button class="close-btn" id="closeDrawer">✕</button>
+      </div>
+
+      <div class="tech-stack-details">
+        <h4>01 // ARQUITETURA & INFRAESTRUTURA</h4>
+        <p>HTML5 + CSS3 + JavaScript Vanilla, arquitetura modular, Cloudflare Pages + Edge Functions, Supabase/PostgreSQL/Auth/Storage/Realtime, persistência de dados, autenticação, aplicações independentes integradas e infraestrutura preparada para escala.</p>
+
+        <h4>02 // ENGINE DE EXPERIÊNCIA</h4>
+        <p>Interface responsiva com Dark/Light Mode, partículas, Canvas, plasma interativo por toque, blur, iluminação, transições, animações, profundidade, CSS 3D e feedback visual em tempo real, com experiência otimizada para mobile e iPad.</p>
+
+        <h4>03 // GRUTA & UNIVERSO NARRATIVO</h4>
+        <p>Hub imersivo para A Quarta Via, livros tratados como objetos digitais tridimensionais, capas e lombadas em perspectiva, ambientes temáticos, navegação não convencional, dossiês independentes, capítulos interativos, leitura por voz e arquitetura narrativa própria.</p>
+
+        <h4>04 // SIMULAÇÃO & CONVERSÃO</h4>
+        <p>Motor de orçamento conectado ao banco, composição dinâmica de serviços, cálculo em tempo real, edição parametrizada, máscaras BRL, animação de valores, regras comerciais, disponibilidade por horário, bloqueios operacionais, janela de 48h e geração automatizada de propostas em PDF.</p>
+
+        <h4>05 // B2B & OPERAÇÃO</h4>
+        <p>Portal privado com autenticação, aprovação de parceiros, níveis de permissão, painel individual, propostas, oportunidades, comissionamentos, biblioteca, suporte, administração, sincronização operacional e controle de agenda com travamento de 48h e regras de disponibilidade.</p>
+
+        <h4>06 // DADOS & INTELIGÊNCIA</h4>
+        <p>Rastreamento de sessões e conversões, origem de tráfego, regiões, jornada, heatmap dia/hora, evolução temporal, funil, distribuição de fontes, live feed e analytics — transformando comportamento de navegação em inteligência comercial.</p>
+      </div>
+
+      <div class="drawer-footer-brand">
+        <a href="https://wa.me/5511999999999" class="brand-logo-link" target="_blank" rel="noopener">
+          FAÇO S<span class="i-custom">ı</span>TES. <span class="arrow-red">→</span>
+        </a>
+      </div>
+    </div>
+  </div>
+
+  <script>
+    const overlay = document.getElementById('techOverlay');
+    const iframe = document.getElementById('previewIframe');
+    const title = document.getElementById('overlayTitle');
+    const closeBtn = document.getElementById('closeOverlay');
+    const triggers = document.querySelectorAll('.preview-trigger');
+    const bladeAudio = document.getElementById('bladeAudio');
+
+    const drawerOverlay = document.getElementById('drawerOverlay');
+    const openDrawerBtn = document.getElementById('openDrawer');
+    const closeDrawerBtn = document.getElementById('closeDrawer');
+
+    if (bladeAudio) {
+      bladeAudio.volume = 0.7;
+    }
+
+    function triggerAudio() {
+      if (bladeAudio) {
+        bladeAudio.currentTime = 0;
+        bladeAudio.play().catch(() => {});
+      }
+    }
+
+    triggers.forEach(trigger => {
+      trigger.addEventListener('click', () => {
+        triggerAudio();
+        const url = trigger.getAttribute('data-url');
+        const siteTitle = trigger.getAttribute('data-title');
+        
+        iframe.src = url;
+        title.textContent = siteTitle;
+        overlay.classList.add('active');
+        fetchTelemetryData();
+      });
+    });
+
+    function closeWindow() {
+      overlay.classList.remove('active');
+      setTimeout(() => {
+        iframe.src = '';
+      }, 300);
+    }
+
+    closeBtn.addEventListener('click', closeWindow);
+    overlay.addEventListener('click', (e) => {
+      if (e.target === overlay) closeWindow();
+    });
+
+    openDrawerBtn.addEventListener('click', () => {
+      triggerAudio();
+      drawerOverlay.classList.add('active');
+    });
+
+    function closeDrawer() {
+      drawerOverlay.classList.remove('active');
+    }
+
+    closeDrawerBtn.addEventListener('click', closeDrawer);
+    drawerOverlay.addEventListener('click', (e) => {
+      if (e.target === drawerOverlay) closeDrawer();
+    });
+
+    document.addEventListener('keydown', (e) => {
+      if (e.key === 'Escape') {
+        if (drawerOverlay.classList.contains('active')) {
+          closeDrawer();
+        } else if (overlay.classList.contains('active')) {
+          closeWindow();
+        }
+      }
+    });
+
+    // TELEMETRIA DIRETA SEM FALLBACKS DE TEXTO
+    function fetchTelemetryData() {
+      const renderTime = performance.now().toFixed(1);
+      document.getElementById('renderVal').textContent = renderTime;
+
+      const startTime = performance.now();
+      
+      fetch(window.location.href, { method: 'HEAD', cache: 'no-store' })
+        .then(() => {
+          const ping = Math.round(performance.now() - startTime);
+          document.getElementById('pingVal').textContent = ping;
+        })
+        .catch(() => {
+          document.getElementById('pingVal').textContent = '--';
+        });
+
+      fetch('https://ipapi.co/json/')
+        .then(res => res.json())
+        .then(data => {
+          if (data.city) {
+            document.getElementById('overlayLocationBadge').textContent = `CONECTADO DE ${data.city.toUpperCase()}, ${data.region_code || ''}`;
+          } else {
+            document.getElementById('overlayLocationBadge').textContent = '--';
+          }
+        })
+        .catch(() => {
+          document.getElementById('overlayLocationBadge').textContent = '--';
+        });
+    }
+  </script>
+
+</body>
+</html>
