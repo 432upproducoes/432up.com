@@ -1,22 +1,17 @@
 <!DOCTYPE html>
 <html lang="pt-BR" class="h-full">
 <head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
+  <title>432UP Partner | Meu Painel</title>
 
-<script>
-  (function() {
-    try {
-      // Se for Administrador, não deixa ficar no B2B/index.html e redireciona para a raiz
-      if (localStorage.getItem('432_is_admin') === 'true') {
-        window.location.href = '../admin-calculadora.html'; // ou ../admin.html dependendo do nome exato na raiz
-      }
-    } catch (e) {}
-  })();
-</script>
-
+  <!-- 1. REDIRECIONAMENTO E MODO ADMIN SÍNCRONO (ANTI-FLICKER) -->
   <script>
     (function() {
       try {
         if (localStorage.getItem('432_is_admin') === 'true') {
+          // Mantém redirecionamento rápido se configurado
+          // window.location.href = '../admin-calculadora.html';
           document.documentElement.classList.add('is-admin');
         } else {
           document.documentElement.classList.remove('is-admin');
@@ -25,9 +20,8 @@
     })();
   </script>
 
-  <!-- 2. REGRAS DE CSS SÍNCRONAS -->
+  <!-- 2. REGRAS DE CSS SÍNCRONAS PARA EXIBIÇÃO ADMIN -->
   <style>
-    /* Padrão: Vendedor (nasce invisível) */
     #navAdminLinkContainer,
     #navAdminLinkContainerMobile,
     [data-admin-menu-desk],
@@ -35,7 +29,6 @@
       display: none !important;
     }
 
-    /* Regra imediata para Admin */
     html.is-admin #navAdminLinkContainer,
     html.is-admin [data-admin-menu-desk] {
       display: inline-flex !important;
@@ -46,21 +39,11 @@
     }
   </style>
 
-  <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
-  <title>432UP Partner | Meu Painel</title> 
   <!-- CSS Global do Site -->
   <link rel="stylesheet" href="../css/style.css">
   <script src="https://cdn.tailwindcss.com"></script>
 
   <style>
-    /* GARANTIA DE OCULTAÇÃO INICIAL DOS BOTÕES ADMIN */
-    #navAdminLinkContainer,
-    #navAdminLinkContainerMobile {
-      display: none !important;
-    }
-
-    /* FUNDO VIDRO B2B CIANO PADRÃO ORIGINAL */
     .glass-b2b {
       background: linear-gradient(135deg, rgba(10, 18, 28, 0.75) 0%, rgba(14, 22, 35, 0.5) 100%);
       backdrop-filter: blur(24px);
@@ -76,7 +59,6 @@
       box-shadow: 0 0 25px rgba(245, 158, 11, 0.15);
     }
 
-    /* HEADER B2B CIANO TECH (ISOLADO E HARMONIZADO PARA DESKTOP) */
     #calc-header.b2b-header-cyan {
       display: flex !important;
       align-items: center !important;
@@ -105,7 +87,6 @@
       }
     }
 
-    /* WIDGET DO PERFIL */
     .b2b-user-widget {
       display: inline-flex !important;
       align-items: center !important;
@@ -142,7 +123,7 @@
 </head>
 <body class="h-full text-slate-200 font-sans antialiased bg-[#06080c] overflow-x-hidden">
 
-  <!-- Fundo Espacial Integrado ao CSS do Projeto -->
+  <!-- Fundo Espacial Integrado -->
   <canvas id="orbit-canvas"></canvas>
   <div id="plasmaLayer" class="plasma-top-layer"></div>
 
@@ -162,7 +143,7 @@
       <a href="comissoes.html">Comissões</a>
       <a href="materiais.html">Materiais</a>
 
-      <!-- CRACHÁ DOURADO MASTER ADMIN (INICIA OCULTO) -->
+      <!-- CRACHÁ DOURADO MASTER ADMIN (INICIA OCULTO VIA CSS) -->
       <span id="navAdminLinkContainer">
         <a href="admin/index.html" style="color: #f59e0b; font-weight: 700; border: 1px solid rgba(245,158,11,0.4); padding: 4px 10px; border-radius: 8px; background: rgba(245,158,11,0.1); font-size: 0.75rem;">👑 Master Admin</a>
       </span>
@@ -194,7 +175,7 @@
       </div>
     </a>
 
-    <!-- LINK MASTER ADMIN NO MOBILE (INICIA OCULTO) -->
+    <!-- LINK MASTER ADMIN NO MOBILE (INICIA OCULTO VIA CSS) -->
     <div id="navAdminLinkContainerMobile" class="w-full mb-2">
       <a href="admin/index.html" onclick="toggleMobileMenu()" style="color: #f59e0b; font-weight: 700; display: block; text-align: center; border: 1px solid rgba(245,158,11,0.4); padding: 8px; border-radius: 8px; background: rgba(245,158,11,0.1);">👑 Painel Master Admin</a>
     </div>
@@ -322,14 +303,13 @@
         }
       };
 
-      /* INICIALIZAÇÃO ÚNICA DA PÁGINA */
       partnerRequireAuth().then(function (parceiro) {
         partnerFillSidebar(parceiro);
         
         var primeiroNome = parceiro.nome_completo ? parceiro.nome_completo.split(' ')[0] : 'Parceiro';
         document.getElementById('dashNomeParceiro').textContent = primeiroNome;
 
-        carregarKPIs(parceiro);
+        carregarKPIsDirecto(parceiro);
         carregarAtencao(parceiro.id);
 
         bindEvents();
@@ -345,11 +325,6 @@
         if (btnMob) btnMob.addEventListener('click', partnerLogout);
       }
 
-      function carregarKPIs(parceiro) {
-        // Redireciona direto para a leitura dinâmica das propostas para garantir integridade
-        carregarKPIsDirecto(parceiro);
-      }
-
       function carregarKPIsDirecto(parceiro) {
         sbPartner.from('propostas')
           .select('*')
@@ -359,23 +334,20 @@
             var list = res.data;
             var hoje = new Date().toISOString().split('T')[0];
 
-            // 1. Propostas em andamento (ignorando maiúsculas/minúsculas)
             var emAndamento = list.filter(function (p) {
-              var st = String(p.status || '').toLowerCase();
+              var st = String(p.status || '').toLowerCase().trim();
               return st === 'enviada' || st === 'hold' || st === 'rascunho';
             }).length;
 
-            // 2. Propostas aprovadas
             var aprovadas = list.filter(function (p) {
-              return String(p.status || '').toLowerCase() === 'aprovada';
+              var st = String(p.status || '').toLowerCase().trim();
+              return st === 'aprovada' || st === 'aprovado';
             });
 
-            // 3. Faturamento Bruto Aprovado
             var valorFechado = aprovadas.reduce(function (acc, p) { 
               return acc + Number(p.valor_total || 0); 
             }, 0);
 
-            // 4. Separação de Comissões: Liberada (evento já ocorreu) vs Pendente (evento futuro)
             var comissaoLiberada = 0;
             var comissaoPendente = 0;
 
@@ -417,22 +389,26 @@
         sbPartner.from('propostas')
           .select('*')
           .eq('parceiro_id', parceiroId)
-          .in('status', ['hold', 'enviada', 'rascunho', 'HOLD', 'ENVIADA', 'RASCUNHO'])
           .order('criado_em', { ascending: false })
-          .limit(5)
           .then(function (res) {
             var el = document.getElementById('listaAtencao');
             if (res.error) {
               el.innerHTML = '<p class="text-xs text-red-400 py-2 text-center">Erro ao carregar oportunidades.</p>';
               return;
             }
-            if (!res.data || !res.data.length) {
+
+            var filtrados = (res.data || []).filter(function(p) {
+              var st = String(p.status || '').toLowerCase().trim();
+              return st === 'hold' || st === 'enviada' || st === 'rascunho';
+            }).slice(0, 5);
+
+            if (!filtrados.length) {
               el.innerHTML = '<p class="text-xs text-slate-500 py-6 text-center">Nenhuma proposta pendente de atenção no momento. 🎉</p>';
               return;
             }
 
-            el.innerHTML = res.data.map(function (p) {
-              var stKey = String(p.status || '').toLowerCase();
+            el.innerHTML = filtrados.map(function (p) {
+              var stKey = String(p.status || '').toLowerCase().trim();
               var st = STATUS_LABEL[stKey] || STATUS_LABEL.enviada;
               var isHold = stKey === 'hold';
               var bordaCls = isHold ? 'border-amber-500/30' : 'border-white/10';
