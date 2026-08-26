@@ -220,7 +220,10 @@
         var mapaVendedores = {};
 
         listaPropostas.forEach(function (p) {
-          if (p.status === 'aprovada') {
+          var stVal = String(p.status || '').toLowerCase();
+
+          // Filtra exclusivamente propostas com status 'aprovada' (independente de caixa alta/baixa no banco)
+          if (stVal === 'aprovada') {
             var val = Number(p.valor_total || 0);
             var pct = Number(p.comissao_pct_efetiva || 10);
             var comissao = (val * pct) / 100;
@@ -263,7 +266,9 @@
             return '<option value="' + v.id + '" ' + sel + '>' + esc(v.nome_completo || v.email) + '</option>';
           }).join('');
 
-          var stVal = p.status || 'rascunho';
+          var stRaw = p.status || 'rascunho';
+          var stVal = String(stRaw).toLowerCase();
+
           var stColorClass = 'text-slate-400 border-white/20';
           if (stVal === 'aprovada') stColorClass = 'text-emerald-400 border-emerald-500/40';
           if (stVal === 'hold' || stVal === 'enviada') stColorClass = 'text-amber-400 border-amber-500/40';
@@ -406,6 +411,6 @@
   });
 </script>
 
-
 </body>
 </html>
+
