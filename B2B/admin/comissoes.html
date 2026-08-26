@@ -25,20 +25,50 @@
       box-shadow: 0 0 25px rgba(245, 158, 11, 0.15);
     }
 
-    /* PREVENÇÃO DE TARJA BRANCA NO CABEÇALHO DA TABELA */
+    /* ESTILIZAÇÃO CURTA DE DATAS E PREVENÇÃO DE ESTOURO */
+    input[type="date"]::-webkit-calendar-picker-indicator {
+      cursor: pointer;
+      filter: invert(0.8);
+    }
+    .filter-box-container {
+      padding-right: 1.25rem !important;
+    }
+
+    /* MODAL DE BAIXA FIXO */
+    #modalBaixaContainer {
+      display: none;
+      position: fixed;
+      inset: 0;
+      z-index: 9999;
+      background: rgba(0, 0, 0, 0.82);
+      backdrop-filter: blur(12px);
+      -webkit-backdrop-filter: blur(12px);
+      align-items: center;
+      justify-content: center;
+      padding: 1rem;
+    }
+    #modalBaixaContainer.active {
+      display: flex;
+    }
+
     table thead tr, table thead th {
       background-color: transparent !important;
       color: #94a3b8 !important;
+    }
+
+    #inputValorPagamento[readonly] {
+      opacity: 0.65;
+      cursor: not-allowed;
     }
   </style>
 </head>
 <body class="min-h-screen text-slate-200 font-sans antialiased bg-[#06080c]">
 
-  <!-- CANVAS DO FUNDO ESPACIAL INTEGRADO AO PROJETO -->
+  <!-- CANVAS DO FUNDO ESPACIAL INTEGRADO -->
   <canvas id="orbit-canvas"></canvas>
   <div id="plasmaLayer" class="plasma-top-layer"></div>
 
-  <!-- HEADER TOPO (EXATAMENTE IGUAL AO PADRÃO CALCULADORA) -->
+  <!-- HEADER TOPO ADMIN -->
   <header id="calc-header">
     <div class="logo-container">
       <a href="../../index.html" class="logo-link" aria-label="Página Inicial 432UP">
@@ -60,7 +90,7 @@
     <button class="mobile-hamburger" onclick="toggleMobileMenu()">☰</button>
   </header>
 
-  <!-- OVERLAY MENU MOBILE (EXATAMENTE IGUAL AO PADRÃO CALCULADORA) -->
+  <!-- OVERLAY MENU MOBILE -->
   <div class="mobile-menu-overlay" id="mobile-menu">
     <button onclick="toggleMobileMenu()" style="position: absolute; top: 20px; right: 20px; background: transparent; border: none; color: #fff; font-size: 1.5rem; cursor: pointer;">✕</button>
     
@@ -79,7 +109,7 @@
   </div>
 
   <!-- CONTAINER EM FLUXO VERTICAL -->
-  <div class="flex flex-col min-h-screen relative z-10">
+  <div class="flex flex-col min-h-screen relative z-10 pb-16">
 
     <!-- CONTEÚDO PRINCIPAL -->
     <main class="flex-1 p-4 lg:p-8 space-y-6 pt-28 lg:pt-28 w-full max-w-7xl mx-auto">
@@ -89,36 +119,109 @@
         <div>
           <span class="text-xs font-bold text-amber-400 uppercase tracking-widest">Gestão Financeira</span>
           <h1 class="text-2xl lg:text-3xl font-bold text-white tracking-tight mt-1">Liberação de Comissões (PIX)</h1>
-          <p class="text-sm text-slate-400 mt-1">Acompanhe os repasses devidos aos vendedores e confirme as liquidações efetuadas.</p>
+          <p class="text-sm text-slate-400 mt-1">Acompanhe os repasses devidos aos vendedores, gerencie adiantamentos e efetue baixas.</p>
         </div>
       </div>
 
       <!-- CARDS RESUMO FINANCEIRO -->
       <div class="grid grid-cols-1 md:grid-cols-3 gap-4">
-        <div class="glass-amber p-5 rounded-2xl">
+        <div class="glass-amber p-5 rounded-2xl border-l-4 border-l-amber-500">
           <span class="text-xs font-semibold uppercase tracking-wider text-amber-300">A Liquidar (Pendente)</span>
           <div id="kpiComissaoPendente" class="text-2xl font-bold text-amber-400 mt-2">R$ 0,00</div>
         </div>
-        <div class="glass-b2b p-5 rounded-2xl">
+        <div class="glass-b2b p-5 rounded-2xl border-l-4 border-l-emerald-500">
           <span class="text-xs font-semibold uppercase tracking-wider text-emerald-400">Total Liquidado (Pago)</span>
           <div id="kpiComissaoPaga" class="text-2xl font-bold text-emerald-300 mt-2">R$ 0,00</div>
         </div>
-        <div class="glass-b2b p-5 rounded-2xl">
+        <div class="glass-b2b p-5 rounded-2xl border-l-4 border-l-cyan-500">
           <span class="text-xs font-semibold uppercase tracking-wider text-cyan-400">Vendas Fechadas</span>
           <div id="kpiQtdAprovadas" class="text-2xl font-bold text-white mt-2">0 eventos</div>
         </div>
       </div>
 
-      <!-- TABELA DE COMISSÕES -->
-      <div class="glass-b2b rounded-2xl p-6">
+     <!-- BARRA DE FILTROS AVANÇADA COM AUTOCOMPLETE -->
+<div class="glass-b2b filter-box-glass rounded-2xl p-4 border border-cyan-500/20 space-y-3 relative z-30">
+  <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-6 gap-2.5">
+    
+    <!-- Busca Global Textual -->
+    <div class="w-full">
+      <label class="block text-[10px] uppercase text-slate-400 font-bold mb-1">Buscar Cliente / Proposta</label>
+      <input type="text" id="filterBusca" placeholder="Ex: #1038 ou Nome" oninput="aplicarFiltros()" class="w-full bg-slate-900/80 border border-white/10 rounded-xl px-2.5 py-2 text-xs text-white focus:border-cyan-400 focus:outline-none transition">
+    </div>
+
+    <!-- Searchable Dropdown (Vendedor Autocomplete com Z-Index Absoluto) -->
+    <div class="relative w-full" id="boxDropdownVendedor">
+      <label class="block text-[10px] uppercase text-slate-400 font-bold mb-1">Vendedor / Parceiro</label>
+      <div class="relative">
+        <span class="absolute inset-y-0 left-0 pl-2.5 flex items-center pointer-events-none text-slate-400 text-xs">🔍</span>
+        <input type="text" id="filterVendedorSearch" placeholder="Digite para buscar..." autocomplete="off" class="w-full bg-slate-900/80 border border-white/10 rounded-xl pl-7 pr-2 py-2 text-xs text-white focus:border-cyan-400 focus:outline-none transition">
+      </div>
+      <input type="hidden" id="filterVendedorVal" value="">
+      
+      <div id="dropdownVendedorList" class="hidden absolute left-0 right-0 top-full mt-1 max-h-48 overflow-y-auto bg-[#0a121c] border border-cyan-500/50 rounded-xl shadow-[0_20px_40px_rgba(0,0,0,0.95)] z-[9999] divide-y divide-white/10 text-xs">
+      </div>
+    </div>
+
+    <!-- Status Repasse -->
+    <div class="w-full">
+      <label class="block text-[10px] uppercase text-slate-400 font-bold mb-1">Status Repasse</label>
+      <select id="filterStatus" onchange="aplicarFiltros()" class="w-full bg-slate-900 border border-white/10 rounded-xl px-2 py-2 text-xs text-white focus:border-cyan-400 focus:outline-none transition cursor-pointer">
+        <option value="">Todos os Status</option>
+        <option value="pendente">🟡 Pendente</option>
+        <option value="solicitado">🟠 Solicitado (Aguardando Baixa)</option>
+        <option value="parcial">🔵 Adiantamento / Parcial</option>
+        <option value="liquidado">🟢 Liquidado / PIX</option>
+        <option value="cancelado">🔴 Cancelado</option>
+      </select>
+    </div>
+
+    <!-- Atração / Fornecedor -->
+    <div class="w-full">
+      <label class="block text-[10px] uppercase text-slate-400 font-bold mb-1">Atração / Fornecedor</label>
+      <input type="text" id="filterAtracao" placeholder="Ex: Banda, DJ" oninput="aplicarFiltros()" class="w-full bg-slate-900/80 border border-white/10 rounded-xl px-2.5 py-2 text-xs text-white focus:border-cyan-400 focus:outline-none transition">
+    </div>
+
+    <!-- Período De -->
+    <div class="w-full min-w-0">
+      <label class="block text-[10px] uppercase text-slate-400 font-bold mb-1 truncate">Data Inicial</label>
+      <input type="date" id="filterDataDe" onchange="aplicarFiltros()" class="w-full bg-slate-900/80 border border-white/10 rounded-xl px-1.5 py-2 text-[11px] text-white font-sans focus:border-cyan-400 focus:outline-none transition [color-scheme:dark]">
+    </div>
+
+    <!-- Período Até -->
+    <div class="w-full min-w-0">
+      <label class="block text-[10px] uppercase text-slate-400 font-bold mb-1 truncate">Data Final</label>
+      <input type="date" id="filterDataAte" onchange="aplicarFiltros()" class="w-full bg-slate-900/80 border border-white/10 rounded-xl px-1.5 py-2 text-[11px] text-white font-sans focus:border-cyan-400 focus:outline-none transition [color-scheme:dark]">
+    </div>
+
+  </div>
+
+  <!-- Botões de Ação -->
+  <div class="flex items-center justify-end gap-2 pt-2 border-t border-white/5 flex-wrap">
+    <button type="button" onclick="limparFiltros()" class="px-3 py-1.5 rounded-lg bg-slate-800/80 hover:bg-slate-700 text-slate-300 border border-white/10 text-xs font-semibold transition cursor-pointer">
+      🔄 Resetar Filtros
+    </button>
+    <button type="button" onclick="exportarCSV()" class="px-3 py-1.5 rounded-lg bg-cyan-500/10 hover:bg-cyan-500/20 text-cyan-300 border border-cyan-500/30 text-xs font-semibold transition cursor-pointer">
+      📥 Exportar CSV
+    </button>
+    <button type="button" onclick="window.print()" class="px-3 py-1.5 rounded-lg bg-purple-500/10 hover:bg-purple-500/20 text-purple-300 border border-purple-500/30 text-xs font-semibold transition cursor-pointer">
+      🖨️ Relatório (PDF)
+    </button>
+  </div>
+</div>
+
+          
+         
+
+      <!-- TABELA DE COMISSÕES COM PAGINAÇÃO -->
+      <div class="glass-b2b rounded-2xl p-6 border border-cyan-500/20">
         <div class="overflow-x-auto">
-          <table class="w-full text-left text-xs min-w-[700px]">
+          <table class="w-full text-left text-xs min-w-[750px]">
             <thead>
               <tr class="border-b border-white/10 text-slate-400 uppercase tracking-wider">
                 <th class="pb-3 px-3">Proposta / Cliente</th>
                 <th class="pb-3 px-3">Vendedor / Repasse</th>
                 <th class="pb-3 px-3 text-right">Valor Venda</th>
-                <th class="pb-3 px-3 text-right">Comissão Devida</th>
+                <th class="pb-3 px-3 text-right">Comissão Total / Paga</th>
                 <th class="pb-3 px-3 text-center">Status do Repasse</th>
                 <th class="pb-3 px-3 text-right">Ação Rápida</th>
               </tr>
@@ -130,9 +233,129 @@
             </tbody>
           </table>
         </div>
+
+        <!-- RODAPÉ DE PAGINAÇÃO E REGISTROS POR PÁGINA -->
+        <div class="flex flex-col sm:flex-row items-center justify-between gap-3 pt-4 mt-4 border-t border-white/5 text-xs text-slate-400">
+          <div class="flex items-center gap-2">
+            <span>Exibir</span>
+            <select id="selectItensPorPagina" onchange="mudarItensPorPagina(this.value)" class="bg-slate-900 border border-white/10 rounded px-2 py-1 text-white focus:outline-none cursor-pointer">
+              <option value="10" selected>10</option>
+              <option value="25">25</option>
+              <option value="50">50</option>
+            </select>
+            <span>registros por página</span>
+          </div>
+
+          <div id="txtInfoPaginacao" class="text-slate-400">
+            Exibindo 0-0 de 0 registros
+          </div>
+
+          <div class="flex items-center gap-1.5">
+            <button id="btnPagAnterior" onclick="mudarPagina(-1)" class="px-3 py-1 rounded-lg bg-white/5 hover:bg-white/10 disabled:opacity-30 disabled:cursor-not-allowed transition">
+              ◀ Anterior
+            </button>
+            <span id="txtPaginaAtual" class="font-bold text-white px-2">1</span>
+            <button id="btnPagProxima" onclick="mudarPagina(1)" class="px-3 py-1 rounded-lg bg-white/5 hover:bg-white/10 disabled:opacity-30 disabled:cursor-not-allowed transition">
+              Próxima ▶
+            </button>
+          </div>
+        </div>
       </div>
 
     </main>
+  </div>
+
+  <!-- MODAL DE LIQUIDAÇÃO COM CHAVE PIX E COMPROVANTE -->
+  <div id="modalBaixaContainer">
+    <div class="glass-b2b p-6 rounded-2xl border border-cyan-500/30 max-w-lg w-full space-y-4 relative shadow-[0_0_50px_rgba(0,0,0,0.9)]">
+      <div class="flex items-center justify-between border-b border-white/10 pb-3">
+        <div>
+          <span class="text-[10px] font-bold text-amber-400 uppercase tracking-wider block">Processar Pagamento (PIX)</span>
+          <h3 id="modalTituloProposta" class="text-base font-bold text-white mt-0.5">#00 — Cliente</h3>
+        </div>
+        <button onclick="fecharModalBaixa()" class="text-slate-400 hover:text-white text-lg font-bold transition">✕</button>
+      </div>
+
+      <!-- BLOCO PIX E DADOS CADASTRAIS DO VENDEDOR -->
+      <div class="p-3 bg-amber-500/10 border border-amber-500/25 rounded-xl space-y-1.5 text-xs">
+        <div class="flex justify-between items-center border-b border-amber-500/20 pb-1">
+          <span class="text-[10px] uppercase font-bold text-amber-400">Dados Financeiros para Transferência</span>
+          <button type="button" onclick="copiarChavePixModal()" class="text-[10px] font-bold text-cyan-300 hover:text-cyan-200 cursor-pointer">📋 Copiar PIX</button>
+        </div>
+        <div class="grid grid-cols-2 gap-2 text-slate-300 text-[11px] pt-0.5">
+          <div><span class="text-slate-400">Favorecido:</span> <strong id="modalNomeVendedor" class="text-white block truncate">—</strong></div>
+          <div><span class="text-slate-400">Tipo de Chave:</span> <strong id="modalTipoPix" class="text-white block uppercase">—</strong></div>
+          <div class="col-span-2"><span class="text-slate-400">Chave PIX:</span> <strong id="modalChavePix" class="text-amber-300 font-mono text-xs block break-all">—</strong></div>
+        </div>
+      </div>
+
+      <div class="grid grid-cols-3 gap-3 bg-white/[0.03] p-3 rounded-xl border border-white/5 text-center">
+        <div>
+          <span class="text-[10px] text-slate-400 uppercase block">Comissão Total</span>
+          <strong id="modalComissaoTotal" class="text-sm text-amber-400 font-bold block mt-1">R$ 0,00</strong>
+        </div>
+        <div>
+          <span class="text-[10px] text-slate-400 uppercase block">Já Pago</span>
+          <strong id="modalComissaoPaga" class="text-sm text-emerald-400 font-bold block mt-1">R$ 0,00</strong>
+        </div>
+        <div>
+          <span class="text-[10px] text-slate-400 uppercase block">Saldo Restante</span>
+          <strong id="modalSaldoRemanescente" class="text-sm text-cyan-300 font-bold block mt-1">R$ 0,00</strong>
+        </div>
+      </div>
+
+      <!-- AVISO: VALOR SOLICITADO PELO PARCEIRO (só aparece quando status = solicitado) -->
+      <div id="boxValorSolicitado" class="hidden p-3 bg-orange-500/10 border border-orange-500/30 rounded-xl flex items-center justify-between">
+        <span class="text-[11px] font-bold text-orange-300 uppercase tracking-wide">🟠 Valor Solicitado pelo Parceiro</span>
+        <strong id="modalValorSolicitadoTxt" class="text-sm text-orange-300 font-extrabold">R$ 0,00</strong>
+      </div>
+
+      <div class="space-y-2">
+        <label class="block text-xs uppercase tracking-wider text-slate-300 font-semibold">Tipo de Operação</label>
+        
+        <div class="grid grid-cols-1 sm:grid-cols-2 gap-3">
+          <label id="lblOpcaoQuitar" class="flex items-center gap-2 p-3 rounded-xl border border-emerald-500/40 bg-emerald-500/10 cursor-pointer hover:bg-emerald-500/20 transition">
+            <input type="radio" name="tipoOperacao" value="quitar" checked onchange="toggleTipoOperacao('quitar')" class="text-emerald-400 focus:ring-emerald-400">
+            <div>
+              <span class="text-xs font-bold text-emerald-300 block">Quitar Restante</span>
+              <span class="text-[10px] text-slate-400 block">Liquidamento Total</span>
+            </div>
+          </label>
+
+          <label id="lblOpcaoParcial" class="flex items-center gap-2 p-3 rounded-xl border border-white/10 bg-slate-900 cursor-pointer hover:bg-slate-800 transition">
+            <input type="radio" name="tipoOperacao" value="parcial" onchange="toggleTipoOperacao('parcial')" class="text-cyan-400 focus:ring-cyan-400">
+            <div>
+              <span class="text-xs font-bold text-cyan-300 block">Novo Adiantamento</span>
+              <span class="text-[10px] text-slate-400 block">Pagamento Parcial</span>
+            </div>
+          </label>
+        </div>
+      </div>
+
+      <div id="boxInputValor" class="space-y-1">
+        <div class="flex items-center justify-between">
+          <label for="inputValorPagamento" id="lblInputValor" class="block text-xs uppercase tracking-wider text-slate-300 font-semibold">Valor da Baixa Atual (R$)</label>
+          <button type="button" id="btnAlterarValorBaixa" onclick="desbloquearValorBaixa()" class="hidden text-[10px] text-amber-400 hover:text-amber-300 font-bold uppercase underline cursor-pointer">✏️ Alterar Valor</button>
+        </div>
+        <input type="number" step="0.01" id="inputValorPagamento" class="w-full bg-slate-900 border border-cyan-500/40 rounded-xl px-4 py-2 text-sm text-white font-bold focus:border-cyan-400 focus:outline-none transition">
+        <span id="txtDicaInput" class="text-[10px] text-slate-400 block">Valor pré-calculado correspondente à quitação integral do saldo remanescente.</span>
+      </div>
+
+      <!-- CAMPO DE REGISTRO / ANEXO DE COMPROVANTE -->
+      <div class="space-y-1">
+        <label for="inputComprovante" class="block text-xs uppercase tracking-wider text-slate-300 font-semibold">Comprovante / Autenticação PIX</label>
+        <input type="text" id="inputComprovante" placeholder="Nº de Autenticação, Link da Imagem ou Observação" class="w-full bg-slate-900/80 border border-white/20 rounded-xl px-4 py-2 text-xs text-white focus:border-cyan-400 focus:outline-none transition">
+      </div>
+
+      <div class="flex items-center justify-end gap-3 pt-2 border-t border-white/10">
+        <button onclick="fecharModalBaixa()" class="px-4 py-2.5 rounded-xl bg-slate-800 hover:bg-slate-700 text-slate-300 font-bold text-xs uppercase transition cursor-pointer">
+          Cancelar
+        </button>
+        <button id="btnConfirmarBaixaModal" onclick="confirmarBaixaModal()" class="px-5 py-2.5 rounded-xl bg-amber-500 hover:bg-amber-400 text-slate-950 font-bold text-xs uppercase tracking-wider transition shadow-[0_0_15px_rgba(245,158,11,0.3)] cursor-pointer">
+          Confirmar Baixa (PIX)
+        </button>
+      </div>
+    </div>
   </div>
 
   <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
@@ -144,9 +367,29 @@
       'use strict';
 
       var listaPropostas = [];
+      var listaFiltrada = [];
+      var listaParceiros = [];
+      var propostaAtivaModal = null;
+
+      // Estado da Paginação
+      var paginaAtual = 1;
+      var itensPorPagina = 10;
 
       function fmtMoeda(n) { return 'R$ ' + Number(n || 0).toLocaleString('pt-BR', { minimumFractionDigits: 2 }); }
       function esc(s) { return String(s == null ? '' : s).replace(/</g, '&lt;').replace(/>/g, '&gt;'); }
+
+      window.toggleMobileMenu = function () {
+        var mobNav = document.getElementById('mobile-menu');
+        if (mobNav) mobNav.classList.toggle('active');
+      };
+
+      partnerRequireAuth({ requireAdmin: true }).then(function (parceiro) {
+        partnerFillSidebar(parceiro);
+        carregarComissoes();
+        configurarAutocompleteVendedor();
+      }).catch(function (err) {
+        console.error('Acesso negado ao Master Admin:', err);
+      });
 
       function carregarComissoes() {
         if (typeof sbPartner === 'undefined') {
@@ -154,75 +397,226 @@
           return;
         }
 
-        sbPartner.from('propostas').select('*, parceiros(nome_completo, email)').order('criado_em', { ascending: false }).then(function (res) {
-          var tbody = document.getElementById('tbodyComissoes');
-          if (res.error) {
-            tbody.innerHTML = '<tr><td colspan="6" class="py-4 text-center text-red-400">Erro ao carregar comissões: ' + esc(res.error.message) + '</td></tr>';
-            return;
-          }
+        sbPartner.from('parceiros').select('id, nome_completo, email, comissao_padrao_pct').then(function(resParceiros) {
+          listaParceiros = resParceiros.data || [];
 
-          listaPropostas = res.data || [];
-          atualizarKPIs();
-          renderTabela(listaPropostas);
+          sbPartner.from('propostas')
+            .select('*, parceiros(id, nome_completo, email, comissao_padrao_pct, tipo_pix, chave_pix, cpf_cnpj)')
+            .order('criado_em', { ascending: false })
+            .then(function (res) {
+              var tbody = document.getElementById('tbodyComissoes');
+              if (res.error) {
+                tbody.innerHTML = '<tr><td colspan="6" class="py-4 text-center text-red-400">Erro ao carregar comissões: ' + esc(res.error.message) + '</td></tr>';
+                return;
+              }
+
+              listaPropostas = res.data || [];
+              limparFiltros(); // Inicializa no mês corrente
+            });
         });
       }
 
-      function atualizarKPIs() {
-        var pendente = 0;
-        var pago = 0;
-        var qtdFechadas = 0;
+      /* CONFIGURAÇÃO DO DROPDOWN AUTOCOMPLETE PARA VENDEDORES */
+      function configurarAutocompleteVendedor() {
+        var inputSearch = document.getElementById('filterVendedorSearch');
+        var inputVal = document.getElementById('filterVendedorVal');
+        var listContainer = document.getElementById('dropdownVendedorList');
 
-        listaPropostas.forEach(function (p) {
-          if (p.status === 'aprovada') {
-            qtdFechadas += 1;
-            var val = Number(p.valor_total || 0);
-            var pct = Number(p.comissao_pct_efetiva || 10);
-            var comissaoTotal = (val * pct) / 100;
+        if (!inputSearch) return;
 
-            var st = p.comissao_status || (p.comissao_paga ? 'liquidado' : 'pendente');
-            var valPagoParcial = Number(p.comissao_paga_valor || 0);
+        inputSearch.addEventListener('focus', function() {
+          renderListaVendedores(inputSearch.value);
+          listContainer.classList.remove('hidden');
+        });
 
-            if (st === 'liquidado') {
-              pago += comissaoTotal;
-            } else if (st === 'parcial') {
-              pago += valPagoParcial;
-              pendente += Math.max(0, comissaoTotal - valPagoParcial);
-            } else if (st !== 'cancelado') {
-              pendente += comissaoTotal;
-            }
+        inputSearch.addEventListener('input', function() {
+          renderListaVendedores(inputSearch.value);
+          listContainer.classList.remove('hidden');
+          if (!inputSearch.value) {
+            inputVal.value = '';
+            aplicarFiltros();
           }
         });
+
+        document.addEventListener('click', function(e) {
+          var box = document.getElementById('boxDropdownVendedor');
+          if (box && !box.contains(e.target)) {
+            listContainer.classList.add('hidden');
+          }
+        });
+      }
+
+      function renderListaVendedores(termo) {
+        var listContainer = document.getElementById('dropdownVendedorList');
+        var termoLower = (termo || '').toLowerCase().trim();
+
+        var filtrados = listaParceiros.filter(function(v) {
+          var nome = (v.nome_completo || '').toLowerCase();
+          var email = (v.email || '').toLowerCase();
+          return !termoLower || nome.includes(termoLower) || email.includes(termoLower);
+        });
+
+        var html = '<div onclick="selecionarVendedor(\'\', \'Todos os Vendedores\')" class="p-2.5 hover:bg-white/10 cursor-pointer text-slate-300 font-semibold border-b border-white/5">Todos os Vendedores</div>';
+        
+        if (filtrados.length) {
+          html += filtrados.map(function(v) {
+            var label = esc(v.nome_completo || v.email);
+            return '<div onclick="selecionarVendedor(\'' + v.id + '\', \'' + label.replace(/'/g, "\\'") + '\')" class="p-2.5 hover:bg-white/10 cursor-pointer text-white flex justify-between items-center transition">' +
+              '<span>' + label + '</span>' +
+              '<span class="text-[10px] text-cyan-400 font-bold">' + (v.comissao_padrao_pct || 10) + '%</span>' +
+            '</div>';
+          }).join('');
+        } else {
+          html += '<div class="p-3 text-slate-500 text-center">Nenhum vendedor encontrado</div>';
+        }
+
+        listContainer.innerHTML = html;
+      }
+
+      window.selecionarVendedor = function(id, label) {
+        document.getElementById('filterVendedorVal').value = id;
+        document.getElementById('filterVendedorSearch').value = id ? label : '';
+        document.getElementById('dropdownVendedorList').classList.add('hidden');
+        aplicarFiltros();
+      };
+
+      /* APLICAR E RESETAR FILTROS (MÊS ATUAL VIGENTE) */
+      window.aplicarFiltros = function() {
+        var busca = (document.getElementById('filterBusca').value || '').toLowerCase().trim();
+        var vendedorId = document.getElementById('filterVendedorVal').value;
+        var statusFiltro = document.getElementById('filterStatus').value;
+        var atracaoFiltro = (document.getElementById('filterAtracao').value || '').toLowerCase().trim();
+        var dataDe = document.getElementById('filterDataDe').value;
+        var dataAte = document.getElementById('filterDataAte').value;
+
+        listaFiltrada = listaPropostas.filter(function(p) {
+          var stProp = String(p.status || '').toLowerCase().trim();
+          if (stProp !== 'aprovada' && stProp !== 'aprovado') return false;
+
+          var numStr = String(p.numero || p.id || '').toLowerCase();
+          var clienteStr = String(p.cliente_nome || '').toLowerCase();
+          var matchBusca = !busca || numStr.includes(busca) || clienteStr.includes(busca);
+
+          var matchVendedor = !vendedorId || (p.parceiro_id === vendedorId);
+
+          var stComissao = p.comissao_status || (p.comissao_paga ? 'liquidado' : 'pendente');
+          var matchStatus = !statusFiltro || (stComissao === statusFiltro);
+
+          var atracaoStr = String(p.tipo_evento || p.detalhes || '').toLowerCase();
+          var matchAtracao = !atracaoFiltro || atracaoStr.includes(atracaoFiltro);
+
+          var dataVenda = p.criado_em ? String(p.criado_em).split('T')[0] : '';
+          var matchDe = !dataDe || (dataVenda >= dataDe);
+          var matchAte = !dataAte || (dataVenda <= dataAte);
+
+          return matchBusca && matchVendedor && matchStatus && matchAtracao && matchDe && matchAte;
+        });
+
+        paginaAtual = 1;
+        atualizarKPIs(listaFiltrada);
+        renderTabela(listaFiltrada);
+      };
+
+      window.limparFiltros = function() {
+        document.getElementById('filterBusca').value = '';
+        document.getElementById('filterVendedorVal').value = '';
+        document.getElementById('filterVendedorSearch').value = '';
+        document.getElementById('filterStatus').value = '';
+        document.getElementById('filterAtracao').value = '';
+
+        // Restaura datas para o Mês Atual Inteiro Vigente (padrão YYYY-MM-DD para input date)
+        var agora = new Date();
+        var ano = agora.getFullYear();
+        var mes = String(agora.getMonth() + 1).padStart(2, '0');
+        var ultimoDia = new Date(ano, agora.getMonth() + 1, 0).getDate();
+
+        document.getElementById('filterDataDe').value = ano + '-' + mes + '-01';
+        document.getElementById('filterDataAte').value = ano + '-' + mes + '-' + String(ultimoDia).padStart(2, '0');
+
+        aplicarFiltros();
+      };
+
+      function atualizarKPIs(lista) {
+        var pendente = 0;
+        var pago = 0;
+        var qtdFechadas = lista.length;
+
+        lista.forEach(function (p) {
+          var val = Number(p.valor_total || 0);
+          var pct = Number(p.comissao_pct_efetiva !== undefined && p.comissao_pct_efetiva !== null ? p.comissao_pct_efetiva : (p.parceiros ? p.parceiros.comissao_padrao_pct : 10));
+          var comissaoTotal = (val * pct) / 100;
+
+          var stRepasse = p.comissao_status || (p.comissao_paga ? 'liquidado' : 'pendente');
+          var valPagoParcial = Number(p.comissao_paga_valor || 0);
+
+          if (stRepasse === 'liquidado') {
+            pago += comissaoTotal;
+          } else if (stRepasse === 'parcial' || stRepasse === 'solicitado') {
+            pago += valPagoParcial;
+            pendente += Math.max(0, comissaoTotal - valPagoParcial);
+          } else if (stRepasse !== 'cancelado') {
+            pendente += comissaoTotal;
+          }
+        });
+
+        // Pluralização dinâmica
+        var txtPlural = qtdFechadas === 1 ? '1 evento' : qtdFechadas + ' eventos';
 
         document.getElementById('kpiComissaoPendente').textContent = fmtMoeda(pendente);
         document.getElementById('kpiComissaoPaga').textContent = fmtMoeda(pago);
-        document.getElementById('kpiQtdAprovadas').textContent = qtdFechadas + ' eventos';
+        document.getElementById('kpiQtdAprovadas').textContent = txtPlural;
       }
 
+      /* RENDERIZAÇÃO DA TABELA COM PAGINAÇÃO */
       function renderTabela(lista) {
         var tbody = document.getElementById('tbodyComissoes');
-        if (!lista.length) {
-          tbody.innerHTML = '<tr><td colspan="6" class="py-6 text-center text-slate-500">Nenhuma comissão cadastrada até o momento.</td></tr>';
+        var totalRegistros = lista.length;
+
+        if (!totalRegistros) {
+          tbody.innerHTML = '<tr><td colspan="6" class="py-6 text-center text-slate-500">Nenhum registro encontrado com os filtros aplicados.</td></tr>';
+          atualizarControlesPaginacao(0, 0, 0);
           return;
         }
 
-        tbody.innerHTML = lista.map(function (p) {
+        var totalPaginas = Math.ceil(totalRegistros / itensPorPagina);
+        if (paginaAtual > totalPaginas) paginaAtual = totalPaginas;
+
+        var inicio = (paginaAtual - 1) * itensPorPagina;
+        var fim = Math.min(inicio + itensPorPagina, totalRegistros);
+        var itensPagina = lista.slice(inicio, fim);
+
+        tbody.innerHTML = itensPagina.map(function (p) {
           var valTotal = Number(p.valor_total || 0);
-          var pct = Number(p.comissao_pct_efetiva || 10);
-          var valComissao = (valTotal * pct) / 100;
+          var pct = Number(p.comissao_pct_efetiva !== undefined && p.comissao_pct_efetiva !== null ? p.comissao_pct_efetiva : (p.parceiros ? p.parceiros.comissao_padrao_pct : 10));
+          var valComissaoTotal = (valTotal * pct) / 100;
           
           var stComissao = p.comissao_status || (p.comissao_paga ? 'liquidado' : 'pendente');
+          var valPagoAcumulado = Number(p.comissao_paga_valor || 0);
+          var saldoRemanescente = Math.max(0, valComissaoTotal - valPagoAcumulado);
+
           var nomeParceiro = p.parceiros ? (p.parceiros.nome_completo || p.parceiros.email) : 'Vendedor ID ' + p.parceiro_id;
 
-          // COR DINÂMICA DO SELECT E DA BORDA
           var stColorClass = 'text-amber-400 border-amber-500/40';
+          if (stComissao === 'solicitado') stColorClass = 'text-orange-400 border-orange-500/40';
           if (stComissao === 'liquidado') stColorClass = 'text-emerald-400 border-emerald-500/40';
           if (stComissao === 'parcial') stColorClass = 'text-cyan-400 border-cyan-500/40';
           if (stComissao === 'cancelado') stColorClass = 'text-red-400 border-red-500/40';
 
           var subtextoComissao = '';
-          if (stComissao === 'parcial') {
-            var pagoParcial = Number(p.comissao_paga_valor || 0);
-            subtextoComissao = '<span class="block text-[10px] text-cyan-300 font-semibold mt-0.5">Pago: ' + fmtMoeda(pagoParcial) + '</span>';
+          if (stComissao === 'solicitado') {
+            var valSolicitadoLinha = Number(p.comissao_solicitada_valor || saldoRemanescente);
+            subtextoComissao =
+              '<div class="mt-1 space-y-0.5 text-[10px] font-semibold">' +
+                '<span class="block text-orange-300">🟠 Solicitado: ' + fmtMoeda(valSolicitadoLinha) + '</span>' +
+              '</div>';
+          } else if (stComissao === 'parcial') {
+            subtextoComissao = 
+              '<div class="mt-1 space-y-0.5 text-[10px] font-semibold">' +
+                '<span class="block text-emerald-400">✓ Pago: ' + fmtMoeda(valPagoAcumulado) + '</span>' +
+                '<span class="block text-cyan-300">⏳ Restante: ' + fmtMoeda(saldoRemanescente) + '</span>' +
+              '</div>';
+          } else if (stComissao === 'liquidado') {
+            subtextoComissao = '<span class="block text-[10px] text-emerald-400 font-semibold mt-0.5">✓ 100% Repassado</span>';
           }
 
           return '<tr class="hover:bg-white/[0.02] transition">' +
@@ -234,14 +628,15 @@
               '<strong class="text-slate-200 block text-xs">' + esc(nomeParceiro) + '</strong>' +
               '<span class="text-cyan-400 text-[10px]">' + pct + '% pactuada</span>' +
             '</td>' +
-            '<td class="py-4 px-3 text-right font-bold text-white">' + fmtMoeda(valTotal) + '</td>' +
+            '<td class="py-4 px-3 text-right font-bold text-slate-300">' + fmtMoeda(valTotal) + '</td>' +
             '<td class="py-4 px-3 text-right font-bold text-amber-400">' +
-              fmtMoeda(valComissao) +
+              fmtMoeda(valComissaoTotal) +
               subtextoComissao +
             '</td>' +
             '<td class="py-4 px-3 text-center">' +
-              '<select onchange="alterarStatusComissao(\'' + p.id + '\', this.value, ' + valComissao + ')" class="bg-slate-900 border rounded-lg px-2.5 py-1.5 text-[11px] font-bold uppercase focus:outline-none ' + stColorClass + '">' +
+              '<select onchange="alterarStatusComissaoDirecto(\'' + p.id + '\', this.value, ' + valComissaoTotal + ')" class="bg-slate-900 border rounded-lg px-2.5 py-1.5 text-[11px] font-bold uppercase focus:outline-none cursor-pointer ' + stColorClass + '">' +
                 '<option value="pendente" class="text-amber-400" ' + (stComissao === 'pendente' ? 'selected' : '') + '>🟡 Pendente</option>' +
+                '<option value="solicitado" class="text-orange-400" ' + (stComissao === 'solicitado' ? 'selected' : '') + '>🟠 Solicitado (Aguardando Baixa)</option>' +
                 '<option value="parcial" class="text-cyan-400" ' + (stComissao === 'parcial' ? 'selected' : '') + '>🔵 Adiantamento / Parcial</option>' +
                 '<option value="liquidado" class="text-emerald-400" ' + (stComissao === 'liquidado' ? 'selected' : '') + '>🟢 Liquidado / PIX</option>' +
                 '<option value="cancelado" class="text-red-400" ' + (stComissao === 'cancelado' ? 'selected' : '') + '>🔴 Cancelado / Estornado</option>' +
@@ -249,26 +644,253 @@
             '</td>' +
             '<td class="py-4 px-3 text-right whitespace-nowrap">' +
               (stComissao !== 'liquidado' 
-                ? '<button onclick="darBaixaRapida(\'' + p.id + '\')" class="inline-flex items-center justify-center px-3.5 py-2 rounded-xl bg-amber-500 hover:bg-amber-400 text-slate-950 text-xs font-bold transition shadow-[0_0_12px_rgba(245,158,11,0.3)] whitespace-nowrap">⚡ Dar Baixa (PIX)</button>'
-                : '<span class="text-xs text-emerald-400 font-bold px-2 py-1 rounded bg-emerald-500/10 border border-emerald-500/30">✓ Paid / Liquidado</span>'
+                ? '<button onclick="abrirModalBaixa(\'' + p.id + '\')" class="inline-flex items-center justify-center px-3.5 py-2 rounded-xl bg-amber-500 hover:bg-amber-400 text-slate-950 text-xs font-bold transition shadow-[0_0_12px_rgba(245,158,11,0.3)] whitespace-nowrap cursor-pointer">⚡ Dar Baixa (PIX)</button>'
+                : '<span class="text-xs text-emerald-400 font-bold px-2.5 py-1 rounded-lg bg-emerald-500/10 border border-emerald-500/30">✓ Paid / Liquidado</span>'
               ) +
             '</td>' +
           '</tr>';
         }).join('');
+
+        atualizarControlesPaginacao(inicio + 1, fim, totalRegistros);
       }
 
-      window.alterarStatusComissao = function (id, novoStatus, valComissaoTotal) {
-        var updatePayload = { comissao_status: novoStatus };
+      function atualizarControlesPaginacao(inicio, fim, total) {
+        document.getElementById('txtInfoPaginacao').textContent = 'Exibindo ' + inicio + '-' + fim + ' de ' + total + ' registros';
+        document.getElementById('txtPaginaAtual').textContent = paginaAtual;
 
-        if (novoStatus === 'parcial') {
-          var vStr = prompt('Digite o valor em R$ já pago como adiantamento parcial ao vendedor:', '0');
-          if (vStr === null) {
-            carregarComissoes();
+        var totalPaginas = Math.ceil(total / itensPorPagina) || 1;
+        document.getElementById('btnPagAnterior').disabled = (paginaAtual <= 1);
+        document.getElementById('btnPagProxima').disabled = (paginaAtual >= totalPaginas);
+      }
+
+      window.mudarPagina = function(delta) {
+        paginaAtual += delta;
+        renderTabela(listaFiltrada);
+      };
+
+      window.mudarItensPorPagina = function(qtd) {
+        itensPorPagina = parseInt(qtd, 10) || 10;
+        paginaAtual = 1;
+        renderTabela(listaFiltrada);
+      };
+
+      /* EXPORTAÇÃO EXCEL / CSV */
+      window.exportarCSV = function() {
+        if (!listaFiltrada.length) {
+          alert('Nenhum dado disponível para exportar.');
+          return;
+        }
+
+        var header = ["Proposta", "Cliente", "Vendedor", "Valor Venda", "Pct Comissao", "Comissao Total", "Pago", "Status"];
+        var rows = listaFiltrada.map(function(p) {
+          var valTotal = Number(p.valor_total || 0);
+          var pct = Number(p.comissao_pct_efetiva !== undefined && p.comissao_pct_efetiva !== null ? p.comissao_pct_efetiva : (p.parceiros ? p.parceiros.comissao_padrao_pct : 10));
+          var valComissao = (valTotal * pct) / 100;
+          var valPago = Number(p.comissao_paga_valor || 0);
+          var stComissao = p.comissao_status || (p.comissao_paga ? 'liquidado' : 'pendente');
+          var nomeVendedor = p.parceiros ? (p.parceiros.nome_completo || p.parceiros.email) : 'Vendedor ID ' + p.parceiro_id;
+
+          return [
+            '="' + (p.numero || p.id) + '"',
+            '"' + (p.cliente_nome || '').replace(/"/g, '""') + '"',
+            '"' + (nomeVendedor || '').replace(/"/g, '""') + '"',
+            valTotal.toFixed(2),
+            pct,
+            valComissao.toFixed(2),
+            valPago.toFixed(2),
+            stComissao
+          ].join(';');
+        });
+
+        var csvContent = 'data:text/csv;charset=utf-8,\uFEFF' + header.join(';') + '\n' + rows.join('\n');
+        var encodedUri = encodeURI(csvContent);
+        var link = document.createElement('a');
+        link.setAttribute('href', encodedUri);
+        link.setAttribute('download', 'Relatorio_Comissoes_432UP_' + new Date().toISOString().split('T')[0] + '.csv');
+        document.body.appendChild(link);
+        link.click();
+        document.body.removeChild(link);
+      };
+
+      /* MODAL INTELIGENTE DE BAIXA + PIX */
+      window.abrirModalBaixa = function (id) {
+        var p = listaPropostas.find(function(item) { return String(item.id) === String(id); });
+        if (!p) return;
+
+        propostaAtivaModal = p;
+
+        var valTotal = Number(p.valor_total || 0);
+        var pct = Number(p.comissao_pct_efetiva !== undefined && p.comissao_pct_efetiva !== null ? p.comissao_pct_efetiva : (p.parceiros ? p.parceiros.comissao_padrao_pct : 10));
+        var valComissaoTotal = (valTotal * pct) / 100;
+        var valJaPago = Number(p.comissao_paga_valor || 0);
+        var saldoRestante = Math.max(0, valComissaoTotal - valJaPago);
+
+        // Preenche dados bancários do recebedor
+        var parceiro = p.parceiros || {};
+        document.getElementById('modalNomeVendedor').textContent = parceiro.nome_completo || parceiro.email || '—';
+        document.getElementById('modalTipoPix').textContent = parceiro.tipo_pix || 'CPF/CNPJ';
+        document.getElementById('modalChavePix').textContent = parceiro.chave_pix || 'Não cadastrada';
+
+        document.getElementById('modalTituloProposta').textContent = '#' + (p.numero || p.id) + ' — ' + p.cliente_nome;
+        document.getElementById('modalComissaoTotal').textContent = fmtMoeda(valComissaoTotal);
+        document.getElementById('modalComissaoPaga').textContent = fmtMoeda(valJaPago);
+        document.getElementById('modalSaldoRemanescente').textContent = fmtMoeda(saldoRestante);
+
+        document.getElementById('inputComprovante').value = p.comissao_comprovante || '';
+
+        var stComissao = String(p.comissao_status || '').toLowerCase().trim();
+        var valSolicitado = Number(p.comissao_solicitada_valor || 0);
+        var boxSolicitado = document.getElementById('boxValorSolicitado');
+        var btnAlterar = document.getElementById('btnAlterarValorBaixa');
+        var inputVal = document.getElementById('inputValorPagamento');
+
+        if (stComissao === 'solicitado' && valSolicitado > 0) {
+          // Existe uma solicitação de resgate do parceiro: pré-preenche e trava o valor
+          boxSolicitado.classList.remove('hidden');
+          document.getElementById('modalValorSolicitadoTxt').textContent = fmtMoeda(valSolicitado);
+
+          var radioParcial = document.querySelector('input[name="tipoOperacao"][value="parcial"]');
+          if (radioParcial) radioParcial.checked = true;
+          toggleTipoOperacao('parcial');
+
+          inputVal.value = valSolicitado.toFixed(2);
+          inputVal.readOnly = true;
+          document.getElementById('txtDicaInput').textContent = 'Valor solicitado pelo parceiro. Clique em "Alterar Valor" para editar.';
+          btnAlterar.classList.remove('hidden');
+        } else {
+          // Fluxo normal: sem solicitação em aberto
+          boxSolicitado.classList.add('hidden');
+          btnAlterar.classList.add('hidden');
+
+          var radioQuitar = document.querySelector('input[name="tipoOperacao"][value="quitar"]');
+          if (radioQuitar) radioQuitar.checked = true;
+          toggleTipoOperacao('quitar');
+        }
+
+        document.getElementById('modalBaixaContainer').classList.add('active');
+      };
+
+      /* LIBERA O CAMPO DE VALOR PARA EDIÇÃO MANUAL (após solicitação pré-preenchida) */
+      window.desbloquearValorBaixa = function () {
+        var inputVal = document.getElementById('inputValorPagamento');
+        inputVal.readOnly = false;
+        inputVal.focus();
+        inputVal.select();
+        document.getElementById('txtDicaInput').textContent = 'Digite o novo valor a ser repassado neste contrato.';
+      };
+
+      window.copiarChavePixModal = function() {
+        var chave = document.getElementById('modalChavePix').textContent;
+        if (chave && chave !== 'Não cadastrada') {
+          navigator.clipboard.writeText(chave).then(function() {
+            alert('Chave PIX copiada para a área de transferência!');
+          });
+        } else {
+          alert('Chave PIX não informada pelo vendedor.');
+        }
+      };
+
+      window.fecharModalBaixa = function () {
+        document.getElementById('modalBaixaContainer').classList.remove('active');
+        propostaAtivaModal = null;
+      };
+
+      window.toggleTipoOperacao = function (tipo) {
+        var inputVal = document.getElementById('inputValorPagamento');
+        var lblQuitar = document.getElementById('lblOpcaoQuitar');
+        var lblParcial = document.getElementById('lblOpcaoParcial');
+        var dicaInput = document.getElementById('txtDicaInput');
+
+        if (!propostaAtivaModal) return;
+
+        var valTotal = Number(propostaAtivaModal.valor_total || 0);
+        var pct = Number(propostaAtivaModal.comissao_pct_efetiva !== undefined && propostaAtivaModal.comissao_pct_efetiva !== null ? propostaAtivaModal.comissao_pct_efetiva : (propostaAtivaModal.parceiros ? propostaAtivaModal.parceiros.comissao_padrao_pct : 10));
+        var valComissaoTotal = (valTotal * pct) / 100;
+        var valJaPago = Number(propostaAtivaModal.comissao_paga_valor || 0);
+        var saldoRestante = Math.max(0, valComissaoTotal - valJaPago);
+
+        if (tipo === 'quitar') {
+          lblQuitar.className = "flex items-center gap-2 p-3 rounded-xl border border-emerald-500/40 bg-emerald-500/10 cursor-pointer transition";
+          lblParcial.className = "flex items-center gap-2 p-3 rounded-xl border border-white/10 bg-slate-900 cursor-pointer transition";
+          
+          inputVal.value = saldoRestante.toFixed(2);
+          inputVal.readOnly = true;
+          dicaInput.textContent = "Valor pré-calculado correspondente à quitação integral do saldo remanescente.";
+        } else {
+          lblQuitar.className = "flex items-center gap-2 p-3 rounded-xl border border-white/10 bg-slate-900 cursor-pointer transition";
+          lblParcial.className = "flex items-center gap-2 p-3 rounded-xl border border-cyan-500/40 bg-cyan-500/10 cursor-pointer transition";
+          
+          inputVal.value = '';
+          inputVal.readOnly = false;
+          inputVal.focus();
+          dicaInput.textContent = "Digite o valor do adiantamento a ser somado aos repasses deste contrato.";
+        }
+      };
+
+      window.confirmarBaixaModal = function () {
+        if (!propostaAtivaModal) return;
+
+        var tipo = document.querySelector('input[name="tipoOperacao"]:checked').value;
+        var inputVal = parseFloat(document.getElementById('inputValorPagamento').value) || 0;
+        var comprovanteObs = document.getElementById('inputComprovante').value.trim();
+
+        var valTotal = Number(propostaAtivaModal.valor_total || 0);
+        var pct = Number(propostaAtivaModal.comissao_pct_efetiva !== undefined && propostaAtivaModal.comissao_pct_efetiva !== null ? propostaAtivaModal.comissao_pct_efetiva : (propostaAtivaModal.parceiros ? propostaAtivaModal.parceiros.comissao_padrao_pct : 10));
+        var valComissaoTotal = (valTotal * pct) / 100;
+        var valJaPago = Number(propostaAtivaModal.comissao_paga_valor || 0);
+
+        var updatePayload = {
+          comissao_comprovante: comprovanteObs
+        };
+
+        if (tipo === 'quitar') {
+          updatePayload.comissao_status = 'liquidado';
+          updatePayload.comissao_paga = true;
+          updatePayload.comissao_paga_valor = valComissaoTotal;
+          updatePayload.comissao_paga_em = new Date().toISOString();
+        } else {
+          if (inputVal <= 0) {
+            alert('Por favor, informe um valor válido para o adiantamento.');
             return;
           }
-          var vNum = parseFloat(vStr.replace(',', '.')) || 0;
-          updatePayload.comissao_paga_valor = vNum;
-          updatePayload.comissao_paga = false;
+
+          var novoTotalPago = valJaPago + inputVal;
+
+          if (novoTotalPago >= valComissaoTotal) {
+            updatePayload.comissao_status = 'liquidado';
+            updatePayload.comissao_paga = true;
+            updatePayload.comissao_paga_valor = valComissaoTotal;
+            updatePayload.comissao_paga_em = new Date().toISOString();
+          } else {
+            updatePayload.comissao_status = 'parcial';
+            updatePayload.comissao_paga = false;
+            updatePayload.comissao_paga_valor = novoTotalPago;
+          }
+        }
+
+        var btn = document.getElementById('btnConfirmarBaixaModal');
+        btn.disabled = true;
+        btn.textContent = 'Gravando...';
+
+        sbPartner.from('propostas').update(updatePayload).eq('id', propostaAtivaModal.id).then(function (res) {
+          btn.disabled = false;
+          btn.textContent = 'Confirmar Baixa (PIX)';
+          fecharModalBaixa();
+
+          if (!res.error) {
+            carregarComissoes();
+          } else {
+            alert('Erro ao registrar baixa: ' + res.error.message);
+          }
+        });
+      };
+
+      window.alterarStatusComissaoDirecto = function (id, novoStatus, valComissaoTotal) {
+        var updatePayload = { comissao_status: novoStatus };
+
+        if (novoStatus === 'parcial' || novoStatus === 'solicitado') {
+          abrirModalBaixa(id);
+          return;
         } else if (novoStatus === 'liquidado') {
           updatePayload.comissao_paga = true;
           updatePayload.comissao_paga_valor = valComissaoTotal;
@@ -282,40 +904,7 @@
           if (!res.error) carregarComissoes();
         });
       };
-
-      window.darBaixaRapida = function (id) {
-        if (confirm('Confirmar o pagamento/PIX integral desta comissão ao vendedor?')) {
-          sbPartner.from('propostas').update({ 
-            comissao_status: 'liquidado',
-            comissao_paga: true, 
-            comissao_paga_em: new Date().toISOString() 
-          }).eq('id', id).then(function (res) {
-            if (!res.error) {
-              carregarComissoes();
-            } else {
-              alert('Erro ao registrar baixa: ' + res.error.message);
-            }
-          });
-        }
-      };
-
-      carregarComissoes();
     })();
   </script>
-
-<script>
-  // Inicialização restrita (Chuta para a Home se NÃO for Admin)
-  partnerRequireAuth({ requireAdmin: true }).then(function (parceiro) {
-    // Carrega o menu e foto do perfil
-    partnerFillSidebar(parceiro);
-
-    // Coloque aqui a lógica de carregamento do painel Master Admin
-  }).catch(function (err) {
-    console.error('Acesso negado ao Master Admin:', err);
-  });
-</script>
-
-
-
 </body>
 </html>
