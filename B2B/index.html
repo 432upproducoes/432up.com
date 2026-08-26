@@ -10,8 +10,6 @@
     (function() {
       try {
         if (localStorage.getItem('432_is_admin') === 'true') {
-          // Mantém redirecionamento rápido se configurado
-          // window.location.href = '../admin-calculadora.html';
           document.documentElement.classList.add('is-admin');
         } else {
           document.documentElement.classList.remove('is-admin');
@@ -143,12 +141,10 @@
       <a href="comissoes.html">Comissões</a>
       <a href="materiais.html">Materiais</a>
 
-      <!-- CRACHÁ DOURADO MASTER ADMIN (INICIA OCULTO VIA CSS) -->
       <span id="navAdminLinkContainer">
         <a href="admin/index.html" style="color: #f59e0b; font-weight: 700; border: 1px solid rgba(245,158,11,0.4); padding: 4px 10px; border-radius: 8px; background: rgba(245,158,11,0.1); font-size: 0.75rem;">👑 Master Admin</a>
       </span>
 
-      <!-- WIDGET DE PERFIL -->
       <div class="b2b-user-widget">
         <a href="perfil.html" title="Meu Perfil" class="b2b-avatar-link">
           <div data-partner-avatar class="b2b-avatar-img"></div>
@@ -159,7 +155,6 @@
       </div>
     </nav>
 
-    <!-- BOTÃO HAMBÚRGUER MOBILE -->
     <button class="mobile-hamburger" onclick="toggleMobileMenu()" aria-label="Abrir menu">☰</button>
   </header>
 
@@ -175,7 +170,6 @@
       </div>
     </a>
 
-    <!-- LINK MASTER ADMIN NO MOBILE (INICIA OCULTO VIA CSS) -->
     <div id="navAdminLinkContainerMobile" class="w-full mb-2">
       <a href="admin/index.html" onclick="toggleMobileMenu()" style="color: #f59e0b; font-weight: 700; display: block; text-align: center; border: 1px solid rgba(245,158,11,0.4); padding: 8px; border-radius: 8px; background: rgba(245,158,11,0.1);">👑 Painel Master Admin</a>
     </div>
@@ -192,7 +186,7 @@
   </div>
 
   <!-- CONTAINER DE CONTEÚDO EM FLUXO VERTICAL -->
-  <div class="flex flex-col min-h-screen relative z-10">
+  <div class="flex flex-col min-h-screen relative z-10 pb-16">
 
     <!-- CONTEÚDO PRINCIPAL (DASHBOARD) -->
     <main class="flex-1 p-4 lg:p-8 space-y-6 pt-28 lg:pt-28 w-full max-w-7xl mx-auto">
@@ -226,7 +220,8 @@
           <span id="kpiValorFechado" class="text-xs text-emerald-500/90 mt-3 block border-t border-white/5 pt-2">R$ 0,00 fechados</span>
         </div>
 
-        <div class="glass-amber p-5 rounded-2xl flex flex-col justify-between">
+        <!-- CARD DE COMISSÃO LÍQUIDA SINCRONIZADO -->
+        <div class="glass-amber p-5 rounded-2xl flex flex-col justify-between border-l-4 border-l-amber-500">
           <div>
             <span class="text-xs font-semibold uppercase tracking-wider text-amber-300">Comissão Acumulada</span>
             <div id="kpiComissaoLiberada" class="text-2xl font-bold text-amber-400 mt-2">R$ 0,00</div>
@@ -330,31 +325,39 @@
           .select('*')
           .eq('parceiro_id', parceiro.id)
           .then(function (res) {
-            if (!res.data) return;
+            if (!res.data || res.data.length === 0) {
+              atualizarKPIsTela(0, 0, 0, 0, 0);
+              return;
+            }
+
             var list = res.data;
             var hoje = new Date().toISOString().split('T')[0];
 
+            // 1. Propostas em andamento
             var emAndamento = list.filter(function (p) {
               var st = String(p.status || '').toLowerCase().trim();
               return st === 'enviada' || st === 'hold' || st === 'rascunho';
             }).length;
 
+            // 2. Propostas Aprovadas
             var aprovadas = list.filter(function (p) {
               var st = String(p.status || '').toLowerCase().trim();
               return st === 'aprovada' || st === 'aprovado';
             });
 
+            // 3. Faturamento Bruto Aprovado
             var valorFechado = aprovadas.reduce(function (acc, p) { 
               return acc + Number(p.valor_total || 0); 
             }, 0);
 
+            // 4. Cálculo de Comissão Líquida Item por Item
             var comissaoLiberada = 0;
             var comissaoPendente = 0;
 
             aprovadas.forEach(function (p) {
               var val = Number(p.valor_total || 0);
-              var pct = Number(p.comissao_pct_efetiva || parceiro.comissao_padrao_pct || 10);
-              var valorComissao = (val * pct / 100);
+              var pct = Number(p.comissao_pct_efetiva !== undefined && p.comissao_pct_efetiva !== null ? p.comissao_pct_efetiva : (parceiro.comissao_padrao_pct || 10));
+              var valorComissao = (val * pct) / 100;
 
               var dataEv = p.data_evento ? String(p.data_evento).split('T')[0] : '';
 
@@ -368,6 +371,7 @@
             atualizarKPIsTela(emAndamento, aprovadas.length, valorFechado, comissaoLiberada, comissaoPendente);
           }).catch(function (err) {
             console.error('[432UP Partner] Erro ao carregar KPIs diretos:', err);
+            atualizarKPIsTela(0, 0, 0, 0, 0);
           });
       }
 
@@ -402,8 +406,15 @@
               return st === 'hold' || st === 'enviada' || st === 'rascunho';
             }).slice(0, 5);
 
+            // Estado Zero Alinhado com CTA
             if (!filtrados.length) {
-              el.innerHTML = '<p class="text-xs text-slate-500 py-6 text-center">Nenhuma proposta pendente de atenção no momento. 🎉</p>';
+              el.innerHTML = 
+                '<div class="py-6 px-4 text-center space-y-3">' +
+                  '<p class="text-xs text-slate-400">Nenhuma proposta pendente de atenção no momento. 🎉</p>' +
+                  '<a href="nova-proposta.html" class="inline-flex items-center space-x-2 px-4 py-2 rounded-xl bg-cyan-500/10 hover:bg-cyan-500/20 text-cyan-300 border border-cyan-500/30 text-xs font-bold transition">' +
+                    '<span>⚡ Criar Nova Proposta</span>' +
+                  '</a>' +
+                '</div>';
               return;
             }
 

@@ -3,14 +3,12 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
-  <title>432UP Partner | Comissões</title>
+  <title>432UP Partner | Comissões & Saques</title>
   
-  <!-- CSS Global do Site -->
   <link rel="stylesheet" href="../css/style.css">
   <script src="https://cdn.tailwindcss.com"></script>
 
   <style>
-    /* FUNDO VIDRO B2B CIANO PADRÃO ORIGINAL */
     .glass-b2b {
       background: linear-gradient(135deg, rgba(10, 18, 28, 0.75) 0%, rgba(14, 22, 35, 0.5) 100%);
       backdrop-filter: blur(24px);
@@ -26,7 +24,6 @@
       box-shadow: 0 0 30px rgba(245, 158, 11, 0.15);
     }
 
-    /* HEADER B2B CIANO TECH (AJUSTADO E LIMPO) */
     #calc-header.b2b-header-cyan {
       display: flex !important;
       align-items: center !important;
@@ -55,7 +52,6 @@
       }
     }
 
-    /* WIDGET DO PERFIL (FOTO CLICÁVEL) */
     .b2b-user-widget {
       display: inline-flex !important;
       align-items: center !important;
@@ -89,18 +85,46 @@
       flex-shrink: 0 !important;
     }
 
-    #formAlert { display: none; }
-    #formAlert.show { display: block; }
-    .btn-loading { opacity: .6; pointer-events: none; }
+    #formAlert {
+      position: fixed !important;
+      top: 84px !important;
+      left: 50% !important;
+      transform: translateX(-50%) !important;
+      z-index: 99999 !important;
+      width: 90% !important;
+      max-width: 480px !important;
+      text-align: center !important;
+      padding: 14px 20px !important;
+      border-radius: 14px !important;
+      backdrop-filter: blur(20px) !important;
+      -webkit-backdrop-filter: blur(20px) !important;
+      font-weight: 700 !important;
+      font-size: 0.88rem !important;
+      display: none;
+      transition: all 0.3s cubic-bezier(0.25, 1, 0.5, 1) !important;
+    }
+    #formAlert.show { display: block !important; }
+
+    #modalResgateContainer {
+      display: none;
+      position: fixed;
+      inset: 0;
+      z-index: 9999;
+      background: rgba(0, 0, 0, 0.82);
+      backdrop-filter: blur(12px);
+      -webkit-backdrop-filter: blur(12px);
+      align-items: center;
+      justify-content: center;
+      padding: 1rem;
+    }
+    #modalResgateContainer.active { display: flex; }
   </style>
 </head>
 <body class="h-full text-slate-200 font-sans antialiased bg-[#06080c] overflow-x-hidden">
 
-  <!-- Fundo Espacial Integrado ao CSS do Projeto -->
   <canvas id="orbit-canvas"></canvas>
   <div id="plasmaLayer" class="plasma-top-layer"></div>
 
-  <!-- HEADER TOPO PARCEIROS (PADRÃO CIANO B2B DEDICADO) -->
   <header id="calc-header" class="b2b-header-cyan">
     <div class="logo-container flex items-center">
       <a href="../index.html" class="logo-link flex items-center" aria-label="Página Inicial 432UP">
@@ -108,7 +132,6 @@
       </a>
     </div>
 
-    <!-- NAV DESKTOP PARCEIROS -->
     <nav class="desktop-nav">
       <a href="index.html">Meu Painel</a>
       <a href="nova-proposta.html" style="color: #f59e0b; font-weight: 700;">⚡ Nova Proposta</a>
@@ -116,12 +139,10 @@
       <a href="comissoes.html" class="active">Comissões</a>
       <a href="materiais.html">Materiais</a>
 
-      <!-- CRACHÁ DOURADO MASTER ADMIN -->
       <span id="navAdminLinkContainer">
         <a href="admin/index.html" style="color: #f59e0b; font-weight: 700; border: 1px solid rgba(245,158,11,0.4); padding: 4px 10px; border-radius: 8px; background: rgba(245,158,11,0.1); font-size: 0.75rem;">👑 Master Admin</a>
       </span>
 
-      <!-- WIDGET DE PERFIL (FOTO CLICÁVEL REVOLUCIONADA) -->
       <div class="b2b-user-widget">
         <a href="perfil.html" title="Meu Perfil" class="b2b-avatar-link">
           <div data-partner-avatar class="b2b-avatar-img"></div>
@@ -132,15 +153,12 @@
       </div>
     </nav>
 
-    <!-- BOTÃO HAMBÚRGUER MOBILE DA CALCULADORA -->
     <button class="mobile-hamburger" onclick="toggleMobileMenu()">☰</button>
   </header>
 
-  <!-- OVERLAY MENU MOBILE PARCEIROS -->
   <div class="mobile-menu-overlay" id="mobile-menu">
     <button onclick="toggleMobileMenu()" style="position: absolute; top: 20px; right: 20px; background: transparent; border: none; color: #fff; font-size: 1.5rem; cursor: pointer;">✕</button>
     
-    <!-- NO MOBILE: FOTO E NOME TAMBÉM LEVAM AO PERFIL -->
     <a href="perfil.html" onclick="toggleMobileMenu()" class="flex items-center gap-3 mb-4 border-b border-cyan-500/20 pb-3 hover:opacity-80 transition">
       <div data-partner-avatar class="w-10 h-10 rounded-full bg-cyan-500/20 border border-cyan-500/40 bg-cover bg-center shrink-0"></div>
       <div class="text-left">
@@ -149,7 +167,6 @@
       </div>
     </a>
 
-    <!-- LINK MASTER ADMIN NO MOBILE -->
     <div id="navAdminLinkContainerMobile" class="w-full mb-2">
       <a href="admin/index.html" onclick="toggleMobileMenu()" style="color: #f59e0b; font-weight: 700; display: block; text-align: center; border: 1px solid rgba(245,158,11,0.4); padding: 8px; border-radius: 8px; background: rgba(245,158,11,0.1);">👑 Painel Master Admin</a>
     </div>
@@ -165,110 +182,206 @@
     </button>
   </div>
 
-  <!-- CONTAINER DE CONTEÚDO EM FLUXO VERTICAL -->
-  <div class="flex flex-col min-h-screen relative z-10">
+  <div class="flex flex-col min-h-screen relative z-10 pb-28">
 
-    <!-- CONTEÚDO PRINCIPAL (PADDING SUPERIOR REAJUSTADO: pt-20 no mobile e pt-24 no desktop) -->
-    <main class="flex-1 p-4 lg:p-8 space-y-6 pt-20 lg:pt-24 w-full max-w-7xl mx-auto">
+    <main class="flex-1 p-4 lg:p-8 space-y-6 pt-24 lg:pt-28 w-full max-w-7xl mx-auto">
       <div>
-        <h1 class="text-2xl md:text-3xl font-bold text-white tracking-tight">Painel de Comissões</h1>
-        <p class="text-sm text-slate-400 mt-1">Transparência total dos seus retornos comerciais.</p>
+        <h1 class="text-2xl md:text-3xl font-bold text-white tracking-tight">Painel de Comissões & Resgate</h1>
+        <p class="text-sm text-slate-400 mt-1">Transparência total dos seus retornos comerciais e solicitações de resgate via PIX.</p>
       </div>
 
-      <div id="formAlert" class="p-3 rounded-xl text-xs font-semibold"></div>
+      <div id="formAlert"></div>
 
-      <!-- CARDS DE RESUMO FINANCEIRO -->
       <div class="grid grid-cols-1 sm:grid-cols-3 gap-4 items-stretch">
-        
         <div class="glass-amber p-5 rounded-2xl border-l-4 border-l-amber-500 flex flex-col justify-between">
           <div>
-            <span class="text-xs uppercase font-semibold text-slate-400">Saldo Disponível</span>
+            <span class="text-xs uppercase font-semibold text-slate-400 tracking-wider">Saldo Disponível para Saque</span>
             <div id="txtSaldoDisponivel" class="text-2xl font-bold text-amber-400 mt-1">R$ 0,00</div>
           </div>
-          <button id="btnSolicitarResgate" class="mt-4 w-full py-2.5 rounded-xl bg-amber-500 hover:bg-amber-400 text-slate-950 font-bold text-xs uppercase tracking-wider transition shadow-[0_0_15px_rgba(245,158,11,0.3)]">
-            Solicitar Resgate
-          </button>
+          <div class="mt-4 space-y-2">
+            <button id="btnSolicitarResgate" onclick="abrirModalSolicitacaoResgate()" class="w-full py-2.5 rounded-xl bg-amber-500 hover:bg-amber-400 text-slate-950 font-bold text-xs uppercase tracking-wider transition shadow-[0_0_15px_rgba(245,158,11,0.3)] cursor-pointer">
+              SOLICITAR RESGATE
+            </button>
+            <span id="txtMicrocopyResgate" class="text-[11px] text-slate-400 block text-center hidden">
+              Saldo insuficiente para resgate
+            </span>
+            <span class="text-[10px] text-slate-400 block text-center font-medium">
+              ⚡ Pagamento via PIX em até 48h úteis
+            </span>
+          </div>
         </div>
 
         <div class="glass-b2b p-5 rounded-2xl border-l-4 border-l-cyan-500 flex flex-col justify-between">
           <div>
-            <span class="text-xs uppercase font-semibold text-slate-400">Pendente de Evento</span>
-            <div id="txtPendenteEvento" class="text-2xl font-bold text-cyan-300 mt-1">R$ 0,00</div>
+            <span class="text-xs uppercase font-semibold text-slate-400 tracking-wider">Comissões a Liberar</span>
+            <div id="txtComissoesALiberar" class="text-2xl font-bold text-cyan-300 mt-1">R$ 0,00</div>
           </div>
-          <span class="text-[11px] text-slate-400 mt-4 block border-t border-white/5 pt-2">Liberado 48h após a realização do evento</span>
+          <span class="text-[11px] text-slate-400 mt-4 block border-t border-white/5 pt-2">
+            Liberado automaticamente após a realização do evento
+          </span>
         </div>
 
-        <div class="glass-b2b p-5 rounded-2xl border-l-4 border-l-emerald-500 flex flex-col justify-between">
+        <div class="glass-b2b p-5 rounded-2xl border-l-4 border-l-emerald-500 flex flex-col justify-between relative group">
           <div>
-            <span class="text-xs uppercase font-semibold text-slate-400">Total Já Pago</span>
-            <div id="txtTotalPago" class="text-2xl font-bold text-emerald-400 mt-1">R$ 0,00</div>
+            <div class="flex items-center justify-between">
+              <span class="text-xs uppercase font-semibold text-slate-400 tracking-wider">Total Já Pago</span>
+              <span class="text-slate-500 hover:text-slate-300 text-xs cursor-pointer transition">ℹ️</span>
+            </div>
+            <div id="txtTotalPago" class="text-2xl font-bold text-emerald-300/80 mt-1 transition">R$ 0,00</div>
           </div>
-          <span class="text-[11px] text-slate-400 mt-4 block border-t border-white/5 pt-2">Acumulado histórico do parceiro</span>
-        </div>
+          
+          <span class="text-[11px] text-slate-400 mt-4 block border-t border-white/5 pt-2">
+            Acumulado de resgates e baixas efetuados
+          </span>
 
+          <div class="pointer-events-none absolute bottom-full mb-2 left-1/2 -translate-x-1/2 w-64 p-3 bg-slate-900/95 border border-emerald-500/40 rounded-xl shadow-[0_10px_25px_rgba(0,0,0,0.9)] backdrop-blur-md text-[11px] text-slate-200 text-center opacity-0 group-hover:opacity-100 transition-all duration-200 z-50 whitespace-normal leading-relaxed">
+            Somatório de todos os valores transferidos e liquidados diretamente na sua chave PIX.
+          </div>
+        </div>
       </div>
 
-      <!-- EXTRATO DETALHADO -->
-      <div class="glass-b2b rounded-2xl p-6 border border-cyan-500/20">
-        <h2 class="text-base font-bold text-white mb-4">Extrato Recente</h2>
-        <div id="listaExtrato" class="space-y-3">
-          <p class="text-xs text-slate-500 py-4 text-center">Carregando extrato de comissões...</p>
+      <div class="glass-b2b rounded-2xl p-6 border border-cyan-500/20 mb-12">
+        <div class="flex items-center justify-between mb-4 border-b border-white/10 pb-3 flex-wrap gap-2">
+          <div>
+            <h2 class="text-base font-bold text-white">Extrato & Histórico de Operações</h2>
+            <p class="text-xs text-slate-400">Acompanhe créditos de vendas e o status das suas solicitações de resgate.</p>
+          </div>
+          <span class="text-[11px] text-cyan-400 font-semibold bg-cyan-500/10 border border-cyan-500/30 px-3 py-1 rounded-lg">
+            🔍 Clique no pedido para ver ou alterar valor do saque
+          </span>
+        </div>
+        
+        <div id="containerExtrato" class="pb-4">
+          <div class="py-6 text-center text-slate-500 text-xs">Carregando extrato comercial...</div>
         </div>
       </div>
     </main>
   </div>
 
+  <div id="modalResgateContainer">
+    <div class="glass-b2b p-6 rounded-2xl border border-cyan-500/40 max-w-lg w-full space-y-4 relative shadow-[0_0_50px_rgba(0,0,0,0.9)]">
+      
+      <div class="flex items-center justify-between border-b border-white/10 pb-3">
+        <div>
+          <span id="modalResgateTag" class="text-[10px] font-bold text-amber-400 uppercase tracking-widest block">Solicitação de Saque PIX</span>
+          <h3 id="modalResgateTitulo" class="text-base font-bold text-white mt-0.5">Resgatar Comissão</h3>
+        </div>
+        <button onclick="fecharModalResgate()" class="text-slate-400 hover:text-white text-lg font-bold transition">✕</button>
+      </div>
+
+      <div id="boxModoSolicitar" class="space-y-4">
+        <div class="grid grid-cols-2 gap-3 bg-white/[0.03] p-3.5 rounded-xl border border-white/10 text-center">
+          <div>
+            <span class="text-[10px] text-slate-400 uppercase block font-semibold">Saldo Disponível</span>
+            <strong id="modalSaldoDisponivelVal" class="text-base text-amber-400 font-bold block mt-0.5">R$ 0,00</strong>
+          </div>
+          <div>
+            <span class="text-[10px] text-slate-400 uppercase block font-semibold">Chave PIX Destino</span>
+            <strong id="modalChavePixInfo" class="text-xs text-cyan-300 font-mono font-bold block mt-1 truncate">—</strong>
+          </div>
+        </div>
+
+        <div class="space-y-1.5">
+          <div class="flex items-center justify-between">
+            <label for="inputValorResgate" class="block text-xs uppercase tracking-wider text-slate-300 font-semibold">Valor do Resgate (R$)</label>
+            <button type="button" onclick="preencherValorTotalResgate()" class="text-[10px] text-amber-400 hover:text-amber-300 font-bold uppercase underline cursor-pointer">
+              ⚡ Resgatar Valor Total
+            </button>
+          </div>
+          <input type="number" step="0.01" id="inputValorResgate" placeholder="0,00" class="w-full bg-slate-900 border border-cyan-500/40 rounded-xl px-4 py-2.5 text-base text-white font-extrabold focus:border-cyan-400 focus:outline-none transition">
+          <span class="text-[10px] text-slate-400 block">Você pode alterar esse valor a qualquer momento antes do pagamento do admin.</span>
+        </div>
+
+        <div class="p-3 bg-cyan-500/10 border border-cyan-500/20 rounded-xl text-xs text-cyan-200 flex items-center gap-2">
+          <span class="text-base shrink-0">⏳</span>
+          <span><strong>Prazo Garantido:</strong> O crédito será efetuado na chave PIX cadastrada em até <strong>48 horas úteis</strong> após a confirmação.</span>
+        </div>
+
+        <div class="flex items-center justify-end gap-3 pt-2 border-t border-white/10">
+          <button type="button" onclick="fecharModalResgate()" class="px-4 py-2.5 rounded-xl bg-slate-800 hover:bg-slate-700 text-slate-300 font-bold text-xs uppercase transition cursor-pointer">
+            Cancelar
+          </button>
+          <button type="button" id="btnConfirmarResgateNativo" onclick="confirmarResgateNativo()" class="px-5 py-2.5 rounded-xl bg-amber-500 hover:bg-amber-400 text-slate-950 font-bold text-xs uppercase tracking-wider transition shadow-[0_0_15px_rgba(245,158,11,0.3)] cursor-pointer">
+            Confirmar Resgate (PIX)
+          </button>
+        </div>
+      </div>
+
+      <div id="boxModoConsultar" class="space-y-4 hidden">
+        <div class="p-4 bg-white/[0.03] border border-white/10 rounded-xl space-y-3">
+          <div class="flex justify-between items-center border-b border-white/10 pb-2.5">
+            <div>
+              <span class="text-[10px] uppercase font-bold text-slate-400 block">Proposta / Pedido</span>
+              <strong id="modalConsultaTitulo" class="text-white text-sm font-bold block mt-0.5">—</strong>
+            </div>
+            <div id="modalConsultaBadgeStatus"></div>
+          </div>
+
+          <div class="grid grid-cols-2 gap-3 text-xs">
+            <div>
+              <span class="text-slate-400 block text-[10px] uppercase">Valor do Contrato</span>
+              <strong id="modalConsultaValContrato" class="text-slate-200 block font-medium mt-0.5">R$ 0,00</strong>
+            </div>
+            <div>
+              <span class="text-slate-400 block text-[10px] uppercase">Comissão Total (%)</span>
+              <strong id="modalConsultaComissaoTotal" class="text-emerald-400 block font-bold mt-0.5">R$ 0,00</strong>
+            </div>
+            <div>
+              <span class="text-slate-400 block text-[10px] uppercase">Total Já Pago</span>
+              <strong id="modalConsultaValPago" class="text-cyan-300 block font-bold mt-0.5">R$ 0,00</strong>
+            </div>
+            <div>
+              <span class="text-slate-400 block text-[10px] uppercase">Saldo Restante</span>
+              <strong id="modalConsultaSaldoRestante" class="text-amber-400 block font-bold mt-0.5">R$ 0,00</strong>
+            </div>
+          </div>
+
+          <div id="boxAvisoSaqueSolicitado" class="hidden bg-amber-500/10 border border-amber-500/30 p-3.5 rounded-xl text-xs space-y-2">
+            <div class="flex justify-between items-center">
+              <span class="text-amber-300 font-bold uppercase text-[10px]">⚠️ Saque em Processamento</span>
+              <strong id="modalConsultaValSolicitado" class="text-amber-400 font-extrabold text-sm">R$ 0,00</strong>
+            </div>
+            <p class="text-[11px] text-slate-300">Deseja alterar o valor solicitado (aumentar ou diminuir) antes da baixa do admin?</p>
+            <button id="btnEditarSaquePendente" type="button" class="w-full py-2 bg-amber-500/20 hover:bg-amber-500/30 border border-amber-500/50 text-amber-300 font-bold rounded-lg text-xs transition cursor-pointer">
+              ✏️ Alterar Valor Solicitado
+            </button>
+          </div>
+        </div>
+
+        <div class="flex items-center justify-between pt-2 border-t border-white/10">
+          <a id="modalConsultaBtnLinkProposta" href="#" class="text-xs text-cyan-400 hover:text-cyan-300 font-bold underline">
+            Ver Proposta ➔
+          </a>
+          <button type="button" onclick="fecharModalResgate()" class="px-5 py-2.5 rounded-xl bg-slate-800 hover:bg-slate-700 text-white font-bold text-xs uppercase tracking-wider transition cursor-pointer">
+            Fechar
+          </button>
+        </div>
+      </div>
+
+    </div>
+  </div>
+
   <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
   <script src="partner-config.js"></script>
   <script src="../script/script.js" defer></script>
+  
   <script>
     (function () {
       'use strict';
 
       var parceiroAtual = null;
-      var timerInterval = null;
-
-      var STATUS_LABEL = {
-        liberada: { text: 'Liberado', cls: 'text-emerald-400 font-semibold' },
-        pendente_evento: { text: 'Aguardando Evento', cls: 'text-cyan-400 font-semibold' },
-        resgatada: { text: 'Resgatada', cls: 'text-slate-400 font-semibold' },
-        cancelada: { text: 'Cancelada', cls: 'text-red-400 font-semibold' }
-      };
+      var saldoDisponivelAtual = 0;
+      var propostasElegiveisSaque = [];
+      var listaPropostasCache = [];
+      var propostaSendoEditadaId = null;
 
       function fmtMoeda(n) { return 'R$ ' + Number(n || 0).toLocaleString('pt-BR', { minimumFractionDigits: 2 }); }
+      function fmtData(d) { return d ? new Date(d + 'T12:00:00').toLocaleDateString('pt-BR') : '—'; }
       function esc(s) { return String(s == null ? '' : s).replace(/</g, '&lt;').replace(/>/g, '&gt;'); }
-      
-      /* CÁLCULO EXATO DA CONTAGEM REGRESSIVA (HHh MMm) */
-      function formatarTempoRestante(dataExpira) {
-        if (!dataExpira) return '48H 00M';
-        var difMs = new Date(dataExpira) - new Date();
-        if (difMs <= 0) return 'EXPIRADO';
 
-        var horas = Math.floor(difMs / (1000 * 60 * 60));
-        var minutos = Math.floor((difMs % (1000 * 60 * 60)) / (1000 * 60));
-
-        return (horas < 10 ? '0' : '') + horas + 'H ' + (minutos < 10 ? '0' : '') + minutos + 'M';
-      }
-
-      function iniciarTimersHold() {
-        if (timerInterval) clearInterval(timerInterval);
-        timerInterval = setInterval(function () {
-          var badgesHold = document.querySelectorAll('[data-hold-expira]');
-          badgesHold.forEach(function (el) {
-            var expira = el.getAttribute('data-hold-expira');
-            if (expira) {
-              el.textContent = '⏳ ' + formatarTempoRestante(expira);
-            }
-          });
-        }, 10000);
-      }
-
-      /* FUNÇÃO GLOBAL DO MENU MOBILE */
       window.toggleMobileMenu = function () {
         var mobNav = document.getElementById('mobile-menu');
-        if (mobNav) {
-          mobNav.classList.toggle('active');
-        }
+        if (mobNav) mobNav.classList.toggle('active');
       };
 
       function showAlert(msg, type) {
@@ -276,156 +389,296 @@
         if (!el) return;
         el.textContent = msg;
         el.className = 'p-3 rounded-xl text-xs font-semibold show ' +
-          (type === 'success' ? 'bg-emerald-500/15 text-emerald-300 border border-emerald-500/30' : 'bg-red-500/15 text-red-300 border border-red-500/30');
+          (type === 'success' ? 'bg-emerald-500/20 text-emerald-300 border border-emerald-500/40' : 'bg-red-500/20 text-red-300 border border-red-500/40');
+        setTimeout(function() { el.classList.remove('show'); }, 4000);
       }
 
       partnerRequireAuth().then(function (parceiro) {
         parceiroAtual = parceiro;
         partnerFillSidebar(parceiro);
-        carregarResumo(parceiro.id);
-        carregarExtrato(parceiro.id);
+        carregarPainelComissoes(parceiro);
         bindEvents();
+      }).catch(function (err) {
+        console.error('[432UP Partner] Erro na autenticação:', err);
       });
 
-      function carregarResumo(parceiroId) {
-        sbPartner.from('v_parceiro_dashboard')
-          .select('*')
-          .eq('parceiro_id', parceiroId)
-          .single()
-          .then(function (res) {
-            if (res.data) {
-              var d = res.data;
-              document.getElementById('txtSaldoDisponivel').textContent = fmtMoeda(d.comissao_disponivel);
-              document.getElementById('txtPendenteEvento').textContent = fmtMoeda(d.comissao_pendente);
-              document.getElementById('txtTotalPago').textContent = fmtMoeda(d.comissao_total_paga);
-            } else {
-              carregarResumoDirecto(parceiroId);
-            }
-          }).catch(function() {
-            carregarResumoDirecto(parceiroId);
-          });
-      }
-
-      function carregarResumoDirecto(parceiroId) {
-        sbPartner.from('propostas')
-          .select('valor_total, comissao_pct_efetiva, status')
-          .eq('parceiro_id', parceiroId)
-          .eq('status', 'aprovada')
-          .then(function (res) {
-            if (res.data) {
-              var totalComissao = res.data.reduce(function (acc, p) {
-                var val = p.valor_total || 0;
-                var pct = p.comissao_pct_efetiva || 10;
-                return acc + (val * pct / 100);
-              }, 0);
-
-              document.getElementById('txtSaldoDisponivel').textContent = fmtMoeda(totalComissao);
-              document.getElementById('txtPendenteEvento').textContent = fmtMoeda(0);
-              document.getElementById('txtTotalPago').textContent = fmtMoeda(0);
-            }
-          });
-      }
-
-      function carregarExtrato(parceiroId) {
-        sbPartner.from('comissoes')
-          .select('*, propostas(numero, cliente_nome)')
-          .eq('parceiro_id', parceiroId)
-          .order('criado_em', { ascending: false })
-          .then(function (res) {
-            var container = document.getElementById('listaExtrato');
-            if (res.error || !res.data || !res.data.length) {
-              carregarExtratoViaPropostas(parceiroId, container);
-              return;
-            }
-
-            container.innerHTML = res.data.map(function (c) {
-              var propNum = c.propostas ? c.propostas.numero : '—';
-              var propCliente = c.propostas ? c.propostas.cliente_nome : 'Proposta';
-              var st = STATUS_LABEL[c.status] || STATUS_LABEL.pendente_evento;
-              var isLiberada = c.status === 'liberada';
-              var valCls = isLiberada ? 'text-amber-400' : 'text-slate-300';
-
-              return '<div class="flex justify-between items-center p-3.5 rounded-xl bg-white/[0.02] border border-white/10 hover:bg-white/[0.04] transition">' +
-                '<div>' +
-                  '<div class="font-bold text-white text-sm">#' + propNum + ' — ' + esc(propCliente) + '</div>' +
-                  '<span class="text-xs text-slate-400">Venda: ' + fmtMoeda(c.valor_venda) + ' (Comissão ' + Number(c.comissao_pct).toFixed(0) + '%)</span>' +
-                '</div>' +
-                '<div class="text-right">' +
-                  '<span class="font-bold ' + valCls + ' text-sm">+ ' + fmtMoeda(c.comissao_valor) + '</span>' +
-                  '<span class="block text-[10px] ' + st.cls + '">' + st.text + '</span>' +
-                '</div>' +
-              '</div>';
-            }).join('');
-          });
-      }
-
-      function carregarExtratoViaPropostas(parceiroId, container) {
+      function carregarPainelComissoes(parceiro) {
         sbPartner.from('propostas')
           .select('*')
-          .eq('parceiro_id', parceiroId)
-          .eq('status', 'aprovada')
+          .eq('parceiro_id', parceiro.id)
           .order('criado_em', { ascending: false })
           .then(function (res) {
-            if (res.error || !res.data || !res.data.length) {
-              container.innerHTML = '<p class="text-xs text-slate-500 py-4 text-center">Nenhuma comissão gerada até o momento.</p>';
-              return;
-            }
+            var propostas = res.data || [];
+            listaPropostasCache = propostas;
+            var hoje = new Date().toISOString().split('T')[0];
 
-            container.innerHTML = res.data.map(function (p) {
-              var valComissao = (p.valor_total * (p.comissao_pct_efetiva || 10)) / 100;
-              return '<div class="flex justify-between items-center p-3.5 rounded-xl bg-white/[0.02] border border-white/10 hover:bg-white/[0.04] transition">' +
-                '<div>' +
-                  '<div class="font-bold text-white text-sm">#' + p.numero + ' — ' + esc(p.cliente_nome) + '</div>' +
-                  '<span class="text-xs text-slate-400">Venda Aprovada: ' + fmtMoeda(p.valor_total) + ' (Comissão ' + Number(p.comissao_pct_efetiva || 10).toFixed(0) + '%)</span>' +
-                '</div>' +
-                '<div class="text-right">' +
-                  '<span class="font-bold text-amber-400 text-sm">+ ' + fmtMoeda(valComissao) + '</span>' +
-                  '<span class="block text-[10px] text-emerald-400 font-semibold">Liberado</span>' +
-                '</div>' +
-              '</div>';
-            }).join('');
+            var aprovadas = propostas.filter(function (p) {
+              var st = String(p.status || '').toLowerCase().trim();
+              return st === 'aprovada' || st === 'aprovado';
+            });
+
+            var comissoesOcorridas = 0;
+            var comissoesALiberar = 0;
+            var saquesLiquidados = 0;
+            var saquesEmProcessamento = 0;
+
+            propostasElegiveisSaque = [];
+
+            aprovadas.forEach(function (p) {
+              var valTotal = Number(p.valor_total || 0);
+              var pct = Number(p.comissao_pct_efetiva !== undefined && p.comissao_pct_efetiva !== null ? p.comissao_pct_efetiva : (parceiro.comissao_padrao_pct || 10));
+              var valorComissaoTotal = p.comissao_valor ? Number(p.comissao_valor) : (valTotal * pct / 100);
+              
+              var valorPago = Number(p.comissao_paga_valor || 0);
+              saquesLiquidados += valorPago;
+
+              var dataEv = p.data_evento ? String(p.data_evento).split('T')[0] : '';
+              var stComissao = String(p.comissao_status || '').toLowerCase().trim();
+
+              var isLiberadoExplicitamente = stComissao === 'liquidado' || stComissao === 'parcial' || stComissao === 'liberado' || stComissao === 'solicitado';
+              var isLiberadoPorData = dataEv && dataEv <= hoje;
+
+              if (isLiberadoExplicitamente || isLiberadoPorData) {
+                comissoesOcorridas += valorComissaoTotal;
+
+                var saldoRestanteProposta = Math.max(0, valorComissaoTotal - valorPago);
+                if (stComissao === 'solicitado') {
+                  saquesEmProcessamento += Number(p.comissao_solicitada_valor || saldoRestanteProposta);
+                  propostasElegiveisSaque.push(p);
+                } else if (saldoRestanteProposta > 0) {
+                  propostasElegiveisSaque.push(p);
+                }
+              } else {
+                comissoesALiberar += valorComissaoTotal;
+              }
+            });
+
+            saldoDisponivelAtual = Math.max(0, comissoesOcorridas - (saquesLiquidados + saquesEmProcessamento));
+
+            document.getElementById('txtSaldoDisponivel').textContent = fmtMoeda(saldoDisponivelAtual);
+            document.getElementById('txtComissoesALiberar').textContent = fmtMoeda(comissoesALiberar);
+            
+            var txtPagoEl = document.getElementById('txtTotalPago');
+            txtPagoEl.textContent = fmtMoeda(saquesLiquidados);
+            txtPagoEl.className = saquesLiquidados > 0 ? "text-2xl font-bold text-emerald-400 mt-1 transition" : "text-2xl font-bold text-emerald-300/60 mt-1 transition";
+
+            atualizarEstadoBotaoResgate(saldoDisponivelAtual);
+            renderizarExtratoUnificado(aprovadas);
           });
       }
 
-      function bindEvents() {
-        var btnResgate = document.getElementById('btnSolicitarResgate');
-        if (btnResgate) {
-          btnResgate.addEventListener('click', function () {
-            var btn = this;
-            btn.classList.add('btn-loading');
-            
-            var msg = 'Olá! Gostaria de solicitar o resgate do meu saldo de comissões disponíveis no Portal Partner 432UP (' + parceiroAtual.nome_completo + ').';
-            window.open('https://wa.me/' + PARTNER_CFG.WHATSAPP_SUPORTE + '?text=' + encodeURIComponent(msg), '_blank');
-            
-            setTimeout(function () {
-              btn.classList.remove('btn-loading');
-              showAlert('Solicitação encaminhada ao suporte via WhatsApp.', 'success');
-            }, 1000);
-          });
+      function atualizarEstadoBotaoResgate(saldo) {
+        var btn = document.getElementById('btnSolicitarResgate');
+        var microcopy = document.getElementById('txtMicrocopyResgate');
+
+        if (saldo <= 0) {
+          btn.disabled = true;
+          btn.className = "w-full py-2.5 rounded-xl bg-slate-800/80 text-slate-500 font-bold text-xs uppercase tracking-wider cursor-not-allowed border border-white/5 opacity-60";
+          if (microcopy) microcopy.classList.remove('hidden');
+        } else {
+          btn.disabled = false;
+          btn.className = "w-full py-2.5 rounded-xl bg-amber-500 hover:bg-amber-400 text-slate-950 font-bold text-xs uppercase tracking-wider transition shadow-[0_0_15px_rgba(245,158,11,0.3)] cursor-pointer";
+          if (microcopy) microcopy.classList.add('hidden');
+        }
+      }
+
+      function renderizarExtratoUnificado(aprovadas) {
+        var container = document.getElementById('containerExtrato');
+        var hoje = new Date().toISOString().split('T')[0];
+
+        if (!aprovadas || aprovadas.length === 0) {
+          container.innerHTML = 
+            '<div class="py-10 px-4 text-center space-y-4">' +
+              '<div class="w-16 h-16 bg-amber-500/10 border border-amber-500/30 rounded-2xl flex items-center justify-center mx-auto text-amber-400 text-3xl shadow-[0_0_25px_rgba(245,158,11,0.2)]">' +
+                '⚡' +
+              '</div>' +
+              '<div class="max-w-md mx-auto space-y-1.5">' +
+                '<h3 class="text-base font-bold text-white">Sua jornada de comissionamento está pronta para ser ativada</h3>' +
+                '<p class="text-xs text-slate-400 leading-relaxed">Crie sua primeira proposta para gerar retornos e acompanhar o saldo de suas vendas em tempo real.</p>' +
+              '</div>' +
+              '<div class="pt-2">' +
+                '<a href="nova-proposta.html" class="inline-flex items-center gap-2 px-6 py-3 rounded-xl bg-amber-500 hover:bg-amber-400 text-slate-950 font-bold text-xs uppercase tracking-wider transition shadow-[0_0_20px_rgba(245,158,11,0.3)] cursor-pointer">' +
+                  '<span>CRIAR PRIMEIRA PROPOSTA</span> ➔' +
+                '</a>' +
+              '</div>' +
+            '</div>';
+          return;
         }
 
+        container.innerHTML = '<div class="space-y-3">' + aprovadas.map(function (p) {
+          var pct = Number(p.comissao_pct_efetiva !== undefined && p.comissao_pct_efetiva !== null ? p.comissao_pct_efetiva : (parceiroAtual.comissao_padrao_pct || 10));
+          var valTotalVenda = Number(p.valor_total || 0);
+          var valComissaoLiquida = p.comissao_valor ? Number(p.comissao_valor) : ((valTotalVenda * pct) / 100);
+          var dataEv = p.data_evento ? String(p.data_evento).split('T')[0] : '';
+
+          var stComissao = String(p.comissao_status || '').toLowerCase().trim();
+          var isLiberadaPorData = dataEv && dataEv <= hoje;
+
+          var badgeStatus = '';
+
+          if (stComissao === 'solicitado') {
+            badgeStatus = '<span class="inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-[10px] font-extrabold uppercase bg-amber-500/25 text-amber-300 border border-amber-500/50 shadow-[0_0_12px_rgba(245,158,11,0.2)]"><span class="w-2 h-2 rounded-full bg-amber-400 animate-ping"></span> EM PROCESSAMENTO</span>';
+          } else if (stComissao === 'liquidado' || p.comissao_paga === true) {
+            badgeStatus = '<span class="inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-[10px] font-extrabold uppercase bg-emerald-500/20 text-emerald-300 border border-emerald-500/40"><span class="w-1.5 h-1.5 rounded-full bg-emerald-400"></span> Liquidado / PIX Enviado</span>';
+          } else if (isLiberadaPorData || stComissao === 'parcial') {
+            badgeStatus = '<span class="inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-[10px] font-extrabold uppercase bg-emerald-500/20 text-emerald-300 border border-emerald-500/40"><span class="w-1.5 h-1.5 rounded-full bg-emerald-400"></span> Liberado para Saque</span>';
+          } else {
+            badgeStatus = '<span class="inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-[10px] font-extrabold uppercase bg-amber-500/20 text-amber-300 border border-amber-500/40"><span class="w-1.5 h-1.5 rounded-full bg-amber-400 animate-pulse"></span> Aguardando Evento</span>';
+          }
+
+          return '<div onclick="abrirModalDetalhesExtrato(\'' + p.id + '\')" class="group flex flex-col sm:flex-row sm:items-center justify-between p-4 rounded-xl bg-white/[0.02] border border-white/10 hover:bg-white/[0.05] hover:border-cyan-500/40 transition-all duration-200 cursor-pointer gap-4 relative">' +
+            '<div class="space-y-1.5">' +
+              '<div class="flex items-center gap-2.5 flex-wrap">' +
+                '<strong class="text-white text-sm font-bold group-hover:text-cyan-300 transition">#' + (p.numero || p.id) + ' — ' + esc(p.cliente_nome) + '</strong>' +
+                badgeStatus +
+              '</div>' +
+              '<div class="text-xs text-slate-400 flex flex-wrap gap-x-4 gap-y-1 pt-0.5">' +
+                '<span>📅 Venda: <strong class="text-slate-200 font-medium">' + fmtData(String(p.criado_em).split('T')[0]) + '</strong></span>' +
+                '<span>🎉 Evento: <strong class="text-slate-200 font-medium">' + fmtData(p.data_evento) + '</strong></span>' +
+                '<span>💼 Contrato: <strong class="text-slate-400">' + fmtMoeda(valTotalVenda) + '</strong> (' + pct + '%)</span>' +
+              '</div>' +
+            '</div>' +
+            '<div class="flex items-center justify-between sm:justify-end gap-3 border-t sm:border-t-0 border-white/5 pt-2 sm:pt-0 shrink-0">' +
+              '<div class="text-left sm:text-right">' +
+                '<span class="text-[10px] uppercase font-bold text-slate-400 block tracking-wider">Comissão Líquida</span>' +
+                '<span class="text-lg font-extrabold text-emerald-400 tracking-tight block mt-0.5 group-hover:scale-105 transition-transform origin-right">+ ' + fmtMoeda(valComissaoLiquida) + '</span>' +
+              '</div>' +
+              '<span class="text-slate-500 group-hover:text-cyan-400 group-hover:translate-x-1 transition-all text-sm font-bold pl-2">🔍</span>' +
+            '</div>' +
+          '</div>';
+        }).join('') + '</div>';
+      }
+
+      window.abrirModalSolicitacaoResgate = function (propostaIdManual, valorAtual) {
+        propostaSendoEditadaId = propostaIdManual || null;
+
+        document.getElementById('modalResgateTag').textContent = 'Solicitação de Saque PIX';
+        document.getElementById('modalResgateTitulo').textContent = propostaIdManual ? 'Alterar Valor do Saque' : 'Resgatar Comissão Comercial';
+        
+        document.getElementById('modalSaldoDisponivelVal').textContent = fmtMoeda(saldoDisponivelAtual);
+        var chaveStr = parceiroAtual.chave_pix || parceiroAtual.cpf_cnpj || parceiroAtual.email || 'Cadastrada no Perfil';
+        document.getElementById('modalChavePixInfo').textContent = chaveStr;
+
+        document.getElementById('inputValorResgate').value = valorAtual ? valorAtual : '';
+        document.getElementById('boxModoSolicitar').classList.remove('hidden');
+        document.getElementById('boxModoConsultar').classList.add('hidden');
+
+        document.getElementById('modalResgateContainer').classList.add('active');
+      };
+
+      window.abrirModalDetalhesExtrato = function (propostaId) {
+        var p = listaPropostasCache.find(function(x) { return String(x.id) === String(propostaId); });
+        if (!p) return;
+
+        document.getElementById('modalResgateTag').textContent = 'Extrato do Contrato';
+        document.getElementById('modalResgateTitulo').textContent = 'Detalhamento de Comissão';
+
+        document.getElementById('modalConsultaTitulo').textContent = '#' + (p.numero || p.id) + ' — ' + (p.cliente_nome || 'Cliente');
+        
+        var pct = Number(p.comissao_pct_efetiva !== undefined && p.comissao_pct_efetiva !== null ? p.comissao_pct_efetiva : (parceiroAtual.comissao_padrao_pct || 10));
+        var valTotalVenda = Number(p.valor_total || 0);
+        var valComissaoLiquida = p.comissao_valor ? Number(p.comissao_valor) : ((valTotalVenda * pct) / 100);
+        var valPago = Number(p.comissao_paga_valor || 0);
+        var saldoRestante = Math.max(0, valComissaoLiquida - valPago);
+
+        document.getElementById('modalConsultaValContrato').textContent = fmtMoeda(valTotalVenda);
+        document.getElementById('modalConsultaComissaoTotal').textContent = fmtMoeda(valComissaoLiquida) + ' (' + pct + '%)';
+        document.getElementById('modalConsultaValPago').textContent = fmtMoeda(valPago);
+        document.getElementById('modalConsultaSaldoRestante').textContent = fmtMoeda(saldoRestante);
+
+        var stComissao = String(p.comissao_status || '').toLowerCase().trim();
+        var badgeEl = document.getElementById('modalConsultaBadgeStatus');
+        var boxSaque = document.getElementById('boxAvisoSaqueSolicitado');
+        var btnEditar = document.getElementById('btnEditarSaquePendente');
+
+        if (stComissao === 'solicitado') {
+          badgeEl.innerHTML = '<span class="px-2.5 py-1 rounded-full text-[10px] font-extrabold uppercase bg-amber-500/20 text-amber-300 border border-amber-500/40">Em Processamento</span>';
+          boxSaque.classList.remove('hidden');
+          var valSolicitado = Number(p.comissao_solicitada_valor || saldoRestante);
+          document.getElementById('modalConsultaValSolicitado').textContent = fmtMoeda(valSolicitado);
+
+          btnEditar.onclick = function() {
+            abrirModalSolicitacaoResgate(p.id, valSolicitado);
+          };
+        } else {
+          boxSaque.classList.add('hidden');
+          if (stComissao === 'liquidado' || p.comissao_paga === true) {
+            badgeEl.innerHTML = '<span class="px-2.5 py-1 rounded-full text-[10px] font-extrabold uppercase bg-emerald-500/20 text-emerald-300 border border-emerald-500/40">Liquidado</span>';
+          } else {
+            badgeEl.innerHTML = '<span class="px-2.5 py-1 rounded-full text-[10px] font-extrabold uppercase bg-cyan-500/20 text-cyan-300 border border-cyan-500/40">Ativo</span>';
+          }
+        }
+
+        document.getElementById('modalConsultaBtnLinkProposta').href = 'propostas.html?id=' + p.id;
+
+        document.getElementById('boxModoSolicitar').classList.add('hidden');
+        document.getElementById('boxModoConsultar').classList.remove('hidden');
+
+        document.getElementById('modalResgateContainer').classList.add('active');
+      };
+
+      window.preencherValorTotalResgate = function () {
+        document.getElementById('inputValorResgate').value = saldoDisponivelAtual.toFixed(2);
+      };
+
+      window.confirmarResgateNativo = function () {
+        var inputVal = parseFloat(document.getElementById('inputValorResgate').value) || 0;
+
+        if (inputVal <= 0) {
+          alert('Por favor, digite um valor válido para o resgate.');
+          return;
+        }
+
+        var propostaAlvo = null;
+        if (propostaSendoEditadaId) {
+          propostaAlvo = listaPropostasCache.find(function(x) { return String(x.id) === String(propostaSendoEditadaId); });
+        } else if (propostasElegiveisSaque.length > 0) {
+          propostaAlvo = propostasElegiveisSaque[0];
+        }
+
+        if (!propostaAlvo) {
+          alert('Nenhuma proposta com saldo liberado encontrada para solicitar resgate.');
+          return;
+        }
+
+        var btn = document.getElementById('btnConfirmarResgateNativo');
+        btn.disabled = true;
+        btn.textContent = 'Processando...';
+
+        sbPartner.from('propostas')
+          .update({
+            comissao_status: 'solicitado',
+            comissao_solicitada_valor: inputVal,
+            comissao_solicitada_data: new Date().toISOString(),
+            atualizado_em: new Date().toISOString()
+          })
+          .eq('id', propostaAlvo.id)
+          .then(function (res) {
+            btn.disabled = false;
+            btn.textContent = 'Confirmar Resgate (PIX)';
+            fecharModalResgate();
+
+            if (!res.error) {
+              showAlert('Solicitação atualizada! Pagamento via PIX em até 48h úteis.', 'success');
+              carregarPainelComissoes(parceiroAtual);
+            } else {
+              alert('Erro ao registrar solicitação: ' + res.error.message);
+            }
+          });
+      };
+
+      window.fecharModalResgate = function () {
+        document.getElementById('modalResgateContainer').classList.remove('active');
+        propostaSendoEditadaId = null;
+      };
+
+      function bindEvents() {
         var btnDesk = document.getElementById('btnLogoutDesk');
         var btnMob = document.getElementById('btnLogoutMob');
-
         if (btnDesk) btnDesk.addEventListener('click', partnerLogout);
         if (btnMob) btnMob.addEventListener('click', partnerLogout);
       }
     })();
   </script>
-
-<script>
-  // Inicialização padrão do portal (Liberado para Vendedores e Admins)
-  partnerRequireAuth().then(function (parceiro) {
-    // Preenche o nome, foto e gerencia a exibição do botão Master Admin no menu
-    partnerFillSidebar(parceiro);
-
-    // Coloque aqui a lógica específica da página, se houver
-  }).catch(function (err) {
-    console.error('Erro na autenticação:', err);
-  });
-</script>
-
-
-
 </body>
 </html>
