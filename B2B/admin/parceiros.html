@@ -26,6 +26,18 @@
       background-color: transparent !important;
       color: #94a3b8 !important;
     }
+    .filter-box-glass {
+      overflow: visible !important;
+    }
+    input[type="date"]::-webkit-calendar-picker-indicator {
+      cursor: pointer;
+      filter: invert(0.8);
+    }
+    input[type="date"] {
+      font-size: 0.7rem !important;
+      padding-left: 0.4rem !important;
+      padding-right: 0.2rem !important;
+    }
   </style>
 </head>
 <body class="min-h-screen text-slate-200 font-sans antialiased bg-[#06080c]">
@@ -34,7 +46,7 @@
   <canvas id="orbit-canvas"></canvas>
   <div id="plasmaLayer" class="plasma-top-layer"></div>
 
-  <!-- HEADER TOPO (PADRÃO UNIFICADO CALCULADORA) -->
+  <!-- HEADER TOPO -->
   <header id="calc-header">
     <div class="logo-container">
       <a href="../../index.html" class="logo-link" aria-label="Página Inicial 432UP">
@@ -56,7 +68,7 @@
     <button class="mobile-hamburger" onclick="toggleMobileMenu()">☰</button>
   </header>
 
-  <!-- OVERLAY MENU MOBILE (PADRÃO UNIFICADO CALCULADORA) -->
+  <!-- OVERLAY MENU MOBILE -->
   <div class="mobile-menu-overlay" id="mobile-menu">
     <button onclick="toggleMobileMenu()" style="position: absolute; top: 20px; right: 20px; background: transparent; border: none; color: #fff; font-size: 1.5rem; cursor: pointer;">✕</button>
     
@@ -75,22 +87,20 @@
   </div>
 
   <!-- CONTAINER EM FLUXO VERTICAL -->
-  <div class="flex flex-col min-h-screen relative z-10">
+  <div class="flex flex-col min-h-screen relative z-10 pb-16">
 
-    <!-- CONTEÚDO PRINCIPAL COM RESPIRO NO MOBILE -->
+    <!-- CONTEÚDO PRINCIPAL -->
     <main class="flex-1 p-4 lg:p-8 space-y-6 pt-28 lg:pt-28 w-full max-w-7xl mx-auto">
       
       <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
         <div>
-          <span class="text-xs font-bold text-amber-400 uppercase tracking-widest">Controle de Acessos</span>
+          <span class="text-xs font-bold text-amber-400 uppercase tracking-widest">Controle de Acessos & Auditoria</span>
           <h1 class="text-2xl lg:text-3xl font-bold text-white tracking-tight mt-1">Gestão de Vendedores e Usuários</h1>
-          <p class="text-sm text-slate-400 mt-1">Aprove solicitações de acesso, altere níveis de usuário e ajuste porcentagens individuais.</p>
-        </div>
-        <div class="flex items-center gap-3">
-          <input type="text" id="inputBuscaParceiro" placeholder="Buscar por nome, email..." class="bg-slate-900/80 border border-white/20 rounded-xl px-4 py-2 text-xs text-white placeholder-slate-500 focus:border-amber-400 focus:ring-1 focus:ring-amber-400 focus:outline-none transition">
+          <p class="text-sm text-slate-400 mt-1">Aprove solicitações de acesso, altere níveis, gerencie comissões e acompanhe o histórico de auditoria.</p>
         </div>
       </div>
 
+      <!-- CARDS KPI RESUMO -->
       <div class="grid grid-cols-1 md:grid-cols-3 gap-4">
         <div class="glass-b2b p-5 rounded-2xl">
           <span class="text-xs font-semibold uppercase tracking-wider text-slate-400">Total de Usuários</span>
@@ -106,7 +116,68 @@
         </div>
       </div>
 
-      <div class="glass-b2b rounded-2xl p-6">
+      <!-- BARRA DE FILTROS AVANÇADA COM AUTOCOMPLETE -->
+      <div class="glass-b2b filter-box-glass rounded-2xl p-4 sm:pr-6 border border-cyan-500/20 space-y-3 relative z-30">
+        <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3">
+          
+          <!-- Busca Textual Global -->
+          <div>
+            <label class="block text-[10px] uppercase text-slate-400 font-bold mb-1">Buscar Nome / E-mail</label>
+            <input type="text" id="filterBusca" placeholder="Ex: Roberto ou roberto@email.com" oninput="aplicarFiltros()" class="w-full bg-slate-900/80 border border-white/10 rounded-xl px-3 py-2 text-xs text-white focus:border-cyan-400 focus:outline-none transition">
+          </div>
+
+          <!-- Searchable Dropdown (Vendedor / Parceiro Autocomplete) -->
+          <div class="relative" id="boxDropdownParceiro">
+            <label class="block text-[10px] uppercase text-slate-400 font-bold mb-1">Seleção Específica</label>
+            <div class="relative">
+              <span class="absolute inset-y-0 left-0 pl-2.5 flex items-center pointer-events-none text-slate-400 text-xs">🔍</span>
+              <input type="text" id="filterParceiroSearch" placeholder="Digite para buscar..." autocomplete="off" class="w-full bg-slate-900/80 border border-white/10 rounded-xl pl-7 pr-2 py-2 text-xs text-white focus:border-cyan-400 focus:outline-none transition">
+            </div>
+            <input type="hidden" id="filterParceiroVal" value="">
+            
+            <div id="dropdownParceiroList" class="hidden absolute left-0 right-0 top-full mt-1 max-h-48 overflow-y-auto bg-[#0a121c] border border-cyan-500/50 rounded-xl shadow-[0_20px_40px_rgba(0,0,0,0.95)] z-[9999] divide-y divide-white/10 text-xs">
+            </div>
+          </div>
+
+          <!-- Filtro por Status de Acesso -->
+          <div>
+            <label class="block text-[10px] uppercase text-slate-400 font-bold mb-1">Status de Acesso</label>
+            <select id="filterStatus" onchange="aplicarFiltros()" class="w-full bg-slate-900 border border-white/10 rounded-xl px-3 py-2 text-xs text-white focus:border-cyan-400 focus:outline-none transition cursor-pointer">
+              <option value="">Todos os Status</option>
+              <option value="aprovado">🟢 Aprovado / Ativo</option>
+              <option value="pendente">🟡 Pendente</option>
+              <option value="bloqueado">🔴 Bloqueado</option>
+            </select>
+          </div>
+
+          <!-- Filtro por Nível/Perfil -->
+          <div>
+            <label class="block text-[10px] uppercase text-slate-400 font-bold mb-1">Perfil de Acesso</label>
+            <select id="filterPerfil" onchange="aplicarFiltros()" class="w-full bg-slate-900 border border-white/10 rounded-xl px-3 py-2 text-xs text-white focus:border-cyan-400 focus:outline-none transition cursor-pointer">
+              <option value="">Todos os Perfis</option>
+              <option value="vendedor">Vendedor B2B</option>
+              <option value="gerente">Gerente Regional</option>
+              <option value="admin">Master Admin</option>
+            </select>
+          </div>
+
+        </div>
+
+        <div class="flex items-center justify-end gap-2 pt-2 border-t border-white/5 flex-wrap">
+          <button type="button" onclick="limparFiltros()" class="px-3.5 py-1.5 rounded-lg bg-slate-800/80 hover:bg-slate-700 text-slate-300 border border-white/10 text-xs font-semibold transition flex items-center gap-1.5 cursor-pointer">
+            🔄 Resetar Filtros
+          </button>
+          <button type="button" onclick="exportarCSV()" class="px-3.5 py-1.5 rounded-lg bg-cyan-500/10 hover:bg-cyan-500/20 text-cyan-300 border border-cyan-500/30 text-xs font-semibold transition flex items-center gap-1.5 cursor-pointer">
+            📥 Exportar Usuários (CSV)
+          </button>
+          <button type="button" onclick="window.print()" class="px-3.5 py-1.5 rounded-lg bg-purple-500/10 hover:bg-purple-500/20 text-purple-300 border border-purple-500/30 text-xs font-semibold transition flex items-center gap-1.5 cursor-pointer">
+            🖨️ Relatório (PDF)
+          </button>
+        </div>
+      </div>
+
+      <!-- TABELA DE USUÁRIOS COM PAGINAÇÃO -->
+      <div class="glass-b2b rounded-2xl p-6 border border-cyan-500/20">
         <div class="overflow-x-auto">
           <table class="w-full text-left text-xs min-w-[700px]">
             <thead>
@@ -114,7 +185,7 @@
                 <th class="pb-3 px-3">Usuário / Email</th>
                 <th class="pb-3 px-3 text-center">Nível / Perfil</th>
                 <th class="pb-3 px-3 text-center">Status Acesso</th>
-                <th class="pb-3 px-3 text-center">% Comissão</th>
+                <th class="pb-3 px-3 text-center">% Comissão Padronizada</th>
                 <th class="pb-3 px-3 text-right">Ações de Gestão</th>
               </tr>
             </thead>
@@ -125,12 +196,103 @@
             </tbody>
           </table>
         </div>
+
+        <!-- RODAPÉ DE PAGINAÇÃO -->
+        <div class="flex flex-col sm:flex-row items-center justify-between gap-3 pt-4 mt-4 border-t border-white/5 text-xs text-slate-400">
+          <div class="flex items-center gap-2">
+            <span>Exibir</span>
+            <select id="selectItensPorPagina" onchange="mudarItensPorPagina(this.value)" class="bg-slate-900 border border-white/10 rounded px-2 py-1 text-white focus:outline-none cursor-pointer">
+              <option value="10" selected>10</option>
+              <option value="25">25</option>
+              <option value="50">50</option>
+            </select>
+            <span>registros por página</span>
+          </div>
+
+          <div id="txtInfoPaginacao" class="text-slate-400">
+            Exibindo 0-0 de 0 registros
+          </div>
+
+          <div class="flex items-center gap-1.5">
+            <button id="btnPagAnterior" onclick="mudarPagina(-1)" class="px-3 py-1 rounded-lg bg-white/5 hover:bg-white/10 disabled:opacity-30 disabled:cursor-not-allowed transition">
+              ◀ Anterior
+            </button>
+            <span id="txtPaginaAtual" class="font-bold text-white px-2">1</span>
+            <button id="btnPagProxima" onclick="mudarPagina(1)" class="px-3 py-1 rounded-lg bg-white/5 hover:bg-white/10 disabled:opacity-30 disabled:cursor-not-allowed transition">
+              Próxima ▶
+            </button>
+          </div>
+        </div>
       </div>
 
     </main>
   </div>
 
-  <!-- MODAL FICHA DO PARCEIRO (GLASS B2B LEVE COM FOTO) -->
+  <!-- MODAL DE AUDITORIA & ALTERAÇÃO DE COMISSÃO -->
+  <div id="modalAuditoriaComissao" class="fixed inset-0 bg-black/80 backdrop-blur-md hidden items-center justify-center p-4 z-[9999]">
+    <div class="glass-b2b w-full max-w-lg p-6 rounded-2xl border border-amber-500/30 space-y-4 text-slate-200 shadow-[0_0_50px_rgba(245,158,11,0.2)]">
+      <div class="flex items-center justify-between border-b border-white/10 pb-3">
+        <div>
+          <span class="text-[10px] font-bold text-amber-400 uppercase tracking-widest block">Registro de Auditoria de Comissão</span>
+          <h3 id="modalAuditoriaNome" class="text-base font-bold text-white mt-0.5">Vendedor</h3>
+        </div>
+        <button id="btnFecharAuditoria" class="text-slate-400 hover:text-white text-lg font-bold">✕</button>
+      </div>
+
+      <div class="space-y-3 text-xs">
+        <div class="grid grid-cols-2 gap-3 bg-white/5 p-3 rounded-xl border border-white/10">
+          <div>
+            <span class="text-slate-400 block text-[10px] uppercase font-bold">Comissão Atual:</span>
+            <strong id="modalComissaoAtualVal" class="text-white text-sm">10.0%</strong>
+          </div>
+          <div>
+            <label class="block text-amber-400 text-[10px] uppercase font-bold">Nova Comissão (%):</label>
+            <input type="number" step="0.5" id="inputNovaComissao" class="w-full bg-slate-900 border border-amber-500/50 rounded-lg p-1.5 text-white font-bold text-sm focus:outline-none">
+          </div>
+        </div>
+
+        <div>
+          <label class="block text-slate-300 uppercase font-semibold mb-1">Escopo de Aplicação da Nova Regra</label>
+          <div class="space-y-2">
+            <label class="flex items-start gap-2 p-2.5 rounded-xl border border-cyan-500/40 bg-cyan-500/10 cursor-pointer hover:bg-cyan-500/20 transition">
+              <input type="radio" name="escopoRegra" value="futuros" checked class="mt-0.5 text-cyan-400 focus:ring-cyan-400">
+              <div>
+                <strong class="text-cyan-300 block">Contratos Futuros (Recomendado)</strong>
+                <span class="text-[10px] text-slate-400 block">A nova % será aplicada apenas às propostas criadas a partir de agora. As anteriores mantêm a % pactuada na época.</span>
+              </div>
+            </label>
+
+            <label class="flex items-start gap-2 p-2.5 rounded-xl border border-amber-500/30 bg-slate-900 cursor-pointer hover:bg-slate-800 transition">
+              <input type="radio" name="escopoRegra" value="retroativo" class="mt-0.5 text-amber-400 focus:ring-amber-400">
+              <div>
+                <strong class="text-amber-300 block">Aplicar Retroativamente a Contratos Legados</strong>
+                <span class="text-[10px] text-slate-400 block">Atualiza a comissão efetiva de propostas antigas pendentes/adiantadas deste vendedor.</span>
+              </div>
+            </label>
+          </div>
+        </div>
+
+        <div>
+          <label class="block text-slate-300 uppercase font-semibold mb-1">Justificativa / Motivo da Alteração</label>
+          <input type="text" id="inputMotivoAuditoria" placeholder="Ex: Promoção de meta, repactuação contratual, ajuste de perfil" class="w-full bg-slate-900 border border-white/20 rounded-xl px-3 py-2 text-xs text-white focus:border-amber-400 focus:outline-none">
+        </div>
+
+        <div class="border-t border-white/10 pt-3">
+          <span class="text-[10px] uppercase text-slate-400 font-bold block mb-1.5">📜 Histórico Recente de Alterações</span>
+          <div id="boxHistoricoAuditoria" class="max-h-32 overflow-y-auto space-y-1.5 bg-slate-950 p-2 rounded-xl border border-white/5 text-[11px] text-slate-300">
+            <span class="text-slate-500 block text-center py-2">Nenhum registro prévio encontrado para este parceiro.</span>
+          </div>
+        </div>
+      </div>
+
+      <div class="flex justify-end gap-2 pt-2 border-t border-white/10">
+        <button id="btnCancelarAuditoria" class="px-4 py-2 rounded-xl bg-slate-800 hover:bg-slate-700 text-slate-300 font-bold text-xs uppercase transition cursor-pointer">Cancelar</button>
+        <button id="btnConfirmarAuditoria" class="px-5 py-2 rounded-xl bg-amber-500 hover:bg-amber-400 text-slate-950 font-bold text-xs uppercase tracking-wider transition shadow-[0_0_15px_rgba(245,158,11,0.3)] cursor-pointer">Salvar & Registrar Auditoria</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- MODAL FICHA DO PARCEIRO -->
   <div id="modalFicha" class="fixed inset-0 bg-black/70 backdrop-blur-md hidden items-center justify-center p-4 z-50">
     <div class="glass-b2b w-full max-w-xl p-6 rounded-2xl border border-cyan-500/30 space-y-4 text-slate-200 shadow-[0_0_50px_rgba(0,240,255,0.15)]">
       <div class="flex items-center justify-between border-b border-white/10 pb-3">
@@ -198,9 +360,28 @@
       'use strict';
 
       var listaParceiros = [];
+      var listaFiltrada = [];
       var parceiroSelecionadoId = null;
+      var parceiroAuditoriaAtivo = null;
+
+      // Estado da Paginação
+      var paginaAtual = 1;
+      var itensPorPagina = 10;
 
       function esc(s) { return String(s == null ? '' : s).replace(/</g, '&lt;').replace(/>/g, '&gt;'); }
+
+      window.toggleMobileMenu = function () {
+        var mobNav = document.getElementById('mobile-menu');
+        if (mobNav) mobNav.classList.toggle('active');
+      };
+
+      partnerRequireAuth({ requireAdmin: true }).then(function (parceiro) {
+        partnerFillSidebar(parceiro);
+        carregarParceiros();
+        configurarAutocompleteParceiro();
+      }).catch(function (err) {
+        console.error('Acesso negado ao Master Admin:', err);
+      });
 
       function carregarParceiros() {
         if (typeof sbPartner === 'undefined') {
@@ -216,35 +397,152 @@
           }
 
           listaParceiros = res.data || [];
-          atualizarKPIs();
-          renderTabela(listaParceiros);
+          limparFiltros();
         });
       }
 
-      function atualizarKPIs() {
-        document.getElementById('kpiTotalParceiros').textContent = listaParceiros.length + ' cadastrados';
-        var pendentes = listaParceiros.filter(function (p) { return p.status === 'pendente'; }).length;
+      /* CONFIGURAÇÃO DO AUTOCOMPLETE */
+      function configurarAutocompleteParceiro() {
+        var inputSearch = document.getElementById('filterParceiroSearch');
+        var inputVal = document.getElementById('filterParceiroVal');
+        var listContainer = document.getElementById('dropdownParceiroList');
+
+        if (!inputSearch) return;
+
+        inputSearch.addEventListener('focus', function() {
+          renderListaParceiros(inputSearch.value);
+          listContainer.classList.remove('hidden');
+        });
+
+        inputSearch.addEventListener('input', function() {
+          renderListaParceiros(inputSearch.value);
+          listContainer.classList.remove('hidden');
+          if (!inputSearch.value) {
+            inputVal.value = '';
+            aplicarFiltros();
+          }
+        });
+
+        document.addEventListener('click', function(e) {
+          var box = document.getElementById('boxDropdownParceiro');
+          if (box && !box.contains(e.target)) {
+            listContainer.classList.add('hidden');
+          }
+        });
+      }
+
+      function renderListaParceiros(termo) {
+        var listContainer = document.getElementById('dropdownParceiroList');
+        var termoLower = (termo || '').toLowerCase().trim();
+
+        var filtrados = listaParceiros.filter(function(v) {
+          var nome = (v.nome_completo || '').toLowerCase();
+          var email = (v.email || '').toLowerCase();
+          return !termoLower || nome.includes(termoLower) || email.includes(termoLower);
+        });
+
+        var html = '<div onclick="selecionarParceiro(\'\', \'Todos os Parceiros\')" class="p-2.5 hover:bg-white/10 cursor-pointer text-slate-300 font-semibold border-b border-white/5">Todos os Parceiros</div>';
+        
+        if (filtrados.length) {
+          html += filtrados.map(function(v) {
+            var label = esc(v.nome_completo || v.email);
+            return '<div onclick="selecionarParceiro(\'' + v.id + '\', \'' + label.replace(/'/g, "\\'") + '\')" class="p-2.5 hover:bg-white/10 cursor-pointer text-white flex justify-between items-center transition">' +
+              '<span>' + label + '</span>' +
+              '<span class="text-[10px] text-cyan-400 font-bold">' + (v.comissao_padrao_pct || 10) + '%</span>' +
+            '</div>';
+          }).join('');
+        } else {
+          html += '<div class="p-3 text-slate-500 text-center">Nenhum parceiro encontrado</div>';
+        }
+
+        listContainer.innerHTML = html;
+      }
+
+      window.selecionarParceiro = function(id, label) {
+        document.getElementById('filterParceiroVal').value = id;
+        document.getElementById('filterParceiroSearch').value = id ? label : '';
+        document.getElementById('dropdownParceiroList').classList.add('hidden');
+        aplicarFiltros();
+      };
+
+      /* APLICAR E RESETAR FILTROS */
+      window.aplicarFiltros = function() {
+        var busca = (document.getElementById('filterBusca').value || '').toLowerCase().trim();
+        var parceiroId = document.getElementById('filterParceiroVal').value;
+        var statusFiltro = document.getElementById('filterStatus').value;
+        var perfilFiltro = document.getElementById('filterPerfil').value;
+
+        listaFiltrada = listaParceiros.filter(function(p) {
+          var nomeStr = String(p.nome_completo || '').toLowerCase();
+          var emailStr = String(p.email || '').toLowerCase();
+          var matchBusca = !busca || nomeStr.includes(busca) || emailStr.includes(busca);
+
+          var matchParceiro = !parceiroId || (p.id === parceiroId);
+
+          var stRaw = String(p.status || 'pendente').toLowerCase().trim();
+          var isAprovado = (stRaw === 'aprovado' || stRaw === 'aprovada' || stRaw === 'ativo');
+          var isPendente = (stRaw === 'pendente');
+          var stNormalized = isAprovado ? 'aprovado' : (isPendente ? 'pendente' : 'bloqueado');
+          var matchStatus = !statusFiltro || (stNormalized === statusFiltro);
+
+          var roleNormalized = String(p.role || p.nivel || 'vendedor').toLowerCase().trim();
+          var matchPerfil = !perfilFiltro || (roleNormalized === perfilFiltro);
+
+          return matchBusca && matchParceiro && matchStatus && matchPerfil;
+        });
+
+        paginaAtual = 1;
+        atualizarKPIs(listaFiltrada);
+        renderTabela(listaFiltrada);
+      };
+
+      window.limparFiltros = function() {
+        document.getElementById('filterBusca').value = '';
+        document.getElementById('filterParceiroVal').value = '';
+        document.getElementById('filterParceiroSearch').value = '';
+        document.getElementById('filterStatus').value = '';
+        document.getElementById('filterPerfil').value = '';
+        aplicarFiltros();
+      };
+
+      function atualizarKPIs(lista) {
+        document.getElementById('kpiTotalParceiros').textContent = lista.length + ' cadastrados';
+        var pendentes = lista.filter(function (p) { 
+          return String(p.status || '').toLowerCase().trim() === 'pendente'; 
+        }).length;
         document.getElementById('kpiParceirosPendentes').textContent = pendentes + ' aguardando';
 
-        if (listaParceiros.length) {
-          var soma = listaParceiros.reduce(function (acc, p) { return acc + Number(p.comissao_padrao_pct || 10); }, 0);
-          var media = soma / listaParceiros.length;
+        if (lista.length) {
+          var soma = lista.reduce(function (acc, p) { return acc + Number(p.comissao_padrao_pct || 10); }, 0);
+          var media = soma / lista.length;
           document.getElementById('kpiComissaoMedia').textContent = media.toFixed(1).replace('.', ',') + '%';
         }
       }
 
       function renderTabela(lista) {
         var tbody = document.getElementById('tbodyParceiros');
-        if (!lista.length) {
-          tbody.innerHTML = '<tr><td colspan="5" class="py-6 text-center text-slate-500">Nenhum usuário encontrado.</td></tr>';
+        var totalRegistros = lista.length;
+
+        if (!totalRegistros) {
+          tbody.innerHTML = '<tr><td colspan="5" class="py-6 text-center text-slate-500">Nenhum usuário encontrado para os filtros aplicados.</td></tr>';
+          atualizarControlesPaginacao(0, 0, 0);
           return;
         }
 
-        tbody.innerHTML = lista.map(function (p) {
-          var stVal = p.status || 'pendente';
-          var nivelVal = p.role || p.nivel || 'vendedor';
+        var totalPaginas = Math.ceil(totalRegistros / itensPorPagina);
+        if (paginaAtual > totalPaginas) paginaAtual = totalPaginas;
 
-          var stColorClass = (stVal === 'aprovado' || stVal === 'ativo') ? 'text-emerald-400 border-emerald-500/40' : (stVal === 'pendente' ? 'text-amber-400 border-amber-500/40' : 'text-red-400 border-red-500/40');
+        var inicio = (paginaAtual - 1) * itensPorPagina;
+        var fim = Math.min(inicio + itensPorPagina, totalRegistros);
+        var itensPagina = lista.slice(inicio, fim);
+
+        tbody.innerHTML = itensPagina.map(function (p) {
+          var stRaw = String(p.status || 'pendente').toLowerCase().trim();
+          var isAprovado = (stRaw === 'aprovado' || stRaw === 'aprovada' || stRaw === 'ativo');
+          var isPendente = (stRaw === 'pendente');
+
+          var stColorClass = isAprovado ? 'text-emerald-400 border-emerald-500/40' : (isPendente ? 'text-amber-400 border-amber-500/40' : 'text-red-400 border-red-500/40');
+          var nivelVal = String(p.role || p.nivel || 'vendedor').toLowerCase().trim();
 
           return '<tr class="hover:bg-white/[0.02] transition">' +
             '<td class="py-3 px-3">' +
@@ -252,33 +550,198 @@
               '<span class="text-slate-400 text-[11px]">' + esc(p.email) + ' • ' + esc(p.whatsapp || p.telefone || 'S/ Telefone') + '</span>' +
             '</td>' +
             '<td class="py-3 px-3 text-center">' +
-              '<select onchange="salvarNivel(\'' + p.id + '\', this.value)" class="bg-slate-900 border border-white/20 rounded px-2 py-1 text-[11px] text-cyan-300 font-semibold focus:outline-none">' +
+              '<select onchange="salvarNivel(\'' + p.id + '\', this.value)" class="bg-slate-900 border border-white/20 rounded px-2 py-1 text-[11px] text-cyan-300 font-semibold focus:outline-none cursor-pointer">' +
                 '<option value="vendedor" ' + (nivelVal === 'vendedor' ? 'selected' : '') + '>Vendedor B2B</option>' +
                 '<option value="gerente" ' + (nivelVal === 'gerente' ? 'selected' : '') + '>Gerente Regional</option>' +
                 '<option value="admin" ' + (nivelVal === 'admin' ? 'selected' : '') + '>Master Admin</option>' +
               '</select>' +
             '</td>' +
             '<td class="py-3 px-3 text-center">' +
-              '<select onchange="alterarStatus(\'' + p.id + '\', this.value)" class="bg-slate-900 border rounded px-2 py-1 text-[11px] font-bold uppercase focus:outline-none ' + stColorClass + '">' +
-                '<option value="aprovado" class="text-emerald-400" ' + (stVal === 'aprovado' || stVal === 'ativo' ? 'selected' : '') + '>Aprovado</option>' +
-                '<option value="pendente" class="text-amber-400" ' + (stVal === 'pendente' ? 'selected' : '') + '>Pendente</option>' +
-                '<option value="bloqueado" class="text-red-400" ' + (stVal === 'bloqueado' ? 'selected' : '') + '>Bloqueado</option>' +
+              '<select onchange="alterarStatus(\'' + p.id + '\', this.value)" class="bg-slate-900 border rounded px-2 py-1 text-[11px] font-bold uppercase focus:outline-none cursor-pointer ' + stColorClass + '">' +
+                '<option value="aprovado" class="text-emerald-400" ' + (isAprovado ? 'selected' : '') + '>Aprovado</option>' +
+                '<option value="pendente" class="text-amber-400" ' + (isPendente ? 'selected' : '') + '>Pendente</option>' +
+                '<option value="bloqueado" class="text-red-400" ' + (!isAprovado && !isPendente ? 'selected' : '') + '>Bloqueado</option>' +
               '</select>' +
             '</td>' +
             '<td class="py-3 px-3 text-center">' +
-              '<div class="inline-flex items-center gap-1">' +
-                '<input type="number" step="0.5" value="' + Number(p.comissao_padrao_pct || 10) + '" data-id="' + p.id + '" class="input-pct w-14 bg-slate-900 border border-white/20 rounded px-1.5 py-1 text-center font-bold text-amber-400 text-xs focus:border-amber-400 focus:outline-none">' +
-                '<span class="text-slate-400">%</span>' +
+              '<div class="inline-flex items-center justify-center gap-1.5 bg-slate-900/90 border border-amber-500/30 rounded-lg px-2.5 py-1">' +
+                '<strong class="font-bold text-amber-400 text-xs">' + Number(p.comissao_padrao_pct || 10).toFixed(1) + '%</strong>' +
               '</div>' +
             '</td>' +
             '<td class="py-3 px-3 text-right space-x-1.5">' +
-              '<button onclick="abrirFichaParceiro(\'' + p.id + '\')" class="px-2.5 py-1 rounded bg-amber-500/20 hover:bg-amber-500/30 text-amber-300 border border-amber-500/30 text-[11px] font-semibold transition">Ficha</button>' +
-              '<button onclick="salvarComissao(\'' + p.id + '\')" class="px-2.5 py-1 rounded bg-cyan-500/20 hover:bg-cyan-500/30 text-cyan-300 border border-cyan-500/30 text-[11px] font-semibold transition">Salvar %</button>' +
-              '<button onclick="excluirUsuario(\'' + p.id + '\')" class="px-2.5 py-1 rounded bg-red-500/20 hover:bg-red-500/30 text-red-300 border border-red-500/30 text-[11px] font-semibold transition">Excluir</button>' +
+              '<button onclick="abrirFichaParceiro(\'' + p.id + '\')" class="px-2.5 py-1 rounded bg-amber-500/20 hover:bg-amber-500/30 text-amber-300 border border-amber-500/30 text-[11px] font-semibold transition cursor-pointer">Ficha</button>' +
+              '<button onclick="abrirModalAuditoria(\'' + p.id + '\')" class="px-2.5 py-1 rounded bg-cyan-500/20 hover:bg-cyan-500/30 text-cyan-300 border border-cyan-500/30 text-[11px] font-semibold transition cursor-pointer">Ajustar %</button>' +
+              '<button onclick="excluirUsuario(\'' + p.id + '\')" class="px-2.5 py-1 rounded bg-red-500/20 hover:bg-red-500/30 text-red-300 border border-red-500/30 text-[11px] font-semibold transition cursor-pointer">Excluir</button>' +
             '</td>' +
           '</tr>';
         }).join('');
+
+        atualizarControlesPaginacao(inicio + 1, fim, totalRegistros);
       }
+
+      function atualizarControlesPaginacao(inicio, fim, total) {
+        document.getElementById('txtInfoPaginacao').textContent = 'Exibindo ' + inicio + '-' + fim + ' de ' + total + ' registros';
+        document.getElementById('txtPaginaAtual').textContent = paginaAtual;
+
+        var totalPaginas = Math.ceil(total / itensPorPagina) || 1;
+        document.getElementById('btnPagAnterior').disabled = (paginaAtual <= 1);
+        document.getElementById('btnPagProxima').disabled = (paginaAtual >= totalPaginas);
+      }
+
+      window.mudarPagina = function(delta) {
+        paginaAtual += delta;
+        renderTabela(listaFiltrada);
+      };
+
+      window.mudarItensPorPagina = function(qtd) {
+        itensPorPagina = parseInt(qtd, 10) || 10;
+        paginaAtual = 1;
+        renderTabela(listaFiltrada);
+      };
+
+      /* EXPORTAÇÃO CSV */
+      window.exportarCSV = function() {
+        if (!listaFiltrada.length) {
+          alert('Nenhum dado disponível para exportar.');
+          return;
+        }
+
+        var header = ["ID", "Nome Completo", "Email", "WhatsApp", "Status", "Perfil", "% Comissao"];
+        var rows = listaFiltrada.map(function(p) {
+          return [
+            '="' + p.id + '"',
+            '"' + (p.nome_completo || '').replace(/"/g, '""') + '"',
+            '"' + (p.email || '').replace(/"/g, '""') + '"',
+            '"' + (p.whatsapp || p.telefone || '').replace(/"/g, '""') + '"',
+            p.status || 'pendente',
+            p.role || p.nivel || 'vendedor',
+            Number(p.comissao_padrao_pct || 10)
+          ].join(';');
+        });
+
+        var csvContent = 'data:text/csv;charset=utf-8,\uFEFF' + header.join(';') + '\n' + rows.join('\n');
+        var encodedUri = encodeURI(csvContent);
+        var link = document.createElement('a');
+        link.setAttribute('href', encodedUri);
+        link.setAttribute('download', 'Usuarios_432UP_' + new Date().toISOString().split('T')[0] + '.csv');
+        document.body.appendChild(link);
+        link.click();
+        document.body.removeChild(link);
+      };
+
+      /* MODAL DE AUDITORIA DE COMISSÃO */
+      window.abrirModalAuditoria = function(id) {
+        var p = listaParceiros.find(function(item) { return String(item.id) === String(id); });
+        if (!p) return;
+
+        parceiroAuditoriaAtivo = p;
+        document.getElementById('modalAuditoriaNome').textContent = p.nome_completo || p.email;
+        document.getElementById('modalComissaoAtualVal').textContent = Number(p.comissao_padrao_pct || 10).toFixed(1) + '%';
+        document.getElementById('inputNovaComissao').value = Number(p.comissao_padrao_pct || 10);
+        document.getElementById('inputMotivoAuditoria').value = '';
+
+        renderHistoricoAuditoria(p.historico_comissao);
+
+        var modal = document.getElementById('modalAuditoriaComissao');
+        modal.classList.remove('hidden');
+        modal.classList.add('flex');
+      };
+
+      function renderHistoricoAuditoria(historicoRaw) {
+        var container = document.getElementById('boxHistoricoAuditoria');
+        var log = [];
+        try {
+          log = typeof historicoRaw === 'string' ? JSON.parse(historicoRaw) : (Array.isArray(historicoRaw) ? historicoRaw : []);
+        } catch(e) { log = []; }
+
+        if (!log.length) {
+          container.innerHTML = '<span class="text-slate-500 block text-center py-2">Nenhum registro prévio encontrado para este parceiro.</span>';
+          return;
+        }
+
+        container.innerHTML = log.map(function(item) {
+          var dtStr = item.data ? new Date(item.data).toLocaleString('pt-BR') : '—';
+          return '<div class="p-1.5 border-b border-white/5 last:border-0">' +
+            '<div class="flex justify-between font-bold text-slate-200">' +
+              '<span class="text-amber-400">' + item.de + '% ➔ ' + item.para + '%</span>' +
+              '<span class="text-[10px] text-slate-400">' + dtStr + '</span>' +
+            '</div>' +
+            '<div class="text-[10px] text-slate-400 mt-0.5">' +
+              'Escopo: <strong class="text-white">' + (item.escopo === 'retroativo' ? 'Retroativo (Contratos Legados)' : 'Contratos Futuros') + '</strong> | Motivo: ' + esc(item.motivo || 'Não informado') +
+            '</div>' +
+          '</div>';
+        }).join('');
+      }
+
+      document.getElementById('btnFecharAuditoria').addEventListener('click', fecharModalAuditoria);
+      document.getElementById('btnCancelarAuditoria').addEventListener('click', fecharModalAuditoria);
+
+      function fecharModalAuditoria() {
+        var modal = document.getElementById('modalAuditoriaComissao');
+        modal.classList.add('hidden');
+        modal.classList.remove('flex');
+        parceiroAuditoriaAtivo = null;
+      }
+
+      document.getElementById('btnConfirmarAuditoria').addEventListener('click', function() {
+        if (!parceiroAuditoriaAtivo) return;
+
+        var novaPct = parseFloat(document.getElementById('inputNovaComissao').value) || 10;
+        var escopo = document.querySelector('input[name="escopoRegra"]:checked').value;
+        var motivo = document.getElementById('inputMotivoAuditoria').value.trim();
+
+        var historico = [];
+        try {
+          var hRaw = parceiroAuditoriaAtivo.historico_comissao;
+          historico = typeof hRaw === 'string' ? JSON.parse(hRaw) : (Array.isArray(hRaw) ? hRaw : []);
+        } catch(e) { historico = []; }
+
+        var novoLog = {
+          data: new Date().toISOString(),
+          de: Number(parceiroAuditoriaAtivo.comissao_padrao_pct || 10),
+          para: novaPct,
+          escopo: escopo,
+          motivo: motivo || 'Ajuste executado via Master Admin'
+        };
+
+        historico.unshift(novoLog);
+
+        var payload = {
+          comissao_padrao_pct: novaPct,
+          historico_comissao: JSON.stringify(historico)
+        };
+
+        var btn = this;
+        btn.disabled = true;
+        btn.textContent = 'Gravando...';
+
+        sbPartner.from('parceiros').update(payload).eq('id', parceiroAuditoriaAtivo.id).then(function(res) {
+          if (res.error) {
+            alert('Erro ao atualizar comissão: ' + res.error.message);
+            btn.disabled = false;
+            btn.textContent = 'Salvar & Registrar Auditoria';
+            return;
+          }
+
+          if (escopo === 'retroativo') {
+            sbPartner.from('propostas')
+              .update({ comissao_pct_efetiva: novaPct })
+              .eq('parceiro_id', parceiroAuditoriaAtivo.id)
+              .neq('comissao_status', 'liquidado')
+              .then(function() {
+                btn.disabled = false;
+                btn.textContent = 'Salvar & Registrar Auditoria';
+                fecharModalAuditoria();
+                carregarParceiros();
+              });
+          } else {
+            btn.disabled = false;
+            btn.textContent = 'Salvar & Registrar Auditoria';
+            fecharModalAuditoria();
+            carregarParceiros();
+          }
+        });
+      });
 
       window.alterarStatus = function (id, novoStatus) {
         sbPartner.from('parceiros').update({ status: novoStatus }).eq('id', id).then(function (res) {
@@ -296,23 +759,16 @@
         });
       };
 
-      window.salvarComissao = function (id) {
-        var input = document.querySelector('.input-pct[data-id="' + id + '"]');
-        if (!input) return;
-        var pct = parseFloat(input.value) || 10;
-
-        sbPartner.from('parceiros').update({ comissao_padrao_pct: pct }).eq('id', id).then(function (res) {
-          if (!res.error) {
-            alert('Porcentagem de comissão atualizada!');
-            carregarParceiros();
-          }
-        });
-      };
-
       window.excluirUsuario = function (id) {
         if (confirm('Tem certeza de que deseja excluir permanentemente este usuário da base?')) {
           sbPartner.from('parceiros').delete().eq('id', id).then(function (res) {
-            if (!res.error) carregarParceiros();
+            if (res.error) {
+              alert('Erro ao excluir usuário: ' + res.error.message);
+              console.error('Erro ao excluir usuário do Supabase:', res.error);
+            } else {
+              alert('Usuário excluído com sucesso!');
+              carregarParceiros();
+            }
           });
         }
       };
@@ -378,32 +834,7 @@
             }
           });
       });
-
-      document.getElementById('inputBuscaParceiro').addEventListener('input', function () {
-        var term = this.value.toLowerCase().trim();
-        var filtrados = listaParceiros.filter(function (p) {
-          return (p.nome_completo && p.nome_completo.toLowerCase().includes(term)) ||
-                 (p.email && p.email.toLowerCase().includes(term));
-        });
-        renderTabela(filtrados);
-      });
-
-      carregarParceiros();
     })();
   </script>
-
-<script>
-  // Inicialização restrita (Chuta para a Home se NÃO for Admin)
-  partnerRequireAuth({ requireAdmin: true }).then(function (parceiro) {
-    // Carrega o menu e foto do perfil
-    partnerFillSidebar(parceiro);
-
-    // Coloque aqui a lógica de carregamento do painel Master Admin
-  }).catch(function (err) {
-    console.error('Acesso negado ao Master Admin:', err);
-  });
-</script>
-
-
 </body>
 </html>
