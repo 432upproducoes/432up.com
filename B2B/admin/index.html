@@ -10,7 +10,6 @@
   <script src="https://cdn.tailwindcss.com"></script>
   
   <style>
-    /* Estilos Vidro Ametista */
     .glass-b2b {
       background: linear-gradient(135deg, rgba(147, 51, 234, 0.22) 0%, rgba(30, 20, 50, 0.65) 100%);
       backdrop-filter: blur(24px);
@@ -28,6 +27,20 @@
       background-color: transparent !important;
       color: #94a3b8 !important;
     }
+
+    /* ESTILIZAÇÃO CURTA DE DATAS E PREVENÇÃO DE ESTOURO */
+    input[type="date"]::-webkit-calendar-picker-indicator {
+      cursor: pointer;
+      filter: invert(0.8);
+    }
+    .filter-box-glass {
+      overflow: visible !important;
+    }
+    input[type="date"] {
+      font-size: 0.7rem !important;
+      padding-left: 0.4rem !important;
+      padding-right: 0.2rem !important;
+    }
   </style>
 </head>
 <body class="min-h-screen text-slate-200 font-sans antialiased bg-[#06080c]">
@@ -35,7 +48,7 @@
   <canvas id="orbit-canvas"></canvas>
   <div id="plasmaLayer" class="plasma-top-layer"></div>
 
-  <!-- HEADER TOPO (IGUAL AO DA CALCULADORA) -->
+  <!-- HEADER TOPO -->
   <header id="calc-header">
     <div class="logo-container">
       <a href="../../index.html" class="logo-link" aria-label="Página Inicial 432UP">
@@ -57,7 +70,7 @@
     <button class="mobile-hamburger" onclick="toggleMobileMenu()">☰</button>
   </header>
 
-  <!-- OVERLAY MENU MOBILE (IGUAL AO DA CALCULADORA) -->
+  <!-- OVERLAY MENU MOBILE -->
   <div class="mobile-menu-overlay" id="mobile-menu">
     <button onclick="toggleMobileMenu()" style="position: absolute; top: 20px; right: 20px; background: transparent; border: none; color: #fff; font-size: 1.5rem; cursor: pointer;">✕</button>
     
@@ -76,9 +89,9 @@
   </div>
 
   <!-- CONTAINER DE CONTEÚDO EM FLUXO VERTICAL -->
-  <div class="flex flex-col min-h-screen relative z-10">
+  <div class="flex flex-col min-h-screen relative z-10 pb-16">
 
-    <!-- CONTEÚDO PRINCIPAL (DASHBOARD) -->
+    <!-- CONTEÚDO PRINCIPAL -->
     <main class="flex-1 p-4 lg:p-8 space-y-6 pt-28 lg:pt-28 w-full max-w-7xl mx-auto">
       
       <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
@@ -94,26 +107,99 @@
         </div>
       </div>
 
+      <!-- CARDS DE MÉTRICAS EXECUTIVAS -->
       <div class="grid grid-cols-1 md:grid-cols-3 gap-4">
-        <div class="glass-b2b p-5 rounded-2xl">
+        <div class="glass-b2b p-5 rounded-2xl border-l-4 border-l-purple-500">
           <span class="text-xs font-semibold uppercase tracking-wider text-purple-200">Faturamento Bruto</span>
           <div id="admFatBruto" class="text-2xl font-bold text-white mt-2">R$ 0,00</div>
-          <span class="text-xs text-cyan-300 mt-2 block border-t border-white/10 pt-2">Total de eventos aprovados</span>
+          <span id="admSubFatBruto" class="text-xs text-cyan-300 mt-2 block border-t border-white/10 pt-2">0 eventos aprovados</span>
         </div>
 
-        <div class="glass-amber p-5 rounded-2xl">
+        <div class="glass-amber p-5 rounded-2xl border-l-4 border-l-amber-500">
           <span class="text-xs font-semibold uppercase tracking-wider text-amber-300">Comissões Devidas</span>
           <div id="admTotalComissoes" class="text-2xl font-bold text-amber-400 mt-2">R$ 0,00</div>
           <span class="text-xs text-amber-200/80 mt-2 block border-t border-amber-500/20 pt-2">Repasse total da rede de parceiros</span>
         </div>
 
-        <div class="glass-b2b p-5 rounded-2xl">
+        <div class="glass-b2b p-5 rounded-2xl border-l-4 border-l-emerald-500">
           <span class="text-xs font-semibold uppercase tracking-wider text-emerald-400">Receita Líquida (432UP)</span>
           <div id="admReceitaLiquida" class="text-2xl font-bold text-emerald-300 mt-2">R$ 0,00</div>
           <span class="text-xs text-emerald-400/90 mt-2 block border-t border-white/10 pt-2">Margem retida pela produtora</span>
         </div>
       </div>
 
+      <!-- BARRA DE FILTROS AVANÇADA COM AUTOCOMPLETE E MARGEM INTERNA CORRIGIDA -->
+      <div class="glass-b2b filter-box-glass rounded-2xl p-4 sm:pr-6 border border-purple-400/20 space-y-3 relative z-30">
+        <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-6 gap-2.5">
+          
+          <!-- Busca Global Textual -->
+          <div class="w-full">
+            <label class="block text-[10px] uppercase text-slate-400 font-bold mb-1">Buscar Pedido / Cliente</label>
+            <input type="text" id="filterBusca" placeholder="Ex: #1038 ou Cliente" oninput="aplicarFiltros()" class="w-full bg-slate-900/80 border border-white/10 rounded-xl px-2.5 py-2 text-xs text-white focus:border-purple-400 focus:outline-none transition">
+          </div>
+
+          <!-- Searchable Dropdown (Vendedor Autocomplete com Z-Index Elevado) -->
+          <div class="relative w-full" id="boxDropdownVendedor">
+            <label class="block text-[10px] uppercase text-slate-400 font-bold mb-1">Vendedor / Parceiro</label>
+            <div class="relative">
+              <span class="absolute inset-y-0 left-0 pl-2.5 flex items-center pointer-events-none text-slate-400 text-xs">🔍</span>
+              <input type="text" id="filterVendedorSearch" placeholder="Digite para buscar..." autocomplete="off" class="w-full bg-slate-900/80 border border-white/10 rounded-xl pl-7 pr-2 py-2 text-xs text-white focus:border-purple-400 focus:outline-none transition">
+            </div>
+            <input type="hidden" id="filterVendedorVal" value="">
+            
+            <div id="dropdownVendedorList" class="hidden absolute left-0 right-0 top-full mt-1 max-h-48 overflow-y-auto bg-[#0a121c] border border-purple-500/50 rounded-xl shadow-[0_20px_40px_rgba(0,0,0,0.95)] z-[9999] divide-y divide-white/10 text-xs">
+            </div>
+          </div>
+
+          <!-- Status do Pedido -->
+          <div class="w-full">
+            <label class="block text-[10px] uppercase text-slate-400 font-bold mb-1">Status do Pedido</label>
+            <select id="filterStatus" onchange="aplicarFiltros()" class="w-full bg-slate-900 border border-white/10 rounded-xl px-2 py-2 text-xs text-white focus:border-purple-400 focus:outline-none transition cursor-pointer">
+              <option value="">Todos os Status</option>
+              <option value="aprovada">🟢 Aprovada / Fechada</option>
+              <option value="hold">⏳ Hold 48h</option>
+              <option value="enviada">🟡 Enviada</option>
+              <option value="adiada">🔵 Adiada</option>
+              <option value="cancelada">🔴 Cancelada</option>
+              <option value="rascunho">⚪ Rascunho</option>
+            </select>
+          </div>
+
+          <!-- Fornecedor / Atração -->
+          <div class="w-full">
+            <label class="block text-[10px] uppercase text-slate-400 font-bold mb-1">Atração / Fornecedor</label>
+            <input type="text" id="filterAtracao" placeholder="Ex: Banda, DJ, Equipe" oninput="aplicarFiltros()" class="w-full bg-slate-900/80 border border-white/10 rounded-xl px-2.5 py-2 text-xs text-white focus:border-purple-400 focus:outline-none transition">
+          </div>
+
+          <!-- Período De -->
+          <div class="w-full min-w-0">
+            <label class="block text-[10px] uppercase text-slate-400 font-bold mb-1 truncate">Data Inicial</label>
+            <input type="date" id="filterDataDe" onchange="aplicarFiltros()" class="w-full bg-slate-900/80 border border-white/10 rounded-xl px-1.5 py-2 text-[11px] text-white font-sans focus:border-purple-400 focus:outline-none transition [color-scheme:dark]">
+          </div>
+
+          <!-- Período Até -->
+          <div class="w-full min-w-0">
+            <label class="block text-[10px] uppercase text-slate-400 font-bold mb-1 truncate">Data Final</label>
+            <input type="date" id="filterDataAte" onchange="aplicarFiltros()" class="w-full bg-slate-900/80 border border-white/10 rounded-xl px-1.5 py-2 text-[11px] text-white font-sans focus:border-purple-400 focus:outline-none transition [color-scheme:dark]">
+          </div>
+
+        </div>
+
+        <!-- AGRUPAMENTO DOS BOTÕES NO CANTO INFERIOR DIREITO -->
+        <div class="flex items-center justify-end gap-2 pt-2 border-t border-white/5 flex-wrap">
+          <button type="button" onclick="limparFiltros()" class="px-3.5 py-1.5 rounded-lg bg-slate-800/80 hover:bg-slate-700 text-slate-300 border border-white/10 text-xs font-semibold transition flex items-center gap-1.5 cursor-pointer">
+            🔄 Resetar Filtros (Mês Atual)
+          </button>
+          <button type="button" onclick="exportarCSV()" class="px-3.5 py-1.5 rounded-lg bg-cyan-500/10 hover:bg-cyan-500/20 text-cyan-300 border border-cyan-500/30 text-xs font-semibold transition flex items-center gap-1.5 cursor-pointer">
+            📥 Exportar CSV
+          </button>
+          <button type="button" onclick="window.print()" class="px-3.5 py-1.5 rounded-lg bg-purple-500/10 hover:bg-purple-500/20 text-purple-300 border border-purple-500/30 text-xs font-semibold transition flex items-center gap-1.5 cursor-pointer">
+            🖨️ Relatório (PDF)
+          </button>
+        </div>
+      </div>
+
+      <!-- TABELA DE PROPOSTAS E PEDIDOS COM PAGINAÇÃO -->
       <div class="glass-b2b rounded-2xl p-6">
         <h2 class="text-base font-bold text-white mb-4 border-b border-purple-400/20 pb-3">Todas as Propostas e Pedidos da Rede</h2>
         
@@ -135,8 +221,36 @@
             </tbody>
           </table>
         </div>
+
+        <!-- RODAPÉ DE PAGINAÇÃO E REGISTROS POR PÁGINA -->
+        <div class="flex flex-col sm:flex-row items-center justify-between gap-3 pt-4 mt-4 border-t border-white/5 text-xs text-slate-400">
+          <div class="flex items-center gap-2">
+            <span>Exibir</span>
+            <select id="selectItensPorPagina" onchange="mudarItensPorPagina(this.value)" class="bg-slate-900 border border-white/10 rounded px-2 py-1 text-white focus:outline-none cursor-pointer">
+              <option value="10" selected>10</option>
+              <option value="25">25</option>
+              <option value="50">50</option>
+            </select>
+            <span>registros por página</span>
+          </div>
+
+          <div id="txtInfoPaginacao" class="text-slate-400">
+            Exibindo 0-0 de 0 registros
+          </div>
+
+          <div class="flex items-center gap-1.5">
+            <button id="btnPagAnterior" onclick="mudarPagina(-1)" class="px-3 py-1 rounded-lg bg-white/5 hover:bg-white/10 disabled:opacity-30 disabled:cursor-not-allowed transition">
+              ◀ Anterior
+            </button>
+            <span id="txtPaginaAtual" class="font-bold text-white px-2">1</span>
+            <button id="btnPagProxima" onclick="mudarPagina(1)" class="px-3 py-1 rounded-lg bg-white/5 hover:bg-white/10 disabled:opacity-30 disabled:cursor-not-allowed transition">
+              Próxima ▶
+            </button>
+          </div>
+        </div>
       </div>
 
+      <!-- RANKING E DESEMPENHO POR VENDEDOR -->
       <div class="glass-b2b rounded-2xl p-6">
         <h2 class="text-base font-bold text-white mb-4 border-b border-purple-400/20 pb-3">Desempenho Comercial por Vendedor</h2>
         
@@ -173,8 +287,13 @@
       'use strict';
 
       var listaPropostas = [];
+      var listaFiltrada = [];
       var listaParceiros = [];
       var timerInterval = null;
+
+      // Estado da Paginação
+      var paginaAtual = 1;
+      var itensPorPagina = 10;
 
       function fmtMoeda(n) { return 'R$ ' + Number(n || 0).toLocaleString('pt-BR', { minimumFractionDigits: 2 }); }
       function esc(s) { return String(s == null ? '' : s).replace(/</g, '&lt;').replace(/>/g, '&gt;'); }
@@ -190,42 +309,174 @@
         return (horas < 10 ? '0' : '') + horas + 'H ' + (minutos < 10 ? '0' : '') + minutos + 'M';
       }
 
+      window.toggleMobileMenu = function () {
+        var mobNav = document.getElementById('mobile-menu');
+        if (mobNav) mobNav.classList.toggle('active');
+      };
+
+      partnerRequireAuth({ requireAdmin: true }).then(function (parceiro) {
+        partnerFillSidebar(parceiro);
+        carregarDashboard();
+        configurarAutocompleteVendedor();
+      }).catch(function (err) {
+        console.error('Acesso negado ao Master Admin:', err);
+      });
+
       function carregarDashboard() {
         if (typeof sbPartner === 'undefined') {
           setTimeout(carregarDashboard, 200);
           return;
         }
 
-        sbPartner.from('parceiros').select('id, nome_completo, email').then(function(resParceiros) {
+        sbPartner.from('parceiros').select('id, nome_completo, email, comissao_padrao_pct').then(function(resParceiros) {
           listaParceiros = resParceiros.data || [];
 
-          sbPartner.from('propostas').select('*, parceiros(id, nome_completo, email)').order('criado_em', { ascending: false }).then(function (res) {
-            var tbodyGestao = document.getElementById('tbodyPropostasGestao');
-            if (res.error) {
-              tbodyGestao.innerHTML = '<tr><td colspan="5" class="py-4 text-center text-red-400">Erro ao carregar dados: ' + esc(res.error.message) + '</td></tr>';
-              return;
-            }
+          sbPartner.from('propostas')
+            .select('*, parceiros(id, nome_completo, email, comissao_padrao_pct)')
+            .order('criado_em', { ascending: false })
+            .then(function (res) {
+              var tbodyGestao = document.getElementById('tbodyPropostasGestao');
+              if (res.error) {
+                tbodyGestao.innerHTML = '<tr><td colspan="5" class="py-4 text-center text-red-400">Erro ao carregar dados: ' + esc(res.error.message) + '</td></tr>';
+                return;
+              }
 
-            listaPropostas = res.data || [];
-            recalcularMetricasECards();
-            renderPropostasGestao();
-            iniciarTimersHold();
-          });
+              listaPropostas = res.data || [];
+              limparFiltros();
+            });
         });
       }
 
-      function recalcularMetricasECards() {
+      /* CONFIGURAÇÃO DO DROPDOWN COM BUSCA (AUTOCOMPLETE) */
+      function configurarAutocompleteVendedor() {
+        var inputSearch = document.getElementById('filterVendedorSearch');
+        var inputVal = document.getElementById('filterVendedorVal');
+        var listContainer = document.getElementById('dropdownVendedorList');
+
+        if (!inputSearch) return;
+
+        inputSearch.addEventListener('focus', function() {
+          renderListaVendedores(inputSearch.value);
+          listContainer.classList.remove('hidden');
+        });
+
+        inputSearch.addEventListener('input', function() {
+          renderListaVendedores(inputSearch.value);
+          listContainer.classList.remove('hidden');
+          if (!inputSearch.value) {
+            inputVal.value = '';
+            aplicarFiltros();
+          }
+        });
+
+        document.addEventListener('click', function(e) {
+          var box = document.getElementById('boxDropdownVendedor');
+          if (box && !box.contains(e.target)) {
+            listContainer.classList.add('hidden');
+          }
+        });
+      }
+
+      function renderListaVendedores(termo) {
+        var listContainer = document.getElementById('dropdownVendedorList');
+        var termoLower = (termo || '').toLowerCase().trim();
+
+        var filtrados = listaParceiros.filter(function(v) {
+          var nome = (v.nome_completo || '').toLowerCase();
+          var email = (v.email || '').toLowerCase();
+          return !termoLower || nome.includes(termoLower) || email.includes(termoLower);
+        });
+
+        var html = '<div onclick="selecionarVendedor(\'\', \'Todos os Vendedores\')" class="p-2.5 hover:bg-white/10 cursor-pointer text-slate-300 font-semibold border-b border-white/5">Todos os Vendedores</div>';
+        
+        if (filtrados.length) {
+          html += filtrados.map(function(v) {
+            var label = esc(v.nome_completo || v.email);
+            return '<div onclick="selecionarVendedor(\'' + v.id + '\', \'' + label.replace(/'/g, "\\'") + '\')" class="p-2.5 hover:bg-white/10 cursor-pointer text-white flex justify-between items-center transition">' +
+              '<span>' + label + '</span>' +
+              '<span class="text-[10px] text-purple-300 font-bold">' + (v.comissao_padrao_pct || 10) + '%</span>' +
+            '</div>';
+          }).join('');
+        } else {
+          html += '<div class="p-3 text-slate-500 text-center">Nenhum vendedor encontrado</div>';
+        }
+
+        listContainer.innerHTML = html;
+      }
+
+      window.selecionarVendedor = function(id, label) {
+        document.getElementById('filterVendedorVal').value = id;
+        document.getElementById('filterVendedorSearch').value = id ? label : '';
+        document.getElementById('dropdownVendedorList').classList.add('hidden');
+        aplicarFiltros();
+      };
+
+      /* APLICAR E RESETAR FILTROS */
+      window.aplicarFiltros = function() {
+        var busca = (document.getElementById('filterBusca').value || '').toLowerCase().trim();
+        var vendedorId = document.getElementById('filterVendedorVal').value;
+        var statusFiltro = document.getElementById('filterStatus').value;
+        var atracaoFiltro = (document.getElementById('filterAtracao').value || '').toLowerCase().trim();
+        var dataDe = document.getElementById('filterDataDe').value;
+        var dataAte = document.getElementById('filterDataAte').value;
+
+        listaFiltrada = listaPropostas.filter(function(p) {
+          var numStr = String(p.numero || p.id || '').toLowerCase();
+          var clienteStr = String(p.cliente_nome || '').toLowerCase();
+          var matchBusca = !busca || numStr.includes(busca) || clienteStr.includes(busca);
+
+          var matchVendedor = !vendedorId || (p.parceiro_id === vendedorId);
+
+          var stVal = String(p.status || 'rascunho').toLowerCase().trim();
+          var matchStatus = !statusFiltro || (stVal === statusFiltro || (statusFiltro === 'aprovada' && stVal === 'aprovado'));
+
+          var atracaoStr = String(p.tipo_evento || p.detalhes || '').toLowerCase();
+          var matchAtracao = !atracaoFiltro || atracaoStr.includes(atracaoFiltro);
+
+          var dataVenda = p.criado_em ? String(p.criado_em).split('T')[0] : '';
+          var matchDe = !dataDe || (dataVenda >= dataDe);
+          var matchAte = !dataAte || (dataVenda <= dataAte);
+
+          return matchBusca && matchVendedor && matchStatus && matchAtracao && matchDe && matchAte;
+        });
+
+        paginaAtual = 1;
+        recalcularMetricasECards(listaFiltrada);
+        renderPropostasGestao();
+        iniciarTimersHold();
+      };
+
+      window.limparFiltros = function() {
+        document.getElementById('filterBusca').value = '';
+        document.getElementById('filterVendedorVal').value = '';
+        document.getElementById('filterVendedorSearch').value = '';
+        document.getElementById('filterStatus').value = '';
+        document.getElementById('filterAtracao').value = '';
+
+        var agora = new Date();
+        var ano = agora.getFullYear();
+        var mes = String(agora.getMonth() + 1).padStart(2, '0');
+        var ultimoDia = new Date(ano, agora.getMonth() + 1, 0).getDate();
+
+        document.getElementById('filterDataDe').value = ano + '-' + mes + '-01';
+        document.getElementById('filterDataAte').value = ano + '-' + mes + '-' + String(ultimoDia).padStart(2, '0');
+
+        aplicarFiltros();
+      };
+
+      function recalcularMetricasECards(lista) {
         var fatBruto = 0;
         var totalComissao = 0;
+        var qtdFechados = 0;
         var mapaVendedores = {};
 
-        listaPropostas.forEach(function (p) {
-          var stVal = String(p.status || '').toLowerCase();
+        lista.forEach(function (p) {
+          var stVal = String(p.status || '').toLowerCase().trim();
 
-          // Filtra exclusivamente propostas com status 'aprovada' (independente de caixa alta/baixa no banco)
-          if (stVal === 'aprovada') {
+          if (stVal === 'aprovada' || stVal === 'aprovado') {
+            qtdFechados += 1;
             var val = Number(p.valor_total || 0);
-            var pct = Number(p.comissao_pct_efetiva || 10);
+            var pct = Number(p.comissao_pct_efetiva !== undefined && p.comissao_pct_efetiva !== null ? p.comissao_pct_efetiva : (p.parceiros ? p.parceiros.comissao_padrao_pct : 10));
             var comissao = (val * pct) / 100;
 
             fatBruto += val;
@@ -244,21 +495,35 @@
           }
         });
 
+        var txtPluralEventos = qtdFechados === 1 ? '1 evento aprovado' : qtdFechados + ' eventos aprovados';
+
         document.getElementById('admFatBruto').textContent = fmtMoeda(fatBruto);
+        document.getElementById('admSubFatBruto').textContent = txtPluralEventos;
         document.getElementById('admTotalComissoes').textContent = fmtMoeda(totalComissao);
         document.getElementById('admReceitaLiquida').textContent = fmtMoeda(fatBruto - totalComissao);
 
         renderRanking(mapaVendedores);
       }
 
+      /* RENDERIZAÇÃO DA TABELA COM ISOLAMENTO DE TOOLTIP E CONFIRMAÇÃO DE VENDEDOR */
       function renderPropostasGestao() {
         var tbody = document.getElementById('tbodyPropostasGestao');
-        if (!listaPropostas.length) {
-          tbody.innerHTML = '<tr><td colspan="5" class="py-6 text-center text-slate-500">Nenhuma proposta registrada na base.</td></tr>';
+        var totalRegistros = listaFiltrada.length;
+
+        if (!totalRegistros) {
+          tbody.innerHTML = '<tr><td colspan="5" class="py-6 text-center text-slate-500">Nenhum pedido encontrado para os filtros aplicados.</td></tr>';
+          atualizarControlesPaginacao(0, 0, 0);
           return;
         }
 
-        tbody.innerHTML = listaPropostas.map(function (p) {
+        var totalPaginas = Math.ceil(totalRegistros / itensPorPagina);
+        if (paginaAtual > totalPaginas) paginaAtual = totalPaginas;
+
+        var inicio = (paginaAtual - 1) * itensPorPagina;
+        var fim = Math.min(inicio + itensPorPagina, totalRegistros);
+        var itensPagina = listaFiltrada.slice(inicio, fim);
+
+        tbody.innerHTML = itensPagina.map(function (p) {
           var numStr = p.numero ? '#' + p.numero : '#' + p.id;
 
           var optionsParceiros = listaParceiros.map(function (v) {
@@ -267,33 +532,43 @@
           }).join('');
 
           var stRaw = p.status || 'rascunho';
-          var stVal = String(stRaw).toLowerCase();
+          var stVal = String(stRaw).toLowerCase().trim();
 
           var stColorClass = 'text-slate-400 border-white/20';
-          if (stVal === 'aprovada') stColorClass = 'text-emerald-400 border-emerald-500/40';
+          if (stVal === 'aprovada' || stVal === 'aprovado') stColorClass = 'text-emerald-400 border-emerald-500/40';
           if (stVal === 'hold' || stVal === 'enviada') stColorClass = 'text-amber-400 border-amber-500/40';
           if (stVal === 'cancelada') stColorClass = 'text-red-400 border-red-500/40';
           if (stVal === 'adiada') stColorClass = 'text-cyan-400 border-cyan-500/40';
 
           var selectStatusHtml = '';
 
+          // TOOLTIP ISOLADO VIA ÍCONE INFORMATIVO (EVITA SOBREPOSIÇÃO NO CLIQUE DO SELECT)
           if (stVal === 'hold') {
             selectStatusHtml = 
-              '<select onchange="alterarStatusProposta(\'' + p.id + '\', this.value)" data-hold-prop-id="' + p.id + '" class="w-auto bg-slate-900 border border-amber-500/50 rounded px-2.5 py-1 text-[11px] font-bold text-amber-400 uppercase focus:outline-none cursor-pointer text-center">' +
-                '<option value="hold" selected data-expira="' + (p.hold_expira_em || '') + '">⏳ ' + formatarTempoRestante(p.hold_expira_em) + '</option>' +
-                '<option value="aprovada" class="text-emerald-400">Aprovada</option>' +
-                '<option value="enviada" class="text-amber-400">Enviada</option>' +
-                '<option value="adiada" class="text-cyan-400">Adiada</option>' +
-                '<option value="cancelada" class="text-red-400">Cancelada</option>' +
-                '<option value="rascunho" class="text-slate-400">Rascunho</option>' +
-              '</select>';
+              '<div class="inline-flex items-center gap-1.5">' +
+                '<select onchange="alterarStatusProposta(\'' + p.id + '\', this.value)" data-hold-prop-id="' + p.id + '" class="w-auto bg-slate-900 border border-amber-500/50 rounded px-2.5 py-1 text-[11px] font-bold text-amber-400 uppercase focus:outline-none cursor-pointer text-center">' +
+                  '<option value="hold" selected data-expira="' + (p.hold_expira_em || '') + '">⏳ ' + formatarTempoRestante(p.hold_expira_em) + '</option>' +
+                  '<option value="aprovada" class="text-emerald-400">Aprovada</option>' +
+                  '<option value="enviada" class="text-amber-400">Enviada</option>' +
+                  '<option value="adiada" class="text-cyan-400">Adiada</option>' +
+                  '<option value="cancelada" class="text-red-400">Cancelada</option>' +
+                  '<option value="rascunho" class="text-slate-400">Rascunho</option>' +
+                '</select>' +
+                '<div class="relative inline-block group cursor-pointer">' +
+                  '<span class="text-slate-400 hover:text-amber-300 text-xs transition">ℹ️</span>' +
+                  '<div class="pointer-events-none absolute bottom-full mb-2 left-1/2 -translate-x-1/2 w-60 p-2.5 bg-slate-900/95 border border-amber-500/40 rounded-xl shadow-[0_10px_25px_rgba(0,0,0,0.85)] backdrop-blur-md text-[11px] font-normal text-slate-200 text-center opacity-0 group-hover:opacity-100 transition-all duration-200 z-[9999] whitespace-normal leading-relaxed">' +
+                    'Reserva de data e condições comerciais válidas durante a contagem. Após o vencimento, o orçamento expira e a data fica disponível.' +
+                    '<div class="absolute top-full left-1/2 -translate-x-1/2 -mt-[1px] border-4 border-transparent border-t-amber-500/40"></div>' +
+                  '</div>' +
+                '</div>' +
+              '</div>';
           } else {
             selectStatusHtml = 
-              '<select onchange="alterarStatusProposta(\'' + p.id + '\', this.value)" class="w-auto bg-slate-900 border rounded px-2.5 py-1 text-[11px] font-bold uppercase focus:outline-none text-center ' + stColorClass + '">' +
+              '<select onchange="alterarStatusProposta(\'' + p.id + '\', this.value)" class="w-auto bg-slate-900 border rounded px-2.5 py-1 text-[11px] font-bold uppercase focus:outline-none text-center cursor-pointer ' + stColorClass + '">' +
                 '<option value="rascunho" class="text-slate-400" ' + (stVal === 'rascunho' ? 'selected' : '') + '>Rascunho</option>' +
                 '<option value="hold" class="text-amber-400" ' + (stVal === 'hold' ? 'selected' : '') + '>Hold 48h</option>' +
                 '<option value="enviada" class="text-amber-400" ' + (stVal === 'enviada' ? 'selected' : '') + '>Enviada</option>' +
-                '<option value="aprovada" class="text-emerald-400" ' + (stVal === 'aprovada' ? 'selected' : '') + '>Aprovada</option>' +
+                '<option value="aprovada" class="text-emerald-400" ' + (stVal === 'aprovada' || stVal === 'aprovado' ? 'selected' : '') + '>Aprovada</option>' +
                 '<option value="adiada" class="text-cyan-400" ' + (stVal === 'adiada' ? 'selected' : '') + '>Adiada</option>' +
                 '<option value="cancelada" class="text-red-400" ' + (stVal === 'cancelada' ? 'selected' : '') + '>Cancelada</option>' +
               '</select>';
@@ -302,24 +577,77 @@
           return '<tr class="hover:bg-white/[0.02] transition">' +
             '<td class="py-3 px-3">' +
               '<strong class="text-white block text-sm">' + numStr + ' — ' + esc(p.cliente_nome) + '</strong>' +
-              '<span class="text-slate-400 text-[11px]">Tipo: ' + esc(p.tipo_evento || '—') + '</span>' +
+              '<span class="text-slate-400 text-[11px]">Atração/Tipo: ' + esc(p.tipo_evento || '—') + '</span>' +
             '</td>' +
             '<td class="py-3 px-3 text-center">' +
-              '<select onchange="reatribuirVendedor(\'' + p.id + '\', this.value)" class="bg-slate-900 border border-white/20 rounded px-2 py-1 text-[11px] text-cyan-300 font-semibold focus:outline-none">' +
+              '<select data-vendedor-atual="' + p.parceiro_id + '" onchange="reatribuirVendedor(this, \'' + p.id + '\', this.value)" class="bg-slate-900 border border-white/20 rounded px-2 py-1 text-[11px] text-purple-300 font-semibold focus:outline-none cursor-pointer">' +
                 optionsParceiros +
               '</select>' +
             '</td>' +
             '<td class="py-3 px-3 text-right font-bold text-white">' + fmtMoeda(p.valor_total) + '</td>' +
-            '<td class="py-3 px-3 text-center">' +
+            '<td class="py-3 px-3 text-center overflow-visible">' +
               selectStatusHtml +
             '</td>' +
             '<td class="py-3 px-3 text-right space-x-1.5">' +
               '<a href="../nova-proposta.html?id=' + p.id + '" class="px-2.5 py-1 rounded bg-purple-500/20 hover:bg-purple-500/30 text-purple-300 border border-purple-500/30 text-[11px] font-semibold transition">Editar</a>' +
-              '<button onclick="excluirProposta(\'' + p.id + '\')" class="px-2.5 py-1 rounded bg-red-500/20 hover:bg-red-500/30 text-red-300 border border-red-500/30 text-[11px] font-semibold transition">Excluir</button>' +
+              '<button onclick="excluirProposta(\'' + p.id + '\')" class="px-2.5 py-1 rounded bg-red-500/20 hover:bg-red-500/30 text-red-300 border border-red-500/30 text-[11px] font-semibold transition cursor-pointer">Excluir</button>' +
             '</td>' +
           '</tr>';
         }).join('');
+
+        atualizarControlesPaginacao(inicio + 1, fim, totalRegistros);
       }
+
+      function atualizarControlesPaginacao(inicio, fim, total) {
+        document.getElementById('txtInfoPaginacao').textContent = 'Exibindo ' + inicio + '-' + fim + ' de ' + total + ' registros';
+        document.getElementById('txtPaginaAtual').textContent = paginaAtual;
+
+        var totalPaginas = Math.ceil(total / itensPorPagina) || 1;
+        document.getElementById('btnPagAnterior').disabled = (paginaAtual <= 1);
+        document.getElementById('btnPagProxima').disabled = (paginaAtual >= totalPaginas);
+      }
+
+      window.mudarPagina = function(delta) {
+        paginaAtual += delta;
+        renderPropostasGestao();
+      };
+
+      window.mudarItensPorPagina = function(qtd) {
+        itensPorPagina = parseInt(qtd, 10) || 10;
+        paginaAtual = 1;
+        renderPropostasGestao();
+      };
+
+      /* EXPORTAÇÃO CSV */
+      window.exportarCSV = function() {
+        if (!listaFiltrada.length) {
+          alert('Nenhum dado disponível para exportar.');
+          return;
+        }
+
+        var header = ["Pedido", "Cliente", "Vendedor", "Valor Total", "Status", "Atração/Tipo", "Data Venda"];
+        var rows = listaFiltrada.map(function(p) {
+          var nomeVendedor = p.parceiros ? (p.parceiros.nome_completo || p.parceiros.email) : 'Vendedor ID ' + p.parceiro_id;
+          return [
+            '="' + (p.numero || p.id) + '"',
+            '"' + (p.cliente_nome || '').replace(/"/g, '""') + '"',
+            '"' + (nomeVendedor || '').replace(/"/g, '""') + '"',
+            Number(p.valor_total || 0).toFixed(2),
+            p.status || 'rascunho',
+            '"' + (p.tipo_evento || '').replace(/"/g, '""') + '"',
+            p.criado_em ? String(p.criado_em).split('T')[0] : ''
+          ].join(';');
+        });
+
+        var csvContent = 'data:text/csv;charset=utf-8,\uFEFF' + header.join(';') + '\n' + rows.join('\n');
+        var encodedUri = encodeURI(csvContent);
+        var link = document.createElement('a');
+        link.setAttribute('href', encodedUri);
+        link.setAttribute('download', 'Relatorio_Vendas_432UP_' + new Date().toISOString().split('T')[0] + '.csv');
+        document.body.appendChild(link);
+        link.click();
+        document.body.removeChild(link);
+      };
 
       function iniciarTimersHold() {
         if (timerInterval) clearInterval(timerInterval);
@@ -351,9 +679,11 @@
 
         tbody.innerHTML = lista.map(function (v) {
           var margemProdutora = v.volume - v.comissao;
+          var txtPluralVendedor = v.qtd === 1 ? '1 fechado' : v.qtd + ' fechados';
+
           return '<tr class="hover:bg-white/[0.02] transition">' +
             '<td class="py-3 px-3"><strong class="text-white block text-sm">' + esc(v.nome) + '</strong></td>' +
-            '<td class="py-3 px-3 text-center font-bold text-cyan-400">' + v.qtd + ' fechados</td>' +
+            '<td class="py-3 px-3 text-center font-bold text-purple-300">' + txtPluralVendedor + '</td>' +
             '<td class="py-3 px-3 text-right font-bold text-white">' + fmtMoeda(v.volume) + '</td>' +
             '<td class="py-3 px-3 text-right font-bold text-amber-400">' + fmtMoeda(v.comissao) + '</td>' +
             '<td class="py-3 px-3 text-right font-bold text-emerald-400">' + fmtMoeda(margemProdutora) + '</td>' +
@@ -381,10 +711,24 @@
         });
       };
 
-      window.reatribuirVendedor = function (id, novoParceiroId) {
-        sbPartner.from('propostas').update({ parceiro_id: novoParceiroId }).eq('id', id).then(function (res) {
-          if (!res.error) carregarDashboard();
-        });
+      /* REATRIBUIÇÃO DE VENDEDOR COM CONFIRMAÇÃO E TRAVA DE CANCELAMENTO */
+      window.reatribuirVendedor = function (selectEl, id, novoParceiroId) {
+        var valAnterior = selectEl.getAttribute('data-vendedor-atual');
+        var parceiroObj = listaParceiros.find(function(p) { return String(p.id) === String(novoParceiroId); });
+        var nomeNovo = parceiroObj ? (parceiroObj.nome_completo || parceiroObj.email) : 'o novo vendedor selecionado';
+
+        if (confirm('Tem certeza de que deseja reatribuir este pedido para "' + nomeNovo + '"?')) {
+          sbPartner.from('propostas').update({ parceiro_id: novoParceiroId }).eq('id', id).then(function (res) {
+            if (res.error) {
+              alert('Erro ao reatribuir vendedor: ' + res.error.message);
+              selectEl.value = valAnterior;
+            } else {
+              carregarDashboard();
+            }
+          });
+        } else {
+          selectEl.value = valAnterior;
+        }
       };
 
       window.excluirProposta = function (id) {
@@ -394,23 +738,7 @@
           });
         }
       };
-
-      carregarDashboard();
     })();
   </script>
-
-<script>
-  // Inicialização restrita (Chuta para a Home se NÃO for Admin)
-  partnerRequireAuth({ requireAdmin: true }).then(function (parceiro) {
-    // Carrega o menu e foto do perfil
-    partnerFillSidebar(parceiro);
-
-    // Coloque aqui a lógica de carregamento do painel Master Admin
-  }).catch(function (err) {
-    console.error('Acesso negado ao Master Admin:', err);
-  });
-</script>
-
 </body>
 </html>
-
