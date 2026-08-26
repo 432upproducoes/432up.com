@@ -2,6 +2,16 @@
 <html lang="pt-BR" class="h-full">
 <head>
 
+<script>
+  (function() {
+    try {
+      // Se for Administrador, não deixa ficar no B2B/index.html e redireciona para a raiz
+      if (localStorage.getItem('432_is_admin') === 'true') {
+        window.location.href = '../admin-calculadora.html'; // ou ../admin.html dependendo do nome exato na raiz
+      }
+    } catch (e) {}
+  })();
+</script>
 
   <script>
     (function() {
@@ -36,19 +46,12 @@
     }
   </style>
 
-
-
-
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
   <title>432UP Partner | Meu Painel</title> 
   <!-- CSS Global do Site -->
   <link rel="stylesheet" href="../css/style.css">
   <script src="https://cdn.tailwindcss.com"></script>
-  
-
-
-
 
   <style>
     /* GARANTIA DE OCULTAÇÃO INICIAL DOS BOTÕES ADMIN */
@@ -321,7 +324,6 @@
 
       /* INICIALIZAÇÃO ÚNICA DA PÁGINA */
       partnerRequireAuth().then(function (parceiro) {
-        // Preenche sidebar e decide centralizadamente a visibilidade do botão Admin
         partnerFillSidebar(parceiro);
         
         var primeiroNome = parceiro.nome_completo ? parceiro.nome_completo.split(' ')[0] : 'Parceiro';
@@ -344,26 +346,8 @@
       }
 
       function carregarKPIs(parceiro) {
-        sbPartner.from('v_parceiro_dashboard')
-          .select('*')
-          .eq('parceiro_id', parceiro.id)
-          .single()
-          .then(function (res) {
-            if (res.data) {
-              var d = res.data;
-              atualizarKPIsTela(
-                d.propostas_em_andamento || 0,
-                d.aprovadas_no_mes || 0,
-                d.valor_fechado_no_mes || 0,
-                d.comissao_disponivel || 0,
-                d.comissao_pendente || 0
-              );
-            } else {
-              carregarKPIsDirecto(parceiro);
-            }
-          }).catch(function () {
-            carregarKPIsDirecto(parceiro);
-          });
+        // Redireciona direto para a leitura dinâmica das propostas para garantir integridade
+        carregarKPIsDirecto(parceiro);
       }
 
       function carregarKPIsDirecto(parceiro) {
@@ -373,18 +357,43 @@
           .then(function (res) {
             if (!res.data) return;
             var list = res.data;
+            var hoje = new Date().toISOString().split('T')[0];
 
-            var emAndamento = list.filter(function (p) { return p.status === 'enviada' || p.status === 'hold' || p.status === 'rascunho'; }).length;
-            var aprovadas = list.filter(function (p) { return p.status === 'aprovada'; });
-            
-            var valorFechado = aprovadas.reduce(function (acc, p) { return acc + Number(p.valor_total || 0); }, 0);
-            var comissaoTotal = aprovadas.reduce(function (acc, p) { 
-              var val = Number(p.valor_total || 0);
-              var pct = Number(p.comissao_pct_efetiva || parceiro.comissao_padrao_pct || 10);
-              return acc + (val * pct / 100);
+            // 1. Propostas em andamento (ignorando maiúsculas/minúsculas)
+            var emAndamento = list.filter(function (p) {
+              var st = String(p.status || '').toLowerCase();
+              return st === 'enviada' || st === 'hold' || st === 'rascunho';
+            }).length;
+
+            // 2. Propostas aprovadas
+            var aprovadas = list.filter(function (p) {
+              return String(p.status || '').toLowerCase() === 'aprovada';
+            });
+
+            // 3. Faturamento Bruto Aprovado
+            var valorFechado = aprovadas.reduce(function (acc, p) { 
+              return acc + Number(p.valor_total || 0); 
             }, 0);
 
-            atualizarKPIsTela(emAndamento, aprovadas.length, valorFechado, comissaoTotal, 0);
+            // 4. Separação de Comissões: Liberada (evento já ocorreu) vs Pendente (evento futuro)
+            var comissaoLiberada = 0;
+            var comissaoPendente = 0;
+
+            aprovadas.forEach(function (p) {
+              var val = Number(p.valor_total || 0);
+              var pct = Number(p.comissao_pct_efetiva || parceiro.comissao_padrao_pct || 10);
+              var valorComissao = (val * pct / 100);
+
+              var dataEv = p.data_evento ? String(p.data_evento).split('T')[0] : '';
+
+              if (dataEv && dataEv <= hoje) {
+                comissaoLiberada += valorComissao;
+              } else {
+                comissaoPendente += valorComissao;
+              }
+            });
+
+            atualizarKPIsTela(emAndamento, aprovadas.length, valorFechado, comissaoLiberada, comissaoPendente);
           }).catch(function (err) {
             console.error('[432UP Partner] Erro ao carregar KPIs diretos:', err);
           });
@@ -396,8 +405,11 @@
         document.getElementById('kpiValorFechado').textContent = fmtMoeda(valorFechado) + ' fechados';
         document.getElementById('kpiComissaoLiberada').textContent = fmtMoeda(comissaoLiberada);
 
+        var subEl = document.getElementById('kpiComissaoSub');
         if (comissaoPendente > 0) {
-          document.getElementById('kpiComissaoSub').textContent = fmtMoeda(comissaoPendente) + ' a liberar pós-evento';
+          subEl.textContent = fmtMoeda(comissaoPendente) + ' a liberar pós-evento';
+        } else {
+          subEl.textContent = 'Liberado para resgate em conta';
         }
       }
 
@@ -405,7 +417,7 @@
         sbPartner.from('propostas')
           .select('*')
           .eq('parceiro_id', parceiroId)
-          .in('status', ['hold', 'enviada', 'rascunho'])
+          .in('status', ['hold', 'enviada', 'rascunho', 'HOLD', 'ENVIADA', 'RASCUNHO'])
           .order('criado_em', { ascending: false })
           .limit(5)
           .then(function (res) {
@@ -420,8 +432,9 @@
             }
 
             el.innerHTML = res.data.map(function (p) {
-              var st = STATUS_LABEL[p.status] || STATUS_LABEL.enviada;
-              var isHold = p.status === 'hold';
+              var stKey = String(p.status || '').toLowerCase();
+              var st = STATUS_LABEL[stKey] || STATUS_LABEL.enviada;
+              var isHold = stKey === 'hold';
               var bordaCls = isHold ? 'border-amber-500/30' : 'border-white/10';
               
               var badgeStatusHtml = isHold 

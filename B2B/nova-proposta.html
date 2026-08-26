@@ -253,7 +253,7 @@
         <a href="admin/index.html" style="color: #f59e0b; font-weight: 700; border: 1px solid rgba(245,158,11,0.4); padding: 4px 10px; border-radius: 8px; background: rgba(245,158,11,0.1); font-size: 0.75rem;">👑 Master Admin</a>
       </span>
 
-      <!-- WIDGET DE PERFIL (FOTO CLICÁVEL ATIVA E DESTAQUE DE PÁGINA) -->
+      <!-- WIDGET DE PERFIL -->
       <div class="b2b-user-widget">
         <a href="perfil.html" title="Meu Perfil" class="b2b-avatar-link">
           <div data-partner-avatar class="b2b-avatar-img"></div>
@@ -421,11 +421,14 @@
               </div>
             </div>
 
-            <div class="space-y-2 pt-2">
-              <button id="btnCadastrarPedido" class="w-full py-3 rounded-xl bg-amber-500 hover:bg-amber-400 text-slate-950 font-bold text-xs uppercase tracking-wider transition shadow-[0_0_20px_rgba(245,158,11,0.3)] cursor-pointer">
-                ⚡ Cadastrar Pedido / Venda
+            <div id="containerAcoesBotoes" class="space-y-2 pt-2">
+              <button id="btnFinalizarEnviar" class="w-full py-3 rounded-xl bg-amber-500 hover:bg-amber-400 text-slate-950 font-bold text-xs uppercase tracking-wider transition shadow-[0_0_20px_rgba(245,158,11,0.3)] cursor-pointer">
+                ⚡ Finalizar e Enviar Proposta
               </button>
-              <button id="btnCadastrarHold" class="w-full py-2.5 rounded-xl bg-white/5 hover:bg-white/10 text-xs font-semibold text-slate-300 transition border border-white/10 cursor-pointer">
+              <button id="btnSalvarRascunho" class="w-full py-2.5 rounded-xl bg-slate-800/80 hover:bg-slate-700/80 text-xs font-semibold text-cyan-300 transition border border-cyan-500/30 cursor-pointer">
+                💾 Salvar como Rascunho
+              </button>
+              <button id="btnCadastrarHold" class="w-full py-2 rounded-xl bg-white/5 hover:bg-white/10 text-[11px] font-semibold text-slate-400 transition border border-white/10 cursor-pointer">
                 Consultar Disponibilidade (Hold 48h)
               </button>
             </div>
@@ -443,12 +446,12 @@
       <div id="mobileValorTotal" class="text-sm font-bold text-amber-400 leading-tight">Selecione as opções acima</div>
       <span id="mobileComissaoBox" class="text-[10px] text-amber-400 font-semibold block hidden">Comissão: <span id="mobileComissaoValor">R$ 0,00</span></span>
     </div>
-    <div class="flex gap-2 shrink-0">
-      <button id="mobileBtnCadastrarHold" class="px-3 py-2 rounded-xl bg-white/10 text-white font-bold text-xs border border-white/10 cursor-pointer">
-        Hold
+    <div id="containerAcoesMobile" class="flex gap-2 shrink-0">
+      <button id="mobileBtnSalvarRascunho" class="px-3 py-2 rounded-xl bg-slate-800 text-cyan-300 font-bold text-xs border border-cyan-500/30 cursor-pointer">
+        Rascunho
       </button>
-      <button id="mobileBtnCadastrarPedido" class="px-4 py-2 rounded-xl bg-amber-500 text-slate-950 font-bold text-xs uppercase shadow-[0_0_15px_rgba(245,158,11,0.4)] cursor-pointer">
-        Cadastrar
+      <button id="mobileBtnFinalizarEnviar" class="px-4 py-2 rounded-xl bg-amber-500 text-slate-950 font-bold text-xs uppercase shadow-[0_0_15px_rgba(245,158,11,0.4)] cursor-pointer">
+        Enviar
       </button>
     </div>
   </div>
@@ -468,6 +471,7 @@
 
       var parceiroAtual = null;
       var propostaEdicaoId = null;
+      var formularioBloqueadoSomenteLeitura = false;
 
       var PKG = [];
       var SVC = [];
@@ -619,11 +623,40 @@
         observer.observe(target);
       }
 
+      function aplicarTravaSomenteLeitura(statusTexto) {
+        formularioBloqueadoSomenteLeitura = true;
+        showAlert('Esta proposta foi ' + statusTexto.toUpperCase() + ' e está bloqueada para edições pelo parceiro.', 'error');
+
+        // Desabilita inputs de texto e selects
+        document.querySelectorAll('input, textarea, select').forEach(function (el) {
+          el.disabled = true;
+          el.classList.add('opacity-60', 'cursor-not-allowed');
+        });
+
+        // Oculta botões de ação e substitui por aviso
+        var containerAcoes = document.getElementById('containerAcoesBotoes');
+        if (containerAcoes) {
+          containerAcoes.innerHTML = 
+            '<div class="p-3.5 rounded-xl bg-slate-900/90 text-center border border-white/10 space-y-2">' +
+              '<span class="text-xs font-bold text-amber-400 block">🔒 Modo Somente Leitura</span>' +
+              '<p class="text-[11px] text-slate-400">Pedidos ' + esc(statusTexto) + 's não podem sofrer alterações diretas.</p>' +
+              '<a href="propostas.html" class="inline-block mt-2 px-4 py-2 rounded-lg bg-cyan-500/20 text-cyan-300 border border-cyan-500/30 text-xs font-semibold hover:bg-cyan-500/30 transition">← Voltar para Minhas Propostas</a>' +
+            '</div>';
+        }
+
+        var containerMob = document.getElementById('containerAcoesMobile');
+        if (containerMob) {
+          containerMob.innerHTML = '<a href="propostas.html" class="px-4 py-2 rounded-xl bg-cyan-500/20 text-cyan-300 font-bold text-xs border border-cyan-500/30">Voltar</a>';
+        }
+      }
+
       function carregarPropostaExistente(id) {
         sbPartner.from('propostas').select('*').eq('id', id).single().then(function (res) {
           if (res.data) {
             var p = res.data;
-            document.getElementById('pageTitle').textContent = 'Editar Proposta #' + (p.numero || id) + ' — ' + (p.cliente_nome || '');
+            var stNorm = String(p.status || '').toLowerCase();
+
+            document.getElementById('pageTitle').textContent = 'Proposta #' + (p.numero || id) + ' — ' + (p.cliente_nome || '');
             document.getElementById('fCliente').value = p.cliente_nome || '';
             document.getElementById('fData').value = p.data_evento || '';
 
@@ -657,6 +690,11 @@
 
             updateUI();
             recalc();
+
+            // BLOQUEIO AUTOMÁTICO SE APROVADA OU CANCELADA
+            if (stNorm === 'aprovada' || stNorm === 'cancelada') {
+              aplicarTravaSomenteLeitura(stNorm);
+            }
           }
         });
       }
@@ -685,6 +723,7 @@
 
         grid.querySelectorAll('[data-pkg]').forEach(function (card) {
           card.addEventListener('click', function () {
+            if (formularioBloqueadoSomenteLeitura) return;
             var pid = card.dataset.pkg;
             if (activePkg === pid) {
               activePkg = null;
@@ -728,6 +767,7 @@
 
         grid.querySelectorAll('[data-svc]').forEach(function (card) {
           card.addEventListener('click', function () {
+            if (formularioBloqueadoSomenteLeitura) return;
             var sid = card.dataset.svc;
             var st = svcState[sid];
             if (st === 'included') {
@@ -766,6 +806,7 @@
         if (btnMob) btnMob.addEventListener('click', partnerLogout);
 
         document.getElementById('sliderHoras').addEventListener('input', function () {
+          if (formularioBloqueadoSomenteLeitura) return;
           document.getElementById('lblHoras').textContent = this.value + 'h';
           recalc();
         });
@@ -775,6 +816,7 @@
 
         document.querySelectorAll('#chipsTipo .chip-item').forEach(function (c) {
           c.addEventListener('click', function () {
+            if (formularioBloqueadoSomenteLeitura) return;
             document.querySelectorAll('#chipsTipo .chip-item').forEach(function (x) { x.classList.remove('active'); });
             c.classList.add('active');
             evTipoVal = c.dataset.val;
@@ -784,6 +826,7 @@
 
         document.querySelectorAll('#chipsConvidados .chip-item').forEach(function (c) {
           c.addEventListener('click', function () {
+            if (formularioBloqueadoSomenteLeitura) return;
             document.querySelectorAll('#chipsConvidados .chip-item').forEach(function (x) { x.classList.remove('active'); });
             c.classList.add('active');
             evConvidados = parseInt(c.dataset.val, 10);
@@ -791,13 +834,19 @@
           });
         });
 
-        document.getElementById('btnCadastrarPedido').addEventListener('click', function () { salvarProposta('aprovada'); });
-        document.getElementById('btnCadastrarHold').addEventListener('click', function () { salvarProposta('hold'); });
+        /* AÇÕES DE BOTÃO */
+        var btnEnviar = document.getElementById('btnFinalizarEnviar');
+        var btnRascunho = document.getElementById('btnSalvarRascunho');
+        var btnHold = document.getElementById('btnCadastrarHold');
 
-        var mBtnPedido = document.getElementById('mobileBtnCadastrarPedido');
-        var mBtnHold = document.getElementById('mobileBtnCadastrarHold');
-        if (mBtnPedido) mBtnPedido.addEventListener('click', function () { salvarProposta('aprovada'); });
-        if (mBtnHold) mBtnHold.addEventListener('click', function () { salvarProposta('hold'); });
+        if (btnEnviar) btnEnviar.addEventListener('click', function () { salvarProposta('enviada'); });
+        if (btnRascunho) btnRascunho.addEventListener('click', function () { salvarProposta('rascunho'); });
+        if (btnHold) btnHold.addEventListener('click', function () { salvarProposta('hold'); });
+
+        var mBtnEnviar = document.getElementById('mobileBtnFinalizarEnviar');
+        var mBtnRascunho = document.getElementById('mobileBtnSalvarRascunho');
+        if (mBtnEnviar) mBtnEnviar.addEventListener('click', function () { salvarProposta('enviada'); });
+        if (mBtnRascunho) mBtnRascunho.addEventListener('click', function () { salvarProposta('rascunho'); });
       }
 
       function recalc() {
@@ -895,6 +944,8 @@
       }
 
       function salvarProposta(statusDesejado) {
+        if (formularioBloqueadoSomenteLeitura) return;
+
         var cliente = document.getElementById('fCliente').value.trim();
         var dataEv = document.getElementById('fData').value;
         var local = document.getElementById('fLocal').value.trim();
@@ -911,6 +962,13 @@
         }
 
         var pct = parceiroAtual.comissao_padrao_pct;
+        var stNorm = String(statusDesejado || 'enviada').toLowerCase();
+
+        // SANITIZAÇÃO DE SEGURANÇA NO FRONT-END
+        if (stNorm === 'aprovada') {
+          stNorm = 'enviada';
+        }
+
         var payload = {
           parceiro_id: parceiroAtual.id,
           cliente_nome: cliente,
@@ -923,18 +981,24 @@
           itens: window.currentItensPayload,
           valor_total: window.currentTotal,
           comissao_pct_efetiva: pct,
-          status: statusDesejado,
+          status: stNorm,
           enviada_em: new Date().toISOString()
         };
 
-        if (statusDesejado === 'hold') {
+        if (stNorm === 'hold') {
           var exp = new Date();
           exp.setHours(exp.getHours() + 48);
           payload.hold_expira_em = exp.toISOString();
+        } else {
+          payload.hold_expira_em = null;
         }
 
-        var btn = statusDesejado === 'hold' ? document.getElementById('btnCadastrarHold') : document.getElementById('btnCadastrarPedido');
-        btn.classList.add('btn-loading');
+        var btn = null;
+        if (stNorm === 'rascunho') btn = document.getElementById('btnSalvarRascunho');
+        else if (stNorm === 'enviada') btn = document.getElementById('btnFinalizarEnviar');
+        else if (stNorm === 'hold') btn = document.getElementById('btnCadastrarHold');
+
+        if (btn) btn.classList.add('btn-loading');
 
         var query = propostaEdicaoId
           ? sbPartner.from('propostas').update(payload).eq('id', propostaEdicaoId)
@@ -943,7 +1007,7 @@
         query.select().single().then(function (res) {
           if (res.error) {
             showAlert('Erro ao salvar proposta: ' + res.error.message, 'error');
-            btn.classList.remove('btn-loading');
+            if (btn) btn.classList.remove('btn-loading');
           } else {
             window.location.href = 'propostas.html';
           }
@@ -953,17 +1017,13 @@
   </script>
 
 <script>
-  // Inicialização padrão do portal (Liberado para Vendedores e Admins)
   partnerRequireAuth().then(function (parceiro) {
-    // Preenche o nome, foto e gerencia a exibição do botão Master Admin no menu
     partnerFillSidebar(parceiro);
-
-    // Coloque aqui a lógica específica da página, se houver
   }).catch(function (err) {
     console.error('Erro na autenticação:', err);
   });
 </script>
 
-
 </body>
 </html>
+
