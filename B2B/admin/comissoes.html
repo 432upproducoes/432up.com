@@ -68,45 +68,9 @@
   <canvas id="orbit-canvas"></canvas>
   <div id="plasmaLayer" class="plasma-top-layer"></div>
 
-  <!-- HEADER TOPO ADMIN -->
-  <header id="calc-header">
-    <div class="logo-container">
-      <a href="../../index.html" class="logo-link" aria-label="Página Inicial 432UP">
-        <img src="../../imagens/logo.png" alt="432UP! Produções" class="logo-img" onerror="this.src='../imagens/logo.png'">
-      </a>
-    </div>
-
-    <!-- MENU DESKTOP -->
-    <nav class="desktop-nav">
-      <a href="index.html">Visão Geral Vendas</a>
-      <a href="parceiros.html">Gestão de Usuários</a>
-      <a href="comissoes.html" class="active">Baixa de Comissões</a>
-      <a href="../index.html" style="color: #f59e0b;">↵ Painel Partner</a>
-
-      <button onclick="window.location.href='../../index.html'" class="btn-header-cta">Site Público</button>
-    </nav>
-
-    <!-- BOTÃO HAMBÚRGUER MOBILE -->
-    <button class="mobile-hamburger" onclick="toggleMobileMenu()">☰</button>
-  </header>
-
-  <!-- OVERLAY MENU MOBILE -->
-  <div class="mobile-menu-overlay" id="mobile-menu">
-    <button onclick="toggleMobileMenu()" style="position: absolute; top: 20px; right: 20px; background: transparent; border: none; color: #fff; font-size: 1.5rem; cursor: pointer;">✕</button>
-    
-    <div style="font-size: 0.75rem; text-transform: uppercase; color: #f59e0b; font-weight: 800; letter-spacing: 1px; margin-bottom: 10px;">
-      Master Admin
-    </div>
-
-    <a href="index.html" onclick="toggleMobileMenu()">📊 Visão Geral Vendas</a>
-    <a href="parceiros.html" onclick="toggleMobileMenu()">👥 Gestão de Usuários</a>
-    <a href="comissoes.html" onclick="toggleMobileMenu()" class="active">💰 Baixa de Comissões</a>
-    <a href="../index.html" onclick="toggleMobileMenu()" style="color: #f59e0b;">↵ Voltar ao Painel Partner</a>
-
-    <button onclick="toggleMobileMenu(); window.location.href='../../index.html';" class="btn-header-cta" style="margin-left: 0; padding: 12px 28px; width: 100%;">
-      🌐 Ir para o Site Público
-    </button>
-  </div>
+  <!-- HEADER E MENU MOBILE INJETADOS VIA PARTNER-HEADER.JS -->
+  <header id="calc-header"></header>
+  <div id="mobile-menu"></div>
 
   <!-- CONTAINER EM FLUXO VERTICAL -->
   <div class="flex flex-col min-h-screen relative z-10 pb-16">
@@ -140,77 +104,74 @@
       </div>
 
      <!-- BARRA DE FILTROS AVANÇADA COM AUTOCOMPLETE -->
-<div class="glass-b2b filter-box-glass rounded-2xl p-4 border border-cyan-500/20 space-y-3 relative z-30">
-  <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-6 gap-2.5">
-    
-    <!-- Busca Global Textual -->
-    <div class="w-full">
-      <label class="block text-[10px] uppercase text-slate-400 font-bold mb-1">Buscar Cliente / Proposta</label>
-      <input type="text" id="filterBusca" placeholder="Ex: #1038 ou Nome" oninput="aplicarFiltros()" class="w-full bg-slate-900/80 border border-white/10 rounded-xl px-2.5 py-2 text-xs text-white focus:border-cyan-400 focus:outline-none transition">
-    </div>
-
-    <!-- Searchable Dropdown (Vendedor Autocomplete com Z-Index Absoluto) -->
-    <div class="relative w-full" id="boxDropdownVendedor">
-      <label class="block text-[10px] uppercase text-slate-400 font-bold mb-1">Vendedor / Parceiro</label>
-      <div class="relative">
-        <span class="absolute inset-y-0 left-0 pl-2.5 flex items-center pointer-events-none text-slate-400 text-xs">🔍</span>
-        <input type="text" id="filterVendedorSearch" placeholder="Digite para buscar..." autocomplete="off" class="w-full bg-slate-900/80 border border-white/10 rounded-xl pl-7 pr-2 py-2 text-xs text-white focus:border-cyan-400 focus:outline-none transition">
-      </div>
-      <input type="hidden" id="filterVendedorVal" value="">
-      
-      <div id="dropdownVendedorList" class="hidden absolute left-0 right-0 top-full mt-1 max-h-48 overflow-y-auto bg-[#0a121c] border border-cyan-500/50 rounded-xl shadow-[0_20px_40px_rgba(0,0,0,0.95)] z-[9999] divide-y divide-white/10 text-xs">
-      </div>
-    </div>
-
-    <!-- Status Repasse -->
-    <div class="w-full">
-      <label class="block text-[10px] uppercase text-slate-400 font-bold mb-1">Status Repasse</label>
-      <select id="filterStatus" onchange="aplicarFiltros()" class="w-full bg-slate-900 border border-white/10 rounded-xl px-2 py-2 text-xs text-white focus:border-cyan-400 focus:outline-none transition cursor-pointer">
-        <option value="">Todos os Status</option>
-        <option value="pendente">🟡 Pendente</option>
-        <option value="solicitado">🟠 Solicitado (Aguardando Baixa)</option>
-        <option value="parcial">🔵 Adiantamento / Parcial</option>
-        <option value="liquidado">🟢 Liquidado / PIX</option>
-        <option value="cancelado">🔴 Cancelado</option>
-      </select>
-    </div>
-
-    <!-- Atração / Fornecedor -->
-    <div class="w-full">
-      <label class="block text-[10px] uppercase text-slate-400 font-bold mb-1">Atração / Fornecedor</label>
-      <input type="text" id="filterAtracao" placeholder="Ex: Banda, DJ" oninput="aplicarFiltros()" class="w-full bg-slate-900/80 border border-white/10 rounded-xl px-2.5 py-2 text-xs text-white focus:border-cyan-400 focus:outline-none transition">
-    </div>
-
-    <!-- Período De -->
-    <div class="w-full min-w-0">
-      <label class="block text-[10px] uppercase text-slate-400 font-bold mb-1 truncate">Data Inicial</label>
-      <input type="date" id="filterDataDe" onchange="aplicarFiltros()" class="w-full bg-slate-900/80 border border-white/10 rounded-xl px-1.5 py-2 text-[11px] text-white font-sans focus:border-cyan-400 focus:outline-none transition [color-scheme:dark]">
-    </div>
-
-    <!-- Período Até -->
-    <div class="w-full min-w-0">
-      <label class="block text-[10px] uppercase text-slate-400 font-bold mb-1 truncate">Data Final</label>
-      <input type="date" id="filterDataAte" onchange="aplicarFiltros()" class="w-full bg-slate-900/80 border border-white/10 rounded-xl px-1.5 py-2 text-[11px] text-white font-sans focus:border-cyan-400 focus:outline-none transition [color-scheme:dark]">
-    </div>
-
-  </div>
-
-  <!-- Botões de Ação -->
-  <div class="flex items-center justify-end gap-2 pt-2 border-t border-white/5 flex-wrap">
-    <button type="button" onclick="limparFiltros()" class="px-3 py-1.5 rounded-lg bg-slate-800/80 hover:bg-slate-700 text-slate-300 border border-white/10 text-xs font-semibold transition cursor-pointer">
-      🔄 Resetar Filtros
-    </button>
-    <button type="button" onclick="exportarCSV()" class="px-3 py-1.5 rounded-lg bg-cyan-500/10 hover:bg-cyan-500/20 text-cyan-300 border border-cyan-500/30 text-xs font-semibold transition cursor-pointer">
-      📥 Exportar CSV
-    </button>
-    <button type="button" onclick="window.print()" class="px-3 py-1.5 rounded-lg bg-purple-500/10 hover:bg-purple-500/20 text-purple-300 border border-purple-500/30 text-xs font-semibold transition cursor-pointer">
-      🖨️ Relatório (PDF)
-    </button>
-  </div>
-</div>
-
-          
+     <div class="glass-b2b filter-box-glass rounded-2xl p-4 border border-cyan-500/20 space-y-3 relative z-30">
+       <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-6 gap-2.5">
          
+         <!-- Busca Global Textual -->
+         <div class="w-full">
+           <label class="block text-[10px] uppercase text-slate-400 font-bold mb-1">Buscar Cliente / Proposta</label>
+           <input type="text" id="filterBusca" placeholder="Ex: #1038 ou Nome" oninput="aplicarFiltros()" class="w-full bg-slate-900/80 border border-white/10 rounded-xl px-2.5 py-2 text-xs text-white focus:border-cyan-400 focus:outline-none transition">
+         </div>
+
+         <!-- Searchable Dropdown (Vendedor Autocomplete com Z-Index Absoluto) -->
+         <div class="relative w-full" id="boxDropdownVendedor">
+           <label class="block text-[10px] uppercase text-slate-400 font-bold mb-1">Vendedor / Parceiro</label>
+           <div class="relative">
+             <span class="absolute inset-y-0 left-0 pl-2.5 flex items-center pointer-events-none text-slate-400 text-xs">🔍</span>
+             <input type="text" id="filterVendedorSearch" placeholder="Digite para buscar..." autocomplete="off" class="w-full bg-slate-900/80 border border-white/10 rounded-xl pl-7 pr-2 py-2 text-xs text-white focus:border-cyan-400 focus:outline-none transition">
+           </div>
+           <input type="hidden" id="filterVendedorVal" value="">
+           
+           <div id="dropdownVendedorList" class="hidden absolute left-0 right-0 top-full mt-1 max-h-48 overflow-y-auto bg-[#0a121c] border border-cyan-500/50 rounded-xl shadow-[0_20px_40px_rgba(0,0,0,0.95)] z-[9999] divide-y divide-white/10 text-xs">
+           </div>
+         </div>
+
+         <!-- Status Repasse -->
+         <div class="w-full">
+           <label class="block text-[10px] uppercase text-slate-400 font-bold mb-1">Status Repasse</label>
+           <select id="filterStatus" onchange="aplicarFiltros()" class="w-full bg-slate-900 border border-white/10 rounded-xl px-2 py-2 text-xs text-white focus:border-cyan-400 focus:outline-none transition cursor-pointer">
+             <option value="">Todos os Status</option>
+             <option value="pendente">🟡 Pendente</option>
+             <option value="solicitado">🟠 Solicitado (Aguardando Baixa)</option>
+             <option value="parcial">🔵 Adiantamento / Parcial</option>
+             <option value="liquidado">🟢 Liquidado / PIX</option>
+             <option value="cancelado">🔴 Cancelado</option>
+           </select>
+         </div>
+
+         <!-- Atração / Fornecedor -->
+         <div class="w-full">
+           <label class="block text-[10px] uppercase text-slate-400 font-bold mb-1">Atração / Fornecedor</label>
+           <input type="text" id="filterAtracao" placeholder="Ex: Banda, DJ" oninput="aplicarFiltros()" class="w-full bg-slate-900/80 border border-white/10 rounded-xl px-2.5 py-2 text-xs text-white focus:border-cyan-400 focus:outline-none transition">
+         </div>
+
+         <!-- Período De -->
+         <div class="w-full min-w-0">
+           <label class="block text-[10px] uppercase text-slate-400 font-bold mb-1 truncate">Data Inicial</label>
+           <input type="date" id="filterDataDe" onchange="aplicarFiltros()" class="w-full bg-slate-900/80 border border-white/10 rounded-xl px-1.5 py-2 text-[11px] text-white font-sans focus:border-cyan-400 focus:outline-none transition [color-scheme:dark]">
+         </div>
+
+         <!-- Período Até -->
+         <div class="w-full min-w-0">
+           <label class="block text-[10px] uppercase text-slate-400 font-bold mb-1 truncate">Data Final</label>
+           <input type="date" id="filterDataAte" onchange="aplicarFiltros()" class="w-full bg-slate-900/80 border border-white/10 rounded-xl px-1.5 py-2 text-[11px] text-white font-sans focus:border-cyan-400 focus:outline-none transition [color-scheme:dark]">
+         </div>
+
+       </div>
+
+       <!-- Botões de Ação -->
+       <div class="flex items-center justify-end gap-2 pt-2 border-t border-white/5 flex-wrap">
+         <button type="button" onclick="limparFiltros()" class="px-3 py-1.5 rounded-lg bg-slate-800/80 hover:bg-slate-700 text-slate-300 border border-white/10 text-xs font-semibold transition cursor-pointer">
+           🔄 Resetar Filtros
+         </button>
+         <button type="button" onclick="exportarCSV()" class="px-3 py-1.5 rounded-lg bg-cyan-500/10 hover:bg-cyan-500/20 text-cyan-300 border border-cyan-500/30 text-xs font-semibold transition cursor-pointer">
+           📥 Exportar CSV
+         </button>
+         <button type="button" onclick="window.print()" class="px-3 py-1.5 rounded-lg bg-purple-500/10 hover:bg-purple-500/20 text-purple-300 border border-purple-500/30 text-xs font-semibold transition cursor-pointer">
+           🖨️ Relatório (PDF)
+         </button>
+       </div>
+     </div>
 
       <!-- TABELA DE COMISSÕES COM PAGINAÇÃO -->
       <div class="glass-b2b rounded-2xl p-6 border border-cyan-500/20">
@@ -358,8 +319,10 @@
     </div>
   </div>
 
+  <!-- SCRIPTS DA APLICAÇÃO -->
   <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
   <script src="../partner-config.js" onerror="this.src='../../partner-config.js'"></script>
+  <script src="../partner-header.js"></script>
   <script src="../../script/script.js" onerror="this.src='../script/script.js'" defer></script>
   
   <script>
