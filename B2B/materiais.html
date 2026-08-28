@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
-  <title>432UP Partner | Materiais de Venda</title>
+  <title>432UP Partner | Central Comercial & Materiais de Venda</title>
   
   <!-- CSS Global do Site -->
   <link rel="stylesheet" href="../css/style.css">
@@ -19,7 +19,7 @@
       box-shadow: 0 20px 50px rgba(0, 0, 0, 0.8), inset 0 0 15px rgba(0, 240, 255, 0.05);
     }
 
-    /* HEADER B2B CIANO TECH (DESKTOP E MOBILE HARMONIZADO) */
+    /* HEADER B2B CIANO TECH */
     #calc-header.b2b-header-cyan {
       display: flex !important;
       align-items: center !important;
@@ -33,7 +33,6 @@
       box-shadow: 0 10px 30px rgba(0, 0, 0, 0.6), 0 0 20px rgba(0, 240, 255, 0.12) !important;
     }
 
-    /* EXIBIÇÃO DO BOTÃO HAMBÚRGUER MOBILE */
     .mobile-hamburger {
       display: block !important;
       background: rgba(0, 240, 255, 0.08) !important;
@@ -63,7 +62,6 @@
       }
     }
 
-    /* WIDGET DO PERFIL (FOTO CLICÁVEL REVOLUCIONADA) */
     .b2b-user-widget {
       display: inline-flex !important;
       align-items: center !important;
@@ -97,7 +95,6 @@
       flex-shrink: 0 !important;
     }
 
-    /* ESTILO E ATIVAÇÃO DA GAVETA MOBILE B2B CIANO */
     .mobile-menu-overlay {
       position: fixed;
       inset: 0;
@@ -129,19 +126,31 @@
       transform: translateY(-2px);
       box-shadow: 0 10px 30px rgba(0, 240, 255, 0.15);
     }
-    #formAlert { display: none; }
-    #formAlert.show { display: block; }
-    .btn-loading { opacity: .6; pointer-events: none; }
+
+    #toast-container {
+      pointer-events: none;
+      min-height: 0;
+    }
+
+    /* Ocultar scrollbars mantendo a funcionalidade de rolagem */
+    .no-scrollbar::-webkit-scrollbar { display: none; }
+    .no-scrollbar { -ms-overflow-style: none; scrollbar-width: none; }
+
+    /* Customização do Accordion */
+    details summary::-webkit-details-marker { display: none; }
   </style>
 </head>
-<body class="h-full text-slate-200 font-sans antialiased bg-[#06080c] overflow-x-hidden">
+<body class="h-full text-slate-200 font-sans antialiased bg-[#06080c] overflow-x-hidden pb-28">
+
+  <!-- NOTIFICAÇÕES TOAST (CORRIGIDO) -->
+  <div id="toast-container" class="fixed top-20 right-5 z-50 flex flex-col gap-2"></div>
 
   <!-- Fundo Espacial Integrado ao CSS do Projeto -->
   <canvas id="orbit-canvas"></canvas>
   <div id="plasmaLayer" class="plasma-top-layer"></div>
 
   <!-- HEADER TOPO PARCEIROS -->
-  <header id="calc-header" class="b2b-header-cyan">
+  <header id="calc-header" class="b2b-header-cyan fixed top-0 left-0 right-0 z-40">
     <div class="logo-container flex items-center">
       <a href="../index.html" class="logo-link flex items-center" aria-label="Página Inicial 432UP">
         <img src="../imagens/logo.png" alt="432UP! Produções" class="logo-img" onerror="this.src='imagens/logo.png'">
@@ -161,7 +170,7 @@
         <a href="admin/index.html" style="color: #f59e0b; font-weight: 700; border: 1px solid rgba(245,158,11,0.4); padding: 4px 10px; border-radius: 8px; background: rgba(245,158,11,0.1); font-size: 0.75rem;">👑 Master Admin</a>
       </span>
 
-      <!-- WIDGET DE PERFIL CLEAN (FOTO CLICÁVEL COM NEON) -->
+      <!-- WIDGET DE PERFIL CLEAN -->
       <div class="b2b-user-widget">
         <a href="perfil.html" title="Meu Perfil" class="b2b-avatar-link">
           <div data-partner-avatar class="b2b-avatar-img"></div>
@@ -180,7 +189,6 @@
   <div class="mobile-menu-overlay" id="mobile-menu">
     <button onclick="toggleMobileMenu()" style="position: absolute; top: 20px; right: 20px; background: transparent; border: none; color: #fff; font-size: 1.5rem; cursor: pointer;" aria-label="Fechar menu">✕</button>
     
-    <!-- NO MOBILE: FOTO E NOME TAMBÉM LEVAM AO PERFIL -->
     <a href="perfil.html" onclick="toggleMobileMenu()" class="flex items-center gap-3 mb-2 border-b border-cyan-500/20 pb-3 w-full max-w-xs hover:opacity-80 transition">
       <div data-partner-avatar class="w-10 h-10 rounded-full bg-cyan-500/20 border border-cyan-500/40 bg-cover bg-center shrink-0"></div>
       <div class="text-left">
@@ -189,7 +197,6 @@
       </div>
     </a>
 
-    <!-- LINK MASTER ADMIN NO MOBILE -->
     <div id="navAdminLinkContainerMobile" class="w-full max-w-xs mb-1">
       <a href="admin/index.html" onclick="toggleMobileMenu()" style="color: #f59e0b; font-weight: 700; display: block; text-align: center; border: 1px solid rgba(245,158,11,0.4); padding: 8px; border-radius: 8px; background: rgba(245,158,11,0.1);">👑 Painel Master Admin</a>
     </div>
@@ -206,30 +213,664 @@
   </div>
 
   <!-- CONTAINER DE CONTEÚDO EM FLUXO VERTICAL -->
-  <div class="flex flex-col min-h-screen relative z-10">
+  <div class="flex flex-col min-h-screen relative z-10 pt-24">
 
-    <!-- CONTEÚDO PRINCIPAL -->
-    <main class="flex-1 p-4 lg:p-8 space-y-6 pt-28 lg:pt-28 w-full max-w-7xl mx-auto">
-      <div>
-        <span class="text-xs font-bold text-cyan-400 uppercase tracking-widest">Recursos Comerciais</span>
-        <h1 class="text-2xl lg:text-3xl font-bold text-white tracking-tight mt-1">Materiais de Venda</h1>
-        <p class="text-sm text-slate-400 mt-1">Riders, apresentações de alta definição e fotos para enviar ao seu cliente final.</p>
+    <main class="flex-1 p-4 lg:p-8 space-y-8 w-full max-w-7xl mx-auto">
+      
+      <!-- HERO DA PÁGINA & BUSCA GLOBAL -->
+      <div class="glass-b2b p-6 md:p-8 rounded-3xl text-center relative overflow-hidden space-y-4">
+        <span class="text-xs font-bold text-cyan-400 uppercase tracking-widest bg-cyan-500/10 px-3 py-1 rounded-full border border-cyan-500/20">Arsenal Comercial do Parceiro</span>
+        <h1 class="text-2xl md:text-4xl font-extrabold text-white tracking-tight">Materiais de Venda</h1>
+        <p class="text-xs md:text-sm text-slate-300 max-w-2xl mx-auto leading-relaxed">
+          Tudo o que você precisa para apresentar, argumentar, montar propostas e fechar negócios em um só ambiente.
+        </p>
+
+        <!-- BARRA DE BUSCA EM TEMPO REAL -->
+        <div class="relative max-w-2xl mx-auto mt-6">
+          <div class="absolute inset-y-0 left-0 pl-4 flex items-center pointer-events-none text-cyan-400">🔎</div>
+          <input type="text" id="global-search" oninput="handleSearch()" placeholder="Procure por serviço, mensagem, objeção, proposta, vídeo..." 
+                 class="w-full pl-11 pr-24 py-3.5 rounded-xl bg-slate-900/80 border border-cyan-500/30 text-sm text-white placeholder-slate-400 focus:outline-none focus:ring-2 focus:ring-cyan-400 shadow-[inset_0_0_10px_rgba(0,240,255,0.05)]">
+          <div id="search-counter" class="absolute inset-y-0 right-0 pr-4 flex items-center text-xs text-cyan-400 font-medium"></div>
+        </div>
       </div>
 
-      <div id="formAlert" class="p-3 rounded-xl text-xs font-semibold"></div>
+      <!-- 3. CENTRAL DE AÇÃO RÁPIDA -->
+      <section class="space-y-3">
+        <h3 class="text-xs font-bold uppercase tracking-wider text-cyan-400">⚡ O que você precisa agora?</h3>
+        <div class="grid grid-cols-2 md:grid-cols-5 gap-3">
+          <button onclick="scrollToSection('whatsapp')" class="glass-b2b p-4 rounded-xl text-left transition flex flex-col justify-between group cursor-pointer hover:border-cyan-400">
+            <span class="text-xl mb-1">💬</span>
+            <span class="text-xs font-bold text-white group-hover:text-cyan-300">Mandar Mensagem</span>
+          </button>
+          <button onclick="scrollToSection('apresentacao')" class="glass-b2b p-4 rounded-xl text-left transition flex flex-col justify-between group cursor-pointer hover:border-cyan-400">
+            <span class="text-xl mb-1">📸</span>
+            <span class="text-xs font-bold text-white group-hover:text-cyan-300">Mostrar Material</span>
+          </button>
+          <button onclick="location.href='nova-proposta.html'" class="glass-b2b p-4 rounded-xl text-left transition flex flex-col justify-between group cursor-pointer hover:border-cyan-400">
+            <span class="text-xl mb-1">💰</span>
+            <span class="text-xs font-bold text-white group-hover:text-cyan-300">Fazer Proposta</span>
+          </button>
+          <button onclick="scrollToSection('midia')" class="glass-b2b p-4 rounded-xl text-left transition flex flex-col justify-between group cursor-pointer hover:border-cyan-400">
+            <span class="text-xl mb-1">🎥</span>
+            <span class="text-xs font-bold text-white group-hover:text-cyan-300">Mostrar Mídia</span>
+          </button>
+          <button onclick="scrollToSection('tecnico')" class="glass-b2b p-4 rounded-xl text-left transition flex flex-col justify-between group cursor-pointer col-span-2 md:col-span-1 hover:border-cyan-400">
+            <span class="text-xl mb-1">🛠️</span>
+            <span class="text-xs font-bold text-white group-hover:text-cyan-300">Consultar Técnico</span>
+          </button>
+        </div>
+      </section>
 
-      <div id="gridMateriais" class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-5">
-        <p class="text-xs text-slate-500 py-8 col-span-full text-center">Carregando acervo de materiais...</p>
-      </div>
+      <!-- 4. FILTROS INTELIGENTES -->
+      <section class="border-b border-cyan-500/20 pb-4">
+        <div class="flex items-center gap-2 overflow-x-auto no-scrollbar py-1">
+          <button onclick="filterCategory('todos')" class="filter-btn active bg-cyan-500 text-slate-950 font-bold text-xs px-4 py-2 rounded-lg whitespace-nowrap transition">Todos</button>
+          <button onclick="filterCategory('favoritos')" class="filter-btn bg-slate-900/60 text-slate-300 border border-cyan-500/20 hover:bg-cyan-500/10 text-xs font-medium px-4 py-2 rounded-lg whitespace-nowrap transition flex items-center gap-1">⭐ Meus Favoritos</button>
+          <button onclick="filterCategory('apresentacao')" class="filter-btn bg-slate-900/60 text-slate-300 border border-cyan-500/20 hover:bg-cyan-500/10 text-xs font-medium px-4 py-2 rounded-lg whitespace-nowrap transition">Apresentação</button>
+          <button onclick="filterCategory('servicos')" class="filter-btn bg-slate-900/60 text-slate-300 border border-cyan-500/20 hover:bg-cyan-500/10 text-xs font-medium px-4 py-2 rounded-lg whitespace-nowrap transition">Serviços</button>
+          <button onclick="filterCategory('whatsapp')" class="filter-btn bg-slate-900/60 text-slate-300 border border-cyan-500/20 hover:bg-cyan-500/10 text-xs font-medium px-4 py-2 rounded-lg whitespace-nowrap transition">WhatsApp</button>
+          <button onclick="filterCategory('propostas')" class="filter-btn bg-slate-900/60 text-slate-300 border border-cyan-500/20 hover:bg-cyan-500/10 text-xs font-medium px-4 py-2 rounded-lg whitespace-nowrap transition">Propostas</button>
+          <button onclick="filterCategory('midia')" class="filter-btn bg-slate-900/60 text-slate-300 border border-cyan-500/20 hover:bg-cyan-500/10 text-xs font-medium px-4 py-2 rounded-lg whitespace-nowrap transition">Prova Social & Mídia</button>
+          <button onclick="filterCategory('tecnico')" class="filter-btn bg-slate-900/60 text-slate-300 border border-cyan-500/20 hover:bg-cyan-500/10 text-xs font-medium px-4 py-2 rounded-lg whitespace-nowrap transition">Técnico</button>
+          <button onclick="filterCategory('parceiro')" class="filter-btn bg-slate-900/60 text-slate-300 border border-cyan-500/20 hover:bg-cyan-500/10 text-xs font-medium px-4 py-2 rounded-lg whitespace-nowrap transition">Kit do Parceiro</button>
+        </div>
+      </section>
+
+      <!-- 6. USADOS RECENTEMENTE -->
+      <section id="section-recentes" class="hidden space-y-3">
+        <h3 class="text-xs font-bold uppercase tracking-wider text-cyan-400 flex items-center gap-1.5">🕘 Usados Recentemente</h3>
+        <div id="recentes-container" class="flex gap-3 overflow-x-auto no-scrollbar py-1"></div>
+      </section>
+
+      <!-- 01. APRESENTAÇÃO -->
+      <section id="apresentacao" class="searchable-section space-y-4" data-category="apresentacao">
+        <div class="flex items-center justify-between border-b pb-2 border-cyan-500/20">
+          <div class="flex items-center gap-3">
+            <span class="text-xs font-bold bg-cyan-500 text-slate-950 px-2.5 py-1 rounded">01</span>
+            <h2 class="text-xl font-bold text-white">Apresentação Institucional</h2>
+          </div>
+        </div>
+
+        <div class="grid md:grid-cols-2 gap-4">
+          <!-- Card 1 -->
+          <div class="glass-b2b material-card p-5 rounded-2xl flex flex-col justify-between" data-id="mat-1" data-tags="pitch institucional apresentação visão geral 432up">
+            <div>
+              <div class="flex justify-between items-start mb-2">
+                <span class="text-[10px] font-bold text-cyan-400 bg-cyan-500/10 px-2 py-0.5 rounded uppercase border border-cyan-500/20">Material 01 · Pitch</span>
+                <button onclick="toggleFavorite('mat-1')" class="fav-btn text-slate-500 hover:text-amber-400 text-lg cursor-pointer">☆</button>
+              </div>
+              <p id="pitch-1" class="text-xs md:text-sm text-slate-300 leading-relaxed">
+                A 432UP Produções transforma eventos em experiências sonoras e visuais completas, unindo música, tecnologia, estrutura profissional e sensibilidade artística.
+              </p>
+            </div>
+            <button onclick="copyAndRegister('pitch-1', 'Material 01 · Pitch')" class="mt-4 text-xs bg-white/5 hover:bg-cyan-500/20 text-cyan-300 font-bold py-2 rounded-xl border border-cyan-500/30 transition text-center cursor-pointer">📋 Copiar Pitch</button>
+          </div>
+
+          <!-- Card 2 -->
+          <div class="glass-b2b material-card p-5 rounded-2xl flex flex-col justify-between" data-id="mat-2" data-tags="quem somos institucional produtora especialização">
+            <div>
+              <div class="flex justify-between items-start mb-2">
+                <span class="text-[10px] font-bold text-cyan-400 bg-cyan-500/10 px-2 py-0.5 rounded uppercase border border-cyan-500/20">Material 02 · Institucional</span>
+                <button onclick="toggleFavorite('mat-2')" class="fav-btn text-slate-500 hover:text-amber-400 text-lg cursor-pointer">☆</button>
+              </div>
+              <p id="pitch-2" class="text-xs md:text-sm text-slate-300 leading-relaxed">
+                Somos uma produtora especializada em experiências musicais, sonorização e iluminação para eventos sociais, corporativos e celebrações especiais.
+              </p>
+            </div>
+            <button onclick="copyAndRegister('pitch-2', 'Material 02 · Institucional')" class="mt-4 text-xs bg-white/5 hover:bg-cyan-500/20 text-cyan-300 font-bold py-2 rounded-xl border border-cyan-500/30 transition text-center cursor-pointer">📋 Copiar Texto</button>
+          </div>
+
+          <!-- Card 3 -->
+          <div class="glass-b2b material-card p-5 rounded-2xl flex flex-col justify-between" data-id="mat-3" data-tags="diferenciais qualidade equipamentos atendimento">
+            <div>
+              <div class="flex justify-between items-start mb-2">
+                <span class="text-[10px] font-bold text-cyan-400 bg-cyan-500/10 px-2 py-0.5 rounded uppercase border border-cyan-500/20">Material 03 · Argumentação</span>
+                <button onclick="toggleFavorite('mat-3')" class="fav-btn text-slate-500 hover:text-amber-400 text-lg cursor-pointer">☆</button>
+              </div>
+              <ul id="pitch-3" class="text-xs text-slate-300 space-y-1 list-disc list-inside">
+                <li>Atendimento profissional</li>
+                <li>Equipamentos de alta qualidade</li>
+                <li>Experiência artística + técnica</li>
+                <li>Soluções personalizadas</li>
+                <li>Estrutura adequada ao perfil de cada evento</li>
+                <li>Operação profissional do início ao fim</li>
+              </ul>
+            </div>
+            <button onclick="copyAndRegister('pitch-3', 'Material 03 · Diferenciais')" class="mt-4 text-xs bg-white/5 hover:bg-cyan-500/20 text-cyan-300 font-bold py-2 rounded-xl border border-cyan-500/30 transition text-center cursor-pointer">📋 Copiar Tópicos</button>
+          </div>
+
+          <!-- Card 4 -->
+          <div class="glass-b2b material-card p-5 rounded-2xl border-amber-500/30 flex flex-col justify-between" data-id="mat-4" data-tags="frase impacto comercial lembrança experiencia">
+            <div>
+              <div class="flex justify-between items-start mb-2">
+                <span class="text-[10px] font-bold text-amber-400 bg-amber-500/10 px-2 py-0.5 rounded uppercase border border-amber-500/20">Material 04 · Impacto</span>
+                <button onclick="toggleFavorite('mat-4')" class="fav-btn text-slate-500 hover:text-amber-400 text-lg cursor-pointer">☆</button>
+              </div>
+              <blockquote id="pitch-4" class="text-sm italic font-light mt-2 text-amber-200">
+                “Seu evento não precisa apenas de música. Precisa de uma experiência que faça as pessoas lembrarem dele.”
+              </blockquote>
+            </div>
+            <button onclick="copyAndRegister('pitch-4', 'Material 04 · Frase Impacto')" class="mt-4 text-xs bg-amber-500/15 hover:bg-amber-500/25 text-amber-300 font-bold py-2 rounded-xl border border-amber-500/30 transition text-center cursor-pointer">📋 Copiar Frase</button>
+          </div>
+        </div>
+      </section>
+
+      <!-- 02. SERVIÇOS -->
+      <section id="servicos" class="searchable-section space-y-4" data-category="servicos">
+        <div class="flex items-center justify-between border-b pb-2 border-cyan-500/20">
+          <div class="flex items-center gap-3">
+            <span class="text-xs font-bold bg-cyan-500 text-slate-950 px-2.5 py-1 rounded">02</span>
+            <h2 class="text-xl font-bold text-white">Catálogo de Serviços</h2>
+          </div>
+        </div>
+
+        <div class="grid md:grid-cols-3 gap-4">
+          <!-- Pocket Show -->
+          <div class="glass-b2b material-card p-5 rounded-2xl flex flex-col justify-between" data-id="srv-1" data-tags="pocket show música ao vivo recepção aniversário">
+            <div>
+              <div class="flex justify-between items-start">
+                <h3 class="font-bold text-white text-sm">Pocket Show Premium</h3>
+                <button onclick="toggleFavorite('srv-1')" class="fav-btn text-slate-500 hover:text-amber-400 text-lg cursor-pointer">☆</button>
+              </div>
+              <p class="text-xs text-slate-400 mt-1">Música ao vivo com formato sofisticado e adaptável ao ambiente, ideal para recepções e aniversários.</p>
+              <span class="inline-block mt-2 text-[10px] font-medium text-cyan-300 bg-cyan-500/10 px-2 py-0.5 rounded border border-cyan-500/20">Social & Corporativo</span>
+            </div>
+            <button onclick="location.href='nova-proposta.html?servico=Pocket+Show+Premium'" class="mt-4 w-full text-xs bg-cyan-500/20 hover:bg-cyan-500/30 text-cyan-300 font-bold py-2 rounded-xl border border-cyan-500/30 transition cursor-pointer">➕ Incluir na Proposta</button>
+          </div>
+
+          <!-- Duo Autoral -->
+          <div class="glass-b2b material-card p-5 rounded-2xl flex flex-col justify-between" data-id="srv-2" data-tags="duo autoral intimista elegante proximidade">
+            <div>
+              <div class="flex justify-between items-start">
+                <h3 class="font-bold text-white text-sm">Duo Autoral</h3>
+                <button onclick="toggleFavorite('srv-2')" class="fav-btn text-slate-500 hover:text-amber-400 text-lg cursor-pointer">☆</button>
+              </div>
+              <p class="text-xs text-slate-400 mt-1">Uma experiência musical intimista, elegante e autoral, criada para eventos que procuram personalidade.</p>
+              <span class="inline-block mt-2 text-[10px] font-medium text-cyan-300 bg-cyan-500/10 px-2 py-0.5 rounded border border-cyan-500/20">Eventos Exclusivos</span>
+            </div>
+            <button onclick="location.href='nova-proposta.html?servico=Duo+Autoral'" class="mt-4 w-full text-xs bg-cyan-500/20 hover:bg-cyan-500/30 text-cyan-300 font-bold py-2 rounded-xl border border-cyan-500/30 transition cursor-pointer">➕ Incluir na Proposta</button>
+          </div>
+
+          <!-- Banda Swing Tropical -->
+          <div class="glass-b2b material-card p-5 rounded-2xl flex flex-col justify-between" data-id="srv-3" data-tags="banda swing tropical festa dançante celebração">
+            <div>
+              <div class="flex justify-between items-start">
+                <h3 class="font-bold text-white text-sm">Banda Swing Tropical</h3>
+                <button onclick="toggleFavorite('srv-3')" class="fav-btn text-slate-500 hover:text-amber-400 text-lg cursor-pointer">☆</button>
+              </div>
+              <p class="text-xs text-slate-400 mt-1">Formação completa para quem quer transformar o evento em uma verdadeira celebração, com repertório dançante.</p>
+              <span class="inline-block mt-2 text-[10px] font-medium text-cyan-300 bg-cyan-500/10 px-2 py-0.5 rounded border border-cyan-500/20">Festas Grandes</span>
+            </div>
+            <button onclick="location.href='nova-proposta.html?servico=Banda+Swing+Tropical'" class="mt-4 w-full text-xs bg-cyan-500/20 hover:bg-cyan-500/30 text-cyan-300 font-bold py-2 rounded-xl border border-cyan-500/30 transition cursor-pointer">➕ Incluir na Proposta</button>
+          </div>
+
+          <!-- DJ -->
+          <div class="glass-b2b material-card p-5 rounded-2xl flex flex-col justify-between" data-id="srv-4" data-tags="dj pista música repertório">
+            <div>
+              <div class="flex justify-between items-start">
+                <h3 class="font-bold text-white text-sm">DJ</h3>
+                <button onclick="toggleFavorite('srv-4')" class="fav-btn text-slate-500 hover:text-amber-400 text-lg cursor-pointer">☆</button>
+              </div>
+              <p class="text-xs text-slate-400 mt-1">Seleção musical personalizada, conduzindo a atmosfera do evento de acordo com o perfil do público.</p>
+              <span class="inline-block mt-2 text-[10px] font-medium text-cyan-300 bg-cyan-500/10 px-2 py-0.5 rounded border border-cyan-500/20">Pista & Transições</span>
+            </div>
+            <button onclick="location.href='nova-proposta.html?servico=DJ'" class="mt-4 w-full text-xs bg-cyan-500/20 hover:bg-cyan-500/30 text-cyan-300 font-bold py-2 rounded-xl border border-cyan-500/30 transition cursor-pointer">➕ Incluir na Proposta</button>
+          </div>
+
+          <!-- Sonorização -->
+          <div class="glass-b2b material-card p-5 rounded-2xl flex flex-col justify-between" data-id="srv-5" data-tags="sonorização som equipamentos pa caixas microfone">
+            <div>
+              <div class="flex justify-between items-start">
+                <h3 class="font-bold text-white text-sm">Sonorização Profissional</h3>
+                <button onclick="toggleFavorite('srv-5')" class="fav-btn text-slate-500 hover:text-amber-400 text-lg cursor-pointer">☆</button>
+              </div>
+              <p class="text-xs text-slate-400 mt-1">Sistema profissional dimensionado de acordo com o espaço, público e necessidade do evento.</p>
+              <span class="inline-block mt-2 text-[10px] font-medium text-cyan-300 bg-cyan-500/10 px-2 py-0.5 rounded border border-cyan-500/20">Infraestrutura</span>
+            </div>
+            <button onclick="location.href='nova-proposta.html?servico=Sonorizacao+Profissional'" class="mt-4 w-full text-xs bg-cyan-500/20 hover:bg-cyan-500/30 text-cyan-300 font-bold py-2 rounded-xl border border-cyan-500/30 transition cursor-pointer">➕ Incluir na Proposta</button>
+          </div>
+
+          <!-- Iluminação Cênica -->
+          <div class="glass-b2b material-card p-5 rounded-2xl flex flex-col justify-between" data-id="srv-6" data-tags="iluminação cênica luzes ambiente palco decoração">
+            <div>
+              <div class="flex justify-between items-start">
+                <h3 class="font-bold text-white text-sm">Iluminação Cênica</h3>
+                <button onclick="toggleFavorite('srv-6')" class="fav-btn text-slate-500 hover:text-amber-400 text-lg cursor-pointer">☆</button>
+              </div>
+              <p class="text-xs text-slate-400 mt-1">Iluminação pensada para valorizar ambiente, palco, decoração e experiência visual.</p>
+              <span class="inline-block mt-2 text-[10px] font-medium text-cyan-300 bg-cyan-500/10 px-2 py-0.5 rounded border border-cyan-500/20">Estética & Clima</span>
+            </div>
+            <button onclick="location.href='nova-proposta.html?servico=Iluminacao+Cenica'" class="mt-4 w-full text-xs bg-cyan-500/20 hover:bg-cyan-500/30 text-cyan-300 font-bold py-2 rounded-xl border border-cyan-500/30 transition cursor-pointer">➕ Incluir na Proposta</button>
+          </div>
+        </div>
+
+        <!-- COMBOS RECOMENDADOS -->
+        <div class="glass-b2b p-4 rounded-2xl mt-4 border-cyan-500/30">
+          <h3 class="text-xs font-bold uppercase tracking-wider text-cyan-400 mb-2">⚡ Combinações Recomendadas (Combos)</h3>
+          <div class="grid grid-cols-2 md:grid-cols-4 gap-2">
+            <button onclick="location.href='nova-proposta.html?combo=musica-som'" class="bg-slate-900/80 p-3 rounded-xl border border-cyan-500/20 text-left hover:border-cyan-400 transition cursor-pointer">
+              <div class="text-xs font-bold text-white">Música + Som</div>
+              <div class="text-[10px] text-slate-400">Pocket Show + Sonorização</div>
+            </button>
+            <button onclick="location.href='nova-proposta.html?combo=musica-luz'" class="bg-slate-900/80 p-3 rounded-xl border border-cyan-500/20 text-left hover:border-cyan-400 transition cursor-pointer">
+              <div class="text-xs font-bold text-white">Música + Iluminação</div>
+              <div class="text-[10px] text-slate-400">Pocket Show + Iluminação</div>
+            </button>
+            <button onclick="location.href='nova-proposta.html?combo=som-luz'" class="bg-slate-900/80 p-3 rounded-xl border border-cyan-500/20 text-left hover:border-cyan-400 transition cursor-pointer">
+              <div class="text-xs font-bold text-white">Som + Iluminação</div>
+              <div class="text-[10px] text-slate-400">Infraestrutura Completa</div>
+            </button>
+            <button onclick="location.href='nova-proposta.html?combo=experiencia-completa'" class="bg-slate-900/80 p-3 rounded-xl border border-cyan-500/20 text-left hover:border-cyan-400 transition cursor-pointer">
+              <div class="text-xs font-bold text-white">Experiência Completa</div>
+              <div class="text-[10px] text-cyan-400 font-medium">Banda + Som + Luz</div>
+            </button>
+          </div>
+        </div>
+      </section>
+
+      <!-- 03. MATERIAIS PARA WHATSAPP -->
+      <section id="whatsapp" class="searchable-section space-y-4" data-category="whatsapp">
+        <div class="flex items-center justify-between border-b pb-2 border-cyan-500/20">
+          <div class="flex items-center gap-3">
+            <span class="text-xs font-bold bg-cyan-500 text-slate-950 px-2.5 py-1 rounded">03</span>
+            <h2 class="text-xl font-bold text-white">Mensagens Rápidas (WhatsApp)</h2>
+          </div>
+        </div>
+
+        <div class="grid md:grid-cols-2 gap-4">
+          <!-- Primeiro Contato -->
+          <div class="glass-b2b material-card p-4 rounded-2xl space-y-2" data-id="wsp-1" data-tags="whatsapp primeiro contato abordagem inicial">
+            <div class="flex justify-between items-center">
+              <span class="font-semibold text-xs text-cyan-400 uppercase">Primeiro Contato</span>
+              <button onclick="toggleFavorite('wsp-1')" class="fav-btn text-slate-500 hover:text-amber-400 text-lg cursor-pointer">☆</button>
+            </div>
+            <p id="msg-wsp-1" class="text-xs text-slate-300 bg-slate-900/80 p-3 rounded-xl border border-cyan-500/10">
+              Olá! Tudo bem? Trabalho com a 432UP Produções e acredito que podemos oferecer uma solução bem interessante para o seu evento. Posso te apresentar algumas opções?
+            </p>
+            <button onclick="copyAndRegister('msg-wsp-1', 'WhatsApp - Primeiro Contato')" class="w-full text-xs bg-cyan-500/20 hover:bg-cyan-500/30 text-cyan-300 font-bold py-2 rounded-xl border border-cyan-500/30 transition cursor-pointer">📋 Copiar Mensagem</button>
+          </div>
+
+          <!-- Descoberta -->
+          <div class="glass-b2b material-card p-4 rounded-2xl space-y-2" data-id="wsp-2" data-tags="whatsapp descoberta perguntas briefing levantamento">
+            <div class="flex justify-between items-center">
+              <span class="font-semibold text-xs text-cyan-400 uppercase">Perguntas de Descoberta</span>
+              <button onclick="toggleFavorite('wsp-2')" class="fav-btn text-slate-500 hover:text-amber-400 text-lg cursor-pointer">☆</button>
+            </div>
+            <p id="msg-wsp-2" class="text-xs text-slate-300 bg-slate-900/80 p-3 rounded-xl border border-cyan-500/10">
+              Para eu te indicar o formato ideal, me conta rapidinho: Qual a data e local do evento? Quantas pessoas são esperadas? Já possuem estrutura de som no espaço?
+            </p>
+            <button onclick="copyAndRegister('msg-wsp-2', 'WhatsApp - Descoberta')" class="w-full text-xs bg-cyan-500/20 hover:bg-cyan-500/30 text-cyan-300 font-bold py-2 rounded-xl border border-cyan-500/30 transition cursor-pointer">📋 Copiar Mensagem</button>
+          </div>
+
+          <!-- Apresentação -->
+          <div class="glass-b2b material-card p-4 rounded-2xl space-y-2" data-id="wsp-3" data-tags="whatsapp apresentação catálogo opções">
+            <div class="flex justify-between items-center">
+              <span class="font-semibold text-xs text-cyan-400 uppercase">Apresentação de Opções</span>
+              <button onclick="toggleFavorite('wsp-3')" class="fav-btn text-slate-500 hover:text-amber-400 text-lg cursor-pointer">☆</button>
+            </div>
+            <p id="msg-wsp-3" class="text-xs text-slate-300 bg-slate-900/80 p-3 rounded-xl border border-cyan-500/10">
+              Separei algumas opções da 432UP que encaixam perfeitamente no perfil do seu evento. Vou te enviar a apresentação técnica e os formatos para você avaliar!
+            </p>
+            <button onclick="copyAndRegister('msg-wsp-3', 'WhatsApp - Apresentação')" class="w-full text-xs bg-cyan-500/20 hover:bg-cyan-500/30 text-cyan-300 font-bold py-2 rounded-xl border border-cyan-500/30 transition cursor-pointer">📋 Copiar Mensagem</button>
+          </div>
+
+          <!-- Fechamento -->
+          <div class="glass-b2b material-card p-4 rounded-2xl space-y-2" data-id="wsp-6" data-tags="whatsapp fechamento contrato confirmação cta">
+            <div class="flex justify-between items-center">
+              <span class="font-semibold text-xs text-cyan-400 uppercase">Fechamento</span>
+              <button onclick="toggleFavorite('wsp-6')" class="fav-btn text-slate-500 hover:text-amber-400 text-lg cursor-pointer">☆</button>
+            </div>
+            <p id="msg-wsp-6" class="text-xs text-slate-300 bg-slate-900/80 p-3 rounded-xl border border-cyan-500/10">
+              Pelo que conversamos, essa configuração atende perfeitamente sua expectativa. Podemos seguir com a confirmação da data e reserva do formato?
+            </p>
+            <button onclick="copyAndRegister('msg-wsp-6', 'WhatsApp - Fechamento')" class="w-full text-xs bg-cyan-500/20 hover:bg-cyan-500/30 text-cyan-300 font-bold py-2 rounded-xl border border-cyan-500/30 transition cursor-pointer">📋 Copiar Mensagem</button>
+          </div>
+        </div>
+      </section>
+
+      <!-- 04. PROPOSTAS & ORÇAMENTOS (ORIENTAÇÃO + REDIRECIONAMENTO OFICIAL) -->
+      <section id="propostas" class="searchable-section space-y-4" data-category="propostas">
+        <div class="flex items-center justify-between border-b pb-2 border-cyan-500/20">
+          <div class="flex items-center gap-3">
+            <span class="text-xs font-bold bg-cyan-500 text-slate-950 px-2.5 py-1 rounded">04</span>
+            <h2 class="text-xl font-bold text-white">Propostas & Orçamentos</h2>
+          </div>
+        </div>
+
+        <div class="glass-b2b p-6 md:p-8 rounded-3xl text-center space-y-4 border border-cyan-500/30">
+          <div class="text-4xl mb-2">📄</div>
+          <h3 class="text-lg md:text-xl font-bold text-white">Criador Oficial de Propostas Comercial</h3>
+          <p class="text-xs md:text-sm text-slate-300 max-w-xl mx-auto leading-relaxed">
+            Monte orçamentos personalizados, calcule suas comissões automaticamente, garanta as condições comerciais e registre o contrato direto na sua conta de parceiro.
+          </p>
+          <div class="pt-2">
+            <a href="nova-proposta.html" class="inline-block bg-cyan-500 hover:bg-cyan-400 text-slate-950 font-bold text-xs px-6 py-3.5 rounded-xl transition shadow-[0_0_20px_rgba(0,240,255,0.3)]">
+              ⚡ Abrir Gerador de Proposta Oficial ➔
+            </a>
+          </div>
+        </div>
+      </section>
+
+      <!-- 05. PROVA SOCIAL & MÍDIAS DO SUPABASE -->
+      <section id="midia" class="searchable-section space-y-4" data-category="midia">
+        <div class="flex items-center justify-between border-b pb-2 border-cyan-500/20">
+          <div class="flex items-center gap-3">
+            <span class="text-xs font-bold bg-cyan-500 text-slate-950 px-2.5 py-1 rounded">05</span>
+            <h2 class="text-xl font-bold text-white">Acervo do Supabase & Prova Social</h2>
+          </div>
+        </div>
+
+        <!-- REPOSITÓRIO DINÂMICO DE ARQUIVOS (SUPABASE) -->
+        <div id="gridMateriais" class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-5">
+          <p class="text-xs text-slate-500 py-8 col-span-full text-center">Carregando acervo de materiais do servidor...</p>
+        </div>
+      </section>
+
+      <!-- 06. MATERIAIS TÉCNICOS & CHECKLIST -->
+      <section id="tecnico" class="searchable-section space-y-4" data-category="tecnico">
+        <div class="flex items-center justify-between border-b pb-2 border-cyan-500/20">
+          <div class="flex items-center gap-3">
+            <span class="text-xs font-bold bg-cyan-500 text-slate-950 px-2.5 py-1 rounded">06</span>
+            <h2 class="text-xl font-bold text-white">Checklist Operacional do Evento</h2>
+          </div>
+        </div>
+
+        <div class="glass-b2b p-5 rounded-2xl space-y-3 border-cyan-500/20">
+          <div class="flex justify-between items-center border-b border-cyan-500/20 pb-2">
+            <h3 class="font-bold text-sm text-white">Checklist de Campo</h3>
+            <div class="flex gap-3">
+              <button onclick="checkAllChecklist(true)" class="text-[10px] text-cyan-400 hover:underline cursor-pointer">Marcar Todos</button>
+              <button onclick="copyChecklistState()" class="text-[10px] bg-slate-900 border border-cyan-500/30 px-2.5 py-1 rounded-lg text-cyan-300 cursor-pointer">Copiar Status</button>
+            </div>
+          </div>
+
+          <div id="checklist-container" class="grid grid-cols-1 md:grid-cols-2 gap-2 text-xs text-slate-300">
+            <!-- Renderizado via JS -->
+          </div>
+        </div>
+      </section>
+
+      <!-- 07. KIT DO PARCEIRO -->
+      <section id="parceiro" class="searchable-section space-y-4" data-category="parceiro">
+        <div class="flex items-center justify-between border-b pb-2 border-cyan-500/20">
+          <div class="flex items-center gap-3">
+            <span class="text-xs font-bold bg-cyan-500 text-slate-950 px-2.5 py-1 rounded">07</span>
+            <div>
+              <h2 class="text-xl font-bold text-white">Kit do Parceiro</h2>
+              <p class="text-xs text-slate-400">Contorno de objeções frequentes para fechar mais propostas.</p>
+            </div>
+          </div>
+        </div>
+
+        <div class="space-y-2">
+          <details class="glass-b2b material-card p-4 rounded-2xl group" data-id="obj-1" data-tags="objeção está caro preço valor investimento">
+            <summary class="font-semibold text-xs text-white cursor-pointer flex justify-between items-center">
+              <span>Objeção: "Está caro / Fora do orçamento"</span>
+              <span class="text-cyan-400 group-open:rotate-180 transition text-xs">▼</span>
+            </summary>
+            <div class="mt-3 pt-3 border-t border-cyan-500/10 space-y-2">
+              <p id="txt-obj-1" class="text-xs text-slate-300 leading-relaxed">
+                "Entendo perfeitamente. Podemos avaliar uma configuração diferente de estrutura ou tempo para encontrar o melhor equilíbrio entre investimento e a experiência ideal para o seu evento."
+              </p>
+              <button onclick="copyAndRegister('txt-obj-1', 'Objeção - Está caro')" class="text-[10px] bg-cyan-500/20 text-cyan-300 border border-cyan-500/30 font-medium px-2.5 py-1 rounded-lg cursor-pointer">Copiar Argumento</button>
+            </div>
+          </details>
+
+          <details class="glass-b2b material-card p-4 rounded-2xl group" data-id="obj-2" data-tags="objeção vou pesquisar fornecedores concorrentes">
+            <summary class="font-semibold text-xs text-white cursor-pointer flex justify-between items-center">
+              <span>Objeção: "Vou pesquisar outros fornecedores"</span>
+              <span class="text-cyan-400 group-open:rotate-180 transition text-xs">▼</span>
+            </summary>
+            <div class="mt-3 pt-3 border-t border-cyan-500/10 space-y-2">
+              <p id="txt-obj-2" class="text-xs text-slate-300 leading-relaxed">
+                "Sem problema. É importante comparar. Só recomendo que você compare também o que está incluído em cada proposta, porque estrutura, operação e experiência técnica podem variar bastante."
+              </p>
+              <button onclick="copyAndRegister('txt-obj-2', 'Objeção - Pesquisar fornecedores')" class="text-[10px] bg-cyan-500/20 text-cyan-300 border border-cyan-500/30 font-medium px-2.5 py-1 rounded-lg cursor-pointer">Copiar Argumento</button>
+            </div>
+          </details>
+        </div>
+      </section>
+
     </main>
   </div>
 
+  <!-- BARRA FLUTUANTE DE AÇÃO RÁPIDA -->
+  <div class="fixed bottom-4 left-1/2 -translate-x-1/2 bg-slate-950/90 backdrop-blur-md text-white px-5 py-3 rounded-full shadow-[0_10px_30px_rgba(0,0,0,0.8)] flex items-center gap-3 border border-cyan-500/30 z-50 text-xs font-medium">
+    <button onclick="location.href='nova-proposta.html'" class="hover:text-cyan-400 flex items-center gap-1 transition cursor-pointer">⚡ <span class="hidden sm:inline">Proposta</span></button>
+    <span class="text-slate-700">|</span>
+    <button onclick="scrollToSection('whatsapp')" class="hover:text-cyan-400 flex items-center gap-1 transition cursor-pointer">💬 <span class="hidden sm:inline">WhatsApp</span></button>
+    <span class="text-slate-700">|</span>
+    <button onclick="scrollToSection('midia')" class="hover:text-cyan-400 flex items-center gap-1 transition cursor-pointer">📸 <span class="hidden sm:inline">Mídia</span></button>
+    <span class="text-slate-700">|</span>
+    <button onclick="scrollToSection('tecnico')" class="hover:text-cyan-400 flex items-center gap-1 transition cursor-pointer">🛠️ <span class="hidden sm:inline">Técnico</span></button>
+  </div>
+
+  <!-- SUPABASE & CONFIGS ORIGINAIS -->
   <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
   <script src="partner-config.js"></script>
   <script src="partner-header.js"></script>
   <script src="../script/script.js" defer></script>
-  
+
+  <!-- LÓGICA INTEGRAÇÃO COMPLETA -->
   <script>
+    /* ==========================================================================
+       1. ARQUITETURA DE DADOS LOCAL (STORAGE SERVICE)
+       ========================================================================== */
+    const StorageService = {
+      getFavorites: () => JSON.parse(localStorage.getItem('432up_favs') || '[]'),
+      saveFavorites: (favs) => localStorage.setItem('432up_favs', JSON.stringify(favs)),
+      
+      getRecent: () => JSON.parse(localStorage.getItem('432up_recent') || '[]'),
+      saveRecentItem: (title) => {
+        let recent = StorageService.getRecent();
+        recent = [title, ...recent.filter(i => i !== title)].slice(0, 5);
+        localStorage.setItem('432up_recent', JSON.stringify(recent));
+        renderRecentes();
+      },
+
+      getChecklist: () => JSON.parse(localStorage.getItem('432up_checklist') || '{}'),
+      saveChecklist: (data) => localStorage.setItem('432up_checklist', JSON.stringify(data))
+    };
+
+    /* ==========================================================================
+       2. NOTIFICAÇÕES TOAST
+       ========================================================================== */
+    function showToast(message, type = 'success') {
+      const container = document.getElementById('toast-container');
+      const toast = document.createElement('div');
+      toast.className = `pointer-events-auto bg-slate-950 text-white text-xs font-medium px-4 py-2.5 rounded-xl shadow-2xl border border-cyan-500/40 flex items-center gap-2 transform transition duration-300 opacity-0 translate-y-2`;
+      toast.innerHTML = `<span class="text-cyan-400">${type === 'success' ? '✓' : 'ℹ️'}</span> <span>${message}</span>`;
+      
+      container.appendChild(toast);
+      
+      requestAnimationFrame(() => {
+        toast.classList.remove('opacity-0', 'translate-y-2');
+      });
+
+      setTimeout(() => {
+        toast.classList.add('opacity-0', 'translate-y-2');
+        setTimeout(() => toast.remove(), 300);
+      }, 2500);
+    }
+
+    /* ==========================================================================
+       3. NAVEGAÇÃO & BUSCA EM TEMPO REAL
+       ========================================================================== */
+    window.toggleMobileMenu = function () {
+      var mobNav = document.getElementById('mobile-menu');
+      if (mobNav) mobNav.classList.toggle('active');
+    };
+
+    function scrollToSection(id) {
+      const el = document.getElementById(id);
+      if (el) el.scrollIntoView({ behavior: 'smooth' });
+    }
+
+    function copyAndRegister(elementId, itemTitle) {
+      const text = document.getElementById(elementId).innerText;
+      navigator.clipboard.writeText(text.trim());
+      StorageService.saveRecentItem(itemTitle);
+      showToast('Texto copiado com sucesso!');
+    }
+
+    function handleSearch() {
+      const query = document.getElementById('global-search').value.toLowerCase().trim();
+      const cards = document.querySelectorAll('.material-card');
+      let visibleCount = 0;
+
+      cards.forEach(card => {
+        const tags = card.getAttribute('data-tags') || '';
+        const text = card.innerText.toLowerCase();
+        
+        if (!query || tags.includes(query) || text.includes(query)) {
+          card.classList.remove('hidden');
+          visibleCount++;
+        } else {
+          card.classList.add('hidden');
+        }
+      });
+
+      const counter = document.getElementById('search-counter');
+      counter.innerText = query ? `${visibleCount} encontrados` : '';
+    }
+
+    function filterCategory(cat) {
+      document.querySelectorAll('.filter-btn').forEach(btn => {
+        btn.classList.remove('active', 'bg-cyan-500', 'text-slate-950', 'font-bold');
+        btn.classList.add('bg-slate-900/60', 'text-slate-300');
+      });
+      event.currentTarget.classList.add('active', 'bg-cyan-500', 'text-slate-950', 'font-bold');
+
+      const sections = document.querySelectorAll('.searchable-section');
+      const favs = StorageService.getFavorites();
+
+      sections.forEach(sec => {
+        const secCat = sec.getAttribute('data-category');
+        if (cat === 'todos' || secCat === cat) {
+          sec.classList.remove('hidden');
+        } else if (cat === 'favoritos') {
+          sec.classList.remove('hidden');
+        } else {
+          sec.classList.add('hidden');
+        }
+      });
+
+      if (cat === 'favoritos') {
+        document.querySelectorAll('.material-card').forEach(card => {
+          const id = card.getAttribute('data-id');
+          if (favs.includes(id)) {
+            card.classList.remove('hidden');
+          } else {
+            card.classList.add('hidden');
+          }
+        });
+      } else {
+        handleSearch();
+      }
+    }
+
+    /* ==========================================================================
+       4. FAVORITOS & RECENTES
+       ========================================================================== */
+    function toggleFavorite(id) {
+      let favs = StorageService.getFavorites();
+      if (favs.includes(id)) {
+        favs = favs.filter(i => i !== id);
+        showToast('Removido dos favoritos', 'info');
+      } else {
+        favs.push(id);
+        showToast('Adicionado aos favoritos!');
+      }
+      StorageService.saveFavorites(favs);
+      renderFavoritesUI();
+    }
+
+    function renderFavoritesUI() {
+      const favs = StorageService.getFavorites();
+      document.querySelectorAll('.material-card').forEach(card => {
+        const id = card.getAttribute('data-id');
+        const btn = card.querySelector('.fav-btn');
+        if (btn) {
+          if (favs.includes(id)) {
+            btn.innerText = '★';
+            btn.classList.add('text-amber-400');
+            btn.classList.remove('text-slate-500');
+          } else {
+            btn.innerText = '☆';
+            btn.classList.remove('text-amber-400');
+            btn.classList.add('text-slate-500');
+          }
+        }
+      });
+    }
+
+    function renderRecentes() {
+      const recent = StorageService.getRecent();
+      const container = document.getElementById('recentes-container');
+      const section = document.getElementById('section-recentes');
+
+      if (recent.length === 0) {
+        section.classList.add('hidden');
+        return;
+      }
+
+      section.classList.remove('hidden');
+      container.innerHTML = recent.map(item => `
+        <div class="glass-b2b px-3 py-1.5 rounded-lg text-xs font-medium text-slate-300 whitespace-nowrap shadow-sm flex items-center gap-1 border-cyan-500/20">
+          <span>📄</span> ${item}
+        </div>
+      `).join('');
+    }
+
+    /* ==========================================================================
+       5. CHECKLIST OPERACIONAL
+       ========================================================================== */
+    const checklistItems = [
+      'Data confirmada', 'Horário de chegada', 'Horário de montagem',
+      'Passagem de som', 'Energia elétrica dedicada', 'Acesso carga/descarga',
+      'Estacionamento', 'Contato do responsável no local', 'Espaço físico definido'
+    ];
+
+    function renderChecklist() {
+      const state = StorageService.getChecklist();
+      const container = document.getElementById('checklist-container');
+      
+      container.innerHTML = checklistItems.map((item, index) => {
+        const isChecked = state[index] ? 'checked' : '';
+        return `
+          <label class="flex items-center gap-2 cursor-pointer bg-slate-900/60 p-2.5 rounded-xl border border-cyan-500/10 hover:bg-slate-900/90">
+            <input type="checkbox" ${isChecked} onchange="toggleChecklistItem(${index})" class="accent-cyan-400">
+            <span>${item}</span>
+          </label>
+        `;
+      }).join('');
+    }
+
+    function toggleChecklistItem(index) {
+      const state = StorageService.getChecklist();
+      state[index] = !state[index];
+      StorageService.saveChecklist(state);
+      showToast('Checklist atualizado!');
+    }
+
+    function checkAllChecklist(status) {
+      const state = {};
+      checklistItems.forEach((_, i) => state[i] = status);
+      StorageService.saveChecklist(state);
+      renderChecklist();
+      showToast('Todos os itens marcados!');
+    }
+
+    function copyChecklistState() {
+      const state = StorageService.getChecklist();
+      const text = checklistItems.map((item, i) => `${state[i] ? '✅' : '❌'} ${item}`).join('\n');
+      navigator.clipboard.writeText(text);
+      showToast('Status do checklist copiado!');
+    }
+
+    /* ==========================================================================
+       6. CONEXÃO COM O SUPABASE (REPOSITÓRIO OFICIAL DE ARQUIVOS)
+       ========================================================================== */
     (function () {
       'use strict';
 
@@ -242,26 +883,10 @@
       };
 
       function esc(s) { return String(s == null ? '' : s).replace(/</g, '&lt;').replace(/>/g, '&gt;'); }
-      
-      function showAlert(msg, type) {
-        var el = document.getElementById('formAlert');
-        if (!el) return;
-        el.textContent = msg;
-        el.className = 'p-3 rounded-xl text-xs font-semibold show ' +
-          (type === 'success' ? 'bg-emerald-500/15 text-emerald-300 border border-emerald-500/30' : 'bg-red-500/15 text-red-300 border border-red-500/30');
-      }
-
-      /* FUNÇÃO GLOBAL DO MENU MOBILE */
-      window.toggleMobileMenu = function () {
-        var mobNav = document.getElementById('mobile-menu');
-        if (mobNav) {
-          mobNav.classList.toggle('active');
-        }
-      };
 
       partnerRequireAuth().then(function (parceiro) {
         partnerFillSidebar(parceiro);
-        carregarMateriais();
+        carregarMateriaisSupabase();
         bindEvents();
       }).catch(function (err) {
         console.error('[432UP Partner] Erro de autenticação nos materiais:', err);
@@ -270,24 +895,27 @@
       function bindEvents() {
         var btnDesk = document.getElementById('btnLogoutDesk');
         var btnMob = document.getElementById('btnLogoutMob');
-
         if (btnDesk) btnDesk.addEventListener('click', partnerLogout);
         if (btnMob) btnMob.addEventListener('click', partnerLogout);
       }
 
-      function carregarMateriais() {
+      function carregarMateriaisSupabase() {
+        if (typeof sbPartner === 'undefined') return;
+
         sbPartner.from('materiais')
           .select('*')
           .eq('ativo', true)
           .order('ordem', { ascending: true })
           .then(function (res) {
             var grid = document.getElementById('gridMateriais');
+            if (!grid) return;
+
             if (res.error) {
-              grid.innerHTML = '<p class="text-xs text-red-400 py-6 col-span-full text-center">Erro ao carregar materiais.</p>';
+              grid.innerHTML = '<p class="text-xs text-red-400 py-6 col-span-full text-center">Erro ao carregar materiais do banco.</p>';
               return;
             }
             if (!res.data || !res.data.length) {
-              grid.innerHTML = '<p class="text-xs text-slate-500 py-8 col-span-full text-center">Nenhum material disponível no momento.</p>';
+              grid.innerHTML = '<p class="text-xs text-slate-500 py-8 col-span-full text-center">Nenhum arquivo cadastrado no momento.</p>';
               return;
             }
 
@@ -295,16 +923,16 @@
               var cat = CATEGORIA_LABEL[m.categoria] || CATEGORIA_LABEL.outro;
               var tamStr = m.tamanho_bytes ? ' (' + (m.tamanho_bytes / (1024 * 1024)).toFixed(1) + 'MB)' : '';
 
-              return '<div class="glass-b2b material-card p-6 rounded-2xl flex flex-col justify-between space-y-4 border border-cyan-500/20">' +
+              return '<div class="glass-b2b material-card p-6 rounded-2xl flex flex-col justify-between space-y-4 border border-cyan-500/20" data-tags="' + esc(m.titulo).toLowerCase() + ' ' + esc(m.descricao).toLowerCase() + '">' +
                 '<div class="space-y-3">' +
                   '<div class="flex items-center justify-between">' +
-                    '<span class="text-[10px] uppercase font-bold ' + cat.cls + ' tracking-wider">' + cat.text + '</span>' +
+                    '<span class="text-[10px] uppercase font-bold ' + cat.cls + ' tracking-wider bg-slate-900/80 px-2 py-0.5 rounded border border-cyan-500/10">' + cat.text + '</span>' +
                     '<span class="text-xl">' + cat.icon + '</span>' +
                   '</div>' +
                   '<h3 class="text-base font-bold text-white tracking-tight">' + esc(m.titulo) + '</h3>' +
                   '<p class="text-xs text-slate-400 leading-relaxed">' + esc(m.descricao || 'Recurso oficial para download.') + '</p>' +
                 '</div>' +
-                '<button data-download="' + m.id + '" data-path="' + esc(m.storage_path) + '" data-bucket="' + esc(m.storage_bucket) + '" class="w-full py-2.5 rounded-xl bg-white/5 hover:bg-white/10 text-xs font-bold text-cyan-300 border border-cyan-500/30 transition shadow-[0_0_15px_rgba(0,240,255,0.05)] cursor-pointer">' +
+                '<button data-download="' + m.id + '" data-path="' + esc(m.storage_path) + '" data-bucket="' + esc(m.storage_bucket) + '" class="w-full py-2.5 rounded-xl bg-cyan-500/20 hover:bg-cyan-500/30 text-xs font-bold text-cyan-300 border border-cyan-500/30 transition shadow-[0_0_15px_rgba(0,240,255,0.05)] cursor-pointer">' +
                   'Baixar Material' + tamStr +
                 '</button>' +
               '</div>';
@@ -315,25 +943,17 @@
                 baixarArquivo(btn, btn.dataset.bucket, btn.dataset.path);
               });
             });
-          }).catch(function (err) {
-            console.error('[432UP Partner] Erro ao consultar acervo:', err);
-            var grid = document.getElementById('gridMateriais');
-            if (grid) {
-              grid.innerHTML = '<p class="text-xs text-red-400 py-6 col-span-full text-center">Erro de conexão ao carregar materiais.</p>';
-            }
           });
       }
 
       function baixarArquivo(btn, bucket, path) {
-        btn.classList.add('btn-loading');
         btn.textContent = 'Gerando link...';
 
         sbPartner.storage.from(bucket).createSignedUrl(path, 60).then(function (res) {
-          btn.classList.remove('btn-loading');
           btn.textContent = 'Baixar Material';
 
           if (res.error || !res.data.signedUrl) {
-            showAlert('Erro ao obter permissão de download.', 'error');
+            showToast('Erro ao obter permissão de download.', 'info');
             return;
           }
 
@@ -344,14 +964,17 @@
           document.body.appendChild(a);
           a.click();
           document.body.removeChild(a);
-        }).catch(function (err) {
-          console.error('[432UP Partner] Erro ao baixar arquivo:', err);
-          btn.classList.remove('btn-loading');
-          btn.textContent = 'Baixar Material';
-          showAlert('Falha no servidor de arquivos.', 'error');
+          showToast('Download iniciado!');
         });
       }
     })();
+
+    /* INIT */
+    document.addEventListener('DOMContentLoaded', () => {
+      renderFavoritesUI();
+      renderRecentes();
+      renderChecklist();
+    });
   </script>
 </body>
 </html>
