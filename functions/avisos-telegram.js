@@ -74,10 +74,10 @@ export async function onRequest(context) {
     }
 
     // ========================================================
-    // MESMAS CREDENCIAIS DO dispararLeadTelegram()
+    // TOKEN 2 — CONFIRMADO FUNCIONANDO
     // ========================================================
     const BOT_TOKEN =
-      "8835958314:AAFGe18Mxm7Z_P_GlRPPRzv8cUWb17mHX00";
+      "8835958314:AAFGe18Mxm7Z_P_GlRPPRzv8cUWbi7mHX00";
 
     const CHAT_ID = "8996965457";
 
@@ -89,7 +89,7 @@ export async function onRequest(context) {
     const mensagem = data.mensagem || "Nenhuma";
 
     // ========================================================
-    // MESMA MENSAGEM DO FORMULÁRIO ANTIGO
+    // MENSAGEM
     // ========================================================
     const texto =
       `🔥 *NOVO LEAD NA 432UP!*\n\n` +
@@ -118,7 +118,7 @@ export async function onRequest(context) {
     const telegramResponse = await response.text();
 
     // ========================================================
-    // RETORNA RESULTADO REAL DO TELEGRAM
+    // RETORNA RESULTADO DO TELEGRAM
     // ========================================================
     return new Response(
       JSON.stringify({
