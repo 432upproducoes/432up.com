@@ -195,6 +195,16 @@ export async function onRequest(context) {
       `💰 <b>Valor:</b> ${fmtMoeda(data.valor_total)}\n` +
       `🕒 <b>Expira em:</b> ${fmtDataHora(data.hold_expira_em)}`;
 
+  } else if (data.event === "solicitacao_saque") {
+
+    texto =
+      `💸 <b>SOLICITAÇÃO DE SAQUE PIX</b>\n\n` +
+      `👤 <b>Vendedor:</b> ${data.parceiro_nome || "Não informado"}\n` +
+      `💰 <b>Valor Solicitado:</b> ${fmtMoeda(data.valor_solicitado)}\n` +
+      `📄 <b>Cliente / Contrato:</b> ${data.cliente_nome || "Nenhum"}\n` +
+      `🔑 <b>Chave PIX:</b> ${data.chave_pix || "Não informada"}\n` +
+      `🕒 <b>Data do Pedido:</b> ${fmtDataHora(new Date().toISOString())}`;
+
   } else {
 
     // ========================================================
