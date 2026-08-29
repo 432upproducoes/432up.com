@@ -92,6 +92,32 @@ export async function onRequest(context) {
   const CHAT_ID = "8996965457";
 
   // ==========================================================
+  // FUNÇÕES AUXILIARES DE FORMATAÇÃO
+  // ==========================================================
+
+  function fmtMoeda(val) {
+    return "R$ " + Number(val || 0).toLocaleString("pt-BR", { minimumFractionDigits: 2 });
+  }
+
+  function fmtData(dataStr) {
+    if (!dataStr) return "Não informada";
+    try {
+      const parts = dataStr.split("T")[0].split("-");
+      if (parts.length === 3) return `${parts[2]}/${parts[1]}/${parts[0]}`;
+    } catch (e) {}
+    return dataStr;
+  }
+
+  function fmtDataHora(dataHoraStr) {
+    if (!dataHoraStr) return "Não informado";
+    try {
+      const d = new Date(dataHoraStr);
+      return d.toLocaleString("pt-BR", { timeZone: "America/Sao_Paulo" });
+    } catch (e) {}
+    return dataHoraStr;
+  }
+
+  // ==========================================================
   // MONTA MENSAGEM
   // ==========================================================
 
@@ -125,7 +151,7 @@ export async function onRequest(context) {
   let texto;
 
   // ==========================================================
-  // NOVO PARCEIRO B2B
+  // TRIAGEM DE EVENTOS
   // ==========================================================
 
   if (
@@ -142,6 +168,32 @@ export async function onRequest(context) {
       `📧 <b>E-mail:</b> ${email}\n` +
       `📱 <b>WhatsApp:</b> ${telefone}\n\n` +
       `🟡 <b>Status:</b> Aguardando aprovação no Admin`;
+
+  } else if (data.event === "proposta_enviada") {
+
+    texto =
+      `🚨 <b>NOVA PROPOSTA RECEBIDA</b>\n\n` +
+      `🆔 <b>Proposta:</b> #${data.proposta_id || "—"}\n` +
+      `👤 <b>Parceiro:</b> ${data.parceiro_nome || "—"}\n` +
+      `🏢 <b>Cliente:</b> ${data.cliente_nome || "—"}\n` +
+      `🎉 <b>Tipo:</b> ${data.tipo_evento || "—"}\n` +
+      `📅 <b>Data do Evento:</b> ${fmtData(data.data_evento)}\n` +
+      `📍 <b>Local:</b> ${data.local_evento || "Não informado"}\n` +
+      `💰 <b>Valor Total:</b> ${fmtMoeda(data.valor_total)}\n` +
+      `💵 <b>Comissão Parceiro:</b> ${fmtMoeda(data.comissao_valor)}\n` +
+      `🕒 <b>Envio:</b> ${fmtDataHora(new Date().toISOString())}`;
+
+  } else if (data.event === "proposta_hold") {
+
+    texto =
+      `⏳ <b>NOVO HOLD CADASTRADO (48H)</b>\n\n` +
+      `🆔 <b>Proposta:</b> #${data.proposta_id || "—"}\n` +
+      `👤 <b>Parceiro:</b> ${data.parceiro_nome || "—"}\n` +
+      `🏢 <b>Cliente:</b> ${data.cliente_nome || "—"}\n` +
+      `🎉 <b>Tipo:</b> ${data.tipo_evento || "—"}\n` +
+      `📅 <b>Data do Evento:</b> ${fmtData(data.data_evento)}\n` +
+      `💰 <b>Valor:</b> ${fmtMoeda(data.valor_total)}\n` +
+      `🕒 <b>Expira em:</b> ${fmtDataHora(data.hold_expira_em)}`;
 
   } else {
 
