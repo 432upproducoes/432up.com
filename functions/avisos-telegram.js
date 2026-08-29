@@ -1,24 +1,30 @@
 export async function onRequest(context) {
+
   const headers = {
     "Content-Type": "application/json",
     "Access-Control-Allow-Origin": "*",
     "Access-Control-Allow-Methods": "GET, POST, OPTIONS",
     "Access-Control-Allow-Headers": "Content-Type"
   };
+
   // ==========================================================
   // CORS
   // ==========================================================
+
   if (context.request.method === "OPTIONS") {
     return new Response(null, {
       status: 204,
       headers
     });
   }
+
   // ==========================================================
   // TESTE GET
   // https://www.432up.com/avisos-telegram
   // ==========================================================
+
   if (context.request.method === "GET") {
+
     return new Response(
       JSON.stringify({
         ok: true,
@@ -32,10 +38,13 @@ export async function onRequest(context) {
       }
     );
   }
+
   // ==========================================================
-  // SOMENTE POST A PARTIR DAQUI
+  // SOMENTE POST
   // ==========================================================
+
   if (context.request.method !== "POST") {
+
     return new Response(
       JSON.stringify({
         ok: false,
@@ -47,18 +56,24 @@ export async function onRequest(context) {
       }
     );
   }
+
   // ==========================================================
   // RECEBE JSON
   // ==========================================================
+
   let data;
+
   try {
+
     data = await context.request.json();
-  } catch (error) {
+
+  } catch (err) {
+
     return new Response(
       JSON.stringify({
         ok: false,
         error: "JSON inválido ou ausente",
-        detail: error.message
+        detail: err?.message || "Erro desconhecido"
       }),
       {
         status: 400,
@@ -66,89 +81,99 @@ export async function onRequest(context) {
       }
     );
   }
+
   // ==========================================================
-  // TOKEN 2 — O TOKEN QUE FUNCIONOU
+  // TOKEN 2 — O TOKEN QUE FUNCIONOU NO TESTE 200
   // ==========================================================
+
   const BOT_TOKEN =
-    "8835958314:AAFGe18Mxm7Z_P_GIRPPRzv8cUWb17mHX00";
+    "8835958314:AAFGe18Mxm7Z_P_GlRPPRzv8cUWbi7mHX00";
+
   const CHAT_ID = "8996965457";
+
   // ==========================================================
-  // MONTA A MENSAGEM
+  // MONTA MENSAGEM
   // ==========================================================
-  let texto = "";
-  switch (data.event) {
-    // --------------------------------------------------------
-    // NOVO COLABORADOR B2B
-    // --------------------------------------------------------
-    case "novo_colaborador":
-      texto =
-        `👤 <b>NOVO COLABORADOR B2B</b>\n\n` +
-        `🏷️ <b>Nome:</b> ${data.parceiro_nome || "Não informado"}\n` +
-        `🏢 <b>Empresa:</b> ${data.empresa || "Não informada"}\n` +
-        `💼 <b>Perfil:</b> ${data.perfil || "Não informado"}\n` +
-        `📧 <b>E-mail:</b> ${data.email || "Não informado"}\n` +
-        `📱 <b>WhatsApp:</b> ${data.telefone || "Não informado"}\n\n` +
-        `🟡 <b>Status:</b> Aguardando aprovação no Admin`;
-      break;
-    // --------------------------------------------------------
-    // SOLICITAÇÃO DE SAQUE
-    // --------------------------------------------------------
-    case "solicitacao_saque":
-      texto =
-        `💸 <b>SOLICITAÇÃO DE SAQUE PIX</b>\n\n` +
-        `👤 <b>Parceiro:</b> ${data.parceiro_nome || "Não informado"}\n` +
-        `💰 <b>Valor:</b> R$ ${data.valor_saque || "0,00"}\n` +
-        `🔑 <b>Chave PIX:</b> ${data.chave_pix || "Não informada"}\n` +
-        `📋 <b>Contrato:</b> #${data.proposta_id || "N/A"} — ${data.cliente_nome || "N/A"}\n\n` +
-        `⏳ <b>Status:</b> Aguardando pagamento no Admin`;
-      break;
-    // --------------------------------------------------------
-    // NOVA PROPOSTA EM HOLD
-    // --------------------------------------------------------
-    case "nova_proposta_hold":
-      texto =
-        `⚡ <b>NOVA PROPOSTA EM ANÁLISE</b>\n\n` +
-        `💼 <b>Vendedor/Parceiro:</b> ${data.vendedor_nome || "Não informado"}\n` +
-        `🎯 <b>Cliente:</b> ${data.cliente_nome || "Não informado"}\n` +
-        `📊 <b>Valor Total:</b> R$ ${data.valor_total || "0,00"}\n` +
-        `🔖 <b>Proposta:</b> #${data.proposta_id || "N/A"}\n\n` +
-        `⏳ <b>Status:</b> Aprovação pendente no Admin`;
-      break;
-    // --------------------------------------------------------
-    // BAIXA PIX
-    // --------------------------------------------------------
-    case "baixa_pix":
-      texto =
-        `⚠️ <b>ALERTA DE PENDÊNCIA PIX</b>\n\n` +
-        `👤 <b>Parceiro:</b> ${data.parceiro_nome || "Não informado"}\n` +
-        `💵 <b>Valor:</b> R$ ${data.valor_pago || "0,00"}\n` +
-        `🔑 <b>Chave PIX:</b> ${data.chave_pix || "Não informada"}\n` +
-        `📄 <b>Referência:</b> Proposta #${data.proposta_id || "N/A"}`;
-      break;
-    // --------------------------------------------------------
-    // LEAD
-    // --------------------------------------------------------
-    default:
-      texto =
-        `🔥 <b>NOVO LEAD NA 432UP!</b>\n\n` +
-        `👤 <b>Nome:</b> ${data.nome || "Não informado"}\n` +
-        `📞 <b>Contato:</b> ${data.telefone || "Não informado"}\n` +
-        `💬 <b>Detalhes:</b> ${data.mensagem || "Nenhum"}`;
-      break;
+
+  const nome =
+    data.nome ||
+    data.parceiro_nome ||
+    data.nome_completo ||
+    "Não informado";
+
+  const empresa =
+    data.empresa ||
+    "Não informada";
+
+  const perfil =
+    data.perfil ||
+    "Não informado";
+
+  const email =
+    data.email ||
+    "Não informado";
+
+  const telefone =
+    data.telefone ||
+    data.whatsapp ||
+    "Não informado";
+
+  const mensagem =
+    data.mensagem ||
+    "Novo aviso recebido pelo sistema 432UP.";
+
+  let texto;
+
+  // ==========================================================
+  // NOVO PARCEIRO B2B
+  // ==========================================================
+
+  if (
+    data.event === "novo_colaborador" ||
+    data.event === "novo_parceiro" ||
+    data.origem === "b2b_partner"
+  ) {
+
+    texto =
+      `🤝 <b>NOVO PARCEIRO B2B</b>\n\n` +
+      `👤 <b>Nome:</b> ${nome}\n` +
+      `🏢 <b>Empresa:</b> ${empresa}\n` +
+      `💼 <b>Perfil:</b> ${perfil}\n` +
+      `📧 <b>E-mail:</b> ${email}\n` +
+      `📱 <b>WhatsApp:</b> ${telefone}\n\n` +
+      `🟡 <b>Status:</b> Aguardando aprovação no Admin`;
+
+  } else {
+
+    // ========================================================
+    // LEAD NORMAL
+    // ========================================================
+
+    texto =
+      `🔥 <b>NOVO LEAD NA 432UP!</b>\n\n` +
+      `👤 <b>Nome:</b> ${nome}\n` +
+      `📞 <b>Contato:</b> ${telefone}\n` +
+      `💬 <b>Detalhes:</b> ${mensagem}`;
   }
+
   // ==========================================================
   // ENVIA PARA TELEGRAM
   // ==========================================================
+
   const telegramURL =
     `https://api.telegram.org/bot${BOT_TOKEN}/sendMessage`;
+
   try {
+
     const telegramResponse = await fetch(
       telegramURL,
       {
         method: "POST",
+
         headers: {
           "Content-Type": "application/json"
         },
+
         body: JSON.stringify({
           chat_id: CHAT_ID,
           text: texto,
@@ -156,10 +181,14 @@ export async function onRequest(context) {
         })
       }
     );
-    const telegramBody = await telegramResponse.text();
+
+    const telegramBody =
+      await telegramResponse.text();
+
     // ========================================================
-    // RETORNO PARA O TESTE
+    // RETORNA RESULTADO COMPLETO
     // ========================================================
+
     return new Response(
       JSON.stringify({
         ok: telegramResponse.ok,
@@ -171,12 +200,14 @@ export async function onRequest(context) {
         headers
       }
     );
-  } catch (error) {
+
+  } catch (err) {
+
     return new Response(
       JSON.stringify({
         ok: false,
-        error: "Falha ao conectar com o Telegram",
-        detail: error.message
+        error: "Falha ao conectar com Telegram",
+        detail: err?.message || "Erro desconhecido"
       }),
       {
         status: 500,
