@@ -885,6 +885,24 @@
         window.currentTotal = total;
       }
 
+      async function avisarTelegramProposta(dados) {
+        try {
+          const resposta = await fetch('https://www.432up.com/avisos-telegram', {
+            method: 'POST',
+            headers: {
+              'Content-Type': 'application/json'
+            },
+            body: JSON.stringify(dados)
+          });
+          const texto = await resposta.text();
+          console.log('[432UP Proposta → Telegram]', resposta.status, texto);
+          return resposta.ok;
+        } catch (erro) {
+          console.error('[432UP Proposta → Telegram] Falha:', erro);
+          return false;
+        }
+      }
+
       function salvarProposta(statusDesejado) {
         if (formularioBloqueadoSomenteLeitura) return;
 
@@ -946,11 +964,27 @@
           ? sbPartner.from('propostas').update(payload).eq('id', propostaEdicaoId)
           : sbPartner.from('propostas').insert(payload);
 
-        query.select().single().then(function (res) {
+        query.select().single().then(async function (res) {
           if (res.error) {
             showAlert('Erro ao salvar proposta: ' + res.error.message, 'error');
             if (btn) btn.classList.remove('btn-loading');
           } else {
+            var propostaSalva = res.data;
+            if (stNorm === 'enviada' || stNorm === 'hold') {
+              var comissaoValor = (window.currentTotal * pct) / 100;
+              await avisarTelegramProposta({
+                event: stNorm === 'hold' ? 'proposta_hold' : 'proposta_enviada',
+                proposta_id: propostaSalva ? (propostaSalva.numero || propostaSalva.id) : propostaEdicaoId,
+                parceiro_nome: parceiroAtual ? (parceiroAtual.nome || parceiroAtual.empresa) : 'Parceiro',
+                cliente_nome: cliente,
+                tipo_evento: evTipoVal,
+                data_evento: dataEv,
+                local_evento: local,
+                valor_total: window.currentTotal,
+                comissao_valor: comissaoValor,
+                hold_expira_em: payload.hold_expira_em
+              });
+            }
             window.location.href = 'propostas.html';
           }
         });

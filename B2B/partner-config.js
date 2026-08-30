@@ -135,3 +135,34 @@ function partnerFillSidebar(parceiro) {
     }
   });
 }
+
+
+
+
+// Rastreamento Automático de Atividade B2B
+(function registrarAtividade() {
+  if (typeof sbPartner === 'undefined') return;
+
+  // Obtém a sessão atual
+  sbPartner.auth.getSession().then(function(res) {
+    var session = res.data ? res.data.session : null;
+    if (!session || !session.user) return;
+
+    var userId = session.user.id;
+    var paginaAtual = window.location.pathname;
+    var navegador = navigator.userAgent;
+
+    // Atualiza a atividade no perfil do parceiro
+    sbPartner
+      .from('parceiros')
+      .update({
+        ultima_atividade: new Date().toISOString(),
+        ultima_pagina: paginaAtual,
+        user_agent: navegador
+      })
+      .eq('user_id', userId)
+      .then(function() {
+        console.log('⚡ Atividade registrada com sucesso!');
+      });
+  });
+})();

@@ -123,8 +123,22 @@
               btn.textContent = 'Acessar Portal';
               return;
             }
-            /* login ok — verifica se o parceiro existe e está aprovado */
-            return sbPartner.from('parceiros').select('status').eq('user_id', res.data.user.id).single()
+            
+            var userId = res.data.user.id;
+
+            /* Registra a telemetria do login */
+            return sbPartner
+              .from('parceiros')
+              .update({
+                ultimo_login: new Date().toISOString(),
+                ultima_atividade: new Date().toISOString(),
+                user_agent: navigator.userAgent
+              })
+              .eq('user_id', userId)
+              .then(function () {
+                /* Verifica o status do parceiro */
+                return sbPartner.from('parceiros').select('status').eq('user_id', userId).single();
+              })
               .then(function (r) {
                 if (r.error || !r.data) {
                   showAlert('Cadastro de parceiro não encontrado para este login.', 'error');

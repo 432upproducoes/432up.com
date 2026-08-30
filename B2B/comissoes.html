@@ -336,15 +336,21 @@
             </div>
           </div>
 
-          <div id="boxAvisoSaqueSolicitado" class="hidden bg-amber-500/10 border border-amber-500/30 p-3.5 rounded-xl text-xs space-y-2">
-            <div class="flex justify-between items-center">
+          <div id="boxAvisoSaqueSolicitado" class="hidden bg-amber-500/10 border border-amber-500/30 p-3.5 rounded-xl text-xs space-y-2.5">
+            <div class="flex justify-between items-center border-b border-amber-500/20 pb-2">
               <span class="text-amber-300 font-bold uppercase text-[10px]">⚠️ Saque em Processamento</span>
               <strong id="modalConsultaValSolicitado" class="text-amber-400 font-extrabold text-sm">R$ 0,00</strong>
             </div>
-            <p class="text-[11px] text-slate-300">Deseja alterar o valor solicitado (aumentar ou diminuir) antes da baixa do admin?</p>
-            <button id="btnEditarSaquePendente" type="button" class="w-full py-2 bg-amber-500/20 hover:bg-amber-500/30 border border-amber-500/50 text-amber-300 font-bold rounded-lg text-xs transition cursor-pointer">
-              ✏️ Alterar Valor Solicitado
-            </button>
+            <p class="text-[11px] text-slate-300 leading-relaxed">Você pode alterar o valor ou cancelar essa solicitação de saque antes do pagamento pelo admin.</p>
+            
+            <div class="grid grid-cols-1 sm:grid-cols-2 gap-2 pt-1">
+              <button id="btnEditarSaquePendente" type="button" class="w-full py-2 bg-amber-500/20 hover:bg-amber-500/30 border border-amber-500/50 text-amber-300 font-bold rounded-lg text-xs transition cursor-pointer">
+                ✏️ Alterar Valor
+              </button>
+              <button id="btnCancelarSaquePendente" type="button" onclick="cancelarSolicitacaoSaque()" class="w-full py-2 bg-red-500/20 hover:bg-red-500/30 border border-red-500/50 text-red-300 font-bold rounded-lg text-xs transition cursor-pointer">
+                🚫 Cancelar Saque
+              </button>
+            </div>
           </div>
         </div>
 
@@ -379,6 +385,25 @@
       function fmtMoeda(n) { return 'R$ ' + Number(n || 0).toLocaleString('pt-BR', { minimumFractionDigits: 2 }); }
       function fmtData(d) { return d ? new Date(d + 'T12:00:00').toLocaleDateString('pt-BR') : '—'; }
       function esc(s) { return String(s == null ? '' : s).replace(/</g, '&lt;').replace(/>/g, '&gt;'); }
+
+      /* ---------- DISPARO TELEGRAM VIA ENDPOINT CENTRALIZADO ---------- */
+      async function dispararSaqueTelegram(nomeVendedor, valorSolicitado, clienteNome, chavePix) {
+        try {
+          await fetch('https://www.432up.com/avisos-telegram', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({
+              event: 'solicitacao_saque',
+              parceiro_nome: nomeVendedor,
+              valor_solicitado: valorSolicitado,
+              cliente_nome: clienteNome,
+              chave_pix: chavePix
+            })
+          });
+        } catch (err) {
+          console.error('Falha ao disparar alerta de saque para o backend:', err);
+        }
+      }
 
       window.toggleMobileMenu = function () {
         var mobNav = document.getElementById('mobile-menu');
@@ -571,6 +596,8 @@
         var p = listaPropostasCache.find(function(x) { return String(x.id) === String(propostaId); });
         if (!p) return;
 
+        propostaSendoEditadaId = p.id;
+
         document.getElementById('modalResgateTag').textContent = 'Extrato do Contrato';
         document.getElementById('modalResgateTitulo').textContent = 'Detalhamento de Comissão';
 
@@ -630,6 +657,11 @@
           return;
         }
 
+        if (!propostaSendoEditadaId && inputVal > saldoDisponivelAtual) {
+          alert('O valor solicitado (R$ ' + inputVal.toFixed(2) + ') é superior ao seu saldo disponível atual (R$ ' + saldoDisponivelAtual.toFixed(2) + ').');
+          return;
+        }
+
         var propostaAlvo = null;
         if (propostaSendoEditadaId) {
           propostaAlvo = listaPropostasCache.find(function(x) { return String(x.id) === String(propostaSendoEditadaId); });
@@ -661,9 +693,54 @@
 
             if (!res.error) {
               showAlert('Solicitação atualizada! Pagamento via PIX em até 48h úteis.', 'success');
+              
+              var chaveStr = (parceiroAtual && (parceiroAtual.chave_pix || parceiroAtual.cpf_cnpj || parceiroAtual.email)) || 'Não informada';
+              var vendedorNome = (parceiroAtual && (parceiroAtual.nome || parceiroAtual.nome_completo || parceiroAtual.empresa)) || 'Parceiro/Vendedor';
+              var clienteNome = (propostaAlvo && propostaAlvo.cliente_nome) || 'Não informado';
+              
+              dispararSaqueTelegram(vendedorNome, inputVal, clienteNome, chaveStr);
+
               carregarPainelComissoes(parceiroAtual);
             } else {
               alert('Erro ao registrar solicitação: ' + res.error.message);
+            }
+          });
+      };
+
+      /* CANCELAR SOLICITAÇÃO DE SAQUE EM PROCESSAMENTO */
+      window.cancelarSolicitacaoSaque = function () {
+        if (!propostaSendoEditadaId) return;
+
+        var p = listaPropostasCache.find(function(x) { return String(x.id) === String(propostaSendoEditadaId); });
+        if (!p) return;
+
+        if (!confirm('Tem certeza que deseja cancelar a solicitação de saque deste contrato? O saldo retornará imediatamente para sua carteira.')) {
+          return;
+        }
+
+        var valPago = Number(p.comissao_paga_valor || 0);
+        var novoStatus = valPago > 0 ? 'parcial' : 'liberado';
+
+        var btn = document.getElementById('btnCancelarSaquePendente');
+        if (btn) {
+          btn.disabled = true;
+          btn.textContent = 'Cancelando...';
+        }
+
+        sbPartner.from('propostas')
+          .update({
+            comissao_status: novoStatus,
+            comissao_solicitada_valor: 0,
+            atualizado_em: new Date().toISOString()
+          })
+          .eq('id', p.id)
+          .then(function (res) {
+            fecharModalResgate();
+            if (!res.error) {
+              showAlert('Solicitação de saque cancelada com sucesso! Saldo restaurado.', 'success');
+              carregarPainelComissoes(parceiroAtual);
+            } else {
+              alert('Erro ao cancelar solicitação: ' + res.error.message);
             }
           });
       };

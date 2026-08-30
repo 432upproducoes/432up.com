@@ -8,16 +8,31 @@
   <script src="https://cdn.tailwindcss.com"></script>
   <style>
     .glass-b2b-box {
-      background: linear-gradient(135deg, rgba(10, 18, 28, 0.88) 0%, rgba(14, 22, 35, 0.7) 100%);
+      background: linear-gradient(
+        135deg,
+        rgba(10, 18, 28, 0.88) 0%,
+        rgba(14, 22, 35, 0.7) 100%
+      );
       backdrop-filter: blur(24px);
       -webkit-backdrop-filter: blur(24px);
       border: 1px solid rgba(0, 240, 255, 0.22);
-      box-shadow: 0 25px 60px rgba(0, 0, 0, 0.85), 0 0 30px rgba(0, 240, 255, 0.12);
+      box-shadow:
+        0 25px 60px rgba(0, 0, 0, 0.85),
+        0 0 30px rgba(0, 240, 255, 0.12);
     }
-    .field-error { border-color: #EF4444 !important; }
-    #formAlert { display: none; }
-    #formAlert.show { display: block; }
-    .btn-loading { opacity: .6; pointer-events: none; }
+    .field-error {
+      border-color: #EF4444 !important;
+    }
+    #formAlert {
+      display: none;
+    }
+    #formAlert.show {
+      display: block;
+    }
+    .btn-loading {
+      opacity: .6;
+      pointer-events: none;
+    }
     #avatarPreview {
       background-size: cover;
       background-position: center;
@@ -25,249 +40,888 @@
   </style>
 </head>
 <body class="h-full text-slate-200 font-sans antialiased bg-[#06080c] flex items-center justify-center p-4 overflow-y-auto">
-
-  <!-- Fundo Espacial Integrado ao CSS do Projeto -->
   <canvas id="orbit-canvas"></canvas>
   <div id="plasmaLayer" class="plasma-top-layer"></div>
-
   <div class="w-full max-w-lg glass-b2b-box p-8 rounded-3xl relative z-10 my-6">
+    <!-- CABEÇALHO -->
     <div class="text-center mb-6">
-      <img src="../imagens/logo.png" alt="432UP! Produções" class="h-10 w-auto mx-auto mb-3 object-contain">
-      <span class="text-xs font-bold px-2.5 py-1 rounded bg-amber-500/20 text-amber-300 border border-amber-500/30 uppercase tracking-widest">Credenciamento de Parceiros</span>
+      <img
+        src="../imagens/logo.png"
+        alt="432UP! Produções"
+        class="h-10 w-auto mx-auto mb-3 object-contain"
+      >
+      <span class="text-xs font-bold px-2.5 py-1 rounded bg-amber-500/20 text-amber-300 border border-amber-500/30 uppercase tracking-widest">
+        Credenciamento de Parceiros
+      </span>
     </div>
-
-    <div id="formAlert" class="mb-4 p-3 rounded-xl text-xs font-semibold"></div>
-
+    <!-- ALERTA -->
+    <div
+      id="formAlert"
+      class="mb-4 p-3 rounded-xl text-xs font-semibold"
+    ></div>
+    <!-- FORMULÁRIO -->
     <form id="cadastroForm" class="space-y-4">
-
-      <!-- FOTO — OPCIONAL -->
+      <!-- FOTO -->
       <div class="flex items-center gap-4">
-        <div id="avatarPreview" class="w-16 h-16 rounded-full bg-white/5 border border-white/15 flex items-center justify-center text-2xl text-slate-500 shrink-0 overflow-hidden">
+        <div
+          id="avatarPreview"
+          class="w-16 h-16 rounded-full bg-white/5 border border-white/15 flex items-center justify-center text-2xl text-slate-500 shrink-0 overflow-hidden"
+        >
           <span id="avatarPlaceholder">📷</span>
         </div>
         <div class="flex-1">
-          <label class="block text-xs uppercase tracking-wider text-slate-400 font-semibold mb-1">Foto de perfil <span class="text-slate-600 normal-case font-normal">(opcional — pode adicionar depois)</span></label>
-          <input type="file" id="fAvatar" accept="image/png,image/jpeg,image/webp" class="w-full text-xs text-slate-400 file:mr-3 file:py-1.5 file:px-3 file:rounded-lg file:border-0 file:text-xs file:font-semibold file:bg-cyan-500/20 file:text-cyan-300 hover:file:bg-cyan-500/30">
+          <label class="block text-xs uppercase tracking-wider text-slate-400 font-semibold mb-1">
+            Foto de perfil
+            <span class="text-slate-600 normal-case font-normal">
+              (opcional — pode adicionar depois)
+            </span>
+          </label>
+          <input
+            type="file"
+            id="fAvatar"
+            accept="image/png,image/jpeg,image/webp"
+            class="w-full text-xs text-slate-400 file:mr-3 file:py-1.5 file:px-3 file:rounded-lg file:border-0 file:text-xs file:font-semibold file:bg-cyan-500/20 file:text-cyan-300 hover:file:bg-cyan-500/30"
+          >
         </div>
       </div>
-
+      <!-- NOME / EMPRESA -->
       <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
         <div>
-          <label class="block text-xs uppercase tracking-wider text-slate-400 font-semibold mb-1">Nome Completo *</label>
-          <input type="text" id="fNome" required placeholder="Seu nome" class="w-full bg-white/5 border border-white/15 rounded-xl px-4 py-2.5 text-sm text-white focus:border-cyan-400 focus:outline-none">
+          <label class="block text-xs uppercase tracking-wider text-slate-400 font-semibold mb-1">
+            Nome Completo *
+          </label>
+          <input
+            type="text"
+            id="fNome"
+            required
+            placeholder="Seu nome"
+            class="w-full bg-white/5 border border-white/15 rounded-xl px-4 py-2.5 text-sm text-white focus:border-cyan-400 focus:outline-none"
+          >
         </div>
         <div>
-          <label class="block text-xs uppercase tracking-wider text-slate-400 font-semibold mb-1">Empresa / Agência *</label>
-          <input type="text" id="fEmpresa" required placeholder="Nome da empresa" class="w-full bg-white/5 border border-white/15 rounded-xl px-4 py-2.5 text-sm text-white focus:border-cyan-400 focus:outline-none">
+          <label class="block text-xs uppercase tracking-wider text-slate-400 font-semibold mb-1">
+            Empresa / Agência *
+          </label>
+          <input
+            type="text"
+            id="fEmpresa"
+            required
+            placeholder="Nome da empresa"
+            class="w-full bg-white/5 border border-white/15 rounded-xl px-4 py-2.5 text-sm text-white focus:border-cyan-400 focus:outline-none"
+          >
         </div>
       </div>
-
+      <!-- EMAIL / WHATSAPP -->
       <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
         <div>
-          <label class="block text-xs uppercase tracking-wider text-slate-400 font-semibold mb-1">E-mail Corporativo *</label>
-          <input type="email" id="fEmail" required placeholder="nome@empresa.com" class="w-full bg-white/5 border border-white/15 rounded-xl px-4 py-2.5 text-sm text-white focus:border-cyan-400 focus:outline-none">
+          <label class="block text-xs uppercase tracking-wider text-slate-400 font-semibold mb-1">
+            E-mail Corporativo *
+          </label>
+          <input
+            type="email"
+            id="fEmail"
+            required
+            placeholder="nome@empresa.com"
+            class="w-full bg-white/5 border border-white/15 rounded-xl px-4 py-2.5 text-sm text-white focus:border-cyan-400 focus:outline-none"
+          >
         </div>
         <div>
-          <label class="block text-xs uppercase tracking-wider text-slate-400 font-semibold mb-1">WhatsApp de Contato *</label>
-          <input type="tel" id="fWhatsapp" required placeholder="(11) 99999-9999" class="w-full bg-white/5 border border-white/15 rounded-xl px-4 py-2.5 text-sm text-white focus:border-cyan-400 focus:outline-none">
+          <label class="block text-xs uppercase tracking-wider text-slate-400 font-semibold mb-1">
+            WhatsApp de Contato *
+          </label>
+          <input
+            type="tel"
+            id="fWhatsapp"
+            required
+            placeholder="(11) 99999-9999"
+            class="w-full bg-white/5 border border-white/15 rounded-xl px-4 py-2.5 text-sm text-white focus:border-cyan-400 focus:outline-none"
+          >
         </div>
       </div>
-
-      <div>
-        <label class="block text-xs uppercase tracking-wider text-slate-400 font-semibold mb-1">Perfil de Atuação *</label>
-        <select id="fPerfil" class="w-full bg-slate-900 border border-white/15 rounded-xl px-4 py-2.5 text-sm text-white focus:border-cyan-400 focus:outline-none">
-          <option value="cerimonialista">Cerimonialista / Assessoria de Eventos</option>
-          <option value="agencia_corporativa">Agência de Eventos Corporativos</option>
-          <option value="produtor_independente">Produtor Independente / Arquiteto Cênico</option>
-          <option value="hotelaria_espaco">Hotelaria de Luxo / Espaço de Eventos</option>
-          <option value="outro">Outro</option>
-        </select>
+      <!-- INSTAGRAM / PERFIL -->
+      <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
+        <div>
+          <label class="block text-xs uppercase tracking-wider text-slate-400 font-semibold mb-1">
+            Instagram / Portfólio *
+          </label>
+          <input
+            type="text"
+            id="fInstagram"
+            required
+            autocomplete="off"
+            placeholder="@suaempresa ou site"
+            class="w-full bg-white/5 border border-white/15 rounded-xl px-4 py-2.5 text-sm text-white focus:border-cyan-400 focus:outline-none"
+          >
+        </div>
+        <div>
+          <label class="block text-xs uppercase tracking-wider text-slate-400 font-semibold mb-1">
+            Perfil de Atuação *
+          </label>
+          <select
+            id="fPerfil"
+            class="w-full bg-slate-900 border border-white/15 rounded-xl px-4 py-2.5 text-sm text-white focus:border-cyan-400 focus:outline-none"
+          >
+            <option value="cerimonialista">
+              Cerimonialista / Assessoria de Eventos
+            </option>
+            <option value="agencia_corporativa">
+              Agência de Eventos Corporativos
+            </option>
+            <option value="produtor_independente">
+              Produtor Independente / Arquiteto Cênico
+            </option>
+            <option value="hotelaria_espaco">
+              Hotelaria de Luxo / Espaço de Eventos
+            </option>
+            <option value="outro">
+              Outro
+            </option>
+          </select>
+        </div>
       </div>
-
+      <!-- SENHAS -->
       <div class="grid grid-cols-1 sm:grid-cols-2 gap-4 pt-2 border-t border-white/10">
         <div>
-          <label class="block text-xs uppercase tracking-wider text-slate-400 font-semibold mb-1">Crie uma senha *</label>
-          <input type="password" id="fSenha1" required minlength="8" placeholder="Mínimo 8 caracteres" class="w-full bg-white/5 border border-white/15 rounded-xl px-4 py-2.5 text-sm text-white focus:border-cyan-400 focus:outline-none">
+          <label class="block text-xs uppercase tracking-wider text-slate-400 font-semibold mb-1">
+            Crie uma senha *
+          </label>
+          <input
+            type="password"
+            id="fSenha1"
+            required
+            minlength="8"
+            placeholder="Mínimo 8 caracteres"
+            class="w-full bg-white/5 border border-white/15 rounded-xl px-4 py-2.5 text-sm text-white focus:border-cyan-400 focus:outline-none"
+          >
         </div>
         <div>
-          <label class="block text-xs uppercase tracking-wider text-slate-400 font-semibold mb-1">Confirme a senha *</label>
-          <input type="password" id="fSenha2" required minlength="8" placeholder="Repita a senha" class="w-full bg-white/5 border border-white/15 rounded-xl px-4 py-2.5 text-sm text-white focus:border-cyan-400 focus:outline-none">
+          <label class="block text-xs uppercase tracking-wider text-slate-400 font-semibold mb-1">
+            Confirme a senha *
+          </label>
+          <input
+            type="password"
+            id="fSenha2"
+            required
+            minlength="8"
+            placeholder="Repita a senha"
+            class="w-full bg-white/5 border border-white/15 rounded-xl px-4 py-2.5 text-sm text-white focus:border-cyan-400 focus:outline-none"
+          >
         </div>
       </div>
-
-      <button type="submit" id="btnEnviar" class="w-full py-3.5 rounded-xl bg-cyan-500 hover:bg-cyan-400 text-slate-950 font-bold text-xs uppercase tracking-wider transition shadow-[0_0_20px_rgba(0,240,255,0.3)] mt-2">
+      <!-- TERMOS -->
+      <div class="pt-1">
+        <label class="flex items-start gap-2.5 cursor-pointer">
+          <input
+            type="checkbox"
+            id="fTermos"
+            required
+            class="mt-0.5 w-4 h-4 rounded border-white/20 bg-slate-900 text-cyan-400 focus:ring-cyan-400 transition cursor-pointer"
+          >
+          <span class="text-xs text-slate-400 leading-relaxed">
+            Concordo com os
+            <strong class="text-slate-200">
+              Termos do Programa Partner 432UP
+            </strong>
+            e autorizo o uso dos dados cadastrais segundo a
+            <strong class="text-cyan-400">
+              LGPD
+            </strong>.
+          </span>
+        </label>
+      </div>
+      <!-- BOTÃO -->
+      <button
+        type="submit"
+        id="btnEnviar"
+        class="w-full py-3.5 rounded-xl bg-cyan-500 hover:bg-cyan-400 text-slate-950 font-bold text-xs uppercase tracking-wider transition shadow-[0_0_20px_rgba(0,240,255,0.3)] mt-2"
+      >
         Enviar Solicitação B2B
       </button>
     </form>
-
+    <!-- LOGIN -->
     <div class="mt-6 pt-4 border-t border-white/10 text-center text-xs text-slate-400">
       Já possui conta aprovada?
-      <a href="login.html" class="text-amber-400 font-semibold hover:underline">Voltar ao Login</a>
+      <a
+        href="login.html"
+        class="text-amber-400 font-semibold hover:underline"
+      >
+        Voltar ao Login
+      </a>
     </div>
   </div>
-
+  <!-- SUPABASE -->
   <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
   <script src="partner-config.js"></script>
   <script src="../script/script.js" defer></script>
   <script>
     (function () {
       'use strict';
-
+      /*
+       * =====================================================
+       * AVATAR
+       * =====================================================
+       *
+       * A imagem original NÃO é enviada.
+       *
+       * Ela é:
+       * 1. redimensionada para no máximo 256x256;
+       * 2. convertida para JPEG;
+       * 3. comprimida progressivamente;
+       * 4. mantida aproximadamente na faixa de 30 KB.
+       *
+       */
       var avatarFile = null;
-
-      document.getElementById('fAvatar').addEventListener('change', function (e) {
-        var file = e.target.files[0];
-        if (!file) return;
-        if (file.size > 5 * 1024 * 1024) {
-          showAlert('A foto precisa ter no máximo 5MB.', 'error');
-          e.target.value = '';
-          return;
-        }
-        avatarFile = file;
-        var reader = new FileReader();
-        reader.onload = function (ev) {
-          document.getElementById('avatarPlaceholder').style.display = 'none';
-          document.getElementById('avatarPreview').style.backgroundImage = 'url(' + ev.target.result + ')';
-        };
-        reader.readAsDataURL(file);
-      });
-
-      function showAlert(msg, type) {
-        var el = document.getElementById('formAlert');
-        el.textContent = msg;
-        el.className = 'mb-4 p-3 rounded-xl text-xs font-semibold show ' +
-          (type === 'success'
-            ? 'bg-emerald-500/15 text-emerald-300 border border-emerald-500/30'
-            : 'bg-red-500/15 text-red-300 border border-red-500/30');
+      /*
+       * =====================================================
+       * COMPACTAÇÃO DA FOTO
+       * =====================================================
+       */
+      async function compactarAvatar(file) {
+        return new Promise(function (resolve, reject) {
+          var reader = new FileReader();
+          reader.onload = function (event) {
+            var img = new Image();
+            img.onload = function () {
+              var MAX_SIZE = 256;
+              var largura = img.width;
+              var altura = img.height;
+              /*
+               * Redimensionamento proporcional
+               */
+              if (largura > altura) {
+                if (largura > MAX_SIZE) {
+                  altura =
+                    Math.round(
+                      altura * MAX_SIZE / largura
+                    );
+                  largura = MAX_SIZE;
+                }
+              } else {
+                if (altura > MAX_SIZE) {
+                  largura =
+                    Math.round(
+                      largura * MAX_SIZE / altura
+                    );
+                  altura = MAX_SIZE;
+                }
+              }
+              /*
+               * Canvas
+               */
+              var canvas =
+                document.createElement('canvas');
+              canvas.width = largura;
+              canvas.height = altura;
+              var ctx =
+                canvas.getContext('2d');
+              /*
+               * Fundo branco evita problemas
+               * com transparência ao converter
+               * PNG/WebP para JPEG.
+               */
+              ctx.fillStyle = '#ffffff';
+              ctx.fillRect(
+                0,
+                0,
+                largura,
+                altura
+              );
+              ctx.drawImage(
+                img,
+                0,
+                0,
+                largura,
+                altura
+              );
+              /*
+               * Tenta várias qualidades até
+               * chegar próximo de 30 KB.
+               */
+              var qualidades = [
+                0.78,
+                0.68,
+                0.58,
+                0.48,
+                0.40,
+                0.32
+              ];
+              var tentativa = 0;
+              function gerar() {
+                canvas.toBlob(
+                  function (blob) {
+                    if (!blob) {
+                      reject(
+                        new Error(
+                          'Não foi possível compactar a imagem.'
+                        )
+                      );
+                      return;
+                    }
+                    /*
+                     * Se já estiver em uma faixa boa,
+                     * usamos esta versão.
+                     */
+                    if (
+                      blob.size <= 40 * 1024 ||
+                      tentativa >= qualidades.length - 1
+                    ) {
+                      var nome =
+                        'avatar-' +
+                        Date.now() +
+                        '.jpg';
+                      var compactado =
+                        new File(
+                          [blob],
+                          nome,
+                          {
+                            type: 'image/jpeg',
+                            lastModified: Date.now()
+                          }
+                        );
+                      resolve(compactado);
+                      return;
+                    }
+                    tentativa++;
+                    gerar();
+                  },
+                  'image/jpeg',
+                  qualidades[tentativa]
+                );
+              }
+              gerar();
+            };
+            img.onerror = function () {
+              reject(
+                new Error(
+                  'Não foi possível ler a imagem.'
+                )
+              );
+            };
+            img.src = event.target.result;
+          };
+          reader.onerror = function () {
+            reject(
+              new Error(
+                'Não foi possível carregar a imagem.'
+              )
+            );
+          };
+          reader.readAsDataURL(file);
+        });
       }
-
-      function fieldErr(id, has) {
-        document.getElementById(id).classList.toggle('field-error', !!has);
-      }
-
-      document.getElementById('cadastroForm').addEventListener('submit', function (e) {
-        e.preventDefault();
-
-        var nome     = document.getElementById('fNome').value.trim();
-        var empresa  = document.getElementById('fEmpresa').value.trim();
-        var email    = document.getElementById('fEmail').value.trim();
-        var whatsapp = document.getElementById('fWhatsapp').value.replace(/\D/g, '');
-        var perfil   = document.getElementById('fPerfil').value;
-        var senha1   = document.getElementById('fSenha1').value;
-        var senha2   = document.getElementById('fSenha2').value;
-
-        ['fNome','fEmpresa','fEmail','fWhatsapp','fSenha1','fSenha2'].forEach(function (id) { fieldErr(id, false); });
-
-        var ok = true;
-        if (!nome) { fieldErr('fNome', true); ok = false; }
-        if (!empresa) { fieldErr('fEmpresa', true); ok = false; }
-        if (!email || email.indexOf('@') < 1) { fieldErr('fEmail', true); ok = false; }
-        if (whatsapp.length < 10) { fieldErr('fWhatsapp', true); ok = false; }
-        if (senha1.length < 8) { fieldErr('fSenha1', true); ok = false; }
-        if (senha1 !== senha2) { fieldErr('fSenha2', true); ok = false; }
-
-        if (!ok) {
-          showAlert('Verifique os campos destacados em vermelho.', 'error');
-          return;
-        }
-
-        var btn = document.getElementById('btnEnviar');
-        btn.classList.add('btn-loading');
-        btn.textContent = 'Enviando...';
-
-        /* 1) cria o usuário enviando os metadados para o trigger do banco lidar com o insert */
-        sbPartner.auth.signUp({
-          email: email,
-          password: senha1,
-          options: {
-            emailRedirectTo: window.location.origin + window.location.pathname.replace('solicitar-acesso.html', 'login.html?confirmado=1'),
-            data: {
-              origem: 'b2b_partner',
-              nome_completo: nome,
-              empresa: empresa,
-              whatsapp: whatsapp,
-              perfil: perfil
+      /*
+       * =====================================================
+       * FOTO / AVATAR
+       * =====================================================
+       */
+      document
+        .getElementById('fAvatar')
+        .addEventListener(
+          'change',
+          async function (e) {
+            var file =
+              e.target.files[0];
+            if (!file) return;
+            /*
+             * Limite da imagem original.
+             */
+            if (file.size > 5 * 1024 * 1024) {
+              showAlert(
+                'A foto precisa ter no máximo 5MB.',
+                'error'
+              );
+              e.target.value = '';
+              avatarFile = null;
+              return;
+            }
+            /*
+             * Preview imediato.
+             */
+            var reader =
+              new FileReader();
+            reader.onload =
+              function (ev) {
+                document
+                  .getElementById(
+                    'avatarPlaceholder'
+                  )
+                  .style.display = 'none';
+                document
+                  .getElementById(
+                    'avatarPreview'
+                  )
+                  .style.backgroundImage =
+                    'url(' +
+                    ev.target.result +
+                    ')';
+              };
+            reader.readAsDataURL(file);
+            /*
+             * Compactação.
+             */
+            try {
+              avatarFile =
+                await compactarAvatar(file);
+              console.log(
+                '[432UP Avatar] Original:',
+                Math.round(file.size / 1024),
+                'KB'
+              );
+              console.log(
+                '[432UP Avatar] Compactado:',
+                Math.round(avatarFile.size / 1024),
+                'KB'
+              );
+            } catch (erro) {
+              console.error(
+                '[432UP Avatar] Falha na compactação:',
+                erro
+              );
+              showAlert(
+                'Não foi possível processar a foto. Tente outra imagem.',
+                'error'
+              );
+              e.target.value = '';
+              avatarFile = null;
             }
           }
-        }).then(function (authRes) {
-          if (authRes.error) {
-            var msg = authRes.error.message.indexOf('already registered') >= 0
-              ? 'Este e-mail já está cadastrado. Tente fazer login ou recuperar sua senha.'
-              : 'Erro ao criar acesso: ' + authRes.error.message;
-            showAlert(msg, 'error');
-            btn.classList.remove('btn-loading');
-            btn.textContent = 'Enviar Solicitação B2B';
-            return Promise.reject('auth error');
-          }
-
-          var userId = authRes.data.user ? authRes.data.user.id : null;
-
-          /* 2) se enviou foto, faz upload no storage */
-          if (avatarFile && userId) {
-            return sbPartner.storage
-              .from(PARTNER_CFG.AVATAR_BUCKET)
-              .upload(userId + '/avatar.jpg', avatarFile, { upsert: true, contentType: avatarFile.type })
-              .then(function () {
-                return sbPartner.from('parceiros')
-                  .update({ avatar_url: partnerAvatarUrl(userId) })
-                  .eq('user_id', userId);
-              })
-              .catch(function (err) {
-                console.warn('[432UP Partner] Upload de avatar falhou, seguindo sem foto:', err);
+        );
+      /*
+       * =====================================================
+       * ALERTAS
+       * =====================================================
+       */
+      function showAlert(msg, type) {
+        var el =
+          document.getElementById('formAlert');
+        el.textContent = msg;
+        el.className =
+          'mb-4 p-3 rounded-xl text-xs font-semibold show ' +
+          (
+            type === 'success'
+              ? 'bg-emerald-500/15 text-emerald-300 border border-emerald-500/30'
+              : 'bg-red-500/15 text-red-300 border border-red-500/30'
+          );
+      }
+      /*
+       * =====================================================
+       * ERRO VISUAL
+       * =====================================================
+       */
+      function fieldErr(id, has) {
+        document
+          .getElementById(id)
+          .classList
+          .toggle(
+            'field-error',
+            !!has
+          );
+      }
+      /*
+       * =====================================================
+       * TELEGRAM
+       * =====================================================
+       */
+      async function avisarTelegramNovoParceiro(dados) {
+        try {
+          var resposta =
+            await fetch(
+              'https://www.432up.com/avisos-telegram',
+              {
+                method: 'POST',
+                headers: {
+                  'Content-Type':
+                    'application/json'
+                },
+                body: JSON.stringify({
+                  event:
+                    'novo_colaborador',
+                  parceiro_nome:
+                    dados.nome,
+                  empresa:
+                    dados.empresa,
+                  perfil:
+                    dados.perfil,
+                  email:
+                    dados.email,
+                  telefone:
+                    dados.whatsapp,
+                  instagram:
+                    dados.instagram
+                })
+              }
+            );
+          var texto =
+            await resposta.text();
+          console.log(
+            '[432UP B2B → Telegram]',
+            resposta.status,
+            texto
+          );
+          return resposta.ok;
+        } catch (erro) {
+          console.error(
+            '[432UP B2B → Telegram] Falha:',
+            erro
+          );
+          return false;
+        }
+      }
+      /*
+       * =====================================================
+       * CADASTRO PRINCIPAL
+       * =====================================================
+       */
+      document
+        .getElementById('cadastroForm')
+        .addEventListener(
+          'submit',
+          async function (e) {
+            e.preventDefault();
+            /*
+             * CAPTURA
+             */
+            var nome =
+              document
+                .getElementById('fNome')
+                .value
+                .trim();
+            var empresa =
+              document
+                .getElementById('fEmpresa')
+                .value
+                .trim();
+            var email =
+              document
+                .getElementById('fEmail')
+                .value
+                .trim();
+            var whatsapp =
+              document
+                .getElementById('fWhatsapp')
+                .value
+                .replace(/\D/g, '');
+            var instagram =
+              document
+                .getElementById('fInstagram')
+                .value
+                .trim();
+            var perfilEl =
+              document.getElementById(
+                'fPerfil'
+              );
+            var perfil =
+              perfilEl
+                .options[
+                  perfilEl.selectedIndex
+                ]
+                .text;
+            var perfilValue =
+              perfilEl.value;
+            var senha1 =
+              document
+                .getElementById('fSenha1')
+                .value;
+            var senha2 =
+              document
+                .getElementById('fSenha2')
+                .value;
+            var termos =
+              document
+                .getElementById('fTermos')
+                .checked;
+            /*
+             * LIMPA ERROS
+             */
+            [
+              'fNome',
+              'fEmpresa',
+              'fEmail',
+              'fWhatsapp',
+              'fInstagram',
+              'fSenha1',
+              'fSenha2'
+            ].forEach(function (id) {
+              fieldErr(
+                id,
+                false
+              );
+            });
+            /*
+             * VALIDAÇÃO
+             */
+            var ok = true;
+            if (!nome) {
+              fieldErr(
+                'fNome',
+                true
+              );
+              ok = false;
+            }
+            if (!empresa) {
+              fieldErr(
+                'fEmpresa',
+                true
+              );
+              ok = false;
+            }
+            if (
+              !email ||
+              email.indexOf('@') < 1
+            ) {
+              fieldErr(
+                'fEmail',
+                true
+              );
+              ok = false;
+            }
+            if (
+              whatsapp.length < 10
+            ) {
+              fieldErr(
+                'fWhatsapp',
+                true
+              );
+              ok = false;
+            }
+            if (!instagram) {
+              fieldErr(
+                'fInstagram',
+                true
+              );
+              ok = false;
+            }
+            if (
+              senha1.length < 8
+            ) {
+              fieldErr(
+                'fSenha1',
+                true
+              );
+              ok = false;
+            }
+            if (
+              senha1 !== senha2
+            ) {
+              fieldErr(
+                'fSenha2',
+                true
+              );
+              ok = false;
+            }
+            if (!termos) {
+              showAlert(
+                'Você precisa aceitar os termos do programa para continuar.',
+                'error'
+              );
+              return;
+            }
+            if (!ok) {
+              showAlert(
+                'Verifique os campos destacados em vermelho.',
+                'error'
+              );
+              return;
+            }
+            /*
+             * BOTÃO
+             */
+            var btn =
+              document.getElementById(
+                'btnEnviar'
+              );
+            btn.classList.add(
+              'btn-loading'
+            );
+            btn.textContent =
+              'Enviando...';
+            /*
+             * =================================================
+             * 1. SUPABASE AUTH
+             * =================================================
+             */
+            try {
+              var authRes =
+                await sbPartner.auth.signUp({
+                  email: email,
+                  password: senha1,
+                  options: {
+                    emailRedirectTo:
+                      window.location.origin +
+                      window.location.pathname.replace(
+                        'solicitar-acesso.html',
+                        'login.html?confirmado=1'
+                      ),
+                    data: {
+                      origem:
+                        'b2b_partner',
+                      nome_completo:
+                        nome,
+                      empresa:
+                        empresa,
+                      whatsapp:
+                        whatsapp,
+                      instagram:
+                        instagram,
+                      perfil:
+                        perfilValue
+                    }
+                  }
+                });
+              /*
+               * ERRO
+               */
+              if (authRes.error) {
+                var msg =
+                  authRes.error.message
+                    .indexOf(
+                      'already registered'
+                    ) >= 0
+                    ? 'Este e-mail já está cadastrado. Tente fazer login ou recuperar sua senha.'
+                    : 'Erro ao criar acesso: ' +
+                      authRes.error.message;
+                showAlert(
+                  msg,
+                  'error'
+                );
+                btn.classList.remove(
+                  'btn-loading'
+                );
+                btn.textContent =
+                  'Enviar Solicitação B2B';
+                return;
+              }
+              /*
+               * ID DO USUÁRIO
+               */
+              var userId =
+                authRes.data.user
+                  ? authRes.data.user.id
+                  : null;
+              /*
+               * =================================================
+               * 2. GARANTE INSTAGRAM EM PARCEIROS
+               * =================================================
+               */
+              if (userId) {
+                try {
+                  var parceiroUpdate =
+                    await sbPartner
+                      .from('parceiros')
+                      .update({
+                        instagram:
+                          instagram
+                      })
+                      .eq(
+                        'user_id',
+                        userId
+                      );
+                  if (
+                    parceiroUpdate.error
+                  ) {
+                    console.warn(
+                      '[432UP Partner] Não foi possível gravar Instagram em parceiros:',
+                      parceiroUpdate.error
+                    );
+                  }
+                } catch (
+                  errInstagram
+                ) {
+                  console.warn(
+                    '[432UP Partner] Falha ao atualizar Instagram:',
+                    errInstagram
+                  );
+                }
+              }
+              /*
+               * =================================================
+               * 3. AVATAR COMPACTADO
+               * =================================================
+               */
+              if (
+                avatarFile &&
+                userId
+              ) {
+                try {
+                  await sbPartner.storage
+                    .from(
+                      PARTNER_CFG.AVATAR_BUCKET
+                    )
+                    .upload(
+                      userId +
+                      '/avatar.jpg',
+                      avatarFile,
+                      {
+                        upsert: true,
+                        contentType:
+                          'image/jpeg'
+                      }
+                    );
+                  await sbPartner
+                    .from('parceiros')
+                    .update({
+                      avatar_url:
+                        partnerAvatarUrl(
+                          userId
+                        )
+                    })
+                    .eq(
+                      'user_id',
+                      userId
+                    );
+                } catch (
+                  errAvatar
+                ) {
+                  console.warn(
+                    '[432UP Partner] Upload de avatar falhou:',
+                    errAvatar
+                  );
+                }
+              }
+              /*
+               * =================================================
+               * 4. TELEGRAM
+               * =================================================
+               */
+              await avisarTelegramNovoParceiro({
+                nome:
+                  nome,
+                empresa:
+                  empresa,
+                perfil:
+                  perfil,
+                email:
+                  email,
+                whatsapp:
+                  whatsapp,
+                instagram:
+                  instagram
               });
+              /*
+               * =================================================
+               * 5. FINALIZAÇÃO
+               * =================================================
+               */
+              window.location.href =
+                'pendente.html';
+            } catch (err) {
+              console.error(
+                '[432UP Partner] Erro inesperado no cadastro:',
+                err
+              );
+              showAlert(
+                'Não foi possível concluir o cadastro. Tente novamente.',
+                'error'
+              );
+              btn.classList.remove(
+                'btn-loading'
+              );
+              btn.textContent =
+                'Enviar Solicitação B2B';
+            }
           }
-        }).then(function () {
-          window.location.href = 'pendente.html';
-        }).catch(function (err) {
-          if (err !== 'auth error') {
-            console.error('[432UP Partner] Erro inesperado no cadastro:', err);
-          }
-        });
-      });
+        );
     })();
   </script>
-
-  <!-- INTEGRAÇÃO TELEGRAM: NOVO PARCEIRO B2B -->
-  <script>
-  (function() {
-    const TELEGRAM_BOT_TOKEN = '8835958314:AAFGe18Mxm7Z_P_GIRPPRzv8cUWb17mHX00';
-    const TELEGRAM_CHAT_ID = '8996965457';
-
-    async function enviarNotificacaoTelegram(texto) {
-      try {
-        await fetch(`https://api.telegram.org/bot${TELEGRAM_BOT_TOKEN}/sendMessage`, {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({
-            chat_id: TELEGRAM_CHAT_ID,
-            text: texto,
-            parse_mode: 'HTML'
-          })
-        });
-      } catch (e) {
-        console.error('Erro ao enviar alerta ao Telegram:', e);
-      }
-    }
-
-    const formCadastro = document.getElementById('cadastroForm');
-    if (formCadastro) {
-      formCadastro.addEventListener('submit', function() {
-        const nome = document.getElementById('fNome')?.value.trim() || 'Não informado';
-        const email = document.getElementById('fEmail')?.value.trim() || '';
-        const whatsapp = document.getElementById('fWhatsapp')?.value.trim() || '';
-        const contato = whatsapp || email || 'Não informado';
-
-        const mensagem = 
-  `👤 <b>NOVO CADASTRO B2B</b>
-  Nome: ${nome}
-  Contato: ${contato}
-  🟡 Pendente de aprovação`;
-
-        enviarNotificacaoTelegram(mensagem);
-      });
-    }
-  })();
-  </script>
-
 </body>
 </html>

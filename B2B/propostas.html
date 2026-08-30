@@ -204,6 +204,24 @@
           (type === 'success' ? 'bg-emerald-500/15 text-emerald-300 border border-emerald-500/30' : 'bg-red-500/15 text-red-300 border border-red-500/30');
       }
 
+      async function avisarTelegramProposta(dados) {
+        try {
+          const resposta = await fetch('https://www.432up.com/avisos-telegram', {
+            method: 'POST',
+            headers: {
+              'Content-Type': 'application/json'
+            },
+            body: JSON.stringify(dados)
+          });
+          const texto = await resposta.text();
+          console.log('[432UP Proposta → Telegram]', resposta.status, texto);
+          return resposta.ok;
+        } catch (erro) {
+          console.error('[432UP Proposta → Telegram] Falha:', erro);
+          return false;
+        }
+      }
+
       partnerRequireAuth().then(function (parceiro) {
         parceiroAtual = parceiro;
         partnerFillSidebar(parceiro);
@@ -345,7 +363,7 @@
                 btnEnviarHtml +
                 '<button onclick="enviarWhatsApp(\'' + p.id + '\')" class="action-btn bg-emerald-500/20 hover:bg-emerald-500/30 text-emerald-300 border border-emerald-500/30 cursor-pointer" title="Enviar no WhatsApp">💬</button>' +
                 '<button onclick="copiarLink(\'' + p.id + '\', this)" class="action-btn bg-slate-800 hover:bg-slate-700 text-slate-300 border border-white/10 cursor-pointer" title="Copiar Link da Proposta">🔗</button>' +
-                '<a href="pdf-template.html?id=' + p.id + '" target="_blank" class="action-btn bg-cyan-500/20 hover:bg-cyan-500/30 text-cyan-300 border border-cyan-500/30">📄 PDF</a>' +
+                '<a href="nova-proposta.html?id=' + p.id + '" target="_blank" class="action-btn bg-cyan-500/20 hover:bg-cyan-500/30 text-cyan-300 border border-cyan-500/30">📄 Ver</a>' +
                 btnEditarOuVisualizarHtml +
                 '<button data-duplicar="' + p.id + '" class="action-btn bg-white/5 hover:bg-white/10 text-slate-300 border border-white/10 cursor-pointer" title="Duplicar Proposta">📋</button>' +
                 btnExcluirHtml +
@@ -379,8 +397,7 @@
         if (!p) return;
 
         var fone = String(p.cliente_whatsapp || p.cliente_telefone || p.whatsapp || '').replace(/\D/g, '');
-        var numProposta = p.numero || p.id;
-        var linkPublico = window.location.origin + '/p/' + numProposta;
+        var linkPublico = window.location.origin + '/partner/nova-proposta.html?id=' + p.id;
         
         var msg = 'Olá, ' + (p.cliente_nome || 'Cliente') + '! 👋\n\n' +
           'Segue a proposta comercial para o evento em ' + fmtData(p.data_evento) + ':\n' +
@@ -400,8 +417,7 @@
         var p = listaPropostas.find(function (item) { return String(item.id) === String(propostaId); });
         if (!p) return;
 
-        var numProposta = p.numero || p.id;
-        var linkPublico = window.location.origin + '/p/' + numProposta;
+        var linkPublico = window.location.origin + '/partner/nova-proposta.html?id=' + p.id;
         
         if (navigator.clipboard && navigator.clipboard.writeText) {
           navigator.clipboard.writeText(linkPublico).then(function () {
@@ -423,11 +439,28 @@
           enviada_em: new Date().toISOString()
         };
 
-        sbPartner.from('propostas').update(payload).eq('id', propostaId).then(function (res) {
+        var p = listaPropostas.find(function (item) { return String(item.id) === String(propostaId); });
+
+        sbPartner.from('propostas').update(payload).eq('id', propostaId).then(async function (res) {
           btn.classList.remove('btn-loading');
           if (res.error) {
             showAlert('Erro ao atualizar status: ' + res.error.message, 'error');
           } else {
+            if (p && novoStatus === 'enviada') {
+              var pct = p.comissao_pct_efetiva ? Number(p.comissao_pct_efetiva) : (parceiroAtual ? Number(parceiroAtual.comissao_padrao_pct) : 10);
+              var comissaoValor = (Number(p.valor_total || 0) * pct) / 100;
+              await avisarTelegramProposta({
+                event: 'proposta_enviada',
+                proposta_id: p.numero || p.id,
+                parceiro_nome: parceiroAtual ? (parceiroAtual.nome || parceiroAtual.empresa) : 'Parceiro',
+                cliente_nome: p.cliente_nome,
+                tipo_evento: p.tipo_evento,
+                data_evento: p.data_evento,
+                local_evento: p.local_evento,
+                valor_total: p.valor_total,
+                comissao_valor: comissaoValor
+              });
+            }
             showAlert('Proposta enviada para o pipeline com sucesso!', 'success');
             carregarPropostas(parceiroAtual.id);
           }
@@ -497,4 +530,3 @@
 
 </body>
 </html>
- 
