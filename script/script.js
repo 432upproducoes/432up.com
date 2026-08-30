@@ -349,12 +349,8 @@ async function handleProgressFormSubmit(e) {
   }
   if (errorMsg) errorMsg.style.display = 'none';
 
+  await dispararLeadTelegram(name, contact, msg || 'Contato pelo Site');
 
-
-await dispararLeadTelegram(name, contact, msg || 'Contato pelo Site');
-
-
-   
   if (btn) {
     btn.innerText = "Registrando...";
     btn.disabled = true;
@@ -604,9 +600,6 @@ window.openLeadModal = openLeadModal;
 window.closeLeadModal = closeLeadModal;
 window.handleProgressFormSubmit = handleProgressFormSubmit;
 
-
-
-
 // Fecha o dropdown de "Projetos" ao clicar em qualquer lugar fora dele
 document.addEventListener('click', function(event) {
   const desktopDetails = document.querySelector('.nav-dropdown-desktop');
@@ -619,30 +612,43 @@ document.addEventListener('click', function(event) {
   }
 });
 
-
-
-
-
-/* ---------- DISPARO TELEGRAM · NOVA PROPOSTA (PARTNER PORTAL) ---------- */
-async function dispararPropostaTelegram(cliente, valorTotal, nomeVendedor) {
+/* ---------- DISPARO TELEGRAM VIA ENDPOINT CENTRALIZADO · NOVO COLABORADOR B2B ---------- */
+async function dispararB2BTelegram(nome, empresa, perfil, email, whatsapp) {
   try {
-    const BOT_TOKEN = "8835958314:AAFGe18Mxm7Z_P_GlRPPRzv8cUWbi7mHX00";
-    const CHAT_ID = "8996965457";
-
-    const valorFmt = 'R$ ' + Number(valorTotal || 0).toLocaleString('pt-BR', { minimumFractionDigits: 2 });
-
-    const texto = `⚡ *NOVA PROPOSTA*\n\n` +
-                  `Cliente: ${cliente}\n` +
-                  `Valor: ${valorFmt}\n` +
-                  `Vendedor: ${nomeVendedor}`;
-
-    const response = await fetch(`https://api.telegram.org/bot${BOT_TOKEN}/sendMessage`, {
+    const response = await fetch('https://www.432up.com/avisos-telegram', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({
-        chat_id: CHAT_ID,
-        text: texto,
-        parse_mode: 'Markdown'
+        event: 'novo_colaborador',
+        nome: nome,
+        empresa: empresa,
+        perfil: perfil,
+        email: email,
+        whatsapp: whatsapp
+      })
+    });
+
+    if (!response.ok) {
+      const errorData = await response.json();
+      console.error("432UP Partner! Erro no Telegram (B2B):", errorData);
+    }
+  } catch (err) {
+    console.error('Falha de rede ao disparar alerta B2B:', err);
+  }
+}
+window.dispararB2BTelegram = dispararB2BTelegram;
+
+/* ---------- DISPARO TELEGRAM VIA ENDPOINT CENTRALIZADO · NOVA PROPOSTA ---------- */
+async function dispararPropostaTelegram(cliente, valorTotal, nomeVendedor) {
+  try {
+    const response = await fetch('https://www.432up.com/avisos-telegram', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        event: 'proposta_enviada',
+        cliente_nome: cliente,
+        valor_total: valorTotal,
+        parceiro_nome: nomeVendedor
       })
     });
 
@@ -656,27 +662,17 @@ async function dispararPropostaTelegram(cliente, valorTotal, nomeVendedor) {
 }
 window.dispararPropostaTelegram = dispararPropostaTelegram;
 
-/* ---------- DISPARO DIRETO PARA O TELEGRAM ---------- */
+/* ---------- DISPARO TELEGRAM VIA ENDPOINT CENTRALIZADO · NOVO LEAD ---------- */
 async function dispararLeadTelegram(nome, telefone, mensagem) {
   try {
-    // Token completo extraído do BotFather
-    const BOT_TOKEN = "8835958314:AAFGe18Mxm7Z_P_GlRPPRzv8cUWbi7mHX00"; 
-    
-    // Seu ID pessoal do Telegram
-    const CHAT_ID = "8996965457"; 
-
-    const texto = `🔥 *NOVO LEAD NA 432UP!*\n\n` +
-                  `👤 *Nome:* ${nome}\n` +
-                  `📞 *Contato:* ${telefone}\n` +
-                  `💬 *Detalhes:* ${mensagem}`;
-
-    const response = await fetch(`https://api.telegram.org/bot${BOT_TOKEN}/sendMessage`, {
+    const response = await fetch('https://www.432up.com/avisos-telegram', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({
-        chat_id: CHAT_ID,
-        text: texto,
-        parse_mode: 'Markdown'
+        event: 'novo_lead',
+        nome: nome,
+        telefone: telefone,
+        mensagem: mensagem
       })
     });
 
