@@ -51,11 +51,6 @@
       display: flex;
     }
 
-    table thead tr, table thead th {
-      background-color: transparent !important;
-      color: #94a3b8 !important;
-    }
-
     #inputValorPagamento[readonly] {
       opacity: 0.65;
       cursor: not-allowed;
@@ -109,13 +104,13 @@
          
          <!-- Busca Global Textual -->
          <div class="w-full">
-           <label class="block text-[10px] uppercase text-slate-400 font-bold mb-1">Buscar Cliente / Proposta</label>
+           <label for="filterBusca" class="block text-[10px] uppercase text-slate-400 font-bold mb-1">Buscar Cliente / Proposta</label>
            <input type="text" id="filterBusca" placeholder="Ex: #1038 ou Nome" oninput="aplicarFiltros()" class="w-full bg-slate-900/80 border border-white/10 rounded-xl px-2.5 py-2 text-xs text-white focus:border-cyan-400 focus:outline-none transition">
          </div>
 
          <!-- Searchable Dropdown (Vendedor Autocomplete com Z-Index Absoluto) -->
          <div class="relative w-full" id="boxDropdownVendedor">
-           <label class="block text-[10px] uppercase text-slate-400 font-bold mb-1">Vendedor / Parceiro</label>
+           <label for="filterVendedorSearch" class="block text-[10px] uppercase text-slate-400 font-bold mb-1">Vendedor / Parceiro</label>
            <div class="relative">
              <span class="absolute inset-y-0 left-0 pl-2.5 flex items-center pointer-events-none text-slate-400 text-xs">🔍</span>
              <input type="text" id="filterVendedorSearch" placeholder="Digite para buscar..." autocomplete="off" class="w-full bg-slate-900/80 border border-white/10 rounded-xl pl-7 pr-2 py-2 text-xs text-white focus:border-cyan-400 focus:outline-none transition">
@@ -128,7 +123,7 @@
 
          <!-- Status Repasse -->
          <div class="w-full">
-           <label class="block text-[10px] uppercase text-slate-400 font-bold mb-1">Status Repasse</label>
+           <label for="filterStatus" class="block text-[10px] uppercase text-slate-400 font-bold mb-1">Status Repasse</label>
            <select id="filterStatus" onchange="aplicarFiltros()" class="w-full bg-slate-900 border border-white/10 rounded-xl px-2 py-2 text-xs text-white focus:border-cyan-400 focus:outline-none transition cursor-pointer">
              <option value="">Todos os Status</option>
              <option value="pendente">🟡 Pendente</option>
@@ -141,19 +136,19 @@
 
          <!-- Atração / Fornecedor -->
          <div class="w-full">
-           <label class="block text-[10px] uppercase text-slate-400 font-bold mb-1">Atração / Fornecedor</label>
+           <label for="filterAtracao" class="block text-[10px] uppercase text-slate-400 font-bold mb-1">Atração / Fornecedor</label>
            <input type="text" id="filterAtracao" placeholder="Ex: Banda, DJ" oninput="aplicarFiltros()" class="w-full bg-slate-900/80 border border-white/10 rounded-xl px-2.5 py-2 text-xs text-white focus:border-cyan-400 focus:outline-none transition">
          </div>
 
          <!-- Período De -->
          <div class="w-full min-w-0">
-           <label class="block text-[10px] uppercase text-slate-400 font-bold mb-1 truncate">Data Inicial</label>
+           <label for="filterDataDe" class="block text-[10px] uppercase text-slate-400 font-bold mb-1 truncate">Data Inicial</label>
            <input type="date" id="filterDataDe" onchange="aplicarFiltros()" class="w-full bg-slate-900/80 border border-white/10 rounded-xl px-1.5 py-2 text-[11px] text-white font-sans focus:border-cyan-400 focus:outline-none transition [color-scheme:dark]">
          </div>
 
          <!-- Período Até -->
          <div class="w-full min-w-0">
-           <label class="block text-[10px] uppercase text-slate-400 font-bold mb-1 truncate">Data Final</label>
+           <label for="filterDataAte" class="block text-[10px] uppercase text-slate-400 font-bold mb-1 truncate">Data Final</label>
            <input type="date" id="filterDataAte" onchange="aplicarFiltros()" class="w-full bg-slate-900/80 border border-white/10 rounded-xl px-1.5 py-2 text-[11px] text-white font-sans focus:border-cyan-400 focus:outline-none transition [color-scheme:dark]">
          </div>
 
@@ -178,7 +173,7 @@
         <div class="overflow-x-auto">
           <table class="w-full text-left text-xs min-w-[750px]">
             <thead>
-              <tr class="border-b border-white/10 text-slate-400 uppercase tracking-wider">
+              <tr class="border-b border-white/10 text-slate-400 uppercase tracking-wider bg-transparent">
                 <th class="pb-3 px-3">Proposta / Cliente</th>
                 <th class="pb-3 px-3">Vendedor / Repasse</th>
                 <th class="pb-3 px-3 text-right">Valor Venda</th>
@@ -319,11 +314,11 @@
     </div>
   </div>
 
-  <!-- SCRIPTS DA APLICAÇÃO -->
+  <!-- SCRIPTS DA APLICAÇÃO CARREGADOS NA ORDEM DE DEPENDÊNCIA -->
   <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
   <script src="../partner-config.js" onerror="this.src='../../partner-config.js'"></script>
   <script src="../partner-header.js"></script>
-  <script src="../../script/script.js" onerror="this.src='../script/script.js'" defer></script>
+  <script src="../../script/script.js" onerror="this.src='../script/script.js'"></script>
   
   <script>
     (function () {
@@ -462,7 +457,17 @@
 
           var matchVendedor = !vendedorId || (p.parceiro_id === vendedorId);
 
+          var valTotal = Number(p.valor_total || 0);
+          var pct = Number(p.comissao_pct_efetiva !== undefined && p.comissao_pct_efetiva !== null ? p.comissao_pct_efetiva : (p.parceiros ? p.parceiros.comissao_padrao_pct : 10));
+          var valComissaoTotal = (valTotal * pct) / 100;
+          var valPagoAcumulado = Number(p.comissao_paga_valor || 0);
+          var saldoRemanescente = Math.max(0, valComissaoTotal - valPagoAcumulado);
+
           var stComissao = p.comissao_status || (p.comissao_paga ? 'liquidado' : 'pendente');
+          if (saldoRemanescente <= 0.01 && valComissaoTotal > 0 && stComissao !== 'cancelado') {
+            stComissao = 'liquidado';
+          }
+
           var matchStatus = !statusFiltro || (stComissao === statusFiltro);
 
           var atracaoStr = String(p.tipo_evento || p.detalhes || '').toLowerCase();
@@ -487,7 +492,7 @@
         document.getElementById('filterStatus').value = '';
         document.getElementById('filterAtracao').value = '';
 
-        // Restaura datas para o Mês Atual Inteiro Vigente (padrão YYYY-MM-DD para input date)
+        // Restaura datas para o Mês Atual Inteiro Vigente
         var agora = new Date();
         var ano = agora.getFullYear();
         var mes = String(agora.getMonth() + 1).padStart(2, '0');
@@ -509,20 +514,24 @@
           var pct = Number(p.comissao_pct_efetiva !== undefined && p.comissao_pct_efetiva !== null ? p.comissao_pct_efetiva : (p.parceiros ? p.parceiros.comissao_padrao_pct : 10));
           var comissaoTotal = (val * pct) / 100;
 
-          var stRepasse = p.comissao_status || (p.comissao_paga ? 'liquidado' : 'pendente');
           var valPagoParcial = Number(p.comissao_paga_valor || 0);
+          var saldoRemanescente = Math.max(0, comissaoTotal - valPagoParcial);
+
+          var stRepasse = p.comissao_status || (p.comissao_paga ? 'liquidado' : 'pendente');
+          if (saldoRemanescente <= 0.01 && comissaoTotal > 0 && stRepasse !== 'cancelado') {
+            stRepasse = 'liquidado';
+          }
 
           if (stRepasse === 'liquidado') {
             pago += comissaoTotal;
           } else if (stRepasse === 'parcial' || stRepasse === 'solicitado') {
             pago += valPagoParcial;
-            pendente += Math.max(0, comissaoTotal - valPagoParcial);
+            pendente += saldoRemanescente;
           } else if (stRepasse !== 'cancelado') {
             pendente += comissaoTotal;
           }
         });
 
-        // Pluralização dinâmica
         var txtPlural = qtdFechadas === 1 ? '1 evento' : qtdFechadas + ' eventos';
 
         document.getElementById('kpiComissaoPendente').textContent = fmtMoeda(pendente);
@@ -530,7 +539,7 @@
         document.getElementById('kpiQtdAprovadas').textContent = txtPlural;
       }
 
-      /* RENDERIZAÇÃO DA TABELA COM PAGINAÇÃO */
+      /* RENDERIZAÇÃO DA TABELA COM AUTOCORREÇÃO DE SALDO ZERADO */
       function renderTabela(lista) {
         var tbody = document.getElementById('tbodyComissoes');
         var totalRegistros = lista.length;
@@ -553,9 +562,20 @@
           var pct = Number(p.comissao_pct_efetiva !== undefined && p.comissao_pct_efetiva !== null ? p.comissao_pct_efetiva : (p.parceiros ? p.parceiros.comissao_padrao_pct : 10));
           var valComissaoTotal = (valTotal * pct) / 100;
           
-          var stComissao = p.comissao_status || (p.comissao_paga ? 'liquidado' : 'pendente');
           var valPagoAcumulado = Number(p.comissao_paga_valor || 0);
           var saldoRemanescente = Math.max(0, valComissaoTotal - valPagoAcumulado);
+
+          // CORREÇÃO CRÍTICA: Se o saldo zerou, força o status para liquidado
+          var stComissao = p.comissao_status || (p.comissao_paga ? 'liquidado' : 'pendente');
+          if (saldoRemanescente <= 0.01 && valComissaoTotal > 0 && stComissao !== 'cancelado') {
+            stComissao = 'liquidado';
+            // Auto-sincroniza silenciosamente com o banco de dados
+            if (p.comissao_status !== 'liquidado' || !p.comissao_paga) {
+              p.comissao_status = 'liquidado';
+              p.comissao_paga = true;
+              sbPartner.from('propostas').update({ comissao_status: 'liquidado', comissao_paga: true }).eq('id', p.id);
+            }
+          }
 
           var nomeParceiro = p.parceiros ? (p.parceiros.nome_completo || p.parceiros.email) : 'Vendedor ID ' + p.parceiro_id;
 
@@ -688,7 +708,6 @@
         var valJaPago = Number(p.comissao_paga_valor || 0);
         var saldoRestante = Math.max(0, valComissaoTotal - valJaPago);
 
-        // Preenche dados bancários do recebedor
         var parceiro = p.parceiros || {};
         document.getElementById('modalNomeVendedor').textContent = parceiro.nome_completo || parceiro.email || '—';
         document.getElementById('modalTipoPix').textContent = parceiro.tipo_pix || 'CPF/CNPJ';
@@ -708,7 +727,6 @@
         var inputVal = document.getElementById('inputValorPagamento');
 
         if (stComissao === 'solicitado' && valSolicitado > 0) {
-          // Existe uma solicitação de resgate do parceiro: pré-preenche e trava o valor
           boxSolicitado.classList.remove('hidden');
           document.getElementById('modalValorSolicitadoTxt').textContent = fmtMoeda(valSolicitado);
 
@@ -721,7 +739,6 @@
           document.getElementById('txtDicaInput').textContent = 'Valor solicitado pelo parceiro. Clique em "Alterar Valor" para editar.';
           btnAlterar.classList.remove('hidden');
         } else {
-          // Fluxo normal: sem solicitação em aberto
           boxSolicitado.classList.add('hidden');
           btnAlterar.classList.add('hidden');
 
@@ -733,7 +750,6 @@
         document.getElementById('modalBaixaContainer').classList.add('active');
       };
 
-      /* LIBERA O CAMPO DE VALOR PARA EDIÇÃO MANUAL (após solicitação pré-preenchida) */
       window.desbloquearValorBaixa = function () {
         var inputVal = document.getElementById('inputValorPagamento');
         inputVal.readOnly = false;
@@ -790,62 +806,99 @@
         }
       };
 
+      /* CONFIRMAR BAIXA (PIX) COM RATEIO EM CASCATA E LIMPEZA DE SOLICITAÇÕES FANTASMAS */
       window.confirmarBaixaModal = function () {
         if (!propostaAtivaModal) return;
 
-        var tipo = document.querySelector('input[name="tipoOperacao"]:checked').value;
         var inputVal = parseFloat(document.getElementById('inputValorPagamento').value) || 0;
         var comprovanteObs = document.getElementById('inputComprovante').value.trim();
 
-        var valTotal = Number(propostaAtivaModal.valor_total || 0);
-        var pct = Number(propostaAtivaModal.comissao_pct_efetiva !== undefined && propostaAtivaModal.comissao_pct_efetiva !== null ? propostaAtivaModal.comissao_pct_efetiva : (propostaAtivaModal.parceiros ? propostaAtivaModal.parceiros.comissao_padrao_pct : 10));
-        var valComissaoTotal = (valTotal * pct) / 100;
-        var valJaPago = Number(propostaAtivaModal.comissao_paga_valor || 0);
-
-        var updatePayload = {
-          comissao_comprovante: comprovanteObs
-        };
-
-        if (tipo === 'quitar') {
-          updatePayload.comissao_status = 'liquidado';
-          updatePayload.comissao_paga = true;
-          updatePayload.comissao_paga_valor = valComissaoTotal;
-          updatePayload.comissao_paga_em = new Date().toISOString();
-        } else {
-          if (inputVal <= 0) {
-            alert('Por favor, informe um valor válido para o adiantamento.');
-            return;
-          }
-
-          var novoTotalPago = valJaPago + inputVal;
-
-          if (novoTotalPago >= valComissaoTotal) {
-            updatePayload.comissao_status = 'liquidado';
-            updatePayload.comissao_paga = true;
-            updatePayload.comissao_paga_valor = valComissaoTotal;
-            updatePayload.comissao_paga_em = new Date().toISOString();
-          } else {
-            updatePayload.comissao_status = 'parcial';
-            updatePayload.comissao_paga = false;
-            updatePayload.comissao_paga_valor = novoTotalPago;
-          }
+        if (inputVal <= 0) {
+          alert('Por favor, informe um valor válido para o pagamento.');
+          return;
         }
 
         var btn = document.getElementById('btnConfirmarBaixaModal');
         btn.disabled = true;
         btn.textContent = 'Gravando...';
 
-        sbPartner.from('propostas').update(updatePayload).eq('id', propostaAtivaModal.id).then(function (res) {
-          btn.disabled = false;
-          btn.textContent = 'Confirmar Baixa (PIX)';
-          fecharModalBaixa();
+        var parceiroId = propostaAtivaModal.parceiro_id;
 
-          if (!res.error) {
-            carregarComissoes();
-          } else {
-            alert('Erro ao registrar baixa: ' + res.error.message);
-          }
-        });
+        sbPartner.from('propostas')
+          .select('*')
+          .eq('parceiro_id', parceiroId)
+          .then(function(resTodas) {
+            var propostasVendedor = resTodas.data || [];
+            var updatesPromises = [];
+
+            propostasVendedor.forEach(function(p) {
+              if (p.comissao_status === 'solicitado' || Number(p.comissao_solicitada_valor) > 0) {
+                var valPagoEx = Number(p.comissao_paga_valor || 0);
+                updatesPromises.push(
+                  sbPartner.from('propostas').update({
+                    comissao_status: valPagoEx > 0 ? 'parcial' : 'liberado',
+                    comissao_solicitada_valor: 0
+                  }).eq('id', p.id)
+                );
+              }
+            });
+
+            var propostasAbertas = propostasVendedor.filter(function(p) {
+              var stProp = String(p.status || '').toLowerCase().trim();
+              var stComissao = p.comissao_status || (p.comissao_paga ? 'liquidado' : 'pendente');
+              return (stProp === 'aprovada' || stProp === 'aprovado') && 
+                     stComissao !== 'liquidado' && 
+                     stComissao !== 'cancelado';
+            }).sort(function(a, b) {
+              return new Date(a.criado_em) - new Date(b.criado_em);
+            });
+
+            var valorRestanteAbate = inputVal;
+
+            propostasAbertas.forEach(function(p) {
+              if (valorRestanteAbate <= 0) return;
+
+              var valTotal = Number(p.valor_total || 0);
+              var pct = Number(p.comissao_pct_efetiva !== undefined && p.comissao_pct_efetiva !== null ? p.comissao_pct_efetiva : (p.parceiros ? p.parceiros.comissao_padrao_pct : 10));
+              var valComissaoTotal = (valTotal * pct) / 100;
+              var valJaPago = Number(p.comissao_paga_valor || 0);
+              var saldoRestante = Math.max(0, valComissaoTotal - valJaPago);
+
+              var updatePayload = {
+                comissao_comprovante: comprovanteObs,
+                comissao_solicitada_valor: 0
+              };
+
+              if (valorRestanteAbate >= saldoRestante) {
+                updatePayload.comissao_status = 'liquidado';
+                updatePayload.comissao_paga = true;
+                updatePayload.comissao_paga_valor = valComissaoTotal;
+                updatePayload.comissao_paga_em = new Date().toISOString();
+
+                valorRestanteAbate -= saldoRestante;
+              } else {
+                var novoTotalPago = valJaPago + valorRestanteAbate;
+                updatePayload.comissao_status = 'parcial';
+                updatePayload.comissao_paga = false;
+                updatePayload.comissao_paga_valor = novoTotalPago;
+
+                valorRestanteAbate = 0;
+              }
+
+              updatesPromises.push(sbPartner.from('propostas').update(updatePayload).eq('id', p.id));
+            });
+
+            Promise.all(updatesPromises).then(function() {
+              btn.disabled = false;
+              btn.textContent = 'Confirmar Baixa (PIX)';
+              fecharModalBaixa();
+              carregarComissoes();
+            }).catch(function(err) {
+              btn.disabled = false;
+              btn.textContent = 'Confirmar Baixa (PIX)';
+              alert('Erro ao registrar baixa: ' + (err.message || err));
+            });
+          });
       };
 
       window.alterarStatusComissaoDirecto = function (id, novoStatus, valComissaoTotal) {

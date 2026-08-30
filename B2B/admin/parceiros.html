@@ -5,7 +5,6 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
   <title>432UP Admin | Gestão de Usuários & Vendedores</title>
   
-  <!-- CSS Global do Site -->
   <link rel="stylesheet" href="../../css/style.css">
   <script src="https://cdn.tailwindcss.com"></script>
   
@@ -34,27 +33,20 @@
       filter: invert(0.8);
     }
     input[type="date"] {
-      font-size: 0.7rem !important;
-      padding-left: 0.4rem !important;
-      padding-right: 0.2rem !important;
       color-scheme: dark !important;
     }
   </style>
 </head>
 <body class="min-h-screen text-slate-200 font-sans antialiased bg-[#06080c]">
 
-  <!-- CANVAS DO FUNDO ESPACIAL INTEGRADO AO PROJETO -->
   <canvas id="orbit-canvas"></canvas>
   <div id="plasmaLayer" class="plasma-top-layer"></div>
 
-  <!-- HEADER E MENU MOBILE INJETADOS VIA PARTNER-HEADER.JS -->
   <header id="calc-header"></header>
   <div id="mobile-menu"></div>
 
-  <!-- CONTAINER EM FLUXO VERTICAL -->
   <div class="flex flex-col min-h-screen relative z-10 pb-16">
 
-    <!-- CONTEÚDO PRINCIPAL -->
     <main class="flex-1 p-4 lg:p-8 space-y-6 pt-28 lg:pt-28 w-full max-w-7xl mx-auto">
       
       <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
@@ -65,7 +57,6 @@
         </div>
       </div>
 
-      <!-- CARDS KPI RESUMO -->
       <div class="grid grid-cols-1 md:grid-cols-3 gap-4">
         <div class="glass-b2b p-5 rounded-2xl">
           <span class="text-xs font-semibold uppercase tracking-wider text-slate-400">Total de Usuários</span>
@@ -81,17 +72,14 @@
         </div>
       </div>
 
-      <!-- BARRA DE FILTROS AVANÇADA COM AUTOCOMPLETE -->
       <div class="glass-b2b filter-box-glass rounded-2xl p-4 sm:pr-6 border border-cyan-500/20 space-y-3 relative z-30">
-        <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3">
+        <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-5 gap-3">
           
-          <!-- Busca Textual Global -->
           <div>
             <label class="block text-[10px] uppercase text-slate-400 font-bold mb-1">Buscar Nome / E-mail</label>
             <input type="text" id="filterBusca" placeholder="Ex: Roberto ou roberto@email.com" oninput="aplicarFiltros()" class="w-full bg-slate-900/80 border border-white/10 rounded-xl px-3 py-2 text-xs text-white focus:border-cyan-400 focus:outline-none transition">
           </div>
 
-          <!-- Searchable Dropdown (Vendedor / Parceiro Autocomplete) -->
           <div class="relative" id="boxDropdownParceiro">
             <label class="block text-[10px] uppercase text-slate-400 font-bold mb-1">Seleção Específica</label>
             <div class="relative">
@@ -104,7 +92,6 @@
             </div>
           </div>
 
-          <!-- Filtro por Status de Acesso -->
           <div>
             <label class="block text-[10px] uppercase text-slate-400 font-bold mb-1">Status de Acesso</label>
             <select id="filterStatus" onchange="aplicarFiltros()" class="w-full bg-slate-900 border border-white/10 rounded-xl px-3 py-2 text-xs text-white focus:border-cyan-400 focus:outline-none transition cursor-pointer">
@@ -115,7 +102,6 @@
             </select>
           </div>
 
-          <!-- Filtro por Nível/Perfil -->
           <div>
             <label class="block text-[10px] uppercase text-slate-400 font-bold mb-1">Perfil de Acesso</label>
             <select id="filterPerfil" onchange="aplicarFiltros()" class="w-full bg-slate-900 border border-white/10 rounded-xl px-3 py-2 text-xs text-white focus:border-cyan-400 focus:outline-none transition cursor-pointer">
@@ -123,6 +109,17 @@
               <option value="vendedor">Vendedor B2B</option>
               <option value="gerente">Gerente Regional</option>
               <option value="admin">Master Admin</option>
+            </select>
+          </div>
+
+          <!-- NOVO FILTRO: ORDENAÇÃO POR ÚLTIMO ACESSO -->
+          <div>
+            <label class="block text-[10px] uppercase text-amber-400 font-bold mb-1">⚡ Ordenar Acesso</label>
+            <select id="filterOrdemAcesso" onchange="aplicarFiltros()" class="w-full bg-slate-900 border border-amber-500/30 rounded-xl px-3 py-2 text-xs text-white focus:border-amber-400 focus:outline-none transition cursor-pointer">
+              <option value="cadastro_desc" selected>Mais Recentes (Cadastro)</option>
+              <option value="acesso_desc">Acesso Recente ➔ Antigo</option>
+              <option value="acesso_asc">Acesso Antigo / Sem Acesso</option>
+              <option value="nome_asc">Nome (A ➔ Z)</option>
             </select>
           </div>
 
@@ -141,14 +138,14 @@
         </div>
       </div>
 
-      <!-- TABELA DE USUÁRIOS COM PAGINAÇÃO -->
       <div class="glass-b2b rounded-2xl p-6 border border-cyan-500/20">
         <div class="overflow-x-auto">
-          <table class="w-full text-left text-xs min-w-[700px]">
+          <table class="w-full text-left text-xs min-w-[950px]">
             <thead>
               <tr class="border-b border-white/10 text-slate-400 uppercase tracking-wider">
                 <th class="pb-3 px-3">Usuário / Email</th>
                 <th class="pb-3 px-3 text-center">Nível / Perfil</th>
+                <th class="pb-3 px-3 text-center">Último Acesso</th>
                 <th class="pb-3 px-3 text-center">Status Acesso</th>
                 <th class="pb-3 px-3 text-center">% Comissão Padronizada</th>
                 <th class="pb-3 px-3 text-right">Ações de Gestão</th>
@@ -156,13 +153,12 @@
             </thead>
             <tbody id="tbodyParceiros" class="divide-y divide-white/5 text-slate-200">
               <tr>
-                <td colspan="5" class="py-6 text-center text-slate-500">Carregando usuários do sistema...</td>
+                <td colspan="6" class="py-6 text-center text-slate-500">Carregando usuários do sistema...</td>
               </tr>
             </tbody>
           </table>
         </div>
 
-        <!-- RODAPÉ DE PAGINAÇÃO -->
         <div class="flex flex-col sm:flex-row items-center justify-between gap-3 pt-4 mt-4 border-t border-white/5 text-xs text-slate-400">
           <div class="flex items-center gap-2">
             <span>Exibir</span>
@@ -193,7 +189,6 @@
     </main>
   </div>
 
-  <!-- MODAL DE AUDITORIA & ALTERAÇÃO DE COMISSÃO -->
   <div id="modalAuditoriaComissao" class="fixed inset-0 bg-black/80 backdrop-blur-md hidden items-center justify-center p-4 z-[9999]">
     <div class="glass-b2b w-full max-w-lg p-6 rounded-2xl border border-amber-500/30 space-y-4 text-slate-200 shadow-[0_0_50px_rgba(245,158,11,0.2)]">
       <div class="flex items-center justify-between border-b border-white/10 pb-3">
@@ -257,153 +252,173 @@
     </div>
   </div>
 
-  <!-- MODAL FICHA COMPLETA DO PARCEIRO -->
-  <div id="modalFicha" class="fixed inset-0 bg-black/80 backdrop-blur-md hidden items-center justify-center p-4 z-50">
-    <div class="glass-b2b w-full max-w-3xl max-h-[90vh] overflow-y-auto p-6 rounded-2xl border border-cyan-500/30 space-y-5 text-slate-200 shadow-[0_0_50px_rgba(0,240,255,0.15)]">
+  <div id="modalFicha" class="fixed inset-0 bg-black/80 backdrop-blur-md hidden items-center justify-center p-4 sm:p-6 z-[9999]">
+    <div class="glass-b2b w-full max-w-3xl max-h-[90vh] overflow-y-auto rounded-2xl border border-cyan-500/30 text-slate-200 shadow-[0_0_50px_rgba(0,240,255,0.15)] relative flex flex-col">
       
-      <div class="flex items-center justify-between border-b border-white/10 pb-3 sticky top-0 bg-[#0a121c]/90 backdrop-blur-md z-10 -mt-2 pt-2">
+      <div class="flex items-center justify-between border-b border-white/10 px-6 py-4 sticky top-0 bg-[#0e1623]/95 backdrop-blur-md z-20 shrink-0">
         <div>
           <span class="text-[10px] font-bold text-cyan-400 uppercase tracking-widest block">Credenciamento & Cadastro B2B</span>
-          <h3 class="text-base font-bold text-white">Ficha Completa do Parceiro</h3>
+          <h3 class="text-base font-bold text-white tracking-tight">Ficha Completa do Parceiro</h3>
         </div>
-        <button id="btnFecharFicha" class="text-slate-400 hover:text-white text-lg font-bold">✕</button>
-      </div>
-
-      <!-- AVATAR E REGISTRO -->
-      <div class="flex items-center gap-4 bg-white/5 p-3 rounded-xl border border-white/10">
-        <div id="mAvatarPreview" class="w-16 h-16 rounded-full bg-slate-900 border border-cyan-500/40 bg-cover bg-center flex items-center justify-center text-2xl text-slate-500 shrink-0 overflow-hidden shadow-[0_0_15px_rgba(0,240,255,0.2)]">
-          <span id="mAvatarPlaceholder">📷</span>
-        </div>
-        <div class="flex-1">
-          <span class="text-sm font-bold text-white block" id="mAvatarNome">—</span>
-          <span class="text-[11px] text-cyan-400 font-mono block" id="mAvatarId">User ID: —</span>
-        </div>
-        <div class="text-right hidden sm:block">
-          <span class="text-[10px] uppercase font-bold text-slate-400 block">Termos & LGPD</span>
-          <span id="mTermosBadge" class="text-[11px] font-semibold text-emerald-400">Aceito</span>
+        <div class="flex items-center gap-3">
+          <button id="btnSalvarFicha" class="px-4 py-2 rounded-xl bg-cyan-500 hover:bg-cyan-400 text-slate-950 font-bold text-xs uppercase tracking-wider transition shadow-[0_0_15px_rgba(0,240,255,0.3)] cursor-pointer">Salvar Ficha Completa</button>
+          <button id="btnFecharFicha" class="text-slate-400 hover:text-white text-lg font-bold p-1 transition cursor-pointer">✕</button>
         </div>
       </div>
 
-      <!-- BLOCO 1: IDENTIFICAÇÃO E SOCIAL -->
-      <div class="space-y-3">
-        <h4 class="text-xs font-bold text-cyan-400 uppercase tracking-wider border-b border-white/10 pb-1.5">1. Dados de Identificação & Atuação</h4>
-        
-        <div class="grid grid-cols-1 sm:grid-cols-2 gap-3 text-xs">
-          <div>
-            <label class="block text-slate-300 uppercase font-semibold mb-1">Nome Completo *</label>
-            <input type="text" id="mNome" class="w-full bg-slate-900 border border-white/20 rounded-xl px-3 py-2 text-white focus:outline-none focus:border-cyan-400">
+      <div class="p-6 space-y-6 flex-1">
+
+        <div class="flex items-center gap-4 bg-white/5 p-4 rounded-xl border border-white/10">
+          <div id="mAvatarPreview" class="w-16 h-16 rounded-full bg-slate-900 border border-cyan-500/40 bg-cover bg-center flex items-center justify-center text-2xl text-slate-500 shrink-0 overflow-hidden shadow-[0_0_15px_rgba(0,240,255,0.2)]">
+            <span id="mAvatarPlaceholder">📷</span>
           </div>
-          <div>
-            <label class="block text-slate-300 uppercase font-semibold mb-1">Empresa / Agência *</label>
-            <input type="text" id="mEmpresa" class="w-full bg-slate-900 border border-white/20 rounded-xl px-3 py-2 text-white focus:outline-none focus:border-cyan-400">
+          <div class="flex-1">
+            <span class="text-base font-bold text-white block" id="mAvatarNome">—</span>
+            <span class="text-xs text-cyan-400 font-mono block mt-0.5" id="mAvatarId">User ID: —</span>
+          </div>
+          <div class="text-right hidden sm:block">
+            <span class="text-[10px] uppercase font-bold text-slate-400 block">Termos & LGPD</span>
+            <span id="mTermosBadge" class="text-xs font-semibold text-emerald-400">Aceito</span>
           </div>
         </div>
 
-        <div class="grid grid-cols-1 sm:grid-cols-3 gap-3 text-xs">
-          <div>
-            <label class="block text-slate-300 uppercase font-semibold mb-1">CPF ou CNPJ</label>
-            <input type="text" id="mCpfCnpj" maxlength="18" placeholder="000.000.000-00" class="w-full bg-slate-900 border border-white/20 rounded-xl px-3 py-2 text-white focus:outline-none focus:border-cyan-400">
-          </div>
-          <div>
-            <label class="block text-slate-300 uppercase font-semibold mb-1">Data de Nascimento</label>
-            <input type="date" id="mNascimento" class="w-full bg-slate-900 border border-white/20 rounded-xl px-3 py-2 text-white focus:outline-none focus:border-cyan-400 [color-scheme:dark]">
-          </div>
-          <div>
-            <label class="block text-slate-300 uppercase font-semibold mb-1">WhatsApp *</label>
-            <input type="tel" id="mWhatsapp" maxlength="15" placeholder="(11) 99999-9999" class="w-full bg-slate-900 border border-white/20 rounded-xl px-3 py-2 text-white focus:outline-none focus:border-cyan-400">
-          </div>
-        </div>
-
-        <div class="grid grid-cols-1 sm:grid-cols-3 gap-3 text-xs">
-          <div>
-            <label class="block text-slate-300 uppercase font-semibold mb-1">E-mail de Login</label>
-            <input type="email" id="mEmail" disabled class="w-full bg-slate-950 border border-white/10 rounded-xl px-3 py-2 text-slate-500 cursor-not-allowed">
-          </div>
-          <div>
-            <label class="block text-slate-300 uppercase font-semibold mb-1">Instagram / Site / Portfólio</label>
-            <input type="text" id="mInstagram" placeholder="@suaempresa ou https://..." class="w-full bg-slate-900 border border-white/20 rounded-xl px-3 py-2 text-white focus:outline-none focus:border-cyan-400">
-          </div>
-          <div>
-            <label class="block text-slate-300 uppercase font-semibold mb-1">Perfil de Atuação</label>
-            <select id="mPerfil" class="w-full bg-slate-900 border border-white/20 rounded-xl px-3 py-2 text-xs text-white focus:outline-none focus:border-cyan-400">
-              <option value="cerimonialista">Cerimonialista / Assessoria de Eventos</option>
-              <option value="agencia_corporativa">Agência de Eventos Corporativos</option>
-              <option value="produtor_independente">Produtor Independente / Arquiteto Cênico</option>
-              <option value="hotelaria_espaco">Hotelaria de Luxo / Espaço de Eventos</option>
-              <option value="outro">Outro</option>
-            </select>
-          </div>
-        </div>
-      </div>
-
-      <!-- BLOCO 2: ENDEREÇO COM BUSCA POR CEP -->
-      <div class="space-y-3 pt-1">
-        <h4 class="text-xs font-bold text-cyan-400 uppercase tracking-wider border-b border-white/10 pb-1.5">2. Endereço Comercial</h4>
-
-        <div class="grid grid-cols-1 sm:grid-cols-3 gap-3 text-xs">
-          <div>
-            <label class="block text-slate-300 uppercase font-semibold mb-1">CEP (Busca Automática)</label>
-            <div class="relative">
-              <input type="text" id="mCep" maxlength="9" placeholder="00000-000" class="w-full bg-slate-900 border border-white/20 rounded-xl px-3 py-2 text-white focus:outline-none focus:border-cyan-400">
-              <span id="mCepSpinner" class="hidden absolute right-3 top-2.5 text-xs text-cyan-400 animate-spin">⌛</span>
+        <div class="bg-slate-900/60 p-3.5 rounded-xl border border-white/10 space-y-2 text-xs">
+          <span class="text-[10px] font-bold text-amber-400 uppercase tracking-widest block">⚡ Controle de Atividade & Telemetria</span>
+          <div class="grid grid-cols-2 sm:grid-cols-4 gap-3 text-[11px]">
+            <div>
+              <span class="text-slate-400 block text-[10px] uppercase font-semibold">Último Login:</span>
+              <strong id="mUltimoLogin" class="text-white">—</strong>
+            </div>
+            <div>
+              <span class="text-slate-400 block text-[10px] uppercase font-semibold">Última Atividade:</span>
+              <strong id="mUltimaAtividade" class="text-cyan-300">—</strong>
+            </div>
+            <div>
+              <span class="text-slate-400 block text-[10px] uppercase font-semibold">Última Página:</span>
+              <span id="mUltimaPagina" class="text-slate-300 font-mono truncate block">—</span>
+            </div>
+            <div>
+              <span class="text-slate-400 block text-[10px] uppercase font-semibold">Navegador / SO:</span>
+              <span id="mDispositivo" class="text-slate-300 truncate block">—</span>
             </div>
           </div>
-          <div class="sm:col-span-2">
-            <label class="block text-slate-300 uppercase font-semibold mb-1">Endereço (Rua, Nº, Complemento)</label>
-            <input type="text" id="mEndereco" placeholder="Ex: Av. Paulista, 1000 - Cj 42" class="w-full bg-slate-900 border border-white/20 rounded-xl px-3 py-2 text-white focus:outline-none focus:border-cyan-400">
+        </div>
+
+        <div class="space-y-3">
+          <h4 class="text-xs font-bold text-cyan-400 uppercase tracking-wider border-b border-white/10 pb-2">1. Dados de Identificação & Atuação</h4>
+          
+          <div class="grid grid-cols-1 sm:grid-cols-2 gap-3 text-xs">
+            <div>
+              <label class="block text-slate-300 uppercase font-semibold mb-1">Nome Completo *</label>
+              <input type="text" id="mNome" class="w-full bg-slate-900 border border-white/20 rounded-xl px-3 py-2 text-white focus:outline-none focus:border-cyan-400">
+            </div>
+            <div>
+              <label class="block text-slate-300 uppercase font-semibold mb-1">Empresa / Agência *</label>
+              <input type="text" id="mEmpresa" class="w-full bg-slate-900 border border-white/20 rounded-xl px-3 py-2 text-white focus:outline-none focus:border-cyan-400">
+            </div>
+          </div>
+
+          <div class="grid grid-cols-1 sm:grid-cols-3 gap-3 text-xs">
+            <div>
+              <label class="block text-slate-300 uppercase font-semibold mb-1">CPF ou CNPJ</label>
+              <input type="text" id="mCpfCnpj" maxlength="18" placeholder="000.000.000-00" class="w-full bg-slate-900 border border-white/20 rounded-xl px-3 py-2 text-white focus:outline-none focus:border-cyan-400">
+            </div>
+            <div>
+              <label class="block text-slate-300 uppercase font-semibold mb-1">Data de Nascimento</label>
+              <input type="date" id="mNascimento" class="w-full bg-slate-900 border border-white/20 rounded-xl px-3 py-2 text-white focus:outline-none focus:border-cyan-400 [color-scheme:dark]">
+            </div>
+            <!-- CORREÇÃO NA CAIXINHA DE WHATSAPP: ALINHAMENTO E ESPAÇAMENTO REFEITOS -->
+            <div>
+              <label class="block text-slate-300 uppercase font-semibold mb-1">WhatsApp *</label>
+              <input type="tel" id="mWhatsapp" maxlength="15" placeholder="(11) 99999-9999" class="w-full bg-slate-900 border border-white/20 rounded-xl px-3 py-2 text-white font-sans text-xs focus:outline-none focus:border-cyan-400 leading-normal tracking-wide">
+            </div>
+          </div>
+
+          <div class="grid grid-cols-1 sm:grid-cols-3 gap-3 text-xs">
+            <div>
+              <label class="block text-slate-300 uppercase font-semibold mb-1">E-mail de Login</label>
+              <input type="email" id="mEmail" disabled class="w-full bg-slate-950/80 border border-white/10 rounded-xl px-3 py-2 text-slate-300 cursor-not-allowed">
+            </div>
+            <div>
+              <label class="block text-slate-300 uppercase font-semibold mb-1">Instagram / Site / Portfólio</label>
+              <input type="text" id="mInstagram" placeholder="@suaempresa ou https://..." class="w-full bg-slate-900 border border-white/20 rounded-xl px-3 py-2 text-white focus:outline-none focus:border-cyan-400">
+            </div>
+            <div>
+              <label class="block text-slate-300 uppercase font-semibold mb-1">Perfil de Atuação</label>
+              <select id="mPerfil" class="w-full bg-slate-900 border border-white/20 rounded-xl px-3 py-2 text-xs text-white focus:outline-none focus:border-cyan-400 truncate">
+                <option value="cerimonialista">Cerimonialista / Assessoria de Eventos</option>
+                <option value="agencia_corporativa">Agência de Eventos Corporativos</option>
+                <option value="produtor_independente">Produtor Independente / Arquiteto Cênico</option>
+                <option value="hotelaria_espaco">Hotelaria de Luxo / Espaço de Eventos</option>
+                <option value="outro">Outro</option>
+              </select>
+            </div>
           </div>
         </div>
 
-        <div class="grid grid-cols-1 sm:grid-cols-3 gap-3 text-xs">
-          <div>
-            <label class="block text-slate-300 uppercase font-semibold mb-1">Bairro</label>
-            <input type="text" id="mBairro" placeholder="Bairro" class="w-full bg-slate-900 border border-white/20 rounded-xl px-3 py-2 text-white focus:outline-none focus:border-cyan-400">
+        <div class="space-y-3 pt-2">
+          <h4 class="text-xs font-bold text-cyan-400 uppercase tracking-wider border-b border-white/10 pb-2">2. Endereço Comercial</h4>
+
+          <div class="grid grid-cols-1 sm:grid-cols-3 gap-3 text-xs">
+            <div>
+              <label class="block text-slate-300 uppercase font-semibold mb-1">CEP (Busca Automática)</label>
+              <div class="relative">
+                <input type="text" id="mCep" maxlength="9" placeholder="00000-000" class="w-full bg-slate-900 border border-white/20 rounded-xl px-3 py-2 text-white focus:outline-none focus:border-cyan-400">
+                <span id="mCepSpinner" class="hidden absolute right-3 top-2.5 text-xs text-cyan-400 animate-spin">⌛</span>
+              </div>
+            </div>
+            <div class="sm:col-span-2">
+              <label class="block text-slate-300 uppercase font-semibold mb-1">Endereço (Rua, Nº, Complemento)</label>
+              <input type="text" id="mEndereco" placeholder="Ex: Av. Paulista, 1000 - Cj 42" class="w-full bg-slate-900 border border-white/20 rounded-xl px-3 py-2 text-white focus:outline-none focus:border-cyan-400">
+            </div>
           </div>
-          <div>
-            <label class="block text-slate-300 uppercase font-semibold mb-1">Cidade</label>
-            <input type="text" id="mCidade" placeholder="Cidade" class="w-full bg-slate-900 border border-white/20 rounded-xl px-3 py-2 text-white focus:outline-none focus:border-cyan-400">
-          </div>
-          <div>
-            <label class="block text-slate-300 uppercase font-semibold mb-1">Estado (UF)</label>
-            <input type="text" id="mEstado" maxlength="2" placeholder="SP" class="w-full bg-slate-900 border border-white/20 rounded-xl px-3 py-2 text-white uppercase focus:outline-none focus:border-cyan-400">
+
+          <div class="grid grid-cols-1 sm:grid-cols-3 gap-3 text-xs">
+            <div>
+              <label class="block text-slate-300 uppercase font-semibold mb-1">Bairro</label>
+              <input type="text" id="mBairro" placeholder="Bairro" class="w-full bg-slate-900 border border-white/20 rounded-xl px-3 py-2 text-white focus:outline-none focus:border-cyan-400">
+            </div>
+            <div>
+              <label class="block text-slate-300 uppercase font-semibold mb-1">Cidade</label>
+              <input type="text" id="mCidade" placeholder="Cidade" class="w-full bg-slate-900 border border-white/20 rounded-xl px-3 py-2 text-white focus:outline-none focus:border-cyan-400">
+            </div>
+            <div>
+              <label class="block text-slate-300 uppercase font-semibold mb-1">Estado (UF)</label>
+              <input type="text" id="mEstado" maxlength="2" placeholder="SP" class="w-full bg-slate-900 border border-white/20 rounded-xl px-3 py-2 text-white uppercase focus:outline-none focus:border-cyan-400">
+            </div>
           </div>
         </div>
-      </div>
 
-      <!-- BLOCO 3: DADOS FINANCEIROS (PIX) -->
-      <div class="space-y-3 pt-1">
-        <h4 class="text-xs font-bold text-amber-400 uppercase tracking-wider border-b border-amber-500/20 pb-1.5">3. Dados Financeiros (Repasse de Comissão)</h4>
+        <div class="space-y-3 pt-2">
+          <h4 class="text-xs font-bold text-amber-400 uppercase tracking-wider border-b border-amber-500/20 pb-2">3. Dados Financeiros (Repasse de Comissão)</h4>
 
-        <div class="grid grid-cols-1 sm:grid-cols-3 gap-3 text-xs">
-          <div>
-            <label class="block text-slate-300 uppercase font-semibold mb-1">Tipo de Chave PIX</label>
-            <select id="mTipoPix" class="w-full bg-slate-900 border border-white/20 rounded-xl px-3 py-2 text-white focus:outline-none focus:border-amber-400">
-              <option value="cpf_cnpj">CPF / CNPJ</option>
-              <option value="email">E-mail</option>
-              <option value="celular">Celular</option>
-              <option value="chave_aleatoria">Chave Aleatória (EVP)</option>
-            </select>
-          </div>
-          <div class="sm:col-span-2">
-            <label class="block text-slate-300 uppercase font-semibold mb-1">Chave PIX para Recebimento</label>
-            <input type="text" id="mChavePix" placeholder="Informe a chave PIX do parceiro" class="w-full bg-slate-900 border border-amber-500/30 rounded-xl px-3 py-2 text-white focus:outline-none focus:border-amber-400">
+          <div class="grid grid-cols-1 sm:grid-cols-3 gap-3 text-xs">
+            <div>
+              <label class="block text-slate-300 uppercase font-semibold mb-1">Tipo de Chave PIX</label>
+              <select id="mTipoPix" class="w-full bg-slate-900 border border-white/20 rounded-xl px-3 py-2 text-white focus:outline-none focus:border-amber-400">
+                <option value="cpf_cnpj">CPF / CNPJ</option>
+                <option value="email">E-mail</option>
+                <option value="celular">Celular</option>
+                <option value="chave_aleatoria">Chave Aleatória (EVP)</option>
+              </select>
+            </div>
+            <div class="sm:col-span-2">
+              <label class="block text-slate-300 uppercase font-semibold mb-1">Chave PIX para Recebimento</label>
+              <input type="text" id="mChavePix" placeholder="Informe a chave PIX do parceiro" class="w-full bg-slate-900 border border-amber-500/30 rounded-xl px-3 py-2 text-white focus:outline-none focus:border-amber-400">
+            </div>
           </div>
         </div>
+
+        <div class="pt-2">
+          <label class="block text-xs text-amber-400 font-bold uppercase tracking-wider mb-2">🔒 Observações Internas (Visível apenas para o Master)</label>
+          <textarea id="mObsAdmin" rows="3" placeholder="Anotações internas sobre este parceiro..." class="w-full bg-slate-950/80 border border-amber-500/30 rounded-xl p-3 text-xs text-white focus:outline-none focus:border-amber-400"></textarea>
+        </div>
+
       </div>
 
-      <!-- BLOCO 4: ANOTAÇÕES INTERNAS -->
-      <div class="pt-1 border-t border-white/10">
-        <label class="block text-xs text-amber-400 font-bold uppercase tracking-wider mb-1">🔒 Observações Internas (Visível apenas para o Master)</label>
-        <textarea id="mObsAdmin" rows="3" placeholder="Anotações internas sobre este parceiro..." class="w-full bg-slate-950/80 border border-amber-500/30 rounded-xl p-2.5 text-xs text-white focus:outline-none focus:border-amber-400"></textarea>
-      </div>
-
-      <div class="flex justify-end gap-2 pt-2 border-t border-white/10 sticky bottom-0 bg-[#0a121c]/90 backdrop-blur-md pb-1">
-        <button id="btnSalvarFicha" class="px-5 py-2.5 rounded-xl bg-cyan-500 hover:bg-cyan-400 text-slate-950 font-bold text-xs uppercase tracking-wider transition shadow-[0_0_15px_rgba(0,240,255,0.3)] cursor-pointer">Salvar Ficha Completa</button>
-      </div>
     </div>
   </div>
 
-  <!-- SCRIPTS DA APLICAÇÃO -->
   <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
   <script src="../partner-config.js" onerror="this.src='../../partner-config.js'"></script>
   <script src="../partner-header.js"></script>
@@ -418,16 +433,39 @@
       var parceiroSelecionadoId = null;
       var parceiroAuditoriaAtivo = null;
 
-      // Estado da Paginação
       var paginaAtual = 1;
       var itensPorPagina = 10;
 
       function esc(s) { return String(s == null ? '' : s).replace(/</g, '&lt;').replace(/>/g, '&gt;'); }
 
-      /* MÁSCARAS E MÁSCARAS DE ENTRADA DO MODAL ADMIN */
+      function formatarAcesso(dataIso) {
+        if (!dataIso) return '<span class="text-slate-600">—</span>';
+        
+        var data = new Date(dataIso);
+        var agora = new Date();
+        var diffMinutos = (agora - data) / (1000 * 60);
+        
+        var badgeAtivo = diffMinutos <= 15 
+          ? '<span class="inline-block w-2 h-2 rounded-full bg-emerald-400 mr-1.5 shadow-[0_0_8px_rgba(52,211,153,0.8)]" title="Atividade recente (últimos 15 min)"></span>' 
+          : '';
+
+        var dataFormatada = data.toLocaleDateString('pt-BR', { day: '2-digit', month: '2-digit' }) + 
+                            ' ' + data.toLocaleTimeString('pt-BR', { hour: '2-digit', minute: '2-digit' });
+
+        return '<div class="flex items-center justify-center text-[11px] text-slate-300 font-mono whitespace-nowrap">' + 
+                  badgeAtivo + dataFormatada + 
+               '</div>';
+      }
+
+      function formatarDataHora(dt) {
+        if (!dt) return '—';
+        return new Date(dt).toLocaleString('pt-BR', { day: '2-digit', month: '2-digit', year: 'numeric', hour: '2-digit', minute: '2-digit' });
+      }
+
+      // MÁSCARA AJUSTADA DE WHATSAPP PARA EVITAR DESALINHAMENTOS
       function formatWhatsApp(v) {
         if (!v) return '';
-        v = v.replace(/\D/g, '');
+        v = String(v).trim().replace(/\D/g, '');
         if (v.length > 11) v = v.substring(0, 11);
         if (v.length > 10) return v.replace(/^(\d{2})(\d{5})(\d{4})$/, '($1) $2-$3');
         if (v.length > 6) return v.replace(/^(\d{2})(\d{4})(\d{0,4})$/, '($1) $2-$3');
@@ -521,7 +559,7 @@
         sbPartner.from('parceiros').select('*').order('criado_em', { ascending: false }).then(function (res) {
           var tbody = document.getElementById('tbodyParceiros');
           if (res.error) {
-            tbody.innerHTML = '<tr><td colspan="5" class="py-4 text-center text-red-400">Erro ao carregar usuários: ' + esc(res.error.message) + '</td></tr>';
+            tbody.innerHTML = '<tr><td colspan="6" class="py-4 text-center text-red-400">Erro ao carregar usuários: ' + esc(res.error.message) + '</td></tr>';
             return;
           }
 
@@ -530,7 +568,6 @@
         });
       }
 
-      /* CONFIGURAÇÃO DO AUTOCOMPLETE */
       function configurarAutocompleteParceiro() {
         var inputSearch = document.getElementById('filterParceiroSearch');
         var inputVal = document.getElementById('filterParceiroVal');
@@ -594,12 +631,13 @@
         aplicarFiltros();
       };
 
-      /* APLICAR E RESETAR FILTROS */
+      /* APLICAR E FILTRAR COM SUPORTE À ORDENAÇÃO DE ATIVIDADE */
       window.aplicarFiltros = function() {
         var busca = (document.getElementById('filterBusca').value || '').toLowerCase().trim();
         var parceiroId = document.getElementById('filterParceiroVal').value;
         var statusFiltro = document.getElementById('filterStatus').value;
         var perfilFiltro = document.getElementById('filterPerfil').value;
+        var ordemAcesso = document.getElementById('filterOrdemAcesso').value;
 
         listaFiltrada = listaParceiros.filter(function(p) {
           var nomeStr = String(p.nome_completo || '').toLowerCase();
@@ -620,6 +658,28 @@
           return matchBusca && matchParceiro && matchStatus && matchPerfil;
         });
 
+        // REGRAS DE ORDENAÇÃO DÁ LISTA
+        listaFiltrada.sort(function(a, b) {
+          if (ordemAcesso === 'acesso_desc') {
+            var dtA = new Date(a.ultima_atividade || a.ultimo_login || 0).getTime();
+            var dtB = new Date(b.ultima_atividade || b.ultimo_login || 0).getTime();
+            return dtB - dtA;
+          } else if (ordemAcesso === 'acesso_asc') {
+            var dtA = new Date(a.ultima_atividade || a.ultimo_login || 0).getTime();
+            var dtB = new Date(b.ultima_atividade || b.ultimo_login || 0).getTime();
+            return dtA - dtB;
+          } else if (ordemAcesso === 'nome_asc') {
+            var nomeA = String(a.nome_completo || a.email).toLowerCase();
+            var nomeB = String(b.nome_completo || b.email).toLowerCase();
+            return nomeA.localeCompare(nomeB);
+          } else {
+            // Padrão: cadastro_desc (mais recentes no topo)
+            var dtCadA = new Date(a.criado_em || 0).getTime();
+            var dtCadB = new Date(b.criado_em || 0).getTime();
+            return dtCadB - dtCadA;
+          }
+        });
+
         paginaAtual = 1;
         atualizarKPIs(listaFiltrada);
         renderTabela(listaFiltrada);
@@ -631,6 +691,7 @@
         document.getElementById('filterParceiroSearch').value = '';
         document.getElementById('filterStatus').value = '';
         document.getElementById('filterPerfil').value = '';
+        document.getElementById('filterOrdemAcesso').value = 'cadastro_desc';
         aplicarFiltros();
       };
 
@@ -653,7 +714,7 @@
         var totalRegistros = lista.length;
 
         if (!totalRegistros) {
-          tbody.innerHTML = '<tr><td colspan="5" class="py-6 text-center text-slate-500">Nenhum usuário encontrado para os filtros aplicados.</td></tr>';
+          tbody.innerHTML = '<tr><td colspan="6" class="py-6 text-center text-slate-500">Nenhum usuário encontrado para os filtros aplicados.</td></tr>';
           atualizarControlesPaginacao(0, 0, 0);
           return;
         }
@@ -673,34 +734,37 @@
           var stColorClass = isAprovado ? 'text-emerald-400 border-emerald-500/40' : (isPendente ? 'text-amber-400 border-amber-500/40' : 'text-red-400 border-red-500/40');
           var nivelVal = String(p.role || p.nivel || 'vendedor').toLowerCase().trim();
 
-          return '<tr class="hover:bg-white/[0.02] transition">' +
-            '<td class="py-3 px-3">' +
-              '<strong class="text-white block text-sm">' + esc(p.nome_completo || p.email) + '</strong>' +
-              '<span class="text-slate-400 text-[11px]">' + esc(p.email) + ' • ' + esc(p.whatsapp || p.telefone || 'S/ Telefone') + '</span>' +
+          return '<tr class="hover:bg-white/[0.02] transition border-b border-white/5">' +
+            '<td class="py-3 px-3 min-w-[200px] text-left">' +
+              '<strong class="text-white block text-sm font-semibold truncate">' + esc(p.nome_completo || p.email) + '</strong>' +
+              '<span class="text-slate-400 text-[11px] block truncate">' + esc(p.email) + ' • ' + esc(formatWhatsApp(p.whatsapp || p.telefone) || 'S/ Telefone') + '</span>' +
             '</td>' +
-            '<td class="py-3 px-3 text-center">' +
-              '<select onchange="salvarNivel(\'' + p.id + '\', this.value)" class="bg-slate-900 border border-white/20 rounded px-2 py-1 text-[11px] text-cyan-300 font-semibold focus:outline-none cursor-pointer">' +
+            '<td class="py-3 px-3 text-center whitespace-nowrap">' +
+              '<select onchange="salvarNivel(\'' + p.id + '\', this.value)" class="bg-slate-900 border border-white/20 rounded-lg px-2 py-1 text-[11px] text-cyan-300 font-semibold focus:outline-none cursor-pointer">' +
                 '<option value="vendedor" ' + (nivelVal === 'vendedor' ? 'selected' : '') + '>Vendedor B2B</option>' +
                 '<option value="gerente" ' + (nivelVal === 'gerente' ? 'selected' : '') + '>Gerente Regional</option>' +
                 '<option value="admin" ' + (nivelVal === 'admin' ? 'selected' : '') + '>Master Admin</option>' +
               '</select>' +
             '</td>' +
-            '<td class="py-3 px-3 text-center">' +
-              '<select onchange="alterarStatus(\'' + p.id + '\', this.value)" class="bg-slate-900 border rounded px-2 py-1 text-[11px] font-bold uppercase focus:outline-none cursor-pointer ' + stColorClass + '">' +
+            '<td class="py-3 px-3 text-center whitespace-nowrap">' + formatarAcesso(p.ultima_atividade || p.ultimo_login) + '</td>' +
+            '<td class="py-3 px-3 text-center whitespace-nowrap">' +
+              '<select onchange="alterarStatus(\'' + p.id + '\', this.value)" class="bg-slate-900 border rounded-lg px-2 py-1 text-[11px] font-bold uppercase focus:outline-none cursor-pointer ' + stColorClass + '">' +
                 '<option value="aprovado" class="text-emerald-400" ' + (isAprovado ? 'selected' : '') + '>Aprovado</option>' +
                 '<option value="pendente" class="text-amber-400" ' + (isPendente ? 'selected' : '') + '>Pendente</option>' +
                 '<option value="bloqueado" class="text-red-400" ' + (!isAprovado && !isPendente ? 'selected' : '') + '>Bloqueado</option>' +
               '</select>' +
             '</td>' +
-            '<td class="py-3 px-3 text-center">' +
+            '<td class="py-3 px-3 text-center whitespace-nowrap">' +
               '<div class="inline-flex items-center justify-center gap-1.5 bg-slate-900/90 border border-amber-500/30 rounded-lg px-2.5 py-1">' +
                 '<strong class="font-bold text-amber-400 text-xs">' + Number(p.comissao_padrao_pct || 10).toFixed(1) + '%</strong>' +
               '</div>' +
             '</td>' +
-            '<td class="py-3 px-3 text-right space-x-1.5">' +
-              '<button onclick="abrirFichaParceiro(\'' + p.id + '\')" class="px-2.5 py-1 rounded bg-amber-500/20 hover:bg-amber-500/30 text-amber-300 border border-amber-500/30 text-[11px] font-semibold transition cursor-pointer">Ficha</button>' +
-              '<button onclick="abrirModalAuditoria(\'' + p.id + '\')" class="px-2.5 py-1 rounded bg-cyan-500/20 hover:bg-cyan-500/30 text-cyan-300 border border-cyan-500/30 text-[11px] font-semibold transition cursor-pointer">Ajustar %</button>' +
-              '<button onclick="excluirUsuario(\'' + p.id + '\')" class="px-2.5 py-1 rounded bg-red-500/20 hover:bg-red-500/30 text-red-300 border border-red-500/30 text-[11px] font-semibold transition cursor-pointer">Excluir</button>' +
+            '<td class="py-3 px-3 text-right whitespace-nowrap shrink-0">' +
+              '<div class="inline-flex items-center justify-end gap-1.5">' +
+                '<button onclick="abrirFichaParceiro(\'' + p.id + '\')" class="px-2.5 py-1 rounded-lg bg-amber-500/20 hover:bg-amber-500/30 text-amber-300 border border-amber-500/30 text-[11px] font-semibold transition cursor-pointer">Ficha</button>' +
+                '<button onclick="abrirModalAuditoria(\'' + p.id + '\')" class="px-2.5 py-1 rounded-lg bg-cyan-500/20 hover:bg-cyan-500/30 text-cyan-300 border border-cyan-500/30 text-[11px] font-semibold transition cursor-pointer">Ajustar %</button>' +
+                '<button onclick="excluirUsuario(\'' + p.id + '\')" class="px-2.5 py-1 rounded-lg bg-red-500/20 hover:bg-red-500/30 text-red-300 border border-red-500/30 text-[11px] font-semibold transition cursor-pointer">Excluir</button>' +
+              '</div>' +
             '</td>' +
           '</tr>';
         }).join('');
@@ -728,14 +792,13 @@
         renderTabela(listaFiltrada);
       };
 
-      /* EXPORTAÇÃO CSV */
       window.exportarCSV = function() {
         if (!listaFiltrada.length) {
           alert('Nenhum dado disponível para exportar.');
           return;
         }
 
-        var header = ["ID", "Nome Completo", "Email", "WhatsApp", "Status", "Perfil", "% Comissao"];
+        var header = ["ID", "Nome Completo", "Email", "WhatsApp", "Status", "Perfil", "% Comissao", "Ultima Atividade"];
         var rows = listaFiltrada.map(function(p) {
           return [
             '="' + p.id + '"',
@@ -744,7 +807,8 @@
             '"' + (p.whatsapp || p.telefone || '').replace(/"/g, '""') + '"',
             p.status || 'pendente',
             p.role || p.nivel || 'vendedor',
-            Number(p.comissao_padrao_pct || 10)
+            Number(p.comissao_padrao_pct || 10),
+            '"' + (p.ultima_atividade || p.ultimo_login || '') + '"'
           ].join(';');
         });
 
@@ -758,7 +822,6 @@
         document.body.removeChild(link);
       };
 
-      /* MODAL DE AUDITORIA DE COMISSÃO */
       window.abrirModalAuditoria = function(id) {
         var p = listaParceiros.find(function(item) { return String(item.id) === String(id); });
         if (!p) return;
@@ -817,7 +880,6 @@
 
         var novaPct = parseFloat(document.getElementById('inputNovaComissao').value);
 
-        /* 1. Validação no Front-end (0% a 100%) */
         if (isNaN(novaPct) || novaPct < 0 || novaPct > 100) {
           alert('A porcentagem de comissão deve ser um valor entre 0% e 100%.');
           return;
@@ -853,7 +915,6 @@
 
         sbPartner.from('parceiros').update(payload).eq('id', parceiroAuditoriaAtivo.id).then(function(res) {
           if (res.error) {
-            /* 2. Tratamento do Erro do Banco de Dados */
             var msgErro = res.error.message;
             if (msgErro.includes('parceiros_comissao_padrao_pct_check')) {
               msgErro = 'A porcentagem de comissão deve ser um valor entre 0% e 100%.';
@@ -915,12 +976,17 @@
         }
       };
 
-      /* ABRIR FICHA COMPLETA DO PARCEIRO */
       window.abrirFichaParceiro = function (id) {
         var parceiro = listaParceiros.find(function (item) { return item.id === id; });
         if (!parceiro) return;
 
         parceiroSelecionadoId = parceiro.id;
+
+        // Telemetria & Atividade
+        document.getElementById('mUltimoLogin').textContent = formatarDataHora(parceiro.ultimo_login);
+        document.getElementById('mUltimaAtividade').textContent = formatarDataHora(parceiro.ultima_atividade);
+        document.getElementById('mUltimaPagina').textContent = parceiro.ultima_pagina || '—';
+        document.getElementById('mDispositivo').textContent = parceiro.user_agent ? (parceiro.user_agent.substring(0, 28) + '...') : '—';
 
         // Bloco 1: Identificação & Social
         document.getElementById('mNome').value = parceiro.nome_completo || '';
@@ -951,10 +1017,10 @@
           if (parceiro.termos_aceitos) {
             var dtAceite = parceiro.termos_aceitos_em ? new Date(parceiro.termos_aceitos_em).toLocaleDateString('pt-BR') : '';
             badgeTermos.textContent = 'Aceito ' + (dtAceite ? '(' + dtAceite + ')' : '');
-            badgeTermos.className = 'text-[11px] font-semibold text-emerald-400';
+            badgeTermos.className = 'text-xs font-semibold text-emerald-400';
           } else {
             badgeTermos.textContent = 'Pendente';
-            badgeTermos.className = 'text-[11px] font-semibold text-amber-400';
+            badgeTermos.className = 'text-xs font-semibold text-amber-400';
           }
         }
 
@@ -984,13 +1050,12 @@
         modal.classList.remove('flex');
       });
 
-      /* SALVAR FICHA COMPLETA DO PARCEIRO */
       document.getElementById('btnSalvarFicha').addEventListener('click', function () {
         if (!parceiroSelecionadoId) return;
 
         var btn = this;
         btn.disabled = true;
-        btn.textContent = 'Salvando Ficha...';
+        btn.textContent = 'Salvando...';
 
         var payload = {
           nome_completo: document.getElementById('mNome').value.trim(),
