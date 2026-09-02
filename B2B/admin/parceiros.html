@@ -57,7 +57,6 @@
       border: 2px solid rgba(245, 158, 11, 0.8);
     }
     
-    /* CORREÇÃO DE Z-INDEX DO BOTÃO DE EXCLUSÃO INDIVIDUAL */
     .btn-remove-galeria-admin {
       position: absolute;
       top: 4px;
@@ -151,13 +150,9 @@
           </div>
 
           <div>
-            <label class="block text-[10px] uppercase text-slate-400 font-bold mb-1">Perfil de Acesso</label>
-            <select id="filterPerfil" onchange="aplicarFiltros()" class="w-full bg-slate-900 border border-white/10 rounded-xl px-3 py-2 text-xs text-white focus:border-cyan-400 focus:outline-none transition cursor-pointer">
+            <label class="block text-[10px] uppercase text-slate-400 font-bold mb-1">Perfil Base (Taxonomia)</label>
+            <select id="filterPerfilTaxonomia" onchange="aplicarFiltros()" class="w-full bg-slate-900 border border-white/10 rounded-xl px-3 py-2 text-xs text-white focus:border-cyan-400 focus:outline-none transition cursor-pointer">
               <option value="">Todos os Perfis</option>
-              <option value="vendedor">Vendedor B2B</option>
-              <option value="gerente">Gerente Regional</option>
-              <option value="admin">Master Admin</option>
-              <option value="artista">🎭 Atração Artística</option>
             </select>
           </div>
 
@@ -176,6 +171,9 @@
         </div>
 
         <div class="flex items-center justify-end gap-2 pt-2 border-t border-white/5 flex-wrap">
+          <button type="button" onclick="abrirModalGerenciarTaxonomia()" class="px-3.5 py-1.5 rounded-lg bg-amber-500/20 hover:bg-amber-500/30 text-amber-300 border border-amber-500/40 text-xs font-bold transition flex items-center gap-1.5 cursor-pointer shadow-[0_0_12px_rgba(245,158,11,0.2)]">
+            🏷️ Gerenciar Taxonomia (Categorias)
+          </button>
           <button type="button" onclick="limparFiltros()" class="px-3.5 py-1.5 rounded-lg bg-slate-800/80 hover:bg-slate-700 text-slate-300 border border-white/10 text-xs font-semibold transition flex items-center gap-1.5 cursor-pointer">
             🔄 Resetar Filtros
           </button>
@@ -195,7 +193,8 @@
             <thead>
               <tr class="border-b border-white/10 text-slate-400 uppercase tracking-wider">
                 <th class="pb-3 px-3">Usuário / Email</th>
-                <th class="pb-3 px-3 text-center">Nível / Perfil</th>
+                <th class="pb-3 px-3 text-center">Perfil Base & Especialidade</th>
+                <th class="pb-3 px-3 text-center">Nível Acesso</th>
                 <th class="pb-3 px-3 text-center">Último Acesso</th>
                 <th class="pb-3 px-3 text-center">Status Acesso</th>
                 <th class="pb-3 px-3 text-center">% Comissão Padronizada</th>
@@ -204,7 +203,7 @@
             </thead>
             <tbody id="tbodyParceiros" class="divide-y divide-white/5 text-slate-200">
               <tr>
-                <td colspan="6" class="py-6 text-center text-slate-500">Carregando usuários do sistema...</td>
+                <td colspan="7" class="py-6 text-center text-slate-500">Carregando usuários do sistema...</td>
               </tr>
             </tbody>
           </table>
@@ -239,6 +238,64 @@
       </div>
 
     </main>
+  </div>
+
+  <!-- MODAL DE GERENCIAMENTO DA TAXONOMIA (CATEGORIAS E ESPECIAIS) -->
+  <div id="modalTaxonomia" class="fixed inset-0 bg-black/80 backdrop-blur-md hidden items-center justify-center p-4 sm:p-6 z-[9999]">
+    <div class="glass-b2b w-full max-w-3xl max-h-[88vh] overflow-y-auto rounded-2xl border border-amber-500/40 text-slate-200 shadow-[0_0_50px_rgba(245,158,11,0.2)] flex flex-col">
+      
+      <div class="flex items-center justify-between border-b border-white/10 px-6 py-4 sticky top-0 bg-[#0e1623]/95 backdrop-blur-md z-40 shrink-0">
+        <div>
+          <span class="text-[10px] font-bold text-amber-400 uppercase tracking-widest block">Estrutura de Perfis & Especialidades</span>
+          <h3 class="text-base font-bold text-white tracking-tight">Gerenciador da Taxonomia (perfis_parceiros)</h3>
+        </div>
+        <button id="btnFecharTaxonomia" class="text-slate-400 hover:text-white text-lg font-bold p-1 transition cursor-pointer">✕</button>
+      </div>
+
+      <div class="p-6 space-y-6 flex-1 text-xs">
+        
+        <!-- PAINEL DE CRIAÇÃO / EDIÇÃO RÁPIDA -->
+        <div class="bg-slate-900/80 p-4 rounded-xl border border-amber-500/30 space-y-3">
+          <h4 id="lblTituloFormTax" class="font-bold text-amber-400 uppercase tracking-wider text-[11px]">➕ Criar Nova Categoria / Especialidade</h4>
+          <input type="hidden" id="taxEditId" value="">
+
+          <div class="grid grid-cols-1 sm:grid-cols-2 gap-3">
+            <div>
+              <label class="block text-slate-300 font-semibold mb-1 uppercase text-[10px]">Nome da Categoria *</label>
+              <input type="text" id="taxNome" placeholder="Ex: Fotógrafo, Barman, Hotelaria..." class="w-full bg-slate-950 border border-white/20 rounded-xl px-3 py-2 text-white focus:outline-none focus:border-amber-400">
+            </div>
+            <div>
+              <label class="block text-slate-300 font-semibold mb-1 uppercase text-[10px]">Categoria Pai (Se for Especialidade)</label>
+              <select id="taxPaiId" class="w-full bg-slate-950 border border-white/20 rounded-xl px-3 py-2 text-white focus:outline-none focus:border-amber-400">
+                <option value="">Nenhuma (É um Perfil Base Principal)</option>
+              </select>
+            </div>
+          </div>
+
+          <div class="flex items-center justify-between gap-3 pt-2 flex-wrap">
+            <label class="flex items-center gap-2 cursor-pointer select-none">
+              <input type="checkbox" id="taxTemFicha" class="w-4 h-4 text-amber-500 bg-slate-950 border-white/20 rounded focus:ring-amber-400">
+              <span class="font-bold text-cyan-300">⭐ Requer Ficha Complementar (Fotos, Vídeos, Bio, Rider)</span>
+            </label>
+
+            <div class="flex items-center gap-2">
+              <button type="button" id="btnCancelarEditTax" onclick="resetFormTaxonomia()" class="hidden px-3 py-1.5 rounded-lg bg-slate-800 text-slate-300 font-semibold hover:bg-slate-700">Cancelar</button>
+              <button type="button" onclick="salvarItemTaxonomia()" class="px-4 py-1.5 rounded-lg bg-amber-500 hover:bg-amber-400 text-slate-950 font-bold uppercase tracking-wider shadow-[0_0_12px_rgba(245,158,11,0.3)]">Salvar Categoria</button>
+            </div>
+          </div>
+        </div>
+
+        <!-- LISTA HIERÁRQUICA DA TAXONOMIA -->
+        <div class="space-y-3">
+          <h4 class="font-bold text-white uppercase tracking-wider text-[11px] border-b border-white/10 pb-1">📂 Categorias Cadastradas no Sistema</h4>
+          <div id="containerListaTaxonomia" class="space-y-3 max-h-96 overflow-y-auto pr-1">
+            <span class="text-slate-500 block text-center py-4">Carregando categorias...</span>
+          </div>
+        </div>
+
+      </div>
+
+    </div>
   </div>
 
   <!-- MODAL DE AUDITORIA DE COMISSÃO -->
@@ -309,7 +366,6 @@
   <div id="modalFicha" class="fixed inset-0 bg-black/80 backdrop-blur-md hidden items-center justify-center p-4 sm:p-6 z-[9999]">
     <div class="glass-b2b w-full max-w-4xl max-h-[90vh] overflow-y-auto rounded-2xl border border-cyan-500/30 text-slate-200 shadow-[0_0_50px_rgba(0,240,255,0.15)] relative flex flex-col">
       
-      <!-- CABEÇALHO FIXO COM Z-40 PARA SOBREPOR A ROLAGEM DE CONTEÚDO -->
       <div class="flex items-center justify-between border-b border-white/10 px-6 py-4 sticky top-0 bg-[#0e1623]/95 backdrop-blur-md z-40 shrink-0">
         <div>
           <span class="text-[10px] font-bold text-cyan-400 uppercase tracking-widest block">Credenciamento & Cadastro Unificado B2B</span>
@@ -323,7 +379,6 @@
 
       <div class="p-6 space-y-6 flex-1">
 
-        <!-- CABEÇALHO DO PARCEIRO & TELEMETRIA -->
         <div class="flex items-center gap-4 bg-white/5 p-4 rounded-xl border border-white/10">
           <div id="mAvatarPreview" class="w-16 h-16 rounded-full bg-slate-900 border border-cyan-500/40 bg-cover bg-center flex items-center justify-center text-2xl text-slate-500 shrink-0 overflow-hidden shadow-[0_0_15px_rgba(0,240,255,0.2)]">
             <span id="mAvatarPlaceholder">📷</span>
@@ -400,13 +455,18 @@
               <input type="text" id="mInstagram" placeholder="@suaempresa ou https://..." class="w-full bg-slate-900 border border-white/20 rounded-xl px-3 py-2 text-white focus:outline-none focus:border-cyan-400">
             </div>
             <div>
-              <label class="block text-slate-300 uppercase font-semibold mb-1">Perfil de Atuação</label>
-              <select id="mPerfil" class="w-full bg-slate-900 border border-white/20 rounded-xl px-3 py-2 text-xs text-white focus:outline-none focus:border-cyan-400 truncate">
-                <option value="cerimonialista">Cerimonialista / Assessoria de Eventos</option>
-                <option value="agencia_corporativa">Agência de Eventos Corporativos</option>
-                <option value="produtor_independente">Produtor Independente / Arquiteto Cênico</option>
-                <option value="hotelaria_espaco">Hotelaria de Luxo / Espaço de Eventos</option>
-                <option value="outro">Outro</option>
+              <label class="block text-slate-300 uppercase font-semibold mb-1">Perfil Base (Taxonomia)</label>
+              <select id="mPerfilBase" class="w-full bg-slate-900 border border-white/20 rounded-xl px-3 py-2 text-xs text-white focus:outline-none focus:border-cyan-400 truncate">
+                <option value="">Carregando...</option>
+              </select>
+            </div>
+          </div>
+
+          <div class="grid grid-cols-1 sm:grid-cols-1 gap-3 text-xs">
+            <div>
+              <label class="block text-slate-300 uppercase font-semibold mb-1">Especialidade (Taxonomia)</label>
+              <select id="mEspecialidade" disabled class="w-full bg-slate-900 border border-white/20 rounded-xl px-3 py-2 text-xs text-white focus:outline-none focus:border-cyan-400 truncate">
+                <option value="">Selecione um Perfil Base primeiro...</option>
               </select>
             </div>
           </div>
@@ -471,14 +531,13 @@
         <div id="mBlocoArtisticoAdmin" class="space-y-5 pt-4 border-t border-cyan-500/30 hidden">
           <div class="flex items-center justify-between border-b border-cyan-500/30 pb-2">
             <h4 class="text-xs font-bold text-cyan-400 uppercase tracking-wider flex items-center gap-2">
-              <span>🎭 4. Perfil Artístico, Vitrine & Curadoria de Mídias</span>
+              <span>🎭 4. Apresentação Comercial, Vitrine & Curadoria de Mídias</span>
             </h4>
             <span id="mMediaPendingBadge" class="hidden px-2.5 py-1 rounded-full text-[10px] font-extrabold bg-amber-500/20 text-amber-300 border border-amber-500/50 animate-pulse">
               ⏳ Mídias Aguardando Curadoria
             </span>
           </div>
 
-          <!-- CARD DE AÇÃO / MODERAÇÃO DE MÍDIAS & ALINHAMENTO DO DESTAQUE -->
           <div class="bg-gradient-to-r from-amber-500/10 via-slate-900 to-cyan-500/10 border border-amber-500/40 rounded-2xl p-4 space-y-3">
             <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
               <div>
@@ -516,9 +575,7 @@
             </div>
           </div>
 
-          <!-- PREVIEW DE CAPA E GALERIA DO ARTISTA COM CONFIRMAÇÃO DE DELEÇÃO INDIVIDUAL -->
           <div class="grid grid-cols-1 md:grid-cols-3 gap-4">
-            <!-- FOTO DE CAPA PRINCIPAL -->
             <div class="space-y-1.5">
               <div class="flex items-center justify-between">
                 <label class="block text-[10px] uppercase font-bold text-slate-300">Foto de Capa Principal</label>
@@ -531,7 +588,6 @@
               </div>
             </div>
 
-            <!-- GALERIA DE FOTOS DO SHOW COM CONFIRMAÇÃO DE DELEÇÃO -->
             <div class="md:col-span-2 space-y-1.5">
               <div class="flex items-center justify-between">
                 <label class="block text-[10px] uppercase font-bold text-slate-300">Galeria de Imagens & Vídeos Pendentes (Exclua os indesejados)</label>
@@ -543,40 +599,21 @@
             </div>
           </div>
 
-          <!-- CAMPOS DE EDIÇÃO ARTÍSTICA -->
           <div class="space-y-3 pt-2">
             <div class="grid grid-cols-1 sm:grid-cols-2 gap-3 text-xs">
               <div>
-                <label class="block text-slate-300 uppercase font-semibold mb-1">Nome Artístico / Banda</label>
+                <label class="block text-slate-300 uppercase font-semibold mb-1">Nome Comercial / Nome Fantasia</label>
                 <input type="text" id="mArtNomeArtistico" class="w-full bg-slate-900 border border-cyan-500/30 rounded-xl px-3 py-2 text-white focus:outline-none focus:border-cyan-400">
               </div>
               <div>
-                <label class="block text-slate-300 uppercase font-semibold mb-1">Categoria Principal</label>
-                <select id="mArtCategoria" class="w-full bg-slate-900 border border-cyan-500/30 rounded-xl px-3 py-2 text-xs text-white focus:outline-none focus:border-cyan-400">
-                  <option value="Cantor(a)">Cantor(a)</option>
-                  <option value="Músico / Instrumentista">Músico / Instrumentista</option>
-                  <option value="Banda">Banda</option>
-                  <option value="DJ">DJ</option>
-                  <option value="Performer">Performer</option>
-                  <option value="Mestre de Cerimônias">Mestre de Cerimônias</option>
-                </select>
-              </div>
-            </div>
-
-            <div class="grid grid-cols-1 sm:grid-cols-2 gap-3 text-xs">
-              <div>
-                <label class="block text-slate-300 uppercase font-semibold mb-1">Especialidade / Estilo Musical</label>
-                <input type="text" id="mArtEspecialidade" class="w-full bg-slate-900 border border-cyan-500/30 rounded-xl px-3 py-2 text-white focus:outline-none focus:border-cyan-400">
-              </div>
-              <div>
-                <label class="block text-slate-300 uppercase font-semibold mb-1">Tagline / Subtítulo da Vitrine</label>
+                <label class="block text-slate-300 uppercase font-semibold mb-1">Tagline / Subtítulo</label>
                 <input type="text" id="mArtTagline" class="w-full bg-slate-900 border border-cyan-500/30 rounded-xl px-3 py-2 text-white focus:outline-none focus:border-cyan-400">
               </div>
             </div>
 
             <div class="grid grid-cols-1 sm:grid-cols-2 gap-3 text-xs">
               <div>
-                <label class="block text-slate-300 uppercase font-semibold mb-1">Cachê Base Estimado (R$)</label>
+                <label class="block text-slate-300 uppercase font-semibold mb-1">Cachê / Valor Base Estimado (R$)</label>
                 <input type="number" id="mArtCacheBase" class="w-full bg-slate-900 border border-cyan-500/30 rounded-xl px-3 py-2 text-white focus:outline-none focus:border-cyan-400">
               </div>
               <div>
@@ -586,12 +623,12 @@
             </div>
 
             <div class="text-xs">
-              <label class="block text-slate-300 uppercase font-semibold mb-1">Bio / Proposta Artística</label>
+              <label class="block text-slate-300 uppercase font-semibold mb-1">Bio / Proposta Comercial</label>
               <textarea id="mArtBio" rows="3" class="w-full bg-slate-900 border border-cyan-500/30 rounded-xl p-3 text-white focus:outline-none focus:border-cyan-400"></textarea>
             </div>
 
             <div class="text-xs">
-              <label class="block text-slate-300 uppercase font-semibold mb-1">Rider Técnico Exigido</label>
+              <label class="block text-slate-300 uppercase font-semibold mb-1">Rider / Estrutura Técnica Exigida</label>
               <textarea id="mArtRider" rows="2" class="w-full bg-slate-900 border border-cyan-500/30 rounded-xl p-3 text-white focus:outline-none focus:border-cyan-400"></textarea>
             </div>
 
@@ -606,7 +643,6 @@
               </div>
             </div>
 
-            <!-- DATAS BLOQUEADAS READ-ONLY -->
             <div class="text-xs pt-1">
               <label class="block text-amber-400 font-bold uppercase mb-1">📅 Períodos de Agenda Declarados Indisponíveis</label>
               <div id="mListaBloqueiosAdmin" class="space-y-1.5 bg-slate-950 p-2.5 rounded-xl border border-white/5 text-[11px]">
@@ -616,7 +652,6 @@
           </div>
         </div>
 
-        <!-- OBSERVAÇÕES INTERNAS DO MASTER -->
         <div class="pt-2">
           <label class="block text-xs text-amber-400 font-bold uppercase tracking-wider mb-2">🔒 Observações Internas (Visível apenas para o Master)</label>
           <textarea id="mObsAdmin" rows="3" placeholder="Anotações internas sobre este parceiro..." class="w-full bg-slate-950/80 border border-amber-500/30 rounded-xl p-3 text-xs text-white focus:outline-none focus:border-amber-400"></textarea>
@@ -638,10 +673,10 @@
 
       var listaParceiros = [];
       var listaFiltrada = [];
+      var listaTaxonomia = [];
       var parceiroSelecionadoId = null;
       var parceiroAuditoriaAtivo = null;
 
-      // VARIÁVEIS LOCAIS PARA CURADORIA INDIVIDUAL DE MÍDIAS NO MODAL
       var mGaleriaFotosAtual = [];
       var mMidiasPendentesAtual = [];
       var mFotoCapaUrlAtual = null;
@@ -713,78 +748,335 @@
         return v;
       }
 
-      var inputMWhatsapp = document.getElementById('mWhatsapp');
-      if (inputMWhatsapp) {
-        inputMWhatsapp.addEventListener('input', function(e) { e.target.value = formatWhatsApp(e.target.value); });
+      function traduzirPerfilLegado(nomePerfilBase) {
+        var mapa = {
+          'Agência': 'agencia_corporativa',
+          'Artista': 'outro',
+          'Cerimonialista': 'cerimonialista',
+          'Hotelaria / Espaço': 'hotelaria_espaco',
+          'Produtor': 'produtor_independente',
+          'Serviços': 'outro',
+          'Outro': 'outro'
+        };
+        return mapa[nomePerfilBase] || 'outro';
       }
 
-      var inputMCpfCnpj = document.getElementById('mCpfCnpj');
-      if (inputMCpfCnpj) {
-        inputMCpfCnpj.addEventListener('input', function(e) { e.target.value = formatCpfCnpj(e.target.value); });
+      function traduzirEnumParaPerfilBase(perfilEnum) {
+        var mapaInverso = {
+          'agencia_corporativa': 'Agência',
+          'cerimonialista': 'Cerimonialista',
+          'hotelaria_espaco': 'Hotelaria / Espaço',
+          'produtor_independente': 'Produtor'
+        };
+        return mapaInverso[perfilEnum] || null;
       }
 
-      var inputMCep = document.getElementById('mCep');
-      if (inputMCep) {
-        inputMCep.addEventListener('input', function(e) {
-          e.target.value = formatCep(e.target.value);
-          if (e.target.value.replace(/\D/g, '').length === 8) {
-            buscarViaCepAdmin(e.target.value);
-          }
-        });
-      }
+      function resolverTaxonomiaParceiro(p) {
+        var res = { perfilPaiId: null, especialidadeId: null, perfilPaiNome: 'Outro', especialidadeNome: '' };
 
-      function buscarViaCepAdmin(cepRaw) {
-        var cleanCep = cepRaw.replace(/\D/g, '');
-        if (cleanCep.length !== 8) return;
-
-        var spinner = document.getElementById('mCepSpinner');
-        if (spinner) spinner.classList.remove('hidden');
-
-        fetch('https://viacep.com.br/ws/' + cleanCep + '/json/')
-          .then(function(res) { return res.json(); })
-          .then(function(data) {
-            if (spinner) spinner.classList.add('hidden');
-            if (!data.erro) {
-              if (data.logradouro) document.getElementById('mEndereco').value = data.logradouro;
-              if (data.bairro) document.getElementById('mBairro').value = data.bairro;
-              if (data.localidade) document.getElementById('mCidade').value = data.localidade;
-              if (data.uf) document.getElementById('mEstado').value = data.uf;
+        if (p.perfil_parceiro_id && listaTaxonomia.length > 0) {
+          var itemTax = listaTaxonomia.find(function(t) { return t.id === p.perfil_parceiro_id; });
+          if (itemTax) {
+            if (itemTax.pai_id) {
+              res.especialidadeId = itemTax.id;
+              res.especialidadeNome = itemTax.nome;
+              res.perfilPaiId = itemTax.pai_id;
+              var paiObj = listaTaxonomia.find(function(t) { return t.id === itemTax.pai_id; });
+              if (paiObj) res.perfilPaiNome = paiObj.nome;
+            } else {
+              res.perfilPaiId = itemTax.id;
+              res.perfilPaiNome = itemTax.nome;
             }
-          })
-          .catch(function() {
-            if (spinner) spinner.classList.add('hidden');
-          });
+            return res;
+          }
+        }
+
+        var nomePaiVisual = traduzirEnumParaPerfilBase(p.perfil);
+        if (!nomePaiVisual) {
+          if (p.perfil === 'outro' && (p.categoria_artistica || p.especialidade_artistica)) {
+            nomePaiVisual = 'Artista';
+          } else {
+            nomePaiVisual = 'Outro';
+          }
+        }
+        res.perfilPaiNome = nomePaiVisual;
+        var paiEncontrado = listaTaxonomia.find(function(t) { return !t.pai_id && t.nome === nomePaiVisual; });
+        if (paiEncontrado) res.perfilPaiId = paiEncontrado.id;
+
+        return res;
       }
 
-      window.toggleMobileMenu = function () {
-        var mobNav = document.getElementById('mobile-menu');
-        if (mobNav) mobNav.classList.toggle('active');
+      // MODAL DE GERENCIAMENTO DA TAXONOMIA
+      window.abrirModalGerenciarTaxonomia = function() {
+        resetFormTaxonomia();
+        renderListaGerenciadorTaxonomia();
+        var modal = document.getElementById('modalTaxonomia');
+        modal.classList.remove('hidden');
+        modal.classList.add('flex');
+      };
+
+      document.getElementById('btnFecharTaxonomia').addEventListener('click', function() {
+        var modal = document.getElementById('modalTaxonomia');
+        modal.classList.add('hidden');
+        modal.classList.remove('flex');
+      });
+
+      function popularSelectPaiTaxonomia() {
+        var selPai = document.getElementById('taxPaiId');
+        if (!selPai) return;
+
+        var perfisPais = listaTaxonomia.filter(function(t) { return !t.pai_id; });
+        var html = '<option value="">Nenhuma (É um Perfil Base Principal)</option>';
+        perfisPais.forEach(function(p) {
+          html += '<option value="' + p.id + '">' + esc(p.nome) + '</option>';
+        });
+        selPai.innerHTML = html;
+      }
+
+      window.resetFormTaxonomia = function() {
+        document.getElementById('taxEditId').value = '';
+        document.getElementById('taxNome').value = '';
+        document.getElementById('taxTemFicha').checked = false;
+        document.getElementById('lblTituloFormTax').textContent = '➕ Criar Nova Categoria / Especialidade';
+        document.getElementById('btnCancelarEditTax').classList.add('hidden');
+        popularSelectPaiTaxonomia();
+      };
+
+      function renderListaGerenciadorTaxonomia() {
+        var container = document.getElementById('containerListaTaxonomia');
+        if (!container) return;
+
+        if (!listaTaxonomia.length) {
+          container.innerHTML = '<span class="text-slate-500 block text-center py-4">Nenhuma categoria cadastrada.</span>';
+          return;
+        }
+
+        var perfisPais = listaTaxonomia.filter(function(t) { return !t.pai_id; });
+        var html = '';
+
+        perfisPais.forEach(function(pai) {
+          var filhos = listaTaxonomia.filter(function(t) { return t.pai_id === pai.id; });
+          var badgeFicha = pai.tem_ficha_complementar ? '<span class="px-1.5 py-0.5 rounded text-[9px] font-bold bg-cyan-500/20 text-cyan-300 border border-cyan-500/40">Ficha Ativa</span>' : '';
+
+          html += '<div class="bg-slate-900/90 p-3 rounded-xl border border-white/10 space-y-2">';
+          html += '<div class="flex items-center justify-between gap-2">' +
+            '<div class="flex items-center gap-2">' +
+              '<strong class="text-white text-sm">' + esc(pai.nome) + '</strong>' +
+              badgeFicha +
+            '</div>' +
+            '<div class="flex items-center gap-1.5">' +
+              '<button type="button" onclick="editarTaxonomiaItem(\'' + pai.id + '\')" class="px-2 py-0.5 bg-amber-500/20 hover:bg-amber-500/30 text-amber-300 rounded text-[10px] font-bold border border-amber-500/30">Editar</button>' +
+              '<button type="button" onclick="alternarStatusTaxonomia(\'' + pai.id + '\', ' + !pai.ativo + ')" class="px-2 py-0.5 ' + (pai.ativo ? 'bg-emerald-500/20 text-emerald-300 border-emerald-500/30' : 'bg-red-500/20 text-red-300 border-red-500/30') + ' rounded text-[10px] font-bold border">' + (pai.ativo ? 'Ativo' : 'Inativo') + '</button>' +
+            '</div>' +
+          '</div>';
+
+          if (filhos.length) {
+            html += '<div class="pl-4 space-y-1.5 border-l-2 border-amber-500/30 mt-2">';
+            filhos.forEach(function(f) {
+              var badgeFichaFilho = f.tem_ficha_complementar ? '<span class="px-1.5 py-0.5 rounded text-[8px] font-bold bg-cyan-500/20 text-cyan-300 border border-cyan-500/40">Ficha</span>' : '';
+              html += '<div class="flex items-center justify-between text-[11px] bg-slate-950/60 p-1.5 rounded border border-white/5">' +
+                '<span class="text-slate-300 flex items-center gap-1.5">↳ ' + esc(f.nome) + ' ' + badgeFichaFilho + '</span>' +
+                '<div class="flex items-center gap-1">' +
+                  '<button type="button" onclick="editarTaxonomiaItem(\'' + f.id + '\')" class="px-1.5 py-0.5 bg-amber-500/20 text-amber-300 rounded text-[9px] font-semibold">Editar</button>' +
+                  '<button type="button" onclick="alternarStatusTaxonomia(\'' + f.id + '\', ' + !f.ativo + ')" class="px-1.5 py-0.5 ' + (f.ativo ? 'text-emerald-400' : 'text-red-400') + ' rounded text-[9px] font-semibold">' + (f.ativo ? 'Ativo' : 'Inativo') + '</button>' +
+                '</div>' +
+              '</div>';
+            });
+            html += '</div>';
+          }
+
+          html += '</div>';
+        });
+
+        container.innerHTML = html;
+      }
+
+      window.editarTaxonomiaItem = function(id) {
+        var item = listaTaxonomia.find(function(t) { return t.id === id; });
+        if (!item) return;
+
+        document.getElementById('taxEditId').value = item.id;
+        document.getElementById('taxNome').value = item.nome || '';
+        document.getElementById('taxTemFicha').checked = Boolean(item.tem_ficha_complementar);
+        
+        popularSelectPaiTaxonomia();
+        document.getElementById('taxPaiId').value = item.pai_id || '';
+
+        document.getElementById('lblTituloFormTax').textContent = '✏️ Editar Categoria';
+        document.getElementById('btnCancelarEditTax').classList.remove('hidden');
+      };
+
+      window.salvarItemTaxonomia = async function() {
+        var editId = document.getElementById('taxEditId').value;
+        var nome = document.getElementById('taxNome').value.trim();
+        var paiId = document.getElementById('taxPaiId').value || null;
+        var temFicha = document.getElementById('taxTemFicha').checked;
+
+        if (!nome) return alert('Por favor, digite o nome da categoria.');
+
+        var payload = {
+          nome: nome,
+          pai_id: paiId,
+          tem_ficha_complementar: temFicha,
+          ativo: true
+        };
+
+        var res;
+        if (editId) {
+          res = await sbPartner.from('perfis_parceiros').update(payload).eq('id', editId);
+        } else {
+          res = await sbPartner.from('perfis_parceiros').insert([payload]);
+        }
+
+        if (res.error) {
+          alert('Erro ao salvar categoria: ' + res.error.message);
+        } else {
+          alert('Categoria salva com sucesso!');
+          resetFormTaxonomia();
+          carregarTaxonomiaEParceiros();
+        }
+      };
+
+      window.alternarStatusTaxonomia = async function(id, novoStatus) {
+        var res = await sbPartner.from('perfis_parceiros').update({ ativo: novoStatus }).eq('id', id);
+        if (!res.error) carregarTaxonomiaEParceiros();
       };
 
       partnerRequireAuth({ requireAdmin: true }).then(function (parceiro) {
         partnerFillSidebar(parceiro);
-        carregarParceiros();
+        carregarTaxonomiaEParceiros();
         configurarAutocompleteParceiro();
+        configurarListenersModalTaxonomia();
       }).catch(function (err) {
         console.error('Acesso negado ao Master Admin:', err);
       });
 
-      function carregarParceiros() {
+      async function carregarTaxonomiaEParceiros() {
         if (typeof sbPartner === 'undefined') {
-          setTimeout(carregarParceiros, 200);
+          setTimeout(carregarTaxonomiaEParceiros, 200);
           return;
         }
 
-        sbPartner.from('parceiros').select('*').order('criado_em', { ascending: false }).then(function (res) {
+        try {
+          var resTax = await sbPartner.from('perfis_parceiros').select('*').order('ordem', { ascending: true });
+          if (!resTax.error && resTax.data) {
+            listaTaxonomia = resTax.data;
+            popularSelectsFiltroTaxonomia();
+            popularSelectModalPerfilBase();
+            renderListaGerenciadorTaxonomia();
+          }
+
+          var resParc = await sbPartner.from('parceiros').select('*').order('criado_em', { ascending: false });
           var tbody = document.getElementById('tbodyParceiros');
-          if (res.error) {
-            tbody.innerHTML = '<tr><td colspan="6" class="py-4 text-center text-red-400">Erro ao carregar usuários: ' + esc(res.error.message) + '</td></tr>';
+          if (resParc.error) {
+            tbody.innerHTML = '<tr><td colspan="7" class="py-4 text-center text-red-400">Erro ao carregar usuários: ' + esc(resParc.error.message) + '</td></tr>';
             return;
           }
 
-          listaParceiros = res.data || [];
+          listaParceiros = resParc.data || [];
           limparFiltros();
+        } catch(e) {
+          console.error("Erro no carregamento:", e);
+        }
+      }
+
+      function popularSelectsFiltroTaxonomia() {
+        var selFiltro = document.getElementById('filterPerfilTaxonomia');
+        if (!selFiltro) return;
+
+        var perfisPais = listaTaxonomia.filter(function(t) { return !t.pai_id && t.ativo; });
+        var html = '<option value="">Todos os Perfis</option>';
+        perfisPais.forEach(function(p) {
+          html += '<option value="' + p.id + '">' + esc(p.nome) + '</option>';
         });
+        selFiltro.innerHTML = html;
+      }
+
+      function popularSelectModalPerfilBase() {
+        var selBase = document.getElementById('mPerfilBase');
+        if (!selBase) return;
+
+        var perfisPais = listaTaxonomia.filter(function(t) { return !t.pai_id && t.ativo; });
+        var html = '<option value="">Selecione...</option>';
+        perfisPais.forEach(function(p) {
+          html += '<option value="' + p.id + '">' + esc(p.nome) + '</option>';
+        });
+        selBase.innerHTML = html;
+      }
+
+      function atualizarSelectModalEspecialidade(perfilBaseId, espSelecionadaId) {
+        var selEsp = document.getElementById('mEspecialidade');
+        if (!selEsp) return;
+
+        if (!perfilBaseId) {
+          selEsp.innerHTML = '<option value="">Selecione um Perfil Base primeiro...</option>';
+          selEsp.disabled = true;
+          return;
+        }
+
+        var filhos = listaTaxonomia.filter(function(t) { return t.pai_id === perfilBaseId && t.ativo; });
+
+        if (!filhos.length) {
+          selEsp.innerHTML = '<option value="">Nenhuma especialidade</option>';
+          selEsp.disabled = true;
+        } else {
+          selEsp.disabled = false;
+          var html = '<option value="">Selecione uma especialidade...</option>';
+          filhos.forEach(function(f) {
+            var selected = (espSelecionadaId && f.id === espSelecionadaId) ? 'selected' : '';
+            html += '<option value="' + f.id + '" ' + selected + '>' + esc(f.nome) + '</option>';
+          });
+          selEsp.innerHTML = html;
+        }
+      }
+
+      function configurarListenersModalTaxonomia() {
+        var selBase = document.getElementById('mPerfilBase');
+        var selEsp = document.getElementById('mEspecialidade');
+
+        if (selBase) {
+          selBase.addEventListener('change', function(e) {
+            var baseId = e.target.value;
+            atualizarSelectModalEspecialidade(baseId, null);
+            verificarExibicaoFichaComplementarAdmin(baseId, null);
+          });
+        }
+
+        if (selEsp) {
+          selEsp.addEventListener('change', function(e) {
+            var espId = e.target.value;
+            var baseId = document.getElementById('mPerfilBase').value;
+            verificarExibicaoFichaComplementarAdmin(baseId, espId);
+          });
+        }
+      }
+
+      function verificarExibicaoFichaComplementarAdmin(baseId, espId) {
+        var blocoArt = document.getElementById('mBlocoArtisticoAdmin');
+        if (!blocoArt) return;
+
+        var itemSel = null;
+        if (espId) itemSel = listaTaxonomia.find(function(t) { return t.id === espId; });
+        if (!itemSel && baseId) itemSel = listaTaxonomia.find(function(t) { return t.id === baseId; });
+
+        var deveExibir = false;
+        if (itemSel) {
+          if (itemSel.tem_ficha_complementar !== undefined && itemSel.tem_ficha_complementar !== null) {
+            deveExibir = Boolean(itemSel.tem_ficha_complementar);
+          } else {
+            deveExibir = (itemSel.nome || '').indexOf('Artista') > -1;
+            if (!deveExibir && itemSel.pai_id) {
+              var pai = listaTaxonomia.find(function(t) { return t.id === itemSel.pai_id; });
+              if (pai) deveExibir = (pai.nome || '').indexOf('Artista') > -1;
+            }
+          }
+        }
+
+        if (deveExibir) {
+          blocoArt.classList.remove('hidden');
+        } else {
+          blocoArt.classList.add('hidden');
+        }
       }
 
       function configurarAutocompleteParceiro() {
@@ -854,7 +1146,7 @@
         var busca = (document.getElementById('filterBusca').value || '').toLowerCase().trim();
         var parceiroId = document.getElementById('filterParceiroVal').value;
         var statusFiltro = document.getElementById('filterStatus').value;
-        var perfilFiltro = document.getElementById('filterPerfil').value;
+        var filtroTaxId = document.getElementById('filterPerfilTaxonomia').value;
         var ordemAcesso = document.getElementById('filterOrdemAcesso').value;
 
         listaFiltrada = listaParceiros.filter(function(p) {
@@ -870,25 +1162,23 @@
           var stNormalized = isAprovado ? 'aprovado' : (isPendente ? 'pendente' : 'bloqueado');
           var matchStatus = !statusFiltro || (stNormalized === statusFiltro);
 
-          var roleNormalized = String(p.role || p.nivel || 'vendedor').toLowerCase().trim();
-          var matchPerfil = true;
-          if (perfilFiltro === 'artista') {
-            matchPerfil = Boolean(p.is_artista) || roleNormalized === 'artista';
-          } else if (perfilFiltro) {
-            matchPerfil = (roleNormalized === perfilFiltro);
+          var matchTaxonomia = true;
+          if (filtroTaxId) {
+            var taxInfo = resolverTaxonomiaParceiro(p);
+            matchTaxonomia = (taxInfo.perfilPaiId === filtroTaxId || taxInfo.especialidadeId === filtroTaxId);
           }
 
-          return matchBusca && matchParceiro && matchStatus && matchPerfil;
+          return matchBusca && matchParceiro && matchStatus && matchTaxonomia;
         });
 
         listaFiltrada.sort(function(a, b) {
           if (ordemAcesso === 'destaque_topo') {
-            var destA = a.is_artista && a.is_destaque ? 1 : 0;
-            var destB = b.is_artista && b.is_destaque ? 1 : 0;
+            var destA = a.is_destaque ? 1 : 0;
+            var destB = b.is_destaque ? 1 : 0;
             return destB - destA;
           } else if (ordemAcesso === 'midia_pendente') {
-            var pendA = a.is_artista && temFotosPendentes(a) ? 1 : 0;
-            var pendB = b.is_artista && temFotosPendentes(b) ? 1 : 0;
+            var pendA = temFotosPendentes(a) ? 1 : 0;
+            var pendB = temFotosPendentes(b) ? 1 : 0;
             return pendB - pendA;
           } else if (ordemAcesso === 'acesso_desc') {
             var dtA = new Date(a.ultima_atividade || a.ultimo_login || 0).getTime();
@@ -919,7 +1209,7 @@
         document.getElementById('filterParceiroVal').value = '';
         document.getElementById('filterParceiroSearch').value = '';
         document.getElementById('filterStatus').value = '';
-        document.getElementById('filterPerfil').value = '';
+        document.getElementById('filterPerfilTaxonomia').value = '';
         document.getElementById('filterOrdemAcesso').value = 'cadastro_desc';
         aplicarFiltros();
       };
@@ -927,7 +1217,7 @@
       function atualizarKPIs(lista) {
         document.getElementById('kpiTotalParceiros').textContent = lista.length + ' cadastrados';
         var pendentes = lista.filter(function (p) { 
-          return String(p.status || '').toLowerCase().trim() === 'pendente' || (p.is_artista && temFotosPendentes(p)); 
+          return String(p.status || '').toLowerCase().trim() === 'pendente' || temFotosPendentes(p); 
         }).length;
         document.getElementById('kpiParceirosPendentes').textContent = pendentes + ' aguardando';
 
@@ -937,13 +1227,13 @@
           document.getElementById('kpiComissaoMedia').textContent = media.toFixed(1).replace('.', ',') + '%';
         }
       }
-      /* RENDERIZADOR DA TABELA COM BADGES INLINE (CONTAGEM DE MÍDIAS CORRIGIDA) */
+
       function renderTabela(lista) {
         var tbody = document.getElementById('tbodyParceiros');
         var totalRegistros = lista.length;
 
         if (!totalRegistros) {
-          tbody.innerHTML = '<tr><td colspan="6" class="py-6 text-center text-slate-500">Nenhum usuário encontrado para os filtros aplicados.</td></tr>';
+          tbody.innerHTML = '<tr><td colspan="7" class="py-6 text-center text-slate-500">Nenhum usuário encontrado para os filtros aplicados.</td></tr>';
           atualizarControlesPaginacao(0, 0, 0);
           return;
         }
@@ -963,21 +1253,18 @@
           var stColorClass = isAprovado ? 'text-emerald-400 border-emerald-500/40' : (isPendente ? 'text-amber-400 border-amber-500/40' : 'text-red-400 border-red-500/40');
           var nivelVal = String(p.role || p.nivel || 'vendedor').toLowerCase().trim();
 
-          // CÁLCULO EXATO DE MÍDIAS APENAS PENDENTES DE APROVAÇÃO
+          var taxInfo = resolverTaxonomiaParceiro(p);
+
           var qtdPendentesArr = Array.isArray(p.midias_pendentes) ? p.midias_pendentes.length : 0;
           var totalPendentesReal = qtdPendentesArr > 0 ? qtdPendentesArr : (p.fotos_pendentes_aprovacao ? 1 : 0);
           var txtMidias = totalPendentesReal + ' Mídia' + (totalPendentesReal > 1 ? 's' : '');
 
-          var badgeDestaqueHtml = (p.is_artista && p.is_destaque) 
+          var badgeDestaqueHtml = p.is_destaque 
             ? '<span class="inline-flex items-center px-1.5 py-0.5 rounded text-[9px] font-extrabold bg-amber-400/20 text-amber-300 border border-amber-400/50 whitespace-nowrap shadow-[0_0_8px_rgba(245,158,11,0.3)]">⭐ Destaque</span>' 
             : '';
 
-          var badgeMidiasPendenteHtml = (p.is_artista && temFotosPendentes(p)) 
+          var badgeMidiasPendenteHtml = temFotosPendentes(p) 
             ? '<span class="inline-flex items-center px-2 py-0.5 rounded text-[10px] font-extrabold bg-amber-500/20 text-amber-300 border border-amber-500/50 animate-pulse whitespace-nowrap">⏳ ' + txtMidias + ' P/ Aprovar</span>' 
-            : '';
-
-          var tagArtistaHtml = p.is_artista 
-            ? '<span class="inline-flex items-center px-1.5 py-0.5 rounded text-[9px] font-bold bg-purple-500/20 text-purple-300 border border-purple-500/30 whitespace-nowrap">🎭 Artista</span>'
             : '';
 
           return '<tr class="hover:bg-white/[0.02] transition border-b border-white/5">' +
@@ -985,17 +1272,19 @@
               '<div class="flex items-center gap-1.5 flex-wrap">' +
                 '<strong class="text-white text-sm font-semibold truncate">' + esc(p.nome_completo || p.email) + '</strong>' +
                 badgeDestaqueHtml +
-                tagArtistaHtml +
                 badgeMidiasPendenteHtml +
               '</div>' +
               '<span class="text-slate-400 text-[11px] block truncate mt-0.5">' + esc(p.email) + ' • ' + esc(formatWhatsApp(p.whatsapp || p.telefone) || 'S/ Telefone') + '</span>' +
             '</td>' +
             '<td class="py-3 px-3 text-center whitespace-nowrap">' +
-              '<select onchange="salvarNivel(\'' + p.id + '\', this.value)" class="bg-slate-900 border border-white/20 rounded-lg px-2 py-1 text-[11px] text-cyan-300 font-semibold focus:outline-none cursor-pointer">' +
+              '<div class="text-[11px] font-semibold text-cyan-300">' + esc(taxInfo.perfilPaiNome) + '</div>' +
+              '<div class="text-[10px] text-slate-400">' + esc(taxInfo.especialidadeNome || '—') + '</div>' +
+            '</td>' +
+            '<td class="py-3 px-3 text-center whitespace-nowrap">' +
+              '<select onchange="salvarNivel(\'' + p.id + '\', this.value)" class="bg-slate-900 border border-white/20 rounded-lg px-2 py-1 text-[11px] text-slate-300 font-semibold focus:outline-none cursor-pointer">' +
                 '<option value="vendedor" ' + (nivelVal === 'vendedor' ? 'selected' : '') + '>Vendedor B2B</option>' +
                 '<option value="gerente" ' + (nivelVal === 'gerente' ? 'selected' : '') + '>Gerente Regional</option>' +
                 '<option value="admin" ' + (nivelVal === 'admin' ? 'selected' : '') + '>Master Admin</option>' +
-                '<option value="artista" ' + (nivelVal === 'artista' ? 'selected' : '') + '>🎭 Atração Artística</option>' +
               '</select>' +
             '</td>' +
             '<td class="py-3 px-3 text-center whitespace-nowrap">' + formatarAcesso(p.ultima_atividade || p.ultimo_login) + '</td>' +
@@ -1050,8 +1339,9 @@
           return;
         }
 
-        var header = ["ID", "Nome Completo", "Email", "WhatsApp", "Status", "Perfil", "% Comissao", "Is Artista", "Is Destaque", "Fotos Pendentes", "Ultima Atividade"];
+        var header = ["ID", "Nome Completo", "Email", "WhatsApp", "Status", "Nivel", "Perfil Base", "Especialidade", "% Comissao", "Is Destaque", "Fotos Pendentes", "Ultima Atividade"];
         var rows = listaFiltrada.map(function(p) {
+          var taxInfo = resolverTaxonomiaParceiro(p);
           return [
             '="' + p.id + '"',
             '"' + (p.nome_completo || '').replace(/"/g, '""') + '"',
@@ -1059,8 +1349,9 @@
             '"' + (p.whatsapp || p.telefone || '').replace(/"/g, '""') + '"',
             p.status || 'pendente',
             p.role || p.nivel || 'vendedor',
+            '"' + taxInfo.perfilPaiNome + '"',
+            '"' + taxInfo.especialidadeNome + '"',
             Number(p.comissao_padrao_pct || 10),
-            p.is_artista ? 'SIM' : 'NAO',
             p.is_destaque ? 'SIM' : 'NAO',
             temFotosPendentes(p) ? 'SIM' : 'NAO',
             '"' + (p.ultima_atividade || p.ultimo_login || '') + '"'
@@ -1185,13 +1476,13 @@
                 btn.disabled = false;
                 btn.textContent = 'Salvar & Registrar Auditoria';
                 fecharModalAuditoria();
-                carregarParceiros();
+                carregarTaxonomiaEParceiros();
               });
           } else {
             btn.disabled = false;
             btn.textContent = 'Salvar & Registrar Auditoria';
             fecharModalAuditoria();
-            carregarParceiros();
+            carregarTaxonomiaEParceiros();
           }
         });
       });
@@ -1201,19 +1492,16 @@
           if (res.error) {
             alert('Erro ao atualizar status: ' + res.error.message);
           } else {
-            carregarParceiros();
+            carregarTaxonomiaEParceiros();
           }
         });
       };
 
       window.salvarNivel = function (id, novoNivel) {
         var payload = { role: novoNivel, nivel: novoNivel };
-        if (novoNivel === 'artista') {
-          payload.is_artista = true;
-        }
 
         sbPartner.from('parceiros').update(payload).eq('id', id).then(function (res) {
-          if (!res.error) carregarParceiros();
+          if (!res.error) carregarTaxonomiaEParceiros();
         });
       };
 
@@ -1224,31 +1512,28 @@
               alert('Erro ao excluir usuário: ' + res.error.message);
             } else {
               alert('Usuário excluído com sucesso!');
-              carregarParceiros();
+              carregarTaxonomiaEParceiros();
             }
           });
         }
       };
 
-      /* ABRIR FICHA COMPLETA DO PARCEIRO E EXIBIR BOTÕES CONDICIONAIS */
+      /* ABRIR FICHA COMPLETA DO PARCEIRO */
       window.abrirFichaParceiro = function (id) {
         var parceiro = listaParceiros.find(function (item) { return String(item.id) === String(id); });
         if (!parceiro) return;
 
         parceiroSelecionadoId = parceiro.id;
 
-        // INICIALIZA ARRAY LOCAL DE MÍDIAS PARA CURADORIA INDIVIDUAL
         mGaleriaFotosAtual = Array.isArray(parceiro.galeria_fotos) ? parceiro.galeria_fotos.slice() : [];
         mMidiasPendentesAtual = Array.isArray(parceiro.midias_pendentes) ? parceiro.midias_pendentes.slice() : [];
         mFotoCapaUrlAtual = parceiro.foto_capa_url || null;
 
-        // Telemetria & Atividade
         document.getElementById('mUltimoLogin').textContent = formatarDataHora(parceiro.ultimo_login);
         document.getElementById('mUltimaAtividade').textContent = formatarDataHora(parceiro.ultima_atividade);
         document.getElementById('mUltimaPagina').textContent = parceiro.ultima_pagina || '—';
         document.getElementById('mDispositivo').textContent = parceiro.user_agent ? (parceiro.user_agent.substring(0, 28) + '...') : '—';
 
-        // Bloco 1: Identificação & Cadastrais
         document.getElementById('mNome').value = parceiro.nome_completo || '';
         document.getElementById('mEmpresa').value = parceiro.empresa || '';
         document.getElementById('mCpfCnpj').value = formatCpfCnpj(parceiro.cpf_cnpj || '');
@@ -1256,76 +1541,66 @@
         document.getElementById('mWhatsapp').value = formatWhatsApp(parceiro.whatsapp || parceiro.telefone || '');
         document.getElementById('mEmail').value = parceiro.email || '';
         document.getElementById('mInstagram').value = parceiro.instagram || parceiro.site_portfolio || '';
-        document.getElementById('mPerfil').value = parceiro.perfil || 'cerimonialista';
 
-        // Bloco 2: Endereço Comercial
+        var taxInfo = resolverTaxonomiaParceiro(parceiro);
+        var selectBase = document.getElementById('mPerfilBase');
+        if (selectBase && taxInfo.perfilPaiId) {
+          selectBase.value = taxInfo.perfilPaiId;
+        }
+        atualizarSelectModalEspecialidade(taxInfo.perfilPaiId, taxInfo.especialidadeId);
+        verificarExibicaoFichaComplementarAdmin(taxInfo.perfilPaiId, taxInfo.especialidadeId);
+
         document.getElementById('mCep').value = formatCep(parceiro.cep || '');
         document.getElementById('mEndereco').value = parceiro.endereco || '';
         document.getElementById('mBairro').value = parceiro.bairro || '';
         document.getElementById('mCidade').value = parceiro.cidade || '';
         document.getElementById('mEstado').value = (parceiro.estado || '').toUpperCase();
 
-        // Bloco 3: Dados Financeiros (PIX)
         document.getElementById('mTipoPix').value = parceiro.tipo_pix || 'cpf_cnpj';
         document.getElementById('mChavePix').value = parceiro.chave_pix || '';
 
-        // BLOCO 4: DADOS DA VITRINE ARTÍSTICA & EXIBIÇÃO CONDICIONAL DE PENDÊNCIAS
-        var blocoArt = document.getElementById('mBlocoArtisticoAdmin');
         var badgePending = document.getElementById('mMediaPendingBadge');
         var containerAcao = document.getElementById('mContainerAcaoMidias');
         var msgEmDia = document.getElementById('mMidiasEmDiaMsg');
 
-        if (parceiro.is_artista) {
-          blocoArt.classList.remove('hidden');
-
-          // CONTROLE DE EXIBIÇÃO DOS BOTÕES DE AÇÃO CONFORME PENDÊNCIA
-          if (temFotosPendentes(parceiro)) {
-            badgePending.classList.remove('hidden');
-            containerAcao.classList.remove('hidden');
-            containerAcao.classList.add('flex');
-            msgEmDia.classList.add('hidden');
-          } else {
-            badgePending.classList.add('hidden');
-            containerAcao.classList.add('hidden');
-            containerAcao.classList.remove('flex');
-            msgEmDia.classList.remove('hidden');
-          }
-
-          document.getElementById('mIsDestaque').checked = Boolean(parceiro.is_destaque);
-          document.getElementById('mStatusArtista').value = (parceiro.status_artista || 'pendente').toLowerCase();
-          document.getElementById('mArtNomeArtistico').value = parceiro.nome_artistico || '';
-          document.getElementById('mArtCategoria').value = parceiro.categoria_artistica || 'Cantor(a)';
-          document.getElementById('mArtEspecialidade').value = parceiro.especialidade_artistica || '';
-          document.getElementById('mArtTagline').value = parceiro.tagline_artistica || '';
-          document.getElementById('mArtCacheBase').value = parceiro.cache_base || '';
-          document.getElementById('mArtExperiencia').value = parceiro.experiencia_comercial || '';
-          document.getElementById('mArtBio').value = parceiro.bio_artistica || '';
-          document.getElementById('mArtRider').value = parceiro.rider_tecnico || '';
-          document.getElementById('mArtYoutube1').value = parceiro.youtube_1 || '';
-          document.getElementById('mArtYoutube2').value = parceiro.youtube_2 || '';
-
-          // RENDERIZAÇÃO DA CAPA & GALERIA (INCLUINDO SUPORTE A VÍDEOS)
-          renderCapaAdmin();
-          renderGaleriaAdmin();
-
-          // RENDER BLOQUEIOS DE AGENDA
-          var listaBloqueios = document.getElementById('mListaBloqueiosAdmin');
-          if (Array.isArray(parceiro.periodos_bloqueados) && parceiro.periodos_bloqueados.length > 0) {
-            listaBloqueios.innerHTML = parceiro.periodos_bloqueados.map(function(b) {
-              return '<div class="flex items-center justify-between bg-slate-900 p-2 rounded border border-white/5">' +
-                '<span>De <strong>' + b.inicio + '</strong> até <strong>' + b.fim + '</strong></span>' +
-                '<span class="text-slate-400">Motivo: ' + esc(b.motivo || '—') + '</span>' +
-              '</div>';
-            }).join('');
-          } else {
-            listaBloqueios.innerHTML = '<span class="text-slate-500 block text-center py-2">Nenhum bloqueio cadastrado</span>';
-          }
-
+        if (temFotosPendentes(parceiro)) {
+          badgePending.classList.remove('hidden');
+          containerAcao.classList.remove('hidden');
+          containerAcao.classList.add('flex');
+          msgEmDia.classList.add('hidden');
         } else {
-          blocoArt.classList.add('hidden');
+          badgePending.classList.add('hidden');
+          containerAcao.classList.add('hidden');
+          containerAcao.classList.remove('flex');
+          msgEmDia.classList.remove('hidden');
         }
 
-        // Observações Internas & Termos
+        document.getElementById('mIsDestaque').checked = Boolean(parceiro.is_destaque);
+        document.getElementById('mStatusArtista').value = (parceiro.status_artista || 'pendente').toLowerCase();
+        document.getElementById('mArtNomeArtistico').value = parceiro.nome_artistico || '';
+        document.getElementById('mArtTagline').value = parceiro.tagline_artistica || '';
+        document.getElementById('mArtCacheBase').value = parceiro.cache_base || '';
+        document.getElementById('mArtExperiencia').value = parceiro.experiencia_comercial || '';
+        document.getElementById('mArtBio').value = parceiro.bio_artistica || '';
+        document.getElementById('mArtRider').value = parceiro.rider_tecnico || '';
+        document.getElementById('mArtYoutube1').value = parceiro.youtube_1 || '';
+        document.getElementById('mArtYoutube2').value = parceiro.youtube_2 || '';
+
+        renderCapaAdmin();
+        renderGaleriaAdmin();
+
+        var listaBloqueios = document.getElementById('mListaBloqueiosAdmin');
+        if (Array.isArray(parceiro.periodos_bloqueados) && parceiro.periodos_bloqueados.length > 0) {
+          listaBloqueios.innerHTML = parceiro.periodos_bloqueados.map(function(b) {
+            return '<div class="flex items-center justify-between bg-slate-900 p-2 rounded border border-white/5">' +
+              '<span>De <strong>' + b.inicio + '</strong> até <strong>' + b.fim + '</strong></span>' +
+              '<span class="text-slate-400">Motivo: ' + esc(b.motivo || '—') + '</span>' +
+            '</div>';
+          }).join('');
+        } else {
+          listaBloqueios.innerHTML = '<span class="text-slate-500 block text-center py-2">Nenhum bloqueio cadastrado</span>';
+        }
+
         document.getElementById('mObsAdmin').value = parceiro.observacoes_admin || '';
 
         var badgeTermos = document.getElementById('mTermosBadge');
@@ -1360,13 +1635,11 @@
         modal.classList.add('flex');
       };
 
-      /* RENDERIZAÇÃO E CONFIRMAÇÃO DE EXCLUSÃO DE FOTOS DA CAPA */
       function renderCapaAdmin() {
         var capaBox = document.getElementById('mCapaBox');
         var capaEmptyTxt = document.getElementById('mCapaEmptyTxt');
         var btnRemover = document.getElementById('btnRemoverCapaAdmin');
 
-        // Procura foto de capa pendente na fila
         var capaPendente = mMidiasPendentesAtual.find(function(m) { return m.tipo === 'capa'; });
         var urlExibir = capaPendente ? capaPendente.url : mFotoCapaUrlAtual;
 
@@ -1389,7 +1662,6 @@
         }
       };
 
-      /* RENDERIZAÇÃO E CONFIRMAÇÃO DE EXCLUSÃO DE MÍDIAS (FOTOS E VÍDEOS PENDENTES) DA GALERIA */
       function renderGaleriaAdmin() {
         var galeriaGrid = document.getElementById('mGaleriaGrid');
         var contadorTxt = document.getElementById('mGaleriaContadorTxt');
@@ -1401,7 +1673,6 @@
 
         var html = '';
 
-        // 1. Fotos Aprovadas da Galeria Ativa
         mGaleriaFotosAtual.forEach(function(url, idx) {
           html += '<div class="portfolio-item-admin">' +
             '<span class="absolute top-1 left-1 px-1 py-0.5 rounded text-[8px] font-extrabold bg-emerald-500/90 text-white z-10 shadow">✓ Ativa</span>' +
@@ -1410,7 +1681,6 @@
           '</div>';
         });
 
-        // 2. Mídias na Fila Pendente (Trata imagens da galeria e links de vídeo com badge amarela)
         midiasPendentesFila.forEach(function(item, idx) {
           if (item.tipo === 'video') {
             html += '<div class="portfolio-item-admin item-pendente bg-slate-950 flex flex-col items-center justify-center p-2 text-center border-amber-500/80">' +
@@ -1453,19 +1723,16 @@
         }
       };
 
-      /* APROVAÇÃO DAS MÍDIAS (INCLUINDO SUPORTE COMPLETO A VÍDEOS) E ATUALIZAÇÃO DA INTERFACE */
       window.aprovarMidiasArtista = function() {
         if (!parceiroSelecionadoId) return;
 
         var payloadToUpdate = {};
 
-        // Migra pendentes de capa para a coluna principal
         var capaPendente = mMidiasPendentesAtual.find(function(m) { return m.tipo === 'capa'; });
         if (capaPendente) {
           mFotoCapaUrlAtual = capaPendente.url;
         }
 
-        // Migra pendentes de vídeos para as colunas youtube_1 ou youtube_2
         var videosPendentes = mMidiasPendentesAtual.filter(function(m) { return m.tipo === 'video'; });
         videosPendentes.forEach(function(vid) {
           var campoDestino = vid.campo_destino || 'youtube_1';
@@ -1473,7 +1740,6 @@
           document.getElementById('mArt' + (campoDestino === 'youtube_2' ? 'Youtube2' : 'Youtube1')).value = vid.url;
         });
 
-        // Migra pendentes de galeria para o array ativo
         var pendentesGaleria = mMidiasPendentesAtual.filter(function(m) { return m.tipo === 'galeria' || !m.tipo; });
         pendentesGaleria.forEach(function(item) {
           if (!mGaleriaFotosAtual.includes(item.url)) {
@@ -1484,14 +1750,13 @@
         var qtdPendentes = mMidiasPendentesAtual.length || 1;
         var ehDestaque = document.getElementById('mIsDestaque').checked;
 
-        if (confirm('Deseja aprovar e publicar a(s) ' + qtdPendentes + ' mídia(s) pendente(s) na Vitrine Artística deste parceiro?')) {
+        if (confirm('Deseja aprovar e publicar a(s) ' + qtdPendentes + ' mídia(s) pendente(s) deste parceiro?')) {
           payloadToUpdate.fotos_pendentes_aprovacao = false;
           payloadToUpdate.status_artista = 'aprovado';
           payloadToUpdate.is_destaque = ehDestaque;
           payloadToUpdate.galeria_fotos = mGaleriaFotosAtual;
           payloadToUpdate.foto_capa_url = mFotoCapaUrlAtual;
 
-          // Limpa a fila pendente caso a coluna exista na tabela
           var parceiro = listaParceiros.find(function(item) { return String(item.id) === String(parceiroSelecionadoId); });
           if (parceiro && parceiro.midias_pendentes !== undefined) {
             payloadToUpdate.midias_pendentes = [];
@@ -1501,7 +1766,7 @@
             if (res.error) {
               alert('Erro ao aprovar mídias: ' + res.error.message);
             } else {
-              alert('✅ Mídias aprovadas e Vitrine Artística publicada com sucesso!');
+              alert('✅ Mídias aprovadas com sucesso!');
               mMidiasPendentesAtual = [];
               document.getElementById('mMediaPendingBadge').classList.add('hidden');
               document.getElementById('mContainerAcaoMidias').classList.add('hidden');
@@ -1510,7 +1775,7 @@
               document.getElementById('mStatusArtista').value = 'aprovado';
               renderCapaAdmin();
               renderGaleriaAdmin();
-              carregarParceiros();
+              carregarTaxonomiaEParceiros();
             }
           });
         }
@@ -1519,7 +1784,7 @@
       window.recusarMidiasArtista = function() {
         if (!parceiroSelecionadoId) return;
 
-        var motivo = prompt('Informe o motivo da recusa ou orientação ao artista (será gravado nas observações internas):');
+        var motivo = prompt('Informe o motivo da recusa:');
         if (motivo !== null) {
           var obsAtual = document.getElementById('mObsAdmin').value.trim();
           var novaObs = obsAtual + (obsAtual ? '\n' : '') + '[Recusa de Mídia ' + new Date().toLocaleDateString('pt-BR') + ']: ' + motivo;
@@ -1539,11 +1804,11 @@
             if (res.error) {
               alert('Erro ao recusar mídias: ' + res.error.message);
             } else {
-              alert('Status alterado para Recusado e observação gravada.');
+              alert('Status alterado para Recusado.');
               mMidiasPendentesAtual = [];
               document.getElementById('mObsAdmin').value = novaObs;
               document.getElementById('mStatusArtista').value = 'recusado';
-              carregarParceiros();
+              carregarTaxonomiaEParceiros();
             }
           });
         }
@@ -1563,7 +1828,15 @@
         btn.disabled = true;
         btn.textContent = 'Salvando...';
 
-        var parceiro = listaParceiros.find(function(item) { return String(item.id) === String(parceiroSelecionadoId); });
+        var baseId = document.getElementById('mPerfilBase').value;
+        var espId = document.getElementById('mEspecialidade').value;
+        var perfilParceiroIdFinal = espId || baseId || null;
+
+        var objBase = listaTaxonomia.find(function(t) { return t.id === baseId; });
+        var nomeBase = objBase ? objBase.nome : '';
+        var enumLegado = traduzirPerfilLegado(nomeBase);
+
+        var rawCache = document.getElementById('mArtCacheBase').value;
 
         var payload = {
           nome_completo: document.getElementById('mNome').value.trim(),
@@ -1572,7 +1845,10 @@
           data_nascimento: document.getElementById('mNascimento').value || null,
           whatsapp: document.getElementById('mWhatsapp').value.replace(/\D/g, ''),
           instagram: document.getElementById('mInstagram').value.trim(),
-          perfil: document.getElementById('mPerfil').value,
+          
+          perfil_parceiro_id: perfilParceiroIdFinal,
+          perfil: enumLegado,
+
           cep: document.getElementById('mCep').value.replace(/\D/g, ''),
           endereco: document.getElementById('mEndereco').value.trim(),
           bairro: document.getElementById('mBairro').value.trim(),
@@ -1580,29 +1856,25 @@
           estado: document.getElementById('mEstado').value.trim().toUpperCase(),
           tipo_pix: document.getElementById('mTipoPix').value,
           chave_pix: document.getElementById('mChavePix').value.trim(),
-          observacoes_admin: document.getElementById('mObsAdmin').value.trim()
+          observacoes_admin: document.getElementById('mObsAdmin').value.trim(),
+
+          status_artista: document.getElementById('mStatusArtista').value,
+          is_destaque: document.getElementById('mIsDestaque').checked,
+          nome_artistico: document.getElementById('mArtNomeArtistico').value.trim() || null,
+          tagline_artistica: document.getElementById('mArtTagline').value.trim() || null,
+          cache_base: rawCache !== "" && !isNaN(rawCache) ? parseFloat(rawCache) : null,
+          experiencia_comercial: document.getElementById('mArtExperiencia').value.trim() || null,
+          bio_artistica: document.getElementById('mArtBio').value.trim() || null,
+          rider_tecnico: document.getElementById('mArtRider').value.trim() || null,
+          youtube_1: document.getElementById('mArtYoutube1').value.trim() || null,
+          youtube_2: document.getElementById('mArtYoutube2').value.trim() || null,
+          galeria_fotos: mGaleriaFotosAtual,
+          foto_capa_url: mFotoCapaUrlAtual
         };
 
-        if (parceiro && parceiro.is_artista) {
-          var rawCache = document.getElementById('mArtCacheBase').value;
-          payload.status_artista = document.getElementById('mStatusArtista').value;
-          payload.is_destaque = document.getElementById('mIsDestaque').checked;
-          payload.nome_artistico = document.getElementById('mArtNomeArtistico').value.trim() || null;
-          payload.categoria_artistica = document.getElementById('mArtCategoria').value || null;
-          payload.especialidade_artistica = document.getElementById('mArtEspecialidade').value.trim() || null;
-          payload.tagline_artistica = document.getElementById('mArtTagline').value.trim() || null;
-          payload.cache_base = rawCache !== "" && !isNaN(rawCache) ? parseFloat(rawCache) : null;
-          payload.experiencia_comercial = document.getElementById('mArtExperiencia').value.trim() || null;
-          payload.bio_artistica = document.getElementById('mArtBio').value.trim() || null;
-          payload.rider_tecnico = document.getElementById('mArtRider').value.trim() || null;
-          payload.youtube_1 = document.getElementById('mArtYoutube1').value.trim() || null;
-          payload.youtube_2 = document.getElementById('mArtYoutube2').value.trim() || null;
-          payload.galeria_fotos = mGaleriaFotosAtual;
-          payload.foto_capa_url = mFotoCapaUrlAtual;
-
-          if (parceiro.midias_pendentes !== undefined) {
-            payload.midias_pendentes = mMidiasPendentesAtual;
-          }
+        var parceiro = listaParceiros.find(function(item) { return String(item.id) === String(parceiroSelecionadoId); });
+        if (parceiro && parceiro.midias_pendentes !== undefined) {
+          payload.midias_pendentes = mMidiasPendentesAtual;
         }
 
         sbPartner
@@ -1616,9 +1888,9 @@
             if (res.error) {
               alert('Erro ao salvar ficha: ' + res.error.message);
             } else {
-              alert('Ficha completa e dados da Vitrine atualizados com sucesso!');
+              alert('Ficha completa atualizada com sucesso!');
               document.getElementById('btnFecharFicha').click();
-              carregarParceiros();
+              carregarTaxonomiaEParceiros();
             }
           })
           .catch(function() {
