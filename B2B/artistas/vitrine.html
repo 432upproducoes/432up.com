@@ -1,1 +1,986 @@
+<!DOCTYPE html>
+<html lang="pt-BR" data-theme="dark">
+<head>
+  <script async src="https://www.googletagmanager.com/gtag/js?id=G-7SWNCP1NV6"></script>
+  <script>
+    window.dataLayer = window.dataLayer || [];
+    function gtag(){dataLayer.push(arguments);}
+    gtag('js', new Date());
+    gtag('config', 'G-7SWNCP1NV6');
+  </script>
 
+  <script src="https://unpkg.com/@supabase/supabase-js@2"></script>
+  <script src="../../script/tracker.js"></script>
+
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
+  <meta name="version" content="Enterprise-3.3.0-B2B-VitrineFrontendFix">
+
+  <meta name="theme-color" content="#08080A">
+  <meta name="apple-mobile-web-app-capable" content="yes">
+  <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+
+  <link class="js-site-favicon" rel="icon" type="image/png" href="../../imagens/favicon.png">
+  <title>Vitrine de Artistas & Talentos | 432UP! Partner</title>
+  <meta name="description" content="Catálogo de atrações homologadas e curadas para produções corporativas e sociais de alto padrão.">
+
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&display=swap" rel="stylesheet">
+
+  <link rel="stylesheet" href="../../css/style.css">
+
+  <script src="../../script/script.js" defer></script>
+
+  <style>
+    :root {
+      --bg-pure: #08080A;
+      --bg-card: rgba(26, 16, 43, 0.45);
+      --bg-card-inner: rgba(30, 18, 50, 0.40);
+      --primary-lime: #00FF66;
+      --text-muted: #8A8A9E;
+      --b2b-cyan: #00F0FF;
+      --border-card: rgba(255, 255, 255, 0.08);
+      --border-accent: rgba(168, 85, 247, 0.35);
+      --gold-destaque: #FACC15;
+    }
+
+    *, *::before, *::after {
+      box-sizing: border-box;
+    }
+
+    body {
+      background-color: var(--bg-pure);
+      color: #FFFFFF;
+      min-height: 100vh;
+      font-family: 'Inter', sans-serif;
+      margin: 0;
+      padding: 0;
+    }
+
+    .gallery-hero {
+      padding-top: 100px;
+      text-align: center;
+      margin-bottom: 2rem;
+    }
+
+    .controls-bar {
+      display: flex;
+      gap: 1rem;
+      margin-bottom: 2.5rem;
+      flex-wrap: wrap;
+      justify-content: center;
+    }
+
+    .search-box, .filter-select {
+      background: rgba(20, 12, 35, 0.75);
+      border: 1px solid var(--border-accent);
+      border-radius: 14px;
+      padding: 12px 18px;
+      color: #FFFFFF;
+      font-size: 0.9rem;
+      outline: none;
+      backdrop-filter: blur(20px);
+      -webkit-backdrop-filter: blur(20px);
+    }
+    .search-box { flex: 1; min-width: 260px; max-width: 420px; }
+
+    .masonry-gallery {
+      display: grid;
+      grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
+      gap: 24px;
+      padding-bottom: 60px;
+    }
+
+    .gallery-card {
+      border: 1px solid var(--border-accent);
+      background: linear-gradient(160deg, rgba(168, 85, 247, 0.12), rgba(20, 12, 35, 0.75) 55%);
+      border-radius: 20px;
+      overflow: hidden;
+      display: flex;
+      flex-direction: column;
+      transition: all 0.3s ease;
+      backdrop-filter: blur(12px);
+      -webkit-backdrop-filter: blur(12px);
+      position: relative;
+    }
+    .gallery-card:hover {
+      border-color: #A855F7;
+      transform: translateY(-4px);
+    }
+
+    .gallery-card.card-destaque {
+      border: 1px solid rgba(250, 204, 21, 0.6);
+      background: linear-gradient(160deg, rgba(250, 204, 21, 0.15), rgba(20, 12, 35, 0.85) 60%);
+      box-shadow: 0 10px 30px rgba(250, 204, 21, 0.12);
+    }
+    .gallery-card.card-destaque:hover {
+      border-color: var(--gold-destaque);
+      box-shadow: 0 15px 40px rgba(250, 204, 21, 0.25);
+    }
+
+    .img-box { width: 100%; height: 260px; position: relative; overflow: hidden; background: #000; }
+    .img-box img { width: 100%; height: 100%; object-fit: cover; }
+    
+    .super-case-badge {
+      position: absolute; right: 12px; top: 12px;
+      background: rgba(0, 255, 102, 0.14); border: 1px solid rgba(0, 255, 102, 0.5);
+      color: var(--primary-lime); font-size: 0.62rem; font-weight: 800;
+      text-transform: uppercase; padding: 4px 10px; border-radius: 14px;
+    }
+
+    .destaque-badge {
+      position: absolute; left: 12px; top: 12px;
+      background: rgba(250, 204, 21, 0.2); border: 1px solid rgba(250, 204, 21, 0.8);
+      color: var(--gold-destaque); font-size: 0.62rem; font-weight: 800;
+      text-transform: uppercase; padding: 4px 10px; border-radius: 14px;
+      box-shadow: 0 0 12px rgba(250, 204, 21, 0.4);
+    }
+
+    .card-body { padding: 20px; display: flex; flex-direction: column; flex: 1; }
+
+    .card-city-tag {
+      font-size: 0.82rem;
+      color: var(--text-muted);
+      display: flex;
+      align-items: center;
+      gap: 4px;
+      margin-bottom: 12px;
+    }
+
+    .modal-case-overlay {
+      position: fixed;
+      top: 0; left: 0; width: 100vw; height: 100vh;
+      background: rgba(8, 10, 16, 0.75);
+      backdrop-filter: blur(16px);
+      -webkit-backdrop-filter: blur(16px);
+      z-index: 9999;
+      display: none;
+      align-items: center;
+      justify-content: center;
+      padding: 20px;
+      overflow: hidden;
+    }
+    .modal-case-overlay.open { display: flex; animation: fadeIn 0.25s ease-out; }
+
+    .modal-case-card {
+      background: rgba(22, 14, 38, 0.42);
+      border: 1px solid rgba(168, 85, 247, 0.38);
+      box-shadow: 0 20px 50px rgba(0, 0, 0, 0.5), 0 0 35px rgba(168, 85, 247, 0.2);
+      backdrop-filter: blur(24px);
+      -webkit-backdrop-filter: blur(24px);
+      border-radius: 24px;
+      width: 100%;
+      max-width: 1020px;
+      max-height: 90vh;
+      overflow-y: auto;
+      padding: 28px;
+      position: relative;
+    }
+
+    .modal-close-btn-fixed {
+      position: fixed !important;
+      top: 24px !important;
+      right: 24px !important;
+      width: 42px;
+      height: 42px;
+      border-radius: 50%;
+      background: rgba(18, 10, 30, 0.85);
+      border: 1px solid rgba(255, 255, 255, 0.25);
+      color: #FFF;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      cursor: pointer;
+      font-size: 1.2rem;
+      transition: all 0.2s;
+      z-index: 10000 !important;
+      box-shadow: 0 4px 15px rgba(0,0,0,0.5);
+    }
+    .modal-close-btn-fixed:hover {
+      background: rgba(168, 85, 247, 0.6);
+      border-color: #A855F7;
+      transform: scale(1.05);
+    }
+
+    .b2b-hero-card {
+      display: grid;
+      grid-template-columns: 420px 1fr;
+      background: var(--bg-card);
+      border: 1px solid var(--border-accent);
+      border-radius: 20px;
+      overflow: hidden;
+      margin-bottom: 20px;
+      backdrop-filter: blur(16px);
+      -webkit-backdrop-filter: blur(16px);
+    }
+
+    .b2b-hero-cover {
+      width: 100%;
+      height: 100%;
+      min-height: 320px;
+      position: relative;
+      background: #000;
+    }
+
+    .b2b-hero-cover img {
+      width: 100%;
+      height: 100%;
+      object-fit: cover;
+      display: block;
+      border-radius: 18px 0 0 18px;
+    }
+
+    .b2b-hero-info {
+      padding: 32px;
+      display: flex;
+      flex-direction: column;
+      justify-content: center;
+      align-items: flex-start;
+      gap: 10px;
+    }
+
+    .b2b-badge-status {
+      background: rgba(0, 255, 102, 0.12);
+      color: var(--primary-lime);
+      border: 1px solid rgba(0, 255, 102, 0.3);
+      font-size: 0.68rem;
+      font-weight: 800;
+      padding: 4px 12px;
+      border-radius: 20px;
+      letter-spacing: 0.5px;
+      text-transform: uppercase;
+    }
+
+    .b2b-hero-title {
+      font-size: 2.2rem;
+      font-weight: 800;
+      color: #FFFFFF;
+      margin: 0;
+      letter-spacing: -0.5px;
+    }
+
+    .b2b-hero-category {
+      color: var(--b2b-cyan);
+      font-size: 1rem;
+      font-weight: 700;
+      margin: 0;
+    }
+
+    .b2b-hero-location {
+      color: var(--text-muted);
+      font-size: 0.9rem;
+      margin: 0;
+      display: flex;
+      align-items: center;
+      gap: 6px;
+    }
+
+    .b2b-hero-cache {
+      color: var(--primary-lime);
+      font-weight: 700;
+      font-size: 0.95rem;
+      margin-top: 10px;
+    }
+
+    .b2b-content-grid {
+      display: grid;
+      grid-template-columns: 1fr 380px;
+      gap: 20px;
+      width: 100%;
+    }
+
+    .b2b-card-block {
+      background: var(--bg-card-inner);
+      border: 1px solid var(--border-card);
+      border-radius: 18px;
+      padding: 24px;
+      margin-bottom: 20px;
+      backdrop-filter: blur(14px);
+      -webkit-backdrop-filter: blur(14px);
+      width: 100%;
+    }
+
+    .b2b-card-block-full {
+      grid-column: 1 / -1;
+      background: var(--bg-card-inner);
+      border: 1px solid var(--border-card);
+      border-radius: 18px;
+      padding: 24px;
+      margin-top: 10px;
+      margin-bottom: 20px;
+      backdrop-filter: blur(14px);
+      -webkit-backdrop-filter: blur(14px);
+      width: 100%;
+    }
+
+    .b2b-videos-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+      gap: 16px;
+      margin-top: 12px;
+      width: 100%;
+    }
+
+    .b2b-block-title {
+      font-size: 0.75rem;
+      font-weight: 800;
+      color: var(--text-muted);
+      text-transform: uppercase;
+      letter-spacing: 1.2px;
+      margin-bottom: 16px;
+      display: block;
+    }
+
+    .b2b-block-text {
+      color: rgba(255, 255, 255, 0.88);
+      font-size: 0.92rem;
+      line-height: 1.6;
+      margin: 0;
+      white-space: pre-line;
+    }
+
+    /* DESKTOP: GRID DE FOTOS MANTIDO INTACTO */
+    .b2b-portfolio-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fill, minmax(130px, 1fr));
+      gap: 12px;
+      width: 100%;
+    }
+
+    .b2b-portfolio-thumb {
+      width: 100%;
+      height: 110px;
+      border-radius: 14px;
+      overflow: hidden;
+      border: 1px solid rgba(255, 255, 255, 0.12);
+      cursor: pointer;
+      transition: transform 0.2s, border-color 0.2s;
+    }
+    .b2b-portfolio-thumb:hover {
+      transform: scale(1.03);
+      border-color: var(--b2b-cyan);
+    }
+    .b2b-portfolio-thumb img {
+      width: 100%;
+      height: 100%;
+      object-fit: cover;
+    }
+
+    .b2b-tech-line {
+      font-size: 0.88rem;
+      color: rgba(255, 255, 255, 0.85);
+      margin-bottom: 10px;
+      line-height: 1.5;
+    }
+    .b2b-tech-line strong { color: #FFF; }
+
+    .b2b-agenda-badge {
+      background: rgba(234, 179, 8, 0.12);
+      color: #FACC15;
+      border: 1px solid rgba(234, 179, 8, 0.3);
+      font-weight: 700;
+      padding: 8px 14px;
+      border-radius: 10px;
+      font-size: 0.82rem;
+      display: inline-block;
+    }
+
+    .b2b-social-row {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      background: rgba(255, 255, 255, 0.03);
+      padding: 10px 14px;
+      border-radius: 10px;
+      margin-bottom: 8px;
+      font-size: 0.88rem;
+      color: rgba(255, 255, 255, 0.8);
+    }
+    .b2b-social-row a { color: var(--b2b-cyan); text-decoration: none; font-weight: 600; }
+
+    .video-container-protected {
+      position: relative;
+      padding-bottom: 56.25%;
+      height: 0;
+      overflow: hidden;
+      border-radius: 14px;
+      border: 1px solid var(--border-accent);
+      background: #000;
+      width: 100%;
+    }
+    .video-container-protected iframe {
+      position: absolute;
+      top: 0; left: 0;
+      width: 100%; height: 100%;
+      border: 0;
+    }
+
+    .lightbox-full-overlay {
+      position: fixed;
+      top: 0; left: 0; width: 100vw; height: 100vh;
+      background: rgba(18, 10, 30, 0.65);
+      backdrop-filter: blur(20px);
+      -webkit-backdrop-filter: blur(20px);
+      z-index: 99999;
+      display: none;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      padding: 20px;
+      touch-action: pan-y;
+    }
+    .lightbox-full-overlay.open { display: flex; animation: fadeIn 0.25s ease-out; }
+
+    .lightbox-card-frame {
+      position: relative;
+      max-width: 90vw;
+      max-height: 80vh;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      user-select: none;
+      -webkit-user-drag: none;
+    }
+
+    .lightbox-img-main {
+      max-width: 100%;
+      max-height: 70vh;
+      border-radius: 16px;
+      box-shadow: 0 0 40px rgba(0,0,0,0.8), 0 0 30px rgba(168, 85, 247, 0.25);
+      border: 1px solid rgba(168, 85, 247, 0.4);
+      object-fit: contain;
+      user-select: none;
+      -webkit-user-drag: none;
+      cursor: grab;
+    }
+    .lightbox-img-main:active { cursor: grabbing; }
+
+    .lightbox-nav-btn {
+      position: absolute;
+      top: 50%;
+      transform: translateY(-50%);
+      width: 44px; height: 44px;
+      border-radius: 50%;
+      background: rgba(26, 16, 43, 0.8);
+      border: 1px solid rgba(255, 255, 255, 0.2);
+      color: #FFF;
+      font-size: 1.2rem;
+      cursor: pointer;
+      display: flex; align-items: center; justify-content: center;
+      transition: all 0.2s;
+      z-index: 10;
+    }
+    .lightbox-nav-btn:hover { background: rgba(168, 85, 247, 0.5); border-color: #A855F7; }
+    .lightbox-nav-prev { left: -60px; }
+    .lightbox-nav-next { right: -60px; }
+
+    .lightbox-dots-container {
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      gap: 8px;
+      margin-top: 14px;
+    }
+
+    .lightbox-dot {
+      width: 10px;
+      height: 10px;
+      border-radius: 50%;
+      background: rgba(255, 255, 255, 0.2);
+      border: 1px solid rgba(0, 255, 102, 0.3);
+      cursor: pointer;
+      transition: all 0.25s ease;
+    }
+
+    .lightbox-dot.active {
+      background: var(--primary-lime);
+      box-shadow: 0 0 12px rgba(0, 255, 102, 0.8);
+      transform: scale(1.25);
+      border-color: #00FF66;
+    }
+
+    /* AJUSTE RESPONSIVO MOBILE: COLUNA ÚNICA PARA FOTOS IGUAL AO VÍDEO */
+    @media (max-width: 860px) {
+      .modal-case-overlay { padding: 12px; }
+      .modal-case-card { padding: 16px; border-radius: 18px; }
+
+      .b2b-hero-card { grid-template-columns: 1fr; }
+      .b2b-hero-cover img { border-radius: 18px 18px 0 0; }
+      
+      .b2b-content-grid { 
+        display: flex; 
+        flex-direction: column; 
+        gap: 0;
+      }
+      
+      .b2b-col-left { display: flex; flex-direction: column; order: 1; }
+      .b2b-card-block-full { order: 2; margin-top: 0; padding: 16px; }
+      .b2b-col-right { order: 3; }
+
+      .b2b-card-block { padding: 16px; margin-bottom: 16px; }
+      .b2b-videos-grid { grid-template-columns: 1fr; }
+
+      /* FORÇA UMA ÚNICA COLUNA NAS FOTOS NO MOBILE COM ALTURA PROPORCIONAL DE VÍDEO (16:9) */
+      .b2b-portfolio-grid { 
+        grid-template-columns: 1fr; 
+        gap: 16px;
+      }
+      .b2b-portfolio-thumb {
+        height: 0;
+        padding-bottom: 56.25%; /* Proporção 16:9 idêntica ao player de vídeo */
+        position: relative;
+      }
+      .b2b-portfolio-thumb img {
+        position: absolute;
+        top: 0; left: 0;
+        width: 100%; height: 100%;
+      }
+
+      .lightbox-nav-prev { left: 10px; }
+      .lightbox-nav-next { right: 10px; }
+      .modal-close-btn-fixed { top: 12px !important; right: 12px !important; width: 36px; height: 36px; font-size: 1rem; }
+    }
+
+    @keyframes fadeIn {
+      from { opacity: 0; }
+      to { opacity: 1; }
+    }
+  </style>
+</head>
+<body>
+
+  <canvas id="orbit-canvas"></canvas>
+  <div id="plasmaLayer" class="plasma-top-layer"></div>
+
+  <div class="viewport-wrapper">
+    <div id="global-header-container"></div>
+
+    <main class="main-content" style="max-width: 1280px; margin: 0 auto; padding: 0 20px;">
+      
+      <section class="gallery-hero">
+        <span class="tagline">Partner Program</span>
+        <h1>Vitrine de <span>Artistas</span></h1>
+        <p>Atrações homologadas e curadas para produções de alto padrão, prontas para contratação.</p>
+      </section>
+
+      <div class="controls-bar">
+        <input type="text" id="search-input" class="search-box" placeholder="Buscar por nome, gênero, cidade..." oninput="renderGallery()">
+        
+        <select id="filter-categoria" class="filter-select" onchange="renderGallery()">
+          <option value="">Todas as Categorias</option>
+          <option value="Cantor(a)">Cantor(a)</option>
+          <option value="Músico / Instrumentista">Músico / Instrumentista</option>
+          <option value="Banda">Banda</option>
+          <option value="DJ">DJ</option>
+          <option value="Performer">Performer</option>
+          <option value="Mestre de Cerimônias">Mestre de Cerimônias</option>
+        </select>
+      </div>
+
+      <div id="main-gallery-grid" class="masonry-gallery"></div>
+
+    </main>
+
+    <footer>
+      <p>© 2026 432UP! Produções — Curadoria Artística e Engenharia Estrutural</p>
+    </footer>
+  </div>
+
+  <div id="case-modal" class="modal-case-overlay">
+    <button class="modal-close-btn-fixed" onclick="fecharModalCase()">✕</button>
+    <div class="modal-case-card">
+      <div id="modal-case-content"></div>
+    </div>
+  </div>
+
+  <div id="lightbox-overlay" class="lightbox-full-overlay">
+    <button class="modal-close-btn-fixed" onclick="fecharLightbox()">✕</button>
+    
+    <div class="lightbox-card-frame" id="lightbox-frame">
+      <button class="lightbox-nav-btn lightbox-nav-prev" onclick="navegarLightbox(-1)">❮</button>
+      <img id="lightbox-active-img" class="lightbox-img-main" src="" alt="Ampliada">
+      <button class="lightbox-nav-btn lightbox-nav-next" onclick="navegarLightbox(1)">❯</button>
+    </div>
+
+    <div id="lightbox-dots-bar" class="lightbox-dots-container"></div>
+
+    <div class="lightbox-caption" style="margin-top:12px; text-align:center;">
+      <h4 id="lightbox-title" style="font-size:1.1rem; color:#FFF; margin:0 0 4px 0;"></h4>
+      <p id="lightbox-subtitle" style="font-size:0.8rem; color:#A855F7; font-weight:700; text-transform:uppercase; margin:0;"></p>
+    </div>
+  </div>
+
+<script src="partner-config.js"></script>
+<script>
+  let dbArtistas = [];
+  let currentActivePortfolio = [];
+  let currentActiveIndex = 0;
+  let currentActiveItem = null;
+
+  function getSupabaseClient() {
+    if (typeof sbPartner !== 'undefined') return sbPartner;
+    if (typeof window.sbPartner !== 'undefined') return window.sbPartner;
+    if (typeof supabaseClient !== 'undefined') return supabaseClient;
+    if (typeof window.supabaseClient !== 'undefined') return window.supabaseClient;
+    if (typeof supabase !== 'undefined') return supabase;
+    return null;
+  }
+
+  async function carregarArtistasSupabase() {
+    const client = getSupabaseClient();
+    if (!client) {
+      console.error('[432UP Vitrine] Instância do Supabase não inicializada.');
+      renderGallery();
+      return;
+    }
+
+    try {
+      const { data, error } = await client
+        .from('parceiros')
+        .select('*')
+        .eq('is_artista', true)
+        .eq('status_artista', 'aprovado')
+        .or('fotos_pendentes_aprovacao.is.null,fotos_pendentes_aprovacao.eq.false');
+
+      if (error) throw error;
+
+      if (data && data.length > 0) {
+        dbArtistas = data.map(item => {
+          let galeriaParsed = [];
+          if (Array.isArray(item.galeria_fotos)) {
+            galeriaParsed = item.galeria_fotos;
+          } else if (typeof item.galeria_fotos === 'string') {
+            try { galeriaParsed = JSON.parse(item.galeria_fotos); } catch(e) { galeriaParsed = []; }
+          }
+
+          const fotoCapa = item.foto_capa_url || item.avatar_url || 'https://images.unsplash.com/photo-1516450360452-9312f5e86fc7?auto=format&fit=crop&w=1000&q=80';
+          const portfolioFinal = galeriaParsed.length > 0 ? galeriaParsed : [fotoCapa];
+          const rawCache = item.cache_base ? parseFloat(item.cache_base) : 0;
+
+          let listaVideos = [];
+          if (item.youtube_1 && typeof item.youtube_1 === 'string' && item.youtube_1.trim() !== '') {
+            listaVideos.push(item.youtube_1.trim());
+          }
+          if (item.youtube_2 && typeof item.youtube_2 === 'string' && item.youtube_2.trim() !== '') {
+            listaVideos.push(item.youtube_2.trim());
+          }
+
+          return {
+            id: item.id,
+            nomeArtistico: item.nome_artistico || item.nome_completo || 'Atração Artística',
+            categoriaTag: 'ATRAÇÃO HOMOLOGADA',
+            subline: item.tagline_artistica || ((item.categoria_artistica || 'Artista') + ' • ' + (item.especialidade_artistica || 'Geral')),
+            cidade: (item.cidade || 'São Paulo') + ' / ' + (item.estado || 'SP').toUpperCase(),
+            categoria: item.categoria_artistica || 'Cantor(a)',
+            especialidade: item.especialidade_artistica || 'Geral',
+            foto: fotoCapa,
+            cacheRaw: rawCache,
+            cacheMedio: rawCache > 0 ? rawCache.toLocaleString('pt-BR', {minimumFractionDigits: 2}) : 'Sob Consulta',
+            sobre: item.bio_artistica || 'Sem descrição cadastrada.',
+            experiencia: item.experiencia_comercial || '10 anos de carreira',
+            rider: item.rider_tecnico || 'Consulte a mesa de produção.',
+            indisponibilidade: formatarIndisponibilidade(item.periodos_bloqueados),
+            instagram: item.instagram || 'N/A',
+            videos: listaVideos,
+            portfolio: portfolioFinal,
+            isDestaque: Boolean(item.is_destaque),
+            publicado: true
+          };
+        });
+
+        dbArtistas.sort((a, b) => (b.isDestaque ? 1 : 0) - (a.isDestaque ? 1 : 0));
+      } else {
+        dbArtistas = [];
+      }
+      renderGallery();
+    } catch (err) {
+      console.error('[432UP Vitrine] Erro na requisição:', err);
+      renderGallery();
+    }
+  }
+
+  function formatarIndisponibilidade(periodos) {
+    let arr = [];
+    if (Array.isArray(periodos)) {
+      arr = periodos;
+    } else if (typeof periodos === 'string') {
+      try { arr = JSON.parse(periodos); } catch(e) { arr = []; }
+    }
+    if (!arr || arr.length === 0) return 'Agenda 100% Livre';
+    return arr.map(p => `De ${p.inicio || p.data_inicio} até ${p.fim || p.data_fim} (${p.motivo || 'Bloqueado'})`).join(' | ');
+  }
+
+  function converterParaEmbedUrl(url) {
+    if (!url || typeof url !== 'string') return '';
+    let u = url.trim();
+
+    if (u.includes('youtube.com/watch')) {
+      const v = new URLSearchParams(u.split('?')[1]).get('v');
+      return v ? `https://www.youtube-nocookie.com/embed/${v}` : '';
+    }
+    if (u.includes('youtu.be/')) {
+      const v = u.split('youtu.be/')[1].split('?')[0];
+      return v ? `https://www.youtube-nocookie.com/embed/${v}` : '';
+    }
+    if (u.includes('youtube.com/shorts/')) {
+      const v = u.split('shorts/')[1].split('?')[0];
+      return v ? `https://www.youtube-nocookie.com/embed/${v}` : '';
+    }
+    if (u.includes('youtube.com/embed/')) {
+      return u;
+    }
+    if (u.includes('vimeo.com/')) {
+      const match = u.match(/vimeo\.com\/(?:video\/)?([0-9]+)/);
+      return match && match[1] ? `https://player.vimeo.com/video/${match[1]}` : '';
+    }
+
+    return '';
+  }
+
+  function renderGallery() {
+    const container = document.getElementById('main-gallery-grid');
+    if (!container) return;
+
+    const search = (document.getElementById('search-input')?.value || '').toLowerCase();
+    const cat = document.getElementById('filter-categoria')?.value || '';
+
+    const filtrados = dbArtistas.filter(a => {
+      const matchBusca = a.nomeArtistico.toLowerCase().includes(search) || 
+                         a.especialidade.toLowerCase().includes(search) || 
+                         a.cidade.toLowerCase().includes(search);
+      const matchCat = cat === "" || a.categoria === cat;
+
+      return matchBusca && matchCat && a.publicado;
+    });
+
+    if (filtrados.length === 0) {
+      container.innerHTML = `<div style="grid-column: 1/-1; text-align:center; padding:3rem; color:var(--text-muted);">Nenhuma atração artística homologada encontrada no momento.</div>`;
+      return;
+    }
+
+    container.innerHTML = filtrados.map(a => `
+      <article class="gallery-card ${a.isDestaque ? 'card-destaque' : ''}">
+        <div class="img-box">
+          <img src="${a.foto}" alt="${a.nomeArtistico}">
+          ${a.isDestaque ? `<span class="destaque-badge">⭐ Destaque</span>` : ''}
+          <span class="super-case-badge">${a.categoria}</span>
+        </div>
+        <div class="card-body">
+          <div style="font-size:1.1rem; font-weight:800; color:#FFF;">${a.nomeArtistico}</div>
+          <div style="font-size:0.8rem; color:#A855F7; font-weight:700; margin-bottom:4px;">${a.subline}</div>
+          <div class="card-city-tag">📍 ${a.cidade}</div>
+          <button class="btn-header-cta" style="margin-top: auto; width: 100%; justify-content: center; cursor:pointer;" onclick="abrirModalCase('${a.id}')">
+            VER PERFIL COMPLETO
+          </button>
+        </div>
+      </article>
+    `).join('');
+  }
+
+  function abrirModalCase(id) {
+    const a = dbArtistas.find(item => item.id === id);
+    if (!a) return;
+
+    currentActiveItem = a;
+    currentActivePortfolio = a.portfolio && a.portfolio.length > 0 ? a.portfolio : [a.foto];
+
+    const thumbsHtml = currentActivePortfolio.map((url, idx) => `
+      <div class="b2b-portfolio-thumb" onclick="abrirLightbox(${idx})">
+        <img src="${url}" alt="Portfólio ${idx + 1}">
+      </div>
+    `).join('');
+
+    let htmlVideos = '';
+    if (a.videos && a.videos.length > 0) {
+      const embeds = a.videos
+        .map(url => converterParaEmbedUrl(url))
+        .filter(embedUrl => embedUrl !== '')
+        .map(embedUrl => `
+          <div class="video-container-protected">
+            <iframe src="${embedUrl}" allowfullscreen></iframe>
+          </div>
+        `).join('');
+
+      if (embeds !== '') {
+        htmlVideos = `
+          <div class="b2b-card-block-full">
+            <span class="b2b-block-title">VÍDEOS DE DEMONSTRAÇÃO DO SHOW</span>
+            <div class="b2b-videos-grid">
+              ${embeds}
+            </div>
+          </div>
+        `;
+      }
+    }
+
+    const mensagemWa = encodeURIComponent(`Olá! Gostaria de solicitar um orçamento para contratação artística da atração: ${a.nomeArtistico}`);
+    const linkWaDireto = `https://wa.me/5511948564577?text=${mensagemWa}`;
+
+    document.getElementById('modal-case-content').innerHTML = `
+      <div class="b2b-hero-card">
+        <div class="b2b-hero-cover">
+          <img src="${a.foto}" alt="${a.nomeArtistico}">
+        </div>
+        <div class="b2b-hero-info">
+          <div style="display:flex; gap:8px; align-items:center;">
+            <span class="b2b-badge-status">🟢 PUBLICADO</span>
+            ${a.isDestaque ? `<span class="destaque-badge" style="position:static;">⭐ DESTAQUE PREMIUM</span>` : ''}
+          </div>
+          <h1 class="b2b-hero-title">${a.nomeArtistico}</h1>
+          <div class="b2b-hero-category">${a.subline}</div>
+          <div class="b2b-hero-location">📍 ${a.cidade}</div>
+          <div class="b2b-hero-cache">Cachê Base Estimado: R$ ${a.cacheMedio}</div>
+        </div>
+      </div>
+
+      <div class="b2b-content-grid">
+        <div class="b2b-col-left">
+          <div class="b2b-card-block">
+            <span class="b2b-block-title">PROPOSTA ARTÍSTICA & SOBRE</span>
+            <p class="b2b-block-text">${a.sobre || 'Sem descrição cadastrada.'}</p>
+          </div>
+
+          <div class="b2b-card-block">
+            <span class="b2b-block-title">PORTFÓLIO EM FOTO (AMPLIADO)</span>
+            <div class="b2b-portfolio-grid">
+              ${thumbsHtml}
+            </div>
+          </div>
+        </div>
+
+        <div class="b2b-col-right">
+          <div class="b2b-card-block">
+            <span class="b2b-block-title">INFORMAÇÕES TÉCNICAS & RIDER</span>
+            <div class="b2b-tech-line"><strong>Experiência:</strong> ${a.experiencia || 'Não informada'}</div>
+            <div class="b2b-tech-line"><strong>Rider Técnico:</strong> ${a.rider || 'Consulte a mesa de produção.'}</div>
+          </div>
+
+          <div class="b2b-card-block">
+            <span class="b2b-block-title">INDISPONIBILIDADE DE AGENDA</span>
+            <div class="b2b-agenda-badge">${a.indisponibilidade}</div>
+          </div>
+
+          <div class="b2b-card-block">
+            <span class="b2b-block-title">PRESENÇA DIGITAL</span>
+            <div class="b2b-social-row">
+              <span>Instagram</span>
+              <strong>${a.instagram || 'N/A'}</strong>
+            </div>
+          </div>
+
+          <a href="${linkWaDireto}" target="_blank" class="btn-header-cta" style="width: 100%; justify-content: center; background: #00FF66; color: #000; font-weight: 800; border: none; padding: 14px; border-radius: 12px; cursor: pointer; margin-top: 10px; text-decoration: none; display: flex; align-items: center; box-sizing: border-box;">
+            SOLICITAR ORÇAMENTO PARA ESTE ARTISTA
+          </a>
+        </div>
+
+        ${htmlVideos}
+      </div>
+    `;
+
+    document.getElementById('case-modal').classList.add('open');
+    document.body.style.overflow = 'hidden';
+  }
+
+  function fecharModalCase() {
+    document.getElementById('case-modal').classList.remove('open');
+    document.body.style.overflow = '';
+  }
+
+  function abrirLightbox(index) {
+    currentActiveIndex = index;
+    atualizarLightbox();
+    document.getElementById('lightbox-overlay').classList.add('open');
+  }
+
+  function fecharLightbox() {
+    document.getElementById('lightbox-overlay').classList.remove('open');
+  }
+
+  function navegarLightbox(direction) {
+    currentActiveIndex += direction;
+    if (currentActiveIndex < 0) currentActiveIndex = currentActivePortfolio.length - 1;
+    if (currentActiveIndex >= currentActivePortfolio.length) currentActiveIndex = 0;
+    atualizarLightbox();
+  }
+
+  function atualizarLightbox() {
+    document.getElementById('lightbox-active-img').src = currentActivePortfolio[currentActiveIndex];
+    
+    if (currentActiveItem) {
+      document.getElementById('lightbox-title').innerText = currentActiveItem.nomeArtistico;
+      document.getElementById('lightbox-subtitle').innerText = (currentActiveItem.subline || '').toUpperCase();
+    }
+
+    const dotsContainer = document.getElementById('lightbox-dots-bar');
+    if (currentActivePortfolio.length > 1) {
+      dotsContainer.style.display = 'flex';
+      dotsContainer.innerHTML = currentActivePortfolio.map((_, idx) => `
+        <span class="lightbox-dot ${idx === currentActiveIndex ? 'active' : ''}" onclick="abrirLightbox(${idx})"></span>
+      `).join('');
+    } else {
+      dotsContainer.style.display = 'none';
+    }
+  }
+
+  let touchStartX = 0;
+  let touchEndX = 0;
+  const minSwipeDistance = 40;
+
+  function setupLightboxSwipe() {
+    const frame = document.getElementById('lightbox-frame');
+    if (!frame) return;
+
+    frame.addEventListener('touchstart', (e) => {
+      touchStartX = e.changedTouches[0].screenX;
+    }, { passive: true });
+
+    frame.addEventListener('touchend', (e) => {
+      touchEndX = e.changedTouches[0].screenX;
+      handleSwipe();
+    }, { passive: true });
+
+    frame.addEventListener('mousedown', (e) => {
+      touchStartX = e.clientX;
+    });
+
+    frame.addEventListener('mouseup', (e) => {
+      touchEndX = e.clientX;
+      handleSwipe();
+    });
+  }
+
+  function handleSwipe() {
+    const diff = touchEndX - touchStartX;
+    if (Math.abs(diff) > minSwipeDistance) {
+      if (diff < 0) {
+        navegarLightbox(1);
+      } else {
+        navegarLightbox(-1);
+      }
+    }
+  }
+
+  async function injectGlobalHeader() {
+    try {
+      const response = await fetch('../../header.html');
+      if (response.ok) {
+        const headerHTML = await response.text();
+        const parser = new DOMParser();
+        const doc = parser.parseFromString(headerHTML, 'text/html');
+        document.getElementById('global-header-container').innerHTML = doc.body ? doc.body.innerHTML : headerHTML;
+      }
+    } catch (e) {
+      console.error('Erro ao carregar header:', e);
+    }
+  }
+
+  document.addEventListener('DOMContentLoaded', () => {
+    injectGlobalHeader();
+    carregarArtistasSupabase();
+    setupLightboxSwipe();
+  });
+</script>
+
+</body>
+</html>
