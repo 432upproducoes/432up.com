@@ -14,7 +14,7 @@
 
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
-  <meta name="version" content="Enterprise-3.3.0-B2B-VitrineFrontendFix">
+  <meta name="version" content="Enterprise-3.4.0-B2B-TaxonomiaDinamica">
 
   <meta name="theme-color" content="#08080A">
   <meta name="apple-mobile-web-app-capable" content="yes">
@@ -340,7 +340,6 @@
       white-space: pre-line;
     }
 
-    /* DESKTOP: GRID DE FOTOS MANTIDO INTACTO */
     .b2b-portfolio-grid {
       display: grid;
       grid-template-columns: repeat(auto-fill, minmax(130px, 1fr));
@@ -500,7 +499,6 @@
       border-color: #00FF66;
     }
 
-    /* AJUSTE RESPONSIVO MOBILE: COLUNA ÚNICA PARA FOTOS IGUAL AO VÍDEO */
     @media (max-width: 860px) {
       .modal-case-overlay { padding: 12px; }
       .modal-case-card { padding: 16px; border-radius: 18px; }
@@ -521,14 +519,13 @@
       .b2b-card-block { padding: 16px; margin-bottom: 16px; }
       .b2b-videos-grid { grid-template-columns: 1fr; }
 
-      /* FORÇA UMA ÚNICA COLUNA NAS FOTOS NO MOBILE COM ALTURA PROPORCIONAL DE VÍDEO (16:9) */
       .b2b-portfolio-grid { 
         grid-template-columns: 1fr; 
         gap: 16px;
       }
       .b2b-portfolio-thumb {
         height: 0;
-        padding-bottom: 56.25%; /* Proporção 16:9 idêntica ao player de vídeo */
+        padding-bottom: 56.25%;
         position: relative;
       }
       .b2b-portfolio-thumb img {
@@ -560,8 +557,8 @@
       
       <section class="gallery-hero">
         <span class="tagline">Partner Program</span>
-        <h1>Vitrine de <span>Artistas</span></h1>
-        <p>Atrações homologadas e curadas para produções de alto padrão, prontas para contratação.</p>
+        <h1>Vitrine de <span>Artistas & Parceiros</span></h1>
+        <p>Atrações e prestadores homologados para produções de alto padrão, prontas para contratação.</p>
       </section>
 
       <div class="controls-bar">
@@ -569,12 +566,6 @@
         
         <select id="filter-categoria" class="filter-select" onchange="renderGallery()">
           <option value="">Todas as Categorias</option>
-          <option value="Cantor(a)">Cantor(a)</option>
-          <option value="Músico / Instrumentista">Músico / Instrumentista</option>
-          <option value="Banda">Banda</option>
-          <option value="DJ">DJ</option>
-          <option value="Performer">Performer</option>
-          <option value="Mestre de Cerimônias">Mestre de Cerimônias</option>
         </select>
       </div>
 
@@ -614,6 +605,7 @@
 <script src="partner-config.js"></script>
 <script>
   let dbArtistas = [];
+  let mapPerfis = {};
   let currentActivePortfolio = [];
   let currentActiveIndex = 0;
   let currentActiveItem = null;
@@ -625,6 +617,36 @@
     if (typeof window.supabaseClient !== 'undefined') return window.supabaseClient;
     if (typeof supabase !== 'undefined') return supabase;
     return null;
+  }
+
+  async function carregarFiltroCategorias() {
+    const client = getSupabaseClient();
+    const select = document.getElementById('filter-categoria');
+    if (!client || !select) return;
+
+    try {
+      const { data, error } = await client
+        .from('perfis_parceiros')
+        .select('id, nome, pai_id')
+        .eq('ativo', true)
+        .is('pai_id', null)
+        .order('ordem', { ascending: true });
+
+      if (error) throw error;
+
+      if (data && data.length > 0) {
+        select.innerHTML = '<option value="">Todas as Categorias</option>';
+        data.forEach(cat => {
+          mapPerfis[cat.id] = cat.nome;
+          const opt = document.createElement('option');
+          opt.value = cat.id;
+          opt.textContent = cat.nome;
+          select.appendChild(opt);
+        });
+      }
+    } catch (err) {
+      console.warn('[432UP Vitrine] Falha ao carregar taxonomia de perfis:', err);
+    }
   }
 
   async function carregarArtistasSupabase() {
@@ -668,6 +690,7 @@
 
           return {
             id: item.id,
+            perfilParceiroId: item.perfil_parceiro_id || null,
             nomeArtistico: item.nome_artistico || item.nome_completo || 'Atração Artística',
             categoriaTag: 'ATRAÇÃO HOMOLOGADA',
             subline: item.tagline_artistica || ((item.categoria_artistica || 'Artista') + ' • ' + (item.especialidade_artistica || 'Geral')),
@@ -743,13 +766,21 @@
     if (!container) return;
 
     const search = (document.getElementById('search-input')?.value || '').toLowerCase();
-    const cat = document.getElementById('filter-categoria')?.value || '';
+    const catVal = document.getElementById('filter-categoria')?.value || '';
 
     const filtrados = dbArtistas.filter(a => {
       const matchBusca = a.nomeArtistico.toLowerCase().includes(search) || 
                          a.especialidade.toLowerCase().includes(search) || 
                          a.cidade.toLowerCase().includes(search);
-      const matchCat = cat === "" || a.categoria === cat;
+
+      let matchCat = true;
+      if (catVal !== "") {
+        const nomeCategoriaSelecionada = mapPerfis[catVal] || '';
+        matchCat = (a.perfilParceiroId === catVal) || 
+                   (a.categoria === catVal) || 
+                   (nomeCategoriaSelecionada && a.categoria === nomeCategoriaSelecionada) ||
+                   (nomeCategoriaSelecionada && a.subline.toLowerCase().includes(nomeCategoriaSelecionada.toLowerCase()));
+      }
 
       return matchBusca && matchCat && a.publicado;
     });
@@ -975,8 +1006,9 @@
     }
   }
 
-  document.addEventListener('DOMContentLoaded', () => {
+  document.addEventListener('DOMContentLoaded', async () => {
     injectGlobalHeader();
+    await carregarFiltroCategorias();
     carregarArtistasSupabase();
     setupLightboxSwipe();
   });
