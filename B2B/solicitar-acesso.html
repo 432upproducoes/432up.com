@@ -39,10 +39,10 @@
     }
   </style>
 </head>
-<body class="h-full text-slate-200 font-sans antialiased bg-[#06080c] flex items-center justify-center p-4 overflow-y-auto">
+<body class="min-h-full text-slate-200 font-sans antialiased bg-[#06080c] flex flex-col justify-start sm:justify-center items-center p-4 py-8 overflow-y-auto">
   <canvas id="orbit-canvas"></canvas>
   <div id="plasmaLayer" class="plasma-top-layer"></div>
-  <div class="w-full max-w-lg glass-b2b-box p-8 rounded-3xl relative z-10 my-6">
+  <div class="w-full max-w-lg glass-b2b-box p-8 rounded-3xl relative z-10 my-auto">
     <!-- CABEÇALHO -->
     <div class="text-center mb-6">
       <img
@@ -138,47 +138,50 @@
           >
         </div>
       </div>
-      <!-- INSTAGRAM / PERFIL -->
+      <!-- INSTAGRAM -->
+      <div>
+        <label class="block text-xs uppercase tracking-wider text-slate-400 font-semibold mb-1">
+          Instagram / Portfólio *
+        </label>
+        <input
+          type="text"
+          id="fInstagram"
+          required
+          autocomplete="off"
+          placeholder="@suaempresa ou site"
+          class="w-full bg-white/5 border border-white/15 rounded-xl px-4 py-2.5 text-sm text-white focus:border-cyan-400 focus:outline-none"
+        >
+      </div>
+
+      <!-- PERFIL DE ATUAÇÃO (PAI) E RAMO / ESPECIALIDADE (FILHO) -->
       <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
         <div>
           <label class="block text-xs uppercase tracking-wider text-slate-400 font-semibold mb-1">
-            Instagram / Portfólio *
-          </label>
-          <input
-            type="text"
-            id="fInstagram"
-            required
-            autocomplete="off"
-            placeholder="@suaempresa ou site"
-            class="w-full bg-white/5 border border-white/15 rounded-xl px-4 py-2.5 text-sm text-white focus:border-cyan-400 focus:outline-none"
-          >
-        </div>
-        <div>
-          <label class="block text-xs uppercase tracking-wider text-slate-400 font-semibold mb-1">
-            Perfil de Atuação *
+            Perfil de Atuação Base *
           </label>
           <select
             id="fPerfil"
+            required
             class="w-full bg-slate-900 border border-white/15 rounded-xl px-4 py-2.5 text-sm text-white focus:border-cyan-400 focus:outline-none"
           >
-            <option value="cerimonialista">
-              Cerimonialista / Assessoria de Eventos
-            </option>
-            <option value="agencia_corporativa">
-              Agência de Eventos Corporativos
-            </option>
-            <option value="produtor_independente">
-              Produtor Independente / Arquiteto Cênico
-            </option>
-            <option value="hotelaria_espaco">
-              Hotelaria de Luxo / Espaço de Eventos
-            </option>
-            <option value="outro">
-              Outro
-            </option>
+            <option value="">Carregando perfis...</option>
+          </select>
+        </div>
+        <div>
+          <label class="block text-xs uppercase tracking-wider text-slate-400 font-semibold mb-1">
+            Ramo / Especialidade *
+          </label>
+          <select
+            id="fEspecialidade"
+            required
+            disabled
+            class="w-full bg-slate-900 border border-white/15 rounded-xl px-4 py-2.5 text-sm text-white focus:border-cyan-400 focus:outline-none disabled:opacity-50 disabled:cursor-not-allowed"
+          >
+            <option value="">Selecione o perfil base primeiro</option>
           </select>
         </div>
       </div>
+
       <!-- SENHAS -->
       <div class="grid grid-cols-1 sm:grid-cols-2 gap-4 pt-2 border-t border-white/10">
         <div>
@@ -256,21 +259,90 @@
   <script>
     (function () {
       'use strict';
+
+      var avatarFile = null;
+      var listaPerfisCompletos = [];
+
       /*
        * =====================================================
-       * AVATAR
+       * DADOS DINÂMICOS DA TABELA perfis_parceiros
        * =====================================================
-       *
-       * A imagem original NÃO é enviada.
-       *
-       * Ela é:
-       * 1. redimensionada para no máximo 256x256;
-       * 2. convertida para JPEG;
-       * 3. comprimida progressivamente;
-       * 4. mantida aproximadamente na faixa de 30 KB.
-       *
        */
-      var avatarFile = null;
+      async function popularSelectPerfilBase() {
+        var perfilSelect = document.getElementById('fPerfil');
+
+        try {
+          var res = await sbPartner
+            .from('perfis_parceiros')
+            .select('id, nome, pai_id, ordem')
+            .eq('ativo', true)
+            .order('ordem', { ascending: true });
+
+          if (res.error) throw res.error;
+
+          listaPerfisCompletos = res.data || [];
+          var pais = listaPerfisCompletos.filter(function (p) { return !p.pai_id; });
+
+          perfilSelect.innerHTML = '<option value="">Selecione o perfil base...</option>';
+          pais.forEach(function (p) {
+            var opt = document.createElement('option');
+            opt.value = p.id;
+            opt.textContent = p.nome;
+            perfilSelect.appendChild(opt);
+          });
+        } catch (err) {
+          console.error('[432UP Partner] Erro ao carregar perfis:', err);
+          perfilSelect.innerHTML = '<option value="">Erro ao carregar perfis</option>';
+        }
+      }
+
+      function atualizarSelectEspecialidades(paiId) {
+        var espSelect = document.getElementById('fEspecialidade');
+        espSelect.innerHTML = '';
+
+        if (!paiId) {
+          espSelect.disabled = true;
+          espSelect.innerHTML = '<option value="">Selecione o perfil base primeiro</option>';
+          return;
+        }
+
+        var filhas = listaPerfisCompletos.filter(function (p) {
+          return p.pai_id === paiId;
+        });
+
+        if (filhas.length === 0) {
+          espSelect.disabled = true;
+          espSelect.innerHTML = '<option value="">Sem especialidades específicas</option>';
+          return;
+        }
+
+        espSelect.disabled = false;
+        espSelect.innerHTML = '<option value="">Selecione a especialidade *</option>';
+        filhas.forEach(function (f) {
+          var opt = document.createElement('option');
+          opt.value = f.id;
+          opt.textContent = f.nome;
+          espSelect.appendChild(opt);
+        });
+      }
+
+      function traduzirPerfilLegado(nomePerfilBase) {
+        if (!nomePerfilBase) return 'outro';
+        var nome = nomePerfilBase.toLowerCase();
+        if (nome.indexOf('cerimonialista') >= 0 || nome.indexOf('assessoria') >= 0) return 'cerimonialista';
+        if (nome.indexOf('agência') >= 0 || nome.indexOf('agencia') >= 0) return 'agencia_corporativa';
+        if (nome.indexOf('produtor') >= 0) return 'produtor_independente';
+        if (nome.indexOf('hotelaria') >= 0 || nome.indexOf('espaço') >= 0 || nome.indexOf('espaco') >= 0) return 'hotelaria_espaco';
+        return 'outro';
+      }
+
+      document.addEventListener('DOMContentLoaded', function () {
+        popularSelectPerfilBase();
+        document.getElementById('fPerfil').addEventListener('change', function (e) {
+          atualizarSelectEspecialidades(e.target.value);
+        });
+      });
+
       /*
        * =====================================================
        * COMPACTAÇÃO DA FOTO
@@ -285,99 +357,45 @@
               var MAX_SIZE = 256;
               var largura = img.width;
               var altura = img.height;
-              /*
-               * Redimensionamento proporcional
-               */
+
               if (largura > altura) {
                 if (largura > MAX_SIZE) {
-                  altura =
-                    Math.round(
-                      altura * MAX_SIZE / largura
-                    );
+                  altura = Math.round(altura * MAX_SIZE / largura);
                   largura = MAX_SIZE;
                 }
               } else {
                 if (altura > MAX_SIZE) {
-                  largura =
-                    Math.round(
-                      largura * MAX_SIZE / altura
-                    );
+                  largura = Math.round(largura * MAX_SIZE / altura);
                   altura = MAX_SIZE;
                 }
               }
-              /*
-               * Canvas
-               */
-              var canvas =
-                document.createElement('canvas');
+
+              var canvas = document.createElement('canvas');
               canvas.width = largura;
               canvas.height = altura;
-              var ctx =
-                canvas.getContext('2d');
-              /*
-               * Fundo branco evita problemas
-               * com transparência ao converter
-               * PNG/WebP para JPEG.
-               */
+              var ctx = canvas.getContext('2d');
+
               ctx.fillStyle = '#ffffff';
-              ctx.fillRect(
-                0,
-                0,
-                largura,
-                altura
-              );
-              ctx.drawImage(
-                img,
-                0,
-                0,
-                largura,
-                altura
-              );
-              /*
-               * Tenta várias qualidades até
-               * chegar próximo de 30 KB.
-               */
-              var qualidades = [
-                0.78,
-                0.68,
-                0.58,
-                0.48,
-                0.40,
-                0.32
-              ];
+              ctx.fillRect(0, 0, largura, altura);
+              ctx.drawImage(img, 0, 0, largura, altura);
+
+              var qualidades = [0.78, 0.68, 0.58, 0.48, 0.40, 0.32];
               var tentativa = 0;
+
               function gerar() {
                 canvas.toBlob(
                   function (blob) {
                     if (!blob) {
-                      reject(
-                        new Error(
-                          'Não foi possível compactar a imagem.'
-                        )
-                      );
+                      reject(new Error('Não foi possível compactar a imagem.'));
                       return;
                     }
-                    /*
-                     * Se já estiver em uma faixa boa,
-                     * usamos esta versão.
-                     */
-                    if (
-                      blob.size <= 40 * 1024 ||
-                      tentativa >= qualidades.length - 1
-                    ) {
-                      var nome =
-                        'avatar-' +
-                        Date.now() +
-                        '.jpg';
-                      var compactado =
-                        new File(
-                          [blob],
-                          nome,
-                          {
-                            type: 'image/jpeg',
-                            lastModified: Date.now()
-                          }
-                        );
+
+                    if (blob.size <= 40 * 1024 || tentativa >= qualidades.length - 1) {
+                      var nome = 'avatar-' + Date.now() + '.jpg';
+                      var compactado = new File([blob], nome, {
+                        type: 'image/jpeg',
+                        lastModified: Date.now()
+                      });
                       resolve(compactado);
                       return;
                     }
@@ -391,132 +409,69 @@
               gerar();
             };
             img.onerror = function () {
-              reject(
-                new Error(
-                  'Não foi possível ler a imagem.'
-                )
-              );
+              reject(new Error('Não foi possível ler a imagem.'));
             };
             img.src = event.target.result;
           };
           reader.onerror = function () {
-            reject(
-              new Error(
-                'Não foi possível carregar a imagem.'
-              )
-            );
+            reject(new Error('Não foi possível carregar a imagem.'));
           };
           reader.readAsDataURL(file);
         });
       }
+
       /*
        * =====================================================
        * FOTO / AVATAR
        * =====================================================
        */
-      document
-        .getElementById('fAvatar')
-        .addEventListener(
-          'change',
-          async function (e) {
-            var file =
-              e.target.files[0];
-            if (!file) return;
-            /*
-             * Limite da imagem original.
-             */
-            if (file.size > 5 * 1024 * 1024) {
-              showAlert(
-                'A foto precisa ter no máximo 5MB.',
-                'error'
-              );
-              e.target.value = '';
-              avatarFile = null;
-              return;
-            }
-            /*
-             * Preview imediato.
-             */
-            var reader =
-              new FileReader();
-            reader.onload =
-              function (ev) {
-                document
-                  .getElementById(
-                    'avatarPlaceholder'
-                  )
-                  .style.display = 'none';
-                document
-                  .getElementById(
-                    'avatarPreview'
-                  )
-                  .style.backgroundImage =
-                    'url(' +
-                    ev.target.result +
-                    ')';
-              };
-            reader.readAsDataURL(file);
-            /*
-             * Compactação.
-             */
-            try {
-              avatarFile =
-                await compactarAvatar(file);
-              console.log(
-                '[432UP Avatar] Original:',
-                Math.round(file.size / 1024),
-                'KB'
-              );
-              console.log(
-                '[432UP Avatar] Compactado:',
-                Math.round(avatarFile.size / 1024),
-                'KB'
-              );
-            } catch (erro) {
-              console.error(
-                '[432UP Avatar] Falha na compactação:',
-                erro
-              );
-              showAlert(
-                'Não foi possível processar a foto. Tente outra imagem.',
-                'error'
-              );
-              e.target.value = '';
-              avatarFile = null;
-            }
-          }
-        );
+      document.getElementById('fAvatar').addEventListener('change', async function (e) {
+        var file = e.target.files[0];
+        if (!file) return;
+
+        if (file.size > 5 * 1024 * 1024) {
+          showAlert('A foto precisa ter no máximo 5MB.', 'error');
+          e.target.value = '';
+          avatarFile = null;
+          return;
+        }
+
+        var reader = new FileReader();
+        reader.onload = function (ev) {
+          document.getElementById('avatarPlaceholder').style.display = 'none';
+          document.getElementById('avatarPreview').style.backgroundImage = 'url(' + ev.target.result + ')';
+        };
+        reader.readAsDataURL(file);
+
+        try {
+          avatarFile = await compactarAvatar(file);
+        } catch (erro) {
+          console.error('[432UP Avatar] Falha na compactação:', erro);
+          showAlert('Não foi possível processar a foto. Tente outra imagem.', 'error');
+          e.target.value = '';
+          avatarFile = null;
+        }
+      });
+
       /*
        * =====================================================
-       * ALERTAS
+       * ALERTAS E ERROS
        * =====================================================
        */
       function showAlert(msg, type) {
-        var el =
-          document.getElementById('formAlert');
+        var el = document.getElementById('formAlert');
         el.textContent = msg;
         el.className =
           'mb-4 p-3 rounded-xl text-xs font-semibold show ' +
-          (
-            type === 'success'
-              ? 'bg-emerald-500/15 text-emerald-300 border border-emerald-500/30'
-              : 'bg-red-500/15 text-red-300 border border-red-500/30'
-          );
+          (type === 'success'
+            ? 'bg-emerald-500/15 text-emerald-300 border border-emerald-500/30'
+            : 'bg-red-500/15 text-red-300 border border-red-500/30');
       }
-      /*
-       * =====================================================
-       * ERRO VISUAL
-       * =====================================================
-       */
+
       function fieldErr(id, has) {
-        document
-          .getElementById(id)
-          .classList
-          .toggle(
-            'field-error',
-            !!has
-          );
+        document.getElementById(id).classList.toggle('field-error', !!has);
       }
+
       /*
        * =====================================================
        * TELEGRAM
@@ -524,403 +479,179 @@
        */
       async function avisarTelegramNovoParceiro(dados) {
         try {
-          var resposta =
-            await fetch(
-              'https://www.432up.com/avisos-telegram',
-              {
-                method: 'POST',
-                headers: {
-                  'Content-Type':
-                    'application/json'
-                },
-                body: JSON.stringify({
-                  event:
-                    'novo_colaborador',
-                  parceiro_nome:
-                    dados.nome,
-                  empresa:
-                    dados.empresa,
-                  perfil:
-                    dados.perfil,
-                  email:
-                    dados.email,
-                  telefone:
-                    dados.whatsapp,
-                  instagram:
-                    dados.instagram
-                })
-              }
-            );
-          var texto =
-            await resposta.text();
-          console.log(
-            '[432UP B2B → Telegram]',
-            resposta.status,
-            texto
-          );
+          var resposta = await fetch('https://www.432up.com/avisos-telegram', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({
+              event: 'novo_colaborador',
+              parceiro_nome: dados.nome,
+              empresa: dados.empresa,
+              perfil: dados.perfil,
+              email: dados.email,
+              telefone: dados.whatsapp,
+              instagram: dados.instagram
+            })
+          });
           return resposta.ok;
         } catch (erro) {
-          console.error(
-            '[432UP B2B → Telegram] Falha:',
-            erro
-          );
+          console.error('[432UP B2B → Telegram] Falha:', erro);
           return false;
         }
       }
+
       /*
        * =====================================================
        * CADASTRO PRINCIPAL
        * =====================================================
        */
-      document
-        .getElementById('cadastroForm')
-        .addEventListener(
-          'submit',
-          async function (e) {
-            e.preventDefault();
-            /*
-             * CAPTURA
-             */
-            var nome =
-              document
-                .getElementById('fNome')
-                .value
-                .trim();
-            var empresa =
-              document
-                .getElementById('fEmpresa')
-                .value
-                .trim();
-            var email =
-              document
-                .getElementById('fEmail')
-                .value
-                .trim();
-            var whatsapp =
-              document
-                .getElementById('fWhatsapp')
-                .value
-                .replace(/\D/g, '');
-            var instagram =
-              document
-                .getElementById('fInstagram')
-                .value
-                .trim();
-            var perfilEl =
-              document.getElementById(
-                'fPerfil'
-              );
-            var perfil =
-              perfilEl
-                .options[
-                  perfilEl.selectedIndex
-                ]
-                .text;
-            var perfilValue =
-              perfilEl.value;
-            var senha1 =
-              document
-                .getElementById('fSenha1')
-                .value;
-            var senha2 =
-              document
-                .getElementById('fSenha2')
-                .value;
-            var termos =
-              document
-                .getElementById('fTermos')
-                .checked;
-            /*
-             * LIMPA ERROS
-             */
-            [
-              'fNome',
-              'fEmpresa',
-              'fEmail',
-              'fWhatsapp',
-              'fInstagram',
-              'fSenha1',
-              'fSenha2'
-            ].forEach(function (id) {
-              fieldErr(
-                id,
-                false
-              );
-            });
-            /*
-             * VALIDAÇÃO
-             */
-            var ok = true;
-            if (!nome) {
-              fieldErr(
-                'fNome',
-                true
-              );
-              ok = false;
+      document.getElementById('cadastroForm').addEventListener('submit', async function (e) {
+        e.preventDefault();
+
+        var nome = document.getElementById('fNome').value.trim();
+        var empresa = document.getElementById('fEmpresa').value.trim();
+        var email = document.getElementById('fEmail').value.trim();
+        var whatsapp = document.getElementById('fWhatsapp').value.replace(/\D/g, '');
+        var instagram = document.getElementById('fInstagram').value.trim();
+
+        var perfilSelect = document.getElementById('fPerfil');
+        var espSelect = document.getElementById('fEspecialidade');
+
+        var perfilBaseId = perfilSelect.value;
+        var especialidadeId = espSelect.value;
+
+        // ID final a ser salvo no banco
+        var perfilParceiroId = especialidadeId || perfilBaseId;
+
+        // Textos descritivos
+        var perfilBaseTexto = perfilSelect.options[perfilSelect.selectedIndex] ? perfilSelect.options[perfilSelect.selectedIndex].text : '';
+        var especialidadeTexto = (espSelect.selectedIndex >= 0 && espSelect.options[espSelect.selectedIndex].value) ? espSelect.options[espSelect.selectedIndex].text : '';
+
+        var perfilTextoExibicao = especialidadeTexto ? (perfilBaseTexto + ' - ' + especialidadeTexto) : perfilBaseTexto;
+        var perfilLegado = traduzirPerfilLegado(perfilBaseTexto);
+
+        var senha1 = document.getElementById('fSenha1').value;
+        var senha2 = document.getElementById('fSenha2').value;
+        var termos = document.getElementById('fTermos').checked;
+
+        ['fNome', 'fEmpresa', 'fEmail', 'fWhatsapp', 'fInstagram', 'fPerfil', 'fEspecialidade', 'fSenha1', 'fSenha2'].forEach(function (id) {
+          fieldErr(id, false);
+        });
+
+        var ok = true;
+        if (!nome) { fieldErr('fNome', true); ok = false; }
+        if (!empresa) { fieldErr('fEmpresa', true); ok = false; }
+        if (!email || email.indexOf('@') < 1) { fieldErr('fEmail', true); ok = false; }
+        if (whatsapp.length < 10) { fieldErr('fWhatsapp', true); ok = false; }
+        if (!instagram) { fieldErr('fInstagram', true); ok = false; }
+        if (!perfilBaseId) { fieldErr('fPerfil', true); ok = false; }
+
+        if (!espSelect.disabled && !especialidadeId) {
+          fieldErr('fEspecialidade', true);
+          ok = false;
+        }
+
+        if (senha1.length < 8) { fieldErr('fSenha1', true); ok = false; }
+        if (senha1 !== senha2) { fieldErr('fSenha2', true); ok = false; }
+
+        if (!termos) {
+          showAlert('Você precisa aceitar os termos do programa para continuar.', 'error');
+          return;
+        }
+        if (!ok) {
+          showAlert('Verifique os campos destacados em vermelho.', 'error');
+          return;
+        }
+
+        var btn = document.getElementById('btnEnviar');
+        btn.classList.add('btn-loading');
+        btn.textContent = 'Enviando...';
+
+        try {
+          var authRes = await sbPartner.auth.signUp({
+            email: email,
+            password: senha1,
+            options: {
+              emailRedirectTo:
+                window.location.origin +
+                window.location.pathname.replace(
+                  'solicitar-acesso.html',
+                  'login.html?confirmado=1'
+                ),
+              data: {
+                origem: 'b2b_partner',
+                nome_completo: nome,
+                empresa: empresa,
+                whatsapp: whatsapp,
+                instagram: instagram,
+                perfil: perfilLegado,
+                perfil_parceiro_id: perfilParceiroId
+              }
             }
-            if (!empresa) {
-              fieldErr(
-                'fEmpresa',
-                true
-              );
-              ok = false;
-            }
-            if (
-              !email ||
-              email.indexOf('@') < 1
-            ) {
-              fieldErr(
-                'fEmail',
-                true
-              );
-              ok = false;
-            }
-            if (
-              whatsapp.length < 10
-            ) {
-              fieldErr(
-                'fWhatsapp',
-                true
-              );
-              ok = false;
-            }
-            if (!instagram) {
-              fieldErr(
-                'fInstagram',
-                true
-              );
-              ok = false;
-            }
-            if (
-              senha1.length < 8
-            ) {
-              fieldErr(
-                'fSenha1',
-                true
-              );
-              ok = false;
-            }
-            if (
-              senha1 !== senha2
-            ) {
-              fieldErr(
-                'fSenha2',
-                true
-              );
-              ok = false;
-            }
-            if (!termos) {
-              showAlert(
-                'Você precisa aceitar os termos do programa para continuar.',
-                'error'
-              );
-              return;
-            }
-            if (!ok) {
-              showAlert(
-                'Verifique os campos destacados em vermelho.',
-                'error'
-              );
-              return;
-            }
-            /*
-             * BOTÃO
-             */
-            var btn =
-              document.getElementById(
-                'btnEnviar'
-              );
-            btn.classList.add(
-              'btn-loading'
-            );
-            btn.textContent =
-              'Enviando...';
-            /*
-             * =================================================
-             * 1. SUPABASE AUTH
-             * =================================================
-             */
+          });
+
+          if (authRes.error) {
+            var msg = authRes.error.message.indexOf('already registered') >= 0
+              ? 'Este e-mail já está cadastrado. Tente fazer login ou recuperar sua senha.'
+              : 'Erro ao criar acesso: ' + authRes.error.message;
+            showAlert(msg, 'error');
+            btn.classList.remove('btn-loading');
+            btn.textContent = 'Enviar Solicitação B2B';
+            return;
+          }
+
+          var userId = authRes.data.user ? authRes.data.user.id : null;
+
+          if (userId) {
             try {
-              var authRes =
-                await sbPartner.auth.signUp({
-                  email: email,
-                  password: senha1,
-                  options: {
-                    emailRedirectTo:
-                      window.location.origin +
-                      window.location.pathname.replace(
-                        'solicitar-acesso.html',
-                        'login.html?confirmado=1'
-                      ),
-                    data: {
-                      origem:
-                        'b2b_partner',
-                      nome_completo:
-                        nome,
-                      empresa:
-                        empresa,
-                      whatsapp:
-                        whatsapp,
-                      instagram:
-                        instagram,
-                      perfil:
-                        perfilValue
-                    }
-                  }
-                });
-              /*
-               * ERRO
-               */
-              if (authRes.error) {
-                var msg =
-                  authRes.error.message
-                    .indexOf(
-                      'already registered'
-                    ) >= 0
-                    ? 'Este e-mail já está cadastrado. Tente fazer login ou recuperar sua senha.'
-                    : 'Erro ao criar acesso: ' +
-                      authRes.error.message;
-                showAlert(
-                  msg,
-                  'error'
-                );
-                btn.classList.remove(
-                  'btn-loading'
-                );
-                btn.textContent =
-                  'Enviar Solicitação B2B';
-                return;
-              }
-              /*
-               * ID DO USUÁRIO
-               */
-              var userId =
-                authRes.data.user
-                  ? authRes.data.user.id
-                  : null;
-              /*
-               * =================================================
-               * 2. GARANTE INSTAGRAM EM PARCEIROS
-               * =================================================
-               */
-              if (userId) {
-                try {
-                  var parceiroUpdate =
-                    await sbPartner
-                      .from('parceiros')
-                      .update({
-                        instagram:
-                          instagram
-                      })
-                      .eq(
-                        'user_id',
-                        userId
-                      );
-                  if (
-                    parceiroUpdate.error
-                  ) {
-                    console.warn(
-                      '[432UP Partner] Não foi possível gravar Instagram em parceiros:',
-                      parceiroUpdate.error
-                    );
-                  }
-                } catch (
-                  errInstagram
-                ) {
-                  console.warn(
-                    '[432UP Partner] Falha ao atualizar Instagram:',
-                    errInstagram
-                  );
-                }
-              }
-              /*
-               * =================================================
-               * 3. AVATAR COMPACTADO
-               * =================================================
-               */
-              if (
-                avatarFile &&
-                userId
-              ) {
-                try {
-                  await sbPartner.storage
-                    .from(
-                      PARTNER_CFG.AVATAR_BUCKET
-                    )
-                    .upload(
-                      userId +
-                      '/avatar.jpg',
-                      avatarFile,
-                      {
-                        upsert: true,
-                        contentType:
-                          'image/jpeg'
-                      }
-                    );
-                  await sbPartner
-                    .from('parceiros')
-                    .update({
-                      avatar_url:
-                        partnerAvatarUrl(
-                          userId
-                        )
-                    })
-                    .eq(
-                      'user_id',
-                      userId
-                    );
-                } catch (
-                  errAvatar
-                ) {
-                  console.warn(
-                    '[432UP Partner] Upload de avatar falhou:',
-                    errAvatar
-                  );
-                }
-              }
-              /*
-               * =================================================
-               * 4. TELEGRAM
-               * =================================================
-               */
-              await avisarTelegramNovoParceiro({
-                nome:
-                  nome,
-                empresa:
-                  empresa,
-                perfil:
-                  perfil,
-                email:
-                  email,
-                whatsapp:
-                  whatsapp,
-                instagram:
-                  instagram
-              });
-              /*
-               * =================================================
-               * 5. FINALIZAÇÃO
-               * =================================================
-               */
-              window.location.href =
-                'pendente.html';
-            } catch (err) {
-              console.error(
-                '[432UP Partner] Erro inesperado no cadastro:',
-                err
-              );
-              showAlert(
-                'Não foi possível concluir o cadastro. Tente novamente.',
-                'error'
-              );
-              btn.classList.remove(
-                'btn-loading'
-              );
-              btn.textContent =
-                'Enviar Solicitação B2B';
+              await sbPartner
+                .from('parceiros')
+                .update({
+                  instagram: instagram,
+                  perfil_parceiro_id: perfilParceiroId
+                })
+                .eq('user_id', userId);
+            } catch (errParceiro) {
+              console.warn('[432UP Partner] Falha ao atualizar dados de parceiro:', errParceiro);
             }
           }
-        );
+
+          if (avatarFile && userId) {
+            try {
+              await sbPartner.storage
+                .from(PARTNER_CFG.AVATAR_BUCKET)
+                .upload(userId + '/avatar.jpg', avatarFile, {
+                  upsert: true,
+                  contentType: 'image/jpeg'
+                });
+
+              await sbPartner
+                .from('parceiros')
+                .update({
+                  avatar_url: partnerAvatarUrl(userId)
+                })
+                .eq('user_id', userId);
+            } catch (errAvatar) {
+              console.warn('[432UP Partner] Upload de avatar falhou:', errAvatar);
+            }
+          }
+
+          await avisarTelegramNovoParceiro({
+            nome: nome,
+            empresa: empresa,
+            perfil: perfilTextoExibicao,
+            email: email,
+            whatsapp: whatsapp,
+            instagram: instagram
+          });
+
+          window.location.href = 'pendente.html';
+        } catch (err) {
+          console.error('[432UP Partner] Erro inesperado no cadastro:', err);
+          showAlert('Não foi possível concluir o cadastro. Tente novamente.', 'error');
+          btn.classList.remove('btn-loading');
+          btn.textContent = 'Enviar Solicitação B2B';
+        }
+      });
     })();
   </script>
 </body>
