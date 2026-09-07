@@ -422,7 +422,7 @@
       // 2. Buscar subcategorias/especialidades filhas para mapear pais -> filhos
       const { data: categoriasFilhas, error: errFilhas } = await client
         .from('perfis_parceiros')
-        .select('id, pai_id')
+        .select('id, nome, pai_id')
         .eq('ativo', true)
         .not('pai_id', 'is', null);
 
@@ -437,44 +437,80 @@
       if (errParceiros) throw errParceiros;
 
       // 4. Mapear dados e filtrar quem tem 0 opções
-      globalCategoriasValidas = categoriasPai
-        .map(cat => {
-          const idsFilhos = (categoriasFilhas || [])
-            .filter(f => f.pai_id === cat.id)
-            .map(f => f.id);
+      // Regra especial: a categoria-pai "Outros" não deve virar 1 card agregado.
+      // Cada filho dela vira um card independente (como se fosse o próprio pai),
+      // sem agregar contagem/artistas dos irmãos. Todas as demais categorias-pai
+      // continuam agregando pai + filhos exatamente como antes.
+      function normalizarNomeCategoria(txt) {
+        return (txt || '')
+          .trim()
+          .toLowerCase()
+          .normalize('NFD')
+          .replace(/[\u0300-\u036f]/g, ''); // remove acentos (ç, ã, etc.)
+      }
+      const NOME_CATEGORIA_FILHOS_SEPARADOS = 'servicos';
 
-          const todosIdsRelacionados = [cat.id, ...idsFilhos];
+      function extrairFotoDestaque(listaParceiros) {
+        let fotoDestaque = FOTO_PADRAO_CATEGORIA;
+        const parceiroRandomico = listaParceiros[Math.floor(Math.random() * listaParceiros.length)];
+        fotoDestaque = parceiroRandomico.foto_capa_url || parceiroRandomico.avatar_url;
 
-          const parceirosDaCategoria = (parceiros || []).filter(p => 
-            p.perfil_parceiro_id && todosIdsRelacionados.includes(p.perfil_parceiro_id)
-          );
-
-          const qtdParceiros = parceirosDaCategoria.length;
-          if (qtdParceiros === 0) return null;
-
-          let fotoDestaque = FOTO_PADRAO_CATEGORIA;
-          const parceiroRandomico = parceirosDaCategoria[Math.floor(Math.random() * parceirosDaCategoria.length)];
-          fotoDestaque = parceiroRandomico.foto_capa_url || parceiroRandomico.avatar_url;
-
-          if (!fotoDestaque && parceiroRandomico.galeria_fotos) {
-            let parsed = [];
-            if (Array.isArray(parceiroRandomico.galeria_fotos)) parsed = parceiroRandomico.galeria_fotos;
-            else if (typeof parceiroRandomico.galeria_fotos === 'string') {
-              try { parsed = JSON.parse(parceiroRandomico.galeria_fotos); } catch(e) {}
-            }
-            if (parsed.length > 0) fotoDestaque = parsed[0];
+        if (!fotoDestaque && parceiroRandomico.galeria_fotos) {
+          let parsed = [];
+          if (Array.isArray(parceiroRandomico.galeria_fotos)) parsed = parceiroRandomico.galeria_fotos;
+          else if (typeof parceiroRandomico.galeria_fotos === 'string') {
+            try { parsed = JSON.parse(parceiroRandomico.galeria_fotos); } catch(e) {}
           }
+          if (parsed.length > 0) fotoDestaque = parsed[0];
+        }
 
-          if (!fotoDestaque) fotoDestaque = FOTO_PADRAO_CATEGORIA;
+        return fotoDestaque || FOTO_PADRAO_CATEGORIA;
+      }
 
-          return {
-            id: cat.id,
-            nome: cat.nome,
-            qtd: qtdParceiros,
-            foto: fotoDestaque
-          };
-        })
-        .filter(cat => cat !== null);
+      globalCategoriasValidas = [];
+
+      categoriasPai.forEach(cat => {
+        const filhosDoPai = (categoriasFilhas || []).filter(f => f.pai_id === cat.id);
+        const ehCategoriaFilhosSeparados = normalizarNomeCategoria(cat.nome) === NOME_CATEGORIA_FILHOS_SEPARADOS;
+
+        if (ehCategoriaFilhosSeparados) {
+          // "Outros" não gera card próprio: cada filho vira card independente
+          filhosDoPai.forEach(filho => {
+            const parceirosDoFilho = (parceiros || []).filter(p =>
+              p.perfil_parceiro_id === filho.id
+            );
+
+            const qtdParceiros = parceirosDoFilho.length;
+            if (qtdParceiros === 0) return;
+
+            globalCategoriasValidas.push({
+              id: filho.id,
+              nome: filho.nome,
+              qtd: qtdParceiros,
+              foto: extrairFotoDestaque(parceirosDoFilho)
+            });
+          });
+          return;
+        }
+
+        // Comportamento padrão (Artistas e demais): agrega pai + filhos
+        const idsFilhos = filhosDoPai.map(f => f.id);
+        const todosIdsRelacionados = [cat.id, ...idsFilhos];
+
+        const parceirosDaCategoria = (parceiros || []).filter(p =>
+          p.perfil_parceiro_id && todosIdsRelacionados.includes(p.perfil_parceiro_id)
+        );
+
+        const qtdParceiros = parceirosDaCategoria.length;
+        if (qtdParceiros === 0) return;
+
+        globalCategoriasValidas.push({
+          id: cat.id,
+          nome: cat.nome,
+          qtd: qtdParceiros,
+          foto: extrairFotoDestaque(parceirosDaCategoria)
+        });
+      });
 
       // Renderizar grid e inicializar o dropdown
       renderizarGrid(globalCategoriasValidas);

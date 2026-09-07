@@ -799,6 +799,17 @@
     return urlParams.get(param);
   }
 
+  // Normaliza texto para comparação (remove acentos, caixa e espaços),
+  // igual à lógica usada na vitrine-categorias.html.
+  function normalizarNomeCategoria(txt) {
+    return (txt || '')
+      .trim()
+      .toLowerCase()
+      .normalize('NFD')
+      .replace(/[\u0300-\u036f]/g, '');
+  }
+  const NOME_CATEGORIA_FILHOS_SEPARADOS = 'servicos';
+
   async function carregarFiltroCategorias() {
     const client = getSupabaseClient();
     if (!client) return;
@@ -824,23 +835,49 @@
         // Para cada categoria-pai, calcula o conjunto de IDs relacionados
         // (o próprio pai + todos os filhos), para poder contar artistas
         // corretamente mesmo quando o artista está vinculado a uma subcategoria.
-        const categoriasComContagem = categoriasPai.map(cat => {
-          const idsFilhos = data
-            .filter(f => String(f.pai_id) === String(cat.id))
-            .map(f => String(f.id));
+        //
+        // Exceção: a categoria-pai "Serviços" não deve virar 1 item agregado
+        // no dropdown. Cada filho dela vira um item independente no filtro,
+        // como se fosse o próprio pai (um "pai órfão"), representando apenas
+        // a si mesmo — sem agregar contagem/artistas dos irmãos. Todas as
+        // demais categorias-pai continuam agregando pai + filhos normalmente.
+        const categoriasComContagem = [];
 
+        categoriasPai.forEach(cat => {
+          const filhosDoPai = data.filter(f => String(f.pai_id) === String(cat.id));
+          const ehCategoriaFilhosSeparados = normalizarNomeCategoria(cat.nome) === NOME_CATEGORIA_FILHOS_SEPARADOS;
+
+          if (ehCategoriaFilhosSeparados) {
+            filhosDoPai.forEach(filho => {
+              const idsRelacionados = [String(filho.id)];
+
+              const qtd = dbArtistas.filter(a =>
+                a.perfilParceiroId && idsRelacionados.includes(String(a.perfilParceiroId))
+              ).length;
+
+              categoriasComContagem.push({
+                id: filho.id,
+                nome: filho.nome,
+                idsRelacionados,
+                qtd
+              });
+            });
+            return;
+          }
+
+          const idsFilhos = filhosDoPai.map(f => String(f.id));
           const idsRelacionados = [String(cat.id), ...idsFilhos];
 
           const qtd = dbArtistas.filter(a =>
             a.perfilParceiroId && idsRelacionados.includes(String(a.perfilParceiroId))
           ).length;
 
-          return {
+          categoriasComContagem.push({
             id: cat.id,
             nome: cat.nome,
             idsRelacionados,
             qtd
-          };
+          });
         });
 
         // Só entram no dropdown as categorias com pelo menos 1 artista vinculado
@@ -956,8 +993,7 @@
       const { data, error } = await client
         .from('parceiros')
         .select('*')
-        .eq('is_artista', true)
-        .eq('status_artista', 'aprovado')
+        .or('status_artista.eq.aprovado,status_artista.is.null')
         .or('fotos_pendentes_aprovacao.is.null,fotos_pendentes_aprovacao.eq.false');
 
       if (error) throw error;
@@ -1158,7 +1194,7 @@
           <h1 class="b2b-hero-title">${a.nomeArtistico}</h1>
           <div class="b2b-hero-category">${a.subline}</div>
           <div class="b2b-hero-location">📍 ${a.cidade}</div>
-          <div class="b2b-hero-cache">Cachê Base Estimado: R$ ${a.cacheMedio}</div>
+         <!-- <div class="b2b-hero-cache">Cachê Base Estimado: R$ ${a.cacheMedio}</div>.     -->
         </div>
       </div>
 
