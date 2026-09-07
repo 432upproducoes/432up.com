@@ -1,0 +1,604 @@
+<!DOCTYPE html>
+<html lang="pt-BR" data-theme="dark">
+<head>
+  <script async src="https://www.googletagmanager.com/gtag/js?id=G-7SWNCP1NV6"></script>
+  <script>
+    window.dataLayer = window.dataLayer || [];
+    function gtag(){dataLayer.push(arguments);}
+    gtag('js', new Date());
+    gtag('config', 'G-7SWNCP1NV6');
+  </script>
+
+  <script src="https://unpkg.com/@supabase/supabase-js@2"></script>
+  <script src="script/tracker.js"></script>
+
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
+  <meta name="version" content="Enterprise-3.4.0-B2B-TaxonomiaDinamica">
+
+  <meta name="theme-color" content="#08080A">
+  <meta name="apple-mobile-web-app-capable" content="yes">
+  <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+
+  <link class="js-site-favicon" rel="icon" type="image/png" href="imagens/favicon.png">
+  <title>Vitrine de Categorias & Talentos | 432UP! Partner</title>
+  <meta name="description" content="Catálogo de atrações e serviços homologados para produções corporativas e sociais de alto padrão.">
+
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&display=swap" rel="stylesheet">
+
+  <link rel="stylesheet" href="css/style.css">
+  <script src="script/script.js" defer></script>
+
+  <style>
+    :root {
+      --bg-pure: #08080A;
+      --bg-card: rgba(26, 16, 43, 0.45);
+      --primary-lime: #00FF66;
+      --text-muted: #8A8A9E;
+      --b2b-cyan: #00F0FF;
+      --border-accent: rgba(168, 85, 247, 0.35);
+    }
+
+    *, *::before, *::after {
+      box-sizing: border-box;
+    }
+
+    body {
+      background-color: var(--bg-pure);
+      color: #FFFFFF;
+      min-height: 100vh;
+      font-family: 'Inter', sans-serif;
+      margin: 0;
+      padding: 0;
+    }
+
+    .gallery-hero {
+      padding-top: 100px;
+      text-align: center;
+      margin-bottom: 2rem;
+    }
+
+    /* ESTILOS DO FILTRO DROPDOWN PESQUISÁVEL */
+    .filter-section {
+      max-width: 540px;
+      margin: 0 auto 3rem auto;
+      position: relative;
+    }
+
+    .custom-dropdown-container {
+      position: relative;
+      width: 100%;
+    }
+
+    .dropdown-input-wrapper {
+      position: relative;
+      display: flex;
+      align-items: center;
+    }
+
+    .dropdown-input-wrapper svg.search-icon {
+      position: absolute;
+      left: 16px;
+      width: 18px;
+      height: 18px;
+      fill: none;
+      stroke: var(--text-muted);
+      stroke-width: 2;
+      stroke-linecap: round;
+      stroke-linejoin: round;
+      pointer-events: none;
+      transition: stroke 0.3s;
+    }
+
+    .dropdown-input {
+      width: 100%;
+      padding: 14px 44px 14px 46px;
+      background: rgba(20, 12, 35, 0.65);
+      border: 1px solid var(--border-accent);
+      border-radius: 14px;
+      color: #FFFFFF;
+      font-size: 0.95rem;
+      font-family: 'Inter', sans-serif;
+      backdrop-filter: blur(12px);
+      -webkit-backdrop-filter: blur(12px);
+      outline: none;
+      transition: all 0.3s ease;
+      box-shadow: 0 4px 20px rgba(0, 0, 0, 0.3);
+    }
+
+    .dropdown-input::placeholder {
+      color: var(--text-muted);
+    }
+
+    .dropdown-input:focus {
+      border-color: #A855F7;
+      box-shadow: 0 0 15px rgba(168, 85, 247, 0.35);
+      background: rgba(26, 16, 43, 0.85);
+    }
+
+    .dropdown-input-wrapper:focus-within svg.search-icon {
+      stroke: var(--b2b-cyan);
+    }
+
+    .dropdown-arrow {
+      position: absolute;
+      right: 16px;
+      width: 16px;
+      height: 16px;
+      fill: none;
+      stroke: var(--text-muted);
+      stroke-width: 2;
+      stroke-linecap: round;
+      stroke-linejoin: round;
+      pointer-events: none;
+      transition: transform 0.3s, stroke 0.3s;
+    }
+
+    .custom-dropdown-container.open .dropdown-arrow {
+      transform: rotate(180deg);
+      stroke: #A855F7;
+    }
+
+    .dropdown-clear-btn {
+      position: absolute;
+      right: 40px;
+      background: none;
+      border: none;
+      color: var(--text-muted);
+      font-size: 1.1rem;
+      cursor: pointer;
+      display: none;
+      padding: 0 4px;
+      line-height: 1;
+      transition: color 0.2s;
+    }
+
+    .dropdown-clear-btn:hover {
+      color: #FFF;
+    }
+
+    .dropdown-list {
+      position: absolute;
+      top: calc(100% + 8px);
+      left: 0;
+      right: 0;
+      background: rgba(18, 10, 30, 0.95);
+      border: 1px solid var(--border-accent);
+      border-radius: 14px;
+      max-height: 260px;
+      overflow-y: auto;
+      z-index: 100;
+      display: none;
+      backdrop-filter: blur(16px);
+      -webkit-backdrop-filter: blur(16px);
+      box-shadow: 0 10px 30px rgba(0, 0, 0, 0.6), 0 0 15px rgba(168, 85, 247, 0.15);
+      padding: 6px;
+    }
+
+    .custom-dropdown-container.open .dropdown-list {
+      display: block;
+      animation: fadeIn 0.2s ease-out;
+    }
+
+    @keyframes fadeIn {
+      from { opacity: 0; transform: translateY(-6px); }
+      to { opacity: 1; transform: translateY(0); }
+    }
+
+    .dropdown-list::-webkit-scrollbar {
+      width: 6px;
+    }
+
+    .dropdown-list::-webkit-scrollbar-thumb {
+      background: rgba(168, 85, 247, 0.4);
+      border-radius: 4px;
+    }
+
+    .dropdown-item {
+      padding: 10px 14px;
+      border-radius: 8px;
+      cursor: pointer;
+      font-size: 0.9rem;
+      color: #DDD;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      transition: all 0.2s;
+    }
+
+    .dropdown-item:hover, .dropdown-item.selected {
+      background: rgba(168, 85, 247, 0.25);
+      color: #FFF;
+    }
+
+    .dropdown-item .item-count {
+      font-size: 0.75rem;
+      color: var(--primary-lime);
+      background: rgba(0, 255, 102, 0.12);
+      border: 1px solid rgba(0, 255, 102, 0.3);
+      padding: 2px 8px;
+      border-radius: 10px;
+    }
+
+    .dropdown-empty {
+      padding: 14px;
+      text-align: center;
+      color: var(--text-muted);
+      font-size: 0.85rem;
+    }
+
+    /* FIM DOS ESTILOS DO FILTRO */
+
+    .masonry-gallery {
+      display: grid;
+      grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
+      gap: 24px;
+      padding-bottom: 60px;
+    }
+
+    .category-card {
+      border: 1px solid var(--border-accent);
+      background: linear-gradient(160deg, rgba(168, 85, 247, 0.12), rgba(20, 12, 35, 0.75) 55%);
+      border-radius: 20px;
+      overflow: hidden;
+      display: flex;
+      flex-direction: column;
+      transition: all 0.3s ease;
+      backdrop-filter: blur(12px);
+      -webkit-backdrop-filter: blur(12px);
+      text-decoration: none;
+      color: inherit;
+      cursor: pointer;
+    }
+
+    .category-card:hover {
+      border-color: #A855F7;
+      transform: translateY(-6px);
+      box-shadow: 0 12px 30px rgba(168, 85, 247, 0.25);
+    }
+
+    .img-box {
+      width: 100%;
+      height: 280px;
+      position: relative;
+      overflow: hidden;
+      background: #000;
+    }
+
+    .img-box img {
+      width: 100%;
+      height: 100%;
+      object-fit: cover;
+      transition: transform 0.5s ease;
+    }
+
+    .category-card:hover .img-box img {
+      transform: scale(1.05);
+    }
+
+    .count-badge {
+      position: absolute;
+      right: 12px;
+      top: 12px;
+      background: rgba(0, 255, 102, 0.18);
+      border: 1px solid rgba(0, 255, 102, 0.6);
+      color: var(--primary-lime);
+      font-size: 0.7rem;
+      font-weight: 800;
+      text-transform: uppercase;
+      padding: 5px 12px;
+      border-radius: 14px;
+      backdrop-filter: blur(8px);
+    }
+
+    .card-body {
+      padding: 22px;
+      display: flex;
+      flex-direction: column;
+      flex: 1;
+    }
+
+    .category-title {
+      font-size: 1.3rem;
+      font-weight: 800;
+      color: #FFFFFF;
+      margin-bottom: 6px;
+    }
+
+    .category-desc {
+      font-size: 0.85rem;
+      color: var(--text-muted);
+      line-height: 1.4;
+      margin-bottom: 16px;
+    }
+
+    .btn-explore {
+      margin-top: auto;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      gap: 8px;
+      background: rgba(168, 85, 247, 0.2);
+      border: 1px solid #A855F7;
+      color: #FFF;
+      font-weight: 700;
+      font-size: 0.85rem;
+      padding: 10px 16px;
+      border-radius: 12px;
+      transition: all 0.2s;
+    }
+
+    .category-card:hover .btn-explore {
+      background: #A855F7;
+      color: #000;
+    }
+  </style>
+</head>
+<body>
+
+  <canvas id="orbit-canvas"></canvas>
+  <div id="plasmaLayer" class="plasma-top-layer"></div>
+
+  <div class="viewport-wrapper">
+    <div id="global-header-container"></div>
+
+    <main class="main-content" style="max-width: 1280px; margin: 0 auto; padding: 0 20px;">
+      
+      <section class="gallery-hero">
+        <span class="tagline">Partner Program</span>
+        <h1>Vitrine de <span>Categorias</span></h1>
+        <p>Selecione uma categoria para visualizar todos os profissionais e atrações homologados.</p>
+      </section>
+
+      <!-- SEÇÃO DO FILTRO PESQUISÁVEL (DROPDOWN + INPUT) -->
+      <div class="filter-section">
+        <div class="custom-dropdown-container" id="categoryDropdown">
+          <div class="dropdown-input-wrapper">
+            <svg class="search-icon" viewBox="0 0 24 24">
+              <circle cx="11" cy="11" r="8"></circle>
+              <line x1="21" y1="21" x2="16.65" y2="16.65"></line>
+            </svg>
+            <input type="text" id="categorySearchInput" class="dropdown-input" placeholder="Buscar ou selecionar categoria..." autocomplete="off">
+            <button type="button" id="clearSearchBtn" class="dropdown-clear-btn" title="Limpar">&times;</button>
+            <svg class="dropdown-arrow" viewBox="0 0 24 24">
+              <polyline points="6 9 12 15 18 9"></polyline>
+            </svg>
+          </div>
+          <div class="dropdown-list" id="dropdownList"></div>
+        </div>
+      </div>
+
+      <div id="categories-grid" class="masonry-gallery"></div>
+
+    </main>
+
+    <footer>
+      <p>© 2026 432UP! Produções — Curadoria Artística e Engenharia Estrutural</p>
+    </footer>
+  </div>
+
+<script src="partner-config.js"></script>
+<script>
+  const FOTO_PADRAO_CATEGORIA = 'https://images.unsplash.com/photo-1516450360452-9312f5e86fc7?auto=format&fit=crop&w=1000&q=80';
+
+  let globalCategoriasValidas = []; // Armazena as categorias com itens para o filtro local
+
+  function getSupabaseClient() {
+    if (typeof sbPartner !== 'undefined') return sbPartner;
+    if (typeof window.sbPartner !== 'undefined') return window.sbPartner;
+    if (typeof supabaseClient !== 'undefined') return supabaseClient;
+    if (typeof window.supabaseClient !== 'undefined') return window.supabaseClient;
+    if (typeof supabase !== 'undefined') return supabase;
+    return null;
+  }
+
+  async function carregarVitrineCategorias() {
+    const container = document.getElementById('categories-grid');
+    const client = getSupabaseClient();
+
+    if (!client) {
+      container.innerHTML = `<div style="grid-column: 1/-1; text-align:center; padding:3rem; color:var(--text-muted);">Erro ao conectar com o banco de dados.</div>`;
+      return;
+    }
+
+    try {
+      // 1. Buscar apenas perfis base ativos ordenados
+      const { data: categoriasPai, error: errCat } = await client
+        .from('perfis_parceiros')
+        .select('id, nome, pai_id, ordem')
+        .eq('ativo', true)
+        .is('pai_id', null)
+        .order('ordem', { ascending: true });
+
+      if (errCat) throw errCat;
+
+      if (!categoriasPai || categoriasPai.length === 0) {
+        container.innerHTML = `<div style="grid-column: 1/-1; text-align:center; padding:3rem; color:var(--text-muted);">Nenhuma categoria cadastrada no momento.</div>`;
+        return;
+      }
+
+      // 2. Buscar subcategorias/especialidades filhas para mapear pais -> filhos
+      const { data: categoriasFilhas, error: errFilhas } = await client
+        .from('perfis_parceiros')
+        .select('id, pai_id')
+        .eq('ativo', true)
+        .not('pai_id', 'is', null);
+
+      if (errFilhas) throw errFilhas;
+
+      // 3. Buscar todos os parceiros cadastrados
+      const { data: parceiros, error: errParceiros } = await client
+        .from('parceiros')
+        .select('id, perfil_parceiro_id, foto_capa_url, avatar_url, galeria_fotos')
+        .or('status_artista.eq.aprovado,status_artista.is.null');
+
+      if (errParceiros) throw errParceiros;
+
+      // 4. Mapear dados e filtrar quem tem 0 opções
+      globalCategoriasValidas = categoriasPai
+        .map(cat => {
+          const idsFilhos = (categoriasFilhas || [])
+            .filter(f => f.pai_id === cat.id)
+            .map(f => f.id);
+
+          const todosIdsRelacionados = [cat.id, ...idsFilhos];
+
+          const parceirosDaCategoria = (parceiros || []).filter(p => 
+            p.perfil_parceiro_id && todosIdsRelacionados.includes(p.perfil_parceiro_id)
+          );
+
+          const qtdParceiros = parceirosDaCategoria.length;
+          if (qtdParceiros === 0) return null;
+
+          let fotoDestaque = FOTO_PADRAO_CATEGORIA;
+          const parceiroRandomico = parceirosDaCategoria[Math.floor(Math.random() * parceirosDaCategoria.length)];
+          fotoDestaque = parceiroRandomico.foto_capa_url || parceiroRandomico.avatar_url;
+
+          if (!fotoDestaque && parceiroRandomico.galeria_fotos) {
+            let parsed = [];
+            if (Array.isArray(parceiroRandomico.galeria_fotos)) parsed = parceiroRandomico.galeria_fotos;
+            else if (typeof parceiroRandomico.galeria_fotos === 'string') {
+              try { parsed = JSON.parse(parceiroRandomico.galeria_fotos); } catch(e) {}
+            }
+            if (parsed.length > 0) fotoDestaque = parsed[0];
+          }
+
+          if (!fotoDestaque) fotoDestaque = FOTO_PADRAO_CATEGORIA;
+
+          return {
+            id: cat.id,
+            nome: cat.nome,
+            qtd: qtdParceiros,
+            foto: fotoDestaque
+          };
+        })
+        .filter(cat => cat !== null);
+
+      // Renderizar grid e inicializar o dropdown
+      renderizarGrid(globalCategoriasValidas);
+      initSearchableDropdown(globalCategoriasValidas);
+
+    } catch (err) {
+      console.error('[432UP Vitrine] Erro ao carregar categorias:', err);
+      container.innerHTML = `<div style="grid-column: 1/-1; text-align:center; padding:3rem; color:var(--text-muted);">Erro ao carregar catálogo de categorias.</div>`;
+    }
+  }
+
+  function renderizarGrid(listaCategorias) {
+    const container = document.getElementById('categories-grid');
+
+    if (!listaCategorias || listaCategorias.length === 0) {
+      container.innerHTML = `<div style="grid-column: 1/-1; text-align:center; padding:3rem; color:var(--text-muted);">Nenhuma categoria encontrada para este filtro.</div>`;
+      return;
+    }
+
+    container.innerHTML = listaCategorias.map(cat => {
+      const labelQtd = cat.qtd === 1 ? '1 Opção' : `${cat.qtd} Opções`;
+      return `
+        <a href="vitrine-categoria.html?categoria_id=${cat.id}" class="category-card" data-title="${cat.nome.toLowerCase()}">
+          <div class="img-box">
+            <img src="${cat.foto}" alt="${cat.nome}">
+            <span class="count-badge">${labelQtd}</span>
+          </div>
+          <div class="card-body">
+            <div class="category-title">${cat.nome}</div>
+            <div class="category-desc">Profissionais e atrações homologadas na categoria ${cat.nome}.</div>
+            <div class="btn-explore">Explorar Categoria ➔</div>
+          </div>
+        </a>
+      `;
+    }).join('');
+  }
+
+  /* LÓGICA DO COMPONENTE DROPDOWN PESQUISÁVEL */
+  function initSearchableDropdown(categorias) {
+    const dropdownContainer = document.getElementById('categoryDropdown');
+    const input = document.getElementById('categorySearchInput');
+    const list = document.getElementById('dropdownList');
+    const clearBtn = document.getElementById('clearSearchBtn');
+
+    function populateList(filterText = '') {
+      list.innerHTML = '';
+      const filtered = categorias.filter(c => c.nome.toLowerCase().includes(filterText.toLowerCase()));
+
+      if (filtered.length === 0) {
+        list.innerHTML = `<div class="dropdown-empty">Nenhuma categoria encontrada</div>`;
+        return;
+      }
+
+      filtered.forEach(cat => {
+        const item = document.createElement('div');
+        item.className = 'dropdown-item';
+        item.innerHTML = `
+          <span>${cat.nome}</span>
+          <span class="item-count">${cat.qtd} ${cat.qtd === 1 ? 'opção' : 'opções'}</span>
+        `;
+        item.addEventListener('click', (e) => {
+          e.stopPropagation();
+          input.value = cat.nome;
+          dropdownContainer.classList.remove('open');
+          clearBtn.style.display = 'block';
+          renderizarGrid([cat]);
+        });
+        list.appendChild(item);
+      });
+    }
+
+    // Toggle dropdown ao clicar no input ou container
+    input.addEventListener('focus', () => {
+      dropdownContainer.classList.add('open');
+      populateList(input.value);
+    });
+
+    input.addEventListener('input', () => {
+      const term = input.value.trim();
+      clearBtn.style.display = term ? 'block' : 'none';
+      dropdownContainer.classList.add('open');
+      populateList(term);
+
+      // Filtra os cards dinamicamente na página conforme o usuário digita
+      const filtrados = categorias.filter(c => c.nome.toLowerCase().includes(term.toLowerCase()));
+      renderizarGrid(filtrados);
+    });
+
+    clearBtn.addEventListener('click', (e) => {
+      e.stopPropagation();
+      input.value = '';
+      clearBtn.style.display = 'none';
+      renderizarGrid(categorias);
+      populateList('');
+      input.focus();
+    });
+
+    // Fechar ao clicar fora
+    document.addEventListener('click', (e) => {
+      if (!dropdownContainer.contains(e.target)) {
+        dropdownContainer.classList.remove('open');
+      }
+    });
+  }
+
+  async function injectGlobalHeader() {
+    try {
+      const response = await fetch('header.html');
+      if (response.ok) {
+        const headerHTML = await response.text();
+        const parser = new DOMParser();
+        const doc = parser.parseFromString(headerHTML, 'text/html');
+        document.getElementById('global-header-container').innerHTML = doc.body ? doc.body.innerHTML : headerHTML;
+      }
+    } catch (e) {
+      console.error('Erro ao carregar header:', e);
+    }
+  }
+
+  document.addEventListener('DOMContentLoaded', async () => {
+    injectGlobalHeader();
+    await carregarVitrineCategorias();
+  });
+</script>
+
+</body>
+</html>
