@@ -371,6 +371,46 @@ main{max-width:700px;margin:0 auto;padding:14px 12px 20px;}
   box-shadow:2px 2px 0 var(--amarelo);
 }
 .prod-qbtn:active{transform:scale(.9);}
+
+/* ===== Cartões de categoria (nível com submenu → abre modal) ===== */
+.cat-item{
+  background:var(--surface);border:2px solid var(--border-soft);border-radius:16px;
+  padding:12px 14px;cursor:pointer;transition:all .15s;position:relative;
+  display:flex;flex-direction:column;justify-content:space-between;min-height:86px;width:100%;
+}
+.cat-item:hover{background:var(--surface-2);}
+.cat-item.has-items{border-color:var(--amarelo);}
+.cat-top{display:flex;align-items:flex-start;justify-content:space-between;gap:6px;}
+.cat-nome{font-family:'Fredoka One',cursive;font-size:.9rem;color:var(--roxo);line-height:1.2;}
+.cat-arrow{font-size:1.1rem;color:var(--muted);flex-shrink:0;}
+.cat-sub{font-size:.7rem;color:var(--muted);margin-top:6px;}
+.cat-badge{
+  position:absolute;top:-7px;right:-7px;background:var(--rosa);color:#fff;border-radius:50%;
+  width:20px;height:20px;font-size:.65rem;font-weight:900;display:none;align-items:center;justify-content:center;
+  border:2px solid var(--surface);
+}
+.cat-badge.show{display:flex;}
+
+/* ===== Modal de item (marcas / apresentações) — sobe como bottom sheet ===== */
+#item-overlay{display:none;position:fixed;inset:0;background:rgba(0,0,0,.5);z-index:400;}
+#item-overlay.open{display:block;}
+#item-modal{
+  position:fixed;bottom:0;left:0;right:0;z-index:401;
+  background:var(--surface);border-radius:22px 22px 0 0;border-top:3px solid var(--amarelo);
+  max-height:85vh;display:flex;flex-direction:column;
+  transform:translateY(100%);transition:transform .3s cubic-bezier(.32,.72,0,1);
+  padding-bottom:env(safe-area-inset-bottom);
+}
+#item-modal.open{transform:translateY(0);}
+.im-handle{width:36px;height:4px;background:var(--border-soft);border-radius:2px;margin:10px auto 0;}
+.im-header{display:flex;align-items:center;gap:8px;padding:8px 14px;}
+.im-back{background:var(--surface-2);border:none;color:var(--text);border-radius:10px;padding:7px 11px;font-size:.85rem;cursor:pointer;font-family:'Fredoka One',cursive;display:none;}
+.im-title{flex:1;font-family:'Fredoka One',cursive;font-size:1.02rem;color:var(--roxo);}
+.im-close{background:var(--surface-2);border:none;color:var(--text);border-radius:10px;padding:7px 11px;font-size:.85rem;cursor:pointer;font-family:'Fredoka One',cursive;}
+.im-breadcrumb{padding:0 16px 6px;font-size:.7rem;color:var(--muted);border-bottom:1px solid var(--border-soft);}
+.im-body{overflow-y:auto;flex:1;padding:12px 14px;display:flex;flex-direction:column;gap:10px;}
+.im-body .prod-item{width:100%;}
+.im-body .cat-item{margin:0;}
 .prod-qnum{font-family:'Fredoka One',cursive;font-size:1.15rem;color:var(--roxo);min-width:36px;text-align:center;}
 
 .empty-corredor{
@@ -781,6 +821,18 @@ main{max-width:700px;margin:0 auto;padding:14px 12px 20px;}
   </div>
 </div>
 
+<div id="item-overlay" onclick="fecharModal()"></div>
+<div id="item-modal">
+  <div class="im-handle"></div>
+  <div class="im-header">
+    <button class="im-back" id="im-back" onclick="voltarModal()">‹ Voltar</button>
+    <span class="im-title" id="im-title"></span>
+    <button class="im-close" onclick="fecharModal()">Fechar</button>
+  </div>
+  <div class="im-breadcrumb" id="im-breadcrumb"></div>
+  <div class="im-body" id="im-body"></div>
+</div>
+
 <div id="toast"></div>
 
 <div id="tela-obrigado">
@@ -793,33 +845,90 @@ main{max-width:700px;margin:0 auto;padding:14px 12px 20px;}
 <script>
 const SB_URL = 'https://qfrsfdqbhgunykgvozcx.supabase.co';
 const SB_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InFmcnNmZHFiaGd1bnlrZ3ZvemN4Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3Nzg1MDM2MjAsImV4cCI6MjA5NDA3OTYyMH0.tzFThSsbOviLDd_f9rmNylPF7v5rmrbXl3JR7vL7_so';
-const ZAP_NUM = '5511934941652';
-const MINIMO_DEL = 25;
+let ZAP_NUM = '5511934941652';
+let MINIMO_DEL = 25;
 
 const CUPONS = { 'MERCADO10': { codigo:'MERCADO10', tipo:'pct', valor:10, desc:'10% de desconto' } };
 
 /* ===== CATÁLOGO (Corredores + Produtos) =====
-   Vem de um arquivo externo que hoje faz o papel do banco de dados.
-   Pra trocar de local pra Supabase depois, troca só o valor de DB_URL
-   pela URL da tabela/endpoint real — o resto do código não muda. */
+   Ordem de prioridade dos dados:
+   1) Supabase (tabela "configuracoes") — é onde o Painel Admin salva as edições,
+      então é a fonte "ao vivo" pra qualquer pessoa que abrir o catálogo.
+   2) Arquivo local banco-dados-mercadinho.json — usado como catálogo inicial/seed
+      e como fallback se o Supabase estiver fora do ar.
+   3) localStorage "mercado_cfg" — só entra por cima se o Painel foi usado no
+      mesmo aparelho/navegador sem internet (modo local do painel). */
 const DB_URL = './banco-dados-mercadinho.json';
 let CORREDORES = [];
 let PRODUTOS = [];
 let catalogoErro = false;
 
+async function sbGetConfig(){
+  const r = await fetch(`${SB_URL}/rest/v1/configuracoes?select=chave,valor`, {
+    headers:{ apikey: SB_KEY, Authorization: 'Bearer '+SB_KEY, Accept:'application/json' }
+  });
+  if(!r.ok) throw new Error('HTTP '+r.status);
+  const rows = await r.json();
+  const cfg = {};
+  rows.forEach(row => { cfg[row.chave] = row.valor; });
+  return cfg;
+}
+
 async function loadCatalogo(){
   catalogoErro = false;
+  let data = { corredores: [], produtos: [], config: {} };
+
+  // 1) tenta o arquivo local primeiro (garante que sempre tem algo pra mostrar)
   try{
     const res = await fetch(DB_URL);
-    if(!res.ok) throw new Error('HTTP ' + res.status);
-    const data = await res.json();
-    CORREDORES = data.corredores || [];
-    PRODUTOS = data.produtos || [];
-    if(!CORREDORES.length || !PRODUTOS.length) catalogoErro = true;
-  }catch(e){
-    console.error('Falha ao carregar catálogo:', e);
-    catalogoErro = true;
+    if(res.ok) data = await res.json();
+  }catch(e){ console.warn('Sem catálogo local:', e); }
+
+  // 2) tenta o Supabase por cima — se o painel já foi usado, prevalece
+  try{
+    const cfg = await sbGetConfig();
+    if(cfg.corredores?.length) data.corredores = cfg.corredores;
+    if(cfg.produtos?.length) data.produtos = cfg.produtos;
+    if(cfg.geral) data.config = { ...data.config, ...cfg.geral };
+  }catch(e){ console.warn('Supabase indisponível, usando dados locais:', e); }
+
+  CORREDORES = data.corredores || [];
+  PRODUTOS = data.produtos || [];
+  if(data.config?.whatsapp) ZAP_NUM = String(data.config.whatsapp);
+  if(data.config?.minimo_delivery) MINIMO_DEL = Number(data.config.minimo_delivery);
+  if(!CORREDORES.length || !PRODUTOS.length) catalogoErro = true;
+  indexarProdutos();
+}
+
+/* ===== Índice do catálogo em árvore =====
+   PRODUTOS pode ter, dentro de cada corredor, itens "categoria" (que agrupam
+   marcas/apresentações dentro de filhos[]) ou itens "produto" (comprável
+   direto). Isso pode ter quantos níveis o admin quiser — os índices abaixo
+   "achatam" a árvore pra facilitar busca por id em qualquer profundidade. */
+let PRODUTOS_INDEX = {};   // id -> produto folha (comprável)
+let CATEGORIA_INDEX = {};  // id -> nó categoria (com filhos)
+
+function indexarProdutos(){
+  PRODUTOS_INDEX = {};
+  CATEGORIA_INDEX = {};
+  function walk(lista, corredor){
+    (lista||[]).forEach(p => {
+      const cor = p.corredor || corredor;
+      if(p.tipo === 'categoria'){
+        CATEGORIA_INDEX[p.id] = { ...p, corredor: cor };
+        walk(p.filhos, cor);
+      } else {
+        PRODUTOS_INDEX[p.id] = { ...p, corredor: cor };
+      }
+    });
   }
+  walk(PRODUTOS, null);
+}
+
+function findProduto(id){ return PRODUTOS_INDEX[id] || null; }
+
+function contarProdutosCorredor(corId){
+  return Object.values(PRODUTOS_INDEX).filter(p => p.corredor === corId && p.ativo !== false).length;
 }
 
 function estadoSemDadosHTML(){
@@ -991,6 +1100,9 @@ function loadAdminData(){
     const cfg = JSON.parse(localStorage.getItem('mercado_cfg')||'{}');
     if(cfg.corredores?.length) CORREDORES = cfg.corredores.filter(c=>c.ativo!==false);
     if(cfg.produtos?.length) PRODUTOS = cfg.produtos.filter(p=>p.ativo!==false);
+    if(cfg.geral?.whatsapp) ZAP_NUM = String(cfg.geral.whatsapp);
+    if(cfg.geral?.minimo_delivery) MINIMO_DEL = Number(cfg.geral.minimo_delivery);
+    indexarProdutos();
     if(cfg.cupons && typeof cfg.cupons === 'object'){
       Object.keys(CUPONS).forEach(k => delete CUPONS[k]);
       Object.assign(CUPONS, cfg.cupons);
@@ -1141,45 +1253,144 @@ function selectCorredor(id){
   if(chip) chip.scrollIntoView({behavior:'smooth', inline:'center', block:'nearest'});
 
   const cor = CORREDORES.find(c=>c.id===id);
-  document.getElementById('section-title').innerHTML = `${cor?.emoji||''} ${cor?.nome||''} <span>${PRODUTOS.filter(p=>p.corredor===id).length} produtos</span>`;
+  document.getElementById('section-title').innerHTML = `${cor?.emoji||''} ${cor?.nome||''} <span>${contarProdutosCorredor(id)} produtos</span>`;
+}
+
+/* Card de um produto folha (comprável) — usado tanto na grade do corredor
+   quanto dentro do modal de categoria (marcas/apresentações). */
+function prodCardHTML(p){
+  const noCarrinho = carrinho.find(i => i.id === p.id);
+  const qty = noCarrinho ? noCarrinho.qty : 0;
+  const selected = qty > 0 ? 'selected' : '';
+  const tipoEscolhido = noCarrinho ? noCarrinho.tipoVendaEscolhido : (p.tipo_venda === 'kg' ? 'kg' : 'un');
+
+  let seletor = '';
+  if(p.tipo_venda === 'ambos'){
+    seletor = `
+    <div class="tipo-venda-row" onclick="event.stopPropagation()">
+      <div class="tipo-venda-btn ${tipoEscolhido==='un'?'active':''}" onclick="setTipoVenda('${p.id}','un')">Unidade</div>
+      <div class="tipo-venda-btn ${tipoEscolhido==='kg'?'active':''}" onclick="setTipoVenda('${p.id}','kg')">Quilo</div>
+    </div>`;
+  }
+
+  const detalhe = [p.marca, p.apresentacao].filter(Boolean).join(' · ');
+
+  return `
+  <div class="prod-item ${selected}" id="prod-${p.id}" onclick="toggleProduto('${p.id}')">
+    <div class="prod-nome">${p.nome}</div>
+    ${detalhe ? `<div class="prod-marca">${detalhe}</div>` : ''}
+    <div class="prod-preco">R$ ${p.preco.toFixed(2).replace('.',',')} <span class="prod-unidade">/ ${p.tipo_venda==='kg'?'kg':(p.tipo_venda==='ambos'?'un ou kg':p.unidade)}</span></div>
+    ${seletor}
+    <div class="prod-qty-row" onclick="event.stopPropagation()">
+      <button class="prod-qbtn" onclick="changeQty('${p.id}',-1)">−</button>
+      <span class="prod-qnum" id="qty-${p.id}">${formatQty(qty, tipoEscolhido)}</span>
+      <button class="prod-qbtn" onclick="changeQty('${p.id}',1)">+</button>
+    </div>
+  </div>`;
+}
+
+/* Card de uma categoria (nível intermediário: ex. "Arroz", "Banana", "Queijo").
+   Ao tocar, abre o modal com as marcas/apresentações de dentro. */
+function catCardHTML(cat){
+  const filhosFolhas = contarFolhasCategoria(cat);
+  const idsFolhas = listarIdsFolhas(cat);
+  const qtdNoCarrinho = carrinho.filter(i => idsFolhas.includes(i.id)).length;
+  const precos = coletarPrecosCategoria(cat);
+  const faixa = precos.length ? (Math.min(...precos)===Math.max(...precos)
+      ? `R$ ${Math.min(...precos).toFixed(2).replace('.',',')}`
+      : `R$ ${Math.min(...precos).toFixed(2).replace('.',',')} a R$ ${Math.max(...precos).toFixed(2).replace('.',',')}`) : '';
+
+  return `
+  <div class="cat-item ${qtdNoCarrinho?'has-items':''}" onclick="abrirCategoria('${cat.id}')">
+    <span class="cat-badge ${qtdNoCarrinho?'show':''}">${qtdNoCarrinho}</span>
+    <div class="cat-top">
+      <div class="cat-nome">${cat.emoji||''} ${cat.nome}</div>
+      <span class="cat-arrow">›</span>
+    </div>
+    <div class="cat-sub">${filhosFolhas} opç${filhosFolhas===1?'ão':'ões'}${faixa?' · '+faixa:''}</div>
+  </div>`;
+}
+
+function contarFolhasCategoria(cat){ return listarIdsFolhas(cat).length; }
+
+function listarIdsFolhas(cat){
+  const ids = [];
+  function walk(node){
+    (node.filhos||[]).forEach(f => {
+      if(f.tipo === 'categoria') walk(f); else ids.push(f.id);
+    });
+  }
+  walk(cat);
+  return ids;
+}
+
+function coletarPrecosCategoria(cat){
+  const precos = [];
+  function walk(node){
+    (node.filhos||[]).forEach(f => {
+      if(f.tipo === 'categoria') walk(f); else if(typeof f.preco === 'number') precos.push(f.preco);
+    });
+  }
+  walk(cat);
+  return precos;
 }
 
 function buildProdutos(cat){
   const grid = document.getElementById('prod-grid');
-  const lista = PRODUTOS.filter(p => p.corredor === cat);
+  const lista = PRODUTOS.filter(p => p.corredor === cat && p.ativo !== false)
+    .slice().sort((a,b) => a.nome.localeCompare(b.nome, 'pt-BR'));
 
   if(!lista.length){
     grid.innerHTML = `<div class="empty-corredor" style="grid-column:1/-1"><span class="big">📭</span>Nenhum produto neste corredor</div>`;
     return;
   }
 
-  grid.innerHTML = lista.map(p => {
-    const noCarrinho = carrinho.find(i => i.id === p.id);
-    const qty = noCarrinho ? noCarrinho.qty : 0;
-    const selected = qty > 0 ? 'selected' : '';
-    const tipoEscolhido = noCarrinho ? noCarrinho.tipoVendaEscolhido : (p.tipo_venda === 'kg' ? 'kg' : 'un');
+  grid.innerHTML = lista.map(p => p.tipo === 'categoria' ? catCardHTML(p) : prodCardHTML(p)).join('');
+}
 
-    let seletor = '';
-    if(p.tipo_venda === 'ambos'){
-      seletor = `
-      <div class="tipo-venda-row" onclick="event.stopPropagation()">
-        <div class="tipo-venda-btn ${tipoEscolhido==='un'?'active':''}" onclick="setTipoVenda('${p.id}','un')">Unidade</div>
-        <div class="tipo-venda-btn ${tipoEscolhido==='kg'?'active':''}" onclick="setTipoVenda('${p.id}','kg')">Quilo</div>
-      </div>`;
-    }
+/* ===== Modal de categoria (marcas / apresentações, com drill-down) ===== */
+let modalStack = [];
 
-    return `
-    <div class="prod-item ${selected}" id="prod-${p.id}" onclick="toggleProduto('${p.id}')">
-      <div class="prod-nome">${p.nome}</div>
-      <div class="prod-preco">R$ ${p.preco.toFixed(2).replace('.',',')} <span class="prod-unidade">/ ${p.tipo_venda==='kg'?'kg':(p.tipo_venda==='ambos'?'un ou kg':p.unidade)}</span></div>
-      ${seletor}
-      <div class="prod-qty-row" onclick="event.stopPropagation()">
-        <button class="prod-qbtn" onclick="changeQty('${p.id}',-1)">−</button>
-        <span class="prod-qnum" id="qty-${p.id}">${formatQty(qty, tipoEscolhido)}</span>
-        <button class="prod-qbtn" onclick="changeQty('${p.id}',1)">+</button>
-      </div>
-    </div>`;
-  }).join('');
+function abrirCategoria(id){
+  const cat = CATEGORIA_INDEX[id];
+  if(!cat) return;
+  modalStack.push(cat);
+  renderModal();
+  document.getElementById('item-overlay').classList.add('open');
+  document.getElementById('item-modal').classList.add('open');
+}
+
+function voltarModal(){
+  if(modalStack.length > 1){
+    modalStack.pop();
+    renderModal();
+  } else {
+    fecharModal();
+  }
+}
+
+function fecharModal(){
+  document.getElementById('item-overlay').classList.remove('open');
+  document.getElementById('item-modal').classList.remove('open');
+  modalStack = [];
+}
+
+function renderModal(){
+  const atual = modalStack[modalStack.length - 1];
+  if(!atual) return;
+  const filhos = (atual.filhos || []).filter(f => f.ativo !== false)
+    .slice().sort((a,b) => a.nome.localeCompare(b.nome, 'pt-BR'));
+
+  document.getElementById('im-title').textContent = `${atual.emoji||''} ${atual.nome}`.trim();
+  document.getElementById('im-back').style.display = modalStack.length > 1 ? 'inline-block' : 'none';
+  document.getElementById('im-breadcrumb').textContent = modalStack.map(c => c.nome).join(' › ');
+
+  const body = document.getElementById('im-body');
+  if(!filhos.length){
+    body.innerHTML = `<div class="empty-corredor"><span class="big">📭</span>Nada por aqui ainda</div>`;
+    return;
+  }
+  body.innerHTML = filhos.map(f => f.tipo === 'categoria' ? catCardHTML(f) : prodCardHTML(f)).join('');
 }
 
 function formatQty(qty, tipo){
@@ -1188,7 +1399,7 @@ function formatQty(qty, tipo){
 }
 
 function toggleProduto(id){
-  const item = PRODUTOS.find(p => p.id === id);
+  const item = findProduto(id);
   if(!item) return;
   if(carrinho.find(i => i.id === id)) return;
 
@@ -1210,7 +1421,7 @@ function toggleProduto(id){
 
 function setTipoVenda(id, tipo){
   const idx = carrinho.findIndex(i => i.id === id);
-  const prod = PRODUTOS.find(p => p.id === id);
+  const prod = findProduto(id);
   if(!prod) return;
 
   if(idx === -1){
@@ -1236,7 +1447,7 @@ function setTipoVenda(id, tipo){
 
 function changeQty(id, delta){
   const idx = carrinho.findIndex(i => i.id === id);
-  const prod = PRODUTOS.find(p => p.id === id);
+  const prod = findProduto(id);
   if(!prod) return;
 
   if(idx === -1 && delta > 0){ toggleProduto(id); return; }
