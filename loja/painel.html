@@ -259,7 +259,7 @@ footer strong{color:var(--roxo);}
 </div>
 
 <div id="sb-banner">
-  ⚠️ Supabase não conectado — pedidos indisponíveis.
+  ⚠️ Sem conexão de escrita com o Supabase — as alterações estão ficando só neste navegador e não chegam ao site.
   <a onclick="goTo('configuracoes',document.querySelector('[onclick*=configuracoes]'))">Configurar →</a>
 </div>
 
@@ -586,9 +586,15 @@ async function salvarConfig(chave,valor){
   CFG[chave]=valor;
   localStorage.setItem('mercado_cfg',JSON.stringify(CFG));
   try{
-    await sbUpsert('configuracoes',[{chave,valor,atualizado_em:new Date().toISOString()}]);
-  }catch(e){}
-  mostrarToast('✅ Salvo!');
+    const ok = await sbUpsert('configuracoes',[{chave,valor,atualizado_em:new Date().toISOString()}]);
+    if(!ok) throw new Error('Supabase recusou a escrita (confira a policy de INSERT/UPDATE e a chave primária da tabela "configuracoes").');
+    document.getElementById('sb-banner').style.display='none';
+    mostrarToast('✅ Salvo! (sincronizado com o site)');
+  }catch(e){
+    console.error('Falha ao salvar no Supabase:', e);
+    document.getElementById('sb-banner').style.display='block';
+    mostrarToast('⚠️ Salvo só neste navegador — não sincronizou com o site. Veja o aviso no topo.');
+  }
 }
 
 /* ══ STATS ══ */
