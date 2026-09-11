@@ -58,6 +58,7 @@ html.dark .pill,
 html.dark .tipo-venda-btn,
 html.dark #faco-id-bar,
 html.dark #corredores-wrap,
+html.dark #search-bar-wrap,
 html.dark .cupom-row .field-input{
   background:var(--surface); border-color:var(--border-soft); color:var(--text);
 }
@@ -91,6 +92,7 @@ html.dark #corredores-wrap{ box-shadow:0 4px 12px rgba(0,0,0,.35); }
 html.dark .corredor-chip.active{ box-shadow:0 4px 0 rgba(0,0,0,.35); }
 html.dark .prod-item.selected{ box-shadow:0 0 0 2px rgba(94,234,212,.25); }
 html.dark #toast{ background:rgba(29,32,37,.96); }
+html.dark .end-salvo-card{ background:var(--surface); border-color:var(--border-soft); color:var(--text); }
 
 *{box-sizing:border-box;margin:0;padding:0;-webkit-tap-highlight-color:transparent}
 html{scroll-behavior:smooth; height:100%; touch-action:manipulation;}
@@ -103,7 +105,7 @@ body{
   transition:background .25s ease, color .25s ease;
 }
 
-/* ===== BOTÃO FIXO DE TEMA + MENU ===== */
+/* ===== BOTÃO FIXO DE TEMA + BUSCA ===== */
 #topbar-controls{
   position:fixed; top:0; right:10px; z-index:2147483647;
   padding-top:calc(10px + env(safe-area-inset-top));
@@ -580,8 +582,9 @@ main{max-width:700px;margin:0 auto;padding:14px 12px 20px;}
 </head>
 <body>
 
-<!-- BOTÃO FIXO: TEMA (visível em todas as telas) -->
+<!-- BOTÃO FIXO: TEMA + LUPA DE BUSCA (visível em todas as telas) -->
 <div id="topbar-controls">
+  <button class="tb-btn" id="btn-search" onclick="toggleBusca()" title="Buscar produtos">🔍</button>
   <button class="tb-btn" id="btn-theme" onclick="toggleTheme()" title="Alternar modo dia/noite">🌙</button>
 </div>
 
@@ -638,6 +641,14 @@ main{max-width:700px;margin:0 auto;padding:14px 12px 20px;}
     <input class="faco-id-input" id="inp-nome" type="text" placeholder="Seu nome ou apelido..."
       autocomplete="given-name" oninput="onNome()">
     <span class="faco-id-ok" id="faco-id-ok">✅</span>
+  </div>
+
+  <!-- BARRA DE BUSCA INTELIGENTE DE PRODUTOS E DIETAS -->
+  <div id="search-bar-wrap" style="display:none; background:var(--surface); padding:10px 16px; border-bottom:2px solid var(--border-soft); position:sticky; top:0; z-index:58;">
+    <div style="position:relative; display:flex; align-items:center;">
+      <input type="text" id="inp-busca" class="field-input" placeholder="Buscar produtos, marcas, 'sem lactose'..." oninput="executarBusca(this.value)" style="padding-right:36px;">
+      <button onclick="fecharBusca()" style="position:absolute; right:10px; background:none; border:none; font-size:1.1rem; cursor:pointer; color:var(--muted);">✕</button>
+    </div>
   </div>
 
   <div id="corredores-wrap">
@@ -744,13 +755,25 @@ main{max-width:700px;margin:0 auto;padding:14px 12px 20px;}
             <div class="minimo-warn" id="minimo-warn">⚠️ Pedido mínimo para delivery: <strong>R$ 25,00</strong></div>
 
             <div style="margin-top:12px;">
-              <label class="field-label">Endereço</label>
-              <input class="field-input" id="inp-rua" placeholder="Rua / Avenida" style="margin-bottom:6px;" oninput="recalcOpenBlock('entrega')">
-              <div style="display:grid;grid-template-columns:1fr 80px;gap:6px;margin-bottom:6px;">
-                <input class="field-input" id="inp-bairro" placeholder="Bairro">
-                <input class="field-input" id="inp-num" placeholder="Nº">
+              <label class="field-label">Endereço de Entrega</label>
+
+              <!-- HISTÓRICO E GERENCIAMENTO DE ENDEREÇOS -->
+              <div id="enderecos-salvos-wrap" style="display:none; margin-bottom:10px;">
+                <div style="font-size:0.78rem; font-weight:800; color:var(--muted); margin-bottom:6px;">Endereços Cadastrados:</div>
+                <div id="lista-enderecos-salvos" style="display:flex; flex-direction:column; gap:6px;"></div>
+                <button type="button" class="pill" onclick="novoEnderecoForm()" style="margin-top:6px; font-size:0.75rem;">＋ Outro Endereço</button>
               </div>
-              <input class="field-input" id="inp-comp" placeholder="Complemento / Referência">
+
+              <!-- FORMULÁRIO DE ENDEREÇO (CEP PRIMEIRO) -->
+              <div id="form-endereco">
+                <input class="field-input" id="inp-cep" placeholder="CEP (ex: 12900-000)" maxlength="9" style="margin-bottom:6px;" oninput="mascaraEBuscaCEP(this)">
+                <input class="field-input" id="inp-rua" placeholder="Rua / Avenida" style="margin-bottom:6px;" oninput="recalcOpenBlock('entrega')">
+                <div style="display:grid;grid-template-columns:1fr 80px;gap:6px;margin-bottom:6px;">
+                  <input class="field-input" id="inp-bairro" placeholder="Bairro" oninput="recalcOpenBlock('entrega')">
+                  <input class="field-input" id="inp-num" placeholder="Nº" oninput="recalcOpenBlock('entrega')">
+                </div>
+                <input class="field-input" id="inp-comp" placeholder="Complemento / Referência" oninput="recalcOpenBlock('entrega')">
+              </div>
             </div>
           </div>
 
@@ -833,14 +856,7 @@ let MINIMO_DEL = 25;
 
 const CUPONS = { 'MERCADO10': { codigo:'MERCADO10', tipo:'pct', valor:10, desc:'10% de desconto' } };
 
-/* ===== CATÁLOGO (Corredores + Produtos) =====
-   Ordem de prioridade dos dados:
-   1) Supabase (tabela "configuracoes") — é onde o Painel Admin salva as edições,
-      então é a fonte "ao vivo" pra qualquer pessoa que abrir o catálogo.
-   2) Arquivo local banco-dados-mercadinho.json — usado como catálogo inicial/seed
-      e como fallback se o Supabase estiver fora do ar.
-   3) localStorage "mercado_cfg" — só entra por cima se o Painel foi usado no
-      mesmo aparelho/navegador sem internet (modo local do painel). */
+/* ===== CATÁLOGO (Corredores + Produtos) ===== */
 const DB_URL = './banco-dados-mercadinho.json';
 let CORREDORES = [];
 let PRODUTOS = [];
@@ -861,13 +877,11 @@ async function loadCatalogo(){
   catalogoErro = false;
   let data = { corredores: [], produtos: [], config: {} };
 
-  // 1) tenta o arquivo local primeiro (garante que sempre tem algo pra mostrar)
   try{
     const res = await fetch(DB_URL);
     if(res.ok) data = await res.json();
   }catch(e){ console.warn('Sem catálogo local:', e); }
 
-  // 2) tenta o Supabase por cima — se o painel já foi usado, prevalece
   try{
     const cfg = await sbGetConfig();
     if(cfg.corredores?.length) data.corredores = cfg.corredores;
@@ -883,11 +897,6 @@ async function loadCatalogo(){
   indexarProdutos();
 }
 
-/* ===== Índice do catálogo em árvore =====
-   PRODUTOS pode ter, dentro de cada corredor, itens "categoria" (que agrupam
-   marcas/apresentações dentro de filhos[]) ou itens "produto" (comprável
-   direto). Isso pode ter quantos níveis o admin quiser — os índices abaixo
-   "achatam" a árvore pra facilitar busca por id em qualquer profundidade. */
 let PRODUTOS_INDEX = {};   // id -> produto folha (comprável)
 let CATEGORIA_INDEX = {};  // id -> nó categoria (com filhos)
 
@@ -967,6 +976,228 @@ function salvarHistoricoPedido(){
   });
   st.historico[S.nome] = st.historico[S.nome].slice(0, 3);
   setIdStorage(st);
+}
+
+/* ===== GERENCIAMENTO E HISTÓRICO DE ENDEREÇOS ===== */
+function getEnderecosSalvos(){
+  const st = getIdStorage();
+  return st.enderecos || [];
+}
+
+function salvarEnderecoAtual(){
+  const cep = document.getElementById('inp-cep')?.value?.trim() || '';
+  const rua = document.getElementById('inp-rua')?.value?.trim() || '';
+  const bairro = document.getElementById('inp-bairro')?.value?.trim() || '';
+  const num = document.getElementById('inp-num')?.value?.trim() || '';
+  const comp = document.getElementById('inp-comp')?.value?.trim() || '';
+
+  if(!rua && !cep) return;
+
+  const st = getIdStorage();
+  if(!st.enderecos) st.enderecos = [];
+
+  const idx = st.enderecos.findIndex(e => e.rua === rua && e.num === num && e.bairro === bairro);
+  if(idx >= 0){
+    st.enderecos[idx] = { cep, rua, bairro, num, comp };
+  } else {
+    st.enderecos.push({ cep, rua, bairro, num, comp });
+  }
+  setIdStorage(st);
+  renderEnderecosSalvos();
+}
+
+function removerEndereco(idx, event){
+  if(event) event.stopPropagation();
+  const st = getIdStorage();
+  if(st.enderecos && st.enderecos[idx]){
+    st.enderecos.splice(idx, 1);
+    setIdStorage(st);
+    renderEnderecosSalvos();
+    mostrarToast('🗑️ Endereço removido');
+  }
+}
+
+function selecionarEnderecoSalvo(idx){
+  const list = getEnderecosSalvos();
+  const end = list[idx];
+  if(!end) return;
+
+  document.getElementById('inp-cep').value = end.cep || '';
+  document.getElementById('inp-rua').value = end.rua || '';
+  document.getElementById('inp-bairro').value = end.bairro || '';
+  document.getElementById('inp-num').value = end.num || '';
+  document.getElementById('inp-comp').value = end.comp || '';
+
+  document.querySelectorAll('.end-salvo-card').forEach((card, i) => {
+    card.classList.toggle('selected', i === idx);
+  });
+
+  if(end.bairro){
+    const bEncontrado = BAIRROS.find(b => b.nome.toLowerCase() === end.bairro.toLowerCase());
+    if(bEncontrado){
+      const btns = document.querySelectorAll('.bairro-btn');
+      btns.forEach(btn => {
+        if(btn.textContent.includes(bEncontrado.nome)){
+          selectBairro(btn, bEncontrado.nome, bEncontrado.taxa);
+        }
+      });
+    }
+  }
+
+  recalcOpenBlock('entrega');
+  mostrarToast(`📍 Endereço ${idx+1} selecionado`);
+}
+
+function novoEnderecoForm(){
+  document.getElementById('inp-cep').value = '';
+  document.getElementById('inp-rua').value = '';
+  document.getElementById('inp-bairro').value = '';
+  document.getElementById('inp-num').value = '';
+  document.getElementById('inp-comp').value = '';
+  document.querySelectorAll('.end-salvo-card').forEach(c => c.classList.remove('selected'));
+  document.getElementById('inp-cep').focus();
+  recalcOpenBlock('entrega');
+}
+
+function renderEnderecosSalvos(){
+  const list = getEnderecosSalvos();
+  const wrap = document.getElementById('enderecos-salvos-wrap');
+  const container = document.getElementById('lista-enderecos-salvos');
+  if(!wrap || !container) return;
+
+  if(!list.length){
+    wrap.style.display = 'none';
+    return;
+  }
+
+  wrap.style.display = 'block';
+  container.innerHTML = list.map((e, i) => {
+    const txt = `${e.rua || ''}${e.num ? ', ' + e.num : ''}${e.bairro ? ' - ' + e.bairro : ''}${e.cep ? ' (' + e.cep + ')' : ''}`;
+    return `
+      <div class="end-salvo-card" onclick="selecionarEnderecoSalvo(${i})" style="display:flex; align-items:center; justify-content:space-between; padding:8px 10px; border:2px solid var(--border-soft); border-radius:12px; background:var(--surface); cursor:pointer;">
+        <div style="flex:1; font-size:0.8rem; font-weight:700;">
+          <div style="color:var(--roxo); font-weight:800;">Endereço ${i+1}</div>
+          <div style="color:var(--muted); font-size:0.75rem; white-space:nowrap; overflow:hidden; text-overflow:ellipsis; max-width:220px;">${txt}</div>
+        </div>
+        <button type="button" onclick="removerEndereco(${i}, event)" style="background:rgba(239,68,68,0.15); border:none; color:#EF4444; border-radius:8px; width:28px; height:28px; font-size:0.8rem; cursor:pointer; display:flex; align-items:center; justify-content:center; margin-left:8px;" title="Remover Endereço">✕</button>
+      </div>
+    `;
+  }).join('');
+}
+
+/* ===== AUTOCOMPLETAR DE ENDEREÇO POR CEP ===== */
+function mascaraEBuscaCEP(input){
+  let val = input.value.replace(/\D/g, '');
+  if(val.length > 5){
+    input.value = val.substring(0,5) + '-' + val.substring(5,8);
+  } else {
+    input.value = val;
+  }
+  if(val.length === 8){
+    buscarCEP(val);
+  }
+  recalcOpenBlock('entrega');
+}
+
+async function buscarCEP(cep){
+  try{
+    const res = await fetch(`https://viacep.com.br/ws/${cep}/json/`);
+    if(!res.ok) return;
+    const data = await res.json();
+    if(data.erro) {
+      mostrarToast('⚠️ CEP não encontrado');
+      return;
+    }
+    if(data.logradouro) document.getElementById('inp-rua').value = data.logradouro;
+    if(data.bairro) document.getElementById('inp-bairro').value = data.bairro;
+
+    if(data.bairro){
+      const bEncontrado = BAIRROS.find(b => b.nome.toLowerCase() === data.bairro.toLowerCase());
+      if(bEncontrado){
+        const btns = document.querySelectorAll('.bairro-btn');
+        btns.forEach(btn => {
+          if(btn.textContent.includes(bEncontrado.nome)){
+            selectBairro(btn, bEncontrado.nome, bEncontrado.taxa);
+          }
+        });
+      }
+    }
+
+    document.getElementById('inp-num').focus();
+    recalcOpenBlock('entrega');
+    mostrarToast('✅ Endereço preenchido pelo CEP!');
+  }catch(e){
+    console.warn('Erro ao buscar CEP:', e);
+  }
+}
+
+/* ===== CAMPO DE BUSCA INTELIGENTE & FILTRO DE DIETAS ===== */
+function toggleBusca(){
+  const wrap = document.getElementById('search-bar-wrap');
+  if(!wrap) return;
+  if(wrap.style.display === 'none' || !wrap.style.display){
+    if(!document.getElementById('page-produtos').classList.contains('active')){
+      irParaProdutos();
+    }
+    wrap.style.display = 'block';
+    const inp = document.getElementById('inp-busca');
+    if(inp){ inp.focus(); }
+  } else {
+    fecharBusca();
+  }
+}
+
+function fecharBusca(){
+  const wrap = document.getElementById('search-bar-wrap');
+  if(wrap) wrap.style.display = 'none';
+  const inp = document.getElementById('inp-busca');
+  if(inp) inp.value = '';
+  if(S.categoria){
+    selectCorredor(S.categoria);
+  } else {
+    renderEstadoInicialProdutos();
+  }
+}
+
+function executarBusca(query){
+  const term = query.trim().toLowerCase();
+  const grid = document.getElementById('prod-grid');
+  if(!grid) return;
+  if(!term){
+    if(S.categoria) selectCorredor(S.categoria);
+    else renderEstadoInicialProdutos();
+    return;
+  }
+
+  const titleEl = document.getElementById('section-title');
+  if(titleEl) titleEl.innerHTML = `🔍 Resultados para "${query}"`;
+
+  const todosProdutos = Object.values(PRODUTOS_INDEX).filter(p => p.ativo !== false);
+
+  const resultados = todosProdutos.filter(p => {
+    const nome = (p.nome || '').toLowerCase();
+    const marca = (p.marca || '').toLowerCase();
+    const desc = (p.descricao || '').toLowerCase();
+    const cat = (p.categoria || p.corredor || '').toLowerCase();
+    const apresentacao = (p.apresentacao || '').toLowerCase();
+    const tags = Array.isArray(p.tags) ? p.tags.join(' ').toLowerCase() : (p.tags || '').toLowerCase();
+    const obs = (p.observacoes || p.obs || '').toLowerCase();
+
+    return nome.includes(term) ||
+           marca.includes(term) ||
+           desc.includes(term) ||
+           cat.includes(term) ||
+           apresentacao.includes(term) ||
+           tags.includes(term) ||
+           obs.includes(term);
+  });
+
+  if(!resultados.length){
+    grid.innerHTML = `<div class="empty-corredor" style="grid-column:1/-1"><span class="big">🔍</span>Nenhum produto encontrado para "${query}"</div>`;
+    return;
+  }
+
+  grid.innerHTML = resultados.map(p => prodCardHTML(p)).join('');
 }
 
 /* ===== NAV entre telas 1/2/3 ===== */
@@ -1094,7 +1325,7 @@ function loadAdminData(){
   }catch(e){}
 }
 
-/* ===== MODO ESCURO (Apple-style) + MENU ===== */
+/* ===== MODO ESCURO (Apple-style) ===== */
 const THEME_KEY = 'faco_mercado_tema';
 
 function aplicarTema(tema){
@@ -1112,7 +1343,6 @@ function initTheme(){
     const prefereEscuro = window.matchMedia && window.matchMedia('(prefers-color-scheme: dark)').matches;
     aplicarTema(prefereEscuro ? 'dark' : 'light');
   }
-  // Acompanha mudança de preferência do sistema, caso o usuário não tenha escolhido manualmente
   if(window.matchMedia){
     window.matchMedia('(prefers-color-scheme: dark)').addEventListener('change', (e) => {
       if(!localStorage.getItem(THEME_KEY)) aplicarTema(e.matches ? 'dark' : 'light');
@@ -1146,6 +1376,7 @@ function irParaCheckout(){
   document.getElementById('card-cupom').style.display = temCupons ? 'block' : 'none';
 
   atualizarContagemCheckout();
+  renderEnderecosSalvos();
   updateResumo();
   requestAnimationFrame(() => recalcOpenBlock('entrega'));
 }
@@ -1209,8 +1440,6 @@ function selectCorredor(id){
   document.getElementById('section-title').innerHTML = `${cor?.emoji||''} ${cor?.nome||''} <span>${contarProdutosCorredor(id)} produtos</span>`;
 }
 
-/* Card de um produto folha (comprável) — usado tanto na grade do corredor
-   quanto dentro do modal de categoria (marcas/apresentações). */
 function prodCardHTML(p){
   const noCarrinho = carrinho.find(i => i.id === p.id);
   const qty = noCarrinho ? noCarrinho.qty : 0;
@@ -1242,8 +1471,6 @@ function prodCardHTML(p){
   </div>`;
 }
 
-/* Card de uma categoria (nível intermediário: ex. "Arroz", "Banana", "Queijo").
-   Ao tocar, abre o modal com as marcas/apresentações de dentro. */
 function catCardHTML(cat){
   const filhosFolhas = contarFolhasCategoria(cat);
   const idsFolhas = listarIdsFolhas(cat);
@@ -1301,7 +1528,6 @@ function buildProdutos(cat){
   grid.innerHTML = lista.map(p => p.tipo === 'categoria' ? catCardHTML(p) : prodCardHTML(p)).join('');
 }
 
-/* ===== Modal de categoria (marcas / apresentações, com drill-down) ===== */
 let modalStack = [];
 
 function abrirCategoria(id){
@@ -1351,9 +1577,6 @@ function formatQty(qty, tipo){
   return qty;
 }
 
-/* Depois de qualquer mudança no carrinho, os cards de CATEGORIA (pai) que
-   mostram "quantos itens tenho aqui dentro" precisam recalcular — tanto se
-   estiver aberto um modal de categoria quanto na grade principal do corredor. */
 function atualizarBadgesPai(){
   if(modalStack.length){
     document.querySelectorAll('#im-body .cat-item').forEach(el => {
@@ -1493,7 +1716,7 @@ function recalcOpenBlock(id){
   const inner = body ? body.querySelector('.block-body-inner') : null;
   if(!body || !inner) return;
   const header = document.querySelector(`.block-header[onclick="toggleBlock('${id}')"]`);
-  const semToggle = !header; // bloco sempre aberto (sem onclick), ex: entrega
+  const semToggle = !header;
   if(semToggle || header.classList.contains('open')){
     body.style.maxHeight = inner.scrollHeight + 'px';
   }
@@ -1506,6 +1729,9 @@ function selectEntrega(tipo){
   document.getElementById('delivery-wrap').style.display = tipo==='delivery' ? 'block' : 'none';
   document.getElementById('badge-entrega').textContent = tipo==='retirada' ? 'Retirada ✓' : 'Delivery…';
   document.getElementById('err-entrega').classList.remove('show');
+  if(tipo === 'delivery'){
+    renderEnderecosSalvos();
+  }
   recalcOpenBlock('entrega');
   updateResumo();
 }
@@ -1678,6 +1904,10 @@ function validar(){
 async function enviarZap(){
   if(!validar()) return;
 
+  if(S.entrega === 'delivery'){
+    salvarEnderecoAtual();
+  }
+
   const total = calcTotal();
   let msg = `🛒 *PEDIDO - Faço Pedidos · Mercadinho*\n\n👤 *Faço ID:* ${S.nome}\n\n`;
   carrinho.forEach(it => {
@@ -1690,9 +1920,11 @@ async function enviarZap(){
     const num = document.getElementById('inp-num')?.value?.trim();
     const bairro = document.getElementById('inp-bairro')?.value?.trim();
     const comp = document.getElementById('inp-comp')?.value?.trim();
+    const cep = document.getElementById('inp-cep')?.value?.trim();
     if(rua) msg += `  📍 ${rua}${num?', '+num:''}\n`;
     if(bairro) msg += `  🏘️ ${bairro}\n`;
     if(comp) msg += `  🚪 ${comp}\n`;
+    if(cep) msg += `  📮 CEP: ${cep}\n`;
     msg += `  🚗 Taxa: ${fmt(S.frete)}\n`;
   }
   if(S.horario) msg += `⏰ ${S.horario}\n`;
@@ -1782,8 +2014,8 @@ document.addEventListener('DOMContentLoaded', async () => {
   renderCorredores();
   renderBairros();
   updateResumo();
+  renderEnderecosSalvos();
 
-  // Botão Entrar (Tela 1 - Faço ID)
   document.getElementById('btn-entrar').addEventListener('click', entrarComId);
   document.getElementById('input-faco-id').addEventListener('keydown', function(e){
     if(e.key === 'Enter'){
@@ -1792,15 +2024,14 @@ document.addEventListener('DOMContentLoaded', async () => {
     }
   });
 
-  // Auto preenche último Faço ID usado
   const st = getIdStorage();
   if(st.ultimoId){
     document.getElementById('input-faco-id').value = st.ultimoId;
   }
 
-  // Bloco "Como vai receber?" já vem aberto de verdade (é a única escolha obrigatória)
   recalcOpenBlock('entrega');
 });
 </script>
 </body>
 </html>
+
