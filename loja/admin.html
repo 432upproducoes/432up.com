@@ -489,22 +489,42 @@ async function sbUpsert(table,data){
   return r.ok;
 }
 
-/* ══ CONFIGS ══ */
+/* ══ CONFIGS ══
+   Mesma lógica de fonte de dados do front (index.html → loadCatalogo):
+   1) Arquivo local banco-dados-mercadinho.json — catálogo real/seed.
+   2) Supabase (tabela configuracoes) por cima — se tiver dado, prevalece
+      (é o que passa a valer depois que alguém edita algo pelo admin). */
+const DB_URL = './banco-dados-mercadinho.json';
 let CFG={};
 let SB_OFFLINE=false;
 
 async function carregarConfigs(){
+  let data = { corredores: [], produtos: [], config: {} };
+
+  // 1) tenta o arquivo local primeiro
   try{
-    const data=await sbGet('configuracoes','?select=chave,valor');
-    data.forEach(r=>{CFG[r.chave]=r.valor;});
+    const res = await fetch(DB_URL);
+    if(res.ok) data = await res.json();
+  }catch(e){ console.warn('Sem catálogo local:', e); }
+
+  CFG.corredores = data.corredores || [];
+  CFG.produtos = data.produtos || [];
+  CFG.geral = data.config || {};
+
+  // 2) tenta o Supabase por cima — se já tiver dado salvo, prevalece
+  try{
+    const rows=await sbGet('configuracoes','?select=chave,valor');
+    rows.forEach(r=>{ if(r.valor!=null && (!Array.isArray(r.valor) || r.valor.length)) CFG[r.chave]=r.valor; });
     SB_OFFLINE=false;
-    document.getElementById('sb-banner').style.display='none';
   }catch(e){
-    console.warn('Configs error:',e);
+    console.warn('Supabase indisponível, usando catálogo local:', e);
     SB_OFFLINE=true;
-    CFG={};
-    document.getElementById('sb-banner').style.display='block';
   }
+
+  // só mostra aviso se nenhuma das duas fontes deu em nada
+  const semDadoNenhum = !(CFG.corredores?.length) && !(CFG.produtos?.length);
+  document.getElementById('sb-banner').style.display = semDadoNenhum ? 'block' : 'none';
+
   aplicarConfigsUI();
   renderCorredores();
   renderProdutos();
