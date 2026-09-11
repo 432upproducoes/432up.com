@@ -491,16 +491,19 @@ async function sbUpsert(table,data){
 
 /* ══ CONFIGS ══ */
 let CFG={};
+let SB_OFFLINE=false;
 
 async function carregarConfigs(){
   try{
     const data=await sbGet('configuracoes','?select=chave,valor');
     data.forEach(r=>{CFG[r.chave]=r.valor;});
+    SB_OFFLINE=false;
     document.getElementById('sb-banner').style.display='none';
   }catch(e){
     console.warn('Configs error:',e);
+    SB_OFFLINE=true;
+    CFG={};
     document.getElementById('sb-banner').style.display='block';
-    carregarConfigsLocais();
   }
   aplicarConfigsUI();
   renderCorredores();
@@ -508,67 +511,6 @@ async function carregarConfigs(){
   renderBairros();
   renderCupons();
   renderHorarios();
-}
-
-function carregarConfigsLocais(){
-  CFG=JSON.parse(localStorage.getItem('mercado_cfg')||'{}');
-  if(!CFG.geral)CFG.geral={whatsapp:'5511934941652',meta_diaria:800,valor_km:2.0,minimo_delivery:25,loja_cep:'12903360',loja_lat:-22.9534,loja_lng:-46.5420};
-  
-  if(!CFG.corredores)CFG.corredores=[
-    {id:'padaria',nome:'Padaria',emoji:'🥖',ativo:true,ordem:1},
-    {id:'hortifruti',nome:'Hortifruti',emoji:'🍎',ativo:true,ordem:2},
-    {id:'laticinios',nome:'Laticínios',emoji:'🧀',ativo:true,ordem:3},
-    {id:'frios',nome:'Frios & Embutidos',emoji:'🥓',ativo:true,ordem:4},
-    {id:'mercearia',nome:'Mercearia',emoji:'🌾',ativo:true,ordem:5},
-    {id:'bebidas',nome:'Bebidas',emoji:'🍷',ativo:true,ordem:6},
-    {id:'higiene',nome:'Higiene',emoji:'🧴',ativo:true,ordem:7},
-    {id:'bebe',nome:'Bebê & Fraldas',emoji:'🍼',ativo:true,ordem:8}
-  ];
-
-  if(!CFG.produtos)CFG.produtos=[
-    // Padaria
-    {id:'pao-frances',corredor:'padaria',nome:'Pão Francês',marca:'',preco:0.90,tipo_venda:'un',min_medida:1,unidade:'un',ativo:true},
-    {id:'pao-forma',corredor:'padaria',nome:'Pão de Forma',marca:'',preco:9.90,tipo_venda:'un',min_medida:1,unidade:'pct',ativo:true},
-    {id:'pao-queijo',corredor:'padaria',nome:'Pão de Queijo',marca:'',preco:2.50,tipo_venda:'un',min_medida:1,unidade:'un',ativo:true},
-    // Hortifruti
-    {id:'banana',corredor:'hortifruti',nome:'Banana Prata',marca:'',preco:6.90,tipo_venda:'ambos',min_medida:0.5,unidade:'kg',ativo:true},
-    {id:'maca',corredor:'hortifruti',nome:'Maçã Fuji',marca:'',preco:12.90,tipo_venda:'ambos',min_medida:0.5,unidade:'kg',ativo:true},
-    {id:'tomate',corredor:'hortifruti',nome:'Tomate',marca:'',preco:8.90,tipo_venda:'kg',min_medida:0.5,unidade:'kg',ativo:true},
-    {id:'alface',corredor:'hortifruti',nome:'Alface Crespa',marca:'',preco:3.50,tipo_venda:'un',min_medida:1,unidade:'un',ativo:true},
-    // Laticínios
-    {id:'leite-integral',corredor:'laticinios',nome:'Leite Integral 1L',marca:'',preco:5.49,tipo_venda:'un',min_medida:1,unidade:'un',ativo:true},
-    {id:'queijo-mussarela',corredor:'laticinios',nome:'Mussarela',marca:'',preco:42.90,tipo_venda:'kg',min_medida:0.1,unidade:'kg',ativo:true},
-    {id:'requeijao',corredor:'laticinios',nome:'Requeijão 200g',marca:'',preco:6.90,tipo_venda:'un',min_medida:1,unidade:'un',ativo:true},
-    // Frios
-    {id:'presunto',corredor:'frios',nome:'Presunto',marca:'',preco:32.90,tipo_venda:'kg',min_medida:0.1,unidade:'kg',ativo:true},
-    {id:'salame',corredor:'frios',nome:'Salame Italiano',marca:'',preco:58.90,tipo_venda:'kg',min_medida:0.1,unidade:'kg',ativo:true},
-    {id:'mortadela',corredor:'frios',nome:'Mortadela',marca:'',preco:24.90,tipo_venda:'kg',min_medida:0.1,unidade:'kg',ativo:true},
-    // Mercearia
-    {id:'arroz',corredor:'mercearia',nome:'Arroz Tipo 1 5kg',marca:'',preco:24.90,tipo_venda:'un',min_medida:1,unidade:'pct',ativo:true},
-    {id:'feijao',corredor:'mercearia',nome:'Feijão Carioca 1kg',marca:'',preco:8.90,tipo_venda:'un',min_medida:1,unidade:'pct',ativo:true},
-    {id:'farinha-trigo',corredor:'mercearia',nome:'Farinha de Trigo 1kg',marca:'',preco:5.90,tipo_venda:'un',min_medida:1,unidade:'pct',ativo:true},
-    // Bebidas
-    {id:'agua',corredor:'bebidas',nome:'Água Mineral 1,5L',marca:'',preco:2.99,tipo_venda:'un',min_medida:1,unidade:'un',ativo:true},
-    {id:'refri-2l',corredor:'bebidas',nome:'Refrigerante 2L',marca:'',preco:9.90,tipo_venda:'un',min_medida:1,unidade:'un',ativo:true},
-    {id:'vinho-tinto',corredor:'bebidas',nome:'Vinho Tinto Seco 750ml',marca:'',preco:39.90,tipo_venda:'un',min_medida:1,unidade:'un',ativo:true},
-    // Higiene
-    {id:'papel-hig',corredor:'higiene',nome:'Papel Higiênico 12un',marca:'',preco:18.90,tipo_venda:'un',min_medida:1,unidade:'pct',ativo:true},
-    {id:'detergente',corredor:'higiene',nome:'Detergente 500ml',marca:'',preco:2.99,tipo_venda:'un',min_medida:1,unidade:'un',ativo:true},
-    // Bebê
-    {id:'fralda-m',corredor:'bebe',nome:'Fralda M (pct 30)',marca:'',preco:34.90,tipo_venda:'un',min_medida:1,unidade:'pct',ativo:true},
-    {id:'lenco',corredor:'bebe',nome:'Lenço Umedecido',marca:'',preco:12.90,tipo_venda:'un',min_medida:1,unidade:'pct',ativo:true}
-  ];
-
-  if(!CFG.bairros)CFG.bairros=[
-    {nome:'Jd. São Miguel',taxa:5,dist:'~1 km',ativo:true},
-    {nome:'Centro',taxa:8,dist:'~2 km',ativo:true},
-    {nome:'Jd. Iguatemi',taxa:7,dist:'~3 km',ativo:true},
-    {nome:'Vila Mota',taxa:8,dist:'~4 km',ativo:true},
-    {nome:'Lago do Taboão',taxa:12,dist:'~5 km',ativo:true},
-    {nome:'Jd. do Sul',taxa:12,dist:'~6 km',ativo:true}
-  ];
-  if(!CFG.cupons)CFG.cupons=[{codigo:'MERCADO10',tipo:'pct',valor:10,desc:'10% de desconto',ativo:true}];
-  if(!CFG.horarios)CFG.horarios={0:{abre:7,fecha:13},1:{abre:7,fecha:20},2:{abre:7,fecha:20},3:{abre:7,fecha:20},4:{abre:7,fecha:20},5:{abre:7,fecha:20},6:{abre:7,fecha:20}};
 }
 
 function aplicarConfigsUI(){
@@ -585,11 +527,15 @@ function aplicarConfigsUI(){
 
 async function salvarConfig(chave,valor){
   CFG[chave]=valor;
-  localStorage.setItem('mercado_cfg',JSON.stringify(CFG));
   try{
-    await sbUpsert('configuracoes',[{chave,valor,atualizado_em:new Date().toISOString()}]);
-  }catch(e){}
-  mostrarToast('✅ Salvo!');
+    const ok=await sbUpsert('configuracoes',[{chave,valor,atualizado_em:new Date().toISOString()}]);
+    if(!ok) throw new Error('Falha ao salvar no Supabase');
+    mostrarToast('✅ Salvo!');
+  }catch(e){
+    console.warn('Salvar config error:',e);
+    mostrarToast('❌ Não foi possível salvar — Supabase fora do ar');
+    document.getElementById('sb-banner').style.display='block';
+  }
 }
 
 /* ══ STATS ══ */
@@ -661,7 +607,10 @@ async function carregarPedidos(){
     agruparEFiltrar();
     atualizarBadge();
     document.getElementById('msg-sem-pedidos').style.display='none';
-  }catch(e){console.warn('Pedidos error:',e);}
+  }catch(e){
+    console.warn('Pedidos error:',e);
+    document.getElementById('sb-banner').style.display='block';
+  }
 }
 
 function agruparEFiltrar(){
@@ -912,7 +861,7 @@ function renderCorredores(){
           <button class="btn-sm btn-del" onclick="deletarItem('corredores',${i})">🗑️</button>
         </div>
       </div>`).join('')
-    :'<div style="color:#bbb;font-size:.82rem;padding:10px;">Nenhum corredor cadastrado.</div>';
+    :`<div style="color:#bbb;font-size:.82rem;padding:10px;">${SB_OFFLINE?'⚠️ Sem conexão com o Supabase — não é possível exibir os corredores.':'Nenhum corredor cadastrado.'}</div>`;
 
   // Tabs de filtro
   const tabs=document.getElementById('corredor-tabs');
@@ -989,7 +938,9 @@ function renderProdutos(){
   addBar.style.display=(!produtoPastaStack.length && corredorFiltro==='todos')?'none':'flex';
 
   if(!lista.length){
-    document.getElementById('list-produtos').innerHTML=`<div style="color:#bbb;font-size:.82rem;padding:10px;">${(!produtoPastaStack.length && corredorFiltro==='todos')?'Escolha um corredor acima pra ver/gerenciar os itens.':'Nada por aqui ainda.'}</div>`;
+    const msgOffline='⚠️ Sem conexão com o Supabase — não é possível exibir os produtos.';
+    const msgVazio=(!produtoPastaStack.length && corredorFiltro==='todos')?'Escolha um corredor acima pra ver/gerenciar os itens.':'Nada por aqui ainda.';
+    document.getElementById('list-produtos').innerHTML=`<div style="color:#bbb;font-size:.82rem;padding:10px;">${SB_OFFLINE?msgOffline:msgVazio}</div>`;
     return;
   }
 
@@ -1182,16 +1133,18 @@ async function salvarModalProdutoArvore(){
 /* ══ BAIRROS / CUPONS / HORÁRIOS ══ */
 function renderBairros(){
   const b=CFG.bairros||[];
-  document.getElementById('list-bairros').innerHTML=b.map((bairro,i)=>`
-    <div class="list-item ${bairro.ativo?'':'inativo'}">
-      <span class="li-nome">📍 ${bairro.nome} <small style="color:#aaa;">${bairro.dist||''}</small></span>
-      <span class="li-preco">${fmt(bairro.taxa)}</span>
-      <div class="li-actions">
-        <button class="btn-sm btn-toggle" onclick="toggleItem('bairros',${i})">${bairro.ativo?'✓':'✗'}</button>
-        <button class="btn-sm btn-edit" onclick="editarItem('bairros',${i})">✏️</button>
-        <button class="btn-sm btn-del" onclick="deletarItem('bairros',${i})">🗑️</button>
-      </div>
-    </div>`).join('');
+  document.getElementById('list-bairros').innerHTML=b.length
+    ?b.map((bairro,i)=>`
+      <div class="list-item ${bairro.ativo?'':'inativo'}">
+        <span class="li-nome">📍 ${bairro.nome} <small style="color:#aaa;">${bairro.dist||''}</small></span>
+        <span class="li-preco">${fmt(bairro.taxa)}</span>
+        <div class="li-actions">
+          <button class="btn-sm btn-toggle" onclick="toggleItem('bairros',${i})">${bairro.ativo?'✓':'✗'}</button>
+          <button class="btn-sm btn-edit" onclick="editarItem('bairros',${i})">✏️</button>
+          <button class="btn-sm btn-del" onclick="deletarItem('bairros',${i})">🗑️</button>
+        </div>
+      </div>`).join('')
+    :`<div style="color:#bbb;font-size:.82rem;padding:10px;">${SB_OFFLINE?'⚠️ Sem conexão com o Supabase — não é possível exibir os bairros.':'Nenhum bairro cadastrado.'}</div>`;
 }
 function renderCupons(){
   const c=CFG.cupons||[];
@@ -1206,7 +1159,7 @@ function renderCupons(){
           <button class="btn-sm btn-del" onclick="deletarItem('cupons',${i})">🗑️</button>
         </div>
       </div>`).join('')
-    :'<div style="color:#bbb;font-size:.82rem;padding:10px;">Nenhum cupom. Crie um!</div>';
+    :`<div style="color:#bbb;font-size:.82rem;padding:10px;">${SB_OFFLINE?'⚠️ Sem conexão com o Supabase — não é possível exibir os cupons.':'Nenhum cupom. Crie um!'}</div>`;
 }
 function renderHorarios(){
   const h=CFG.horarios||{};
