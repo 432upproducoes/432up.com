@@ -26,6 +26,13 @@
     }
     #formAlert {
       display: none;
+      position: fixed;
+      top: 16px;
+      left: 50%;
+      transform: translateX(-50%);
+      z-index: 9998;
+      width: calc(100% - 2rem);
+      max-width: 30rem;
     }
     #formAlert.show {
       display: block;
@@ -100,6 +107,12 @@
   <canvas id="orbit-canvas"></canvas>
   <div id="plasmaLayer" class="plasma-top-layer"></div>
 
+  <!-- ALERTA (fica fora do card com backdrop-filter para o position:fixed funcionar contra a viewport) -->
+  <div
+    id="formAlert"
+    class="p-3 rounded-xl text-xs font-semibold"
+  ></div>
+
   <div id="loadingOverlay">
     <div class="glass-b2b-box p-8 rounded-2xl max-w-sm w-full text-center space-y-4">
       <div class="w-12 h-12 border-4 border-cyan-400 border-t-transparent rounded-full animate-spin mx-auto mb-2"></div>
@@ -125,13 +138,10 @@
         Credenciamento de Parceiros
       </span>
     </div>
-    <!-- ALERTA -->
-    <div
-      id="formAlert"
-      class="mb-4 p-3 rounded-xl text-xs font-semibold"
-    ></div>
     <!-- FORMULÁRIO -->
     <form id="cadastroForm" class="space-y-4">
+      <!-- CARD 1: DADOS PRINCIPAIS (termina com cantos arredondados antes do aviso) -->
+      <div class="bg-white/5 border border-white/10 rounded-2xl p-5 space-y-4">
       <!-- FOTO -->
       <div class="flex items-center gap-4">
         <div
@@ -282,6 +292,15 @@
           >
         </div>
       </div>
+      </div>
+      <!-- FIM DO CARD 1 -->
+
+      <!-- AVISO DE NÃO OBRIGATORIEDADE — fica entre os dois cards, sincronizado com a mesma regra de exibição da Ficha Complementar -->
+      <div id="avisoFichaComplementar" class="section-artistic-toggle bg-amber-500/10 border border-amber-500/30 rounded-xl px-4 py-3">
+        <p class="text-[11px] text-amber-300 leading-relaxed">
+          💡 <strong>Este bloco não é obrigatório agora.</strong> É bom já preencher, mas se preferir pode completar depois, no seu Perfil, assim que o cadastro for aprovado.
+        </p>
+      </div>
 
       <!-- FICHA COMPLEMENTAR — aparece quando o perfil/especialidade selecionado exige cadastro extra -->
       <div id="secaoArtistica" class="section-artistic-toggle bg-white/5 border border-cyan-500/25 rounded-2xl p-5 space-y-6">
@@ -317,12 +336,6 @@
               </div>
             </div>
           </div>
-        </div>
-
-        <div class="bg-amber-500/10 border border-amber-500/30 rounded-xl px-4 py-3">
-          <p class="text-[11px] text-amber-300 leading-relaxed">
-            💡 <strong>Este bloco não é obrigatório agora.</strong> É bom já preencher, mas se preferir pode completar depois, no seu Perfil, assim que o cadastro for aprovado.
-          </p>
         </div>
 
         <div class="space-y-4">
@@ -593,6 +606,7 @@
       // ---- FICHA COMPLEMENTAR: regra dinâmica de exibição (igual ao Perfil Unificado) ----
       function verificarExibicaoFichaComplementar(perfilBaseId, especialidadeId) {
         var containerFicha = document.getElementById('secaoArtistica');
+        var avisoFicha = document.getElementById('avisoFichaComplementar');
         if (!containerFicha) return;
 
         var itemSelecionado = null;
@@ -620,9 +634,11 @@
 
         if (deveExibir) {
           containerFicha.classList.add('active');
+          if (avisoFicha) avisoFicha.classList.add('active');
           updateVitrinePreview();
         } else {
           containerFicha.classList.remove('active');
+          if (avisoFicha) avisoFicha.classList.remove('active');
         }
       }
 
@@ -1106,7 +1122,7 @@
         var el = document.getElementById('formAlert');
         el.textContent = msg;
         el.className =
-          'mb-4 p-3 rounded-xl text-xs font-semibold show ' +
+          'p-3 rounded-xl text-xs font-semibold show ' +
           (type === 'success'
             ? 'bg-emerald-500/15 text-emerald-300 border border-emerald-500/30'
             : 'bg-red-500/15 text-red-300 border border-red-500/30');
@@ -1115,6 +1131,74 @@
       function fieldErr(id, has) {
         document.getElementById(id).classList.toggle('field-error', !!has);
       }
+
+      // Rola suavemente até o primeiro campo inválido, deixando-o em evidência
+      function rolarAteCampoInvalido(id) {
+        if (!id) return;
+        var el = document.getElementById(id);
+        if (!el) return;
+        el.scrollIntoView({ behavior: 'smooth', block: 'center' });
+        setTimeout(function () {
+          el.focus({ preventScroll: true });
+        }, 450);
+      }
+
+      // Campos monitorados para o desaparecimento automático da notificação
+      var CAMPOS_MONITORADOS = ['fNome', 'fEmpresa', 'fEmail', 'fWhatsapp', 'fInstagram', 'fPerfil', 'fEspecialidade', 'fSenha1', 'fSenha2'];
+
+      function campoEhValido(id) {
+        var el = document.getElementById(id);
+        if (!el) return true;
+        switch (id) {
+          case 'fNome':
+          case 'fEmpresa':
+          case 'fInstagram':
+            return el.value.trim().length > 0;
+          case 'fEmail':
+            return el.value.trim().indexOf('@') > 0;
+          case 'fWhatsapp':
+            return el.value.replace(/\D/g, '').length >= 10;
+          case 'fPerfil':
+            return !!el.value;
+          case 'fEspecialidade':
+            return el.disabled || !!el.value;
+          case 'fSenha1':
+            return el.value.length >= 8;
+          case 'fSenha2':
+            var senha1El = document.getElementById('fSenha1');
+            return el.value.length >= 8 && senha1El && el.value === senha1El.value;
+          default:
+            return true;
+        }
+      }
+
+      // Assim que o campo é corrigido, some o destaque vermelho dele; se não
+      // sobrar nenhum campo com erro, a notificação some sozinha também.
+      function revalidarCampoUnico(id) {
+        fieldErr(id, !campoEhValido(id));
+        atualizarVisibilidadeAlerta();
+      }
+
+      function atualizarVisibilidadeAlerta() {
+        var aindaTemErro = CAMPOS_MONITORADOS.some(function (id) {
+          var el = document.getElementById(id);
+          return el && el.classList.contains('field-error');
+        });
+        if (!aindaTemErro) {
+          document.getElementById('formAlert').classList.remove('show');
+        }
+      }
+
+      CAMPOS_MONITORADOS.forEach(function (id) {
+        var el = document.getElementById(id);
+        if (!el) return;
+        var evento = (el.tagName === 'SELECT') ? 'change' : 'input';
+        el.addEventListener(evento, function () {
+          revalidarCampoUnico(id);
+          // Senha e confirmação de senha dependem uma da outra
+          if (id === 'fSenha1') revalidarCampoUnico('fSenha2');
+        });
+      });
 
       /*
        * =====================================================
@@ -1182,20 +1266,26 @@
         });
 
         var ok = true;
-        if (!nome) { fieldErr('fNome', true); ok = false; }
-        if (!empresa) { fieldErr('fEmpresa', true); ok = false; }
-        if (!email || email.indexOf('@') < 1) { fieldErr('fEmail', true); ok = false; }
-        if (whatsapp.length < 10) { fieldErr('fWhatsapp', true); ok = false; }
-        if (!instagram) { fieldErr('fInstagram', true); ok = false; }
-        if (!perfilBaseId) { fieldErr('fPerfil', true); ok = false; }
-
-        if (!espSelect.disabled && !especialidadeId) {
-          fieldErr('fEspecialidade', true);
+        var primeiroCampoInvalido = null;
+        function marcarInvalido(id) {
+          fieldErr(id, true);
           ok = false;
+          if (!primeiroCampoInvalido) primeiroCampoInvalido = id;
         }
 
-        if (senha1.length < 8) { fieldErr('fSenha1', true); ok = false; }
-        if (senha1 !== senha2) { fieldErr('fSenha2', true); ok = false; }
+        if (!nome) marcarInvalido('fNome');
+        if (!empresa) marcarInvalido('fEmpresa');
+        if (!email || email.indexOf('@') < 1) marcarInvalido('fEmail');
+        if (whatsapp.length < 10) marcarInvalido('fWhatsapp');
+        if (!instagram) marcarInvalido('fInstagram');
+        if (!perfilBaseId) marcarInvalido('fPerfil');
+
+        if (!espSelect.disabled && !especialidadeId) {
+          marcarInvalido('fEspecialidade');
+        }
+
+        if (senha1.length < 8) marcarInvalido('fSenha1');
+        if (senha1 !== senha2) marcarInvalido('fSenha2');
 
         if (!termos) {
           showAlert('Você precisa aceitar os termos do programa para continuar.', 'error');
@@ -1203,6 +1293,7 @@
         }
         if (!ok) {
           showAlert('Verifique os campos destacados em vermelho.', 'error');
+          rolarAteCampoInvalido(primeiroCampoInvalido);
           return;
         }
 
