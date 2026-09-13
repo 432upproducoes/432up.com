@@ -205,6 +205,16 @@ export async function onRequest(context) {
       `🔑 <b>Chave PIX:</b> ${data.chave_pix || "Não informada"}\n` +
       `🕒 <b>Data do Pedido:</b> ${fmtDataHora(new Date().toISOString())}`;
 
+  } else if (data.event === "midia_pendente_aprovacao") {
+
+    texto =
+      `🖼️ <b>MÍDIA PENDENTE DE APROVAÇÃO</b>\n\n` +
+      `👤 <b>Parceiro:</b> ${data.parceiro_nome || "Não informado"}\n` +
+      `🏢 <b>Empresa:</b> ${data.empresa || "Não informada"}\n` +
+      `📧 <b>E-mail:</b> ${data.email || "Não informado"}\n` +
+      `📦 <b>Itens novos em análise:</b> ${data.total_midias_pendentes ?? "—"}\n\n` +
+      `🟡 <b>Ação necessária:</b> Autorizar no Admin (Perfil do Parceiro → Mídias Pendentes)`;
+
   } else {
 
     // ========================================================
