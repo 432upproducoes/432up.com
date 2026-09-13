@@ -6,6 +6,7 @@
   <title>432UP Partner | Solicitar Credenciamento</title>
   <link rel="stylesheet" href="../css/style.css">
   <script src="https://cdn.tailwindcss.com"></script>
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/cropperjs/1.5.13/cropper.min.css">
   <style>
     .glass-b2b-box {
       background: linear-gradient(
@@ -37,11 +38,81 @@
       background-size: cover;
       background-position: center;
     }
+
+    /* ===== FICHA COMPLEMENTAR (transplantado do Perfil Unificado) ===== */
+    .section-artistic-toggle {
+      display: none;
+      opacity: 0;
+      transition: opacity 0.4s ease-in-out;
+    }
+    .section-artistic-toggle.active {
+      display: block;
+      opacity: 1;
+    }
+    .portfolio-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(130px, 1fr)); gap: 0.85rem; }
+    .portfolio-item { position: relative; border-radius: 12px; overflow: hidden; height: 110px; background: #000; transition: all 0.2s ease; }
+    .portfolio-item img { width: 100%; height: 100%; object-fit: cover; }
+    .portfolio-item.pendente { border: 2px solid rgba(245, 158, 11, 0.8); }
+
+    .btn-remove-img { position: absolute; top: 4px; right: 4px; background: rgba(255, 75, 75, 0.9); color: #FFF; border-radius: 50%; width: 22px; height: 22px; font-weight: bold; display: flex; align-items: center; justify-content: center; font-size: 0.75rem; cursor: pointer; z-index: 20; }
+
+    #capaPreview { background-size: cover; background-position: center; }
+
+    .modal-crop-overlay {
+      position: fixed; top: 0; left: 0; width: 100vw; height: 100vh;
+      background: rgba(8, 10, 16, 0.85); backdrop-filter: blur(16px);
+      z-index: 9999; display: none; align-items: center; justify-content: center; padding: 20px;
+    }
+    .modal-crop-overlay.active { display: flex; }
+
+    input[type="date"] {
+      color-scheme: dark !important;
+      text-align: left !important;
+      -webkit-appearance: none !important;
+      appearance: none !important;
+      display: flex !important;
+      align-items: center !important;
+    }
+    input[type="date"]::-webkit-date-and-time-value {
+      text-align: left !important;
+      width: 100% !important;
+      margin: 0 !important;
+    }
+
+    #loadingOverlay {
+      position: fixed;
+      top: 0; left: 0; width: 100vw; height: 100vh;
+      background: rgba(14, 10, 20, 0.88);
+      backdrop-filter: blur(18px);
+      -webkit-backdrop-filter: blur(18px);
+      z-index: 100000;
+      display: none;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      padding: 20px;
+      transition: opacity 0.3s ease;
+    }
+    #loadingOverlay.active { display: flex; }
   </style>
 </head>
 <body class="min-h-full text-slate-200 font-sans antialiased bg-[#06080c] flex flex-col justify-start sm:justify-center items-center p-4 py-8 overflow-y-auto">
   <canvas id="orbit-canvas"></canvas>
   <div id="plasmaLayer" class="plasma-top-layer"></div>
+
+  <div id="loadingOverlay">
+    <div class="glass-b2b-box p-8 rounded-2xl max-w-sm w-full text-center space-y-4">
+      <div class="w-12 h-12 border-4 border-cyan-400 border-t-transparent rounded-full animate-spin mx-auto mb-2"></div>
+      <div>
+        <span id="loadingMessage" class="text-xs font-bold text-cyan-300 uppercase tracking-wider block">Processando...</span>
+        <span id="loadingPercentageText" class="text-2xl font-extrabold text-white mt-1 block">0%</span>
+      </div>
+      <div class="w-full bg-slate-950/80 rounded-full h-2.5 overflow-hidden border border-cyan-500/30">
+        <div id="loadingProgressBar" class="bg-gradient-to-r from-cyan-500 via-cyan-400 to-amber-400 h-2.5 rounded-full transition-all duration-150" style="width: 0%"></div>
+      </div>
+    </div>
+  </div>
+
   <div class="w-full max-w-lg glass-b2b-box p-8 rounded-3xl relative z-10 my-auto">
     <!-- CABEÇALHO -->
     <div class="text-center mb-6">
@@ -182,6 +253,158 @@
         </div>
       </div>
 
+      <!-- LOCALIZAÇÃO (usada na vitrine comercial da Ficha Complementar) -->
+      <div class="grid grid-cols-1 sm:grid-cols-3 gap-4">
+        <div class="sm:col-span-2">
+          <label class="block text-xs uppercase tracking-wider text-slate-400 font-semibold mb-1">
+            Cidade
+            <span class="text-slate-600 normal-case font-normal">(opcional)</span>
+          </label>
+          <input
+            type="text"
+            id="fCidade"
+            placeholder="Cidade"
+            class="w-full bg-white/5 border border-white/15 rounded-xl px-4 py-2.5 text-sm text-white focus:border-cyan-400 focus:outline-none"
+            oninput="updateVitrinePreview()"
+          >
+        </div>
+        <div>
+          <label class="block text-xs uppercase tracking-wider text-slate-400 font-semibold mb-1">
+            Estado (UF)
+          </label>
+          <input
+            type="text"
+            id="fEstado"
+            placeholder="SP"
+            maxlength="2"
+            class="w-full bg-white/5 border border-white/15 rounded-xl px-4 py-2.5 text-sm text-white uppercase focus:border-cyan-400 focus:outline-none"
+            oninput="updateVitrinePreview()"
+          >
+        </div>
+      </div>
+
+      <!-- FICHA COMPLEMENTAR — aparece quando o perfil/especialidade selecionado exige cadastro extra -->
+      <div id="secaoArtistica" class="section-artistic-toggle bg-white/5 border border-cyan-500/25 rounded-2xl p-5 space-y-6">
+
+        <div class="bg-gradient-to-br from-slate-900/90 to-cyan-950/40 border border-cyan-500/30 rounded-2xl p-4 md:p-5">
+          <span class="text-[10px] font-extrabold text-cyan-400 uppercase tracking-widest block mb-3">⭐ Pré-visualização do Perfil Comercial</span>
+          <div class="flex flex-col md:flex-row items-center md:items-start gap-5">
+            <div class="w-full md:w-40 h-40 rounded-xl bg-black/60 border border-cyan-500/30 overflow-hidden relative group shrink-0 flex items-center justify-center">
+              <span id="capaStatusBadge" class="hidden absolute top-2 left-2 px-2 py-0.5 rounded-full text-[10px] font-extrabold z-20 shadow-lg bg-amber-500/90 text-slate-950">⏳ Em Análise</span>
+              <div id="capaPreview" class="w-full h-full bg-cover bg-center">
+                <span id="capaPlaceholder" class="flex flex-col items-center justify-center h-full text-slate-500 text-xs text-center p-2">
+                  🖼️<br>Foto de Capa
+                </span>
+              </div>
+              <div class="absolute inset-0 bg-black/80 opacity-0 group-hover:opacity-100 flex flex-col items-center justify-center gap-2 transition p-2 z-10">
+                <button type="button" onclick="document.getElementById('fCapaInput').click()" class="px-3 py-1.5 bg-cyan-500 hover:bg-cyan-400 text-slate-950 text-[11px] font-bold rounded-lg transition">
+                  Alterar Foto
+                </button>
+                <button type="button" id="btnExcluirCapa" onclick="excluirFotoCapa()" class="px-3 py-1.5 bg-red-500/80 hover:bg-red-500 text-white text-[11px] font-bold rounded-lg transition hidden">
+                  Excluir Foto
+                </button>
+              </div>
+              <input type="file" id="fCapaInput" accept="image/*" class="hidden" onchange="openCropCapaModal(event)">
+            </div>
+            <div class="flex-1 space-y-2 w-full text-center md:text-left">
+              <h3 id="prevNome" class="text-xl font-extrabold text-white tracking-tight">Nome de Apresentação</h3>
+              <div id="prevTagline" class="text-xs font-semibold text-cyan-400">Categoria • Especialidade</div>
+              <div id="prevLocal" class="text-xs text-slate-400">📍 Cidade / UF</div>
+              <div class="pt-2">
+                <span id="prevCache" class="inline-block px-3 py-1.5 rounded-lg text-xs font-extrabold bg-emerald-500/10 text-emerald-400 border border-emerald-500/30">
+                  Cachê Base Estimado: Sob Consulta
+                </span>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <div class="bg-amber-500/10 border border-amber-500/30 rounded-xl px-4 py-3">
+          <p class="text-[11px] text-amber-300 leading-relaxed">
+            💡 <strong>Este bloco não é obrigatório agora.</strong> É bom já preencher, mas se preferir pode completar depois, no seu Perfil, assim que o cadastro for aprovado.
+          </p>
+        </div>
+
+        <div class="space-y-4">
+          <h2 class="text-sm font-bold text-cyan-400 border-b border-cyan-500/20 pb-2">🎤 Apresentação Comercial / Portfólio</h2>
+
+          <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
+            <div>
+              <label for="artNomeArtistico" class="block text-xs uppercase tracking-wider text-slate-300 font-semibold mb-1.5">Nome Comercial / Nome Fantasia</label>
+              <input type="text" id="artNomeArtistico" placeholder="Ex: Jac Maia ou Swing Tropical" class="w-full bg-slate-900/80 border border-cyan-500/30 rounded-xl px-4 py-2.5 text-sm text-white focus:border-cyan-400 focus:outline-none transition" oninput="updateVitrinePreview()">
+            </div>
+            <div>
+              <label for="artTagline" class="block text-xs uppercase tracking-wider text-slate-300 font-semibold mb-1.5">Tagline / Frase de Impacto</label>
+              <input type="text" id="artTagline" placeholder="Ex: Pop Lounge, Live Vocal & Sax Session" class="w-full bg-slate-900/80 border border-cyan-500/30 rounded-xl px-4 py-2.5 text-sm text-white focus:border-cyan-400 focus:outline-none transition" oninput="updateVitrinePreview()">
+            </div>
+          </div>
+
+          <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
+            <div>
+              <label for="artCacheBase" class="block text-xs uppercase tracking-wider text-slate-300 font-semibold mb-1.5">Valor Base Estimado (R$)</label>
+              <input type="number" id="artCacheBase" placeholder="Ex: 4500" class="w-full bg-slate-900/80 border border-cyan-500/30 rounded-xl px-4 py-2.5 text-sm text-white focus:border-cyan-400 focus:outline-none transition" oninput="updateVitrinePreview()">
+            </div>
+            <div>
+              <label for="artExperiencia" class="block text-xs uppercase tracking-wider text-slate-300 font-semibold mb-1.5">Histórico & Experiência Comercial</label>
+              <input type="text" id="artExperiencia" placeholder="Ex: 10 anos de carreira | +200 corporativos" class="w-full bg-slate-900/80 border border-cyan-500/30 rounded-xl px-4 py-2.5 text-sm text-white focus:border-cyan-400 focus:outline-none transition">
+            </div>
+          </div>
+
+          <div>
+            <label for="artBio" class="block text-xs uppercase tracking-wider text-slate-300 font-semibold mb-1.5">Proposta & Resumo Comercial</label>
+            <textarea id="artBio" rows="3" placeholder="Resumo da proposta, trajetória e formato do trabalho..." class="w-full bg-slate-900/80 border border-cyan-500/30 rounded-xl p-3 text-sm text-white focus:border-cyan-400 focus:outline-none transition"></textarea>
+          </div>
+        </div>
+
+        <div class="space-y-4">
+          <h2 class="text-sm font-bold text-cyan-400 border-b border-cyan-500/20 pb-2">📷 Portfólio de Fotos (WebP 80%) & Vídeos</h2>
+
+          <div>
+            <label class="block text-xs uppercase tracking-wider text-slate-300 font-semibold mb-1.5">Galeria de Fotos (Envio individual ou em lote)</label>
+            <p class="text-[11px] text-slate-400 mb-2">Envie até 6 fotos para a galeria (além da foto de capa e dos 2 vídeos abaixo).</p>
+            <div id="galeriaUploadArea" class="border-2 dashed border-cyan-500/30 bg-cyan-500/5 rounded-xl p-4 text-center cursor-pointer hover:bg-cyan-500/10 transition" onclick="document.getElementById('fGaleriaInput').click()">
+              <p class="text-xs text-cyan-300 font-semibold">➕ Selecionar Fotos para a Galeria</p>
+              <span id="galeriaContador" class="text-[11px] font-semibold mt-2 block text-slate-400"></span>
+              <input type="file" id="fGaleriaInput" accept="image/*" multiple class="hidden" onchange="handleMultipleGaleriaFiles(event)">
+            </div>
+            <div class="portfolio-grid mt-4" id="portfolioPreviewContainer"></div>
+          </div>
+
+          <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
+            <div>
+              <label for="artYoutube1" class="block text-xs uppercase tracking-wider text-slate-300 font-semibold mb-1.5">YouTube / Shorts / Vimeo (Vídeo Principal)</label>
+              <input type="url" id="artYoutube1" placeholder="https://www.youtube.com/watch?v=..." class="w-full bg-slate-900/80 border border-cyan-500/30 rounded-xl px-4 py-2.5 text-sm text-white focus:border-cyan-400 focus:outline-none transition">
+            </div>
+            <div>
+              <label for="artYoutube2" class="block text-xs uppercase tracking-wider text-slate-300 font-semibold mb-1.5">YouTube / Shorts / Vimeo (Vídeo Secundário)</label>
+              <input type="url" id="artYoutube2" placeholder="https://www.youtube.com/watch?v=..." class="w-full bg-slate-900/80 border border-cyan-500/30 rounded-xl px-4 py-2.5 text-sm text-white focus:border-cyan-400 focus:outline-none transition">
+            </div>
+          </div>
+        </div>
+
+        <div class="space-y-4">
+          <h2 class="text-sm font-bold text-amber-400 border-b border-amber-500/20 pb-2">📅 Estrutura Técnica & Bloqueio de Agenda</h2>
+
+          <div>
+            <label for="artRider" class="block text-xs uppercase tracking-wider text-slate-300 font-semibold mb-1.5">Rider / Estrutura Técnica Necessária</label>
+            <textarea id="artRider" rows="2" placeholder="Ex: Estrutura de som, pontos de energia, microfones, camarim..." class="w-full bg-slate-900/80 border border-amber-500/30 rounded-xl p-3 text-sm text-white focus:border-amber-400 focus:outline-none transition"></textarea>
+          </div>
+
+          <div class="bg-amber-500/5 border border-amber-500/20 rounded-xl p-4 space-y-3">
+            <span class="text-xs font-bold text-amber-400 uppercase tracking-wider block">⛔ Registrar Indisponibilidade por Período</span>
+            <div class="grid grid-cols-1 sm:grid-cols-3 gap-3">
+              <input type="date" id="blockStartDate" class="bg-slate-900 border border-amber-500/30 rounded-lg px-3 py-2 text-xs text-white">
+              <input type="date" id="blockEndDate" class="bg-slate-900 border border-amber-500/30 rounded-lg px-3 py-2 text-xs text-white">
+              <input type="text" id="blockReason" placeholder="Motivo (Ex: Compromisso, Férias)" class="bg-slate-900 border border-amber-500/30 rounded-lg px-3 py-2 text-xs text-white">
+            </div>
+            <button type="button" onclick="adicionarBloqueio()" class="px-3 py-2 bg-amber-500/20 text-amber-300 border border-amber-500/40 hover:bg-amber-500/30 rounded-lg text-xs font-bold transition cursor-pointer">+ Registrar Data Indisponível</button>
+
+            <div id="listaBloqueios" class="space-y-2 pt-2"></div>
+          </div>
+        </div>
+
+      </div>
+
       <!-- SENHAS -->
       <div class="grid grid-cols-1 sm:grid-cols-2 gap-4 pt-2 border-t border-white/10">
         <div>
@@ -252,16 +475,47 @@
       </a>
     </div>
   </div>
+
+  <!-- MODAL DE RECORTE (Cropper.js) -->
+  <div id="modal-crop" class="modal-crop-overlay">
+    <div class="glass-b2b-box p-6 rounded-2xl max-w-lg w-full">
+      <h3 id="modalCropTitle" class="text-sm font-bold text-white mb-2">Recortar & Compactar Foto (WebP 80%)</h3>
+      <div class="w-full h-64 bg-black rounded-xl overflow-hidden mb-4">
+        <img id="image-to-crop" src="" class="max-w-full">
+      </div>
+      <div class="flex gap-3 justify-end">
+        <button type="button" onclick="closeCropModal()" class="px-4 py-2 bg-white/10 text-white text-xs font-semibold rounded-lg">Cancelar</button>
+        <button type="button" onclick="cropAndCompress()" class="px-4 py-2 bg-cyan-500 text-slate-950 text-xs font-bold rounded-lg">Aplicar & Otimizar</button>
+      </div>
+    </div>
+  </div>
+
   <!-- SUPABASE -->
   <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
   <script src="partner-config.js"></script>
   <script src="../script/script.js" defer></script>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/cropperjs/1.5.13/cropper.min.js"></script>
   <script>
     (function () {
       'use strict';
 
       var avatarFile = null;
       var listaPerfisCompletos = [];
+
+      // ---- FICHA COMPLEMENTAR: estado local ----
+      var novaCapaBlob = null;
+      var capaRemovida = false;
+      var galeriaBlobs = [];
+      var periodosBloqueadosArray = [];
+      var cropper = null;
+      var cropMode = 'galeria';
+      var filaCropGaleria = [];
+
+      // LIMITE MÁXIMO DE FOTOS NA GALERIA (não conta a foto de capa, que é separada)
+      var MAX_FOTOS_GALERIA = 6;
+
+      var currentProgressVal = 0;
+      var progressInterval = null;
 
       /*
        * =====================================================
@@ -274,7 +528,7 @@
         try {
           var res = await sbPartner
             .from('perfis_parceiros')
-            .select('id, nome, pai_id, ordem')
+            .select('id, nome, pai_id, ordem, tem_ficha_complementar')
             .eq('ativo', true)
             .order('ordem', { ascending: true });
 
@@ -336,16 +590,406 @@
         return 'outro';
       }
 
+      // ---- FICHA COMPLEMENTAR: regra dinâmica de exibição (igual ao Perfil Unificado) ----
+      function verificarExibicaoFichaComplementar(perfilBaseId, especialidadeId) {
+        var containerFicha = document.getElementById('secaoArtistica');
+        if (!containerFicha) return;
+
+        var itemSelecionado = null;
+        if (especialidadeId) {
+          itemSelecionado = listaPerfisCompletos.find(function (p) { return p.id === especialidadeId; });
+        }
+        if (!itemSelecionado && perfilBaseId) {
+          itemSelecionado = listaPerfisCompletos.find(function (p) { return p.id === perfilBaseId; });
+        }
+
+        var deveExibir = false;
+
+        if (itemSelecionado) {
+          if (itemSelecionado.tem_ficha_complementar !== undefined && itemSelecionado.tem_ficha_complementar !== null) {
+            deveExibir = Boolean(itemSelecionado.tem_ficha_complementar);
+          } else {
+            // Fallback de segurança: se o nome contiver 'Artista', ativa a ficha
+            deveExibir = (itemSelecionado.nome || '').indexOf('Artista') > -1;
+            if (!deveExibir && itemSelecionado.pai_id) {
+              var pai = listaPerfisCompletos.find(function (p) { return p.id === itemSelecionado.pai_id; });
+              if (pai) deveExibir = (pai.nome || '').indexOf('Artista') > -1;
+            }
+          }
+        }
+
+        if (deveExibir) {
+          containerFicha.classList.add('active');
+          updateVitrinePreview();
+        } else {
+          containerFicha.classList.remove('active');
+        }
+      }
+
+      window.updateVitrinePreview = function () {
+        var nome = document.getElementById('artNomeArtistico').value.trim() || 'Nome de Apresentação';
+
+        var perfilBaseId = document.getElementById('fPerfil').value;
+        var espId = document.getElementById('fEspecialidade').value;
+        var objPai = listaPerfisCompletos.find(function (p) { return p.id === perfilBaseId; });
+        var objEsp = listaPerfisCompletos.find(function (p) { return p.id === espId; });
+
+        var catNome = objPai ? objPai.nome : 'Perfil';
+        var espNome = objEsp ? objEsp.nome : '';
+
+        var tag = document.getElementById('artTagline').value.trim() || (catNome + (espNome ? ' • ' + espNome : ''));
+        var cid = document.getElementById('fCidade').value.trim() || 'Cidade';
+        var uf = document.getElementById('fEstado').value.trim() || 'UF';
+        var cache = document.getElementById('artCacheBase').value;
+
+        document.getElementById('prevNome').textContent = nome;
+        document.getElementById('prevTagline').textContent = tag;
+        document.getElementById('prevLocal').textContent = '📍 ' + cid + ' / ' + uf.toUpperCase();
+
+        var txtCache = cache ? 'R$ ' + parseFloat(cache).toLocaleString('pt-BR', { minimumFractionDigits: 2 }) : 'Sob Consulta';
+        document.getElementById('prevCache').textContent = 'Cachê Base Estimado: ' + txtCache;
+      };
+
       document.addEventListener('DOMContentLoaded', function () {
         popularSelectPerfilBase();
         document.getElementById('fPerfil').addEventListener('change', function (e) {
-          atualizarSelectEspecialidades(e.target.value);
+          var perfilBaseId = e.target.value;
+          atualizarSelectEspecialidades(perfilBaseId);
+          verificarExibicaoFichaComplementar(perfilBaseId, null);
+        });
+        document.getElementById('fEspecialidade').addEventListener('change', function (e) {
+          var especialidadeId = e.target.value;
+          var perfilBaseId = document.getElementById('fPerfil').value;
+          verificarExibicaoFichaComplementar(perfilBaseId, especialidadeId);
         });
       });
 
       /*
        * =====================================================
-       * COMPACTAÇÃO DA FOTO
+       * OVERLAY DE PROGRESSO (transplantado do Perfil Unificado)
+       * =====================================================
+       */
+      function startLoadingProgress(initialTarget, msg) {
+        if (progressInterval) clearInterval(progressInterval);
+        currentProgressVal = 0;
+        renderProgressVisuals(0);
+        updateLoadingProgress(initialTarget, msg);
+      }
+
+      function updateLoadingProgress(targetPercent, msg) {
+        var overlay = document.getElementById('loadingOverlay');
+        var txtMsg = document.getElementById('loadingMessage');
+        if (msg && txtMsg) txtMsg.textContent = msg;
+
+        overlay.classList.add('active');
+
+        if (progressInterval) clearInterval(progressInterval);
+
+        progressInterval = setInterval(function () {
+          if (currentProgressVal < targetPercent) {
+            currentProgressVal++;
+            renderProgressVisuals(currentProgressVal);
+          } else if (currentProgressVal > targetPercent) {
+            currentProgressVal--;
+            renderProgressVisuals(currentProgressVal);
+          } else {
+            clearInterval(progressInterval);
+            progressInterval = null;
+          }
+        }, 12);
+      }
+
+      function renderProgressVisuals(val) {
+        var bar = document.getElementById('loadingProgressBar');
+        var txtPercent = document.getElementById('loadingPercentageText');
+        var pct = Math.min(Math.max(val, 0), 100);
+        if (bar) bar.style.width = pct + '%';
+        if (txtPercent) txtPercent.textContent = pct + '%';
+      }
+
+      function hideLoadingProgress() {
+        var overlay = document.getElementById('loadingOverlay');
+        overlay.classList.remove('active');
+        setTimeout(function () {
+          currentProgressVal = 0;
+          renderProgressVisuals(0);
+        }, 350);
+      }
+
+      /*
+       * =====================================================
+       * FICHA COMPLEMENTAR: capa, galeria, bloqueios, recorte
+       * (transplantado do Perfil Unificado)
+       * =====================================================
+       */
+      function exibirFotoCapaPreview(src, isPendente) {
+        var elPlaceholder = document.getElementById('capaPlaceholder');
+        if (elPlaceholder) elPlaceholder.style.display = 'none';
+
+        document.getElementById('capaPreview').style.backgroundImage = 'url("' + src + '")';
+        document.getElementById('btnExcluirCapa').classList.remove('hidden');
+
+        var badge = document.getElementById('capaStatusBadge');
+        if (badge) {
+          badge.classList.remove('hidden');
+          badge.textContent = '⏳ Em Análise';
+        }
+      }
+
+      window.excluirFotoCapa = function () {
+        novaCapaBlob = null;
+        capaRemovida = true;
+        document.getElementById('capaPreview').style.backgroundImage = 'none';
+        var elPlaceholder = document.getElementById('capaPlaceholder');
+        if (elPlaceholder) elPlaceholder.style.display = 'flex';
+        document.getElementById('btnExcluirCapa').classList.add('hidden');
+        document.getElementById('capaStatusBadge').classList.add('hidden');
+      };
+
+      // Aviso ao Telegram (mesmo endpoint usado no aviso de novo colaborador)
+      // quando o cadastro já sai com mídia pendente de aprovação da curadoria.
+      async function avisarTelegramMidiaPendente(dados) {
+        try {
+          var resposta = await fetch('https://www.432up.com/avisos-telegram', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({
+              event: 'midia_pendente_aprovacao',
+              parceiro_nome: dados.nome,
+              empresa: dados.empresa,
+              email: dados.email,
+              total_midias_pendentes: dados.totalPendentes
+            })
+          });
+          return resposta.ok;
+        } catch (erro) {
+          console.error('[432UP Partner → Telegram] Falha ao avisar mídia pendente:', erro);
+          return false;
+        }
+      }
+
+      // Retorna quantas fotos de galeria já estão "ocupando vaga" no momento
+      // (nesta tela de cadastro só existem as fotos novas ainda não salvas)
+      function contarFotosGaleriaAtuais() {
+        return galeriaBlobs.length;
+      }
+
+      function renderGaleriaCompleta() {
+        var container = document.getElementById('portfolioPreviewContainer');
+        container.innerHTML = '';
+
+        galeriaBlobs.forEach(function (item, idx) {
+          var div = document.createElement('div');
+          div.className = 'portfolio-item pendente';
+          div.innerHTML = '<span class="absolute top-1 left-1 px-1.5 py-0.5 rounded text-[9px] font-extrabold bg-amber-500/90 text-slate-950 z-10 shadow">⏳ Nova Foto</span>' +
+                          '<img src="' + item.previewUrl + '"><button type="button" class="btn-remove-img" onclick="removerFotoNova(' + idx + ')">×</button>';
+          container.appendChild(div);
+        });
+
+        // Feedback visual de vagas restantes no bloco de upload da galeria
+        var totalAtual = contarFotosGaleriaAtuais();
+        var restantes = Math.max(MAX_FOTOS_GALERIA - totalAtual, 0);
+        var elContador = document.getElementById('galeriaContador');
+        if (elContador) {
+          elContador.textContent = totalAtual + ' de ' + MAX_FOTOS_GALERIA + ' fotos utilizadas' + (restantes === 0 ? ' — limite atingido' : '');
+          elContador.className = 'text-[11px] font-semibold mt-2 block ' + (restantes === 0 ? 'text-amber-400' : 'text-slate-400');
+        }
+
+        // Desabilita visualmente a área de upload ao atingir o limite,
+        // e reabilita automaticamente assim que houver vaga novamente
+        var elArea = document.getElementById('galeriaUploadArea');
+        if (elArea) {
+          if (restantes === 0) {
+            elArea.classList.add('opacity-40', 'cursor-not-allowed', 'pointer-events-none');
+            elArea.classList.remove('cursor-pointer', 'hover:bg-cyan-500/10');
+          } else {
+            elArea.classList.remove('opacity-40', 'cursor-not-allowed', 'pointer-events-none');
+            elArea.classList.add('cursor-pointer', 'hover:bg-cyan-500/10');
+          }
+        }
+      }
+
+      window.removerFotoNova = function (idx) {
+        galeriaBlobs.splice(idx, 1);
+        renderGaleriaCompleta();
+      };
+
+      window.adicionarBloqueio = function () {
+        var ini = document.getElementById('blockStartDate').value;
+        var fim = document.getElementById('blockEndDate').value;
+        var mot = document.getElementById('blockReason').value || 'Indisponível';
+
+        if (!ini || !fim) return alert('Selecione as datas de início e fim.');
+
+        periodosBloqueadosArray.push({ inicio: ini, fim: fim, motivo: mot });
+        renderBloqueios();
+
+        document.getElementById('blockStartDate').value = '';
+        document.getElementById('blockEndDate').value = '';
+        document.getElementById('blockReason').value = '';
+      };
+
+      function renderBloqueios() {
+        var container = document.getElementById('listaBloqueios');
+        container.innerHTML = '';
+        periodosBloqueadosArray.forEach(function (item, idx) {
+          var div = document.createElement('div');
+          div.className = 'flex items-center justify-between bg-slate-900/60 p-2.5 rounded-lg border border-white/5 text-xs';
+          div.innerHTML = '<div><strong class="text-amber-400">De ' + item.inicio + ' até ' + item.fim + '</strong><span class="text-slate-400 block">Motivo: ' + item.motivo + '</span></div><button type="button" onclick="removerBloqueio(' + idx + ')" class="text-red-400 hover:text-red-300 font-bold px-2 py-1">Remover</button>';
+          container.appendChild(div);
+        });
+      }
+
+      window.removerBloqueio = function (idx) {
+        periodosBloqueadosArray.splice(idx, 1);
+        renderBloqueios();
+      };
+
+      /* ======================================================================
+         Envio em lote passa cada foto pelo modal de recorte (crop)
+         individualmente, uma de cada vez, em fila — igual ao fluxo de envio
+         de foto única. Sem compressão automática "às cegas" via canvas fixo.
+
+         Antes de enfileirar os arquivos selecionados para o crop, corta a
+         seleção respeitando o limite de MAX_FOTOS_GALERIA. Se o usuário
+         selecionar mais do que o espaço disponível, só as primeiras N
+         entram na fila e um aviso é exibido informando quantas foram
+         ignoradas. (transplantado do Perfil Unificado atualizado)
+         ====================================================================== */
+      window.handleMultipleGaleriaFiles = function (e) {
+        var files = e.target.files;
+        if (!files || files.length === 0) return;
+
+        var todosArquivos = Array.from(files);
+
+        var vagasDisponiveis = MAX_FOTOS_GALERIA - contarFotosGaleriaAtuais();
+
+        if (vagasDisponiveis <= 0) {
+          showAlert('Limite de ' + MAX_FOTOS_GALERIA + ' fotos na galeria já atingido. Remova alguma foto para adicionar novas.', 'error');
+          document.getElementById('fGaleriaInput').value = '';
+          return;
+        }
+
+        if (todosArquivos.length > vagasDisponiveis) {
+          var ignorados = todosArquivos.length - vagasDisponiveis;
+          todosArquivos = todosArquivos.slice(0, vagasDisponiveis);
+          showAlert('Você selecionou fotos além do limite. Apenas ' + vagasDisponiveis + ' foto(s) serão adicionadas — ' + ignorados + ' foto(s) foram ignoradas (limite: ' + MAX_FOTOS_GALERIA + ').', 'error');
+        }
+
+        // Monta a fila com os arquivos permitidos dentro do limite
+        filaCropGaleria = todosArquivos;
+
+        // Dispara o primeiro crop da fila
+        processarProximoDaFilaGaleria();
+      };
+
+      function processarProximoDaFilaGaleria() {
+        if (filaCropGaleria.length === 0) {
+          // Fila concluída: limpa o input de arquivo
+          document.getElementById('fGaleriaInput').value = '';
+          return;
+        }
+
+        var proximoArquivo = filaCropGaleria.shift();
+        openCropGaleriaModal(proximoArquivo);
+      }
+
+      function openCropGaleriaModal(file) {
+        cropMode = 'galeria';
+        var restantes = filaCropGaleria.length;
+        var tituloBase = 'Recortar Foto da Galeria (WebP 80%)';
+        document.getElementById('modalCropTitle').textContent = restantes > 0
+          ? tituloBase + ' — restam ' + (restantes + 1) + ' foto(s)'
+          : tituloBase;
+        initCropImage(file, 4 / 3);
+      }
+
+      window.openCropCapaModal = function (e) {
+        cropMode = 'capa';
+        document.getElementById('modalCropTitle').textContent = 'Recortar Foto Principal (WebP 80%)';
+        initCropImage(e.target.files[0], 1 / 1);
+      };
+
+      function initCropImage(file, ratio) {
+        if (!file) return;
+        var reader = new FileReader();
+        reader.onload = function (evt) {
+          var img = document.getElementById('image-to-crop');
+          img.src = evt.target.result;
+          document.getElementById('modal-crop').classList.add('active');
+          if (cropper) cropper.destroy();
+          cropper = new Cropper(img, { aspectRatio: ratio, viewMode: 1 });
+        };
+        reader.readAsDataURL(file);
+      }
+
+      window.closeCropModal = function () {
+        document.getElementById('modal-crop').classList.remove('active');
+        if (cropper) cropper.destroy();
+
+        if (cropMode === 'galeria') {
+          // Se o usuário cancelar no meio do lote, segue para a próxima
+          // foto da fila em vez de abortar tudo silenciosamente.
+          processarProximoDaFilaGaleria();
+        } else {
+          document.getElementById('fCapaInput').value = '';
+        }
+      };
+
+      window.cropAndCompress = function () {
+        if (!cropper) return;
+
+        // Checagem de segurança no momento da confirmação do crop, cobrindo
+        // qualquer forma de a fila crescer além do limite entre a seleção
+        // e o crop.
+        if (cropMode === 'galeria' && contarFotosGaleriaAtuais() >= MAX_FOTOS_GALERIA) {
+          showAlert('Limite de ' + MAX_FOTOS_GALERIA + ' fotos na galeria atingido. Esta foto não foi adicionada.', 'error');
+          document.getElementById('modal-crop').classList.remove('active');
+          if (cropper) cropper.destroy();
+          filaCropGaleria = [];
+          document.getElementById('fGaleriaInput').value = '';
+          return;
+        }
+
+        var targetWidth = cropMode === 'capa' ? 600 : 800;
+        var targetHeight = cropMode === 'capa' ? 600 : 600;
+
+        var canvas = cropper.getCroppedCanvas({ width: targetWidth, height: targetHeight });
+        var webpBase64 = canvas.toDataURL('image/webp', 0.8);
+
+        if (cropMode === 'capa') {
+          capaRemovida = false;
+          exibirFotoCapaPreview(webpBase64, true);
+
+          canvas.toBlob(function (blob) {
+            novaCapaBlob = blob;
+          }, 'image/webp', 0.8);
+
+          document.getElementById('modal-crop').classList.remove('active');
+          if (cropper) cropper.destroy();
+          document.getElementById('fCapaInput').value = '';
+
+        } else {
+          canvas.toBlob(function (blob) {
+            galeriaBlobs.push({
+              blob: blob,
+              previewUrl: webpBase64
+            });
+            renderGaleriaCompleta();
+
+            document.getElementById('modal-crop').classList.remove('active');
+            if (cropper) cropper.destroy();
+
+            // Segue automaticamente para a próxima foto do lote, se houver
+            processarProximoDaFilaGaleria();
+          }, 'image/webp', 0.8);
+          return;
+        }
+      };
+
+      /*
+       * =====================================================
+       * COMPACTAÇÃO DA FOTO DE PERFIL (AVATAR)
        * =====================================================
        */
       async function compactarAvatar(file) {
@@ -562,9 +1206,17 @@
           return;
         }
 
+        // Revalidação final do limite de fotos da galeria, caso algum
+        // estado inconsistente tenha driblado as checagens anteriores.
+        if (contarFotosGaleriaAtuais() > MAX_FOTOS_GALERIA) {
+          showAlert('A galeria excede o limite de ' + MAX_FOTOS_GALERIA + ' fotos. Remova o excedente antes de enviar.', 'error');
+          return;
+        }
+
         var btn = document.getElementById('btnEnviar');
         btn.classList.add('btn-loading');
         btn.textContent = 'Enviando...';
+        startLoadingProgress(15, 'Criando seu acesso...');
 
         try {
           var authRes = await sbPartner.auth.signUp({
@@ -596,19 +1248,134 @@
             showAlert(msg, 'error');
             btn.classList.remove('btn-loading');
             btn.textContent = 'Enviar Solicitação B2B';
+            hideLoadingProgress();
             return;
           }
 
           var userId = authRes.data.user ? authRes.data.user.id : null;
 
+          // ---- FICHA COMPLEMENTAR: monta o payload extra (só o que foi de fato preenchido) ----
+          var payloadExtra = {
+            instagram: instagram,
+            perfil_parceiro_id: perfilParceiroId
+          };
+
+          var cidadeVal = document.getElementById('fCidade').value.trim();
+          var estadoVal = document.getElementById('fEstado').value.trim().toUpperCase();
+          var artNomeArtisticoVal = document.getElementById('artNomeArtistico').value.trim();
+          var artTaglineVal = document.getElementById('artTagline').value.trim();
+          var artCacheBaseVal = document.getElementById('artCacheBase').value;
+          var artExperienciaVal = document.getElementById('artExperiencia').value.trim();
+          var artBioVal = document.getElementById('artBio').value.trim();
+          var artRiderVal = document.getElementById('artRider').value.trim();
+
+          if (cidadeVal) payloadExtra.cidade = cidadeVal;
+          if (estadoVal) payloadExtra.estado = estadoVal;
+          if (artNomeArtisticoVal) payloadExtra.nome_artistico = artNomeArtisticoVal;
+          if (artTaglineVal) payloadExtra.tagline_artistica = artTaglineVal;
+          if (artCacheBaseVal !== '' && !isNaN(artCacheBaseVal)) payloadExtra.cache_base = parseFloat(artCacheBaseVal);
+          if (artExperienciaVal) payloadExtra.experiencia_comercial = artExperienciaVal;
+          if (artBioVal) payloadExtra.bio_artistica = artBioVal;
+          if (artRiderVal) payloadExtra.rider_tecnico = artRiderVal;
+          if (periodosBloqueadosArray.length > 0) payloadExtra.periodos_bloqueados = periodosBloqueadosArray;
+
+          // Vídeos, capa e galeria entram como mídia pendente de moderação, igual ao Perfil Unificado
+          var novasMidiasPendentes = [];
+
+          var video1Input = document.getElementById('artYoutube1').value.trim();
+          var video2Input = document.getElementById('artYoutube2').value.trim();
+
+          if (video1Input) {
+            novasMidiasPendentes.push({
+              id: 'video_1_' + Date.now(),
+              url: video1Input,
+              tipo: 'video',
+              campo_destino: 'youtube_1',
+              criado_em: new Date().toISOString()
+            });
+          }
+          if (video2Input) {
+            novasMidiasPendentes.push({
+              id: 'video_2_' + Date.now(),
+              url: video2Input,
+              tipo: 'video',
+              campo_destino: 'youtube_2',
+              criado_em: new Date().toISOString()
+            });
+          }
+
           if (userId) {
+            updateLoadingProgress(45, 'Enviando portfólio...');
+
+            // CAPA
+            if (novaCapaBlob && !capaRemovida) {
+              try {
+                var capaPath = userId + '/capa_vitrine_' + Date.now() + '.webp';
+                var upResCapa = await sbPartner.storage.from(PARTNER_CFG.AVATAR_BUCKET).upload(capaPath, novaCapaBlob, { upsert: true, contentType: 'image/webp' });
+                if (!upResCapa.error) {
+                  var publicUrlCapa = sbPartner.storage.from(PARTNER_CFG.AVATAR_BUCKET).getPublicUrl(capaPath);
+                  if (publicUrlCapa && publicUrlCapa.data) {
+                    novasMidiasPendentes.push({
+                      id: 'capa_' + Date.now(),
+                      url: publicUrlCapa.data.publicUrl,
+                      tipo: 'capa',
+                      criado_em: new Date().toISOString()
+                    });
+                  }
+                }
+              } catch (errCapa) {
+                console.warn('[432UP Partner] Upload de capa falhou:', errCapa);
+              }
+            }
+
+            // GALERIA
+            if (galeriaBlobs.length > 0) {
+              try {
+                var totalG = galeriaBlobs.length;
+                var concluidosG = 0;
+
+                var uploadPromises = galeriaBlobs.map(function (item, idx) {
+                  var gPath = userId + '/galeria_' + Date.now() + '_' + idx + '.webp';
+                  return sbPartner.storage
+                    .from(PARTNER_CFG.AVATAR_BUCKET)
+                    .upload(gPath, item.blob, { upsert: true, contentType: 'image/webp' })
+                    .then(function (res) {
+                      concluidosG++;
+                      var pVal = 45 + Math.round((concluidosG / totalG) * 30);
+                      updateLoadingProgress(pVal, 'Enviada foto ' + concluidosG + ' de ' + totalG + '...');
+
+                      if (res.error) return null;
+                      var urlData = sbPartner.storage.from(PARTNER_CFG.AVATAR_BUCKET).getPublicUrl(gPath);
+                      return (urlData && urlData.data) ? urlData.data.publicUrl : null;
+                    });
+                });
+
+                var resultados = await Promise.all(uploadPromises);
+                resultados.forEach(function (url) {
+                  if (url) {
+                    novasMidiasPendentes.push({
+                      id: 'galeria_' + Date.now() + '_' + Math.random().toString(36).substr(2, 5),
+                      url: url,
+                      tipo: 'galeria',
+                      criado_em: new Date().toISOString()
+                    });
+                  }
+                });
+              } catch (errGaleria) {
+                console.warn('[432UP Partner] Upload de galeria falhou:', errGaleria);
+              }
+            }
+
+            if (novasMidiasPendentes.length > 0) {
+              payloadExtra.midias_pendentes = novasMidiasPendentes;
+            }
+
+            updateLoadingProgress(80, 'Sincronizando cadastro...');
+
             try {
               await sbPartner
                 .from('parceiros')
-                .update({
-                  instagram: instagram,
-                  perfil_parceiro_id: perfilParceiroId
-                })
+                .update(payloadExtra)
                 .eq('user_id', userId);
             } catch (errParceiro) {
               console.warn('[432UP Partner] Falha ao atualizar dados de parceiro:', errParceiro);
@@ -635,6 +1402,8 @@
             }
           }
 
+          updateLoadingProgress(95, 'Quase lá...');
+
           await avisarTelegramNovoParceiro({
             nome: nome,
             empresa: empresa,
@@ -644,12 +1413,23 @@
             instagram: instagram
           });
 
+          if (novasMidiasPendentes.length > 0) {
+            avisarTelegramMidiaPendente({
+              nome: nome,
+              empresa: empresa,
+              email: email,
+              totalPendentes: novasMidiasPendentes.length
+            });
+          }
+
+          updateLoadingProgress(100, 'Concluído!');
           window.location.href = 'pendente.html';
         } catch (err) {
           console.error('[432UP Partner] Erro inesperado no cadastro:', err);
           showAlert('Não foi possível concluir o cadastro. Tente novamente.', 'error');
           btn.classList.remove('btn-loading');
           btn.textContent = 'Enviar Solicitação B2B';
+          hideLoadingProgress();
         }
       });
     })();

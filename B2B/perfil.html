@@ -419,8 +419,10 @@
 
             <div>
               <label class="block text-xs uppercase tracking-wider text-slate-300 font-semibold mb-1.5">Galeria de Fotos (Envio individual ou em lote)</label>
-              <div class="border-2 dashed border-cyan-500/30 bg-cyan-500/5 rounded-xl p-4 text-center cursor-pointer hover:bg-cyan-500/10 transition" onclick="document.getElementById('fGaleriaInput').click()">
+              <p class="text-[11px] text-slate-400 mb-2">Envie até 6 fotos para a galeria (além da foto de capa e dos 2 vídeos abaixo).</p>
+              <div id="galeriaUploadArea" class="border-2 dashed border-cyan-500/30 bg-cyan-500/5 rounded-xl p-4 text-center cursor-pointer hover:bg-cyan-500/10 transition" onclick="document.getElementById('fGaleriaInput').click()">
                 <p class="text-xs text-cyan-300 font-semibold">➕ Selecionar Fotos para a Galeria</p>
+                <span id="galeriaContador" class="text-[11px] font-semibold mt-2 block text-slate-400"></span>
                 <input type="file" id="fGaleriaInput" accept="image/*" multiple class="hidden" onchange="handleMultipleGaleriaFiles(event)">
               </div>
               <div class="portfolio-grid mt-4" id="portfolioPreviewContainer"></div>
@@ -539,6 +541,11 @@
       var cropper = null;
       var cropMode = 'galeria';
       var alertTimer = null;
+
+      var filaCropGaleria = [];
+
+      // LIMITE MÁXIMO DE FOTOS NA GALERIA (não conta a foto de capa, que é separada)
+      var MAX_FOTOS_GALERIA = 6;
 
       var currentProgressVal = 0;
       var progressInterval = null;
@@ -849,6 +856,38 @@
         }, 3500);
       }
 
+      // Aviso ao Telegram (mesmo endpoint usado no cadastro de novo parceiro)
+      // quando há mídia nova pendente de aprovação da curadoria.
+      // O backend ainda não trata este 'event' — combinado com a Carol que
+      // o endpoint /avisos-telegram vai ganhar esse tratamento depois.
+      async function avisarTelegramMidiaPendente(dados) {
+        try {
+          var resposta = await fetch('https://www.432up.com/avisos-telegram', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({
+              event: 'midia_pendente_aprovacao',
+              parceiro_nome: dados.nome,
+              empresa: dados.empresa,
+              email: dados.email,
+              total_midias_pendentes: dados.totalPendentes
+            })
+          });
+          return resposta.ok;
+        } catch (erro) {
+          console.error('[432UP Partner → Telegram] Falha ao avisar mídia pendente:', erro);
+          return false;
+        }
+      }
+
+      // Retorna quantas fotos de galeria já estão "ocupando vaga" no momento
+      // (aprovadas + pendentes de moderação + novas ainda não salvas)
+      function contarFotosGaleriaAtuais() {
+        return galeriaUrlsExistentes.length + midiasPendentesExistentes.filter(function(m) {
+          return m.tipo === 'galeria' || !m.tipo;
+        }).length + galeriaBlobs.length;
+      }
+
       // INICIALIZAÇÃO DA PÁGINA COM CARREGAMENTO PARALELO
       Promise.all([
         partnerRequireAuth(),
@@ -1048,6 +1087,28 @@
                           '<img src="' + item.previewUrl + '"><button type="button" class="btn-remove-img" onclick="removerFotoNova(' + idx + ')">×</button>';
           container.appendChild(div);
         });
+
+        // Feedback visual de vagas restantes no bloco de upload da galeria
+        var totalAtual = contarFotosGaleriaAtuais();
+        var restantes = Math.max(MAX_FOTOS_GALERIA - totalAtual, 0);
+        var elContador = document.getElementById('galeriaContador');
+        if (elContador) {
+          elContador.textContent = totalAtual + ' de ' + MAX_FOTOS_GALERIA + ' fotos utilizadas' + (restantes === 0 ? ' — limite atingido' : '');
+          elContador.className = 'text-[11px] font-semibold mt-2 block ' + (restantes === 0 ? 'text-amber-400' : 'text-slate-400');
+        }
+
+        // Desabilita visualmente a área de upload ao atingir o limite,
+        // e reabilita automaticamente assim que houver vaga novamente
+        var elArea = document.getElementById('galeriaUploadArea');
+        if (elArea) {
+          if (restantes === 0) {
+            elArea.classList.add('opacity-40', 'cursor-not-allowed', 'pointer-events-none');
+            elArea.classList.remove('cursor-pointer', 'hover:bg-cyan-500/10');
+          } else {
+            elArea.classList.remove('opacity-40', 'cursor-not-allowed', 'pointer-events-none');
+            elArea.classList.add('cursor-pointer', 'hover:bg-cyan-500/10');
+          }
+        }
       }
 
       window.removerFotoSalva = function(idx) {
@@ -1096,55 +1157,64 @@
         renderBloqueios();
       };
 
+      /* ======================================================================
+         MELHORIA CIRÚRGICA: envio em lote agora passa cada foto pelo modal
+         de recorte (crop) individualmente, uma de cada vez, em fila —
+         igual ao fluxo de envio de foto única. Sem compressão automática
+         "às cegas" via canvas fixo 800x600.
+
+         MELHORIA CIRÚRGICA (limite de fotos): antes de enfileirar os
+         arquivos selecionados para o crop, corta a seleção respeitando
+         o limite de MAX_FOTOS_GALERIA (contando aprovadas + pendentes +
+         novas ainda não salvas). Se o usuário selecionar mais do que o
+         espaço disponível, só as primeiras N entram na fila e um aviso
+         é exibido informando quantas foram ignoradas.
+         ====================================================================== */
       window.handleMultipleGaleriaFiles = function(e) {
         var files = e.target.files;
         if (!files || files.length === 0) return;
 
-        if (files.length === 1) {
-          openCropGaleriaModal(files[0]);
-        } else {
-          startLoadingProgress(10, 'Otimizando pacote de imagens...');
-          var loaded = 0;
-          var total = files.length;
+        var todosArquivos = Array.from(files);
 
-          Array.from(files).forEach(function(file) {
-            var reader = new FileReader();
-            reader.onload = function(evt) {
-              var img = new Image();
-              img.onload = function() {
-                var canvas = document.createElement('canvas');
-                var ctx = canvas.getContext('2d');
-                canvas.width = 800;
-                canvas.height = 600;
-                ctx.drawImage(img, 0, 0, 800, 600);
-                
-                canvas.toBlob(function(blob) {
-                  galeriaBlobs.push({
-                    blob: blob,
-                    previewUrl: canvas.toDataURL('image/webp', 0.8)
-                  });
-                  loaded++;
-                  var currentProgress = Math.round((loaded / total) * 90);
-                  updateLoadingProgress(currentProgress, 'Otimizado ' + loaded + ' de ' + total + ' imagens...');
+        var vagasDisponiveis = MAX_FOTOS_GALERIA - contarFotosGaleriaAtuais();
 
-                  if (loaded === total) {
-                    renderGaleriaCompleta();
-                    updateLoadingProgress(100, 'Imagens prontas!');
-                    setTimeout(hideLoadingProgress, 500);
-                    document.getElementById('fGaleriaInput').value = '';
-                  }
-                }, 'image/webp', 0.8);
-              };
-              img.src = evt.target.result;
-            };
-            reader.readAsDataURL(file);
-          });
+        if (vagasDisponiveis <= 0) {
+          showAlert('Limite de ' + MAX_FOTOS_GALERIA + ' fotos na galeria já atingido. Remova alguma foto para adicionar novas.', 'error');
+          document.getElementById('fGaleriaInput').value = '';
+          return;
         }
+
+        if (todosArquivos.length > vagasDisponiveis) {
+          var ignorados = todosArquivos.length - vagasDisponiveis;
+          todosArquivos = todosArquivos.slice(0, vagasDisponiveis);
+          showAlert('Você selecionou fotos além do limite. Apenas ' + vagasDisponiveis + ' foto(s) serão adicionadas — ' + ignorados + ' foto(s) foram ignoradas (limite: ' + MAX_FOTOS_GALERIA + ').', 'error');
+        }
+
+        // Monta a fila com os arquivos permitidos dentro do limite
+        filaCropGaleria = todosArquivos;
+
+        // Dispara o primeiro crop da fila
+        processarProximoDaFilaGaleria();
       };
+
+      function processarProximoDaFilaGaleria() {
+        if (filaCropGaleria.length === 0) {
+          // Fila concluída: limpa o input de arquivo
+          document.getElementById('fGaleriaInput').value = '';
+          return;
+        }
+
+        var proximoArquivo = filaCropGaleria.shift();
+        openCropGaleriaModal(proximoArquivo);
+      }
 
       function openCropGaleriaModal(file) {
         cropMode = 'galeria';
-        document.getElementById('modalCropTitle').textContent = 'Recortar Foto da Galeria (WebP 80%)';
+        var restantes = filaCropGaleria.length;
+        var tituloBase = 'Recortar Foto da Galeria (WebP 80%)';
+        document.getElementById('modalCropTitle').textContent = restantes > 0
+          ? tituloBase + ' — restam ' + (restantes + 1) + ' foto(s)'
+          : tituloBase;
         initCropImage(file, 4/3);
       }
 
@@ -1170,12 +1240,30 @@
       window.closeCropModal = function() {
         document.getElementById('modal-crop').classList.remove('active');
         if (cropper) cropper.destroy();
-        document.getElementById('fGaleriaInput').value = '';
-        document.getElementById('fCapaInput').value = '';
+
+        if (cropMode === 'galeria') {
+          // Se o usuário cancelar no meio do lote, segue para a próxima
+          // foto da fila em vez de abortar tudo silenciosamente.
+          processarProximoDaFilaGaleria();
+        } else {
+          document.getElementById('fCapaInput').value = '';
+        }
       };
 
       window.cropAndCompress = function() {
         if (!cropper) return;
+
+        // MELHORIA CIRÚRGICA (limite de fotos): checagem de segurança
+        // no momento da confirmação do crop, cobrindo qualquer forma
+        // de a fila crescer além do limite entre a seleção e o crop.
+        if (cropMode === 'galeria' && contarFotosGaleriaAtuais() >= MAX_FOTOS_GALERIA) {
+          showAlert('Limite de ' + MAX_FOTOS_GALERIA + ' fotos na galeria atingido. Esta foto não foi adicionada.', 'error');
+          document.getElementById('modal-crop').classList.remove('active');
+          if (cropper) cropper.destroy();
+          filaCropGaleria = [];
+          document.getElementById('fGaleriaInput').value = '';
+          return;
+        }
         
         var targetWidth = cropMode === 'capa' ? 600 : 800;
         var targetHeight = cropMode === 'capa' ? 600 : 600;
@@ -1191,6 +1279,10 @@
             novaCapaBlob = blob;
           }, 'image/webp', 0.8);
 
+          document.getElementById('modal-crop').classList.remove('active');
+          if (cropper) cropper.destroy();
+          document.getElementById('fCapaInput').value = '';
+
         } else {
           canvas.toBlob(function(blob) {
             galeriaBlobs.push({
@@ -1198,10 +1290,15 @@
               previewUrl: webpBase64
             });
             renderGaleriaCompleta();
-          }, 'image/webp', 0.8);
-        }
 
-        closeCropModal();
+            document.getElementById('modal-crop').classList.remove('active');
+            if (cropper) cropper.destroy();
+
+            // Segue automaticamente para a próxima foto do lote, se houver
+            processarProximoDaFilaGaleria();
+          }, 'image/webp', 0.8);
+          return;
+        }
       };
 
       document.getElementById('fAvatar').addEventListener('change', function (e) {
@@ -1272,6 +1369,14 @@
 
         if (!perfilBaseId) {
           showAlert('Por favor, selecione um Perfil de Atuação Base.', 'error');
+          return;
+        }
+
+        // MELHORIA CIRÚRGICA (limite de fotos): revalidação final no submit,
+        // caso algum estado inconsistente tenha driblado as checagens
+        // anteriores (ex.: manipulação manual do estado em memória).
+        if (contarFotosGaleriaAtuais() > MAX_FOTOS_GALERIA) {
+          showAlert('A galeria excede o limite de ' + MAX_FOTOS_GALERIA + ' fotos. Remova o excedente antes de salvar.', 'error');
           return;
         }
 
@@ -1438,6 +1543,15 @@
               : 'Perfil Unificado atualizado com sucesso!';
 
             showAlert(msgSucesso, 'success');
+
+            if (houveEnvioMidia) {
+              avisarTelegramMidiaPendente({
+                nome: parceiroAtual.nome_completo || novoNome,
+                empresa: parceiroAtual.empresa || '',
+                email: parceiroAtual.email || '',
+                totalPendentes: novasMidiasPendentes.length
+              });
+            }
             
             midiasPendentesExistentes = payload.midias_pendentes || [];
             galeriaBlobs = [];
