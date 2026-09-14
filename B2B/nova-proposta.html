@@ -327,6 +327,70 @@
     #transporteStatus.loading { color: #00F0FF; }
     #transporteStatus.err { color: #f87171; }
     #transporteStatus.ok { color: #4ade80; }
+
+    /* ---- Desconto comercial: inputs alinhados (mesma altura / base) ---- */
+    #boxDesconto .grid.grid-cols-2 {
+      align-items: end;
+    }
+    #boxDesconto .grid.grid-cols-2 > div {
+      display: flex;
+      flex-direction: column;
+      min-width: 0;
+    }
+    #boxDesconto label {
+      min-height: 1.25rem;
+      line-height: 1.25;
+      white-space: nowrap;
+      overflow: hidden;
+      text-overflow: ellipsis;
+    }
+    #fDescontoPct,
+    #fTotalDesejado {
+      height: 38px !important;
+      min-height: 38px !important;
+      box-sizing: border-box;
+      line-height: 1.2;
+    }
+    #fTotalDesejado {
+      font-variant-numeric: tabular-nums;
+      letter-spacing: -0.01em;
+    }
+
+    /* ---- Modal Cadastro Cliente: acima do header/menu, sem ficar esmagado ---- */
+    #modalCliente {
+      z-index: 99999 !important;
+      position: fixed !important;
+      inset: 0 !important;
+      display: none;
+      align-items: center;
+      justify-content: center;
+      padding: max(12px, env(safe-area-inset-top, 0px)) 12px max(12px, env(safe-area-inset-bottom, 0px));
+      overflow-y: auto;
+      -webkit-overflow-scrolling: touch;
+      overscroll-behavior: contain;
+      background: rgba(0, 0, 0, 0.72) !important;
+      pointer-events: auto !important;
+    }
+    #modalCliente.flex {
+      display: flex !important;
+    }
+    #modalCliente > .glass-b2b {
+      position: relative;
+      z-index: 1;
+      width: 100%;
+      max-width: 32rem; /* max-w-lg */
+      max-height: min(90vh, calc(100dvh - 24px));
+      margin: auto;
+      overflow-y: auto;
+      -webkit-overflow-scrolling: touch;
+      flex-shrink: 0;
+      pointer-events: auto !important;
+    }
+    /* Garante que o header injetado nunca cubra o modal */
+    #calc-header,
+    #mobile-menu {
+      z-index: 100 !important;
+    }
   </style>
 </head>
 <body class="h-full text-slate-200 font-sans antialiased bg-[#06080c] overflow-x-hidden">
@@ -602,11 +666,11 @@
   </div>
 
   <!-- MODAL — CADASTRO DE CLIENTE (reutiliza public.co_clientes / mesmas regras do cadastro existente) -->
-  <div id="modalCliente" class="hidden fixed inset-0 z-[999] items-center justify-center p-4" style="background: rgba(0,0,0,0.72);">
-    <div class="glass-b2b w-full max-w-lg rounded-2xl p-6 space-y-4 max-h-[90vh] overflow-y-auto">
-      <div class="flex items-center justify-between border-b border-white/10 pb-3">
+  <div id="modalCliente" class="hidden" aria-modal="true" role="dialog">
+    <div class="glass-b2b w-full max-w-lg rounded-2xl p-6 space-y-4">
+      <div class="flex items-center justify-between border-b border-white/10 pb-3 shrink-0">
         <h3 id="mcTitulo" class="text-sm font-bold text-white">Cadastrar Cliente</h3>
-        <button type="button" id="btnFecharModalCliente" class="text-slate-400 hover:text-white text-lg leading-none cursor-pointer">✕</button>
+        <button type="button" id="btnFecharModalCliente" class="text-slate-400 hover:text-white text-lg leading-none cursor-pointer p-1 -mr-1 rounded-lg hover:bg-white/10" aria-label="Fechar">✕</button>
       </div>
 
       <div class="flex justify-center">
@@ -618,6 +682,18 @@
 
       <form id="formCadastroCliente" class="space-y-3">
         <input type="hidden" id="mcTipoPessoa" value="PF">
+
+        <!-- COLAR DADOS DO WHATSAPP — preenchimento automático dos campos existentes -->
+        <div class="p-3 rounded-xl bg-slate-900/60 border border-cyan-500/25 space-y-2">
+          <label for="mcWhatsappPaste" class="block text-xs uppercase tracking-wider text-cyan-300 font-semibold">Colar dados do WhatsApp — preenchimento automático</label>
+          <textarea id="mcWhatsappPaste" rows="3" placeholder="Cole aqui a mensagem recebida pelo WhatsApp (nome, telefone, CPF/CNPJ, e-mail, endereço… mesmo bagunçado)" class="w-full bg-slate-900/80 border border-white/20 rounded-xl px-3 py-2 text-sm text-white placeholder-slate-500 focus:border-cyan-400 focus:ring-1 focus:ring-cyan-400 focus:outline-none transition resize-y min-h-[72px]"></textarea>
+          <div class="flex items-center gap-2 flex-wrap">
+            <button type="button" id="btnInterpretarWhatsapp" class="px-3 py-1.5 rounded-lg bg-cyan-500/20 hover:bg-cyan-500/30 text-cyan-300 border border-cyan-500/40 text-[11px] font-bold uppercase tracking-wide cursor-pointer transition">Interpretar e Preencher</button>
+            <button type="button" id="btnLimparWhatsappPaste" class="px-2.5 py-1.5 rounded-lg bg-white/5 hover:bg-white/10 text-slate-400 border border-white/10 text-[11px] font-semibold cursor-pointer transition">Limpar</button>
+            <span id="mcWhatsappStatus" class="text-[11px] text-slate-400 flex-1 min-w-0"></span>
+          </div>
+          <p class="text-[10px] text-slate-500 leading-snug">Opcional. Os campos abaixo continuam editáveis manualmente. Após interpretar, confira os dados antes de salvar.</p>
+        </div>
 
         <div>
           <label id="mcLabelNome" for="mcNomeRazao" class="block text-xs uppercase tracking-wider text-slate-300 font-semibold mb-1.5">Nome Completo *</label>
@@ -1870,6 +1946,7 @@ updateUI();
         ultimoCepConsultadoModal = null;
         var mcCepStatusEl = document.getElementById('mcCepStatus');
         if (mcCepStatusEl) { mcCepStatusEl.textContent = ''; mcCepStatusEl.className = 'mt-1 text-[11px]'; }
+        mcSetWhatsappStatus('', '');
         var mcTitulo = document.getElementById('mcTitulo');
         if (mcTitulo) mcTitulo.textContent = 'Cadastrar Cliente';
         var mcBtnSalvarEl = document.getElementById('mcBtnSalvar');
@@ -1892,6 +1969,7 @@ updateUI();
         ultimoCepConsultadoModal = null;
         var mcCepStatusEl = document.getElementById('mcCepStatus');
         if (mcCepStatusEl) { mcCepStatusEl.textContent = ''; mcCepStatusEl.className = 'mt-1 text-[11px]'; }
+        mcSetWhatsappStatus('', '');
 
         try {
           var res = await sbPartner
@@ -2103,6 +2181,292 @@ updateUI();
         }
       }
 
+      /* ===================== WHATSAPP PASTE → PREENCHER FORMULÁRIO =====================
+         Interpreta texto colado (mesmo bagunçado) e alimenta os inputs existentes do modal.
+         Não substitui o cadastro manual: o usuário pode ignorar e digitar campo a campo. */
+
+      function mcSetWhatsappStatus(msg, tipo) {
+        var el = document.getElementById('mcWhatsappStatus');
+        if (!el) return;
+        el.textContent = msg || '';
+        el.className = 'text-[11px] flex-1 min-w-0 ' +
+          (tipo === 'ok' ? 'text-emerald-400' : tipo === 'err' ? 'text-red-400' : 'text-slate-400');
+      }
+
+      function extrairRotuloValor(texto, rotulos) {
+        // Procura linhas no estilo "Nome: João" / "Nome - João" / "Nome João"
+        var linhas = texto.split(/\r?\n/);
+        var i, j, linha, lower, rotulo, idx, val;
+        for (i = 0; i < linhas.length; i++) {
+          linha = linhas[i].replace(/^\s*[-•*]\s*/, '').trim();
+          if (!linha) continue;
+          lower = linha.toLowerCase();
+          for (j = 0; j < rotulos.length; j++) {
+            rotulo = rotulos[j].toLowerCase();
+            if (lower.indexOf(rotulo) === 0) {
+              val = linha.slice(rotulos[j].length).replace(/^[\s:.\-–—]+/, '').trim();
+              if (val) return val;
+            }
+            // "rotulo: valor" em qualquer posição da linha
+            idx = lower.indexOf(rotulo);
+            if (idx >= 0) {
+              var apos = linha.slice(idx + rotulos[j].length).replace(/^[\s:.\-–—]+/, '').trim();
+              if (apos && apos.length >= 2) return apos;
+            }
+          }
+        }
+        return null;
+      }
+
+      function interpretarTextoWhatsapp(textoBruto) {
+        var texto = String(textoBruto || '').replace(/\u00a0/g, ' ').trim();
+        if (!texto) return null;
+
+        var resultado = {
+          nome_razao: null,
+          nome_fantasia: null,
+          telefone: null,
+          cpf_cnpj: null,
+          email: null,
+          responsavel_legal: null,
+          cep: null,
+          logradouro: null,
+          numero: null,
+          complemento: null,
+          bairro: null,
+          cidade: null,
+          uf: null,
+          tipo_pessoa: null,
+          observacoes: null
+        };
+
+        // --- E-mail ---
+        var mEmail = texto.match(/[a-zA-Z0-9._%+\-]+@[a-zA-Z0-9.\-]+\.[a-zA-Z]{2,}/);
+        if (mEmail) resultado.email = mEmail[0];
+
+        // --- CEP (prioridade a padrões com hífen ou 8 dígitos isolados) ---
+        var mCep = texto.match(/\b(\d{5})-?(\d{3})\b/);
+        if (mCep) resultado.cep = mCep[1] + mCep[2];
+
+        // --- CPF / CNPJ (coleta candidatos numéricos e escolhe pelo tamanho) ---
+        var docs = [];
+        var reDoc = /\b(\d{2,3}\.?\d{3}\.?\d{3}\/?\d{0,4}-?\d{0,2})\b/g;
+        var md;
+        while ((md = reDoc.exec(texto)) !== null) {
+          var dig = md[1].replace(/\D/g, '');
+          if (dig.length === 11 || dig.length === 14) docs.push(dig);
+        }
+        // fallback: sequências puras de 11 ou 14 dígitos
+        var rePure = /\b(\d{11}|\d{14})\b/g;
+        while ((md = rePure.exec(texto)) !== null) {
+          if (docs.indexOf(md[1]) < 0) docs.push(md[1]);
+        }
+        if (docs.length) {
+          // preferir CNPJ se houver, senão CPF
+          var cnpj = docs.filter(function (d) { return d.length === 14; })[0];
+          var cpf = docs.filter(function (d) { return d.length === 11; })[0];
+          resultado.cpf_cnpj = cnpj || cpf || docs[0];
+          if (resultado.cpf_cnpj.length === 14) resultado.tipo_pessoa = 'PJ';
+          else if (resultado.cpf_cnpj.length === 11) resultado.tipo_pessoa = 'PF';
+        }
+
+        // --- Telefone / WhatsApp (BR: 10 ou 11 dígitos com DDD) ---
+        var tels = [];
+        var reTel = /(?:\+?55\s*)?(?:\(?\d{2}\)?\s*)?(?:9\s*)?\d{4,5}[-\s]?\d{4}\b/g;
+        var mt;
+        while ((mt = reTel.exec(texto)) !== null) {
+          var tdig = mt[0].replace(/\D/g, '');
+          if (tdig.indexOf('55') === 0 && tdig.length >= 12) tdig = tdig.slice(2);
+          if (tdig.length >= 10 && tdig.length <= 11) tels.push(tdig);
+        }
+        // também procura rótulos comuns
+        var telRotulo = extrairRotuloValor(texto, ['Telefone', 'WhatsApp', 'Whats', 'Celular', 'Fone', 'Tel', 'Contato']);
+        if (telRotulo) {
+          var td2 = telRotulo.replace(/\D/g, '');
+          if (td2.indexOf('55') === 0 && td2.length >= 12) td2 = td2.slice(2);
+          if (td2.length >= 10 && td2.length <= 11) tels.unshift(td2);
+        }
+        if (tels.length) {
+          // formata (XX) XXXXX-XXXX ou (XX) XXXX-XXXX
+          var t = tels[0];
+          if (t.length === 11) resultado.telefone = '(' + t.slice(0, 2) + ') ' + t.slice(2, 7) + '-' + t.slice(7);
+          else resultado.telefone = '(' + t.slice(0, 2) + ') ' + t.slice(2, 6) + '-' + t.slice(6);
+        }
+
+        // --- Campos por rótulo (linhas típicas de cadastro) ---
+        var nomeRot = extrairRotuloValor(texto, [
+          'Nome completo', 'Nome Completo', 'Razão Social', 'Razao Social', 'Razão social',
+          'Nome do cliente', 'Cliente', 'Nome'
+        ]);
+        var fantasiaRot = extrairRotuloValor(texto, ['Nome Fantasia', 'Nome fantasia', 'Fantasia']);
+        var respRot = extrairRotuloValor(texto, [
+          'Responsável Legal', 'Responsavel Legal', 'Responsável', 'Responsavel', 'Representante'
+        ]);
+        var logRot = extrairRotuloValor(texto, [
+          'Logradouro', 'Endereço', 'Endereco', 'Rua', 'Av.', 'Avenida'
+        ]);
+        var numRot = extrairRotuloValor(texto, ['Número', 'Numero', 'Nº', 'No.', 'N.']);
+        var compRot = extrairRotuloValor(texto, ['Complemento', 'Apto', 'Apartamento', 'Sala', 'Bloco']);
+        var bairroRot = extrairRotuloValor(texto, ['Bairro']);
+        var cidadeRot = extrairRotuloValor(texto, ['Cidade', 'Município', 'Municipio']);
+        var ufRot = extrairRotuloValor(texto, ['UF', 'Estado']);
+        var cepRot = extrairRotuloValor(texto, ['CEP', 'Cep']);
+        var emailRot = extrairRotuloValor(texto, ['E-mail', 'Email', 'E mail']);
+        var obsRot = extrairRotuloValor(texto, ['Observações', 'Observacoes', 'Obs', 'Observação', 'Observacao']);
+
+        if (nomeRot) resultado.nome_razao = nomeRot.replace(/\s{2,}/g, ' ').trim();
+        if (fantasiaRot) resultado.nome_fantasia = fantasiaRot.replace(/\s{2,}/g, ' ').trim();
+        if (respRot) resultado.responsavel_legal = respRot.replace(/\s{2,}/g, ' ').trim();
+        if (logRot) resultado.logradouro = logRot.replace(/\s{2,}/g, ' ').trim();
+        if (numRot) resultado.numero = numRot.replace(/\s{2,}/g, ' ').trim();
+        if (compRot) resultado.complemento = compRot.replace(/\s{2,}/g, ' ').trim();
+        if (bairroRot) resultado.bairro = bairroRot.replace(/\s{2,}/g, ' ').trim();
+        if (cidadeRot) resultado.cidade = cidadeRot.replace(/\s{2,}/g, ' ').trim();
+        if (ufRot) {
+          var ufClean = ufRot.replace(/[^a-zA-Z]/g, '').toUpperCase().slice(0, 2);
+          if (ufClean.length === 2) resultado.uf = ufClean;
+        }
+        if (cepRot) {
+          var c8 = cepRot.replace(/\D/g, '');
+          if (c8.length === 8) resultado.cep = c8;
+        }
+        if (emailRot && !resultado.email) {
+          var em = emailRot.match(/[a-zA-Z0-9._%+\-]+@[a-zA-Z0-9.\-]+\.[a-zA-Z]{2,}/);
+          if (em) resultado.email = em[0];
+        }
+        if (obsRot) resultado.observacoes = obsRot;
+
+        // Heurística de nome: se não achou por rótulo, pega a primeira linha “humana”
+        // (sem muitos dígitos, sem @, com pelo menos 2 palavras ou 6 letras)
+        if (!resultado.nome_razao) {
+          var linhas = texto.split(/\r?\n/);
+          for (var li = 0; li < linhas.length; li++) {
+            var L = linhas[li].replace(/^\s*[-•*]\s*/, '').trim();
+            if (!L || L.length < 4) continue;
+            if (/@/.test(L)) continue;
+            if (/\d{5,}/.test(L)) continue; // evita linhas de telefone/doc/cep
+            if (/^(telefone|whats|celular|fone|tel|cpf|cnpj|email|e-mail|cep|endere[cç]o|rua|av\.?|bairro|cidade|uf|obs)/i.test(L)) continue;
+            var palavras = L.split(/\s+/).filter(Boolean);
+            if (palavras.length >= 2 || L.replace(/\s/g, '').length >= 6) {
+              resultado.nome_razao = L.replace(/\s{2,}/g, ' ');
+              break;
+            }
+          }
+        }
+
+        // Detectar UF sozinha (2 letras maiúsculas comuns de estado)
+        if (!resultado.uf) {
+          var mUf = texto.match(/\b(AC|AL|AP|AM|BA|CE|DF|ES|GO|MA|MT|MS|MG|PA|PB|PR|PE|PI|RJ|RN|RS|RO|RR|SC|SP|SE|TO)\b/);
+          if (mUf) resultado.uf = mUf[1];
+        }
+
+        // Se tem nome fantasia ou CNPJ → força PJ visualmente
+        if (resultado.nome_fantasia || (resultado.cpf_cnpj && resultado.cpf_cnpj.length === 14)) {
+          resultado.tipo_pessoa = 'PJ';
+        }
+
+        // Conta quantos campos úteis foram encontrados
+        var preenchidos = 0;
+        Object.keys(resultado).forEach(function (k) {
+          if (resultado[k] != null && String(resultado[k]).trim() !== '') preenchidos++;
+        });
+        resultado._preenchidos = preenchidos;
+
+        return resultado;
+      }
+
+      function aplicarDadosWhatsappNoForm(dados) {
+        if (!dados) return 0;
+        var n = 0;
+
+        if (dados.tipo_pessoa === 'PJ' || dados.tipo_pessoa === 'PF') {
+          setMcTipo(dados.tipo_pessoa);
+        }
+
+        function setIf(id, val, formatFn) {
+          if (val == null || String(val).trim() === '') return;
+          var el = document.getElementById(id);
+          if (!el) return;
+          el.value = formatFn ? formatFn(val) : String(val).trim();
+          n++;
+        }
+
+        setIf('mcNomeRazao', dados.nome_razao);
+        setIf('mcNomeFantasia', dados.nome_fantasia);
+        setIf('mcRepNome', dados.responsavel_legal);
+        setIf('mcTelefone', dados.telefone);
+        setIf('mcEmail', dados.email);
+        setIf('mcObs', dados.observacoes);
+        setIf('mcLogradouro', dados.logradouro);
+        setIf('mcNumero', dados.numero);
+        setIf('mcComplemento', dados.complemento);
+        setIf('mcBairro', dados.bairro);
+        setIf('mcCidade', dados.cidade);
+        setIf('mcUf', dados.uf, function (v) { return String(v).toUpperCase().slice(0, 2); });
+
+        if (dados.cpf_cnpj) {
+          var docFmt = handleMcDocFormatarValor(dados.cpf_cnpj);
+          var docEl = document.getElementById('mcDocNumero');
+          if (docEl) {
+            docEl.value = docFmt;
+            // dispara o handler para ajustar PF/PJ pela quantidade de dígitos
+            try {
+              handleMcDocTyping({ target: docEl });
+            } catch (e) { /* ignore */ }
+            n++;
+          }
+        }
+
+        if (dados.cep) {
+          var cepEl = document.getElementById('mcCep');
+          if (cepEl) {
+            cepEl.value = aplicarMascaraCep(dados.cep);
+            // dispara autocomplete de endereço se o CEP estiver completo
+            try { onMcCepInput({ target: cepEl }); } catch (e) { /* ignore */ }
+            n++;
+          }
+        }
+
+        // Abre o bloco de endereço se algum campo de endereço foi preenchido
+        if (dados.cep || dados.logradouro || dados.bairro || dados.cidade || dados.uf || dados.numero) {
+          var det = document.querySelector('#formCadastroCliente details');
+          if (det) det.open = true;
+        }
+
+        return n;
+      }
+
+      function onInterpretarWhatsapp() {
+        if (formularioBloqueadoSomenteLeitura) return;
+        var ta = document.getElementById('mcWhatsappPaste');
+        var texto = ta ? ta.value : '';
+        if (!String(texto || '').trim()) {
+          mcSetWhatsappStatus('Cole o texto do WhatsApp antes de interpretar.', 'err');
+          return;
+        }
+        var dados = interpretarTextoWhatsapp(texto);
+        if (!dados || !dados._preenchidos) {
+          mcSetWhatsappStatus('Não foi possível extrair dados úteis. Tente colar de novo ou preencha manualmente.', 'err');
+          return;
+        }
+        var qtd = aplicarDadosWhatsappNoForm(dados);
+        if (qtd > 0) {
+          mcSetWhatsappStatus('✓ ' + qtd + ' campo(s) preenchido(s). Confira e ajuste se necessário.', 'ok');
+        } else {
+          mcSetWhatsappStatus('Texto interpretado, mas nenhum campo pôde ser aplicado. Preencha manualmente.', 'err');
+        }
+      }
+
+      function onLimparWhatsappPaste() {
+        var ta = document.getElementById('mcWhatsappPaste');
+        if (ta) ta.value = '';
+        mcSetWhatsappStatus('', '');
+      }
+
+      function limparAreaWhatsappNoModal() {
+        onLimparWhatsappPaste();
+      }
+
       function bindClienteEvents() {
         document.getElementById('fClienteBusca').addEventListener('input', onClienteBuscaInput);
         document.getElementById('fClienteBusca').addEventListener('focus', onClienteBuscaInput);
@@ -2127,6 +2491,11 @@ updateUI();
         document.getElementById('mcCep').addEventListener('input', onMcCepInput);
         document.getElementById('btnFecharModalCliente').addEventListener('click', fecharModalCliente);
         document.getElementById('formCadastroCliente').addEventListener('submit', submitCadastroCliente);
+
+        var btnInterp = document.getElementById('btnInterpretarWhatsapp');
+        var btnLimparPaste = document.getElementById('btnLimparWhatsappPaste');
+        if (btnInterp) btnInterp.addEventListener('click', onInterpretarWhatsapp);
+        if (btnLimparPaste) btnLimparPaste.addEventListener('click', onLimparWhatsappPaste);
       }
 
       /* =================================================================== */
