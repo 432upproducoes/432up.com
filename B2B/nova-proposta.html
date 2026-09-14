@@ -4,11 +4,11 @@
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
   <title>432UP Partner | Nova Proposta</title>
-  
+
   <!-- CSS Global do Site -->
   <link rel="stylesheet" href="../css/style.css">
   <script src="https://cdn.tailwindcss.com"></script>
-  
+
   <style>
     /* FUNDO VIDRO B2B CIANO PADRÃO ORIGINAL */
     .glass-b2b {
@@ -138,7 +138,72 @@
       font-weight: 400;
     }
 
-    input[type="date"] {
+    /* INDICADOR VISUAL DE METRAGEM — mesmo estilo/fonte do badge de horas já usado */
+    .badge-metragem {
+      display: inline-flex;
+      align-items: center;
+      gap: 4px;
+      font-size: 11px;
+      font-weight: 700;
+      color: #00F0FF;
+      background: rgba(0, 240, 255, 0.1);
+      padding: 2px 8px;
+      border-radius: 6px;
+      border: 1px solid rgba(0, 240, 255, 0.3);
+    }
+
+    /* CONTROLES +/- DO CARD POR METRO */
+    .metro-controls {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 8px;
+      margin-top: 10px;
+      padding-top: 10px;
+      border-top: 1px solid rgba(0, 240, 255, 0.15);
+    }
+    .metro-btn {
+      width: 28px;
+      height: 28px;
+      border-radius: 8px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-weight: 700;
+      font-size: 14px;
+      background: rgba(0, 240, 255, 0.12);
+      border: 1px solid rgba(0, 240, 255, 0.35);
+      color: #00F0FF;
+      cursor: pointer;
+      transition: all 0.15s;
+      user-select: none;
+      touch-action: manipulation;
+    }
+    .metro-btn:hover { background: rgba(0, 240, 255, 0.25); }
+    .metro-btn:active { transform: scale(0.92); }
+    .metro-btn.disabled { opacity: 0.3; pointer-events: none; }
+
+    /* Área clicável do toggle de metragem: garante que TODO o bloco visual
+       responda ao toque/clique em qualquer ponto (topo, centro, base,
+       laterais e bordas) — inclusive o espaço vazio que sobra quando o
+       card fica esticado por um vizinho mais alto no mesmo grid row.
+       Nenhuma mudança de tamanho visual, aparência, texto, ícone ou
+       comando executado: apenas a área que responde ao clique/toque. */
+    [data-svc][data-metro="1"] {
+      display: flex;
+      flex-direction: column;
+    }
+    [data-metro-toggle] {
+      cursor: pointer;
+      -webkit-tap-highlight-color: transparent;
+      touch-action: manipulation;
+      flex: 1 1 auto;
+    }
+    [data-metro-toggle] * {
+      pointer-events: none;
+    }
+
+    input[type="date"], input[type="text"] {
       color-scheme: dark !important;
       -webkit-appearance: none;
       -moz-appearance: none;
@@ -224,6 +289,44 @@
     .catalog-skeleton .cs-dot:nth-child(2) { animation-delay: .15s; }
     .catalog-skeleton .cs-dot:nth-child(3) { animation-delay: .3s; }
     @keyframes csBlink { 0%, 80%, 100% { opacity: .25; } 40% { opacity: 1; } }
+
+    /* TOGGLE TRANSPORTE */
+    .toggle-switch {
+      position: relative;
+      width: 44px;
+      height: 24px;
+      border-radius: 999px;
+      background: rgba(255,255,255,0.12);
+      border: 1px solid rgba(255,255,255,0.2);
+      cursor: pointer;
+      transition: all 0.2s;
+      flex-shrink: 0;
+    }
+    .toggle-switch.on {
+      background: rgba(0, 240, 255, 0.35);
+      border-color: #00F0FF;
+      box-shadow: 0 0 10px rgba(0, 240, 255, 0.3);
+    }
+    .toggle-switch .knob {
+      position: absolute;
+      top: 2px;
+      left: 2px;
+      width: 18px;
+      height: 18px;
+      border-radius: 50%;
+      background: #fff;
+      transition: all 0.2s;
+    }
+    .toggle-switch.on .knob { left: 22px; background: #00F0FF; }
+
+    #transporteStatus {
+      font-size: 11px;
+      color: #64748b;
+      min-height: 14px;
+    }
+    #transporteStatus.loading { color: #00F0FF; }
+    #transporteStatus.err { color: #f87171; }
+    #transporteStatus.ok { color: #4ade80; }
   </style>
 </head>
 <body class="h-full text-slate-200 font-sans antialiased bg-[#06080c] overflow-x-hidden">
@@ -284,8 +387,78 @@
 
             <div class="space-y-4">
               <div>
-                <label for="fCliente" class="block text-xs uppercase tracking-wider text-slate-300 font-semibold mb-1.5">Nome do Cliente / Empresa *</label>
-                <input type="text" id="fCliente" placeholder="Ex: Banco Itaú ou Ana & Pedro" class="w-full bg-slate-900/80 border border-white/20 rounded-xl px-4 py-2.5 text-sm text-white placeholder-slate-500 focus:border-cyan-400 focus:ring-1 focus:ring-cyan-400 focus:outline-none transition">
+                <label class="block text-xs uppercase tracking-wider text-slate-300 font-semibold mb-1.5">Cliente *</label>
+
+                <!-- BUSCA DE CLIENTE (estado: nenhum cliente selecionado) -->
+                <div id="clienteBuscaWrap" class="relative">
+                  <input type="text" id="fClienteBusca" autocomplete="off" placeholder="🔍 Buscar cliente por nome, CPF/CNPJ ou telefone" class="w-full bg-slate-900/80 border border-white/20 rounded-xl px-4 py-2.5 text-sm text-white placeholder-slate-500 focus:border-cyan-400 focus:ring-1 focus:ring-cyan-400 focus:outline-none transition">
+                  <div id="clienteResultados" class="hidden absolute z-40 mt-1.5 w-full glass-b2b rounded-xl overflow-hidden max-h-64 overflow-y-auto"></div>
+                </div>
+
+                <!-- CLIENTE SELECIONADO (estado: cliente vinculado à proposta) -->
+                <div id="clienteSelecionadoBox" class="hidden items-center justify-between gap-3 p-3 rounded-xl bg-slate-900/60 border border-cyan-500/30">
+                  <div class="min-w-0">
+                    <span id="clienteSelNome" class="block text-sm font-bold text-white truncate">—</span>
+                    <span id="clienteSelSub" class="block text-[11px] text-slate-400 truncate"></span>
+                  </div>
+                  <div class="flex items-center gap-3 shrink-0">
+                    <button type="button" id="btnEditarCliente" class="text-[11px] font-semibold text-cyan-300 hover:text-cyan-200 underline underline-offset-2 cursor-pointer">Editar cliente</button>
+                    <button type="button" id="btnTrocarCliente" class="text-[11px] font-semibold text-slate-400 hover:text-white underline underline-offset-2 cursor-pointer">Trocar</button>
+                  </div>
+                </div>
+              </div>
+
+              <!-- CEP + STATUS DE GEOCODIFICAÇÃO -->
+              <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                <div>
+                  <label for="fCep" id="lblFCep" class="block text-xs uppercase tracking-wider text-slate-300 font-semibold mb-1.5">CEP do Local do Evento *</label>
+                  <input type="text" id="fCep" placeholder="Ex: 01310-100" maxlength="9" inputmode="numeric" class="w-full bg-slate-900/80 border border-white/20 rounded-xl px-4 py-2.5 text-sm text-white placeholder-slate-500 focus:border-cyan-400 focus:ring-1 focus:ring-cyan-400 focus:outline-none transition">
+                  <div id="transporteStatus" class="mt-1"></div>
+                </div>
+                <div>
+                  <label for="fData" class="block text-xs uppercase tracking-wider text-slate-300 font-semibold mb-1.5">Data Prevista *</label>
+                  <input type="date" id="fData" class="w-full border border-white/20 rounded-xl px-3 py-2 text-sm text-white focus:border-cyan-400 focus:ring-1 focus:ring-cyan-400 focus:outline-none transition">
+                </div>
+              </div>
+
+              <!-- ENDEREÇO DO EVENTO — controle "mesmo endereço do cliente" -->
+              <div class="p-3 rounded-xl bg-slate-900/60 border border-white/10 space-y-3">
+                <label class="flex items-center gap-2 cursor-pointer select-none">
+                  <input type="checkbox" id="fEventoEnderecoIgualCliente" checked class="w-4 h-4 rounded accent-cyan-400 cursor-pointer">
+                  <span class="text-xs font-semibold text-white">Local do evento é o mesmo endereço do cliente</span>
+                </label>
+
+                <div id="blocoEnderecoEvento" class="hidden grid grid-cols-1 md:grid-cols-2 gap-3 pt-1">
+                  <div>
+                    <label for="fEventoCep" class="block text-xs uppercase tracking-wider text-slate-300 font-semibold mb-1.5">CEP do Evento</label>
+                    <input type="text" id="fEventoCep" placeholder="Ex: 01310-100" maxlength="9" inputmode="numeric" class="w-full bg-slate-900/80 border border-white/20 rounded-xl px-4 py-2.5 text-sm text-white placeholder-slate-500 focus:border-cyan-400 focus:ring-1 focus:ring-cyan-400 focus:outline-none transition">
+                    <div id="eventoCepStatus" class="mt-1 text-[11px]"></div>
+                  </div>
+                  <div>
+                    <label for="fEventoNumero" class="block text-xs uppercase tracking-wider text-slate-300 font-semibold mb-1.5">Número</label>
+                    <input type="text" id="fEventoNumero" class="w-full bg-slate-900/80 border border-white/20 rounded-xl px-4 py-2.5 text-sm text-white placeholder-slate-500 focus:border-cyan-400 focus:ring-1 focus:ring-cyan-400 focus:outline-none transition">
+                  </div>
+                  <div class="md:col-span-2">
+                    <label for="fEventoLogradouro" class="block text-xs uppercase tracking-wider text-slate-300 font-semibold mb-1.5">Logradouro</label>
+                    <input type="text" id="fEventoLogradouro" class="w-full bg-slate-900/80 border border-white/20 rounded-xl px-4 py-2.5 text-sm text-white placeholder-slate-500 focus:border-cyan-400 focus:ring-1 focus:ring-cyan-400 focus:outline-none transition">
+                  </div>
+                  <div>
+                    <label for="fEventoComplemento" class="block text-xs uppercase tracking-wider text-slate-300 font-semibold mb-1.5">Complemento</label>
+                    <input type="text" id="fEventoComplemento" class="w-full bg-slate-900/80 border border-white/20 rounded-xl px-4 py-2.5 text-sm text-white placeholder-slate-500 focus:border-cyan-400 focus:ring-1 focus:ring-cyan-400 focus:outline-none transition" placeholder="Apto, Sala, Bloco">
+                  </div>
+                  <div>
+                    <label for="fEventoBairro" class="block text-xs uppercase tracking-wider text-slate-300 font-semibold mb-1.5">Bairro</label>
+                    <input type="text" id="fEventoBairro" class="w-full bg-slate-900/80 border border-white/20 rounded-xl px-4 py-2.5 text-sm text-white placeholder-slate-500 focus:border-cyan-400 focus:ring-1 focus:ring-cyan-400 focus:outline-none transition">
+                  </div>
+                  <div>
+                    <label for="fEventoCidade" class="block text-xs uppercase tracking-wider text-slate-300 font-semibold mb-1.5">Cidade</label>
+                    <input type="text" id="fEventoCidade" class="w-full bg-slate-900/80 border border-white/20 rounded-xl px-4 py-2.5 text-sm text-white placeholder-slate-500 focus:border-cyan-400 focus:ring-1 focus:ring-cyan-400 focus:outline-none transition">
+                  </div>
+                  <div>
+                    <label for="fEventoUf" class="block text-xs uppercase tracking-wider text-slate-300 font-semibold mb-1.5">UF</label>
+                    <input type="text" id="fEventoUf" maxlength="2" class="w-full bg-slate-900/80 border border-white/20 rounded-xl px-4 py-2.5 text-sm text-white placeholder-slate-500 focus:border-cyan-400 focus:ring-1 focus:ring-cyan-400 focus:outline-none transition" placeholder="SP">
+                  </div>
+                </div>
               </div>
 
               <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
@@ -298,17 +471,6 @@
                     <span class="chip-item" data-val="Formatura">Formatura</span>
                   </div>
                 </div>
-                <div class="min-w-0">
-                  <label for="fData" class="block text-xs uppercase tracking-wider text-slate-300 font-semibold mb-1.5">Data Prevista *</label>
-                  <input type="date" id="fData" class="w-full border border-white/20 rounded-xl px-3 py-2 text-sm text-white focus:border-cyan-400 focus:ring-1 focus:ring-cyan-400 focus:outline-none transition">
-                </div>
-              </div>
-
-              <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
-                <div>
-                  <label for="fLocal" class="block text-xs uppercase tracking-wider text-slate-300 font-semibold mb-1.5">Cidade / Local</label>
-                  <input type="text" id="fLocal" placeholder="Ex: Alphaville - SP" class="w-full bg-slate-900/80 border border-white/20 rounded-xl px-4 py-2.5 text-sm text-white placeholder-slate-500 focus:border-cyan-400 focus:ring-1 focus:ring-cyan-400 focus:outline-none transition">
-                </div>
                 <div>
                   <span class="block text-xs uppercase tracking-wider text-slate-300 font-semibold mb-1.5">Convidados (Porte do Som)</span>
                   <div id="chipsConvidados" class="flex flex-wrap gap-1.5">
@@ -318,6 +480,20 @@
                     <span class="chip-item" data-val="500">500+</span>
                   </div>
                 </div>
+              </div>
+
+              <div>
+                <label for="fLocal" class="block text-xs uppercase tracking-wider text-slate-300 font-semibold mb-1.5">Cidade / Local (referência)</label>
+                <input type="text" id="fLocal" placeholder="Ex: Alphaville - SP" class="w-full bg-slate-900/80 border border-white/20 rounded-xl px-4 py-2.5 text-sm text-white placeholder-slate-500 focus:border-cyan-400 focus:ring-1 focus:ring-cyan-400 focus:outline-none transition">
+              </div>
+
+              <!-- TOGGLE TRANSPORTE -->
+              <div class="flex items-center justify-between p-3 rounded-xl bg-slate-900/60 border border-white/10">
+                <div>
+                  <span class="block text-xs font-semibold text-white">Incluir valor do transporte</span>
+                  <span class="block text-[10.5px] text-slate-400 mt-0.5">Calculado automaticamente pelo CEP informado</span>
+                </div>
+                <div id="toggleTransporte" class="toggle-switch on"><div class="knob"></div></div>
               </div>
 
               <div class="pt-2">
@@ -351,6 +527,34 @@
             <div id="sumListaItens" class="space-y-1.5 pt-2 border-t border-amber-500/20 text-xs"></div>
 
             <div class="pt-4 border-t border-amber-500/20 space-y-3">
+              <div class="space-y-1.5 text-xs text-slate-300">
+                <div class="flex justify-between"><span>Valor comercial:</span><strong id="sumValorSubtotal" class="text-white">R$ 0,00</strong></div>
+                <div class="flex justify-between"><span>Transporte:</span><strong id="sumValorTransporte" class="text-white">R$ 0,00</strong></div>
+              </div>
+
+              <div id="boxDesconto" class="p-3 rounded-xl bg-slate-900/50 border border-white/10 space-y-2.5">
+                <span class="text-[10px] uppercase font-bold tracking-wider text-slate-400 block">Desconto comercial</span>
+                <div class="grid grid-cols-2 gap-2">
+                  <div>
+                    <label for="fDescontoPct" class="block text-[10px] text-slate-400 mb-1">Percentual (%)</label>
+                    <input type="number" id="fDescontoPct" min="0" max="100" step="0.01" value="0" inputmode="decimal"
+                      class="w-full bg-slate-900/80 border border-white/20 rounded-lg px-2.5 py-1.5 text-sm text-white focus:border-cyan-400 focus:ring-1 focus:ring-cyan-400 focus:outline-none transition"
+                      title="Desconto % sobre o valor comercial">
+                  </div>
+                  <div>
+                    <label for="fTotalDesejado" class="block text-[10px] text-slate-400 mb-1">Total final desejado</label>
+                    <input type="text" id="fTotalDesejado" inputmode="decimal" placeholder="R$ 0,00"
+                      class="w-full bg-slate-900/80 border border-white/20 rounded-lg px-2.5 py-1.5 text-sm text-white focus:border-cyan-400 focus:ring-1 focus:ring-cyan-400 focus:outline-none transition"
+                      title="Valor final que o cliente deve pagar">
+                  </div>
+                </div>
+                <div class="flex justify-between text-[11px]">
+                  <span class="text-slate-400">Desconto aplicado:</span>
+                  <strong id="sumDescontoValor" class="text-emerald-400">R$ 0,00</strong>
+                </div>
+                <div id="descontoAlert" class="hidden text-[10px] text-red-300 font-semibold"></div>
+              </div>
+
               <div>
                 <span class="text-[11px] uppercase tracking-wider text-slate-400 block">Valor Final ao Cliente</span>
                 <div id="sumValorTotal" class="text-2xl font-bold text-amber-400 mt-0.5">Selecione as opções acima</div>
@@ -397,6 +601,107 @@
     </div>
   </div>
 
+  <!-- MODAL — CADASTRO DE CLIENTE (reutiliza public.co_clientes / mesmas regras do cadastro existente) -->
+  <div id="modalCliente" class="hidden fixed inset-0 z-[999] items-center justify-center p-4" style="background: rgba(0,0,0,0.72);">
+    <div class="glass-b2b w-full max-w-lg rounded-2xl p-6 space-y-4 max-h-[90vh] overflow-y-auto">
+      <div class="flex items-center justify-between border-b border-white/10 pb-3">
+        <h3 id="mcTitulo" class="text-sm font-bold text-white">Cadastrar Cliente</h3>
+        <button type="button" id="btnFecharModalCliente" class="text-slate-400 hover:text-white text-lg leading-none cursor-pointer">✕</button>
+      </div>
+
+      <div class="flex justify-center">
+        <div class="inline-flex rounded-full border border-white/10 bg-slate-900/60 p-1 gap-1">
+          <span id="mcBtnPF" class="chip-item active" data-tipo="PF">Pessoa Física</span>
+          <span id="mcBtnPJ" class="chip-item" data-tipo="PJ">Pessoa Jurídica</span>
+        </div>
+      </div>
+
+      <form id="formCadastroCliente" class="space-y-3">
+        <input type="hidden" id="mcTipoPessoa" value="PF">
+
+        <div>
+          <label id="mcLabelNome" for="mcNomeRazao" class="block text-xs uppercase tracking-wider text-slate-300 font-semibold mb-1.5">Nome Completo *</label>
+          <input type="text" id="mcNomeRazao" required class="w-full bg-slate-900/80 border border-white/20 rounded-xl px-4 py-2.5 text-sm text-white placeholder-slate-500 focus:border-cyan-400 focus:ring-1 focus:ring-cyan-400 focus:outline-none transition" placeholder="Nome do cliente">
+        </div>
+
+        <div class="grid grid-cols-1 md:grid-cols-2 gap-3">
+          <div>
+            <label for="mcTelefone" class="block text-xs uppercase tracking-wider text-slate-300 font-semibold mb-1.5">Telefone / WhatsApp *</label>
+            <input type="tel" id="mcTelefone" required class="w-full bg-slate-900/80 border border-white/20 rounded-xl px-4 py-2.5 text-sm text-white placeholder-slate-500 focus:border-cyan-400 focus:ring-1 focus:ring-cyan-400 focus:outline-none transition" placeholder="(00) 00000-0000">
+          </div>
+          <div>
+            <label id="mcLabelDoc" for="mcDocNumero" class="block text-xs uppercase tracking-wider text-slate-300 font-semibold mb-1.5">CPF/CNPJ (Opcional)</label>
+            <input type="text" id="mcDocNumero" maxlength="18" inputmode="numeric" class="w-full bg-slate-900/80 border border-white/20 rounded-xl px-4 py-2.5 text-sm text-white placeholder-slate-500 focus:border-cyan-400 focus:ring-1 focus:ring-cyan-400 focus:outline-none transition" placeholder="000.000.000-00">
+          </div>
+        </div>
+
+        <div>
+          <label for="mcEmail" class="block text-xs uppercase tracking-wider text-slate-300 font-semibold mb-1.5">E-mail (Opcional)</label>
+          <input type="email" id="mcEmail" class="w-full bg-slate-900/80 border border-white/20 rounded-xl px-4 py-2.5 text-sm text-white placeholder-slate-500 focus:border-cyan-400 focus:ring-1 focus:ring-cyan-400 focus:outline-none transition" placeholder="exemplo@email.com">
+        </div>
+
+        <div id="mcBlocoPJ" class="hidden space-y-3">
+          <div>
+            <label for="mcNomeFantasia" class="block text-xs uppercase tracking-wider text-slate-300 font-semibold mb-1.5">Nome Fantasia (Opcional)</label>
+            <input type="text" id="mcNomeFantasia" class="w-full bg-slate-900/80 border border-white/20 rounded-xl px-4 py-2.5 text-sm text-white placeholder-slate-500 focus:border-cyan-400 focus:ring-1 focus:ring-cyan-400 focus:outline-none transition">
+          </div>
+          <div>
+            <label for="mcRepNome" class="block text-xs uppercase tracking-wider text-slate-300 font-semibold mb-1.5">Responsável Legal (Opcional)</label>
+            <input type="text" id="mcRepNome" class="w-full bg-slate-900/80 border border-white/20 rounded-xl px-4 py-2.5 text-sm text-white placeholder-slate-500 focus:border-cyan-400 focus:ring-1 focus:ring-cyan-400 focus:outline-none transition" placeholder="Nome completo do representante">
+          </div>
+        </div>
+
+        <details class="pt-1">
+          <summary class="text-xs uppercase tracking-wider text-slate-400 font-semibold cursor-pointer select-none">Endereço (opcional — não é o local do evento)</summary>
+          <div class="grid grid-cols-1 md:grid-cols-3 gap-3 mt-3">
+            <div>
+              <label for="mcCep" class="block text-xs uppercase tracking-wider text-slate-300 font-semibold mb-1.5">CEP</label>
+              <input type="text" id="mcCep" maxlength="9" inputmode="numeric" class="w-full bg-slate-900/80 border border-white/20 rounded-xl px-4 py-2.5 text-sm text-white placeholder-slate-500 focus:border-cyan-400 focus:ring-1 focus:ring-cyan-400 focus:outline-none transition" placeholder="00000-000">
+              <div id="mcCepStatus" class="mt-1 text-[11px]"></div>
+            </div>
+            <div>
+              <label for="mcCidade" class="block text-xs uppercase tracking-wider text-slate-300 font-semibold mb-1.5">Cidade</label>
+              <input type="text" id="mcCidade" class="w-full bg-slate-900/80 border border-white/20 rounded-xl px-4 py-2.5 text-sm text-white placeholder-slate-500 focus:border-cyan-400 focus:ring-1 focus:ring-cyan-400 focus:outline-none transition">
+            </div>
+            <div>
+              <label for="mcUf" class="block text-xs uppercase tracking-wider text-slate-300 font-semibold mb-1.5">UF</label>
+              <input type="text" id="mcUf" maxlength="2" class="w-full bg-slate-900/80 border border-white/20 rounded-xl px-4 py-2.5 text-sm text-white placeholder-slate-500 focus:border-cyan-400 focus:ring-1 focus:ring-cyan-400 focus:outline-none transition" placeholder="SP">
+            </div>
+          </div>
+          <div class="grid grid-cols-1 md:grid-cols-2 gap-3 mt-3">
+            <div>
+              <label for="mcLogradouro" class="block text-xs uppercase tracking-wider text-slate-300 font-semibold mb-1.5">Logradouro</label>
+              <input type="text" id="mcLogradouro" class="w-full bg-slate-900/80 border border-white/20 rounded-xl px-4 py-2.5 text-sm text-white placeholder-slate-500 focus:border-cyan-400 focus:ring-1 focus:ring-cyan-400 focus:outline-none transition">
+            </div>
+            <div>
+              <label for="mcNumero" class="block text-xs uppercase tracking-wider text-slate-300 font-semibold mb-1.5">Número</label>
+              <input type="text" id="mcNumero" class="w-full bg-slate-900/80 border border-white/20 rounded-xl px-4 py-2.5 text-sm text-white placeholder-slate-500 focus:border-cyan-400 focus:ring-1 focus:ring-cyan-400 focus:outline-none transition">
+            </div>
+          </div>
+          <div class="grid grid-cols-1 md:grid-cols-2 gap-3 mt-3">
+            <div>
+              <label for="mcComplemento" class="block text-xs uppercase tracking-wider text-slate-300 font-semibold mb-1.5">Complemento</label>
+              <input type="text" id="mcComplemento" class="w-full bg-slate-900/80 border border-white/20 rounded-xl px-4 py-2.5 text-sm text-white placeholder-slate-500 focus:border-cyan-400 focus:ring-1 focus:ring-cyan-400 focus:outline-none transition" placeholder="Apto, Sala, Bloco">
+            </div>
+            <div>
+              <label for="mcBairro" class="block text-xs uppercase tracking-wider text-slate-300 font-semibold mb-1.5">Bairro</label>
+              <input type="text" id="mcBairro" class="w-full bg-slate-900/80 border border-white/20 rounded-xl px-4 py-2.5 text-sm text-white placeholder-slate-500 focus:border-cyan-400 focus:ring-1 focus:ring-cyan-400 focus:outline-none transition">
+            </div>
+          </div>
+        </details>
+
+        <div>
+          <label for="mcObs" class="block text-xs uppercase tracking-wider text-slate-300 font-semibold mb-1.5">Observações Comerciais</label>
+          <textarea id="mcObs" rows="2" class="w-full bg-slate-900/80 border border-white/20 rounded-xl px-4 py-2.5 text-sm text-white placeholder-slate-500 focus:border-cyan-400 focus:ring-1 focus:ring-cyan-400 focus:outline-none transition"></textarea>
+        </div>
+
+        <div id="mcAlert" class="hidden p-3 rounded-xl text-xs font-semibold bg-red-500/15 text-red-300 border border-red-500/30"></div>
+
+        <button type="submit" id="mcBtnSalvar" class="w-full py-3 rounded-xl bg-amber-500 hover:bg-amber-400 text-slate-950 font-bold text-xs uppercase tracking-wider transition shadow-[0_0_20px_rgba(245,158,11,0.3)] cursor-pointer">Salvar Cliente</button>
+      </form>
+    </div>
+  </div>
+
   <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
   <script src="partner-config.js"></script>
   <script src="partner-header.js"></script>
@@ -420,10 +725,53 @@
       var pkgOk = false;
       var svcOk = false;
 
+      var CONFIG_TRANSPORTE = null; // { valor_por_km, origem_lat, origem_lng, origem_label }
+
       var activePkg = null;
-      var svcState = {};
+      var svcState = {};          // 'off' | 'manual' | 'included'
+      var svcMetragem = {};       // servico_id -> metragem atual (0 = desligado)
       var evConvidados = 80;
       var evTipoVal = 'Corporativo';
+
+      // Estado do transporte
+      var transporteAtivo = true;      // toggle "incluir transporte"
+      var transporteDistanciaKm = null;
+      var transporteValor = 0;
+      var transporteCepValido = null;  // último CEP geocodificado com sucesso
+      var transporteLatLng = null;
+
+      // Estado do desconto comercial (incide APENAS sobre valor comercial / subtotal)
+      // modoDesconto: 'percentual' | 'total_desejado' — controla qual campo foi a referência
+      var descontoPercentual = 0;
+      var descontoValor = 0;
+      var valorSubtotal = 0;
+      var modoDesconto = 'percentual';
+      var totalDesejadoTemp = null; // apenas UI, NÃO persiste no banco
+      var descontoUiUpdating = false; // evita loop entre inputs
+
+      // Estado do cliente (item 1 a 11 da regra de negócio: co_clientes = fonte única)
+      // clienteSelecionado = { id, nome_razao, nome_fantasia, cidade, bairro, legacy }
+      // legacy === true => proposta antiga com cliente_nome mas sem cliente_id vinculado
+      var clienteSelecionado = null;
+      var clienteBuscaTimer = null;
+
+      // id do cliente em edição via modal (null = modal em modo "cadastrar novo")
+      var mcClienteEditandoId = null;
+
+      // Guarda o último CEP (8 dígitos) já consultado com sucesso em cada contexto,
+      // para permitir nova consulta somente quando o CEP realmente mudar.
+      var ultimoCepConsultadoModal = null;
+      var ultimoCepConsultadoProposta = null;
+      var ultimoCepConsultadoEvento = null;
+
+      // Endereço do evento (independente do cadastro do cliente) — campos evento_*.
+      // eventoEnderecoIgualCliente = true  -> endereço do evento = endereço do cliente
+      // eventoEnderecoIgualCliente = false -> usa os campos evento_* preenchidos abaixo
+      var eventoEnderecoIgualCliente = true;
+      var eventoEndereco = {
+        cep: null, logradouro: null, numero: null, complemento: null,
+        bairro: null, cidade: null, uf: null, lat: null, lng: null
+      };
 
       function fmtMoeda(n) { return 'R$ ' + Number(n || 0).toLocaleString('pt-BR', { minimumFractionDigits: 2 }); }
       function fmtData(d) { return d ? new Date(d + 'T12:00:00').toLocaleDateString('pt-BR') : '—'; }
@@ -486,13 +834,22 @@
       }
 
       function normSvc(s) {
-        s.faixas = toArr(s.faixas);
+        s.faixas = toArr(s.faixas);                 // faixas de convidados/som (economia de escala)
+        s.faixas_metro = toArr(s.faixas_metro);      // faixas de economia de escala por metro
         s.valor_base = Number(s.valor_base) || 0;
         s.valor_hora = Number(s.valor_por_hora) || 0;
         s.servico_id = String(s.servico_id || '').toLowerCase().trim();
         s.nome = s.nome_exibicao || s.nome || '';
         s.descricao = s.descricao || '';
         s.icone = s.icone || '🎵';
+
+        // Campos do tipo "por metro"
+        s.metragem_minima = s.metragem_minima != null ? Number(s.metragem_minima) : null;
+        s.metragem_maxima = s.metragem_maxima != null ? Number(s.metragem_maxima) : null; // null = sem teto
+        s.valor_por_metro = Number(s.valor_por_metro) || 0;
+        s.passo_metro = Number(s.passo_metro) || 1;
+        s.isPorMetro = s.metragem_minima != null && s.metragem_minima > 0;
+
         return s;
       }
 
@@ -522,7 +879,26 @@
           svcOk = false;
         }
 
-        SVC.forEach(function (s) { svcState[s.servico_id] = 'off'; });
+        SVC.forEach(function (s) {
+          svcState[s.servico_id] = 'off';
+          svcMetragem[s.servico_id] = 0;
+        });
+      }
+
+      async function carregarConfigTransporte() {
+        try {
+          var r = await sbCatalog.from('co_config_transporte').select('*').eq('ativo', true).limit(1).single();
+          if (r.error) throw r.error;
+          CONFIG_TRANSPORTE = {
+            valor_por_km: Number(r.data.valor_por_km) || 0,
+            origem_lat: Number(r.data.origem_lat),
+            origem_lng: Number(r.data.origem_lng),
+            origem_label: r.data.origem_label || 'Centro de São Paulo'
+          };
+        } catch (e) {
+          console.error('[432UP Partner] Falha ao carregar config de transporte:', e);
+          CONFIG_TRANSPORTE = null;
+        }
       }
 
       partnerRequireAuth().then(async function (parceiro) {
@@ -531,11 +907,16 @@
         document.getElementById('sumComissaoPct').textContent = Number(parceiro.comissao_padrao_pct).toFixed(0);
 
         await carregarCatalogo();
+        await carregarConfigTransporte();
 
         renderPacotes();
         renderServicos();
         bindEvents();
+        bindClienteEvents();
+        bindEventoEnderecoEvents();
+        atualizarLabelFCep();
         setupMobileBarAutoFade();
+        aplicarPermissaoDesconto();
 
         var params = new URLSearchParams(window.location.search);
         propostaEdicaoId = params.get('id');
@@ -569,16 +950,14 @@
         formularioBloqueadoSomenteLeitura = true;
         showAlert('Esta proposta foi ' + statusTexto.toUpperCase() + ' e está bloqueada para edições pelo parceiro.', 'error');
 
-        // Desabilita inputs de texto e selects
         document.querySelectorAll('input, textarea, select').forEach(function (el) {
           el.disabled = true;
           el.classList.add('opacity-60', 'cursor-not-allowed');
         });
 
-        // Oculta botões de ação e substitui por aviso
         var containerAcoes = document.getElementById('containerAcoesBotoes');
         if (containerAcoes) {
-          containerAcoes.innerHTML = 
+          containerAcoes.innerHTML =
             '<div class="p-3.5 rounded-xl bg-slate-900/90 text-center border border-white/10 space-y-2">' +
               '<span class="text-xs font-bold text-amber-400 block">🔒 Modo Somente Leitura</span>' +
               '<p class="text-[11px] text-slate-400">Pedidos ' + esc(statusTexto) + 's não podem sofrer alterações diretas.</p>' +
@@ -592,14 +971,41 @@
         }
       }
 
+      async function carregarClienteDaProposta(p) {
+        if (p.cliente_id) {
+          try {
+            var res = await sbPartner
+              .from('co_clientes')
+              .select('id, nome_razao, nome_fantasia, cidade, bairro')
+              .eq('id', p.cliente_id)
+              .maybeSingle();
+            if (!res.error && res.data) {
+              clienteSelecionado = res.data;
+            } else {
+              // cliente_id não encontrado/visível (RLS) — cai para compatibilidade por nome
+              clienteSelecionado = p.cliente_nome ? { id: null, nome_razao: p.cliente_nome, legacy: true } : null;
+            }
+          } catch (e) {
+            console.error('[432UP Partner] Falha ao carregar cliente vinculado:', e);
+            clienteSelecionado = p.cliente_nome ? { id: null, nome_razao: p.cliente_nome, legacy: true } : null;
+          }
+        } else if (p.cliente_nome) {
+          // Proposta antiga: possui cliente_nome mas não cliente_id (compatibilidade — regra 9)
+          clienteSelecionado = { id: null, nome_razao: p.cliente_nome, legacy: true };
+        } else {
+          clienteSelecionado = null;
+        }
+        setClienteSelecionadoUI();
+      }
+
       function carregarPropostaExistente(id) {
-        sbPartner.from('propostas').select('*').eq('id', id).single().then(function (res) {
+        sbPartner.from('propostas').select('*').eq('id', id).single().then(async function (res) {
           if (res.data) {
             var p = res.data;
             var stNorm = String(p.status || '').toLowerCase();
 
             document.getElementById('pageTitle').textContent = 'Proposta #' + (p.numero || id) + ' — ' + (p.cliente_nome || '');
-            document.getElementById('fCliente').value = p.cliente_nome || '';
+            await carregarClienteDaProposta(p);
             document.getElementById('fData').value = p.data_evento || '';
 
             if (p.duracao_horas) {
@@ -608,6 +1014,70 @@
             }
             if (p.local_evento) document.getElementById('fLocal').value = p.local_evento;
             if (p.observacoes) document.getElementById('fObs').value = p.observacoes;
+            if (p.cep_cliente) {
+              // Regra 3 (tela FORA): carrega o CEP salvo do cliente, aplicando a
+              // máscara 00000-000, sem disparar autocomplete/duplicar dados.
+              document.getElementById('fCep').value = aplicarMascaraCep(p.cep_cliente);
+              var cepLimpoExistente = String(p.cep_cliente).replace(/\D/g, '');
+              if (cepLimpoExistente.length === 8) ultimoCepConsultadoProposta = cepLimpoExistente;
+            }
+
+            transporteAtivo = p.transporte_incluido !== false;
+            setToggleVisual(transporteAtivo);
+
+            if (p.distancia_km != null) {
+              transporteDistanciaKm = Number(p.distancia_km);
+              transporteLatLng = (p.lat_cliente != null && p.lng_cliente != null) ? { lat: p.lat_cliente, lng: p.lng_cliente } : null;
+              transporteCepValido = p.cep_cliente || null;
+              atualizarStatusTransporte('ok', 'Distância: ' + transporteDistanciaKm.toFixed(1) + ' km de ' + (CONFIG_TRANSPORTE ? CONFIG_TRANSPORTE.origem_label : 'origem'));
+            }
+            // Desconto comercial — propostas antigas sem os campos ficam em 0 (sem desconto)
+            descontoPercentual = Number(p.desconto_percentual) || 0;
+            descontoValor = Number(p.desconto_valor) || 0;
+            valorSubtotal = Number(p.valor_subtotal) || 0;
+            if (descontoPercentual > 0 || descontoValor > 0) {
+              modoDesconto = 'percentual';
+              totalDesejadoTemp = null;
+            } else {
+              modoDesconto = 'percentual';
+              totalDesejadoTemp = null;
+              descontoPercentual = 0;
+              descontoValor = 0;
+            }
+
+
+            // Regras 7 e 9: propostas antigas não têm evento_endereco_igual_cliente
+            // no retorno (undefined) e o banco trata registros antigos como true;
+            // tratamos undefined/null da mesma forma que true.
+            eventoEnderecoIgualCliente = (p.evento_endereco_igual_cliente !== false);
+            document.getElementById('fEventoEnderecoIgualCliente').checked = eventoEnderecoIgualCliente;
+            document.getElementById('blocoEnderecoEvento').classList.toggle('hidden', eventoEnderecoIgualCliente);
+            atualizarLabelFCep();
+
+            eventoEndereco = {
+              cep: p.evento_cep || null,
+              logradouro: p.evento_logradouro || null,
+              numero: p.evento_numero || null,
+              complemento: p.evento_complemento || null,
+              bairro: p.evento_bairro || null,
+              cidade: p.evento_cidade || null,
+              uf: p.evento_uf || null,
+              lat: p.evento_lat != null ? Number(p.evento_lat) : null,
+              lng: p.evento_lng != null ? Number(p.evento_lng) : null
+            };
+
+            if (!eventoEnderecoIgualCliente) {
+              if (eventoEndereco.cep) document.getElementById('fEventoCep').value = aplicarMascaraCep(eventoEndereco.cep);
+              if (eventoEndereco.logradouro) document.getElementById('fEventoLogradouro').value = eventoEndereco.logradouro;
+              if (eventoEndereco.numero) document.getElementById('fEventoNumero').value = eventoEndereco.numero;
+              if (eventoEndereco.complemento) document.getElementById('fEventoComplemento').value = eventoEndereco.complemento;
+              if (eventoEndereco.bairro) document.getElementById('fEventoBairro').value = eventoEndereco.bairro;
+              if (eventoEndereco.cidade) document.getElementById('fEventoCidade').value = eventoEndereco.cidade;
+              if (eventoEndereco.uf) document.getElementById('fEventoUf').value = eventoEndereco.uf;
+              if (eventoEndereco.cep) ultimoCepConsultadoEvento = String(eventoEndereco.cep).replace(/\D/g, '');
+              // Endereço do evento é o efetivo para transporte: usa os dados salvos.
+              recalcularTransporteEfetivo();
+            }
 
             if (p.convidados_estimados) {
               evConvidados = p.convidados_estimados;
@@ -626,14 +1096,16 @@
             if (Array.isArray(p.itens)) {
               p.itens.forEach(function (it) {
                 if (it.tipo === 'pacote') activePkg = it.id;
-                if (it.tipo === 'servico') svcState[it.id] = 'manual';
+                if (it.tipo === 'servico') {
+                  svcState[it.id] = 'manual';
+                  if (it.metragem != null) svcMetragem[it.id] = Number(it.metragem);
+                }
               });
             }
 
             updateUI();
             recalc();
 
-            // BLOQUEIO AUTOMÁTICO SE APROVADA OU CANCELADA
             if (stNorm === 'aprovada' || stNorm === 'cancelada') {
               aplicarTravaSomenteLeitura(stNorm);
             }
@@ -669,21 +1141,42 @@
             var pid = card.dataset.pkg;
             if (activePkg === pid) {
               activePkg = null;
-              SVC.forEach(function (s) { svcState[s.servico_id] = 'off'; });
+              SVC.forEach(function (s) { svcState[s.servico_id] = 'off'; svcMetragem[s.servico_id] = 0; });
             } else {
               activePkg = pid;
               var pObj = PKG.find(function (x) { return x.pacote_id === pid; });
               var pacoteItens = (pObj.servicos_ids && pObj.servicos_ids.length) ? pObj.servicos_ids : pObj.itens;
               SVC.forEach(function (s) {
-                svcState[s.servico_id] = pacoteItens.indexOf(s.servico_id) >= 0 ? 'included' : 'off';
+                var incluido = pacoteItens.indexOf(s.servico_id) >= 0;
+                svcState[s.servico_id] = incluido ? 'included' : 'off';
+                if (incluido && s.isPorMetro) {
+                  svcMetragem[s.servico_id] = s.metragem_minima;
+                } else if (!incluido) {
+                  svcMetragem[s.servico_id] = 0;
+                }
               });
               document.getElementById('sliderHoras').value = pObj.horas;
               document.getElementById('lblHoras').textContent = pObj.horas + 'h';
             }
             updateUI();
+            renderServicos();
             recalc();
           });
         });
+      }
+
+      // Calcula o valor de um serviço "por metro" para uma dada metragem,
+      // aplicando faixas de economia de escala se existirem.
+      function calcularValorPorMetro(s, metragem) {
+        if (!metragem || metragem <= 0) return { valor: 0, valorPorMetroAplicado: 0, faixaAplicada: null };
+
+        if (s.faixas_metro && s.faixas_metro.length) {
+          var faixa = s.faixas_metro.find(function (f) { return metragem >= f.min && metragem <= (f.max != null ? f.max : Infinity); });
+          if (faixa) {
+            return { valor: metragem * Number(faixa.valor_metro || 0), valorPorMetroAplicado: Number(faixa.valor_metro || 0), faixaAplicada: faixa };
+          }
+        }
+        return { valor: metragem * s.valor_por_metro, valorPorMetroAplicado: s.valor_por_metro, faixaAplicada: null };
       }
 
       function renderServicos() {
@@ -700,6 +1193,27 @@
         }
 
         grid.innerHTML = SVC.map(function (s) {
+          if (s.isPorMetro) {
+            var metragemAtual = svcMetragem[s.servico_id] || 0;
+            var ligado = metragemAtual > 0;
+            var calc = calcularValorPorMetro(s, metragemAtual);
+
+            return '<div data-svc="' + s.servico_id + '" data-metro="1" id="card-svc-' + s.servico_id + '" class="glass-card-interactive p-4 rounded-xl">' +
+              '<div class="cursor-pointer" data-metro-toggle="' + s.servico_id + '">' +
+                '<span class="block text-xs font-bold text-white">' + s.icone + ' ' + esc(s.nome) + '</span>' +
+                (s.descricao ? '<span class="card-desc">' + esc(s.descricao) + '</span>' : '') +
+                '<span class="block text-[11px] font-semibold text-cyan-400 mt-2">' + fmtMoeda(s.valor_por_metro) + ' / metro' + (s.metragem_maxima ? ' (mín. ' + s.metragem_minima + 'm, máx. ' + s.metragem_maxima + 'm)' : ' (mín. ' + s.metragem_minima + 'm)') + '</span>' +
+              '</div>' +
+              (ligado ?
+                '<div class="metro-controls">' +
+                  '<div class="metro-btn" data-metro-menos="' + s.servico_id + '">−</div>' +
+                  '<span class="badge-metragem">📐 ' + metragemAtual + 'm selecionado · ' + fmtMoeda(calc.valor) + '</span>' +
+                  '<div class="metro-btn' + (s.metragem_maxima != null && metragemAtual >= s.metragem_maxima ? ' disabled' : '') + '" data-metro-mais="' + s.servico_id + '">+</div>' +
+                '</div>'
+              : '') +
+            '</div>';
+          }
+
           return '<div data-svc="' + s.servico_id + '" id="card-svc-' + s.servico_id + '" class="glass-card-interactive p-4 rounded-xl cursor-pointer">' +
             '<span class="block text-xs font-bold text-white">' + s.icone + ' ' + esc(s.nome) + '</span>' +
             (s.descricao ? '<span class="card-desc">' + esc(s.descricao) + '</span>' : '') +
@@ -707,7 +1221,8 @@
           '</div>';
         }).join('');
 
-        grid.querySelectorAll('[data-svc]').forEach(function (card) {
+        // Clique nos cards normais (não-metro)
+        grid.querySelectorAll('[data-svc]:not([data-metro])').forEach(function (card) {
           card.addEventListener('click', function () {
             if (formularioBloqueadoSomenteLeitura) return;
             var sid = card.dataset.svc;
@@ -724,6 +1239,71 @@
             recalc();
           });
         });
+
+        // Clique/toque em QUALQUER ponto do bloco "por metro" (topo, centro,
+        // base, laterais e bordas) — liga/desliga na metragem mínima.
+        // Correção 4: o CSS marca [data-metro-toggle] * { pointer-events: none }
+        // para que nenhum filho intercepte o evento; o listener continua
+        // único, no elemento pai, sem alterar o comando executado.
+        grid.querySelectorAll('[data-metro-toggle]').forEach(function (el) {
+          el.addEventListener('click', function () {
+            if (formularioBloqueadoSomenteLeitura) return;
+            var sid = el.dataset.metroToggle;
+            var s = SVC.find(function (x) { return x.servico_id === sid; });
+            if (!s) return;
+            if (svcMetragem[sid] > 0) {
+              // já ligado -> desliga
+              svcMetragem[sid] = 0;
+              svcState[sid] = 'off';
+            } else {
+              svcMetragem[sid] = s.metragem_minima;
+              svcState[sid] = 'manual';
+            }
+            updateUI();
+            renderServicos();
+            recalc();
+          });
+        });
+
+        // Botão "+"
+        grid.querySelectorAll('[data-metro-mais]').forEach(function (btn) {
+          btn.addEventListener('click', function (e) {
+            e.stopPropagation();
+            if (formularioBloqueadoSomenteLeitura) return;
+            var sid = btn.dataset.metroMais;
+            var s = SVC.find(function (x) { return x.servico_id === sid; });
+            if (!s) return;
+            var atual = svcMetragem[sid] || s.metragem_minima;
+            var novo = atual + s.passo_metro;
+            if (s.metragem_maxima != null && novo > s.metragem_maxima) novo = s.metragem_maxima;
+            svcMetragem[sid] = novo;
+            renderServicos();
+            recalc();
+          });
+        });
+
+        // Botão "−"
+        grid.querySelectorAll('[data-metro-menos]').forEach(function (btn) {
+          btn.addEventListener('click', function (e) {
+            e.stopPropagation();
+            if (formularioBloqueadoSomenteLeitura) return;
+            var sid = btn.dataset.metroMenos;
+            var s = SVC.find(function (x) { return x.servico_id === sid; });
+            if (!s) return;
+            var atual = svcMetragem[sid] || s.metragem_minima;
+            var novo = atual - s.passo_metro;
+            if (novo <= s.metragem_minima - s.passo_metro || novo < s.metragem_minima) {
+              // desce abaixo do mínimo -> desliga completamente
+              svcMetragem[sid] = 0;
+              svcState[sid] = 'off';
+            } else {
+              svcMetragem[sid] = novo;
+            }
+            renderServicos();
+            recalc();
+          });
+        });
+updateUI();
       }
 
       function updateUI() {
@@ -740,6 +1320,817 @@
         });
       }
 
+      function setToggleVisual(ligado) {
+        var el = document.getElementById('toggleTransporte');
+        if (el) el.classList.toggle('on', ligado);
+      }
+
+      function atualizarStatusTransporte(tipo, msg) {
+        var el = document.getElementById('transporteStatus');
+        if (!el) return;
+        el.className = tipo || '';
+        el.textContent = msg || '';
+      }
+
+      /* FÓRMULA DE HAVERSINE — distância em km entre dois pontos lat/lng */
+      function distanciaHaversine(lat1, lng1, lat2, lng2) {
+        var R = 6371; // raio médio da Terra em km
+        var dLat = (lat2 - lat1) * Math.PI / 180;
+        var dLng = (lng2 - lng1) * Math.PI / 180;
+        var a = Math.sin(dLat / 2) * Math.sin(dLat / 2) +
+                Math.cos(lat1 * Math.PI / 180) * Math.cos(lat2 * Math.PI / 180) *
+                Math.sin(dLng / 2) * Math.sin(dLng / 2);
+        var c = 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a));
+        return R * c;
+      }
+
+   async function geocodificarCep(cepBruto) {
+  var cep = String(cepBruto || '').replace(/\D/g, '');
+  if (cep.length !== 8) return null;
+
+  var viacepResp = await fetch('https://viacep.com.br/ws/' + cep + '/json/');
+  var viacepData = await viacepResp.json();
+  if (viacepData.erro) return null;
+
+  async function buscarNominatim(query) {
+    var nomUrl = 'https://nominatim.openstreetmap.org/search?format=json&limit=1&countrycodes=br&q=' + encodeURIComponent(query);
+    var nomResp = await fetch(nomUrl, { headers: { 'Accept-Language': 'pt-BR' } });
+    if (!nomResp.ok) return null;
+    var nomData = await nomResp.json();
+    return (nomData && nomData.length) ? nomData[0] : null;
+  }
+
+  var enderecoCompleto = [viacepData.logradouro, viacepData.bairro, viacepData.localidade, viacepData.uf, 'Brasil']
+    .filter(Boolean).join(', ');
+  var resultado = enderecoCompleto ? await buscarNominatim(enderecoCompleto) : null;
+
+  if (!resultado) {
+    var enderecoBairro = [viacepData.bairro, viacepData.localidade, viacepData.uf, 'Brasil'].filter(Boolean).join(', ');
+    resultado = await buscarNominatim(enderecoBairro);
+  }
+
+  if (!resultado) {
+    var enderecoCidade = [viacepData.localidade, viacepData.uf, 'Brasil'].filter(Boolean).join(', ');
+    resultado = await buscarNominatim(enderecoCidade);
+  }
+
+  if (!resultado) return null;
+
+  return {
+    lat: Number(resultado.lat),
+    lng: Number(resultado.lon),
+    enderecoFormatado: enderecoCompleto
+  };
+}
+
+      /* ===================== CEP — MÁSCARA + BUSCA DE ENDEREÇO (ViaCEP) =====================
+         Ponto 2/3 do briefing: função única, reutilizada no modal de Cadastro de Cliente
+         e na tela principal da Nova Proposta. Não reimplementa geocodificação (isso já
+         existe em geocodificarCep/distância); aqui é apenas a consulta de endereço por CEP. */
+
+      function aplicarMascaraCep(valor) {
+        var v = String(valor || '').replace(/\D/g, '').substring(0, 8);
+        if (v.length > 5) v = v.replace(/^(\d{5})(\d{1,3})$/, '$1-$2');
+        return v;
+      }
+
+      // Função única de busca de endereço por CEP, reaproveitada no modal (2) e na
+      // tela principal (3). Não faz requisição a cada tecla — quem chama decide
+      // quando (somente ao completar 8 dígitos). Erros/CEP inválido nunca lançam.
+      async function buscarEnderecoPorCEP(cep) {
+        var cepLimpo = String(cep || '').replace(/\D/g, '');
+        if (cepLimpo.length !== 8) return null;
+        try {
+          var resp = await fetch('https://viacep.com.br/ws/' + cepLimpo + '/json/');
+          if (!resp.ok) return null;
+          var data = await resp.json();
+          if (!data || data.erro) return null;
+          return {
+            logradouro: data.logradouro || '',
+            bairro: data.bairro || '',
+            cidade: data.localidade || '',
+            uf: data.uf || ''
+          };
+        } catch (e) {
+          console.error('[432UP Partner] Erro ao buscar CEP:', e);
+          return null;
+        }
+      }
+
+      /* ---- CEP no modal de Cadastro de Cliente (Correção 2) ---- */
+
+      function onMcCepInput(e) {
+        e.target.value = aplicarMascaraCep(e.target.value);
+        var cepLimpo = e.target.value.replace(/\D/g, '');
+        var statusEl = document.getElementById('mcCepStatus');
+
+        if (cepLimpo.length < 8) {
+          ultimoCepConsultadoModal = null;
+          if (statusEl) { statusEl.textContent = ''; statusEl.className = 'mt-1 text-[11px]'; }
+          return;
+        }
+        if (cepLimpo.length !== 8) return;
+        if (cepLimpo === ultimoCepConsultadoModal) return; // já consultado, evita repetir
+
+        ultimoCepConsultadoModal = cepLimpo;
+        if (statusEl) { statusEl.textContent = 'Buscando endereço...'; statusEl.className = 'mt-1 text-[11px] text-cyan-400'; }
+
+        buscarEnderecoPorCEP(cepLimpo).then(function (end) {
+          if (!end) {
+            if (statusEl) { statusEl.textContent = 'CEP não encontrado.'; statusEl.className = 'mt-1 text-[11px] text-red-400'; }
+            return;
+          }
+          if (end.logradouro) document.getElementById('mcLogradouro').value = end.logradouro;
+          if (end.bairro) document.getElementById('mcBairro').value = end.bairro;
+          if (end.cidade) document.getElementById('mcCidade').value = end.cidade;
+          if (end.uf) document.getElementById('mcUf').value = end.uf;
+          if (statusEl) { statusEl.textContent = 'Endereço preenchido automaticamente.'; statusEl.className = 'mt-1 text-[11px] text-emerald-400'; }
+        }).catch(function (e) {
+          console.error('[432UP Partner] Erro no autocomplete de CEP (modal):', e);
+          if (statusEl) { statusEl.textContent = ''; statusEl.className = 'mt-1 text-[11px]'; }
+        });
+      }
+
+      var cepDebounceTimer = null;
+      function onCepChange() {
+        var cepInput = document.getElementById('fCep');
+        cepInput.value = aplicarMascaraCep(cepInput.value);
+        var cepLimpo = cepInput.value.replace(/\D/g, '');
+        clearTimeout(cepDebounceTimer);
+
+        if (cepLimpo.length < 8) {
+          transporteDistanciaKm = null;
+          transporteValor = 0;
+          transporteLatLng = null;
+          ultimoCepConsultadoProposta = null;
+          atualizarStatusTransporte('', '');
+          recalc();
+          return;
+        }
+
+        cepDebounceTimer = setTimeout(async function () {
+          if (!CONFIG_TRANSPORTE) {
+            atualizarStatusTransporte('err', 'Tarifa de transporte não configurada. Fale com a equipe.');
+          } else {
+            atualizarStatusTransporte('loading', 'Calculando distância…');
+            try {
+              var geo = await geocodificarCep(cepLimpo);
+              if (!geo) {
+                atualizarStatusTransporte('err', 'CEP não encontrado. Verifique e tente novamente.');
+                transporteDistanciaKm = null;
+                transporteLatLng = null;
+                recalc();
+              } else {
+                var dist = distanciaHaversine(CONFIG_TRANSPORTE.origem_lat, CONFIG_TRANSPORTE.origem_lng, geo.lat, geo.lng);
+                dist = Math.round(dist * 10) / 10;
+
+                transporteDistanciaKm = dist;
+                transporteLatLng = { lat: geo.lat, lng: geo.lng };
+                transporteCepValido = cepLimpo;
+
+                if (eventoEnderecoIgualCliente) {
+                  eventoEndereco.cep = cepLimpo;
+                  eventoEndereco.lat = geo.lat;
+                  eventoEndereco.lng = geo.lng;
+                }
+
+                atualizarStatusTransporte('ok', 'Distância: ' + dist.toFixed(1) + ' km de ' + CONFIG_TRANSPORTE.origem_label);
+                recalc();
+              }
+            } catch (e) {
+              console.error('[432UP Partner] Erro ao geocodificar CEP:', e);
+              atualizarStatusTransporte('err', 'Não foi possível calcular a distância agora.');
+              transporteDistanciaKm = null;
+              recalc();
+            }
+          }
+
+          // Correção 3: autocomplete de Logradouro/Bairro/Cidade/UF na tela
+          // principal, reutilizando a mesma função do modal (buscarEnderecoPorCEP),
+          // sem duplicar dados do cliente nem mover/alterar campos existentes.
+          if (cepLimpo !== ultimoCepConsultadoProposta) {
+            ultimoCepConsultadoProposta = cepLimpo;
+            try {
+              var endProposta = await buscarEnderecoPorCEP(cepLimpo);
+              if (endProposta) {
+                var fLocalEl = document.getElementById('fLocal');
+                if (fLocalEl && !fLocalEl.value.trim()) {
+                  var refLocal = [endProposta.cidade, endProposta.uf].filter(Boolean).join(' - ');
+                  if (refLocal) fLocalEl.value = refLocal;
+                }
+                if (eventoEnderecoIgualCliente) {
+                  eventoEndereco.logradouro = endProposta.logradouro || eventoEndereco.logradouro;
+                  eventoEndereco.bairro = endProposta.bairro || eventoEndereco.bairro;
+                  eventoEndereco.cidade = endProposta.cidade || eventoEndereco.cidade;
+                  eventoEndereco.uf = endProposta.uf || eventoEndereco.uf;
+                }
+              }
+            } catch (e) {
+              console.error('[432UP Partner] Erro no autocomplete de CEP (proposta):', e);
+            }
+          }
+        }, 700);
+      }
+
+      /* ===================== ENDEREÇO DO EVENTO (evento_*) =====================
+         Regra: quando eventoEnderecoIgualCliente = true, o endereço do evento é o
+         endereço cadastrado do cliente (fCep/transporteLatLng/transporteDistanciaKm
+         já calculados pelo fluxo existente). Quando false, usa os campos evento_*
+         preenchidos aqui, com seu próprio CEP/geocodificação/distância — sem alterar
+         o cadastro do cliente. */
+
+      function atualizarLabelFCep() {
+        var lbl = document.getElementById('lblFCep');
+        if (!lbl) return;
+        lbl.textContent = eventoEnderecoIgualCliente ? 'CEP do Local do Evento *' : 'CEP do Cliente (cadastro)';
+      }
+
+      function atualizarStatusEventoCep(tipo, msg) {
+        var el = document.getElementById('eventoCepStatus');
+        if (!el) return;
+        el.className = 'mt-1 text-[11px]' + (tipo ? ' ' + (tipo === 'ok' ? 'text-emerald-400' : tipo === 'err' ? 'text-red-400' : 'text-cyan-400') : '');
+        el.textContent = msg || '';
+      }
+
+      function toggleEventoEnderecoIgualCliente(ligado) {
+        eventoEnderecoIgualCliente = !!ligado;
+        var chk = document.getElementById('fEventoEnderecoIgualCliente');
+        if (chk) chk.checked = eventoEnderecoIgualCliente;
+        var bloco = document.getElementById('blocoEnderecoEvento');
+        if (bloco) bloco.classList.toggle('hidden', eventoEnderecoIgualCliente);
+        atualizarLabelFCep();
+
+        if (eventoEnderecoIgualCliente) {
+          // Volta a usar o endereço do cliente: transporte usa transporteLatLng/transporteDistanciaKm
+          // já calculados a partir do fCep. Não apaga os campos evento_* preenchidos
+          // (permite reativar sem perder o que foi digitado), mas eles deixam de valer.
+          recalcularTransporteEfetivo();
+        } else {
+          // Passa a exigir endereço específico do evento; se já houver um CEP de evento
+          // preenchido, recalcula a distância a partir dele.
+          var cepEventoEl = document.getElementById('fEventoCep');
+          if (cepEventoEl && cepEventoEl.value.trim()) {
+            onEventoCepChange();
+          } else {
+            recalcularTransporteEfetivo();
+          }
+        }
+        recalc();
+      }
+
+      // Centraliza a regra de item 5: origem do endereço para cálculo de transporte.
+      // Preserva toda a lógica de distância/valor já existente (distanciaHaversine,
+      // CONFIG_TRANSPORTE) — apenas escolhe de onde vem lat/lng e o CEP de referência.
+      function recalcularTransporteEfetivo() {
+        if (eventoEnderecoIgualCliente) {
+          // endereço efetivo = endereço do cliente -> nada a fazer aqui, os valores
+          // já vêm de transporteLatLng/transporteDistanciaKm/transporteCepValido
+          // calculados pelo fluxo existente de fCep (onCepChange/geocodificarCep).
+          return;
+        }
+        // endereço efetivo = endereço específico do evento
+        if (eventoEndereco.lat != null && eventoEndereco.lng != null && CONFIG_TRANSPORTE) {
+          var dist = distanciaHaversine(CONFIG_TRANSPORTE.origem_lat, CONFIG_TRANSPORTE.origem_lng, eventoEndereco.lat, eventoEndereco.lng);
+          dist = Math.round(dist * 10) / 10;
+          transporteDistanciaKm = dist;
+          transporteLatLng = { lat: eventoEndereco.lat, lng: eventoEndereco.lng };
+          transporteCepValido = eventoEndereco.cep;
+          atualizarStatusTransporte('ok', 'Distância: ' + dist.toFixed(1) + ' km de ' + CONFIG_TRANSPORTE.origem_label);
+        } else {
+          transporteDistanciaKm = null;
+          transporteLatLng = null;
+        }
+      }
+
+      var eventoCepDebounceTimer = null;
+      function onEventoCepChange() {
+        var cepInput = document.getElementById('fEventoCep');
+        cepInput.value = aplicarMascaraCep(cepInput.value);
+        var cepLimpo = cepInput.value.replace(/\D/g, '');
+        eventoEndereco.cep = cepLimpo || null;
+        clearTimeout(eventoCepDebounceTimer);
+
+        if (cepLimpo.length < 8) {
+          eventoEndereco.lat = null;
+          eventoEndereco.lng = null;
+          ultimoCepConsultadoEvento = null;
+          atualizarStatusEventoCep('', '');
+          recalcularTransporteEfetivo();
+          recalc();
+          return;
+        }
+
+        eventoCepDebounceTimer = setTimeout(async function () {
+          // Autocomplete de Logradouro/Bairro/Cidade/UF — reutiliza a mesma função
+          // já usada no modal de cliente e na tela principal (item 4 do briefing).
+          if (cepLimpo !== ultimoCepConsultadoEvento) {
+            ultimoCepConsultadoEvento = cepLimpo;
+            atualizarStatusEventoCep('loading', 'Buscando endereço...');
+            try {
+              var end = await buscarEnderecoPorCEP(cepLimpo);
+              if (!end) {
+                atualizarStatusEventoCep('err', 'CEP não encontrado.');
+              } else {
+                if (end.logradouro) { document.getElementById('fEventoLogradouro').value = end.logradouro; eventoEndereco.logradouro = end.logradouro; }
+                if (end.bairro) { document.getElementById('fEventoBairro').value = end.bairro; eventoEndereco.bairro = end.bairro; }
+                if (end.cidade) { document.getElementById('fEventoCidade').value = end.cidade; eventoEndereco.cidade = end.cidade; }
+                if (end.uf) { document.getElementById('fEventoUf').value = end.uf; eventoEndereco.uf = end.uf; }
+                atualizarStatusEventoCep('ok', 'Endereço preenchido automaticamente.');
+              }
+            } catch (e) {
+              console.error('[432UP Partner] Erro no autocomplete de CEP (evento):', e);
+              atualizarStatusEventoCep('', '');
+            }
+          }
+
+          // Geocodificação para transporte (item 5) — reutiliza geocodificarCep já existente.
+          if (!CONFIG_TRANSPORTE) {
+            atualizarStatusTransporte('err', 'Tarifa de transporte não configurada. Fale com a equipe.');
+          } else {
+            atualizarStatusTransporte('loading', 'Calculando distância…');
+            try {
+              var geo = await geocodificarCep(cepLimpo);
+              if (!geo) {
+                atualizarStatusTransporte('err', 'CEP do evento não encontrado. Verifique e tente novamente.');
+                eventoEndereco.lat = null;
+                eventoEndereco.lng = null;
+              } else {
+                eventoEndereco.lat = geo.lat;
+                eventoEndereco.lng = geo.lng;
+              }
+              recalcularTransporteEfetivo();
+              recalc();
+            } catch (e) {
+              console.error('[432UP Partner] Erro ao geocodificar CEP do evento:', e);
+              atualizarStatusTransporte('err', 'Não foi possível calcular a distância agora.');
+              eventoEndereco.lat = null;
+              eventoEndereco.lng = null;
+              recalcularTransporteEfetivo();
+              recalc();
+            }
+          }
+        }, 700);
+      }
+
+      function bindEventoEnderecoEvents() {
+        var chk = document.getElementById('fEventoEnderecoIgualCliente');
+        if (chk) {
+          chk.addEventListener('change', function () {
+            if (formularioBloqueadoSomenteLeitura) return;
+            toggleEventoEnderecoIgualCliente(this.checked);
+          });
+        }
+
+        var camposTexto = ['fEventoNumero', 'fEventoLogradouro', 'fEventoComplemento', 'fEventoBairro', 'fEventoCidade', 'fEventoUf'];
+        var mapaCampo = {
+          fEventoNumero: 'numero', fEventoLogradouro: 'logradouro', fEventoComplemento: 'complemento',
+          fEventoBairro: 'bairro', fEventoCidade: 'cidade', fEventoUf: 'uf'
+        };
+        camposTexto.forEach(function (id) {
+          var el = document.getElementById(id);
+          if (!el) return;
+          el.addEventListener('input', function () {
+            eventoEndereco[mapaCampo[id]] = this.value.trim() || null;
+          });
+        });
+
+        var cepEl = document.getElementById('fEventoCep');
+        if (cepEl) cepEl.addEventListener('input', onEventoCepChange);
+      }
+
+      // Preenche os campos evento_* com os dados do cliente selecionado, para que a
+      // proposta fique completa mesmo com evento_endereco_igual_cliente = true
+      // (item 3 do briefing). Não sobrescreve o cadastro do cliente.
+      function sincronizarEventoComCliente(c) {
+        if (!eventoEnderecoIgualCliente) return;
+        eventoEndereco.cep = (c && c.cep) ? String(c.cep).replace(/\D/g, '') : eventoEndereco.cep;
+        if (transporteLatLng) {
+          eventoEndereco.lat = transporteLatLng.lat;
+          eventoEndereco.lng = transporteLatLng.lng;
+        }
+      }
+
+      /* ===================== CLIENTE (co_clientes) ===================== */
+
+      function normalizarNumeros(str) { return str ? String(str).replace(/\D/g, '') : ''; }
+
+      function clienteSubtitulo(c) {
+        var partes = [];
+        if (c.nome_fantasia) partes.push(c.nome_fantasia);
+        var local = [c.cidade, c.bairro].filter(Boolean).join(' / ');
+        if (local) partes.push(local);
+        return partes.join(' — ');
+      }
+
+      function setClienteSelecionadoUI() {
+        var wrapBusca = document.getElementById('clienteBuscaWrap');
+        var box = document.getElementById('clienteSelecionadoBox');
+        var btnEditar = document.getElementById('btnEditarCliente');
+
+        if (clienteSelecionado) {
+          wrapBusca.classList.add('hidden');
+          box.classList.remove('hidden');
+          box.classList.add('flex');
+          document.getElementById('clienteSelNome').textContent = clienteSelecionado.nome_razao || '—';
+          var sub = clienteSelecionado.legacy
+            ? 'Cliente sem cadastro vinculado — busque para associar'
+            : clienteSubtitulo(clienteSelecionado);
+          document.getElementById('clienteSelSub').textContent = sub;
+          btnEditar.classList.toggle('hidden', !clienteSelecionado.id);
+        } else {
+          wrapBusca.classList.remove('hidden');
+          box.classList.add('hidden');
+          box.classList.remove('flex');
+          document.getElementById('fClienteBusca').value = '';
+        }
+      }
+
+      function selecionarCliente(c) {
+        clienteSelecionado = {
+          id: c.id,
+          nome_razao: c.nome_razao,
+          nome_fantasia: c.nome_fantasia,
+          cidade: c.cidade,
+          bairro: c.bairro,
+          cep: c.cep
+        };
+        document.getElementById('clienteResultados').classList.add('hidden');
+        setClienteSelecionadoUI();
+
+        // Correção: ao selecionar um cliente já cadastrado, carregar o CEP
+        // salvo dele no campo da tela principal (fora do modal), aplicando a
+        // máscara 00000-000 e disparando o mesmo autocomplete de endereço/
+        // transporte já usado quando o CEP é digitado manualmente.
+        var fCepEl = document.getElementById('fCep');
+        if (fCepEl && c.cep) {
+          fCepEl.value = aplicarMascaraCep(c.cep);
+          onCepChange();
+        }
+
+        sincronizarEventoComCliente(c);
+        recalc();
+      }
+
+      function trocarCliente() {
+        if (formularioBloqueadoSomenteLeitura) return;
+        clienteSelecionado = null;
+        setClienteSelecionadoUI();
+        recalc();
+        var input = document.getElementById('fClienteBusca');
+        if (input) input.focus();
+      }
+
+      function renderClienteResultados(lista, termoOriginal) {
+        var el = document.getElementById('clienteResultados');
+
+        if (!lista.length) {
+          el.innerHTML =
+            '<div class="p-3">' +
+              '<span class="block text-xs text-slate-400 mb-2">Nenhum cliente encontrado para "' + esc(termoOriginal) + '".</span>' +
+              '<button type="button" id="btnCadastrarClienteNovo" class="w-full py-2 rounded-lg bg-cyan-500/15 text-cyan-300 border border-cyan-500/30 text-xs font-semibold cursor-pointer">+ Cadastrar cliente</button>' +
+            '</div>';
+          el.classList.remove('hidden');
+          var btnNovo = document.getElementById('btnCadastrarClienteNovo');
+          if (btnNovo) btnNovo.addEventListener('click', function () { abrirModalCliente(termoOriginal); });
+          return;
+        }
+
+        el.innerHTML = lista.map(function (c, i) {
+          var sub = clienteSubtitulo(c);
+          return '<div data-cliente-idx="' + i + '" class="px-4 py-2.5 cursor-pointer hover:bg-cyan-500/10 border-b border-white/5 last:border-b-0">' +
+            '<span class="block text-sm font-semibold text-white truncate">' + esc(c.nome_razao) + '</span>' +
+            (sub ? '<span class="block text-[11px] text-slate-400 truncate">' + esc(sub) + '</span>' : '') +
+          '</div>';
+        }).join('') +
+          '<div class="px-4 py-2 border-t border-white/10">' +
+            '<button type="button" id="btnCadastrarClienteNovo" class="text-[11px] font-semibold text-cyan-300 hover:text-cyan-200 cursor-pointer">+ Não encontrou? Cadastrar cliente</button>' +
+          '</div>';
+
+        el.classList.remove('hidden');
+
+        el.querySelectorAll('[data-cliente-idx]').forEach(function (row) {
+          row.addEventListener('click', function () {
+            selecionarCliente(lista[parseInt(row.dataset.clienteIdx, 10)]);
+          });
+        });
+        var btnNovo2 = document.getElementById('btnCadastrarClienteNovo');
+        if (btnNovo2) btnNovo2.addEventListener('click', function () { abrirModalCliente(termoOriginal); });
+      }
+
+      async function buscarClientes(termo) {
+        var termoTrim = termo.trim();
+        if (termoTrim.length < 2) {
+          document.getElementById('clienteResultados').classList.add('hidden');
+          return;
+        }
+
+        var termoNum = normalizarNumeros(termoTrim);
+        var filtros = ['nome_razao.ilike.%' + termoTrim + '%'];
+        if (termoNum.length >= 3) {
+          filtros.push('cpf_cnpj.ilike.%' + termoNum + '%');
+          filtros.push('telefone.ilike.%' + termoNum + '%');
+        }
+
+        try {
+          var res = await sbPartner
+            .from('co_clientes')
+            .select('id, tipo_pessoa, nome_razao, nome_fantasia, cidade, bairro, cpf_cnpj, telefone, cep')
+            .or(filtros.join(','))
+            .limit(8);
+
+          if (res.error) {
+            console.error('[432UP Partner] Erro na busca de clientes:', res.error);
+            renderClienteResultados([], termoTrim);
+            return;
+          }
+          renderClienteResultados(res.data || [], termoTrim);
+        } catch (e) {
+          console.error('[432UP Partner] Exceção na busca de clientes:', e);
+          renderClienteResultados([], termoTrim);
+        }
+      }
+
+      function onClienteBuscaInput() {
+        var val = document.getElementById('fClienteBusca').value;
+        clearTimeout(clienteBuscaTimer);
+        clienteBuscaTimer = setTimeout(function () { buscarClientes(val); }, 350);
+      }
+
+      /* ---------- MODAL DE CADASTRO (reaproveita public.co_clientes) ---------- */
+
+      function abrirModalCliente(termoPreenchido) {
+        if (formularioBloqueadoSomenteLeitura) return;
+        mcClienteEditandoId = null;
+        document.getElementById('clienteResultados').classList.add('hidden');
+        setMcTipo('PF');
+        document.getElementById('formCadastroCliente').reset();
+        document.getElementById('mcTipoPessoa').value = 'PF';
+        if (termoPreenchido) document.getElementById('mcNomeRazao').value = termoPreenchido;
+        document.getElementById('mcAlert').classList.add('hidden');
+        ultimoCepConsultadoModal = null;
+        var mcCepStatusEl = document.getElementById('mcCepStatus');
+        if (mcCepStatusEl) { mcCepStatusEl.textContent = ''; mcCepStatusEl.className = 'mt-1 text-[11px]'; }
+        var mcTitulo = document.getElementById('mcTitulo');
+        if (mcTitulo) mcTitulo.textContent = 'Cadastrar Cliente';
+        var mcBtnSalvarEl = document.getElementById('mcBtnSalvar');
+        if (mcBtnSalvarEl) mcBtnSalvarEl.textContent = 'Salvar Cliente';
+        var modal = document.getElementById('modalCliente');
+        modal.classList.remove('hidden');
+        modal.classList.add('flex');
+      }
+
+      // Correção: "Editar cliente" reaproveita o mesmo modal de cadastro,
+      // já em uso e funcional, em vez de depender de ficha-cliente.html
+      // (que hoje não abre nada). Busca os dados completos do cliente
+      // selecionado e preenche o formulário para edição no local.
+      async function abrirModalClienteParaEdicao(clienteId) {
+        if (formularioBloqueadoSomenteLeitura || !clienteId) return;
+
+        document.getElementById('clienteResultados').classList.add('hidden');
+        document.getElementById('formCadastroCliente').reset();
+        document.getElementById('mcAlert').classList.add('hidden');
+        ultimoCepConsultadoModal = null;
+        var mcCepStatusEl = document.getElementById('mcCepStatus');
+        if (mcCepStatusEl) { mcCepStatusEl.textContent = ''; mcCepStatusEl.className = 'mt-1 text-[11px]'; }
+
+        try {
+          var res = await sbPartner
+            .from('co_clientes')
+            .select('id, tipo_pessoa, nome_razao, telefone, cpf_cnpj, email, nome_fantasia, responsavel_legal, cep, logradouro, numero, complemento, bairro, cidade, uf, observacoes_comerciais')
+            .eq('id', clienteId)
+            .maybeSingle();
+
+          if (res.error || !res.data) {
+            console.error('[432UP Partner] Falha ao carregar cliente para edição:', res.error);
+            showAlert('Não foi possível carregar os dados deste cliente para edição.', 'error');
+            return;
+          }
+
+          var c = res.data;
+          mcClienteEditandoId = c.id;
+
+          setMcTipo(c.tipo_pessoa === 'PJ' ? 'PJ' : 'PF');
+          document.getElementById('mcNomeRazao').value = c.nome_razao || '';
+          document.getElementById('mcTelefone').value = c.telefone || '';
+          document.getElementById('mcDocNumero').value = c.cpf_cnpj ? handleMcDocFormatarValor(c.cpf_cnpj) : '';
+          document.getElementById('mcEmail').value = c.email || '';
+          document.getElementById('mcNomeFantasia').value = c.nome_fantasia || '';
+          document.getElementById('mcRepNome').value = c.responsavel_legal || '';
+          document.getElementById('mcCep').value = c.cep ? aplicarMascaraCep(c.cep) : '';
+          document.getElementById('mcLogradouro').value = c.logradouro || '';
+          document.getElementById('mcNumero').value = c.numero || '';
+          document.getElementById('mcComplemento').value = c.complemento || '';
+          document.getElementById('mcBairro').value = c.bairro || '';
+          document.getElementById('mcCidade').value = c.cidade || '';
+          document.getElementById('mcUf').value = c.uf || '';
+          document.getElementById('mcObs').value = c.observacoes_comerciais || '';
+
+          if (c.cep) ultimoCepConsultadoModal = String(c.cep).replace(/\D/g, '');
+
+          var mcTitulo = document.getElementById('mcTitulo');
+          if (mcTitulo) mcTitulo.textContent = 'Editar Cliente';
+          var mcBtnSalvarEl = document.getElementById('mcBtnSalvar');
+          if (mcBtnSalvarEl) mcBtnSalvarEl.textContent = 'Salvar Alterações';
+
+          var modal = document.getElementById('modalCliente');
+          modal.classList.remove('hidden');
+          modal.classList.add('flex');
+        } catch (e) {
+          console.error('[432UP Partner] Exceção ao carregar cliente para edição:', e);
+          showAlert('Erro técnico ao abrir a edição do cliente.', 'error');
+        }
+      }
+
+      // Aplica a máscara correta (CPF ou CNPJ) sobre um valor já salvo no
+      // banco, para exibir corretamente ao abrir um cliente existente.
+      function handleMcDocFormatarValor(docSalvo) {
+        var value = String(docSalvo || '').replace(/\D/g, '');
+        if (value.length <= 11) {
+          value = value.replace(/(\d{3})(\d)/, '$1.$2');
+          value = value.replace(/(\d{3})(\d)/, '$1.$2');
+          value = value.replace(/(\d{3})(\d{1,2})$/, '$1-$2');
+        } else {
+          value = value.substring(0, 14);
+          value = value.replace(/^(\d{2})(\d)/, '$1.$2');
+          value = value.replace(/^(\d{2})\.(\d{3})(\d)/, '$1.$2.$3');
+          value = value.replace(/\.(\d{3})(\d)/, '.$1/$2');
+          value = value.replace(/(\d{4})(\d{1,2})$/, '$1-$2');
+        }
+        return value;
+      }
+
+      function fecharModalCliente() {
+        mcClienteEditandoId = null;
+        var modal = document.getElementById('modalCliente');
+        modal.classList.add('hidden');
+        modal.classList.remove('flex');
+      }
+
+      function setMcTipo(tipo) {
+        document.getElementById('mcTipoPessoa').value = tipo;
+        document.getElementById('mcBtnPF').classList.toggle('active', tipo === 'PF');
+        document.getElementById('mcBtnPJ').classList.toggle('active', tipo === 'PJ');
+        document.getElementById('mcBlocoPJ').classList.toggle('hidden', tipo !== 'PJ');
+        document.getElementById('mcLabelNome').textContent = tipo === 'PJ' ? 'Razão Social *' : 'Nome Completo *';
+        document.getElementById('mcLabelDoc').textContent = tipo === 'PJ' ? 'CNPJ (Opcional)' : 'CPF (Opcional)';
+      }
+
+      // Correção 1: autorreconhecimento de CPF/CNPJ pela quantidade de dígitos,
+      // sem depender do seletor PF/PJ. O seletor PF/PJ continua existindo e
+      // controlando os demais campos (Razão Social, Nome Fantasia, etc.), mas
+      // não é mais requisito para a máscara do documento funcionar.
+      function handleMcDocTyping(e) {
+        var value = e.target.value.replace(/\D/g, '');
+        if (value.length <= 11) {
+          value = value.replace(/(\d{3})(\d)/, '$1.$2');
+          value = value.replace(/(\d{3})(\d)/, '$1.$2');
+          value = value.replace(/(\d{3})(\d{1,2})$/, '$1-$2');
+          e.target.value = value;
+        } else {
+          value = value.substring(0, 14);
+          value = value.replace(/^(\d{2})(\d)/, '$1.$2');
+          value = value.replace(/^(\d{2})\.(\d{3})(\d)/, '$1.$2.$3');
+          value = value.replace(/\.(\d{3})(\d)/, '.$1/$2');
+          value = value.replace(/(\d{4})(\d{1,2})$/, '$1-$2');
+          e.target.value = value;
+        }
+
+        // Ajusta o tipo de pessoa (PF/PJ) e o rótulo do campo automaticamente
+        // conforme a quantidade de dígitos, sem alterar demais campos do form.
+        var digitos = value.replace(/\D/g, '');
+        var tipoAtual = document.getElementById('mcTipoPessoa').value;
+        var tipoDetectado = digitos.length > 11 ? 'PJ' : 'PF';
+        if (digitos.length > 0 && tipoDetectado !== tipoAtual) {
+          setMcTipo(tipoDetectado);
+        }
+      }
+
+      function mcShowAlert(msg) {
+        var el = document.getElementById('mcAlert');
+        el.textContent = msg;
+        el.classList.remove('hidden');
+      }
+
+      async function submitCadastroCliente(e) {
+        e.preventDefault();
+        var btn = document.getElementById('mcBtnSalvar');
+        var original = btn.textContent;
+        document.getElementById('mcAlert').classList.add('hidden');
+
+        var tipoPessoa = document.getElementById('mcTipoPessoa').value;
+        var nomeRazao = document.getElementById('mcNomeRazao').value.trim();
+        var telefone = document.getElementById('mcTelefone').value.trim();
+        var docNumero = document.getElementById('mcDocNumero').value.trim();
+        var email = document.getElementById('mcEmail').value.trim();
+        var nomeFantasia = document.getElementById('mcNomeFantasia').value.trim();
+        var repNome = document.getElementById('mcRepNome').value.trim();
+        var cep = document.getElementById('mcCep').value.trim();
+        var logradouro = document.getElementById('mcLogradouro').value.trim();
+        var numero = document.getElementById('mcNumero').value.trim();
+        var complemento = document.getElementById('mcComplemento').value.trim();
+        var bairro = document.getElementById('mcBairro').value.trim();
+        var cidade = document.getElementById('mcCidade').value.trim();
+        var uf = document.getElementById('mcUf').value.trim();
+        var obsComerciais = document.getElementById('mcObs').value.trim();
+
+        if (!nomeRazao || !telefone) {
+          mcShowAlert('Preencha nome/razão social e telefone.');
+          return;
+        }
+
+        var docNormalizado = normalizarNumeros(docNumero);
+        var editandoId = mcClienteEditandoId;
+
+        btn.disabled = true;
+        btn.textContent = editandoId ? 'Salvando...' : 'Salvando...';
+
+        try {
+          if (docNormalizado.length > 0) {
+            var dupQuery = sbPartner.from('co_clientes').select('id').eq('cpf_cnpj', docNormalizado);
+            if (editandoId) dupQuery = dupQuery.neq('id', editandoId);
+            var dup = await dupQuery.maybeSingle();
+            if (dup.error) console.error('[432UP Partner] Erro técnico na checagem de duplicidade:', dup.error);
+            if (dup.data) {
+              mcShowAlert('Este cliente já possui cadastro em nossa base comercial e está vinculado a outro responsável. Para verificar a situação, entre em contato com a administração.');
+              btn.disabled = false;
+              btn.textContent = original;
+              return;
+            }
+          }
+
+          var payload = {
+            tipo_pessoa: tipoPessoa,
+            nome_razao: nomeRazao,
+            telefone: telefone,
+            cpf_cnpj: docNormalizado || null,
+            email: email || null,
+            nome_fantasia: tipoPessoa === 'PJ' ? (nomeFantasia || null) : null,
+            responsavel_legal: tipoPessoa === 'PJ' ? (repNome || null) : null,
+            cep: cep || null,
+            logradouro: logradouro || null,
+            numero: numero || null,
+            complemento: complemento || null,
+            bairro: bairro || null,
+            cidade: cidade || null,
+            uf: uf || null,
+            observacoes_comerciais: obsComerciais || null
+          };
+
+          var saveResult;
+          if (editandoId) {
+            saveResult = await sbPartner.from('co_clientes').update(payload).eq('id', editandoId)
+              .select('id, nome_razao, nome_fantasia, cidade, bairro, cep').single();
+          } else {
+            payload.parceiro_responsavel_id = parceiroAtual.id;
+            saveResult = await sbPartner.from('co_clientes').insert([payload])
+              .select('id, nome_razao, nome_fantasia, cidade, bairro, cep').single();
+          }
+
+          if (saveResult.error) {
+            console.error('[432UP Partner] Erro técnico no salvamento do cliente:', saveResult.error);
+            mcShowAlert('Não foi possível salvar os dados do cliente. Tente novamente ou contate o suporte.');
+          } else {
+            mcClienteEditandoId = null;
+            fecharModalCliente();
+            selecionarCliente(saveResult.data);
+          }
+        } catch (err) {
+          console.error('[432UP Partner] Exceção no salvamento do cliente:', err);
+          mcShowAlert('Erro técnico ao salvar o cliente. Tente novamente.');
+        } finally {
+          btn.disabled = false;
+          btn.textContent = original;
+        }
+      }
+
+      function bindClienteEvents() {
+        document.getElementById('fClienteBusca').addEventListener('input', onClienteBuscaInput);
+        document.getElementById('fClienteBusca').addEventListener('focus', onClienteBuscaInput);
+
+        document.addEventListener('click', function (e) {
+          var wrap = document.getElementById('clienteBuscaWrap');
+          if (wrap && !wrap.contains(e.target)) {
+            document.getElementById('clienteResultados').classList.add('hidden');
+          }
+        });
+
+        document.getElementById('btnTrocarCliente').addEventListener('click', trocarCliente);
+        document.getElementById('btnEditarCliente').addEventListener('click', function () {
+          if (clienteSelecionado && clienteSelecionado.id) {
+            abrirModalClienteParaEdicao(clienteSelecionado.id);
+          }
+        });
+
+        document.getElementById('mcBtnPF').addEventListener('click', function () { setMcTipo('PF'); });
+        document.getElementById('mcBtnPJ').addEventListener('click', function () { setMcTipo('PJ'); });
+        document.getElementById('mcDocNumero').addEventListener('input', handleMcDocTyping);
+        document.getElementById('mcCep').addEventListener('input', onMcCepInput);
+        document.getElementById('btnFecharModalCliente').addEventListener('click', fecharModalCliente);
+        document.getElementById('formCadastroCliente').addEventListener('submit', submitCadastroCliente);
+      }
+
+      /* =================================================================== */
+
       function bindEvents() {
         var btnDesk = document.getElementById('btnLogoutDesk');
         var btnMob = document.getElementById('btnLogoutMob');
@@ -753,8 +2144,15 @@
           recalc();
         });
 
-        document.getElementById('fCliente').addEventListener('input', recalc);
         document.getElementById('fData').addEventListener('change', recalc);
+        document.getElementById('fCep').addEventListener('input', onCepChange);
+
+        document.getElementById('toggleTransporte').addEventListener('click', function () {
+          if (formularioBloqueadoSomenteLeitura) return;
+          transporteAtivo = !transporteAtivo;
+          setToggleVisual(transporteAtivo);
+          recalc();
+        });
 
         document.querySelectorAll('#chipsTipo .chip-item').forEach(function (c) {
           c.addEventListener('click', function () {
@@ -789,48 +2187,253 @@
         var mBtnRascunho = document.getElementById('mobileBtnSalvarRascunho');
         if (mBtnEnviar) mBtnEnviar.addEventListener('click', function () { salvarProposta('enviada'); });
         if (mBtnRascunho) mBtnRascunho.addEventListener('click', function () { salvarProposta('rascunho'); });
+
+        // Desconto comercial — Admin edita; Vendedor só visualiza
+        var fPct = document.getElementById('fDescontoPct');
+        var fTot = document.getElementById('fTotalDesejado');
+        if (fPct) {
+          fPct.addEventListener('change', onDescontoPctChange);
+          fPct.addEventListener('input', function () {
+            // atualização em tempo quase real, sem forçar loop
+            if (descontoUiUpdating) return;
+            clearTimeout(fPct._t);
+            fPct._t = setTimeout(onDescontoPctChange, 280);
+          });
+        }
+        if (fTot) {
+          fTot.addEventListener('change', onTotalDesejadoChange);
+          fTot.addEventListener('blur', onTotalDesejadoChange);
+        }
+      }
+
+      function ehAdmin() {
+        return !!(parceiroAtual && String(parceiroAtual.role || '').toLowerCase() === 'admin');
+      }
+
+      function parseMoedaInput(str) {
+        if (str == null || str === '') return NaN;
+        var s = String(str).trim().replace(/R\$\s?/gi, '').replace(/\./g, '').replace(',', '.');
+        var n = parseFloat(s);
+        return isFinite(n) ? n : NaN;
+      }
+
+      function aplicarDescontoSobreSubtotal(subtotal, transporte) {
+        // Valida e aplica desconto APENAS sobre o valor comercial (subtotal).
+        // Transporte nunca recebe desconto.
+        var sub = Number(subtotal) || 0;
+        var transp = Number(transporte) || 0;
+        var pct = Number(descontoPercentual) || 0;
+        var dVal = Number(descontoValor) || 0;
+
+        if (!isFinite(sub) || sub < 0) sub = 0;
+        if (!isFinite(transp) || transp < 0) transp = 0;
+
+        if (modoDesconto === 'total_desejado' && totalDesejadoTemp != null && isFinite(totalDesejadoTemp)) {
+          // desconto_valor = subtotal + transporte - total_desejado
+          var desejado = Math.max(0, Number(totalDesejadoTemp));
+          dVal = sub + transp - desejado;
+          if (dVal < 0) dVal = 0; // não gerar desconto negativo silenciosamente
+          if (sub > 0) {
+            pct = (dVal / sub) * 100;
+          } else {
+            pct = 0;
+            dVal = 0;
+          }
+          // Bloquear se exigir desconto > 100% do comercial
+          if (pct > 100 + 1e-9) {
+            return { ok: false, msg: 'O total desejado exige desconto maior que 100% do valor comercial. Ajuste o valor.', sub: sub, transp: transp, pct: descontoPercentual, dVal: descontoValor, total: Math.max(0, sub - descontoValor + transp) };
+          }
+        } else {
+          // modo percentual (padrão)
+          if (pct < 0) pct = 0;
+          if (pct > 100) pct = 100;
+          dVal = sub * pct / 100;
+        }
+
+        if (!isFinite(pct) || pct < 0) pct = 0;
+        if (!isFinite(dVal) || dVal < 0) dVal = 0;
+        if (pct > 100) { pct = 100; dVal = sub; }
+
+        var totalFinal = sub - dVal + transp;
+        if (!isFinite(totalFinal) || totalFinal < 0) totalFinal = 0;
+
+        descontoPercentual = Math.round(pct * 100) / 100;
+        descontoValor = Math.round(dVal * 100) / 100;
+        valorSubtotal = Math.round(sub * 100) / 100;
+
+        return { ok: true, msg: '', sub: valorSubtotal, transp: transp, pct: descontoPercentual, dVal: descontoValor, total: Math.round(totalFinal * 100) / 100 };
+      }
+
+      function atualizarUIDesconto(res) {
+        var pctEl = document.getElementById('fDescontoPct');
+        var totalEl = document.getElementById('fTotalDesejado');
+        var dValEl = document.getElementById('sumDescontoValor');
+        var alertEl = document.getElementById('descontoAlert');
+        var subEl = document.getElementById('sumValorSubtotal');
+        var transpEl = document.getElementById('sumValorTransporte');
+
+        descontoUiUpdating = true;
+        try {
+          if (subEl) subEl.textContent = fmtMoeda(res.sub);
+          if (transpEl) transpEl.textContent = fmtMoeda(res.transp);
+          if (dValEl) dValEl.textContent = fmtMoeda(res.dVal);
+          if (pctEl && document.activeElement !== pctEl) {
+            pctEl.value = (res.pct != null ? Number(res.pct) : 0).toFixed(2);
+          }
+          if (totalEl && document.activeElement !== totalEl) {
+            if (modoDesconto === 'total_desejado' && totalDesejadoTemp != null) {
+              totalEl.value = fmtMoeda(totalDesejadoTemp);
+            } else if (res.total > 0) {
+              totalEl.value = fmtMoeda(res.total);
+            } else {
+              totalEl.value = '';
+            }
+          }
+          if (alertEl) {
+            if (!res.ok && res.msg) {
+              alertEl.textContent = res.msg;
+              alertEl.classList.remove('hidden');
+            } else {
+              alertEl.textContent = '';
+              alertEl.classList.add('hidden');
+            }
+          }
+        } finally {
+          descontoUiUpdating = false;
+        }
+      }
+
+      function aplicarPermissaoDesconto() {
+        var isAdm = ehAdmin();
+        var pctEl = document.getElementById('fDescontoPct');
+        var totalEl = document.getElementById('fTotalDesejado');
+        [pctEl, totalEl].forEach(function (el) {
+          if (!el) return;
+          el.disabled = !isAdm || formularioBloqueadoSomenteLeitura;
+          el.classList.toggle('opacity-60', !isAdm || formularioBloqueadoSomenteLeitura);
+          el.classList.toggle('cursor-not-allowed', !isAdm || formularioBloqueadoSomenteLeitura);
+        });
+      }
+
+      function onDescontoPctChange() {
+        if (descontoUiUpdating || formularioBloqueadoSomenteLeitura || !ehAdmin()) return;
+        var el = document.getElementById('fDescontoPct');
+        var raw = parseFloat(el.value);
+        if (!isFinite(raw) || raw < 0) raw = 0;
+        if (raw > 100) raw = 100;
+        modoDesconto = 'percentual';
+        totalDesejadoTemp = null;
+        descontoPercentual = raw;
+        recalc();
+      }
+
+      function onTotalDesejadoChange() {
+        if (descontoUiUpdating || formularioBloqueadoSomenteLeitura || !ehAdmin()) return;
+        var el = document.getElementById('fTotalDesejado');
+        var raw = parseMoedaInput(el.value);
+        if (!isFinite(raw) || raw < 0) {
+          // input vazio/ inválido → volta para modo percentual sem forçar valor
+          return;
+        }
+        modoDesconto = 'total_desejado';
+        totalDesejadoTemp = raw;
+        recalc();
       }
 
       function recalc() {
-        var cliente = document.getElementById('fCliente').value.trim() || '—';
+        var cliente = clienteSelecionado ? clienteSelecionado.nome_razao : '—';
         var dataEv = document.getElementById('fData').value;
         var horas = parseInt(document.getElementById('sliderHoras').value, 10) || 4;
 
-        var total = 0;
+        var totalComercial = 0; // valor comercial ANTES do desconto (sem transporte)
         var listaLinhas = [];
         var itensPayload = [];
 
         var pObj = PKG.find(function (x) { return x.pacote_id === activePkg; });
         if (pObj) {
-          total += pObj.preco;
+          totalComercial += pObj.preco;
           listaLinhas.push({ nome: 'Pacote ' + pObj.nome, val: pObj.preco });
           itensPayload.push({ tipo: 'pacote', id: pObj.pacote_id, nome: 'Pacote ' + pObj.nome, valor: pObj.preco });
 
           var extraH = Math.max(0, horas - pObj.horas);
           if (extraH > 0) {
             var valExtraH = extraH * 350;
-            total += valExtraH;
+            totalComercial += valExtraH;
             listaLinhas.push({ nome: '+' + extraH + 'h Horas Extras', val: valExtraH });
           }
         }
 
         SVC.forEach(function (s) {
+          if (s.isPorMetro) {
+            var metragemAtual = svcMetragem[s.servico_id] || 0;
+            if (metragemAtual > 0) {
+              var calcMetro = calcularValorPorMetro(s, metragemAtual);
+              totalComercial += calcMetro.valor;
+              listaLinhas.push({ nome: s.nome + ' (' + metragemAtual + 'm)', val: calcMetro.valor });
+              itensPayload.push({
+                tipo: 'servico', id: s.servico_id, nome: s.nome, valor: calcMetro.valor,
+                metragem: metragemAtual,
+                valor_por_metro_aplicado: calcMetro.valorPorMetroAplicado,
+                faixa_aplicada: calcMetro.faixaAplicada
+              });
+            }
+            return;
+          }
+
           if (svcState[s.servico_id] === 'manual') {
             var v = s.valor_base;
-            if (s.servico_id === 'som' && s.faixas && s.faixas.length) {
-              var fx = s.faixas.find(function (f) { return evConvidados >= f.min && evConvidados <= f.max; }) || s.faixas[0];
+            var faixaAplicadaSvc = null;
+
+            if (s.faixas && s.faixas.length) {
+              // faixas por convidados (som) — mantém padrão existente e passa a
+              // registrar a faixa aplicada no detalhamento
+              var fx = s.faixas.find(function (f) { return evConvidados >= f.min && evConvidados <= (f.max != null ? f.max : Infinity); }) || s.faixas[0];
               v += (fx.adicional || 0);
+              faixaAplicadaSvc = fx;
             }
             if (!pObj && horas > 4 && s.valor_hora) {
               v += (horas - 4) * s.valor_hora;
             }
-            total += v;
+            totalComercial += v;
             listaLinhas.push({ nome: s.nome, val: v });
-            itensPayload.push({ tipo: 'servico', id: s.servico_id, nome: s.nome, valor: v });
+            itensPayload.push({
+              tipo: 'servico', id: s.servico_id, nome: s.nome, valor: v,
+              faixa_aplicada: faixaAplicadaSvc
+            });
           }
         });
 
+        // TRANSPORTE — linha fixa independente, cobrada se toggle ligado e distância calculada
+        // NUNCA recebe desconto.
+        var transporteItem = null;
+        if (transporteAtivo && CONFIG_TRANSPORTE && transporteDistanciaKm != null) {
+          transporteValor = Math.round(transporteDistanciaKm * CONFIG_TRANSPORTE.valor_por_km * 100) / 100;
+          listaLinhas.push({ nome: 'Transporte (' + transporteDistanciaKm.toFixed(1) + 'km)', val: transporteValor });
+          transporteItem = {
+            tipo: 'transporte', nome: 'Transporte', valor: transporteValor,
+            cep: transporteCepValido, distancia_km: transporteDistanciaKm,
+            valor_por_km_aplicado: CONFIG_TRANSPORTE.valor_por_km,
+            origem_label: CONFIG_TRANSPORTE.origem_label
+          };
+          itensPayload.push(transporteItem);
+        } else {
+          transporteValor = 0;
+        }
+
+        // DESCONTO — somente sobre o valor comercial (subtotal)
+        var resDesc = aplicarDescontoSobreSubtotal(totalComercial, transporteValor);
+        var total = resDesc.total;
+
+        // Exibe linha de desconto na lista quando houver
+        if (resDesc.dVal > 0) {
+          listaLinhas.push({ nome: 'Desconto comercial (' + resDesc.pct.toFixed(2) + '%)', val: -resDesc.dVal });
+        }
+
+        atualizarUIDesconto(resDesc);
+        aplicarPermissaoDesconto();
+
         var comissaoPct = parceiroAtual ? parceiroAtual.comissao_padrao_pct : 10;
+        // Comissão sobre o valor final (após desconto), mantendo comportamento comercial atual
         var comissaoValor = (total * comissaoPct) / 100;
 
         document.getElementById('sumCliente').textContent = cliente;
@@ -845,7 +2448,7 @@
         var mobComissaoValEl = document.getElementById('mobileComissaoValor');
         var mobComissaoBoxEl = document.getElementById('mobileComissaoBox');
 
-        if (total > 0) {
+        if (total > 0 || totalComercial > 0) {
           sumTotalEl.textContent = fmtMoeda(total);
           sumTotalEl.className = 'text-2xl font-bold text-white mt-0.5';
           sumComissaoValEl.textContent = fmtMoeda(comissaoValor);
@@ -872,9 +2475,10 @@
         var containerLista = document.getElementById('sumListaItens');
         if (listaLinhas.length) {
           containerLista.innerHTML = listaLinhas.map(function (l) {
+            var valClass = l.val < 0 ? 'text-emerald-400' : 'text-white';
             return '<div class="flex justify-between text-[11px] text-slate-300">' +
               '<span class="truncate max-w-[130px]">' + esc(l.nome) + '</span>' +
-              '<strong class="text-white">' + fmtMoeda(l.val) + '</strong>' +
+              '<strong class="' + valClass + '">' + fmtMoeda(l.val) + '</strong>' +
             '</div>';
           }).join('');
         } else {
@@ -883,6 +2487,10 @@
 
         window.currentItensPayload = itensPayload;
         window.currentTotal = total;
+        window.currentTransporte = transporteItem;
+        window.currentSubtotal = valorSubtotal;
+        window.currentDescontoPercentual = descontoPercentual;
+        window.currentDescontoValor = descontoValor;
       }
 
       async function avisarTelegramProposta(dados) {
@@ -906,20 +2514,11 @@
       function salvarProposta(statusDesejado) {
         if (formularioBloqueadoSomenteLeitura) return;
 
-        var cliente = document.getElementById('fCliente').value.trim();
         var dataEv = document.getElementById('fData').value;
         var local = document.getElementById('fLocal').value.trim();
         var obs = document.getElementById('fObs').value.trim();
         var horas = parseInt(document.getElementById('sliderHoras').value, 10) || 4;
-
-        if (!cliente || !dataEv) {
-          showAlert('Preencha o Nome do Cliente e a Data Prevista.', 'error');
-          return;
-        }
-        if (!window.currentItensPayload || !window.currentItensPayload.length) {
-          showAlert('Selecione ao menos um Pacote ou Serviço do catálogo.', 'error');
-          return;
-        }
+        var cepVal = document.getElementById('fCep').value.trim();
 
         var pct = parceiroAtual.comissao_padrao_pct;
         var stNorm = String(statusDesejado || 'enviada').toLowerCase();
@@ -929,9 +2528,36 @@
           stNorm = 'enviada';
         }
 
+        if (!dataEv) {
+          showAlert('Preencha a Data Prevista.', 'error');
+          return;
+        }
+        // Regra 6: cliente é opcional para rascunho/simulação, mas obrigatório
+        // para homologar/enviar formalmente a proposta (e, mais adiante, para o contrato).
+        if (stNorm !== 'rascunho' && (!clienteSelecionado || !clienteSelecionado.id)) {
+          showAlert('Selecione ou cadastre um cliente para enviar/homologar a proposta.', 'error');
+          return;
+        }
+        if (eventoEnderecoIgualCliente) {
+          if (!cepVal) {
+            showAlert('Preencha o CEP do local do evento para calcular o transporte.', 'error');
+            return;
+          }
+        } else {
+          if (!eventoEndereco.cep || String(eventoEndereco.cep).replace(/\D/g, '').length !== 8) {
+            showAlert('Preencha o CEP específico do local do evento para calcular o transporte.', 'error');
+            return;
+          }
+        }
+        if (!window.currentItensPayload || !window.currentItensPayload.filter(function (i) { return i.tipo !== 'transporte'; }).length) {
+          showAlert('Selecione ao menos um Pacote ou Serviço do catálogo.', 'error');
+          return;
+        }
+
         var payload = {
           parceiro_id: parceiroAtual.id,
-          cliente_nome: cliente,
+          cliente_id: clienteSelecionado ? clienteSelecionado.id : null,
+          cliente_nome: clienteSelecionado ? clienteSelecionado.nome_razao : null,
           tipo_evento: evTipoVal,
           data_evento: dataEv,
           convidados_estimados: evConvidados,
@@ -939,10 +2565,31 @@
           local_evento: local,
           observacoes: obs,
           itens: window.currentItensPayload,
+          valor_subtotal: window.currentSubtotal != null ? window.currentSubtotal : 0,
+          desconto_percentual: window.currentDescontoPercentual != null ? window.currentDescontoPercentual : 0,
+          desconto_valor: window.currentDescontoValor != null ? window.currentDescontoValor : 0,
           valor_total: window.currentTotal,
           comissao_pct_efetiva: pct,
           status: stNorm,
-          enviada_em: new Date().toISOString()
+          enviada_em: new Date().toISOString(),
+          // Persistência de detalhamento para nota fiscal
+          cep_cliente: transporteCepValido || cepVal,
+          lat_cliente: transporteLatLng ? transporteLatLng.lat : null,
+          lng_cliente: transporteLatLng ? transporteLatLng.lng : null,
+          distancia_km: transporteDistanciaKm,
+          transporte_incluido: transporteAtivo,
+          valor_transporte: transporteValor,
+          // Endereço do evento (distinto do cadastro do cliente) — regras 2, 3 e 6.
+          evento_endereco_igual_cliente: eventoEnderecoIgualCliente,
+          evento_cep: eventoEndereco.cep || null,
+          evento_logradouro: eventoEndereco.logradouro || null,
+          evento_numero: eventoEndereco.numero || null,
+          evento_complemento: eventoEndereco.complemento || null,
+          evento_bairro: eventoEndereco.bairro || null,
+          evento_cidade: eventoEndereco.cidade || null,
+          evento_uf: eventoEndereco.uf || null,
+          evento_lat: eventoEndereco.lat != null ? eventoEndereco.lat : null,
+          evento_lng: eventoEndereco.lng != null ? eventoEndereco.lng : null
         };
 
         if (stNorm === 'hold') {
@@ -976,7 +2623,7 @@
                 event: stNorm === 'hold' ? 'proposta_hold' : 'proposta_enviada',
                 proposta_id: propostaSalva ? (propostaSalva.numero || propostaSalva.id) : propostaEdicaoId,
                 parceiro_nome: parceiroAtual ? (parceiroAtual.nome || parceiroAtual.empresa) : 'Parceiro',
-                cliente_nome: cliente,
+                cliente_nome: payload.cliente_nome,
                 tipo_evento: evTipoVal,
                 data_evento: dataEv,
                 local_evento: local,

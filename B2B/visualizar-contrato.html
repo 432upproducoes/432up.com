@@ -1,0 +1,671 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Contrato de Prestação de Serviços - 432UP!</title>
+  <style>
+    @import url('https://fonts.googleapis.com/css2?family=Montserrat:wght@400;600;700;800&family=Inter:wght@300;400;500;600;700&display=swap');
+
+    :root {
+      --purple-primary: #8A10D8;
+      --magenta-primary: #D800A6;
+      --gradient-accent: linear-gradient(135deg, #8A10D8 0%, #D800A6 100%);
+      --text-dark: #1F1F24;
+      --text-muted: #4A4A58;
+      --border-color: #E2E2EC;
+      --bg-card: #F9F9FC;
+    }
+
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+    body { font-family: 'Inter', sans-serif; color: var(--text-dark); background: #D6D6DC; line-height: 1.5; font-size: 12px; -webkit-print-color-adjust: exact; }
+
+    /* BARRA DE AÇÃO FIXA FORA DA IMPRESSÃO */
+    .action-bar {
+      max-width: 210mm;
+      margin: 15px auto 5px auto;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      background: #FFFFFF;
+      padding: 12px 20px;
+      border-radius: 8px;
+      box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+    }
+    .action-bar h2 {
+      font-family: 'Montserrat', sans-serif;
+      font-size: 15px;
+      color: var(--purple-primary);
+    }
+    .btn-print {
+      background: var(--gradient-accent);
+      color: #FFFFFF;
+      border: none;
+      padding: 10px 20px;
+      font-family: 'Montserrat', sans-serif;
+      font-weight: 700;
+      font-size: 12px;
+      border-radius: 6px;
+      cursor: pointer;
+      box-shadow: 0 2px 6px rgba(138, 16, 216, 0.3);
+      transition: transform 0.2s, box-shadow 0.2s;
+    }
+    .btn-print:hover {
+      transform: translateY(-1px);
+      box-shadow: 0 4px 12px rgba(138, 16, 216, 0.4);
+    }
+
+    /* MENSAGEM DE STATUS / CARREGAMENTO */
+    .status-message {
+      max-width: 210mm;
+      margin: 40px auto;
+      padding: 20px;
+      background: #FFFFFF;
+      border-radius: 8px;
+      text-align: center;
+      font-family: 'Montserrat', sans-serif;
+      font-size: 15px;
+      color: var(--purple-primary);
+      box-shadow: 0 4px 15px rgba(0,0,0,0.1);
+    }
+    .status-message.error {
+      color: #D32F2F;
+      border-left: 4px solid #D32F2F;
+    }
+
+    /* LAYOUT A4 DE ALTA DENSIDADE JURÍDICA */
+    .page {
+      width: 210mm;
+      min-height: 297mm;
+      padding: 18mm 18mm 20mm 18mm;
+      margin: 10px auto;
+      background: #FFFFFF;
+      position: relative;
+      box-shadow: 0 5px 15px rgba(0,0,0,0.15);
+      page-break-after: always;
+      display: flex;
+      flex-direction: column;
+      justify-content: space-between;
+    }
+
+    .page-header-bar, .page-footer-bar { position: absolute; left: 0; right: 0; height: 5mm; background: var(--gradient-accent); }
+    .page-header-bar { top: 0; }
+    .page-footer-bar { bottom: 0; }
+
+    .header-inner { display: flex; justify-content: space-between; align-items: center; border-bottom: 2px solid var(--border-color); padding-bottom: 10px; margin-top: 3mm; margin-bottom: 15px; }
+    .brand-logo { font-family: 'Montserrat', sans-serif; font-weight: 800; font-size: 22px; font-style: italic; letter-spacing: -1px; background: var(--gradient-accent); -webkit-background-clip: text; -webkit-text-fill-color: transparent; }
+    .brand-subtitle { font-size: 9px; font-weight: 700; letter-spacing: 2px; color: var(--magenta-primary); display: block; margin-top: -3px; }
+    .doc-meta { text-align: right; font-size: 10.5px; color: var(--text-muted); }
+
+    .section-title { font-family: 'Montserrat', sans-serif; font-size: 12px; font-weight: 700; color: var(--purple-primary); text-transform: uppercase; margin: 14px 0 8px 0; border-bottom: 1px solid var(--border-color); padding-bottom: 3px; }
+    .grid-2 { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; margin-bottom: 10px; }
+
+    /* CARDS JURÍDICOS MINIMALISTAS */
+    .card-legal { background: var(--bg-card); border-left: 3px solid var(--purple-primary); padding: 10px 12px; border-radius: 0 4px 4px 0; font-size: 11px; }
+    .card-legal h4 { font-size: 11px; font-weight: 700; text-transform: uppercase; margin-bottom: 6px; color: var(--purple-primary); }
+    .card-legal p { color: var(--text-muted); margin-bottom: 3px; }
+    .card-legal strong { color: var(--text-dark); }
+
+    /* TABELAS OBJETIVAS */
+    .data-table { width: 100%; border-collapse: collapse; margin-bottom: 12px; font-size: 11px; }
+    .data-table th { background: #F4F4F8; color: var(--purple-primary); font-weight: 700; text-align: left; padding: 6px 8px; border-bottom: 2px solid var(--border-color); text-transform: uppercase; font-size: 10px; }
+    .data-table td { padding: 7px 8px; border-bottom: 1px solid var(--border-color); }
+    .data-table tr:nth-child(even) { background-color: #FAFAFC; }
+
+    /* RESUMO FINANCEIRO E CONDIÇÕES */
+    .financial-summary { width: 100%; border-collapse: collapse; margin-top: 5px; font-size: 11px; }
+    .financial-summary td { padding: 4px 8px; }
+    .financial-summary .label { font-weight: 600; color: var(--text-muted); }
+    .financial-summary .value { text-align: right; font-weight: 600; color: var(--text-dark); }
+    .financial-summary .total-row td { font-size: 13px; font-weight: 700; color: var(--purple-primary); border-top: 2px solid var(--border-color); padding-top: 6px; }
+
+    /* CLAÚSULAS ENXUTAS */
+    .clause { margin-bottom: 8px; text-align: justify; font-size: 10.5px; color: var(--text-dark); line-height: 1.45; }
+    .clause-title { font-weight: 700; color: var(--purple-primary); margin-bottom: 2px; text-transform: uppercase; font-size: 10.5px; }
+
+    .signatures-container { display: grid; grid-template-columns: 1fr 1fr; gap: 30px; margin-top: 30px; margin-bottom: 15px; }
+    .signature-box { text-align: center; }
+    .signature-line { border-top: 1px solid var(--text-dark); margin-bottom: 6px; }
+
+    .page-footer { display: flex; justify-content: space-between; font-size: 9.5px; color: var(--text-muted); border-top: 1px solid var(--border-color); padding-top: 6px; margin-bottom: 2mm; }
+
+    .note-box { background: #FAF9FE; border: 1px dashed var(--purple-primary); padding: 8px 12px; border-radius: 4px; font-size: 10.5px; color: var(--text-muted); }
+
+    @media print { 
+      body { background: none; } 
+      .action-bar { display: none !important; }
+      .page { margin: 0; box-shadow: none; page-break-after: always; width: 100%; height: 100%; padding: 15mm 15mm; } 
+    }
+  </style>
+</head>
+<body>
+
+  <!-- BARRA DE AÇÃO (TELA) -->
+  <div class="action-bar" id="actionBar">
+    <h2>Contrato de Prestação de Serviços - 432UP!</h2>
+    <button class="btn-print" onclick="window.print()">Imprimir / Salvar PDF</button>
+  </div>
+
+  <!-- STATUS MENSAGEM -->
+  <div id="statusMessage" class="status-message">
+    Carregando contrato...
+  </div>
+
+  <!-- CONTEÚDO DO CONTRATO -->
+  <div id="contractContent" style="display: none;">
+
+    <!-- PÁGINA 1 -->
+    <div class="page">
+      <div class="page-header-bar"></div>
+      <div>
+        <header class="header-inner">
+          <div>
+            <span class="brand-logo">432UP!</span>
+            <span class="brand-subtitle">PRODUÇÕES</span>
+          </div>
+          <div class="doc-meta">
+            <strong>CONTRATO DE PRESTAÇÃO DE SERVIÇOS</strong><br>
+            Proposta Ref.: <strong class="proposta-numero-val">#—</strong>
+          </div>
+        </header>
+
+        <!-- 1. QUALIFICAÇÃO DAS PARTES -->
+        <div class="section-title">1. Qualificação das Partes</div>
+        <div class="grid-2">
+          <div class="card-legal">
+            <h4>CONTRATADA</h4>
+            <p><strong>Razão Social:</strong> <span id="empresa_razao_social">—</span></p>
+            <p><strong>CNPJ:</strong> <span id="empresa_cnpj">—</span></p>
+            <p id="empresa_endereco_row" style="display: none;"><strong>Endereço:</strong> <span id="empresa_endereco">—</span></p>
+            <p id="empresa_rep_row" style="display: none;"><strong>Representante Legal:</strong> <span id="empresa_representante_legal">—</span></p>
+          </div>
+
+          <div class="card-legal">
+            <h4>CONTRATANTE</h4>
+            <p><strong>Nome/Razão Social:</strong> <span id="cliente_nome_razao">—</span></p>
+            <p><strong>CPF/CNPJ:</strong> <span id="cliente_cpf_cnpj">—</span></p>
+            <p id="cliente_resp_row" style="display: none;"><strong>Responsável Legal:</strong> <span id="cliente_responsavel_legal">—</span></p>
+            <p id="cliente_endereco_row" style="display: none;"><strong>Endereço:</strong> <span id="cliente_endereco">—</span></p>
+            <p id="cliente_contato_row" style="display: none;"><strong>Contato:</strong> <span id="cliente_contato">—</span></p>
+          </div>
+        </div>
+
+        <!-- 2. OBJETO E EVENTO -->
+        <div class="section-title">2. Objeto e Dados do Evento</div>
+        <div class="card-legal" style="margin-bottom: 12px;">
+          <div class="grid-2" style="margin-bottom:0;">
+            <div>
+              <p id="evento_tipo_row" style="display: none;"><strong>Tipo de Evento:</strong> <span id="evento_tipo">—</span></p>
+              <p id="evento_data_row" style="display: none;"><strong>Data do Evento:</strong> <span id="evento_data">—</span></p>
+              <p id="evento_duracao_row" style="display: none;"><strong>Duração:</strong> <span id="evento_duracao">—</span> horas</p>
+              <p id="evento_convidados_row" style="display: none;"><strong>Convidados Estimados:</strong> <span id="evento_convidados">—</span></p>
+            </div>
+            <div>
+              <p id="evento_local_row" style="display: none;"><strong>Local:</strong> <span id="evento_local_nome">—</span></p>
+              <p id="evento_endereco_row" style="display: none;"><strong>Endereço:</strong> <span id="evento_endereco">—</span></p>
+              <p id="evento_cidade_uf_row" style="display: none;"><strong>Cidade/UF:</strong> <span id="evento_cidade_uf">—</span></p>
+            </div>
+          </div>
+        </div>
+
+        <!-- 3. ESCOPO DOS SERVIÇOS CONTRATADOS -->
+        <div class="section-title">3. Escopo dos Serviços Contratados</div>
+        <table class="data-table">
+          <thead>
+            <tr>
+              <th style="width: 45%;">Item Contratado</th>
+              <th style="width: 35%;">Base de Cálculo</th>
+              <th style="width: 20%; text-align: right;">Valor</th>
+            </tr>
+          </thead>
+          <tbody id="itens_tbody">
+            <!-- Renderizado dinamicamente -->
+          </tbody>
+        </table>
+
+        <!-- 4. VALOR E CONDIÇÕES FINANCEIRAS -->
+        <div class="section-title">4. Valor e Condições Financeiras</div>
+        <div class="grid-2">
+          <div class="card-legal">
+            <table class="financial-summary">
+              <tr>
+                <td class="label">Valor dos Serviços:</td>
+                <td class="value" id="valor_subtotal">R$ 0,00</td>
+              </tr>
+              <tr id="desconto_row" style="display: none;">
+                <td class="label">Desconto (<span id="desconto_percentual">0%</span>):</td>
+                <td class="value" style="color: #D32F2F;" id="desconto_valor">- R$ 0,00</td>
+              </tr>
+              <tr id="transporte_row" style="display: none;">
+                <td class="label">Transporte / Logística:</td>
+                <td class="value" id="valor_transporte">R$ 0,00</td>
+              </tr>
+              <tr class="total-row">
+                <td class="label">VALOR TOTAL:</td>
+                <td class="value" id="valor_total">R$ 0,00</td>
+              </tr>
+            </table>
+          </div>
+          <div>
+            <div class="note-box">
+              O desconto incide exclusivamente sobre o valor dos serviços contratados. O valor de transporte/logística permanece separado e não sofre desconto.
+            </div>
+          </div>
+        </div>
+
+      </div>
+
+      <div>
+        <div class="page-footer">
+          <span>Contrato de Prestação de Serviços — 432UP! Produções</span>
+          <span>Página 1 de 3</span>
+        </div>
+        <div class="page-footer-bar"></div>
+      </div>
+    </div>
+
+    <!-- PÁGINA 2 -->
+    <div class="page">
+      <div class="page-header-bar"></div>
+      <div>
+        <header class="header-inner">
+          <div>
+            <span class="brand-logo">432UP!</span>
+            <span class="brand-subtitle">PRODUÇÕES</span>
+          </div>
+          <div class="doc-meta">
+            <strong>CONTRATO DE PRESTAÇÃO DE SERVIÇOS</strong><br>
+            Proposta Ref.: <strong class="proposta-numero-val">#—</strong>
+          </div>
+        </header>
+
+        <!-- 5. PAGAMENTO -->
+        <div class="section-title">5. Condições de Pagamento</div>
+        <div class="clause">
+          <p>As condições comerciais, datas de vencimento e meio de pagamento aplicáveis a esta contratação serão registradas na proposta ou cronograma comercial correspondente.</p>
+        </div>
+
+        <!-- 6. EXECUÇÃO DOS SERVIÇOS -->
+        <div class="section-title">6. Execução dos Serviços</div>
+        <div class="clause">
+          <p>A <strong>CONTRATADA</strong> executará os serviços com zelo técnico, observando o escopo contratado. O <strong>CONTRATANTE</strong> compromete-se a disponibilizar acesso ao local nos horários necessários para montagem, operação e desmontagem, assegurando infraestrutura elétrica adequada e aterrada, além de ambiente seguro para a equipe e equipamentos. Alterações de escopo ou serviços adicionais dependem de prévia aprovação e poderão gerar cobrança complementar.</p>
+        </div>
+
+        <!-- 7. HORAS E SERVIÇOS ADICIONAIS -->
+        <div class="section-title">7. Horas e Serviços Adicionais</div>
+        <div class="clause">
+          <p>A prestação dos serviços fica adstrita à duração especificada no Objeto deste contrato. A permanência da equipe ou a manutenção da estrutura além do período contratado, bem como a solicitação de itens não previstos no escopo inicial, estará sujeita à disponibilidade técnica da CONTRATADA e dependerá de aprovação formal, gerando cobrança proporcional adicional.</p>
+        </div>
+
+        <!-- 8. CANCELAMENTO E REMARCAÇÃO -->
+        <div class="section-title">8. Cancelamento e Remarcação</div>
+        <div class="clause">
+          <p>Em caso de desistência, rescisão imotivada ou alteração de data por iniciativa do CONTRATANTE, aplicar-se-ão as condições comerciais específicas vigentes entre as partes e/ou a retenção de valores destinados ao ressarcimento de custos operacionais e reservas técnicas já efetuadas pela CONTRATADA.</p>
+        </div>
+
+        <!-- 9. RESPONSABILIDADES -->
+        <div class="section-title">9. Responsabilidades</div>
+        <div class="clause">
+          <p>O CONTRATANTE responsabiliza-se por danos causados aos equipamentos ou estruturas decorrentes de intervenção de terceiros não autorizados, uso inadequado, instalações elétricas deficientes do local ou falta de segurança no recinto. A CONTRATADA responsabiliza-se pela correta operação técnica de seus recursos e pela conduta profissional de sua equipe.</p>
+        </div>
+
+        <!-- 10. USO DE IMAGEM -->
+        <div class="section-title">10. Uso de Imagem Institucional</div>
+        <div class="clause">
+          <p>A CONTRATADA poderá registrar imagens e vídeos da estrutura técnica, ambientação e execução dos serviços para fins exclusivos de divulgação institucional e portfólio profissional, salvo restrição previamente formalizada por escrito pelo CONTRATANTE.</p>
+        </div>
+
+      </div>
+
+      <div>
+        <div class="page-footer">
+          <span>Contrato de Prestação de Serviços — 432UP! Produções</span>
+          <span>Página 2 de 3</span>
+        </div>
+        <div class="page-footer-bar"></div>
+      </div>
+    </div>
+
+    <!-- PÁGINA 3 -->
+    <div class="page">
+      <div class="page-header-bar"></div>
+      <div>
+        <header class="header-inner">
+          <div>
+            <span class="brand-logo">432UP!</span>
+            <span class="brand-subtitle">PRODUÇÕES</span>
+          </div>
+          <div class="doc-meta">
+            <strong>CONTRATO DE PRESTAÇÃO DE SERVIÇOS</strong><br>
+            Proposta Ref.: <strong class="proposta-numero-val">#—</strong>
+          </div>
+        </header>
+
+        <!-- 11. CASO FORTUITO E FORÇA MAIOR -->
+        <div class="section-title">11. Caso Fortuito e Força Maior</div>
+        <div class="clause">
+          <p>Nenhuma das partes será responsabilizada por falhas ou atrasos na execução deste contrato decorrentes de eventos imprevisíveis ou inevitáveis, tais como tempestades extremas, interrupção no fornecimento de energia da rede pública no local do evento, ato de autoridade pública ou grave perturbação da ordem que impeça o acesso ou a realização segura do serviço.</p>
+        </div>
+
+        <!-- 13. FORO -->
+        <div class="section-title">12. Foro de Eleição</div>
+        <div class="clause">
+          <p>Para dirimir quaisquer controvérsias oriundas do presente instrumento, as partes elegem o Foro da Comarca de <strong id="foro_cidade_uf">São Paulo/SP</strong>, com a aplicação da legislação vigente.</p>
+        </div>
+
+        <p style="text-align: center; margin: 30px 0 20px 0; font-size: 11px;" id="data_extenso_paragrafo">
+          <span id="cidade_data_extenso">São Paulo - SP</span>, <span id="data_emissao_extenso">—</span>.
+        </p>
+
+        <!-- 12. ACEITE E ASSINATURA -->
+        <div class="section-title">13. Aceite e Assinatura</div>
+        <div class="signatures-container">
+          <div class="signature-box">
+            <div class="signature-line"></div>
+            <div style="font-weight: 700; font-size: 11px;" id="assinatura_empresa_razao">432UP! PRODUÇÕES</div>
+            <div style="font-size: 10px; color: var(--text-muted);" id="assinatura_empresa_cnpj">CNPJ: —</div>
+            <div style="font-size: 10px; color: var(--text-muted);" id="assinatura_empresa_rep">Representante Legal</div>
+          </div>
+          <div class="signature-box">
+            <div class="signature-line"></div>
+            <div style="font-weight: 700; font-size: 11px;" id="assinatura_cliente_nome">CONTRATANTE</div>
+            <div style="font-size: 10px; color: var(--text-muted);" id="assinatura_cliente_doc">CPF/CNPJ: —</div>
+          </div>
+        </div>
+
+      </div>
+
+      <div>
+        <div class="page-footer">
+          <span>Contrato de Prestação de Serviços — 432UP! Produções</span>
+          <span>Página 3 de 3</span>
+        </div>
+        <div class="page-footer-bar"></div>
+      </div>
+    </div>
+
+  </div>
+
+  <!-- DEPENDÊNCIAS FIXAS -->
+  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+  <script src="./partner-config.js"></script>
+
+  <script>
+    // ID DA PROPOSTA VIA URL (SEM FALLBACK FIXO)
+    const urlParams = new URLSearchParams(window.location.search);
+    const propostaId = urlParams.get('id');
+
+    // AUXILIARES DE FORMATAÇÃO
+    function formatarMoeda(valor) {
+      const num = Number(valor) || 0;
+      return num.toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' });
+    }
+
+    function formatarPercentual(valor) {
+      const num = Number(valor) || 0;
+      return num.toLocaleString('pt-BR', { minimumFractionDigits: 0, maximumFractionDigits: 2 }) + '%';
+    }
+
+    function formatarDataBR(dataIsoStr) {
+      if (!dataIsoStr) return null;
+      const parts = dataIsoStr.split('T')[0].split('-');
+      if (parts.length === 3) return `${parts[2]}/${parts[1]}/${parts[0]}`;
+      return dataIsoStr;
+    }
+
+    function formatarDataExtenso(dataIsoStr) {
+      if (!dataIsoStr) return null;
+      const data = new Date(dataIsoStr);
+      if (isNaN(data.getTime())) return null;
+      return data.toLocaleDateString('pt-BR', { day: 'numeric', month: 'long', year: 'numeric' });
+    }
+
+    function setSafeText(idOrClass, text, isClass = false) {
+      const str = (text !== null && text !== undefined) ? String(text).trim() : '';
+      if (isClass) {
+        document.querySelectorAll('.' + idOrClass).forEach(el => el.textContent = str);
+      } else {
+        const el = document.getElementById(idOrClass);
+        if (el) el.textContent = str;
+      }
+      return str;
+    }
+
+    function toggleRow(rowId, val) {
+      const el = document.getElementById(rowId);
+      if (el) el.style.display = (val && String(val).trim() !== '') ? '' : 'none';
+    }
+
+    // CARREGAMENTO DO CONTRATO
+    async function carregarContrato() {
+      const statusEl = document.getElementById('statusMessage');
+      const contentEl = document.getElementById('contractContent');
+
+      try {
+        if (!propostaId) {
+          statusEl.textContent = 'Proposta não especificada. Nenhum identificador foi fornecido na URL.';
+          statusEl.classList.add('error');
+          return;
+        }
+
+        if (typeof sbPartner === 'undefined') {
+          throw new Error('Cliente do Supabase não inicializado (sbPartner).');
+        }
+
+        // 1. DADOS LEGAIS DA EMPRESA
+        const { data: dadosEmpresa, error: errorEmpresa } = await sbPartner
+          .from('co_dados_legais_empresa')
+          .select('*')
+          .limit(1)
+          .maybeSingle();
+
+        if (errorEmpresa || !dadosEmpresa) {
+          statusEl.textContent = 'Erro ao carregar dados legais da contratada. Verifique as informações cadastrais.';
+          statusEl.classList.add('error');
+          return;
+        }
+
+        setSafeText('empresa_razao_social', dadosEmpresa.razao_social);
+        setSafeText('assinatura_empresa_razao', dadosEmpresa.razao_social);
+        setSafeText('empresa_cnpj', dadosEmpresa.cnpj);
+        setSafeText('assinatura_empresa_cnpj', dadosEmpresa.cnpj ? `CNPJ: ${dadosEmpresa.cnpj}` : '');
+
+        const empLogrComp = [dadosEmpresa.logradouro, dadosEmpresa.numero, dadosEmpresa.complemento].filter(Boolean).join(', ');
+        const empBairroCep = [dadosEmpresa.bairro, dadosEmpresa.cidade && dadosEmpresa.uf ? `${dadosEmpresa.cidade}/${dadosEmpresa.uf}` : '', dadosEmpresa.cep ? `CEP ${dadosEmpresa.cep}` : ''].filter(Boolean).join(' - ');
+        const empEndCompleto = [empLogrComp, empBairroCep].filter(Boolean).join(' - ');
+        setSafeText('empresa_endereco', empEndCompleto);
+        toggleRow('empresa_endereco_row', empEndCompleto);
+
+        const repEmp = [dadosEmpresa.representante_legal_nome, dadosEmpresa.representante_legal_cargo].filter(Boolean).join(' - ');
+        setSafeText('empresa_representante_legal', repEmp);
+        setSafeText('assinatura_empresa_rep', repEmp || 'Representante Legal');
+        toggleRow('empresa_rep_row', repEmp);
+
+        if (dadosEmpresa.cidade && dadosEmpresa.uf) {
+          setSafeText('foro_cidade_uf', `${dadosEmpresa.cidade}/${dadosEmpresa.uf}`);
+          setSafeText('cidade_data_extenso', `${dadosEmpresa.cidade} - ${dadosEmpresa.uf}`);
+        }
+
+        // 2. PROPOSTA
+        const { data: proposta, error: errorProposta } = await sbPartner
+          .from('propostas')
+          .select('*')
+          .eq('id', propostaId)
+          .single();
+
+        if (errorProposta || !proposta) {
+          statusEl.textContent = 'Proposta não encontrada para a geração do contrato.';
+          statusEl.classList.add('error');
+          return;
+        }
+
+        setSafeText('proposta-numero-val', proposta.numero ? `#${proposta.numero}` : '', true);
+
+        // Data de emissão derivada de criado_em
+        const dataEmissaoExt = formatarDataExtenso(proposta.criado_em);
+        setSafeText('data_emissao_extenso', dataEmissaoExt || '—');
+
+        // 3. CLIENTE
+        let cliente = null;
+        if (proposta.cliente_id) {
+          const { data: cliData } = await sbPartner
+            .from('co_clientes')
+            .select('*')
+            .eq('id', proposta.cliente_id)
+            .single();
+          cliente = cliData;
+        }
+
+        if (cliente) {
+          setSafeText('cliente_nome_razao', cliente.nome_razao || cliente.nome_fantasia);
+          setSafeText('assinatura_cliente_nome', cliente.nome_razao || cliente.nome_fantasia || 'CONTRATANTE');
+          setSafeText('cliente_cpf_cnpj', cliente.cpf_cnpj);
+          setSafeText('assinatura_cliente_doc', cliente.cpf_cnpj ? `CPF/CNPJ: ${cliente.cpf_cnpj}` : '');
+          
+          setSafeText('cliente_responsavel_legal', cliente.responsavel_legal);
+          toggleRow('cliente_resp_row', cliente.responsavel_legal);
+
+          const cliLogr = [cliente.logradouro, cliente.numero, cliente.complemento].filter(Boolean).join(', ');
+          const cliCid = [cliente.bairro, cliente.cidade && cliente.uf ? `${cliente.cidade}/${cliente.uf}` : '', cliente.cep ? `CEP ${cliente.cep}` : ''].filter(Boolean).join(' - ');
+          const cliEndCompleto = [cliLogr, cliCid].filter(Boolean).join(' - ');
+          setSafeText('cliente_endereco', cliEndCompleto);
+          toggleRow('cliente_endereco_row', cliEndCompleto);
+
+          const contatos = [cliente.email, cliente.telefone].filter(Boolean).join(' | ');
+          setSafeText('cliente_contato', contatos);
+          toggleRow('cliente_contato_row', contatos);
+        } else {
+          statusEl.textContent = 'Dados do cliente inconsistentes ou incompletos na proposta.';
+          statusEl.classList.add('error');
+          return;
+        }
+
+        // 4. EVENTO
+        setSafeText('evento_tipo', proposta.tipo_evento);
+        toggleRow('evento_tipo_row', proposta.tipo_evento);
+
+        const dataEvBR = formatarDataBR(proposta.data_evento);
+        setSafeText('evento_data', dataEvBR);
+        toggleRow('evento_data_row', dataEvBR);
+
+        setSafeText('evento_duracao', proposta.duracao_horas);
+        toggleRow('evento_duracao_row', proposta.duracao_horas);
+
+        setSafeText('evento_convidados', proposta.convidados_estimados);
+        toggleRow('evento_convidados_row', proposta.convidados_estimados);
+
+        setSafeText('evento_local_nome', proposta.local_evento);
+        toggleRow('evento_local_row', proposta.local_evento);
+
+        // Endereço do evento
+        let evLogr = '', evNum = '', evComp = '', evBairro = '', evCid = '', evUf = '', evCep = '';
+        if (proposta.evento_endereco_igual_cliente === true && cliente) {
+          evLogr = cliente.logradouro || '';
+          evNum = cliente.numero || '';
+          evComp = cliente.complemento || '';
+          evBairro = cliente.bairro || '';
+          evCid = cliente.cidade || '';
+          evUf = cliente.uf || '';
+          evCep = cliente.cep || '';
+        } else {
+          evLogr = proposta.evento_logradouro || '';
+          evNum = proposta.evento_numero || '';
+          evComp = proposta.evento_complemento || '';
+          evBairro = proposta.evento_bairro || '';
+          evCid = proposta.evento_cidade || '';
+          evUf = proposta.evento_uf || '';
+          evCep = proposta.evento_cep || '';
+        }
+
+        const evLogrComp = [evLogr, evNum, evComp].filter(Boolean).join(', ');
+        setSafeText('evento_endereco', evLogrComp);
+        toggleRow('evento_endereco_row', evLogrComp);
+
+        const evCidUfCep = [evBairro, evCid && evUf ? `${evCid}/${evUf}` : (evCid || evUf), evCep ? `CEP ${evCep}` : ''].filter(Boolean).join(' - ');
+        setSafeText('evento_cidade_uf', evCidUfCep);
+        toggleRow('evento_cidade_uf_row', evCidUfCep);
+
+        // 5. ITENS CONTRATADOS (ESCOPO)
+        const tbody = document.getElementById('itens_tbody');
+        tbody.innerHTML = '';
+
+        const itens = Array.isArray(proposta.itens) ? proposta.itens : [];
+        let temItemValido = false;
+
+        itens.forEach(item => {
+          if (item.tipo === 'transporte' || item.id === 'transporte' || item.is_transporte === true) {
+            return;
+          }
+
+          temItemValido = true;
+          const tr = document.createElement('tr');
+
+          const tdNome = document.createElement('td');
+          const strong = document.createElement('strong');
+          strong.textContent = item.nome || item.item_nome || 'Serviço Contratado';
+          tdNome.appendChild(strong);
+
+          const tdBase = document.createElement('td');
+          if (item.metragem && item.valor_por_metro_aplicado) {
+            tdBase.textContent = `${item.metragem} m² × ${formatarMoeda(item.valor_por_metro_aplicado)}/m²`;
+          } else if (item.quantidade && Number(item.quantidade) > 1) {
+            tdBase.textContent = `Qtd: ${item.quantidade}`;
+          } else if (item.tipo === 'pacote') {
+            tdBase.textContent = 'Pacote contratado';
+          } else {
+            tdBase.textContent = 'Serviço contratado';
+          }
+
+          const tdValor = document.createElement('td');
+          tdValor.style.textAlign = 'right';
+          tdValor.textContent = formatarMoeda(item.valor || item.preco || 0);
+
+          tr.appendChild(tdNome);
+          tr.appendChild(tdBase);
+          tr.appendChild(tdValor);
+          tbody.appendChild(tr);
+        });
+
+        if (!temItemValido) {
+          const tr = document.createElement('tr');
+          tr.innerHTML = `<td colspan="3" style="text-align: center; color: var(--text-muted);">Nenhum item específico listado.</td>`;
+          tbody.appendChild(tr);
+        }
+
+        // 6. CONDICIONALIDADES FINANCEIRAS
+        setSafeText('valor_subtotal', formatarMoeda(proposta.valor_subtotal));
+        
+        const descVal = Number(proposta.desconto_valor) || 0;
+        if (descVal > 0) {
+          setSafeText('desconto_percentual', formatarPercentual(proposta.desconto_percentual));
+          setSafeText('desconto_valor', `- ${formatarMoeda(descVal)}`);
+          toggleRow('desconto_row', true);
+        } else {
+          toggleRow('desconto_row', false);
+        }
+
+        const transpVal = Number(proposta.valor_transporte) || 0;
+        if (transpVal > 0) {
+          setSafeText('valor_transporte', formatarMoeda(transpVal));
+          toggleRow('transporte_row', true);
+        } else {
+          toggleRow('transporte_row', false);
+        }
+
+        setSafeText('valor_total', formatarMoeda(proposta.valor_total));
+
+        // EXIBIÇÃO FINAL
+        statusEl.style.display = 'none';
+        contentEl.style.display = 'block';
+
+      } catch (err) {
+        console.error('Erro ao montar contrato:', err);
+        statusEl.textContent = 'Ocorreu um erro ao processar os dados do contrato.';
+        statusEl.classList.add('error');
+      }
+    }
+
+    document.addEventListener('DOMContentLoaded', carregarContrato);
+  </script>
+</body>
+</html>

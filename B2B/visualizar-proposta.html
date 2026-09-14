@@ -1,0 +1,562 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Proposta Comercial - 432UP! Produções</title>
+  
+  <!-- Carregamento do Supabase JS v2 e Partner Config na ordem exata solicitada -->
+  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+  <script src="./partner-config.js"></script>
+  
+  <style>
+    @import url('https://fonts.googleapis.com/css2?family=Montserrat:wght@400;600;700;800&family=Inter:wght@300;400;500;600;700&display=swap');
+
+    :root {
+      --purple-primary: #8A10D8;
+      --magenta-primary: #D800A6;
+      --gradient-accent: linear-gradient(135deg, #8A10D8 0%, #D800A6 100%);
+      --text-dark: #1F1F24;
+      --text-muted: #555560;
+      --border-color: #E2E2EC;
+      
+      /* PNL / Neurocomunicação - Cores Suaves */
+      --pnl-blue-bg: #F0F5FA;
+      --pnl-blue-border: #2196F3;
+      --pnl-green-bg: #F1F8F5;
+      --pnl-green-border: #4CAF50;
+      --pnl-amber-bg: #FFFDF2;
+      --pnl-amber-border: #FFC107;
+    }
+
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+    body { font-family: 'Inter', sans-serif; color: var(--text-dark); background: #D6D6DC; line-height: 1.5; font-size: 13px; -webkit-print-color-adjust: exact; }
+
+    /* Barra de Ações Superior (Apenas Tela) */
+    .action-bar {
+      width: 210mm;
+      margin: 15px auto 5px auto;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      background: #FFFFFF;
+      padding: 12px 20px;
+      border-radius: 8px;
+      box-shadow: 0 4px 12px rgba(0,0,0,0.08);
+    }
+    .action-bar .info {
+      font-size: 13px;
+      font-weight: 600;
+      color: var(--text-dark);
+    }
+    .action-bar .btn-print {
+      background: var(--gradient-accent);
+      color: #FFFFFF;
+      border: none;
+      padding: 10px 20px;
+      font-size: 13px;
+      font-weight: 700;
+      border-radius: 6px;
+      cursor: pointer;
+      transition: opacity 0.2s;
+    }
+    .action-bar .btn-print:hover {
+      opacity: 0.9;
+    }
+
+    /* Mensagem de Erro/Alerta */
+    #status-container {
+      width: 210mm;
+      margin: 40px auto;
+      background: #FFFFFF;
+      padding: 30px;
+      border-radius: 8px;
+      border-left: 5px solid #E53935;
+      box-shadow: 0 4px 12px rgba(0,0,0,0.1);
+      display: none;
+    }
+    #status-title {
+      font-family: 'Montserrat', sans-serif;
+      font-size: 18px;
+      font-weight: 700;
+      color: #E53935;
+      margin-bottom: 8px;
+    }
+    #status-desc {
+      font-size: 14px;
+      color: var(--text-muted);
+    }
+
+    /* Container do Documento */
+    #document-content {
+      display: none;
+    }
+
+    .page {
+      width: 210mm;
+      height: 297mm;
+      padding: 20mm 20mm 25mm 20mm;
+      margin: 10px auto;
+      background: #FFFFFF;
+      position: relative;
+      box-shadow: 0 5px 15px rgba(0,0,0,0.15);
+      page-break-after: always;
+      display: flex;
+      flex-direction: column;
+      justify-content: space-between;
+      overflow: hidden;
+    }
+
+    .page-header-bar, .page-footer-bar { position: absolute; left: 0; right: 0; height: 6mm; background: var(--gradient-accent); }
+    .page-header-bar { top: 0; }
+    .page-footer-bar { bottom: 0; }
+
+    /* CAPA DA PROPOSTA */
+    .cover-container {
+      height: 100%;
+      display: flex;
+      flex-direction: column;
+      justify-content: center;
+      align-items: center;
+      text-align: center;
+    }
+
+    .cover-brand { font-family: 'Montserrat', sans-serif; font-weight: 800; font-size: 52px; font-style: italic; letter-spacing: -2px; background: var(--gradient-accent); -webkit-background-clip: text; -webkit-text-fill-color: transparent; }
+    .cover-subbrand { font-size: 18px; font-weight: 700; letter-spacing: 6px; color: var(--magenta-primary); margin-top: -10px; margin-bottom: 60px; }
+    .cover-tag { font-size: 11px; font-weight: 700; letter-spacing: 3px; color: var(--text-muted); text-transform: uppercase; margin-bottom: 12px; }
+    .cover-title { font-family: 'Montserrat', sans-serif; font-size: 28px; font-weight: 800; color: var(--purple-primary); text-transform: uppercase; margin-bottom: 40px; }
+
+    .cover-card {
+      background: var(--pnl-blue-bg);
+      border-left: 4px solid var(--pnl-blue-border);
+      padding: 20px 30px;
+      border-radius: 0 10px 10px 0;
+      text-align: left;
+      width: 80%;
+      margin-top: 20px;
+    }
+
+    .cover-card p { font-size: 13px; color: var(--text-muted); margin-bottom: 6px; }
+    .cover-card strong { color: var(--text-dark); }
+
+    /* CABEÇALHO INTERNO */
+    .header-inner { display: flex; justify-content: space-between; align-items: center; border-bottom: 2px solid var(--border-color); padding-bottom: 12px; margin-top: 4mm; margin-bottom: 20px; }
+    .brand-logo { font-family: 'Montserrat', sans-serif; font-weight: 800; font-size: 24px; font-style: italic; letter-spacing: -1px; background: var(--gradient-accent); -webkit-background-clip: text; -webkit-text-fill-color: transparent; }
+    .brand-subtitle { font-size: 10px; font-weight: 700; letter-spacing: 2px; color: var(--magenta-primary); display: block; margin-top: -4px; }
+    .doc-meta { text-align: right; font-size: 11px; color: var(--text-muted); }
+
+    .section-title { font-family: 'Montserrat', sans-serif; font-size: 15px; font-weight: 700; color: var(--purple-primary); text-transform: uppercase; margin-bottom: 12px; border-bottom: 1px solid var(--border-color); padding-bottom: 4px; }
+    
+    .grid-2 { display: grid; grid-template-columns: 1fr 1fr; gap: 15px; margin-bottom: 15px; }
+
+    /* CARDS COM PNL */
+    .card-pnl-blue { background: var(--pnl-blue-bg); border-left: 4px solid var(--pnl-blue-border); padding: 12px 15px; border-radius: 0 6px 6px 0; margin-bottom: 15px; }
+    .card-pnl-green { background: var(--pnl-green-bg); border-left: 4px solid var(--pnl-green-border); padding: 12px 15px; border-radius: 0 6px 6px 0; margin-bottom: 15px; }
+    .card-pnl-amber { background: var(--pnl-amber-bg); border-left: 4px solid var(--pnl-amber-border); padding: 12px 15px; border-radius: 0 6px 6px 0; margin-bottom: 15px; }
+
+    /* TABELAS */
+    .data-table { width: 100%; border-collapse: collapse; margin-bottom: 20px; font-size: 12px; }
+    .data-table th { background: #F4F4F8; color: var(--purple-primary); font-weight: 700; text-align: left; padding: 8px 10px; border-bottom: 2px solid var(--border-color); text-transform: uppercase; font-size: 11px; }
+    .data-table td { padding: 10px; border-bottom: 1px solid var(--border-color); }
+
+    .page-footer { display: flex; justify-content: space-between; font-size: 10px; color: var(--text-muted); border-top: 1px solid var(--border-color); padding-top: 8px; margin-bottom: 4mm; }
+
+    @media print {
+      body { background: none; }
+      .action-bar { display: none !important; }
+      .page { margin: 0; box-shadow: none; page-break-after: always; }
+    }
+  </style>
+</head>
+<body>
+
+  <!-- Barra de Ação Superior (Imprimir / Salvar PDF) -->
+  <div class="action-bar" id="action-bar">
+    <div class="info">Visualização da Proposta Comercial</div>
+    <button class="btn-print" onclick="window.print()">Imprimir / Salvar em PDF</button>
+  </div>
+
+  <!-- Container de Mensagens de Erro / Informação -->
+  <div id="status-container">
+    <div id="status-title">Proposta não especificada.</div>
+    <div id="status-desc">Nenhum parâmetro “id” foi fornecido na URL.</div>
+  </div>
+
+  <!-- Container Principal do Documento -->
+  <div id="document-content">
+    
+    <!-- PÁGINA 1: CAPA -->
+    <div class="page">
+      <div class="page-header-bar"></div>
+      <div class="cover-container">
+        <span class="cover-brand">432UP!</span>
+        <span class="cover-subbrand">PRODUÇÕES</span>
+        <p class="cover-tag">Proposta de Realização de Evento</p>
+        <h1 class="cover-title" id="cover-titulo-evento">-</h1>
+
+        <div class="cover-card">
+          <p><strong>Apresentado a:</strong> <span id="cover-cliente-nome">-</span></p>
+          <p><strong>Número da Proposta:</strong> #<span id="cover-proposta-numero">-</span></p>
+          <p><strong>Data de Emissão:</strong> <span id="cover-data-emissao">-</span></p>
+        </div>
+      </div>
+      <div class="page-footer-bar"></div>
+    </div>
+
+    <!-- PÁGINA 2: SOBRE O EVENTO E EXPERIÊNCIA -->
+    <div class="page">
+      <div class="page-header-bar"></div>
+      <div class="page-content">
+        <header class="header-inner">
+          <div><span class="brand-logo">432UP!</span><span class="brand-subtitle">PRODUÇÕES</span></div>
+          <div class="doc-meta">Proposta Visual<br>Nº <strong>#<span class="meta-proposta-numero">-</span></strong></div>
+        </header>
+
+        <!-- CARD AZUL: Clareza Lógica e Alinhamento do Evento -->
+        <div class="section-title">Sobre o Evento</div>
+        <div class="card-pnl-blue">
+          <div class="grid-2" style="margin-bottom:0;">
+            <div>
+              <p><strong>Cliente:</strong> <span id="p2-cliente-nome">-</span></p>
+              <p><strong>Tipo de Evento:</strong> <span id="p2-evento-tipo">-</span></p>
+              <p><strong>Estimativa de Público:</strong> <span id="p2-convidados-estimados">-</span> convidados</p>
+            </div>
+            <div>
+              <p><strong>Data:</strong> <span id="p2-evento-data">-</span></p>
+              <p><strong>Duração:</strong> <span id="p2-evento-duracao">-</span></p>
+              <p><strong>Local:</strong> <span id="p2-evento-local">-</span></p>
+            </div>
+          </div>
+        </div>
+
+        <div class="section-title">A Experiência Contratada</div>
+        <p style="margin-bottom: 15px; color: var(--text-muted); text-align: justify;">
+          Acreditamos que uma comunicação impecável exige tecnologia de ponta e precisão técnica. Nosso trabalho garante estabilidade técnica do início ao fim, conduzindo seu evento com o mais alto padrão estético e sonorização de alta fidelidade.
+        </p>
+
+        <table class="data-table">
+          <thead>
+            <tr>
+              <th>Produto / Serviço</th>
+              <th style="text-align: center; width: 100px;">Quantidade</th>
+              <th style="text-align: right; width: 140px;">Valor</th>
+            </tr>
+          </thead>
+          <tbody id="itens-table-body">
+            <!-- Inserido dinamicamente via Javascript -->
+          </tbody>
+        </table>
+      </div>
+
+      <div>
+        <div class="page-footer"><span>432UP! Produções — Proposta Comercial</span><span>Página 2 de 3</span></div>
+        <div class="page-footer-bar"></div>
+      </div>
+    </div>
+
+    <!-- PÁGINA 3: VALORES E ACEITE -->
+    <div class="page">
+      <div class="page-header-bar"></div>
+      <div class="page-content">
+        <header class="header-inner">
+          <div><span class="brand-logo">432UP!</span><span class="brand-subtitle">PRODUÇÕES</span></div>
+          <div class="doc-meta">Proposta Visual<br>Nº <strong>#<span class="meta-proposta-numero">-</span></strong></div>
+        </header>
+
+        <div class="section-title">Resumo Financeiro</div>
+        
+        <!-- CARD VERDE: Decisão de Compra e Segurança Financeira -->
+        <div class="card-pnl-green">
+          <div style="display: flex; justify-content: space-between; margin-bottom: 8px;">
+            <span>Subtotal dos serviços</span>
+            <span id="fin-valor-subtotal">R$ 0,00</span>
+          </div>
+          <div id="fin-linha-desconto" style="display: none; justify-content: space-between; margin-bottom: 8px; color: #2E7D32;">
+            <span>Desconto (<span id="fin-desconto-percentual">0</span>%):</span>
+            <span>- <span id="fin-desconto-valor">R$ 0,00</span></span>
+          </div>
+          <div id="fin-linha-transporte" style="display: none; justify-content: space-between; margin-bottom: 8px;">
+            <span>Transporte / Logística</span>
+            <span id="fin-valor-transporte">R$ 0,00</span>
+          </div>
+          <div style="display: flex; justify-content: space-between; font-weight: 800; font-size: 16px; color: var(--purple-primary); border-top: 1px solid var(--border-color); padding-top: 8px;">
+            <span>TOTAL DA PROPOSTA</span>
+            <span id="fin-valor-total">R$ 0,00</span>
+          </div>
+        </div>
+
+        <div class="section-title" style="margin-top: 30px;">Aceite e Aprovação</div>
+        <div style="border: 1px dashed var(--border-color); padding: 20px; border-radius: 8px; text-align: center; margin-top: 20px;">
+          <p style="margin-bottom: 30px; color: var(--text-muted);">
+            Ao responder "Ciente e De Acordo", o contratante confirma o aceite dos serviços, valores e condições aqui estipulados.
+          </p>
+          <div style="width: 60%; margin: 0 auto; border-top: 1px solid var(--text-dark); padding-top: 6px; font-weight: 700;" id="aceite-cliente-nome">
+            -
+          </div>
+        </div>
+      </div>
+
+      <div>
+        <div class="page-footer"><span>432UP! Produções — Proposta Comercial</span><span>Página 3 de 3</span></div>
+        <div class="page-footer-bar"></div>
+      </div>
+    </div>
+
+  </div>
+
+  <script>
+    /* ==========================================================================
+       1. FUNÇÕES AUXILIARES DE FORMATAÇÃO E SEGURANÇA (DOM)
+       ========================================================================== */
+    function formatarMoeda(val) {
+      const num = parseFloat(val);
+      if (isNaN(num)) return 'R$ 0,00';
+      return num.toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' });
+    }
+
+    function formatarDataBR(dataStr) {
+      if (!dataStr) return '-';
+      const partes = dataStr.split('T')[0].split('-');
+      if (partes.length === 3) {
+        return `${partes[2]}/${partes[1]}/${partes[0]}`;
+      }
+      const dataObj = new Date(dataStr);
+      if (isNaN(dataObj.getTime())) return '-';
+      return dataObj.toLocaleDateString('pt-BR');
+    }
+
+    function safeText(str, fallback = '-') {
+      if (str === null || str === undefined) return fallback;
+      const s = String(str).trim();
+      return s.length > 0 ? s : fallback;
+    }
+
+    function setText(id, text) {
+      const el = document.getElementById(id);
+      if (el) el.textContent = safeText(text);
+    }
+
+    function setClassText(className, text) {
+      const elements = document.getElementsByClassName(className);
+      const val = safeText(text);
+      for (let el of elements) {
+        el.textContent = val;
+      }
+    }
+
+    function mostrarErro(titulo, mensagem = '') {
+      document.getElementById('action-bar').style.display = 'none';
+      document.getElementById('document-content').style.display = 'none';
+      
+      const container = document.getElementById('status-container');
+      const elTitle = document.getElementById('status-title');
+      const elDesc = document.getElementById('status-desc');
+      
+      elTitle.textContent = titulo;
+      elDesc.textContent = mensagem;
+      container.style.display = 'block';
+    }
+
+    /* ==========================================================================
+       2. LÓGICA PRINCIPAL E CONSULTAS SUPABASE
+       ========================================================================== */
+    async function inicializarProposta() {
+      try {
+        if (typeof sbPartner === 'undefined') {
+          mostrarErro('Erro de Inicialização', 'O cliente sbPartner não está disponível.');
+          return;
+        }
+
+        const urlParams = new URLSearchParams(window.location.search);
+        const propostaId = urlParams.get('id');
+
+        if (!propostaId) {
+          mostrarErro('Proposta não especificada.', 'Nenhum parâmetro “id” foi fornecido na URL.');
+          return;
+        }
+
+        // Consulta direta da Proposta utilizando o ID da URL
+        const { data: proposta, error: errorProposta } = await sbPartner
+          .from('propostas')
+          .select('*')
+          .eq('id', propostaId)
+          .single();
+
+        if (errorProposta || !proposta) {
+          mostrarErro('Proposta não encontrada.', errorProposta ? errorProposta.message : '');
+          return;
+        }
+
+        // 2. Consulta do Cliente (co_clientes) através do cliente_id, quando existir
+        let nomeCliente = 'Cliente não informado';
+        let dadosCliente = null;
+
+        if (proposta.cliente_id) {
+          const { data: cliente, error: errorCliente } = await sbPartner
+            .from('co_clientes')
+            .select('*')
+            .eq('id', proposta.cliente_id)
+            .single();
+
+          if (!errorCliente && cliente) {
+            dadosCliente = cliente;
+            nomeCliente = cliente.nome_razao || cliente.nome_fantasia || nomeCliente;
+          } else if (proposta.cliente_nome) {
+            nomeCliente = proposta.cliente_nome;
+          }
+        } else if (proposta.cliente_nome) {
+          nomeCliente = proposta.cliente_nome;
+        }
+
+        // 3. Resolução do Endereço do Evento
+        let enderecoFormatado = safeText(proposta.local_evento, 'Local não especificado');
+        const partesEndereco = [];
+
+        if (proposta.evento_endereco_igual_cliente === true && dadosCliente) {
+          if (dadosCliente.logradouro) {
+            let log = dadosCliente.logradouro;
+            if (dadosCliente.numero) log += `, ${dadosCliente.numero}`;
+            if (dadosCliente.complemento) log += ` - ${dadosCliente.complemento}`;
+            partesEndereco.push(log);
+          }
+          if (dadosCliente.bairro) partesEndereco.push(dadosCliente.bairro);
+          if (dadosCliente.cidade && dadosCliente.uf) {
+            partesEndereco.push(`${dadosCliente.cidade}/${dadosCliente.uf}`);
+          } else if (dadosCliente.cidade) {
+            partesEndereco.push(dadosCliente.cidade);
+          }
+        } else if (proposta.evento_endereco_igual_cliente === false) {
+          if (proposta.evento_logradouro) {
+            let log = proposta.evento_logradouro;
+            if (proposta.evento_numero) log += `, ${proposta.evento_numero}`;
+            if (proposta.evento_complemento) log += ` - ${proposta.evento_complemento}`;
+            partesEndereco.push(log);
+          }
+          if (proposta.evento_bairro) partesEndereco.push(proposta.evento_bairro);
+          if (proposta.evento_cidade && proposta.evento_uf) {
+            partesEndereco.push(`${proposta.evento_cidade}/${proposta.evento_uf}`);
+          } else if (proposta.evento_cidade) {
+            partesEndereco.push(proposta.evento_cidade);
+          }
+        }
+
+        if (partesEndereco.length > 0) {
+          const detEndereco = partesEndereco.join(' - ');
+          enderecoFormatado = proposta.local_evento 
+            ? `${proposta.local_evento} (${detEndereco})` 
+            : detEndereco;
+        }
+
+        // 4. Processamento dos Itens (ignorando transporte)
+        const itensRaw = Array.isArray(proposta.itens) ? proposta.itens : [];
+        const itensServicos = itensRaw.filter(item => item && item.tipo !== 'transporte');
+
+        // 5. Valores Persistidos
+        const valorSubtotal = parseFloat(proposta.valor_subtotal) || 0;
+        const descontoPercentual = parseFloat(proposta.desconto_percentual) || 0;
+        const descontoValor = parseFloat(proposta.desconto_valor) || 0;
+        const valorTransporte = parseFloat(proposta.valor_transporte) || 0;
+        const valorTotal = parseFloat(proposta.valor_total) || 0;
+
+        // 6. Preenchimento dos Elementos do Documento
+        const numPropostaStr = safeText(proposta.numero, '-');
+        setClassText('meta-proposta-numero', numPropostaStr);
+
+        // Capa
+        setText('cover-titulo-evento', safeText(proposta.tipo_evento, 'PROPOSTA COMERCIAL'));
+        setText('cover-cliente-nome', nomeCliente);
+        setText('cover-proposta-numero', numPropostaStr);
+        setText('cover-data-emissao', formatarDataBR(proposta.criado_em));
+
+        // Página 2: Dados do Evento
+        setText('p2-cliente-nome', nomeCliente);
+        setText('p2-evento-tipo', safeText(proposta.tipo_evento));
+        setText('p2-convidados-estimados', safeText(proposta.convidados_estimados));
+        setText('p2-evento-data', formatarDataBR(proposta.data_evento));
+        
+        const durHoras = parseFloat(proposta.duracao_horas);
+        setText('p2-evento-duracao', !isNaN(durHoras) && durHoras > 0 ? `${durHoras} Horas` : '-');
+        setText('p2-evento-local', enderecoFormatado);
+
+        // Página 2: Tabela de Produtos / Serviços (3 Colunas)
+        const tbody = document.getElementById('itens-table-body');
+        tbody.innerHTML = '';
+
+        if (itensServicos.length === 0) {
+          const tr = document.createElement('tr');
+          tr.innerHTML = `<td colspan="3" style="text-align: center; color: var(--text-muted);">Nenhum produto ou serviço listado.</td>`;
+          tbody.appendChild(tr);
+        } else {
+          itensServicos.forEach(item => {
+            const tr = document.createElement('tr');
+
+            const tdNome = document.createElement('td');
+            let nomeExibicao = safeText(item.nome, 'Produto / Serviço');
+            tdNome.textContent = nomeExibicao;
+
+            const tdQtd = document.createElement('td');
+            tdQtd.style.textAlign = 'center';
+            let qtdTexto = '1';
+            const metragemNum = parseFloat(item.metragem);
+            const qtdNum = parseFloat(item.quantidade);
+
+            if (!isNaN(metragemNum) && metragemNum > 0) {
+              qtdTexto = `${item.metragem} m²`;
+            } else if (!isNaN(qtdNum) && qtdNum > 0) {
+              qtdTexto = `${item.quantidade}`;
+            }
+            tdQtd.textContent = qtdTexto;
+
+            const tdValor = document.createElement('td');
+            tdValor.style.textAlign = 'right';
+            tdValor.style.fontWeight = '600';
+            tdValor.textContent = formatarMoeda(item.valor);
+
+            tr.appendChild(tdNome);
+            tr.appendChild(tdQtd);
+            tr.appendChild(tdValor);
+            tbody.appendChild(tr);
+          });
+        }
+
+        // Página 3: Resumo Financeiro
+        setText('fin-valor-subtotal', formatarMoeda(valorSubtotal));
+        setText('fin-valor-total', formatarMoeda(valorTotal));
+
+        // Desconto (somente se desconto_valor > 0)
+        const elLinhaDesconto = document.getElementById('fin-linha-desconto');
+        if (descontoValor > 0) {
+          setText('fin-desconto-percentual', descontoPercentual.toString());
+          setText('fin-desconto-valor', formatarMoeda(descontoValor));
+          elLinhaDesconto.style.display = 'flex';
+        } else {
+          elLinhaDesconto.style.display = 'none';
+        }
+
+        // Transporte (somente se valor_transporte > 0)
+        const elLinhaTransporte = document.getElementById('fin-linha-transporte');
+        if (valorTransporte > 0) {
+          setText('fin-valor-transporte', formatarMoeda(valorTransporte));
+          elLinhaTransporte.style.display = 'flex';
+        } else {
+          elLinhaTransporte.style.display = 'none';
+        }
+
+        // Página 3: Aceite
+        setText('aceite-cliente-nome', nomeCliente);
+
+        // Exibe o documento visual
+        document.getElementById('document-content').style.display = 'block';
+
+      } catch (err) {
+        console.error('Erro geral no carregamento:', err);
+        mostrarErro('Erro ao carregar proposta.', err.message || '');
+      }
+    }
+
+    // Executa ao carregar o DOM
+    document.addEventListener('DOMContentLoaded', inicializarProposta);
+  </script>
+</body>
+</html>
+
