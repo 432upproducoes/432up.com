@@ -1,0 +1,591 @@
+<!DOCTYPE html>
+<html lang="pt-BR" class="h-full">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
+  <title>432UP Partner | Kit de Sobrevivência Sonora - Halloween</title>
+
+  <link rel="stylesheet" href="https://www.432up.com/css/style.css">
+  <script src="https://cdn.tailwindcss.com"></script>
+
+  <!-- ESTILOS TEMÁTICOS HALLOWEEN (sangue, relâmpago, morcegos, velas) -->
+  <style>
+    /* ===== Morcegos voando (SVG real, asas animadas) ===== */
+    .bat-fly {
+      position: fixed;
+      pointer-events: none;
+      z-index: 5;
+      width: 34px; height: 34px;
+      opacity: 0.5;
+      animation: batMove 18s linear infinite;
+      filter: drop-shadow(0 2px 4px rgba(0,0,0,.5));
+    }
+    .bat-1 { top: 12%; left: -60px; animation-delay: 0s; }
+    .bat-2 { top: 48%; left: -60px; animation-delay: 6s; }
+    .bat-3 { top: 78%; left: -60px; animation-delay: 12s; }
+
+    .bat-fly svg { width: 100%; height: 100%; }
+    .bat-fly .wing-l, .bat-fly .wing-r {
+      transform-origin: 50% 20%;
+      animation: batWing .35s ease-in-out infinite alternate;
+    }
+    .bat-fly .wing-r { animation-delay: .02s; }
+
+    @keyframes batWing {
+      0% { transform: scaleY(1) rotate(0deg); }
+      100% { transform: scaleY(.55) rotate(-8deg); }
+    }
+
+    @keyframes batMove {
+      0% { transform: translate(0, 0) scale(0.75) rotate(-3deg); opacity: 0; }
+      8% { opacity: .55; }
+      25% { transform: translate(28vw, -40px) scale(0.95) rotate(4deg); }
+      50% { transform: translate(55vw, 15px) scale(1.05) rotate(-4deg); }
+      75% { transform: translate(82vw, -25px) scale(0.9) rotate(3deg); }
+      92% { opacity: .45; }
+      100% { transform: translate(112vw, 5px) scale(0.7) rotate(-2deg); opacity: 0; }
+    }
+
+    /* ===== Velas nos cantos ===== */
+    .corner-candle {
+      position: fixed;
+      bottom: 16px;
+      z-index: 30;
+      font-size: 26px;
+      pointer-events: none;
+      filter: drop-shadow(0 0 10px rgba(255, 120, 0, 0.75));
+      animation: candleFlicker 2s ease-in-out infinite alternate;
+    }
+    .candle-left { left: 16px; }
+    .candle-right { right: 16px; }
+
+    @keyframes candleFlicker {
+      0% { opacity: 0.8; transform: scale(1); }
+      100% { opacity: 1; transform: scale(1.08); }
+    }
+
+    /* ===== Gotas de sangue escorrendo (título e botões — mesmo efeito) ===== */
+    .btn-drip, .blood-drip-title { position: relative; overflow: visible !important; }
+    .btn-drip { margin-bottom: 16px; }
+    .blood-drip-title { position: relative; display: inline-block; padding-bottom: 14px; }
+    .blood-drip-title::before, .blood-drip-title::after,
+    .blood-drip-title .td1, .blood-drip-title .td2, .blood-drip-title .td3, .blood-drip-title .td4 {
+      content: ''; position: absolute; bottom: -2px; width: 5px;
+      border-radius: 0 0 50% 50%; background: #cc0000;
+      box-shadow: 0 4px 8px rgba(139,0,0,.4); pointer-events: none; z-index: 1;
+    }
+    .blood-drip-title::before { left: 6%; animation: dripFall 3.2s ease-in infinite .2s; --dh: 9px; }
+    .blood-drip-title::after  { left: 40%; animation: dripFall 2.8s ease-in infinite 1.5s; --dh: 6px; }
+    .blood-drip-title .td1 { left: 68%; animation: dripFall 3.6s ease-in infinite .8s; --dh: 11px; }
+    .blood-drip-title .td2 { left: 92%; animation: dripFall 3s ease-in infinite 2.1s; --dh: 7px; }
+    .blood-drip {
+      position: absolute; bottom: -2px; width: 5px;
+      border-radius: 0 0 50% 50%;
+      background: #cc0000;
+      animation: dripFall var(--dd, 3s) ease-in infinite var(--ddl, 0s);
+      box-shadow: 0 4px 8px rgba(139,0,0,.4);
+      pointer-events: none; z-index: 1;
+    }
+    @keyframes dripFall {
+      0% { height: 0; opacity: 0; bottom: -2px; }
+      15% { opacity: 1; }
+      50% { height: var(--dh, 12px); bottom: calc(-2px - var(--dh, 12px)); }
+      70% { opacity: 1; }
+      85% { opacity: 0; }
+      100% { height: var(--dh, 12px); bottom: calc(-2px - var(--dh, 12px) - 8px); opacity: 0; }
+    }
+
+    /* ===== Relâmpago / flash ===== */
+    @keyframes lightningFlash {
+      0%,100% { opacity: 0; }
+      1% { opacity: .18; }
+      2% { opacity: 0; }
+      3% { opacity: .12; }
+      4% { opacity: 0; }
+    }
+    .lightning-overlay {
+      position: fixed; inset: 0; pointer-events: none; z-index: 6;
+      background: #fff; opacity: 0;
+      animation: lightningFlash 14s ease-in-out infinite;
+    }
+
+    /* ===== Névoa/fog sutil no fundo ===== */
+    .fog-parallax { position: fixed; inset: 0; pointer-events: none; z-index: 1; overflow: hidden; }
+    .fog-band {
+      position: absolute; left: -10%; width: 120%; height: 30%;
+      background: linear-gradient(90deg, transparent 0%, rgba(139,0,0,.05) 20%, rgba(123,47,190,.05) 50%, rgba(255,143,0,.03) 80%, transparent 100%);
+      filter: blur(40px); opacity: .5;
+      animation: fogDrift var(--fog-speed, 30s) ease-in-out infinite alternate;
+    }
+    @keyframes fogDrift {
+      0% { transform: translateX(-5%) translateY(0); }
+      100% { transform: translateX(5%) translateY(-10px); }
+    }
+
+    /* ===== Accordion Customizado ===== */
+    details summary::-webkit-details-marker { display: none; }
+    details[open] summary .arrow-icon { transform: rotate(180deg); }
+    details[open] { border-color: rgba(185, 28, 28, 0.6) !important; }
+
+    .faq-num-glow { text-shadow: 0 0 10px rgba(185,28,28,.35); }
+
+    /* ===== Cards com transparência real (glass vermelho-sangue) ===== */
+    .hw-glass-card {
+      background: linear-gradient(160deg, rgba(60,4,4,.38), rgba(8,4,10,.55)) !important;
+      border: 1px solid rgba(139,0,0,.32) !important;
+      backdrop-filter: blur(22px) saturate(1.2);
+      -webkit-backdrop-filter: blur(22px) saturate(1.2);
+      box-shadow: inset 0 1px 0 rgba(255,255,255,.03), 0 0 40px rgba(139,0,0,.1);
+    }
+    .hw-glass-card:hover {
+      background: linear-gradient(160deg, rgba(80,6,6,.46), rgba(10,5,12,.62)) !important;
+      border-color: rgba(255,143,32,.4) !important;
+    }
+    .hw-glass-card[open], details.hw-glass-card[open] {
+      border-color: rgba(220,38,38,.7) !important;
+      box-shadow: inset 0 1px 0 rgba(255,255,255,.04), 0 0 55px rgba(139,0,0,.18);
+    }
+
+    /* Força a cor do título */
+    h1 #hwHeroTitleAccent,
+    #hwHeroTitleAccent.blood-drip-title,
+    span#hwHeroTitleAccent {
+      color: #ff8f20 !important;
+      -webkit-text-fill-color: #ff8f20 !important;
+    }
+
+    /* ===== CTA ajustado — laranja-abóbora / âmbar ===== */
+    .cta-toxic {
+      background: linear-gradient(135deg, #7a3a05, #b85c0a);
+      border: 1px solid rgba(255,143,0,.45);
+      box-shadow: 0 4px 20px rgba(0,0,0,.5), 0 0 24px rgba(255,143,0,.18), inset 0 1px 0 rgba(255,255,255,.05);
+      text-shadow: 0 0 8px rgba(255,180,80,.3);
+    }
+    .cta-toxic:hover {
+      background: linear-gradient(135deg, #8f4507, #d16f0e);
+      box-shadow: 0 6px 26px rgba(0,0,0,.55), 0 0 34px rgba(255,143,0,.28);
+    }
+
+    /* ===== ESTILO BASE DAS TAGS DE CONTEXTO (do header institucional) ===== */
+    .lp-tag {
+      color: #c5a059; /* Dourado editorial */
+      font-size: 0.75em;
+      margin-left: 4px;
+      text-transform: uppercase;
+      letter-spacing: 0.1em;
+    }
+
+    /* Garante que o header institucional fique visível e acima dos efeitos */
+    #calc-header {
+      position: relative;
+      z-index: 50;
+      display: flex !important;
+      visibility: visible !important;
+    }
+  </style>
+</head>
+<body class="h-full text-slate-200 font-sans antialiased bg-[#06080c] overflow-x-hidden">
+
+  <!-- EFEITOS DE HALLOWEEN -->
+  <div class="bat-fly bat-1"><svg viewBox="0 0 100 60" xmlns="http://www.w3.org/2000/svg"><g fill="#1a1a1a"><path class="wing-l" d="M48 22 C 30 6, 6 4, 0 18 C 14 16, 24 20, 34 30 C 22 26, 10 30, 6 40 C 20 34, 32 34, 46 30 Z"/><path class="wing-r" d="M52 22 C 70 6, 94 4, 100 18 C 86 16, 76 20, 66 30 C 78 26, 90 30, 94 40 C 80 34, 68 34, 54 30 Z"/><ellipse cx="50" cy="26" rx="7" ry="10"/><path d="M44 18 L40 8 L49 16 Z"/><path d="M56 18 L60 8 L51 16 Z"/></g></svg></div>
+  <div class="bat-fly bat-2"><svg viewBox="0 0 100 60" xmlns="http://www.w3.org/2000/svg"><g fill="#1a1a1a"><path class="wing-l" d="M48 22 C 30 6, 6 4, 0 18 C 14 16, 24 20, 34 30 C 22 26, 10 30, 6 40 C 20 34, 32 34, 46 30 Z"/><path class="wing-r" d="M52 22 C 70 6, 94 4, 100 18 C 86 16, 76 20, 66 30 C 78 26, 90 30, 94 40 C 80 34, 68 34, 54 30 Z"/><ellipse cx="50" cy="26" rx="7" ry="10"/><path d="M44 18 L40 8 L49 16 Z"/><path d="M56 18 L60 8 L51 16 Z"/></g></svg></div>
+  <div class="bat-fly bat-3"><svg viewBox="0 0 100 60" xmlns="http://www.w3.org/2000/svg"><g fill="#1a1a1a"><path class="wing-l" d="M48 22 C 30 6, 6 4, 0 18 C 14 16, 24 20, 34 30 C 22 26, 10 30, 6 40 C 20 34, 32 34, 46 30 Z"/><path class="wing-r" d="M52 22 C 70 6, 94 4, 100 18 C 86 16, 76 20, 66 30 C 78 26, 90 30, 94 40 C 80 34, 68 34, 54 30 Z"/><ellipse cx="50" cy="26" rx="7" ry="10"/><path d="M44 18 L40 8 L49 16 Z"/><path d="M56 18 L60 8 L51 16 Z"/></g></svg></div>
+
+  <div class="corner-candle candle-left" title="Halloween Vibe">🕯️</div>
+  <div class="corner-candle candle-right" title="Halloween Vibe">🕯️</div>
+
+  <!-- Névoa e relâmpago -->
+  <div class="fog-parallax">
+    <div class="fog-band" style="top:10%;--fog-speed:25s;"></div>
+    <div class="fog-band" style="top:45%;--fog-speed:35s;"></div>
+    <div class="fog-band" style="top:75%;--fog-speed:45s;"></div>
+  </div>
+  <div class="lightning-overlay"></div>
+
+  <canvas id="orbit-canvas"></canvas>
+  <div id="plasmaLayer" class="plasma-top-layer"></div>
+
+  <!-- ============================================================ -->
+  <!-- MENU INSTITUCIONAL UNIFICADO (idêntico ao header / index)   -->
+  <!-- ============================================================ -->
+  <header id="calc-header">
+    <div class="logo-container">
+      <a href="https://www.432up.com/" class="logo-link" aria-label="Página Inicial 432UP">
+        <img src="https://www.432up.com/imagens/logo.png" alt="432UP! Produções — produção e soluções para eventos em São Paulo" class="logo-img">
+      </a>
+    </div>
+
+    <!-- MENU DESKTOP EDITORIAL FECHADO -->
+    <nav class="desktop-nav" aria-label="Navegação Principal">
+      <a href="https://www.432up.com/aessencia.html" id="nav-essencia">A Essência</a>
+      <a href="https://www.432up.com/amaestria.html" id="nav-maestria">A Maestria</a>
+      <a href="https://www.432up.com/galeria.html" id="nav-galeria">
+        Galeria <span id="lp-context-tag" class="lp-tag" style="display: none;"></span>
+      </a>
+      <a href="https://www.432up.com/vitrine.html" id="nav-vitrine">Vitrine</a>
+      <a href="https://www.432up.com/calculadora.html" id="nav-simulador">Simulador</a>
+      <a href="https://www.432up.com/mesa-de-producao.html" id="nav-parceiros">Parceiros</a>
+      <button
+        type="button"
+        onclick="openLeadModal()"
+        class="btn-header-cta"
+        aria-label="Iniciar projeto audiovisual"
+      >
+        INICIAR PROJETO →
+      </button>
+    </nav>
+
+    <!-- BOTÃO HAMBÚRGUER MOBILE -->
+    <button
+      type="button"
+      class="mobile-hamburger"
+      onclick="toggleMobileMenu()"
+      aria-label="Abrir menu principal"
+    >
+      ☰
+    </button>
+  </header>
+
+  <!-- OVERLAY MENU MOBILE EDITORIAL -->
+  <div
+    class="mobile-menu-overlay"
+    id="mobile-menu"
+    aria-hidden="true"
+  >
+    <button
+      type="button"
+      onclick="toggleMobileMenu()"
+      style="
+        position: absolute;
+        top: 20px;
+        right: 20px;
+        background: transparent;
+        border: none;
+        color: #fff;
+        font-size: 1.5rem;
+        cursor: pointer;
+      "
+      aria-label="Fechar menu"
+    >
+      ✕
+    </button>
+    <a href="https://www.432up.com/aessencia.html" onclick="toggleMobileMenu()">A Essência</a>
+    <a href="https://www.432up.com/amaestria.html" onclick="toggleMobileMenu()">A Maestria</a>
+    <a href="https://www.432up.com/galeria.html" id="nav-galeria-mobile" onclick="toggleMobileMenu()">
+      Galeria <span id="lp-context-tag-mobile" class="lp-tag" style="display: none;"></span>
+    </a>
+    <a href="https://www.432up.com/vitrine.html" onclick="toggleMobileMenu()">Vitrine</a>
+    <a href="https://www.432up.com/calculadora.html" onclick="toggleMobileMenu()">Simulador</a>
+    <a href="https://www.432up.com/mesa-de-producao.html" onclick="toggleMobileMenu()">Parceiros</a>
+    <button
+      type="button"
+      onclick="toggleMobileMenu(); openLeadModal();"
+      class="btn-header-cta"
+      style="
+        margin-left: 0;
+        padding: 12px 28px;
+        width: 100%;
+      "
+    >
+      INICIAR PROJETO →
+    </button>
+  </div>
+
+  <!-- CONTEÚDO DA PÁGINA -->
+  <div class="flex flex-col min-h-screen relative z-10 pb-16">
+    <main class="flex-1 p-4 lg:p-8 space-y-8 pt-20 lg:pt-24 w-full max-w-5xl mx-auto">
+
+      <!-- HERO / BANNER PRINCIPAL -->
+      <section class="bg-gradient-to-b from-[#16121e] to-[#0c0e15] border border-red-950/40 rounded-2xl p-6 lg:p-10 shadow-2xl text-center relative overflow-hidden">
+        <div class="absolute -top-10 -right-10 w-40 h-40 bg-red-900/10 rounded-full blur-3xl pointer-events-none"></div>
+        <div class="absolute -bottom-10 -left-10 w-40 h-40 bg-amber-600/10 rounded-full blur-3xl pointer-events-none"></div>
+
+        <span class="inline-flex items-center gap-2 px-3 py-1 rounded-full text-xs font-semibold bg-red-950/60 text-red-400 border border-red-800/40 mb-4">
+          🎃 Guia Especial & Kit de Sobrevivência Sonora
+        </span>
+
+        <h1 class="text-3xl lg:text-5xl font-extrabold text-white tracking-tight mb-4">
+          <span id="hwHeroTitleAccent" class="blood-drip-title">Kit de Sobrevivência Sonora<span class="td1"></span><span class="td2"></span></span> para Halloween
+        </h1>
+
+        <p class="text-slate-400 max-w-2xl mx-auto text-sm lg:text-base leading-relaxed mb-6">
+          12 dicas essenciais de som, iluminação, repertório e efeitos temáticos para garantir a atmosfera perfeita na sua festa de Halloween — e um caminho rápido para fechar o próximo evento com quem já confia na 432UP.
+        </p>
+
+        <!-- CTA BOTÃO WHATSAPP (FUNIL DE RECONVERSÃO) -->
+        <div class="flex flex-col sm:flex-row items-center justify-center gap-4">
+          <a href="https://wa.me/5511948564577?text=Ol%C3%A1!%20Vim%20pelo%20Kit%20de%20Sobreviv%C3%AAncia%20de%20Halloween%20e%20quero%20fechar%20meu%20pr%C3%B3ximo%20evento%20com%20a%20432UP."
+             target="_blank"
+             class="w-full sm:w-auto inline-flex items-center justify-center gap-3 text-white font-bold py-3.5 px-7 rounded-xl transition-all transform hover:-translate-y-0.5 btn-drip cta-toxic">
+            <svg class="w-5 h-5 fill-current" viewBox="0 0 24 24"><path d="M.057 24l1.687-6.163c-1.041-1.804-1.588-3.849-1.587-5.946.003-6.556 5.338-11.891 11.893-11.891 3.181.001 6.167 1.24 8.413 3.488 2.245 2.248 3.481 5.236 3.48 8.414-.003 6.557-5.338 11.892-11.893 11.892-1.99-.001-3.951-.5-5.688-1.448l-6.305 1.654zm6.597-3.807c1.676.995 3.276 1.591 5.392 1.592 5.448 0 9.886-4.434 9.889-9.885.002-5.462-4.415-9.89-9.881-9.892-5.452 0-9.887 4.434-9.889 9.884-.001 2.225.651 3.891 1.746 5.634l-.999 3.648 3.742-.981z"/></svg>
+            <span>Quero reservar meu Halloween com a 432UP</span>
+            <span class="blood-drip" style="left:20%;--dd:3s;--ddl:0s;--dh:12px;"></span>
+            <span class="blood-drip" style="left:75%;--dd:3.4s;--ddl:1.5s;--dh:9px;"></span>
+          </a>
+
+          <a href="#faq-section" class="w-full sm:w-auto text-xs text-slate-400 hover:text-white underline underline-offset-4 py-2 px-4">
+            Ver as 12 dicas completas abaixo ↓
+          </a>
+        </div>
+      </section>
+
+      <!-- SEÇÃO FAQ / DICAS -->
+      <section id="faq-section" class="space-y-4">
+        <div class="flex items-center justify-between border-b border-slate-800/80 pb-3">
+          <h2 class="text-xl font-bold text-white flex items-center gap-2">
+            <span>👻</span> 12 Dicas Essenciais para o Som e o Clima do seu Halloween
+          </h2>
+          <span class="text-xs text-slate-400">Clique para abrir e fechar</span>
+        </div>
+
+        <div class="space-y-3">
+
+          <!-- DICA 1 -->
+          <details class="group hw-glass-card rounded-xl transition-all duration-200">
+            <summary class="flex items-center justify-between p-4 cursor-pointer font-semibold text-slate-100 hover:text-red-400 transition-colors">
+              <span class="flex items-center gap-3">
+                <span class="text-red-500 font-mono text-sm faq-num-glow">01.</span>
+                Como dimensionar a potência e subwoofers para festas de Halloween?
+              </span>
+              <span class="arrow-icon text-slate-500 transition-transform duration-200">▼</span>
+            </summary>
+            <div class="p-4 pt-0 text-slate-300 text-sm leading-relaxed border-t border-slate-800/40 mt-2">
+              <p>O clima de Halloween exige graves profundos para causar impacto físico no público. Recomendamos utilizar no mínimo 2 subwoofers de 18 polegadas para ambientes até 150 pessoas. Garanta reforço na faixa de frequências baixas (35Hz a 80Hz) para destacar vinhetas sombrias e os graves de remixagens eletrônicas.</p>
+            </div>
+          </details>
+
+          <!-- DICA 2 -->
+          <details class="group hw-glass-card rounded-xl transition-all duration-200">
+            <summary class="flex items-center justify-between p-4 cursor-pointer font-semibold text-slate-100 hover:text-red-400 transition-colors">
+              <span class="flex items-center gap-3">
+                <span class="text-red-500 font-mono text-sm faq-num-glow">02.</span>
+                Qual a combinação ideal de iluminação e fumaça para o clima macabro?
+              </span>
+              <span class="arrow-icon text-slate-500 transition-transform duration-200">▼</span>
+            </summary>
+            <div class="p-4 pt-0 text-slate-300 text-sm leading-relaxed border-t border-slate-800/40 mt-2">
+              <p>A iluminação deve priorizar tons roxos, verde-neon, vermelho-sangue e ultravioleta (luz negra). Um Hazer ou Máquina de Fumaça com fluido de alta densidade é essencial para que os feixes de luz fiquem visíveis no ar, criando um efeito fantasmagórico contínuo na pista.</p>
+            </div>
+          </details>
+
+          <!-- DICA 3 -->
+          <details class="group hw-glass-card rounded-xl transition-all duration-200">
+            <summary class="flex items-center justify-between p-4 cursor-pointer font-semibold text-slate-100 hover:text-red-400 transition-colors">
+              <span class="flex items-center gap-3">
+                <span class="text-red-500 font-mono text-sm faq-num-glow">03.</span>
+                Como preparar vinhetas e efeitos sonoros para disparar ao vivo?
+              </span>
+              <span class="arrow-icon text-slate-500 transition-transform duration-200">▼</span>
+            </summary>
+            <div class="p-4 pt-0 text-slate-300 text-sm leading-relaxed border-t border-slate-800/40 mt-2">
+              <p>Organize um Sampler ou pad no seu software de DJ (ou mesa de som) carregado com efeitos clássicos: gargalhadas macabras, trovões, portas rangendo, uivos e batimentos cardíacos. Mantenha os volumes nivelados com a música principal para evitar distorção ou sustos indesejados no sistema de som.</p>
+            </div>
+          </details>
+
+          <!-- DICA 4 -->
+          <details class="group hw-glass-card rounded-xl transition-all duration-200">
+            <summary class="flex items-center justify-between p-4 cursor-pointer font-semibold text-slate-100 hover:text-red-400 transition-colors">
+              <span class="flex items-center gap-3">
+                <span class="text-red-500 font-mono text-sm faq-num-glow">04.</span>
+                Qual a melhor estrutura de cronograma musical para a noite?
+              </span>
+              <span class="arrow-icon text-slate-500 transition-transform duration-200">▼</span>
+            </summary>
+            <div class="p-4 pt-0 text-slate-300 text-sm leading-relaxed border-t border-slate-800/40 mt-2">
+              <ul class="list-disc pl-5 space-y-1">
+                <li><strong>Recepção (0h às 1h):</strong> Trilhas sonoras cinematográficas de suspense e Synthwave sombrio.</li>
+                <li><strong>Aquecimento (1h às 2h):</strong> Pop/Rock clássico com temática de horror (Thriller, Psycho Killer, Ghostbusters).</li>
+                <li><strong>Ápice da Pista (2h em diante):</strong> Versões Open Format, Tech House, EDM e Funk com synths obscuros e batidas pesadas.</li>
+              </ul>
+            </div>
+          </details>
+
+          <!-- DICA 5 -->
+          <details class="group hw-glass-card rounded-xl transition-all duration-200">
+            <summary class="flex items-center justify-between p-4 cursor-pointer font-semibold text-slate-100 hover:text-red-400 transition-colors">
+              <span class="flex items-center gap-3">
+                <span class="text-red-500 font-mono text-sm faq-num-glow">05.</span>
+                Como resolver problemas de eco e acústica em locais decorados?
+              </span>
+              <span class="arrow-icon text-slate-500 transition-transform duration-200">▼</span>
+            </summary>
+            <div class="p-4 pt-0 text-slate-300 text-sm leading-relaxed border-t border-slate-800/40 mt-2">
+              <p>Decorações temáticas como teias de aranha sintéticas, tecidos pretos nas paredes e cortinas aveludadas ajudam a absorver frequências altas e reduzir o eco. Posicione as caixas de som viradas levemente para o centro da pista, evitando reflexão direta em superfícies de vidro ou concreto.</p>
+            </div>
+          </details>
+
+          <!-- DICA 6 -->
+          <details class="group hw-glass-card rounded-xl transition-all duration-200">
+            <summary class="flex items-center justify-between p-4 cursor-pointer font-semibold text-slate-100 hover:text-red-400 transition-colors">
+              <span class="flex items-center gap-3">
+                <span class="text-red-500 font-mono text-sm faq-num-glow">06.</span>
+                Quais efeitos de voz usar para apresentadores ou locução temática?
+              </span>
+              <span class="arrow-icon text-slate-500 transition-transform duration-200">▼</span>
+            </summary>
+            <div class="p-4 pt-0 text-slate-300 text-sm leading-relaxed border-t border-slate-800/40 mt-2">
+              <p>Aplique um modulador de pitch (Pitch Shifter) caindo entre -2 e -4 semitons para engrossar a voz do locutor/DJ. Adicione um Reverb longo e um Delay sincronizado com o tempo (BPM) da música para dar o tom grave e cavernoso nos momentos de anúncio da festa.</p>
+            </div>
+          </details>
+
+          <!-- DICA 7 -->
+          <details class="group hw-glass-card rounded-xl transition-all duration-200">
+            <summary class="flex items-center justify-between p-4 cursor-pointer font-semibold text-slate-100 hover:text-red-400 transition-colors">
+              <span class="flex items-center gap-3">
+                <span class="text-red-500 font-mono text-sm faq-num-glow">07.</span>
+                Como proteger equipamentos de fumaça, líquidos e tintas corporais?
+              </span>
+              <span class="arrow-icon text-slate-500 transition-transform duration-200">▼</span>
+            </summary>
+            <div class="p-4 pt-0 text-slate-300 text-sm leading-relaxed border-t border-slate-800/40 mt-2">
+              <p>Mantenha a mesa de som e a cabine do DJ elevadas ou protegidas por barreira física (acrílico/grade). A fumaça de névoa deve ser direcionada para a pista, longe do cooler de refrigeração das caixas e amplificadores para evitar acúmulo de resíduos secos dentro dos equipamentos.</p>
+            </div>
+          </details>
+
+          <!-- DICA 8 -->
+          <details class="group hw-glass-card rounded-xl transition-all duration-200">
+            <summary class="flex items-center justify-between p-4 cursor-pointer font-semibold text-slate-100 hover:text-red-400 transition-colors">
+              <span class="flex items-center gap-3">
+                <span class="text-red-500 font-mono text-sm faq-num-glow">08.</span>
+                Quais são os clássicos musicais indispensáveis para a pista?
+              </span>
+              <span class="arrow-icon text-slate-500 transition-transform duration-200">▼</span>
+            </summary>
+            <div class="p-4 pt-0 text-slate-300 text-sm leading-relaxed border-t border-slate-800/40 mt-2">
+              <p>Faixas essenciais incluem: <em>Thriller (Michael Jackson)</em>, <em>Somebody's Watching Me (Rockwell)</em>, <em>Ghostbusters (Ray Parker Jr.)</em>, <em>Sweet Dreams (Eurythmics)</em>, além de bootlegs e remixes de temas como <em>Halloween (John Carpenter)</em>, <em>Requiem for a Dream</em> e <em>Stranger Things Theme</em>.</p>
+            </div>
+          </details>
+
+          <!-- DICA 9 -->
+          <details class="group hw-glass-card rounded-xl transition-all duration-200">
+            <summary class="flex items-center justify-between p-4 cursor-pointer font-semibold text-slate-100 hover:text-red-400 transition-colors">
+              <span class="flex items-center gap-3">
+                <span class="text-red-500 font-mono text-sm faq-num-glow">09.</span>
+                Como sincronizar strobos, relâmpagos e blackouts para o "drop" perfeito?
+              </span>
+              <span class="arrow-icon text-slate-500 transition-transform duration-200">▼</span>
+            </summary>
+            <div class="p-4 pt-0 text-slate-300 text-sm leading-relaxed border-t border-slate-800/40 mt-2">
+              <p>Programe cenas DMX de <em>Blackout</em> (escuridão total) exatamente 4 ou 8 tempos antes da virada principal da música. Combine com um efeito de flash tipo relâmpago no telão ou painel de LED para simular uma tempestade. No momento do impacto grave (Drop), acione simultaneamente os Estroboscópios e o disparo da fumaça para gerar um efeito de surpresa imersivo no público.</p>
+            </div>
+          </details>
+
+          <!-- DICA 10 -->
+          <details class="group hw-glass-card rounded-xl transition-all duration-200">
+            <summary class="flex items-center justify-between p-4 cursor-pointer font-semibold text-slate-100 hover:text-red-400 transition-colors">
+              <span class="flex items-center gap-3">
+                <span class="text-red-500 font-mono text-sm faq-num-glow">10.</span>
+                Como usar "sangue" e texturas visuais sem exagerar no clima?
+              </span>
+              <span class="arrow-icon text-slate-500 transition-transform duration-200">▼</span>
+            </summary>
+            <div class="p-4 pt-0 text-slate-300 text-sm leading-relaxed border-t border-slate-800/40 mt-2">
+              <p>Detalhes como gotejo de "sangue" em copos, taças e letreiros, luz vermelha pontual sobre superfícies escuras e projeções sutis de texturas (rachaduras, névoa, veias de luz) reforçam a atmosfera sem pesar a decoração. O segredo é usar com moderação em pontos estratégicos — bar, entrada e pista — e não em todo o ambiente.</p>
+            </div>
+          </details>
+
+          <!-- DICA 11 -->
+          <details class="group hw-glass-card rounded-xl transition-all duration-200">
+            <summary class="flex items-center justify-between p-4 cursor-pointer font-semibold text-slate-100 hover:text-red-400 transition-colors">
+              <span class="flex items-center gap-3">
+                <span class="text-red-500 font-mono text-sm faq-num-glow">11.</span>
+                Como planejar a trilha sonora de tempestade (relâmpagos e trovões)?
+              </span>
+              <span class="arrow-icon text-slate-500 transition-transform duration-200">▼</span>
+            </summary>
+            <div class="p-4 pt-0 text-slate-300 text-sm leading-relaxed border-t border-slate-800/40 mt-2">
+              <p>Trovões e relâmpagos funcionam melhor como pontuação, não como fundo contínuo — use nos momentos de transição entre blocos musicais ou logo antes de um drop. Sincronize o som do trovão com um flash de luz branca estroboscópica de curtíssima duração (150–300ms) para reforçar a sensação de tempestade real na pista.</p>
+            </div>
+          </details>
+
+          <!-- DICA 12 -->
+          <details class="group hw-glass-card rounded-xl transition-all duration-200">
+            <summary class="flex items-center justify-between p-4 cursor-pointer font-semibold text-slate-100 hover:text-red-400 transition-colors">
+              <span class="flex items-center gap-3">
+                <span class="text-red-500 font-mono text-sm faq-num-glow">12.</span>
+                Como contratar novamente a estrutura completa de som e iluminação com a 432UP?
+              </span>
+              <span class="arrow-icon text-slate-500 transition-transform duration-200">▼</span>
+            </summary>
+            <div class="p-4 pt-0 text-slate-300 text-sm leading-relaxed border-t border-slate-800/40 mt-2">
+              <p class="mb-3">Se você já foi cliente 432UP, seu próximo orçamento sai ainda mais rápido — já conhecemos o espaço, o estilo e as preferências da sua festa. Fale com a gente pelo WhatsApp e receba uma proposta personalizada para o Halloween deste ano em poucos minutos.</p>
+              <a href="https://wa.me/5511948564577?text=Ol%C3%A1!%20J%C3%A1%20fui%20cliente%20432UP%20e%20quero%20reservar%20novamente%20a%20estrutura%20de%20som%20e%20ilumina%C3%A7%C3%A3o%20para%20o%20Halloween%20deste%20ano."
+                 target="_blank"
+                 class="inline-flex items-center gap-2 text-xs font-bold text-amber-400 hover:text-amber-300 bg-amber-950/40 border border-amber-700/40 px-3 py-2 rounded-lg transition-colors btn-drip">
+                <span>💬 Já sou cliente — quero renovar meu orçamento</span>
+                <span class="blood-drip" style="left:15%;--dd:2.8s;--ddl:.4s;--dh:8px;"></span>
+              </a>
+            </div>
+          </details>
+
+        </div>
+      </section>
+
+      <!-- RODAPÉ DE CONVERSÃO -->
+      <section class="bg-gradient-to-r from-red-950/40 via-[#111622] to-slate-900 border border-red-900/30 rounded-2xl p-6 lg:p-8 text-center space-y-4">
+        <h3 class="text-2xl font-bold text-white">Já produzimos seu Halloween antes. Vamos de novo?</h3>
+        <p class="text-sm text-slate-400 max-w-xl mx-auto">
+          Nossa equipe monta toda a infraestrutura de áudio, iluminação cênica e efeitos especiais para transformar a sua festa de Halloween em um evento inesquecível — e para clientes que retornam, o processo é ainda mais rápido.
+        </p>
+        <a href="https://wa.me/5511948564577?text=Ol%C3%A1!%20Gostaria%20de%20reservar%20novamente%20a%20432UP%20para%20o%20Halloween%20deste%20ano."
+           target="_blank"
+           class="inline-flex items-center gap-3 bg-red-600 hover:bg-red-500 text-white font-bold py-3 px-8 rounded-xl transition-all shadow-lg shadow-red-950/50 btn-drip">
+          <span>🎃 Solicitar Orçamento e Reservar Novamente</span>
+          <span class="blood-drip" style="left:20%;--dd:3s;--ddl:0s;--dh:12px;"></span>
+          <span class="blood-drip" style="left:80%;--dd:3.3s;--ddl:1.8s;--dh:10px;"></span>
+        </a>
+      </section>
+
+    </main>
+  </div>
+
+  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+  <script src="https://www.432up.com/admin/partner-config.js"></script>
+  <script src="https://www.432up.com/script/script.js" defer></script>
+
+  <script>
+    // Autenticação de parceiro (opcional)
+    if (typeof partnerRequireAuth === 'function') {
+      partnerRequireAuth().then(function (parceiro) {
+        if (typeof partnerFillSidebar === 'function') partnerFillSidebar(parceiro);
+        var roleNorm = String(parceiro.role || parceiro.nivel || '').toLowerCase().trim();
+        var isAdmin = roleNorm === 'admin' || roleNorm === 'master';
+        if (typeof window.updateAdminState === 'function') window.updateAdminState(isAdmin);
+      }).catch(function (err) {
+        console.error('Autenticação de parceiro indisponível (não afeta o menu):', err);
+      });
+    }
+  </script>
+
+  <!-- ===== ÁUDIO AMBIENTE: UIVO DE LOBO EM INTERVALOS RANDÔMICOS ===== -->
+  <script>
+    (function(){
+      var howlUrl = 'https://actions.google.com/sounds/v1/animals/wolf_howl.ogg';
+      var audio = new Audio(howlUrl);
+      audio.volume = 0.25;
+      audio.preload = 'auto';
+
+      function scheduleNext(){
+        var delay = 7000 + Math.random() * 8000;
+        setTimeout(function(){
+          audio.currentTime = 0;
+          audio.play().catch(function(){ /* autoplay bloqueado até 1ª interação */ });
+          scheduleNext();
+        }, delay);
+      }
+
+      var started = false;
+      function startOnce(){
+        if (started) return;
+        started = true;
+        scheduleNext();
+        document.removeEventListener('click', startOnce);
+        document.removeEventListener('touchstart', startOnce);
+      }
+      document.addEventListener('click', startOnce, { once: true });
+      document.addEventListener('touchstart', startOnce, { once: true });
+      scheduleNext();
+    })();
+  </script>
+</body>
+</html>
