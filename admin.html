@@ -865,16 +865,16 @@
       <div class="mm-title">432UP<span>!</span> Admin</div>
 
       <div class="mm-cat">Calculadora & Simulador</div>
-      <button type="button" class="mm-link active" data-module="simulador" onclick="navTo('simulador'); window.toggleMobileMenu();">🎧 Simulador</button>
-      <button type="button" class="mm-link" data-module="calc1-servicos" onclick="navTo('calc1-servicos'); window.toggleMobileMenu();">🛠 Serviços</button>
-      <button type="button" class="mm-link" data-module="calc1-pacotes" onclick="navTo('calc1-pacotes'); window.toggleMobileMenu();">📦 Pacotes</button>
-      <button type="button" class="mm-link" data-module="calc1-transporte" onclick="navTo('calc1-transporte'); window.toggleMobileMenu();">🚚 Transporte</button>
+      <button type="button" class="mm-link active" data-module="simulador" onclick="navTo('simulador')">🎧 Simulador</button>
+      <button type="button" class="mm-link" data-module="calc1-servicos" onclick="navTo('calc1-servicos')">🛠 Serviços</button>
+      <button type="button" class="mm-link" data-module="calc1-pacotes" onclick="navTo('calc1-pacotes')">📦 Pacotes</button>
+      <button type="button" class="mm-link" data-module="calc1-transporte" onclick="navTo('calc1-transporte')">🚚 Transporte</button>
 
       <div class="mm-cat">Comercial</div>
-      <button type="button" class="mm-link" data-module="leads" onclick="navTo('leads'); window.toggleMobileMenu();">📊 Leads</button>
+      <button type="button" class="mm-link" data-module="leads" onclick="navTo('leads')">📊 Leads</button>
 
       <div class="mm-cat">Conteúdo</div>
-      <button type="button" class="mm-link" data-module="galeria" onclick="navTo('galeria'); window.toggleMobileMenu();">🖼 Galeria</button>
+      <button type="button" class="mm-link" data-module="galeria" onclick="navTo('galeria')">🖼 Galeria</button>
 
       <button type="button" class="mm-sair" onclick="logoutAdmin()">🔒 Sair</button>
     </div>
@@ -886,8 +886,8 @@
     <div class="module-page active" id="module-simulador">
       <div class="admin-content-area" style="padding-top:0;">
         <div class="admin-bar-top">
-          <div class="admin-bar-title">🎧 432UP<span>!</span> Painel de Edição Direta (Modo Admin)</div>
-          <div style="display:flex;align-items:center;gap:16px;flex-wrap:wrap;">
+          <div class="admin-bar-title">🎧 Painel de Edição Direta</div>
+          <div style="display:flex;align-items:center;gap:12px;flex-wrap:wrap;">
             <div class="drag-toggle-wrap">
               <span>Modo Drag</span>
               <label class="switch">
@@ -895,10 +895,7 @@
                 <span class="slider"></span>
               </label>
             </div>
-            <div class="admin-status-pill">
-              <span class="admin-status-dot"></span>
-              <span id="sim-sync-text">Arrastar bloqueado — ative o Modo Drag para reordenar</span>
-            </div>
+            <span id="sim-sync-text" style="font-size:0.78rem;color:var(--text-muted);">Arrastar bloqueado</span>
           </div>
         </div>
 
@@ -936,7 +933,7 @@
         </section>
 
         <main>
-          <div class="simulator-layout" style="display:grid;grid-template-columns:1fr 320px;gap:24px;">
+          <div class="simulator-layout" style="display:block;max-width:920px;margin:0 auto;">
             <div class="setup-box">
               <!-- STEP 1 -->
               <div class="step-section" style="margin-bottom:28px;">
@@ -1035,7 +1032,8 @@
               </div>
             </div>
 
-            <aside class="summary-sidebar item-card" id="sidebar-target" style="position:sticky;top:140px;align-self:start;">
+            <!-- Resumo no final (não ocupa coluna à direita) -->
+            <aside class="summary-sidebar item-card" id="sidebar-target" style="margin-top:28px;display:none;">
               <h4 class="summary-title" contenteditable="true" data-db-item="sidebar_title" data-db-col="nome" style="font-size:1rem;margin-bottom:14px;">Projeto Estimado</h4>
               <div class="summary-row" style="display:flex;justify-content:space-between;font-size:0.82rem;margin-bottom:8px;"><span>Densidade de público:</span><strong id="sum-guests">Selecione</strong></div>
               <div class="summary-row" style="display:flex;justify-content:space-between;font-size:0.82rem;margin-bottom:8px;"><span>Tempo operacional:</span><strong id="sum-hours">Selecione</strong></div>
@@ -1051,6 +1049,12 @@
             </aside>
           </div>
         </main>
+
+        <!-- Flag flutuante de valor (só aparece com valor > 0) -->
+        <div id="sim-price-flag" style="display:none;position:fixed;bottom:20px;left:50%;transform:translateX(-50%);z-index:400;background:rgba(10,10,16,0.95);border:1px solid rgba(0,255,102,0.45);box-shadow:0 8px 32px rgba(0,0,0,0.5),0 0 20px rgba(0,255,102,0.15);border-radius:20px;padding:10px 22px;align-items:center;gap:10px;backdrop-filter:blur(12px);cursor:pointer;" onclick="var s=document.getElementById('sidebar-target');if(s){s.style.display='block';s.scrollIntoView({behavior:'smooth',block:'start'});}">
+          <span style="font-size:0.72rem;color:var(--text-muted);font-weight:600;">Investimento</span>
+          <strong id="sim-price-flag-value" style="font-size:1.05rem;color:var(--accent);font-weight:800;">R$ 0</strong>
+        </div>
 
         <div class="price-popover item-card" id="price-popover" style="display:none;position:fixed;z-index:600;width:280px;padding:16px;">
           <div style="font-size:0.78rem;font-weight:700;color:#00FF66;margin-bottom:10px;">💰 Editar Valor do Item</div>
@@ -1487,6 +1491,37 @@
     var mobNav = document.getElementById('mobile-menu');
     if (mobNav) mobNav.classList.toggle('active');
   };
+  window.closeMobileMenu = function () {
+    var mobNav = document.getElementById('mobile-menu');
+    if (mobNav) mobNav.classList.remove('active');
+  };
+
+  /* Flag de preço do simulador: só aparece com valor > 0 */
+  function syncSimPriceFlag() {
+    var priceEl = document.getElementById('total-price');
+    var flag = document.getElementById('sim-price-flag');
+    var flagVal = document.getElementById('sim-price-flag-value');
+    var sidebar = document.getElementById('sidebar-target');
+    if (!priceEl || !flag) return;
+    var raw = (priceEl.textContent || '').replace(/[^\d,.-]/g, '').replace(/\./g, '').replace(',', '.');
+    var num = parseFloat(raw) || 0;
+    if (flagVal) flagVal.textContent = priceEl.textContent || 'R$ 0';
+    if (num > 0) {
+      flag.style.display = 'flex';
+      if (sidebar) sidebar.style.display = 'block';
+    } else {
+      flag.style.display = 'none';
+      if (sidebar) sidebar.style.display = 'none';
+    }
+  }
+  document.addEventListener('DOMContentLoaded', function () {
+    var priceEl = document.getElementById('total-price');
+    if (priceEl && typeof MutationObserver !== 'undefined') {
+      new MutationObserver(syncSimPriceFlag).observe(priceEl, { childList: true, characterData: true, subtree: true });
+    }
+    setInterval(syncSimPriceFlag, 800);
+    syncSimPriceFlag();
+  });
 
   /* isAdminMode para calculadora.js */
   function isAdminMode() {
@@ -1503,13 +1538,19 @@
     const page = document.getElementById('module-' + mod);
     if (page) page.classList.add('active');
     document.querySelectorAll('.nav-link[data-module="' + mod + '"]').forEach(n => n.classList.add('active'));
-    // sincroniza menu mobile
+    // sincroniza + fecha menu mobile (não usa toggle — evita reabrir)
     var mnav = document.getElementById('mobile-menu');
     if (mnav) {
       mnav.querySelectorAll('.mm-link').forEach(function (b) {
         b.classList.toggle('active', b.getAttribute('data-module') === mod);
       });
       mnav.classList.remove('active');
+    }
+    // flag de preço só no simulador
+    var flag = document.getElementById('sim-price-flag');
+    if (flag) {
+      if (mod === 'simulador') syncSimPriceFlag();
+      else flag.style.display = 'none';
     }
     if (mod === 'galeria') {
       carregarGridCases();
@@ -2026,12 +2067,12 @@
     if (SIM_DND_ENABLED) {
       _applySimDndLockCss(false);
       ativarSortableSimulador();
-      if (syncText) syncText.innerText = 'Modo Drag ativo — arraste para reordenar';
+      if (syncText) syncText.innerText = 'Modo Drag ativo';
       toast('Modo Drag ativado', 'ok');
     } else {
       _destroyAllSimSortables();
       _applySimDndLockCss(true);
-      if (syncText) syncText.innerText = 'Arrastar bloqueado — ative o Modo Drag para reordenar';
+      if (syncText) syncText.innerText = 'Arrastar bloqueado';
       toast('Modo Drag desativado', 'ok');
     }
   }
@@ -2091,7 +2132,7 @@
     _destroyAllSimSortables();
     _applySimDndLockCss(true);
     var syncText = document.getElementById('sim-sync-text');
-    if (syncText) syncText.innerText = 'Arrastar bloqueado — ative o Modo Drag para reordenar';
+    if (syncText) syncText.innerText = 'Arrastar bloqueado';
   }
 
   // Padrão OFF no load + após scripts defer (calculadora.js) que possam reativar Sortable
@@ -2254,7 +2295,7 @@
       if (mod) mod.classList.remove('gal-dnd-locked');
       if (grid) grid.classList.add('gal-dnd-on');
       ativarSortableGaleria();
-      if (sync) sync.textContent = 'Modo Drag ativo — arraste os cards';
+      if (sync) sync.textContent = 'Modo Drag ativo';
       toast('Galeria: Modo Drag ativado', 'ok');
     } else {
       if (CASES_SORTABLE_INSTANCE) { try { CASES_SORTABLE_INSTANCE.destroy(); } catch (e) {} CASES_SORTABLE_INSTANCE = null; }
