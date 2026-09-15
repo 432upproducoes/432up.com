@@ -9,9 +9,8 @@
     gtag('config', 'G-7SWNCP1NV6');
   </script>
 
-  <!-- Biblioteca para Drag and Drop -->
-  <script src="https://cdn.jsdelivr.net/npm/sortablejs@latest/Sortable.min.js"></script>
-
+  <script src="https://cdn.jsdelivr.net/npm/sortablejs@1.15.2/Sortable.min.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/browser-image-compression@2.0.2/dist/browser-image-compression.min.js"></script>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
   <meta name="robots" content="noindex, nofollow">
@@ -19,9 +18,8 @@
   <meta name="apple-mobile-web-app-capable" content="yes">
   <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
 
-  <link rel="canonical" href="https://www.432up.com/admin.html">
   <link class="js-site-favicon" rel="icon" type="image/png" href="imagens/favicon.png">
-  <title>Painel Admin - Simulador & Gestão | 432UP! Produções</title>
+  <title>Admin 432UP | Painel Administrativo</title>
 
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
@@ -32,12 +30,39 @@
   <link rel="stylesheet" href="css/style.css">
 
   <style>
-    /* ================================================================
-       OVERLAY E CARD DE AUTHENTICAÇÃO (GLASSMORPHISM DARK)
-       ================================================================ */
+    :root {
+      --bg: #08080A;
+      --bg-card: rgba(14,14,22,0.92);
+      --bg-elevated: rgba(18,18,28,0.98);
+      --border: rgba(0,255,102,0.18);
+      --border-strong: rgba(0,255,102,0.35);
+      --accent: #00FF66;
+      --accent-dim: rgba(0,255,102,0.12);
+      --text: #fff;
+      --text-muted: rgba(255,255,255,0.55);
+      --text-dim: rgba(255,255,255,0.35);
+      --danger: #FF4D4D;
+      --radius: 16px;
+      --radius-sm: 10px;
+      --cat-corporativo: #06B6D4;
+      --cat-casamentos: #D4AF37;
+      --cat-shows: #A855F7;
+      --cat-festas: #FF8A4C;
+    }
+
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+    html, body {
+      min-height: 100%;
+      font-family: 'Inter', system-ui, sans-serif;
+      background: var(--bg);
+      color: var(--text);
+      overflow-x: hidden;
+    }
+
+    /* ========== AUTH ========== */
     #auth-overlay-admin {
       position: fixed; inset: 0; z-index: 99999;
-      background: rgba(8, 8, 10, 0.94);
+      background: rgba(8, 8, 10, 0.92);
       backdrop-filter: blur(20px); -webkit-backdrop-filter: blur(20px);
       display: flex; align-items: center; justify-content: center; padding: 20px;
     }
@@ -59,252 +84,772 @@
       width: 100%; background: rgba(255,255,255,0.05);
       border: 1px solid rgba(0,255,102,0.25);
       padding: 12px 14px; border-radius: 12px; color: #fff; font-size: 0.88rem;
-      outline: none; box-sizing: border-box; transition: all 0.2s ease;
+      outline: none; box-sizing: border-box;
     }
     .adm-input-admin:focus { border-color: #00FF66; box-shadow: 0 0 12px rgba(0,255,102,0.3); }
     .btn-adm-primary-admin {
       width: 100%; padding: 12px 20px; margin-top: 4px;
-      background: rgba(10,10,16,0.85); border: 1px solid #00FF66;
-      border-radius: 20px; color: #00FF66; font-weight: 700; font-size: 0.9rem; cursor: pointer;
-      transition: all 0.2s ease;
+      background: rgba(10,10,16,0.85); border: 1px solid transparent;
+      border-radius: 20px; color: #fff; font-weight: 700; font-size: 0.9rem; cursor: pointer;
+      transition: all 0.2s;
     }
     .btn-adm-primary-admin:hover { background: #00FF66; color: #000; box-shadow: 0 0 25px rgba(0,255,102,0.5); }
-    .btn-adm-primary-admin:disabled { opacity: 0.5; cursor: not-allowed; }
     .auth-error-admin { color: #FF4D4D; font-size: 0.78rem; margin-top: 10px; display: none; }
 
-    #painel-conteudo-admin { display: none; }
+    #painel-conteudo-admin { display: none; position: relative; min-height: 100vh; }
+
+    /* Background layers (Simulador visual replicated) */
+    .scroll-stretcher-pixel { position: fixed; inset: 0; pointer-events: none; z-index: 0; }
+    #orbit-canvas { position: fixed; inset: 0; width: 100%; height: 100%; pointer-events: none; z-index: 0; }
+    #plasmaLayer { position: fixed; inset: 0; pointer-events: none; z-index: 1; }
+
+    /* ========== TOP NAV (horizontal + hamburger) ========== */
+    .admin-topnav {
+      position: fixed; top: 0; left: 0; right: 0; z-index: 500;
+      display: flex; align-items: center; justify-content: space-between;
+      height: 64px; padding: 0 20px;
+      background: linear-gradient(180deg, rgba(10,10,16,0.96) 0%, rgba(8,8,12,0.94) 100%);
+      backdrop-filter: blur(20px) saturate(140%);
+      -webkit-backdrop-filter: blur(20px) saturate(140%);
+      border-bottom: 1px solid var(--border);
+      box-shadow: 0 8px 30px rgba(0,0,0,0.4);
+    }
+    .topnav-brand {
+      display: flex; align-items: center; gap: 10px; flex-shrink: 0;
+    }
+    .topnav-brand h1 {
+      font-size: 1.1rem; font-weight: 800; letter-spacing: -0.02em;
+    }
+    .topnav-brand h1 span { color: var(--accent); }
+    .topnav-brand .badge {
+      font-size: 0.62rem; font-weight: 700; text-transform: uppercase;
+      letter-spacing: 0.8px; color: var(--accent);
+      background: var(--accent-dim); border: 1px solid var(--border);
+      padding: 2px 8px; border-radius: 20px;
+    }
+
+    .topnav-links {
+      display: flex; align-items: center; gap: 4px;
+    }
+    .topnav-links a, .topnav-links button.nav-link {
+      background: none; border: none; cursor: pointer;
+      color: rgba(255,255,255,0.7);
+      font-size: 0.84rem; font-weight: 600;
+      padding: 8px 14px; border-radius: 12px;
+      font-family: inherit;
+      transition: all 0.15s;
+      white-space: nowrap;
+    }
+    .topnav-links a:hover, .topnav-links button.nav-link:hover {
+      color: #fff; background: var(--accent-dim);
+    }
+    .topnav-links a.active, .topnav-links button.nav-link.active {
+      color: var(--accent);
+      background: var(--accent-dim);
+      border: 1px solid var(--border-strong);
+    }
+
+    .topnav-right {
+      display: flex; align-items: center; gap: 12px; flex-shrink: 0;
+    }
+    .topnav-status {
+      display: flex; align-items: center; gap: 6px;
+      font-size: 0.72rem; color: var(--text-muted);
+    }
+    .status-dot {
+      width: 8px; height: 8px; border-radius: 50%;
+      background: var(--accent); box-shadow: 0 0 8px var(--accent);
+    }
+    .status-dot.err { background: var(--danger); box-shadow: 0 0 8px var(--danger); }
 
     .btn-logout-top {
-      background: rgba(255, 77, 77, 0.15);
-      border: 1px solid rgba(255, 77, 77, 0.4);
-      color: #FF4D4D;
-      padding: 4px 10px;
-      border-radius: 8px;
-      font-size: 0.72rem;
-      font-weight: 700;
-      cursor: pointer;
-      margin-left: 10px;
-      transition: all 0.2s ease;
+      background: transparent;
+      border: 1px solid rgba(255,77,77,0.35);
+      color: var(--danger);
+      padding: 7px 14px; border-radius: 12px;
+      font-size: 0.78rem; font-weight: 600;
+      cursor: pointer; transition: all 0.15s;
+      font-family: inherit;
     }
-    .btn-logout-top:hover { background: #FF4D4D; color: #FFF; }
-
-    /* ================================================================
-       ESTILOS ESCOPADOS ABAS GALERIA & LEADS
-       ================================================================ */
-    #tab-galeria .field,
-    #tab-leads .field {
-      display: flex; flex-direction: column; gap: 6px; margin-bottom: 14px;
-    }
-    #tab-galeria .field label,
-    #tab-leads .field label {
-      font-size: 0.75rem; text-transform: uppercase; letter-spacing: 0.5px; color: var(--text-muted); font-weight: 600;
-    }
-    #tab-galeria .field-row,
-    #tab-leads .field-row {
-      display: grid; grid-template-columns: 1fr 1fr; gap: 12px;
-    }
-    @media (max-width: 576px) {
-      #tab-galeria .field-row, #tab-leads .field-row { grid-template-columns: 1fr; }
+    .btn-logout-top:hover {
+      background: rgba(255,77,77,0.15);
+      border-color: var(--danger);
     }
 
-    #tab-galeria .admin-input, #tab-galeria .admin-select, #tab-galeria textarea,
-    #tab-leads .admin-input, #tab-leads .admin-select, #tab-leads textarea {
-      width: 100%; background: rgba(8, 8, 10, 0.6); border: 1px solid rgba(255, 255, 255, 0.12);
-      border-radius: 12px; padding: 10px 14px; color: #FFF; font-family: var(--font-base); font-size: 0.88rem;
-      outline: none; transition: var(--transition-smooth); box-sizing: border-box;
-    }
-    #tab-galeria .admin-input:focus, #tab-galeria .admin-select:focus, #tab-galeria textarea:focus,
-    #tab-leads .admin-input:focus, #tab-leads .admin-select:focus, #tab-leads textarea:focus {
-      border-color: var(--primary-lime); box-shadow: 0 0 12px rgba(0, 255, 102, 0.2);
+    .hamburger-btn {
+      display: none;
+      background: rgba(0,255,102,0.08);
+      border: 1px solid var(--border);
+      color: var(--accent);
+      width: 42px; height: 42px; border-radius: 12px;
+      font-size: 1.2rem; cursor: pointer;
     }
 
-    #tab-galeria .visual-card, #tab-leads .visual-card {
-      background: rgba(14, 14, 22, 0.82); backdrop-filter: blur(24px); -webkit-backdrop-filter: blur(24px);
-      border: 1px solid rgba(0, 255, 102, 0.22); border-radius: 20px; padding: 22px; box-shadow: 0 15px 35px rgba(0, 0, 0, 0.6);
+    /* Mobile menu drawer */
+    .mobile-menu {
+      display: none;
+      position: fixed; top: 64px; left: 0; right: 0; bottom: 0;
+      z-index: 499;
+      background: rgba(8,8,12,0.96);
+      backdrop-filter: blur(16px);
+      padding: 20px;
+      flex-direction: column; gap: 6px;
     }
-    #tab-galeria .visual-card h3, #tab-leads .visual-card h3 {
-      font-size: 1.05rem; font-weight: 700; color: #FFF; margin-bottom: 14px; border-bottom: 1px solid rgba(255, 255, 255, 0.08); padding-bottom: 8px;
+    .mobile-menu.open { display: flex; }
+    .mobile-menu a, .mobile-menu button.nav-link {
+      background: none; border: 1px solid transparent;
+      color: rgba(255,255,255,0.8);
+      font-size: 1rem; font-weight: 600;
+      padding: 14px 16px; border-radius: 14px;
+      text-align: left; cursor: pointer; font-family: inherit;
     }
-    #tab-galeria .margin-b-20 { margin-bottom: 20px; }
-
-    #tab-galeria .gal-tipo-wrap { display: flex; gap: 16px; margin: 15px 0; flex-wrap: wrap; }
-    #tab-galeria .gal-tipo-opt { font-size: 0.85rem; cursor: pointer; color: var(--text-main); display: inline-flex; align-items: center; gap: 6px; }
-
-    #tab-galeria .upload-zone {
-      border: 2px dashed rgba(0, 255, 102, 0.3); border-radius: 14px; padding: 24px; text-align: center;
-      color: var(--text-muted); font-size: 0.88rem; cursor: pointer; transition: var(--transition-smooth); margin-bottom: 14px;
-    }
-    #tab-galeria .upload-zone:hover { border-color: var(--primary-lime); background: rgba(0, 255, 102, 0.04); color: #FFF; }
-
-    #tab-galeria .cat-tags { display: flex; flex-wrap: wrap; gap: 10px; }
-    #tab-galeria .cat-tag {
-      background: rgba(255, 255, 255, 0.04); border: 1px solid rgba(255, 255, 255, 0.12); color: #FFF;
-      padding: 6px 12px; border-radius: 20px; font-size: 0.82rem; display: inline-flex; align-items: center; gap: 8px;
-    }
-    #tab-galeria .cat-tag .cat-tag-remove { cursor: pointer; color: rgba(255,255,255,0.5); font-weight: 700; }
-    #tab-galeria .cat-tag .cat-tag-remove:hover { color: var(--danger); }
-
-    #tab-galeria .toggle-wrap, #tab-leads .toggle-wrap { display: flex; align-items: center; gap: 10px; font-size: 0.85rem; color: #FFF; margin-bottom: 10px; }
-    #tab-galeria .toggle, #tab-leads .toggle { position: relative; display: inline-block; width: 38px; height: 20px; flex-shrink: 0; }
-    #tab-galeria .toggle input, #tab-leads .toggle input { opacity: 0; width: 0; height: 0; }
-    #tab-galeria .toggle .track, #tab-leads .toggle .track { position: absolute; inset: 0; background: rgba(255, 255, 255, 0.15); border-radius: 20px; transition: .3s; }
-    #tab-galeria .toggle .thumb, #tab-leads .toggle .thumb { position: absolute; height: 14px; width: 14px; left: 3px; bottom: 3px; background: #FFF; border-radius: 50%; transition: .3s; }
-    #tab-galeria .toggle input:checked + .track, #tab-leads .toggle input:checked + .track { background: var(--primary-lime); }
-    #tab-galeria .toggle input:checked ~ .thumb, #tab-leads .toggle input:checked ~ .thumb { transform: translateX(18px); background: #000; }
-
-    #tab-galeria .btn-accent, #tab-leads .btn-accent {
-      background: var(--primary-lime); color: #000; border: none; padding: 10px 20px; border-radius: 14px;
-      font-weight: 700; font-size: 0.82rem; cursor: pointer; transition: var(--transition-smooth); box-shadow: 0 0 15px rgba(0, 255, 102, 0.3);
-    }
-    #tab-galeria .btn-accent:hover, #tab-leads .btn-accent:hover { transform: translateY(-1px); box-shadow: 0 0 25px rgba(0, 255, 102, 0.6); }
-
-    #tab-galeria .btn-ghost, #tab-leads .btn-ghost {
-      background: rgba(255, 255, 255, 0.04); border: 1px solid rgba(255, 255, 255, 0.15); color: #FFF;
-      padding: 10px 16px; border-radius: 14px; font-size: 0.82rem; font-weight: 600; cursor: pointer; transition: var(--transition-smooth);
-    }
-    #tab-galeria .btn-ghost:hover, #tab-leads .btn-ghost:hover { border-color: var(--primary-lime); color: var(--primary-lime); }
-
-    #tab-leads .btn-danger {
-      background: rgba(255, 77, 77, 0.15); border: 1px solid rgba(255, 77, 77, 0.4); color: var(--danger);
-      padding: 8px 14px; border-radius: 10px; font-size: 0.78rem; font-weight: 600; cursor: pointer; transition: var(--transition-smooth);
-    }
-    #tab-leads .btn-danger:hover { background: var(--danger); color: #FFF; }
-
-    #tab-galeria .btn-sm, #tab-leads .btn-sm { padding: 4px 10px; font-size: 0.72rem; }
-    #tab-galeria .w-100, #tab-leads .w-100 { width: 100%; }
-
-    #tab-galeria .panel-header, #tab-leads .panel-header { display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 12px; }
-    #tab-galeria .panel-header h2, #tab-leads .panel-header h2 { font-size: 1.4rem; font-weight: 700; color: #FFF; }
-    #tab-leads .panel-desc { font-size: 0.85rem; color: var(--text-muted); margin-top: 2px; }
-    #tab-leads .panel-actions { display: flex; gap: 10px; flex-wrap: wrap; }
-
-    #tab-galeria .gal-list-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(240px, 1fr)); gap: 16px; margin-top: 14px; }
-    #tab-galeria .gal-item {
-      background: rgba(0, 0, 0, 0.4); border: 1px solid rgba(255, 255, 255, 0.08); border-radius: 14px;
-      overflow: hidden; padding: 10px; display: flex; flex-direction: column; gap: 8px;
-    }
-    #tab-galeria .gal-item img { width: 100%; aspect-ratio: 4/3; object-fit: cover; border-radius: 8px; }
-    #tab-galeria .gal-item-actions { display: flex; gap: 6px; justify-content: flex-end; }
-    #tab-galeria .gal-item-actions button {
-      background: rgba(255,255,255,0.06); border: 1px solid rgba(255,255,255,0.1); color: #FFF;
-      padding: 4px 8px; border-radius: 6px; cursor: pointer;
+    .mobile-menu a.active, .mobile-menu button.nav-link.active {
+      color: var(--accent);
+      background: var(--accent-dim);
+      border-color: var(--border-strong);
     }
 
-    #tab-leads .leads-filters { display: grid; grid-template-columns: repeat(auto-fit, minmax(180px, 1fr)); gap: 12px; }
-    #tab-leads .leads-summary { font-size: 0.85rem; color: var(--text-muted); }
-    #tab-leads .lead-card { background: rgba(14, 14, 22, 0.7); border: 1px solid rgba(255,255,255,0.08); border-radius: 14px; padding: 14px; margin-bottom: 10px; }
-    #tab-leads .lead-card.selected { border-color: var(--primary-lime); background: rgba(0, 255, 102, 0.04); }
-    #tab-leads .lead-top { display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 6px; margin-bottom: 8px; }
-    #tab-leads .lead-name { font-weight: 700; color: #FFF; font-size: 0.95rem; }
-    #tab-leads .lead-tag {
-      display: inline-block; font-size: 0.7rem; background: rgba(255,255,255,0.06);
-      border: 1px solid rgba(255,255,255,0.1); padding: 2px 8px; border-radius: 10px; margin-right: 6px; color: var(--text-muted);
+    @media (max-width: 900px) {
+      .topnav-links { display: none; }
+      .hamburger-btn { display: flex; align-items: center; justify-content: center; }
+      .topnav-status { display: none; }
     }
-    #tab-leads .lead-tag.wa { border-color: rgba(0,255,102,0.4); color: var(--primary-lime); cursor: pointer; }
 
-    #tab-galeria #toastBox, #tab-leads #toastBox { position: fixed; bottom: 24px; right: 24px; z-index: 100000; display: flex; flex-direction: column; gap: 8px; }
-    #tab-galeria .toast, #tab-leads .toast {
-      padding: 12px 20px; border-radius: 12px; font-size: 0.85rem; font-weight: 600;
-      color: #000; background: var(--primary-lime); box-shadow: 0 10px 25px rgba(0,0,0,0.5);
+    /* ========== CONTENT AREA ========== */
+    .admin-content-area {
+      position: relative; z-index: 2;
+      padding: 20px 28px 80px;
+      max-width: 1280px; margin: 0 auto;
     }
-    #tab-galeria .toast.err, #tab-leads .toast.err { background: var(--danger); color: #FFF; }
+    .module-page { display: none; }
+    .module-page.active { display: block; }
+    /* Menu fixed 64px → conteúdo começa abaixo + respiro */
+    .module-page:not(#module-simulador) > .admin-content-area {
+      padding-top: 88px; /* 64px menu + 24px respiro */
+    }
+    .module-page:not(#module-simulador) .mod-header {
+      margin-top: 0;
+      margin-bottom: 28px;
+    }
+    .module-page:not(#module-simulador) .mod-header h2 {
+      font-size: 1.45rem;
+      font-weight: 800;
+      color: #fff;
+      letter-spacing: -0.02em;
+    }
+
+    /* Module header */
+    .mod-header {
+      display: flex; justify-content: space-between; align-items: flex-start;
+      gap: 16px; flex-wrap: wrap; margin-bottom: 24px;
+    }
+    .mod-header h2 { font-size: 1.4rem; font-weight: 800; }
+    .mod-header p { font-size: 0.84rem; color: var(--text-muted); margin-top: 6px; }
+    .mod-actions { display: flex; gap: 8px; flex-wrap: wrap; align-items: center; }
+
+    .btn {
+      display: inline-flex; align-items: center; gap: 6px;
+      padding: 9px 16px; border-radius: 12px;
+      font-size: 0.82rem; font-weight: 600; cursor: pointer;
+      border: 1px solid transparent; transition: all 0.15s;
+      background: rgba(255,255,255,0.06); color: var(--text);
+      font-family: inherit;
+    }
+    .btn:hover { background: rgba(255,255,255,0.1); }
+    .btn-primary {
+      background: var(--accent-dim); border-color: var(--border-strong); color: var(--accent);
+    }
+    .btn-primary:hover {
+      background: var(--accent); color: #000;
+      box-shadow: 0 0 20px rgba(0,255,102,0.35);
+    }
+    .btn-danger {
+      background: rgba(255,77,77,0.1); border-color: rgba(255,77,77,0.3); color: var(--danger);
+    }
+    .btn-danger:hover { background: rgba(255,77,77,0.2); }
+    .btn-sm { padding: 5px 10px; font-size: 0.75rem; border-radius: 8px; }
+    .btn-ghost {
+      background: transparent; border: 1px solid var(--border); color: var(--text-muted);
+    }
+    .btn-ghost:hover { border-color: var(--accent); color: var(--accent); }
+
+    /* Edit mode banner */
+    .edit-mode-bar {
+      display: none;
+      align-items: center; justify-content: space-between;
+      background: rgba(0,255,102,0.1);
+      border: 1px solid var(--border-strong);
+      border-radius: 12px; padding: 10px 16px;
+      margin-bottom: 16px; font-size: 0.84rem;
+    }
+    .edit-mode-bar.active { display: flex; }
+    .edit-mode-bar strong { color: var(--accent); }
+
+    /* Cards */
+    .cards-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fill, minmax(300px, 1fr));
+      gap: 16px;
+    }
+    .item-card {
+      background: linear-gradient(160deg, rgba(20,22,32,0.72), rgba(12,14,22,0.55));
+      border: 1px solid rgba(0,255,102,0.16);
+      border-radius: var(--radius);
+      padding: 18px;
+      transition: border-color 0.15s, box-shadow 0.15s, transform 0.15s;
+      position: relative;
+      overflow: hidden;
+      backdrop-filter: blur(18px) saturate(140%);
+      -webkit-backdrop-filter: blur(18px) saturate(140%);
+      box-shadow: 0 8px 28px rgba(0,0,0,0.25);
+    }
+    .item-card:hover {
+      border-color: rgba(0,255,102,0.4);
+      box-shadow: 0 14px 40px rgba(0,0,0,0.4), 0 0 24px rgba(0,255,102,0.1);
+      transform: translateY(-3px);
+    }
+    .item-card.inactive { opacity: 0.55; }
+    .item-card-header {
+      display: flex; justify-content: space-between; align-items: flex-start; gap: 8px; margin-bottom: 12px;
+      flex-wrap: wrap;
+    }
+    .item-card-title {
+      font-size: 1rem; font-weight: 700;
+      display: flex; align-items: center; gap: 6px; flex-wrap: wrap;
+      min-width: 0; max-width: 100%;
+    }
+    .item-card-meta { font-size: 0.75rem; color: var(--text-muted); margin-top: 4px; }
+    .item-card-actions {
+      display: flex; gap: 6px; flex-shrink: 0; flex-wrap: wrap;
+      margin-left: auto;
+    }
+    .item-card-body { font-size: 0.84rem; color: var(--text-muted); }
+    .price-tag {
+      display: inline-block; background: var(--accent-dim); color: var(--accent);
+      font-weight: 700; font-size: 0.9rem; padding: 4px 10px; border-radius: 8px; margin-top: 8px;
+    }
+    .badge {
+      display: inline-block; font-size: 0.68rem; font-weight: 700;
+      text-transform: uppercase; letter-spacing: 0.5px;
+      padding: 2px 8px; border-radius: 6px;
+      background: rgba(255,255,255,0.08); color: var(--text-muted);
+      white-space: nowrap;
+    }
+    .badge-on { background: var(--accent-dim); color: var(--accent); }
+    .badge-star {
+      background: rgba(255,200,0,0.18); color: #ffc800;
+      font-size: 0.65rem; padding: 2px 6px;
+    }
+
+    /* Switch */
+    .switch { position: relative; display: inline-block; width: 40px; height: 22px; }
+    .switch input { opacity: 0; width: 0; height: 0; }
+    .slider {
+      position: absolute; cursor: pointer; inset: 0;
+      background: rgba(255,255,255,0.12); border-radius: 22px; transition: 0.2s;
+    }
+    .slider:before {
+      position: absolute; content: ""; height: 16px; width: 16px;
+      left: 3px; bottom: 3px; background: #fff; border-radius: 50%; transition: 0.2s;
+    }
+    input:checked + .slider { background: var(--accent); }
+    input:checked + .slider:before { transform: translateX(18px); }
+
+    /* Forms / Modal */
+    .modal-overlay {
+      position: fixed; inset: 0; z-index: 100050;
+      background: rgba(8, 6, 14, 0.88);
+      backdrop-filter: blur(18px);
+      -webkit-backdrop-filter: blur(18px);
+      display: none; align-items: center; justify-content: center;
+      padding: 16px;
+      overflow-y: auto;
+    }
+    .modal-overlay.open { display: flex !important; visibility: visible !important; opacity: 1 !important; pointer-events: auto !important; }
+    .modal-box {
+      width: 100%; max-width: 560px; max-height: 92vh;
+      overflow-x: hidden !important; overflow-y: auto;
+      background: linear-gradient(135deg, rgba(14, 14, 22, 0.98), rgba(28, 20, 48, 0.92));
+      backdrop-filter: blur(24px);
+      -webkit-backdrop-filter: blur(24px);
+      border: 1px solid rgba(168, 85, 247, 0.30);
+      border-radius: 24px; padding: 28px 24px;
+      box-shadow: 0 25px 60px rgba(0,0,0,0.9), 0 0 40px rgba(168,85,247,0.18);
+      position: relative; z-index: 100051;
+      box-sizing: border-box;
+    }
+    .modal-box.wide { max-width: 720px; }
+    .modal-box.xl { max-width: min(920px, 96vw); }
+    .modal-box .form-row { max-width: 100%; }
+    .modal-box .form-group input,
+    .modal-box .form-group textarea,
+    .modal-box .form-group select {
+      max-width: 100%;
+      min-width: 0;
+    }
+    .modal-box .specs-edit-list input {
+      max-width: calc(100% - 48px);
+      min-width: 0;
+      box-sizing: border-box;
+    }
+    @media (max-width: 640px) {
+      .modal-overlay { padding: 8px; align-items: flex-start; }
+      .modal-box, .modal-box.wide, .modal-box.xl {
+        max-width: 100% !important; width: 100%;
+        border-radius: 18px; padding: 20px 16px;
+        max-height: none; margin: 8px 0 24px;
+      }
+      .modal-box .form-row { flex-direction: column !important; }
+    }
+    .modal-header {
+      display: flex; justify-content: space-between; align-items: center; margin-bottom: 22px;
+    }
+    .modal-header h3 { font-size: 1.15rem; font-weight: 800; color: #fff; }
+    .modal-close {
+      width: 36px; height: 36px; border-radius: 50%;
+      background: rgba(255,255,255,0.08);
+      border: 1px solid rgba(255,255,255,0.15);
+      color: #fff; font-size: 1.2rem; cursor: pointer;
+      display: flex; align-items: center; justify-content: center;
+      line-height: 1;
+    }
+    .modal-close:hover { color: #00FF66; border-color: #00FF66; background: rgba(0,255,102,0.1); }
+
+    .form-group { margin-bottom: 14px; min-width: 0; }
+    .form-group label {
+      display: block; font-size: 0.72rem; font-weight: 700;
+      text-transform: uppercase; letter-spacing: 0.6px;
+      color: #A855F7; margin-bottom: 6px;
+    }
+    .form-group input, .form-group textarea, .form-group select {
+      width: 100%;
+      background: rgba(255, 255, 255, 0.05);
+      border: 1px solid rgba(168, 85, 247, 0.28);
+      border-radius: 12px;
+      padding: 12px 14px;
+      color: #fff;
+      font-size: 0.88rem;
+      outline: none;
+      font-family: inherit;
+      box-sizing: border-box;
+    }
+    .form-group input::placeholder, .form-group textarea::placeholder {
+      color: rgba(255,255,255,0.35);
+    }
+    .form-group input:focus, .form-group textarea:focus, .form-group select:focus {
+      border-color: #A855F7;
+      background: rgba(168, 85, 247, 0.08);
+      box-shadow: 0 0 12px rgba(168,85,247,0.25);
+    }
+    .form-row {
+      display: flex; gap: 12px; align-items: flex-start; flex-wrap: wrap;
+    }
+    .form-row .form-group { flex: 1 1 120px; min-width: 100px; }
+    .form-toggles {
+      display: flex; flex-direction: column; gap: 10px;
+      padding-top: 22px; flex: 0 0 auto;
+    }
+    .form-toggles .toggle-line {
+      display: flex; align-items: center; gap: 10px;
+      font-size: 0.82rem; color: rgba(255,255,255,0.7);
+      white-space: nowrap;
+    }
+    .form-section {
+      border-top: 1px dashed var(--border); margin-top: 18px; padding-top: 16px;
+    }
+    .form-section-title {
+      font-size: 0.72rem; font-weight: 700; color: #A855F7;
+      margin-bottom: 12px; text-transform: uppercase; letter-spacing: 1px;
+    }
+    .advanced-toggle {
+      font-size: 0.78rem; color: var(--accent); cursor: pointer;
+      margin-top: 12px; display: inline-flex; align-items: center; gap: 4px; font-weight: 600;
+    }
+    .advanced-block { display: none; margin-top: 12px; }
+    .advanced-block.open { display: block; }
+
+    .faixa-row {
+      display: flex; gap: 6px; align-items: center; margin-bottom: 6px;
+    }
+    .faixa-row input {
+      flex: 1; min-width: 0; background: rgba(255,255,255,0.04);
+      border: 1px solid var(--border); border-radius: 8px;
+      padding: 6px 8px; color: var(--text); font-size: 0.82rem;
+    }
+    .faixa-row label { font-size: 0.7rem; color: var(--text-dim); white-space: nowrap; }
+
+    .srv-pick-grid {
+      display: grid; grid-template-columns: repeat(auto-fill, minmax(160px, 1fr)); gap: 8px; margin-top: 8px;
+    }
+    .srv-pick {
+      display: flex; align-items: center; gap: 8px;
+      padding: 8px 10px; border: 1px solid var(--border); border-radius: 10px;
+      cursor: pointer; font-size: 0.82rem; transition: border-color 0.15s;
+    }
+    .srv-pick:hover { border-color: var(--border-strong); }
+    .srv-pick.checked { border-color: var(--accent); background: var(--accent-dim); }
+    .srv-pick input { width: 16px; accent-color: var(--accent); }
+
+    .transporte-card {
+      max-width: 520px;
+      background: linear-gradient(160deg, rgba(20,22,32,0.72), rgba(12,14,22,0.55));
+      border: 1px solid rgba(0,255,102,0.18);
+      border-radius: var(--radius); padding: 22px;
+      backdrop-filter: blur(18px);
+      -webkit-backdrop-filter: blur(18px);
+    }
+
+    /* Leads */
+    .leads-filters {
+      display: flex; gap: 12px; flex-wrap: wrap; margin-bottom: 16px;
+    }
+    .leads-filters .field { min-width: 150px; flex: 1; }
+    .leads-filters label {
+      display: block; font-size: 0.68rem; font-weight: 700;
+      text-transform: uppercase; letter-spacing: 0.6px;
+      color: var(--text-dim); margin-bottom: 4px;
+    }
+    .leads-filters input, .leads-filters select {
+      width: 100%; background: rgba(255,255,255,0.04);
+      border: 1px solid var(--border); border-radius: 10px;
+      padding: 8px 12px; color: var(--text); font-size: 0.84rem; outline: none;
+    }
+    .leads-stats { font-size: 0.84rem; color: var(--text-muted); margin-bottom: 12px; }
+    .lead-card {
+      background: linear-gradient(160deg, rgba(20,22,32,0.7), rgba(12,14,22,0.5));
+      border: 1px solid rgba(0,255,102,0.14);
+      border-radius: var(--radius-sm); padding: 14px 16px; margin-bottom: 10px;
+      backdrop-filter: blur(16px);
+      -webkit-backdrop-filter: blur(16px);
+    }
+    .lead-top { display: flex; justify-content: space-between; align-items: center; margin-bottom: 8px; }
+    .lead-name { font-weight: 700; font-size: 0.95rem; }
+    .lead-date { font-size: 0.72rem; color: var(--text-dim); }
+    .lead-tags { display: flex; flex-wrap: wrap; gap: 6px; margin-bottom: 8px; }
+    .lead-tag {
+      display: inline-block; background: rgba(255,255,255,0.06);
+      border: 1px solid var(--border); border-radius: 20px;
+      padding: 2px 10px; font-size: 0.72rem; color: var(--text-muted);
+    }
+    .lead-tag.clickable { cursor: pointer; }
+    .lead-tag.clickable:hover { border-color: var(--accent); color: var(--accent); }
+    .lead-msg {
+      font-size: 0.8rem; color: var(--text-muted);
+      background: rgba(0,0,0,0.25); padding: 8px 10px; border-radius: 8px;
+      margin: 8px 0; max-height: 60px; overflow: hidden;
+    }
+    .lead-status-select {
+      background: rgba(255,255,255,0.04); border: 1px solid var(--border);
+      border-radius: 8px; padding: 5px 8px; color: var(--text); font-size: 0.8rem; outline: none;
+    }
+
+    /* Galeria */
+    .galeria-filters {
+      display: flex; gap: 12px; flex-wrap: wrap; margin-bottom: 20px; align-items: center;
+    }
+    .galeria-filters input, .galeria-filters select {
+      background: rgba(255,255,255,0.04); border: 1px solid var(--border);
+      border-radius: 10px; padding: 9px 14px; color: var(--text); font-size: 0.84rem; outline: none;
+    }
+    .galeria-filters input { min-width: 200px; flex: 1; }
+    .adm-card {
+      background: linear-gradient(160deg, rgba(20,22,32,0.7), rgba(12,14,22,0.5));
+      border: 1px solid rgba(0,255,102,0.16);
+      border-radius: 20px; overflow: hidden; display: flex; flex-direction: column;
+      transition: all 0.2s;
+      backdrop-filter: blur(18px) saturate(140%);
+      -webkit-backdrop-filter: blur(18px) saturate(140%);
+      box-shadow: 0 8px 28px rgba(0,0,0,0.25);
+    }
+    .adm-card:hover {
+      border-color: rgba(0,255,102,0.4); transform: translateY(-4px);
+      box-shadow: 0 16px 40px rgba(0,0,0,0.45), 0 0 24px rgba(0,255,102,0.12);
+    }
+    .adm-card-media {
+      width: 100%; height: 180px; object-fit: cover; background: #111; cursor: pointer;
+    }
+    .adm-card-body {
+      padding: 16px; flex: 1; display: flex; flex-direction: column; gap: 6px;
+      border-top: 1px solid rgba(255,255,255,0.06);
+    }
+    .adm-card-title { font-size: 1rem; font-weight: 800; }
+    .adm-card-sub { font-size: 0.76rem; color: var(--text-muted); text-transform: uppercase; letter-spacing: 0.3px; }
+    .adm-card-footer {
+      display: flex; justify-content: space-between; align-items: center;
+      padding-top: 10px; border-top: 1px solid rgba(255,255,255,0.08); margin-top: auto; flex-wrap: wrap; gap: 8px;
+    }
+    .cat-pill {
+      font-size: 0.68rem; font-weight: 700; text-transform: uppercase;
+      padding: 3px 10px; border-radius: 20px; letter-spacing: 0.4px;
+    }
+    .cat-corporativo { background: rgba(6,182,212,0.15); color: var(--cat-corporativo); border: 1px solid rgba(6,182,212,0.35); }
+    .cat-casamentos { background: rgba(212,175,55,0.15); color: var(--cat-casamentos); border: 1px solid rgba(212,175,55,0.35); }
+    .cat-shows { background: rgba(168,85,247,0.15); color: var(--cat-shows); border: 1px solid rgba(168,85,247,0.35); }
+    .cat-festas { background: rgba(255,138,76,0.15); color: var(--cat-festas); border: 1px solid rgba(255,138,76,0.35); }
+
+    .marcas-section {
+      background: linear-gradient(160deg, rgba(20,22,32,0.65), rgba(12,14,22,0.45));
+      border: 1px solid rgba(0,255,102,0.16);
+      border-radius: 16px; padding: 18px; margin-bottom: 24px;
+      backdrop-filter: blur(16px);
+      -webkit-backdrop-filter: blur(16px);
+    }
+    .marcas-section h3 {
+      font-size: 0.8rem; text-transform: uppercase; letter-spacing: 1px;
+      color: var(--accent); margin-bottom: 12px; font-weight: 700;
+    }
+    .marcas-list { display: flex; gap: 10px; overflow-x: auto; padding: 8px 0; }
+    .marca-chip {
+      display: flex; align-items: center; gap: 8px;
+      background: rgba(255,255,255,0.03); border: 1px solid rgba(255,255,255,0.08);
+      padding: 6px 12px; border-radius: 12px; flex: 0 0 auto;
+    }
+    .marca-chip img { height: 22px; object-fit: contain; }
+    .marca-chip span { font-size: 0.78rem; font-weight: 600; }
+
+    .edit-media-grid {
+      display: flex; gap: 10px; overflow-x: auto; overflow-y: hidden;
+      padding-bottom: 10px; max-width: 100%;
+      -webkit-overflow-scrolling: touch;
+    }
+    .edit-media-thumb {
+      flex: 0 0 auto; width: 130px; height: 100px; border-radius: 12px; overflow: hidden;
+      position: relative; border: 1px solid var(--border); background: rgba(0,0,0,0.4);
+    }
+    .edit-media-thumb img, .edit-media-thumb video { width: 100%; height: 100%; object-fit: cover; }
+    .btn-del-media {
+      position: absolute; top: 4px; right: 4px;
+      background: rgba(255,77,77,0.9); border: none; color: #fff;
+      width: 22px; height: 22px; border-radius: 50%; cursor: pointer; font-weight: 800; font-size: 0.7rem;
+    }
+    .admin-drag-handle {
+      position: absolute; top: 4px; left: 4px; z-index: 2;
+      background: rgba(8,6,14,0.75); border-radius: 6px; font-size: 0.8rem; padding: 2px 5px;
+      cursor: grab; display: none;
+    }
+    .edit-mode-active .admin-drag-handle { display: block; }
+    .edit-mode-active .edit-media-thumb { cursor: grab; }
+
+    .specs-edit-list { display: flex; flex-direction: column; gap: 8px; margin-bottom: 10px; }
+    .spec-edit-item { display: flex; gap: 8px; align-items: center; }
+    .spec-drag-handle {
+      cursor: grab; padding: 8px 6px; color: var(--accent); font-size: 1rem;
+      user-select: none; display: none;
+    }
+    .edit-mode-active .spec-drag-handle { display: block; }
+
+    .file-upload-wrap { display: flex; flex-wrap: wrap; align-items: center; gap: 10px; }
+    .file-upload-input { position: absolute; width: 1px; height: 1px; overflow: hidden; clip: rect(0,0,0,0); }
+    .btn-file-upload {
+      background: var(--accent-dim); border: 1px solid var(--border-strong);
+      color: var(--accent); font-weight: 700; padding: 10px 18px; border-radius: 14px;
+      cursor: pointer; display: inline-flex; align-items: center; gap: 8px; font-size: 0.82rem;
+    }
+    .btn-file-upload:hover { background: var(--accent); color: #000; }
+    .file-upload-filename { font-size: 0.78rem; color: var(--text-muted); }
+
+    .heic-warning, .slug-warning {
+      font-size: 0.76rem; padding: 8px 12px; border-radius: 10px; margin-top: 6px;
+      display: none; align-items: center; gap: 6px;
+    }
+    .heic-warning { background: rgba(255,184,0,0.1); border: 1px solid rgba(255,184,0,0.4); color: #FFB800; }
+    .slug-warning { background: rgba(255,77,77,0.08); border: 1px solid rgba(255,77,77,0.35); color: #FF8080; }
+
+    /* Toast / Confirm */
+    #toastBox {
+      position: fixed; top: 80px; right: 16px; z-index: 100000;
+      display: flex; flex-direction: column; gap: 8px;
+    }
+    .toast {
+      background: var(--bg-elevated); border: 1px solid var(--border);
+      padding: 10px 16px; border-radius: 12px; font-size: 0.84rem;
+      box-shadow: 0 8px 24px rgba(0,0,0,0.5);
+      animation: toastIn 0.25s ease;
+    }
+    .toast.ok { border-color: var(--accent); }
+    .toast.err { border-color: var(--danger); }
+    @keyframes toastIn {
+      from { opacity: 0; transform: translateY(-8px); }
+      to { opacity: 1; transform: none; }
+    }
+    .confirm-overlay {
+      position: fixed; inset: 0; background: rgba(0,0,0,0.7);
+      display: none; align-items: center; justify-content: center; z-index: 100060;
+    }
+    .confirm-overlay.open { display: flex; }
+    .confirm-box {
+      background: var(--bg-elevated); border: 1px solid var(--border);
+      border-radius: 16px; padding: 24px; max-width: 360px; text-align: center;
+    }
+    .confirm-box p { margin-bottom: 18px; font-size: 0.92rem; }
+    .confirm-actions { display: flex; gap: 10px; justify-content: center; }
+
+    .empty-state { text-align: center; padding: 48px 20px; color: var(--text-muted); }
+    .empty-state .icon { font-size: 2.5rem; margin-bottom: 12px; }
+
+    /* Simulador module needs full width feel + respiro sob menu fixed */
+    #module-simulador .admin-content-area { max-width: none; padding: 0; }
+    #module-simulador .viewport-wrapper {
+      padding-top: 72px; /* 64px menu + 8px */
+    }
+    #module-simulador .admin-bar-top {
+      position: sticky; top: 64px; z-index: 50;
+    }
+
+    /* Toggle DnD no simulador */
+    .sim-dnd-bar {
+      position: sticky; top: 64px; z-index: 40;
+      display: flex; align-items: center; justify-content: flex-end; gap: 10px;
+      padding: 8px 20px;
+      background: rgba(8,8,12,0.85);
+      backdrop-filter: blur(12px);
+      border-bottom: 1px solid rgba(0,255,102,0.15);
+    }
+    .sim-dnd-bar .dnd-label { font-size: 0.78rem; color: rgba(255,255,255,0.65); font-weight: 600; }
+    .sim-dnd-bar.active {
+      background: rgba(0,255,102,0.08);
+      border-bottom-color: rgba(0,255,102,0.35);
+    }
+    /* Itens vazios no pacote não devem aparecer como barra preta */
+    .pkg-selected-list > :empty,
+    .pkg-selected-list > div:empty,
+    .pkg-selected-list > li:empty {
+      display: none !important;
+    }
+    .pkg-selected-list .sortable-ghost {
+      opacity: 0.4; outline: 1px dashed rgba(0,255,102,0.5);
+    }
+    body.sim-dnd-on .pkg-selected-list > *,
+    body.sim-dnd-on #dynamic-addons-list > * {
+      cursor: grab;
+    }
+    body.sim-dnd-off .pkg-selected-list,
+    body.sim-dnd-off #dynamic-addons-list {
+      touch-action: pan-y;
+    }
   </style>
 </head>
 <body>
 
-  <!-- ================= OVERLAY DE AUTENTICAÇÃO ================= -->
+  <!-- AUTH -->
   <div id="auth-overlay-admin">
     <div class="auth-card-admin">
       <h2>Painel Admin 432UP!</h2>
-      <p>Acesse com suas credenciais para gerenciar o sistema</p>
+      <p>Simulador · Calculadora · Leads · Galeria</p>
       <form onsubmit="event.preventDefault(); autenticarAdmin();">
         <div class="adm-field-admin">
-          <label for="auth-email-admin">E-mail</label>
-          <input type="email" id="auth-email-admin" class="adm-input-admin" placeholder="seu@email.com" required>
+          <label>E-mail</label>
+          <input type="email" id="auth-email-admin" class="adm-input-admin" placeholder="seu@email.com" required autocomplete="username">
         </div>
         <div class="adm-field-admin">
-          <label for="auth-pass-admin">Senha</label>
-          <input type="password" id="auth-pass-admin" class="adm-input-admin" placeholder="••••••••" required>
+          <label>Senha</label>
+          <input type="password" id="auth-pass-admin" class="adm-input-admin" placeholder="••••••••" required autocomplete="current-password">
         </div>
-        <button type="submit" id="btn-login-admin" class="btn-adm-primary-admin">Entrar no Painel</button>
+        <button type="submit" id="btn-login-admin" class="btn-adm-primary-admin">Entrar</button>
         <div id="auth-error-admin" class="auth-error-admin"></div>
       </form>
     </div>
   </div>
 
-  <!-- ================= PAINEL DE CONTEÚDO PROTEGIDO ================= -->
   <div id="painel-conteudo-admin">
-
-    <div class="admin-bar-top">
-      <div class="admin-bar-title">🎧 432UP<span>!</span> Painel de Gestão e Edição Direta (Modo Admin)</div>
-      <div class="admin-status-pill">
-        <span class="admin-status-dot"></span>
-        <span id="admin-sync-text">Sistema Sincronizado</span>
-        <button type="button" class="btn-logout-top" onclick="deslogarAdmin()">Sair 🚪</button>
-      </div>
-    </div>
-
-    <div class="popover-bottom-up" id="new-item-popover">
-      <div style="font-size: 0.82rem; font-weight: 700; color: #00FF66; margin-bottom: 12px; display: flex; justify-content: space-between;">
-        <span>➕ Cadastrar Item / Atração</span>
-        <span style="cursor: pointer; font-size: 1.1rem;" onclick="closeNewItemModal()">&times;</span>
-      </div>
-      <label>Nome do Item / Atração</label>
-      <input type="text" id="new-item-nome" placeholder="ex: Performance de Sax / Som EV">
-      <label>Descrição Curta</label>
-      <input type="text" id="new-item-desc" placeholder="ex: Atração para receptivo">
-      <label>Valor Base de Saída (R$)</label>
-      <input type="text" id="new-item-vbase" placeholder="R$ 1.500,00">
-      <label>Valor por Hora Extra (R$/h)</label>
-      <input type="text" id="new-item-vextra" placeholder="R$ 200,00">
-      <label>Hora Mínima Inclusa (h)</label>
-      <input type="number" id="new-item-hmin" value="2" placeholder="2">
-      <label>Valor a Cobrar por Bloco de Pessoas (R$)</label>
-      <input type="text" id="new-item-vpessoa" placeholder="R$ 400,00">
-      <label>A cada quantas pessoas?</label>
-      <input type="number" id="new-item-acada" value="100" placeholder="100">
-      <button type="button" class="btn-pop-save" onclick="saveNewItemToDatabase()">💾 Cadastrar no Banco</button>
-    </div>
-
+    <!-- Background effects (Simulador visual) -->
     <div class="scroll-stretcher-pixel"></div>
     <canvas id="orbit-canvas"></canvas>
     <div id="plasmaLayer" class="plasma-top-layer"></div>
 
-    <div class="viewport-wrapper">
-      <header id="calc-header">
-        <div class="logo-container">
-          <a href="index.html" class="logo-link" aria-label="Página Inicial 432UP">
-            <img src="imagens/logo.png" alt="432UP! Produções" class="logo-img">
-          </a>
-        </div>
-        <nav class="desktop-nav" id="calc-nav">
-          <a href="index.html">Início</a>
-          <a href="calculadora.html">Simulador de Atmosfera</a>
-          <a href="galeria.html">Portfólio</a>
-          <a id="nav-trigger-modal">Contato</a>
-        </nav>
-        <button class="mobile-hamburger" id="mobile-menu-btn" onclick="toggleMobileMenu()">☰</button>
-      </header>
-
-      <!-- MENU DE ABAS UNIFICADO -->
-      <div style="display: flex; gap: 10px; justify-content: center; margin: 25px auto; flex-wrap: wrap; max-width: 900px;">
-        <button type="button" class="admin-tab-btn active" onclick="switchAdminTab('calculadora', event)" style="background: rgba(0, 255, 102, 0.15); border: 1px solid #00FF66; color: #00FF66; padding: 10px 20px; border-radius: 8px; cursor: pointer; font-weight: 600;">📊 Simulador & Preços</button>
-        <button type="button" class="admin-tab-btn" onclick="switchAdminTab('galeria', event)" style="background: rgba(255, 255, 255, 0.04); border: 1px solid rgba(255,255,255,0.1); color: #fff; padding: 10px 20px; border-radius: 8px; cursor: pointer; font-weight: 600;">📷 Gestão de Galeria</button>
-        <button type="button" class="admin-tab-btn" onclick="switchAdminTab('leads', event)" style="background: rgba(255, 255, 255, 0.04); border: 1px solid rgba(255,255,255,0.1); color: #fff; padding: 10px 20px; border-radius: 8px; cursor: pointer; font-weight: 600;">📥 Leads & Orçamentos</button>
+    <!-- TOP NAV -->
+    <header class="admin-topnav">
+      <div class="topnav-brand">
+        <h1>432UP<span>!</span></h1>
+        <span class="badge">Admin</span>
       </div>
 
-      <main>
-        <!-- ================= ABA 1: CALCULADORA ================= -->
-        <div id="tab-calculadora" class="admin-panel-content" style="display: block;">
-          <section class="hero-center" id="calc-hero">
-            <span class="tagline" contenteditable="true" data-db-item="tagline_hero" data-db-col="nome">ENGENHARIA DE ATMOSFERA & CURATORIA DE LUXO</span>
-            <h1 style="display: flex; justify-content: center; align-items: center; gap: 0.3em; flex-wrap: wrap; margin: 0 auto;">
-              <span contenteditable="true" data-db-item="titulo_hero_parte1" data-db-col="nome" style="color: #FFFFFF !important; text-shadow: none !important;">Simulador de</span>
-              <span contenteditable="true" data-db-item="titulo_hero_parte2" data-db-col="nome" style="color: #00FF66 !important; text-shadow: 0 0 12px rgba(0, 255, 102, 0.6), 0 0 25px rgba(0, 255, 102, 0.3) !important; font-weight: 800;">Atmosfera</span>
-            </h1>
-            <p class="simulator-desc" contenteditable="true" data-db-item="descricao_hero" data-db-col="descricao">Configure a escala do público, o tempo operacional e a assinatura técnica para projetarmos a experiência cênica do seu evento.</p>
-          </section>
+      <nav class="topnav-links" id="topnav-links">
+        <button type="button" class="nav-link active" data-module="simulador" onclick="navTo('simulador')">🎧 Simulador</button>
+        <button type="button" class="nav-link" data-module="calc1-servicos" onclick="navTo('calc1-servicos')">🛠️ Serviços</button>
+        <button type="button" class="nav-link" data-module="calc1-pacotes" onclick="navTo('calc1-pacotes')">📦 Pacotes</button>
+        <button type="button" class="nav-link" data-module="calc1-transporte" onclick="navTo('calc1-transporte')">🚚 Transporte</button>
+        <button type="button" class="nav-link" data-module="leads" onclick="navTo('leads')">📊 Leads</button>
+        <button type="button" class="nav-link" data-module="galeria" onclick="navTo('galeria')">🖼️ Galeria</button>
+      </nav>
 
+      <div class="topnav-right">
+        <div class="topnav-status">
+          <span class="status-dot" id="db-dot"></span>
+          <span id="db-status-text">—</span>
+          <span id="last-save-text" style="margin-left:8px;"></span>
+        </div>
+        <button class="btn-logout-top" onclick="logoutAdmin()">Sair</button>
+        <button class="hamburger-btn" id="hamburger-btn" onclick="toggleMobileMenu()" aria-label="Menu">☰</button>
+      </div>
+    </header>
+
+    <!-- Mobile menu -->
+    <div class="mobile-menu" id="mobile-menu">
+      <button type="button" class="nav-link active" data-module="simulador" onclick="navTo('simulador');toggleMobileMenu()">🎧 Simulador</button>
+      <button type="button" class="nav-link" data-module="calc1-servicos" onclick="navTo('calc1-servicos');toggleMobileMenu()">🛠️ Serviços</button>
+      <button type="button" class="nav-link" data-module="calc1-pacotes" onclick="navTo('calc1-pacotes');toggleMobileMenu()">📦 Pacotes</button>
+      <button type="button" class="nav-link" data-module="calc1-transporte" onclick="navTo('calc1-transporte');toggleMobileMenu()">🚚 Transporte</button>
+      <button type="button" class="nav-link" data-module="leads" onclick="navTo('leads');toggleMobileMenu()">📊 Leads</button>
+      <button type="button" class="nav-link" data-module="galeria" onclick="navTo('galeria');toggleMobileMenu()">🖼️ Galeria</button>
+      <button type="button" class="btn-logout-top" style="margin-top:16px" onclick="logoutAdmin()">Sair</button>
+    </div>
+
+    <!-- ========== MÓDULO SIMULADOR ========== -->
+    <div class="module-page active" id="module-simulador">
+
+      <div class="popover-bottom-up" id="new-item-popover">
+        <div style="font-size: 0.82rem; font-weight: 700; color: #00FF66; margin-bottom: 12px; display: flex; justify-content: space-between;">
+          <span>➕ Cadastrar Item / Atração</span>
+          <span style="cursor: pointer; font-size: 1.1rem;" onclick="closeNewItemModal()">&times;</span>
+        </div>
+        <label>Nome do Item / Atração</label>
+        <input type="text" id="new-item-nome" placeholder="ex: Performance de Sax / Som EV">
+        <label>Descrição Curta</label>
+        <input type="text" id="new-item-desc" placeholder="ex: Atração para receptivo">
+        <label>Valor Base de Saída (R$)</label>
+        <input type="text" id="new-item-vbase" placeholder="R$ 1.500,00">
+        <label>Valor por Hora Extra (R$/h)</label>
+        <input type="text" id="new-item-vextra" placeholder="R$ 200,00">
+        <label>Hora Mínima Inclusa (h)</label>
+        <input type="number" id="new-item-hmin" value="2" placeholder="2">
+        <label>Valor a Cobrar por Bloco de Pessoas (R$)</label>
+        <input type="text" id="new-item-vpessoa" placeholder="R$ 400,00">
+        <label>A cada quantas pessoas?</label>
+        <input type="number" id="new-item-acada" value="100" placeholder="100">
+        <button type="button" class="btn-pop-save" onclick="saveNewItemToDatabase()">💾 Cadastrar no Banco</button>
+      </div>
+
+      <div class="viewport-wrapper">
+        <div class="sim-dnd-bar" id="sim-dnd-bar">
+          <span class="dnd-label">Drag and Drop nos itens do pacote</span>
+          <button type="button" class="btn btn-sm btn-primary" id="btn-sim-dnd" onclick="toggleSimDnd()">Ativado</button>
+        </div>
+        <header id="calc-header">
+          <div class="logo-container">
+            <a href="index.html" class="logo-link" aria-label="Página Inicial 432UP">
+              <img src="imagens/logo.png" alt="432UP! Produções" class="logo-img">
+            </a>
+          </div>
+          <nav class="desktop-nav" id="calc-nav">
+            <a href="index.html">Início</a>
+            <a href="#" class="active">Simulador de Atmosfera</a>
+            <a href="galeria.html">Portfólio</a>
+            <a id="nav-trigger-modal">Contato</a>
+          </nav>
+          <button class="mobile-hamburger" id="mobile-menu-btn" onclick="toggleMobileMenu()">☰</button>
+        </header>
+
+        <section class="hero-center" id="calc-hero">
+          <span class="tagline" contenteditable="true" data-db-item="tagline_hero" data-db-col="nome">ENGENHARIA DE ATMOSFERA & CURATORIA DE LUXO</span>
+          <h1 style="display: flex; justify-content: center; align-items: center; gap: 0.3em; flex-wrap: wrap; margin: 0 auto;">
+            <span contenteditable="true" data-db-item="titulo_hero_parte1" data-db-col="nome" style="color: #FFFFFF !important; text-shadow: none !important;">Simulador de</span>
+            <span contenteditable="true" data-db-item="titulo_hero_parte2" data-db-col="nome" style="color: #00FF66 !important; text-shadow: 0 0 12px rgba(0, 255, 102, 0.6), 0 0 25px rgba(0, 255, 102, 0.3) !important; font-weight: 800;">Atmosfera</span>
+          </h1>
+          <p class="simulator-desc" contenteditable="true" data-db-item="descricao_hero" data-db-col="descricao">Configure a escala do público, o tempo operacional e a assinatura técnica para projetarmos a experiência cênica do seu evento.</p>
+        </section>
+
+        <main>
           <div class="simulator-layout">
             <div class="setup-box">
               <div class="step-section">
@@ -312,19 +857,18 @@
                 <div class="option-cards" id="group-scale">
                   <div class="option-card" data-value="small" data-slug="small">
                     <span class="label" contenteditable="true" data-db-item="small" data-db-col="nome">Intimista</span>
-                    <span class="sub">Até <strong contenteditable="true" data-db-item="small" data-db-col="qtd_pessoas">100</strong> pessoas</span>
+                    <span class="sub">Até <strong contenteditable="true" data-db-item="small" data-db-col="qtd_pessoas">--</strong> pessoas</span>
                   </div>
                   <div class="option-card" data-value="medium" data-slug="medium">
                     <span class="label" contenteditable="true" data-db-item="medium" data-db-col="nome">Intermediário</span>
-                    <span class="sub"><strong contenteditable="true" data-db-item="medium" data-db-col="qtd_pessoas">250</strong> pessoas</span>
+                    <span class="sub">Até <strong contenteditable="true" data-db-item="medium" data-db-col="qtd_pessoas">--</strong> pessoas</span>
                   </div>
                   <div class="option-card" data-value="large" data-slug="large">
                     <span class="label" contenteditable="true" data-db-item="large" data-db-col="nome">High Scale</span>
-                    <span class="sub">Mais de <strong contenteditable="true" data-db-item="large" data-db-col="qtd_pessoas">500</strong> pessoas</span>
+                    <span class="sub">Até <strong contenteditable="true" data-db-item="large" data-db-col="qtd_pessoas">300</strong> pessoas</span>
                   </div>
                 </div>
               </div>
-
               <div class="step-section">
                 <div class="step-title"><span class="step-number">2</span><h3 contenteditable="true" data-db-item="step2_title" data-db-col="nome">Cronograma de Performance</h3></div>
                 <div class="option-cards" id="group-hours">
@@ -342,7 +886,6 @@
                   </div>
                 </div>
               </div>
-
               <div class="step-section">
                 <div class="step-title"><span class="step-number">3</span><h3 contenteditable="true" data-db-item="step3_title" data-db-col="nome">Curadoria de Rider & Cenografia</h3></div>
                 <div class="option-cards" id="group-package">
@@ -369,7 +912,6 @@
                   </div>
                 </div>
               </div>
-
               <div class="step-section" id="step4-container">
                 <div class="step-title step-title-with-action">
                   <div class="step-title-left">
@@ -390,7 +932,6 @@
                 <div class="extra-list" id="dynamic-addons-list"></div>
               </div>
             </div>
-
             <aside class="summary-sidebar" id="sidebar-target">
               <h4 class="summary-title" contenteditable="true" data-db-item="sidebar_title" data-db-col="nome">Projeto Estimado</h4>
               <div class="summary-row"><span>Densidade de público:</span><strong id="sum-guests">Selecione ao lado</strong></div>
@@ -407,232 +948,1519 @@
               </div>
             </aside>
           </div>
-        </div>
-
-        <!-- ================= ABA 2: GALERIA ================= -->
-        <div id="tab-galeria" class="admin-panel-content" style="display: none; max-width: 1200px; margin: 0 auto; padding: 20px;">
-          <div id="p-galeria" class="panel" style="background: rgba(12, 12, 18, 0.85); border: 1px solid rgba(255, 255, 255, 0.08); border-radius: 16px; padding: 30px; box-shadow: 0 20px 40px rgba(0,0,0,0.5);">
-            <div class="panel-header" style="margin-bottom: 25px;">
-              <h2 style="color: #fff; font-size: 1.5rem; font-weight: 700;">Galeria de Fotos & Vídeos</h2>
-            </div>
-
-            <div class="gal-btn-section" style="margin-bottom:20px">
-              <div class="field" style="max-width:400px">
-                <label>Texto do botão "Ver galeria" (home)</label>
-                <input id="galBtnTexto" class="admin-input" placeholder="Ver galeria completa →" onchange="saveConfigField('galeria_btn_texto',this.value)">
-              </div>
-            </div>
-
-            <div class="visual-card margin-b-20" style="margin-bottom: 20px;">
-              <h3>Publicar nova mídia</h3>
-              <div class="gal-tipo-wrap">
-                <label class="gal-tipo-opt"><input type="radio" name="galTipo" value="foto" checked onchange="toggleGalTipo()"> 📷 Foto</label>
-                <label class="gal-tipo-opt"><input type="radio" name="galTipo" value="video_yt" onchange="toggleGalTipo()"> ▶ YouTube</label>
-                <label class="gal-tipo-opt"><input type="radio" name="galTipo" value="video_up" onchange="toggleGalTipo()"> 🎥 Vídeo Upload</label>
-              </div>
-
-              <div id="galUploadFoto">
-                <div id="galUploadZone" class="upload-zone" onclick="document.getElementById('galFileInput').click()">
-                  Arraste fotos aqui ou toque para selecionar
-                </div>
-                <input type="file" id="galFileInput" accept="image/*" multiple style="display:none" onchange="handleGalFiles(this.files)">
-              </div>
-
-              <div id="galUploadYt" style="display:none">
-                <div class="field"><label>URL do YouTube</label><input type="url" id="galVideoUrl" class="admin-input" placeholder="https://youtube.com/watch?v=..."></div>
-              </div>
-
-              <div id="galUploadVid" style="display:none">
-                <div id="galUploadZoneVid" class="upload-zone" onclick="document.getElementById('galVidInput').click()">
-                  Arraste vídeo aqui ou toque para selecionar (máx 50MB)
-                </div>
-                <input type="file" id="galVidInput" accept="video/*" style="display:none" onchange="handleGalVidFile(this.files)">
-              </div>
-
-              <div class="gal-fields" style="margin-top: 15px;">
-                <div class="field"><label>Título</label><input id="galTitulo" class="admin-input" placeholder="Nome da mídia"></div>
-                <div class="field-row">
-                  <div class="field"><label>Categoria</label><select id="galCat" class="admin-select"></select></div>
-                  <div class="field"><label>Local</label><input id="galLocal" class="admin-input" placeholder="Ex: Vila Madalena, SP"></div>
-                </div>
-                <div class="field"><label>Descrição</label><input id="galDesc" class="admin-input" placeholder="Descrição curta (opcional)"></div>
-                <div class="toggle-wrap"><label class="toggle"><input type="checkbox" id="galDest"><span class="track"></span><span class="thumb"></span></label><span>Destaque ⭐</span></div>
-                <button type="button" id="btnGalPublicar" onclick="galPublicar()" class="btn-accent w-100" style="margin-top:12px">📤 Publicar Mídia</button>
-              </div>
-            </div>
-
-            <div class="visual-card margin-b-20" style="margin-bottom: 20px;">
-              <h3>Categorias da Galeria</h3>
-              <div id="galCatList" class="cat-tags"></div>
-              <div class="field-row" style="margin-top:12px">
-                <div class="field"><label>Nova categoria</label><input id="galCatNome" class="admin-input" placeholder="Nome"></div>
-                <div class="field" style="max-width:90px"><label>Emoji</label><input id="galCatEmoji" class="admin-input" placeholder="📌" maxlength="4"></div>
-                <button type="button" onclick="galAddCat()" class="btn-ghost" style="align-self:flex-end;margin-bottom:2px">+ Criar</button>
-              </div>
-            </div>
-
-            <div class="visual-card">
-              <h3>Mídias publicadas (<span id="galCount">0</span>)</h3>
-              <div id="galListContainer" class="gal-list-grid"></div>
+        </main>
+        <footer>
+          <div class="footer-bar" style="justify-content: flex-end;">
+            <div style="opacity: 0.85; text-align: right; font-size: 0.78rem;" contenteditable="true" data-db-item="footer_text" data-db-col="nome">
+              Curadoria Artística & Engenharia Estrutural
             </div>
           </div>
-        </div>
+        </footer>
+      </div>
 
-        <!-- ================= ABA 3: LEADS ================= -->
-        <div id="tab-leads" class="admin-panel-content" style="display: none; max-width: 1200px; margin: 0 auto; padding: 20px;">
-          <div id="p-leads" class="panel" style="background: rgba(12, 12, 18, 0.85); border: 1px solid rgba(255, 255, 255, 0.08); border-radius: 16px; padding: 30px; box-shadow: 0 20px 40px rgba(0,0,0,0.5);">
-            <div class="panel-header" style="margin-bottom: 25px;">
-              <div>
-                <h2 style="color: #fff; font-size: 1.5rem; font-weight: 700;">Gestão de Leads</h2>
-                <p class="panel-desc" style="color: rgba(255,255,255,0.6);">Contatos e orçamentos registrados.</p>
-              </div>
-              <div class="panel-actions">
-                <button type="button" onclick="exportCSV()" class="btn-ghost">📥 Exportar CSV</button>
-                <button type="button" onclick="deleteSelectedLeads()" class="btn-danger" id="btnDeleteLeads" style="display:none">🗑 Excluir selecionados</button>
-              </div>
-            </div>
-
-            <div class="leads-filters" style="background: rgba(255,255,255,0.02); border: 1px solid rgba(255,255,255,0.08); padding: 20px; border-radius: 12px; margin-bottom: 20px;">
-              <div class="field"><label>Busca</label><input id="leadSearch" class="admin-input" placeholder="Nome, WhatsApp ou evento..." oninput="filterLeads()"></div>
-              <div class="field"><label>Status</label>
-                <select id="leadStatusFilter" class="admin-select" onchange="filterLeads()">
-                  <option value="">Todos</option>
-                  <option value="novo">Novo</option>
-                  <option value="em_contato">Em contato</option>
-                  <option value="fechado">Fechado</option>
-                  <option value="perdido">Perdido</option>
-                </select>
-              </div>
-              <div class="field"><label>Origem</label>
-                <select id="leadOrigemFilter" class="admin-select" onchange="filterLeads()">
-                  <option value="">Todas</option>
-                  <option value="landing_contato">Landing</option>
-                  <option value="email_calculadora_overlay">Calculadora email</option>
-                  <option value="calculadora">Calculadora WA</option>
-                </select>
-              </div>
-              <div class="field"><label>Ações em Massa</label>
-                <button type="button" onclick="toggleSelectAll()" class="btn-ghost btn-sm">☑ Marcar Todos</button>
-              </div>
-            </div>
-
-            <div class="leads-summary" style="margin-bottom: 20px;">
-              Total: <b id="leadsTotal">0</b> leads
-              <span id="leadsSelectedCount" style="display:none"> | <b id="leadsSelCount">0</b> selecionados</span>
-            </div>
-
-            <div id="leadsContainer" class="leads-list"></div>
-          </div>
-        </div>
-      </main>
-
-      <footer>
-        <div class="footer-bar" style="justify-content: flex-end;">
-          <div style="opacity: 0.85; text-align: right; font-size: 0.78rem;" contenteditable="true" data-db-item="footer_text" data-db-col="nome">
-            Curadoria Artística & Engenharia Estrutural
-          </div>
-        </div>
-      </footer>
+      <div class="price-popover" id="price-popover">
+        <div style="font-size: 0.78rem; font-weight: 700; color: #00FF66; margin-bottom: 10px;">💰 Editar Valor do Item</div>
+        <label>Valor Base Fixo (R$)</label>
+        <input type="text" id="pop-vbase">
+        <label>Valor por Hora Extra (R$/h)</label>
+        <input type="text" id="pop-vhora">
+        <label>Hora Mínima Inclusa (h)</label>
+        <input type="number" id="pop-hmin" value="1">
+        <label>Valor a Cobrar por Bloco (R$)</label>
+        <input type="text" id="pop-vpessoa">
+        <label>A cada quantas pessoas?</label>
+        <input type="number" id="pop-acada" value="100">
+        <button type="button" class="btn-pop-save" onclick="savePriceFromPopover()">💾 Salvar Preço</button>
+      </div>
     </div>
 
-    <div class="price-popover" id="price-popover">
-      <div style="font-size: 0.78rem; font-weight: 700; color: #00FF66; margin-bottom: 10px;">💰 Editar Valor do Item</div>
-      <label>Valor Base Fixo (R$)</label>
-      <input type="text" id="pop-vbase">
-      <label>Valor por Hora Extra (R$/h)</label>
-      <input type="text" id="pop-vhora">
-      <label>Hora Mínima Inclusa (h)</label>
-      <input type="number" id="pop-hmin" value="1">
-      <label>Valor a Cobrar por Bloco (R$)</label>
-      <input type="text" id="pop-vpessoa">
-      <label>A cada quantas pessoas?</label>
-      <input type="number" id="pop-acada" value="100">
-      <button type="button" class="btn-pop-save" onclick="savePriceFromPopover()">💾 Salvar Preço</button>
+    <!-- ========== SERVIÇOS ========== -->
+    <div class="module-page" id="module-calc1-servicos">
+      <div class="admin-content-area">
+        <div class="mod-header">
+          <div>
+            <h2>Serviços</h2>
+            <p>Cada serviço aparece na home (visual) e na calculadora (preços e regras).</p>
+          </div>
+          <div class="mod-actions">
+            <button class="btn btn-primary" onclick="openServicoModal()">+ Novo Serviço</button>
+            <button class="btn" onclick="loadCalc1Data()">🔄 Recarregar</button>
+          </div>
+        </div>
+        <div class="cards-grid" id="servicos-grid"></div>
+      </div>
     </div>
 
-  </div><!-- /#painel-conteudo-admin -->
+    <!-- ========== PACOTES ========== -->
+    <div class="module-page" id="module-calc1-pacotes">
+      <div class="admin-content-area">
+        <div class="mod-header">
+          <div>
+            <h2>Pacotes</h2>
+            <p>Pacotes comerciais com serviços vinculados e preços especiais.</p>
+          </div>
+          <div class="mod-actions">
+            <button class="btn btn-primary" onclick="openPacoteModal()">+ Novo Pacote</button>
+            <button class="btn" onclick="loadCalc1Data()">🔄 Recarregar</button>
+          </div>
+        </div>
+        <div class="cards-grid" id="pacotes-grid"></div>
+      </div>
+    </div>
 
-  <!-- ================= LÓGICA DE AUTENTICAÇÃO E ABAS ================= -->
+    <!-- ========== TRANSPORTE ========== -->
+    <div class="module-page" id="module-calc1-transporte">
+      <div class="admin-content-area">
+        <div class="mod-header">
+          <div>
+            <h2>Transporte</h2>
+            <p>Tarifa global por KM e ponto de origem de referência.</p>
+          </div>
+        </div>
+        <div class="transporte-card">
+          <div class="form-group">
+            <label>Valor por KM (R$)</label>
+            <input type="number" step="0.01" id="cfgTransporteValorKm" value="0">
+          </div>
+          <div class="form-group">
+            <label>CEP de origem</label>
+            <div style="display:flex;gap:8px;align-items:center;">
+              <input id="cfgTransporteCep" placeholder="00000-000" maxlength="9" style="flex:1;" onblur="buscarCepOrigem()">
+              <button type="button" class="btn btn-sm" onclick="buscarCepOrigem()">Buscar CEP</button>
+            </div>
+            <p id="cfgTransporteCepStatus" style="font-size:0.75rem;color:var(--text-muted);margin-top:6px;"></p>
+          </div>
+          <div class="form-group">
+            <label>Origem (preenchida pelo CEP)</label>
+            <input id="cfgTransporteOrigemLabel" value="Centro de São Paulo" readonly style="opacity:0.9;">
+          </div>
+          <div class="form-section">
+            <div class="form-section-title">Avançado (coordenadas — auto)</div>
+            <div class="form-row">
+              <div class="form-group">
+                <label>Latitude</label>
+                <input type="number" step="0.000001" id="cfgTransporteOrigemLat" value="-23.5505">
+              </div>
+              <div class="form-group">
+                <label>Longitude</label>
+                <input type="number" step="0.000001" id="cfgTransporteOrigemLng" value="-46.6333">
+              </div>
+            </div>
+          </div>
+          <div style="margin-top:20px; display:flex; justify-content:flex-end;">
+            <button class="btn btn-primary" id="btn-save-transporte" onclick="saveConfigTransporte()">💾 Salvar tarifa</button>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- ========== LEADS ========== -->
+    <div class="module-page" id="module-leads">
+      <div class="admin-content-area">
+        <div class="mod-header">
+          <div>
+            <h2>Leads</h2>
+            <p>Contatos captados pelo site e calculadora.</p>
+          </div>
+          <div class="mod-actions">
+            <button class="btn" onclick="exportCSV()">📥 Exportar CSV</button>
+            <button class="btn btn-danger" id="btnDeleteLeads" style="display:none" onclick="deleteSelectedLeads()">🗑 Excluir selecionados</button>
+            <button class="btn" onclick="loadCalc1Data()">🔄 Recarregar</button>
+          </div>
+        </div>
+        <div class="leads-filters">
+          <div class="field">
+            <label>Busca</label>
+            <input id="leadSearch" placeholder="Nome ou WhatsApp..." oninput="filterLeads()">
+          </div>
+          <div class="field">
+            <label>Status</label>
+            <select id="leadStatusFilter" onchange="filterLeads()">
+              <option value="">Todos</option>
+              <option value="novo">Novo</option>
+              <option value="em_contato">Em contato</option>
+              <option value="fechado">Fechado</option>
+              <option value="perdido">Perdido</option>
+            </select>
+          </div>
+          <div class="field">
+            <label>Origem</label>
+            <select id="leadOrigemFilter" onchange="filterLeads()">
+              <option value="">Todas</option>
+              <option value="landing_contato">Landing</option>
+              <option value="email_calculadora_overlay">Calculadora email</option>
+              <option value="calculadora">Calculadora WA</option>
+            </select>
+          </div>
+          <div class="field" style="flex:0; min-width:auto; align-self:flex-end;">
+            <button class="btn btn-sm" onclick="toggleSelectAll()">☑ Todos</button>
+          </div>
+        </div>
+        <div class="leads-stats">
+          Total: <b id="leadsTotal">0</b> leads
+          <span id="leadsSelectedCount" style="display:none"> | <b id="leadsSelCount">0</b> selecionados</span>
+        </div>
+        <div id="leadsContainer"></div>
+      </div>
+    </div>
+
+    <!-- ========== GALERIA ========== -->
+    <div class="module-page" id="module-galeria">
+      <div class="admin-content-area">
+        <div class="mod-header">
+          <div>
+            <h2>Galeria In Loco</h2>
+            <p>Cases, mídias, specs e marcas — mesa de produção.</p>
+          </div>
+          <div class="mod-actions">
+            <button class="btn btn-primary" onclick="abrirNovoCase()">+ Novo Case</button>
+            <button class="btn" id="btn-edit-mode-galeria" onclick="toggleGaleriaEditMode()">↕️ Ativar drag and drop</button>
+            <button class="btn" onclick="carregarGridCases()">🔄 Recarregar</button>
+          </div>
+        </div>
+
+        <div class="edit-mode-bar" id="galeria-edit-mode-bar">
+          <span><strong>Drag & drop ativo</strong> — arraste mídias e specs para reordenar. Desative para priorizar a rolagem.</span>
+          <button class="btn btn-sm" onclick="toggleGaleriaEditMode()">Desativar</button>
+        </div>
+
+        <div class="marcas-section">
+          <h3>Marcas / Logos</h3>
+          <div style="display:flex; gap:10px; flex-wrap:wrap; margin-bottom:12px; align-items:flex-end;">
+            <div class="form-group" style="margin:0; flex:1; min-width:140px;">
+              <label>Nome</label>
+              <input id="marca-nome" placeholder="Nome da marca">
+            </div>
+            <div class="file-upload-wrap">
+              <label class="btn-file-upload">
+                📎 Logo
+                <input type="file" id="marca-file" class="file-upload-input" accept="image/*" onchange="document.getElementById('marca-file-name').textContent=this.files[0]?this.files[0].name:'nenhum arquivo'">
+              </label>
+              <span class="file-upload-filename" id="marca-file-name">nenhum arquivo</span>
+            </div>
+            <button class="btn btn-primary" id="btn-add-marca" onclick="salvarMarca()">+ Enviar Logo</button>
+          </div>
+          <div class="marcas-list" id="marcas-container"></div>
+        </div>
+
+        <div class="galeria-filters">
+          <input id="galeria-search" placeholder="Buscar cliente, título..." oninput="filtrarCases()">
+          <select id="galeria-cat-filter" onchange="filtrarCases()">
+            <option value="">Todas categorias</option>
+            <option value="corporativo">Corporativo</option>
+            <option value="casamentos">Casamentos</option>
+            <option value="shows">Shows</option>
+            <option value="festas">Festas</option>
+          </select>
+        </div>
+
+        <div class="cards-grid" id="galeria-grid"></div>
+      </div>
+    </div>
+
+  </div><!-- /painel-conteudo-admin -->
+
+  <!-- MODAL SERVIÇO -->
+  <div class="modal-overlay" id="modal-servico">
+    <div class="modal-box wide">
+      <div class="modal-header">
+        <h3 id="modal-servico-title">Novo Serviço</h3>
+        <button class="modal-close" onclick="closeServicoModal()">&times;</button>
+      </div>
+      <input type="hidden" id="srv-edit-id">
+      <div class="form-row">
+        <div class="form-group" style="flex:0 0 80px;">
+          <label>Ícone</label>
+          <input id="srv-icone" placeholder="🎵">
+        </div>
+        <div class="form-group">
+          <label>Nome de exibição</label>
+          <input id="srv-nome-exibicao" placeholder="Nome visível">
+        </div>
+      </div>
+      <div class="form-group">
+        <label>Descrição</label>
+        <textarea id="srv-descricao" rows="2"></textarea>
+      </div>
+      <div class="form-row">
+        <div class="form-group">
+          <label>Preço base (R$)</label>
+          <input type="number" step="0.01" id="srv-valor-base" value="0">
+        </div>
+        <div class="form-group">
+          <label>Hora extra (R$)</label>
+          <input type="number" step="0.01" id="srv-valor-hora" value="0">
+        </div>
+        <div class="form-group">
+          <label>Valor por pessoa (R$)</label>
+          <input type="number" step="0.01" id="srv-valor-pessoa" value="0">
+        </div>
+      </div>
+      <div class="form-row">
+        <div class="form-group" style="flex:0 0 100px;">
+          <label>Ordem</label>
+          <input type="number" id="srv-ordem" value="0">
+        </div>
+        <div class="form-toggles">
+          <div class="toggle-line">
+            <label class="switch"><input type="checkbox" id="srv-ativo" checked><span class="slider"></span></label>
+            <span>Ativo</span>
+          </div>
+          <div class="toggle-line">
+            <label class="switch"><input type="checkbox" id="srv-calc-hora"><span class="slider"></span></label>
+            <span>Por hora</span>
+          </div>
+          <div class="toggle-line">
+            <label class="switch"><input type="checkbox" id="srv-calc-pessoa"><span class="slider"></span></label>
+            <span>Por pessoa</span>
+          </div>
+        </div>
+      </div>
+      <div class="form-section">
+        <div class="form-section-title">Faixas por pessoa</div>
+        <div id="srv-faixas-pessoa"></div>
+        <button type="button" class="btn btn-sm" style="margin-top:6px" onclick="addFaixaUI('pessoa')">+ Faixa</button>
+      </div>
+      <div class="advanced-toggle" onclick="toggleAdvanced('srv-adv')">▸ Avançado (metragem / IDs)</div>
+      <div class="advanced-block" id="srv-adv">
+        <div class="form-row">
+          <div class="form-group"><label>Metragem mín.</label><input type="number" step="0.1" id="srv-metragem-min"></div>
+          <div class="form-group"><label>Metragem máx.</label><input type="number" step="0.1" id="srv-metragem-max"></div>
+        </div>
+        <div class="form-row">
+          <div class="form-group"><label>Valor/metro (R$)</label><input type="number" step="0.01" id="srv-valor-metro" value="0"></div>
+          <div class="form-group"><label>Passo (m)</label><input type="number" step="0.1" id="srv-passo-metro" value="1"></div>
+        </div>
+        <div class="form-section-title" style="margin-top:12px">Faixas por metro</div>
+        <div id="srv-faixas-metro"></div>
+        <button type="button" class="btn btn-sm" style="margin-top:6px" onclick="addFaixaUI('metro')">+ Faixa</button>
+        <div class="form-row" style="margin-top:14px">
+          <div class="form-group"><label>ID interno</label><input id="srv-servico-id"></div>
+          <div class="form-group"><label>Nome interno</label><input id="srv-nome-interno"></div>
+        </div>
+      </div>
+      <div style="display:flex;gap:10px;margin-top:22px;justify-content:flex-end;">
+        <button class="btn" onclick="closeServicoModal()">Cancelar</button>
+        <button class="btn btn-primary" id="btn-save-servico" onclick="saveServico()">Salvar</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- MODAL PACOTE -->
+  <div class="modal-overlay" id="modal-pacote">
+    <div class="modal-box wide">
+      <div class="modal-header">
+        <h3 id="modal-pacote-title">Novo Pacote</h3>
+        <button class="modal-close" onclick="closePacoteModal()">&times;</button>
+      </div>
+      <input type="hidden" id="pkg-edit-id">
+      <div class="form-group"><label>Nome</label><input id="pkg-nome"></div>
+      <div class="form-row">
+        <div class="form-group"><label>Preço pacote (R$)</label><input type="number" step="0.01" id="pkg-preco" value="0"></div>
+        <div class="form-group"><label>Preço original (R$)</label><input type="number" step="0.01" id="pkg-preco-orig" value="0"></div>
+      </div>
+      <div class="form-row">
+        <div class="form-group"><label>Horas inclusas</label><input type="number" id="pkg-horas" value="0"></div>
+        <div class="form-group"><label>Ideal para</label><input id="pkg-ideal"></div>
+      </div>
+      <div class="form-group"><label>Itens (um por linha)</label><textarea id="pkg-itens" rows="4"></textarea></div>
+      <div class="form-group">
+        <label>Serviços incluídos</label>
+        <div class="srv-pick-grid" id="pkg-srv-picks"></div>
+        <div style="font-size:0.75rem;color:var(--text-dim);margin-top:6px">Selecionados: <b id="pkg-srv-count">0</b></div>
+      </div>
+      <div class="form-row">
+        <div class="form-group"><label>Ordem</label><input type="number" id="pkg-ordem" value="0"></div>
+        <div class="form-group" style="display:flex;align-items:flex-end;gap:14px;padding-bottom:8px;">
+          <label class="switch"><input type="checkbox" id="pkg-ativo" checked><span class="slider"></span></label>
+          <span style="font-size:0.8rem;color:var(--text-muted)">Ativo</span>
+          <label class="switch"><input type="checkbox" id="pkg-destaque"><span class="slider"></span></label>
+          <span style="font-size:0.8rem;color:var(--text-muted)">Destaque</span>
+        </div>
+      </div>
+      <div style="display:flex;gap:10px;margin-top:22px;justify-content:flex-end;">
+        <button class="btn" onclick="closePacoteModal()">Cancelar</button>
+        <button class="btn btn-primary" id="btn-save-pacote" onclick="savePacote()">Salvar</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- MODAL GALERIA CASE -->
+  <div class="modal-overlay" id="modal-galeria-case">
+    <div class="modal-box xl">
+      <div class="modal-header">
+        <h3 id="modal-title-header">Case</h3>
+        <button class="modal-close" onclick="fecharModalEdicao()">&times;</button>
+      </div>
+      <div class="form-row">
+        <div class="form-group"><label>Cliente *</label><input id="modal-edit-cliente"></div>
+        <div class="form-group"><label>Título</label><input id="modal-edit-titulo"></div>
+      </div>
+      <div class="form-row">
+        <div class="form-group">
+          <label>Categoria</label>
+          <select id="modal-edit-cat">
+            <option value="corporativo">Corporativo</option>
+            <option value="casamentos">Casamentos</option>
+            <option value="shows">Shows</option>
+            <option value="festas">Festas</option>
+          </select>
+        </div>
+        <div class="form-group"><label>Local</label><input id="modal-edit-local"></div>
+      </div>
+      <div class="form-row">
+        <div class="form-group"><label>Case Slug</label><input id="modal-edit-slug"><div class="slug-warning" id="slug-warning">Slug pode conflitar</div></div>
+        <div class="form-group"><label>Ordem</label><input type="number" id="modal-edit-ordem" value="1"></div>
+      </div>
+      <div class="form-group"><label>Descrição</label><textarea id="modal-edit-descricao" rows="3"></textarea></div>
+      <div class="form-row">
+        <div class="form-group" style="display:flex;align-items:center;gap:10px;padding-top:8px;">
+          <label class="switch"><input type="checkbox" id="modal-edit-destaque"><span class="slider"></span></label>
+          <span style="font-size:0.84rem;color:var(--text-muted)">Destaque</span>
+        </div>
+        <div class="form-group">
+          <label>Capa</label>
+          <div class="file-upload-wrap">
+            <label class="btn-file-upload">📎 Foto de capa<input type="file" id="modal-edit-cover-file" class="file-upload-input" accept="image/*" onchange="document.getElementById('cover-file-name').textContent=this.files[0]?this.files[0].name:'nenhum'"></label>
+            <span class="file-upload-filename" id="cover-file-name">nenhum</span>
+          </div>
+          <div class="heic-warning" id="heic-warning-cover">HEIC detectado — convertendo…</div>
+        </div>
+      </div>
+
+      <div id="modal-album-section" style="display:none">
+        <div class="form-section">
+          <div class="form-section-title">Álbum de mídias</div>
+          <div class="edit-media-grid" id="modal-media-list"></div>
+          <div class="file-upload-wrap" style="margin-top:10px">
+            <label class="btn-file-upload">📎 Upload em lote
+              <input type="file" id="modal-lote-files" class="file-upload-input" accept="image/*,video/*" multiple onchange="uploadMidiasLote(this.files); this.value=''">
+            </label>
+            <span id="upload-lote-status" style="font-size:0.8rem;color:var(--text-muted)"></span>
+          </div>
+          <div class="heic-warning" id="heic-warning-lote">HEIC detectado — convertendo…</div>
+        </div>
+        <div class="form-section">
+          <div class="form-section-title">Especificações técnicas</div>
+          <div class="specs-edit-list" id="modal-specs-list"></div>
+          <div style="display:flex;gap:8px;margin-top:8px">
+            <input id="new-spec-item" placeholder="Nova spec..." style="flex:1;background:rgba(255,255,255,0.04);border:1px solid var(--border);border-radius:10px;padding:8px 12px;color:#fff;font-size:0.84rem">
+            <button class="btn btn-primary btn-sm" onclick="adicionarSpecItem()">+ Spec</button>
+          </div>
+        </div>
+      </div>
+
+      <div style="display:flex;gap:10px;margin-top:24px;justify-content:space-between;flex-wrap:wrap;">
+        <button class="btn btn-danger" id="btn-delete-case" style="display:none" onclick="excluirCaseAtual()">🗑 Excluir Case</button>
+        <div style="display:flex;gap:10px;margin-left:auto">
+          <button class="btn" onclick="fecharModalEdicao()">Cancelar</button>
+          <button class="btn btn-primary" id="btn-save-case" onclick="salvarAlteracoesCase()">💾 Salvar Alterações</button>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <div id="toastBox"></div>
+  <div class="confirm-overlay" id="confirmDlg">
+    <div class="confirm-box">
+      <p id="confirmMsg"></p>
+      <div class="confirm-actions">
+        <button class="btn btn-danger" onclick="confirmClose(true)">Sim, excluir</button>
+        <button class="btn" onclick="confirmClose(false)">Cancelar</button>
+      </div>
+    </div>
+  </div>
+
   <script>
-    const SUPABASE_URL_ADM = 'https://paetkspbfejtjjkngqej.supabase.co';
-    const SUPABASE_KEY_ADM = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InBhZXRrc3BiZmVqdGpqa25ncWVqIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzA5MDU2OTgsImV4cCI6MjA4NjQ4MTY5OH0.IiYweZ2g3bP7b0o7VvBW5LLb6d1oHtSNFUZlVkIsdsA';
-    const _supabaseAdmin = supabase.createClient(SUPABASE_URL_ADM, SUPABASE_KEY_ADM);
+  // ============================================================
+  // AUTH + SUPABASE
+  // ============================================================
+  const SUPABASE_URL_ADM = 'https://paetkspbfejtjjkngqej.supabase.co';
+  const SUPABASE_KEY_ADM = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InBhZXRrc3BiZmVqdGpqa25ncWVqIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzA5MDU2OTgsImV4cCI6MjA4NjQ4MTY5OH0.IiYweZ2g3bP7b0o7VvBW5LLb6d1oHtSNFUZlVkIsdsA';
+  const _supabaseAdmin = supabase.createClient(SUPABASE_URL_ADM, SUPABASE_KEY_ADM);
+  const _supabase = _supabaseAdmin;
+  const SB = SUPABASE_URL_ADM;
+  const SK = SUPABASE_KEY_ADM;
 
-    document.addEventListener('DOMContentLoaded', () => {
-      // Monitoramento de Sessão Reativo
-      _supabaseAdmin.auth.onAuthStateChange((event, session) => {
-        if (session) {
-          exibirPainel();
-        } else {
-          exibirLogin();
+  document.addEventListener('DOMContentLoaded', async () => {
+    const { data: { session } } = await _supabaseAdmin.auth.getSession();
+    if (session) iniciarPainelAdmin();
+  });
+
+  async function autenticarAdmin() {
+    const email = document.getElementById('auth-email-admin').value;
+    const password = document.getElementById('auth-pass-admin').value;
+    const btn = document.getElementById('btn-login-admin');
+    const errBox = document.getElementById('auth-error-admin');
+    errBox.style.display = 'none';
+    btn.innerText = 'Autenticando...';
+    const { error } = await _supabaseAdmin.auth.signInWithPassword({ email, password });
+    if (error) {
+      errBox.textContent = 'E-mail ou senha incorretos.';
+      errBox.style.display = 'block';
+      btn.innerText = 'Entrar';
+    } else {
+      iniciarPainelAdmin();
+    }
+  }
+
+  function iniciarPainelAdmin() {
+    document.getElementById('auth-overlay-admin').style.display = 'none';
+    document.getElementById('painel-conteudo-admin').style.display = 'block';
+    loadCalc1Data();
+  }
+
+  async function logoutAdmin() {
+    await _supabaseAdmin.auth.signOut();
+    location.reload();
+  }
+
+  function toggleMobileMenu() {
+    document.getElementById('mobile-menu').classList.toggle('open');
+  }
+
+  // ============================================================
+  // NAV
+  // ============================================================
+  function navTo(mod) {
+    document.querySelectorAll('.module-page').forEach(p => p.classList.remove('active'));
+    document.querySelectorAll('.nav-link').forEach(n => n.classList.remove('active'));
+    const page = document.getElementById('module-' + mod);
+    if (page) page.classList.add('active');
+    document.querySelectorAll('.nav-link[data-module="' + mod + '"]').forEach(n => n.classList.add('active'));
+    if (mod === 'galeria') {
+      carregarGridCases();
+      carregarMarcas();
+    }
+  }
+
+  // ============================================================
+  // HELPERS
+  // ============================================================
+  var DATA = { servicos: [], pacotes: [], leads: [], configTransporte: null };
+  var selectedLeads = {};
+  var _confirmCb = null;
+  var ALL_CASES_CACHE = [];
+  var CURRENT_CASE = null;
+  var GALERIA_EDIT_MODE = false;
+  var MEDIAS_SORTABLE_INSTANCE = null;
+  var SPECS_SORTABLE_INSTANCE = null;
+
+  function qs(s) { return document.querySelector(s); }
+  function qsa(s) { return document.querySelectorAll(s); }
+  // alias seguro — evita conflito com jQuery/$ de script.js
+  function $(s) { return document.querySelector(s); }
+  function $$(s) { return document.querySelectorAll(s); }
+  function esc(s) { return (s || '').toString().replace(/"/g, '&quot;').replace(/</g, '&lt;'); }
+  function el(id) { return document.getElementById(id); }
+
+  function toast(msg, type) {
+    var t = document.createElement('div');
+    t.className = 'toast ' + (type || 'info');
+    t.textContent = msg;
+    $('#toastBox').appendChild(t);
+    setTimeout(function () { t.remove(); }, 3200);
+  }
+  function markSaved() {
+    var el = $('#last-save-text');
+    if (el) el.textContent = 'Salvo ' + new Date().toLocaleTimeString('pt-BR');
+  }
+  function setDbStatus(ok) {
+    var dot = $('#db-dot');
+    var txt = $('#db-status-text');
+    if (dot) dot.classList.toggle('err', !ok);
+    if (txt) txt.textContent = ok ? 'DB OK' : 'DB ERRO';
+  }
+  function confirmShow(msg, cb) {
+    $('#confirmMsg').textContent = msg;
+    _confirmCb = cb;
+    $('#confirmDlg').classList.add('open');
+  }
+  function confirmClose(yes) {
+    $('#confirmDlg').classList.remove('open');
+    if (_confirmCb) _confirmCb(yes);
+    _confirmCb = null;
+  }
+
+  function sbH(m) {
+    var h = { 'apikey': SK, 'Authorization': 'Bearer ' + SK, 'Content-Type': 'application/json' };
+    if (m === 'PATCH' || m === 'POST') h['Prefer'] = 'return=representation';
+    return h;
+  }
+  async function sbGet(table, qs) {
+    try {
+      var r = await fetch(SB + '/rest/v1/' + table + '?' + qs, { headers: { 'apikey': SK, 'Authorization': 'Bearer ' + SK } });
+      if (!r.ok) throw r;
+      return await r.json();
+    } catch (e) { console.error('sbGet', table, e); return null; }
+  }
+  async function sbPatch(table, id, body) {
+    try {
+      var r = await fetch(SB + '/rest/v1/' + table + '?id=eq.' + id, { method: 'PATCH', headers: sbH('PATCH'), body: JSON.stringify(body) });
+      if (!r.ok) { console.error('sbPatch', await r.text()); return false; }
+      return true;
+    } catch (e) { return false; }
+  }
+  async function sbPost(table, body) {
+    try {
+      var r = await fetch(SB + '/rest/v1/' + table, { method: 'POST', headers: sbH('POST'), body: JSON.stringify(body) });
+      if (!r.ok) { console.error('sbPost', await r.text()); return null; }
+      return await r.json();
+    } catch (e) { return null; }
+  }
+  async function sbDel(table, id) {
+    try {
+      var r = await fetch(SB + '/rest/v1/' + table + '?id=eq.' + id, { method: 'DELETE', headers: { 'apikey': SK, 'Authorization': 'Bearer ' + SK } });
+      return r.ok;
+    } catch (e) { return false; }
+  }
+
+  // ============================================================
+  // CALC1 DATA
+  // ============================================================
+  async function loadCalc1Data() {
+    var results = await Promise.all([
+      sbGet('co_calculadora_valores', 'select=*&order=ordem'),
+      sbGet('co_calc_pacotes', 'select=*&order=ordem'),
+      sbGet('co_leads', 'select=*&order=criado_em.desc&limit=100'),
+      sbGet('co_config_transporte', 'select=*&ativo=eq.true&limit=1')
+    ]);
+    var ok = results.every(function (r) { return r !== null; });
+    setDbStatus(ok);
+    DATA.servicos = results[0] || [];
+    DATA.pacotes = results[1] || [];
+    DATA.leads = results[2] || [];
+    DATA.configTransporte = (results[3] && results[3][0]) ? results[3][0] : null;
+    renderServicosCards();
+    renderPacotesCards();
+    renderLeads();
+    renderConfigTransporte();
+    if (ok) toast('Dados carregados', 'ok');
+    else toast('Erro ao carregar', 'err');
+  }
+
+  // SERVIÇOS
+  function renderServicosCards() {
+    var grid = $('#servicos-grid');
+    if (!grid) return;
+    if (!DATA.servicos.length) {
+      grid.innerHTML = '<div class="empty-state"><div class="icon">🛠️</div>Nenhum serviço.<br><button class="btn btn-primary" style="margin-top:12px" onclick="openServicoModal()">+ Criar</button></div>';
+      return;
+    }
+    var h = '';
+    DATA.servicos.forEach(function (s) {
+      var inactive = s.ativo === false;
+      h += '<div class="item-card' + (inactive ? ' inactive' : '') + '"><div class="item-card-header"><div><div class="item-card-title"><span>' + esc(s.icone || '🎵') + '</span> ' + esc(s.nome_exibicao || s.nome || '—') + '</div><div class="item-card-meta">' + (s.calc_por_hora ? 'Por hora · ' : '') + (s.calc_por_pessoa ? 'Por pessoa · ' : '') + 'Ordem ' + (s.ordem || 0) + '</div></div><div class="item-card-actions"><button class="btn btn-sm" onclick="openServicoModal(' + s.id + ')">Editar</button><button class="btn btn-sm btn-danger" onclick="removeServico(' + s.id + ')">Excluir</button></div></div><div class="item-card-body">' + esc((s.descricao || '').substring(0, 120)) + '</div><div style="display:flex;align-items:center;justify-content:space-between;margin-top:10px;flex-wrap:wrap;gap:8px;"><span class="price-tag">R$ ' + Number(s.valor_base || 0).toLocaleString('pt-BR', { minimumFractionDigits: 2 }) + '</span><span class="badge ' + (inactive ? '' : 'badge-on') + '">' + (inactive ? 'Inativo' : 'Ativo') + '</span></div></div>';
+    });
+    grid.innerHTML = h;
+  }
+
+  function openServicoModal(id) {
+    try {
+      var s = id ? DATA.servicos.find(function (x) { return String(x.id) === String(id); }) : null;
+      el('modal-servico-title').textContent = s ? 'Editar Serviço' : 'Novo Serviço';
+      el('srv-edit-id').value = s ? s.id : '';
+      el('srv-icone').value = s ? (s.icone || '') : '🎵';
+      el('srv-nome-exibicao').value = s ? (s.nome_exibicao || '') : '';
+      el('srv-descricao').value = s ? (s.descricao || '') : '';
+      el('srv-valor-base').value = s ? (s.valor_base || 0) : 0;
+      el('srv-valor-hora').value = s ? (s.valor_por_hora || 0) : 0;
+      el('srv-valor-pessoa').value = s ? (s.valor_por_pessoa || 0) : 0;
+      el('srv-ordem').value = s ? (s.ordem || 0) : (DATA.servicos.length + 1);
+      el('srv-ativo').checked = s ? (s.ativo !== false) : true;
+      el('srv-calc-hora').checked = s ? !!s.calc_por_hora : false;
+      el('srv-calc-pessoa').checked = s ? !!s.calc_por_pessoa : false;
+      el('srv-metragem-min').value = s && s.metragem_minima != null ? s.metragem_minima : '';
+      el('srv-metragem-max').value = s && s.metragem_maxima != null ? s.metragem_maxima : '';
+      el('srv-valor-metro').value = s ? (s.valor_por_metro || 0) : 0;
+      el('srv-passo-metro').value = s ? (s.passo_metro || 1) : 1;
+      el('srv-servico-id').value = s ? (s.servico_id || '') : '';
+      el('srv-nome-interno').value = s ? (s.nome || '') : '';
+      var faixas = [], faixasM = [];
+      if (s && s.faixas) { try { faixas = typeof s.faixas === 'string' ? JSON.parse(s.faixas) : s.faixas; } catch (e) {} }
+      if (s && s.faixas_metro) { try { faixasM = typeof s.faixas_metro === 'string' ? JSON.parse(s.faixas_metro) : s.faixas_metro; } catch (e) {} }
+      renderFaixasUI('pessoa', faixas || []);
+      renderFaixasUI('metro', faixasM || []);
+      var adv = el('srv-adv'); if (adv) adv.classList.remove('open');
+      var modal = el('modal-servico');
+      if (modal) {
+        modal.classList.add('open');
+        modal.style.display = 'flex';
+      } else {
+        console.error('modal-servico não encontrado no DOM');
+        toast('Erro: modal de serviço não encontrado', 'err');
+      }
+    } catch (err) {
+      console.error('openServicoModal', err);
+      toast('Erro ao abrir editor: ' + err.message, 'err');
+    }
+  }
+  function closeServicoModal() {
+    var modal = el('modal-servico');
+    if (modal) { modal.classList.remove('open'); modal.style.display = 'none'; }
+  }
+  function renderFaixasUI(tipo, arr) {
+    var box = el('srv-faixas-' + tipo);
+    if (!box) return;
+    var h = '';
+    (arr || []).forEach(function (fx) {
+      var min = fx.min != null ? fx.min : (fx.ate || 0);
+      var max = fx.max != null ? fx.max : '';
+      var valor = fx.valor_metro != null ? fx.valor_metro : (fx.adicional != null ? fx.adicional : (fx.valor || 0));
+      h += '<div class="faixa-row"><label>De</label><input type="number" class="f-min" value="' + min + '"><label>até</label><input type="number" class="f-max" value="' + max + '" placeholder="∞"><label>R$</label><input type="number" step="0.01" class="f-val" value="' + valor + '"><button type="button" class="btn btn-sm btn-danger" onclick="this.parentElement.remove()">✕</button></div>';
+    });
+    box.innerHTML = h;
+  }
+  function addFaixaUI(tipo) {
+    var box = el('srv-faixas-' + tipo);
+    if (!box) return;
+    var div = document.createElement('div');
+    div.className = 'faixa-row';
+    div.innerHTML = '<label>De</label><input type="number" class="f-min" value="0"><label>até</label><input type="number" class="f-max" value="" placeholder="∞"><label>R$</label><input type="number" step="0.01" class="f-val" value="0"><button type="button" class="btn btn-sm btn-danger" onclick="this.parentElement.remove()">✕</button>';
+    box.appendChild(div);
+  }
+  function collectFaixas(tipo) {
+    var box = el('srv-faixas-' + tipo);
+    var arr = [];
+    if (!box) return arr;
+    box.querySelectorAll('.faixa-row').forEach(function (row) {
+      var min = parseFloat(row.querySelector('.f-min').value) || 0;
+      var maxRaw = row.querySelector('.f-max').value;
+      var max = maxRaw.trim() === '' ? null : parseFloat(maxRaw);
+      var valor = parseFloat(row.querySelector('.f-val').value) || 0;
+      if (tipo === 'pessoa') arr.push({ min: min, max: max, adicional: valor });
+      else arr.push({ min: min, max: max, valor_metro: valor });
+    });
+    return arr;
+  }
+  function toggleAdvanced(id) { document.getElementById(id).classList.toggle('open'); }
+
+  async function saveServico() {
+    try {
+      var id = el('srv-edit-id').value;
+      var isNew = !id;
+      var nomeEx = (el('srv-nome-exibicao').value || '').trim();
+      if (!nomeEx) { toast('Informe o nome de exibição', 'err'); return; }
+      var body = {
+        icone: el('srv-icone').value || '🎵',
+        nome_exibicao: nomeEx,
+        descricao: el('srv-descricao').value || '',
+        valor_base: parseFloat(el('srv-valor-base').value) || 0,
+        valor_por_hora: parseFloat(el('srv-valor-hora').value) || 0,
+        valor_por_pessoa: parseFloat(el('srv-valor-pessoa').value) || 0,
+        ordem: parseInt(el('srv-ordem').value) || 0,
+        ativo: el('srv-ativo').checked,
+        calc_por_hora: el('srv-calc-hora').checked,
+        calc_por_pessoa: el('srv-calc-pessoa').checked,
+        metragem_minima: el('srv-metragem-min').value.trim() === '' ? null : parseFloat(el('srv-metragem-min').value),
+        metragem_maxima: el('srv-metragem-max').value.trim() === '' ? null : parseFloat(el('srv-metragem-max').value),
+        valor_por_metro: parseFloat(el('srv-valor-metro').value) || 0,
+        passo_metro: parseFloat(el('srv-passo-metro').value) || 1,
+        faixas: JSON.stringify(collectFaixas('pessoa')),
+        faixas_metro: JSON.stringify(collectFaixas('metro')),
+        servico_id: (el('srv-servico-id').value || '').trim() || ('srv_' + Date.now()),
+        nome: (el('srv-nome-interno').value || '').trim() || nomeEx || 'servico'
+      };
+      var btn = el('btn-save-servico');
+      if (btn) { btn.disabled = true; btn.textContent = 'Salvando...'; }
+      var ok = false;
+      if (isNew) {
+        var res = await sbPost('co_calculadora_valores', body);
+        ok = !!(res && (res[0] || res.id || Array.isArray(res)));
+      } else {
+        ok = await sbPatch('co_calculadora_valores', id, body);
+      }
+      if (btn) { btn.disabled = false; btn.textContent = 'Salvar'; }
+      if (ok) { toast('Serviço salvo', 'ok'); markSaved(); closeServicoModal(); await loadCalc1Data(); }
+      else toast('Erro ao salvar serviço', 'err');
+    } catch (err) {
+      console.error('saveServico', err);
+      toast('Erro: ' + err.message, 'err');
+      var b = el('btn-save-servico'); if (b) { b.disabled = false; b.textContent = 'Salvar'; }
+    }
+  }
+  function removeServico(id) {
+    confirmShow('Excluir este serviço?', async function (yes) {
+      if (!yes) return;
+      if (await sbDel('co_calculadora_valores', id)) { toast('Excluído', 'ok'); await loadCalc1Data(); }
+      else toast('Erro', 'err');
+    });
+  }
+
+  // PACOTES
+  function renderPacotesCards() {
+    var grid = $('#pacotes-grid');
+    if (!grid) return;
+    if (!DATA.pacotes.length) {
+      grid.innerHTML = '<div class="empty-state"><div class="icon">📦</div>Nenhum pacote.<br><button class="btn btn-primary" style="margin-top:12px" onclick="openPacoteModal()">+ Criar</button></div>';
+      return;
+    }
+    var h = '';
+    DATA.pacotes.forEach(function (p) {
+      var inactive = p.ativo === false;
+      var saving = p.preco_original ? Math.round((1 - p.preco_pacote / p.preco_original) * 100) : 0;
+      var itens = []; try { itens = typeof p.itens === 'string' ? JSON.parse(p.itens) : (p.itens || []); } catch (e) {}
+      h += '<div class="item-card' + (inactive ? ' inactive' : '') + '">'
+        + (p.destaque ? '<span class="badge badge-star" style="position:absolute;top:10px;right:10px;z-index:2;">★</span>' : '')
+        + '<div class="item-card-header"><div style="min-width:0;flex:1;"><div class="item-card-title">' + esc(p.nome || '—')
+        + (saving > 0 ? ' <span class="badge badge-on">-' + saving + '%</span>' : '')
+        + '</div><div class="item-card-meta">' + (p.horas_inclusas || 0) + 'h · ' + esc(p.ideal_para || '') + '</div></div>'
+        + '<div class="item-card-actions"><button class="btn btn-sm" onclick="openPacoteModal(' + p.id + ')">Editar</button>'
+        + '<button class="btn btn-sm" onclick="duplicarPacote(' + p.id + ')">Duplicar</button>'
+        + '<button class="btn btn-sm btn-danger" onclick="removePacote(' + p.id + ')">Excluir</button></div></div>'
+        + '<div class="item-card-body">' + (Array.isArray(itens) ? itens.slice(0, 3).map(function (i) { return '· ' + esc(i); }).join('<br>') : '') + '</div>'
+        + '<div style="display:flex;align-items:center;justify-content:space-between;margin-top:10px;flex-wrap:wrap;gap:8px;">'
+        + '<span class="price-tag">R$ ' + Number(p.preco_pacote || 0).toLocaleString('pt-BR', { minimumFractionDigits: 2 }) + '</span>'
+        + '<span class="badge ' + (inactive ? '' : 'badge-on') + '">' + (inactive ? 'Inativo' : 'Ativo') + '</span></div></div>';
+    });
+    grid.innerHTML = h;
+  }
+
+  function openPacoteModal(id) {
+    try {
+      var p = id ? DATA.pacotes.find(function (x) { return String(x.id) === String(id); }) : null;
+      el('modal-pacote-title').textContent = p ? 'Editar Pacote' : 'Novo Pacote';
+      el('pkg-edit-id').value = p ? p.id : '';
+      el('pkg-nome').value = p ? (p.nome || '') : '';
+      el('pkg-preco').value = p ? (p.preco_pacote || 0) : 0;
+      el('pkg-preco-orig').value = p ? (p.preco_original || 0) : 0;
+      el('pkg-horas').value = p ? (p.horas_inclusas || 0) : 0;
+      el('pkg-ideal').value = p ? (p.ideal_para || '') : '';
+      var itens = []; if (p && p.itens) { try { itens = typeof p.itens === 'string' ? JSON.parse(p.itens) : p.itens; } catch (e) {} }
+      el('pkg-itens').value = Array.isArray(itens) ? itens.join('\n') : '';
+      el('pkg-ordem').value = p ? (p.ordem || 0) : (DATA.pacotes.length + 1);
+      el('pkg-ativo').checked = p ? (p.ativo !== false) : true;
+      el('pkg-destaque').checked = p ? !!p.destaque : false;
+      var servArr = []; if (p && p.servicos_ids) { try { servArr = typeof p.servicos_ids === 'string' ? JSON.parse(p.servicos_ids) : p.servicos_ids; } catch (e) {} }
+      servArr = (servArr || []).map(function (x) { return String(x).toLowerCase().trim(); });
+      var servSet = {}; servArr.forEach(function (x) { servSet[x] = 1; });
+      var srvList = (DATA.servicos || []).filter(function (s) { return s && s.ativo !== false; }).sort(function (a, b) { return (a.ordem || 0) - (b.ordem || 0); });
+      var picks = el('pkg-srv-picks');
+      var ph = '';
+      srvList.forEach(function (s) {
+        var sid = String(s.servico_id || '').toLowerCase().trim();
+        if (!sid) return;
+        var checked = !!servSet[sid];
+        ph += '<label class="srv-pick' + (checked ? ' checked' : '') + '"><input type="checkbox" value="' + esc(sid) + '" ' + (checked ? 'checked' : '') + ' onchange="this.parentElement.classList.toggle(\'checked\',this.checked);updatePkgSrvCount()"><span>' + esc((s.icone || '') + ' ' + (s.nome_exibicao || s.nome || sid)) + '</span></label>';
+      });
+      if (picks) picks.innerHTML = ph || '<div style="color:var(--text-dim);font-size:0.82rem">Nenhum serviço ativo.</div>';
+      updatePkgSrvCount();
+      var modal = el('modal-pacote');
+      if (modal) { modal.classList.add('open'); modal.style.display = 'flex'; }
+      else toast('Erro: modal de pacote não encontrado', 'err');
+    } catch (err) {
+      console.error('openPacoteModal', err);
+      toast('Erro ao abrir editor: ' + err.message, 'err');
+    }
+  }
+  function updatePkgSrvCount() {
+    var n = document.querySelectorAll('#pkg-srv-picks input:checked').length;
+    var c = el('pkg-srv-count'); if (c) c.textContent = n;
+  }
+  function closePacoteModal() {
+    var modal = el('modal-pacote');
+    if (modal) { modal.classList.remove('open'); modal.style.display = 'none'; }
+  }
+
+  async function savePacote() {
+    var id = $('#pkg-edit-id').value;
+    var isNew = !id;
+    var servArr = [];
+    $$('#pkg-srv-picks input:checked').forEach(function (chk) {
+      var v = (chk.value || '').trim().toLowerCase(); if (v) servArr.push(v);
+    });
+    var body = {
+      nome: $('#pkg-nome').value || 'Pacote', preco_pacote: parseFloat($('#pkg-preco').value) || 0,
+      preco_original: parseFloat($('#pkg-preco-orig').value) || 0, horas_inclusas: parseInt($('#pkg-horas').value) || 0,
+      ideal_para: $('#pkg-ideal').value,
+      itens: JSON.stringify(($('#pkg-itens').value || '').split('\n').filter(function (l) { return l.trim(); })),
+      servicos_ids: JSON.stringify(servArr), ordem: parseInt($('#pkg-ordem').value) || 0,
+      ativo: $('#pkg-ativo').checked, destaque: $('#pkg-destaque').checked
+    };
+    if (isNew) { body.pacote_id = 'pacote_' + Date.now(); body.nivel = body.nome; }
+    var btn = $('#btn-save-pacote'); btn.disabled = true; btn.textContent = 'Salvando...';
+    var ok = isNew ? !!(await sbPost('co_calc_pacotes', body)) : await sbPatch('co_calc_pacotes', id, body);
+    btn.disabled = false; btn.textContent = 'Salvar';
+    if (ok) { toast('Pacote salvo', 'ok'); markSaved(); closePacoteModal(); await loadCalc1Data(); }
+    else toast('Erro', 'err');
+  }
+  async function duplicarPacote(id) {
+    var p = DATA.pacotes.find(function (x) { return String(x.id) === String(id); });
+    if (!p) return;
+    var body = {
+      pacote_id: 'pacote_' + Date.now(), nivel: (p.nome || 'Pacote') + ' (cópia)',
+      nome: (p.nome || 'Pacote') + ' (cópia)', preco_pacote: p.preco_pacote || 0, preco_original: p.preco_original || 0,
+      horas_inclusas: p.horas_inclusas || 0, ideal_para: p.ideal_para || '',
+      itens: typeof p.itens === 'string' ? p.itens : JSON.stringify(p.itens || []),
+      servicos_ids: typeof p.servicos_ids === 'string' ? p.servicos_ids : JSON.stringify(p.servicos_ids || []),
+      ordem: DATA.pacotes.length + 1, ativo: true, destaque: false
+    };
+    if (await sbPost('co_calc_pacotes', body)) { toast('Duplicado', 'ok'); await loadCalc1Data(); }
+    else toast('Erro', 'err');
+  }
+  function removePacote(id) {
+    confirmShow('Excluir este pacote?', async function (yes) {
+      if (!yes) return;
+      if (await sbDel('co_calc_pacotes', id)) { toast('Excluído', 'ok'); await loadCalc1Data(); }
+      else toast('Erro', 'err');
+    });
+  }
+
+  // TRANSPORTE
+  function renderConfigTransporte() {
+    var cfg = DATA.configTransporte; if (!cfg) return;
+    var km = el('cfgTransporteValorKm');
+    var lab = el('cfgTransporteOrigemLabel');
+    var lat = el('cfgTransporteOrigemLat');
+    var lng = el('cfgTransporteOrigemLng');
+    var cep = el('cfgTransporteCep');
+    if (km) km.value = cfg.valor_por_km != null ? cfg.valor_por_km : 0;
+    if (lab) lab.value = cfg.origem_label || 'Centro de São Paulo';
+    if (lat) lat.value = cfg.origem_lat != null ? cfg.origem_lat : -23.5505;
+    if (lng) lng.value = cfg.origem_lng != null ? cfg.origem_lng : -46.6333;
+    if (cep && cfg.origem_cep) cep.value = cfg.origem_cep;
+  }
+
+  async function buscarCepOrigem() {
+    var cepEl = el('cfgTransporteCep');
+    var status = el('cfgTransporteCepStatus');
+    if (!cepEl) return;
+    var cep = (cepEl.value || '').replace(/\D/g, '');
+    if (cep.length !== 8) {
+      if (status) status.textContent = 'CEP inválido (use 8 dígitos).';
+      return;
+    }
+    if (status) status.textContent = 'Consultando CEP...';
+    try {
+      var res = await fetch('https://viacep.com.br/ws/' + cep + '/json/');
+      var data = await res.json();
+      if (data.erro) {
+        if (status) status.textContent = 'CEP não encontrado.';
+        return;
+      }
+      var label = [data.logradouro, data.bairro, data.localidade, data.uf].filter(Boolean).join(', ');
+      var lab = el('cfgTransporteOrigemLabel');
+      if (lab) lab.value = label || (data.localidade + ' - ' + data.uf);
+      if (status) status.textContent = 'CEP ok — buscando coordenadas...';
+
+      // Geocode via Nominatim (OpenStreetMap)
+      var q = encodeURIComponent((data.logradouro || '') + ', ' + (data.localidade || '') + ', ' + (data.uf || '') + ', Brasil');
+      var geo = await fetch('https://nominatim.openstreetmap.org/search?format=json&limit=1&q=' + q, {
+        headers: { 'Accept-Language': 'pt-BR' }
+      });
+      var geoData = await geo.json();
+      if (geoData && geoData[0]) {
+        var latEl = el('cfgTransporteOrigemLat');
+        var lngEl = el('cfgTransporteOrigemLng');
+        if (latEl) latEl.value = parseFloat(geoData[0].lat).toFixed(6);
+        if (lngEl) lngEl.value = parseFloat(geoData[0].lon).toFixed(6);
+        if (status) status.textContent = 'Origem definida: ' + (lab ? lab.value : label);
+      } else {
+        if (status) status.textContent = 'Endereço preenchido. Coordenadas não encontradas — ajuste manualmente se precisar.';
+      }
+    } catch (err) {
+      console.error(err);
+      if (status) status.textContent = 'Erro ao consultar CEP. Tente de novo.';
+    }
+  }
+
+  async function saveConfigTransporte() {
+    var btn = el('btn-save-transporte');
+    if (btn) { btn.disabled = true; btn.textContent = 'Salvando...'; }
+    var payload = {
+      valor_por_km: parseFloat(el('cfgTransporteValorKm').value) || 0,
+      origem_label: el('cfgTransporteOrigemLabel').value || 'Centro de São Paulo',
+      origem_lat: parseFloat(el('cfgTransporteOrigemLat').value) || -23.5505,
+      origem_lng: parseFloat(el('cfgTransporteOrigemLng').value) || -46.6333,
+      origem_cep: (el('cfgTransporteCep') && el('cfgTransporteCep').value) || null,
+      atualizado_em: new Date().toISOString()
+    };
+    var id = DATA.configTransporte && DATA.configTransporte.id;
+    var ok = id ? await sbPatch('co_config_transporte', id, payload) : !!(await sbPost('co_config_transporte', Object.assign({ ativo: true }, payload)));
+    if (btn) { btn.disabled = false; btn.textContent = '💾 Salvar tarifa'; }
+    if (ok) { toast('Transporte salvo', 'ok'); markSaved(); await loadCalc1Data(); }
+    else toast('Erro ao salvar transporte', 'err');
+  }
+
+  // SIMULADOR — DnD: NÃO interfere no Sortable do calculadora.js
+  // O original liga o drag via calculadora.js. Aqui só ligamos/desligamos.
+  var SIM_DND_ENABLED = true;
+
+  function simDndTargets() {
+    return document.querySelectorAll(
+      '#selected-bronze, #selected-prata, #selected-ouro, .pkg-selected-list, #dynamic-addons-list'
+    );
+  }
+
+  function applySimDndState() {
+    var bar = el('sim-dnd-bar');
+    var btn = el('btn-sim-dnd');
+    if (SIM_DND_ENABLED) {
+      if (bar) bar.classList.add('active');
+      if (btn) { btn.textContent = 'Ativado'; btn.classList.add('btn-primary'); }
+      document.body.classList.add('sim-dnd-on');
+      document.body.classList.remove('sim-dnd-off');
+    } else {
+      if (bar) bar.classList.remove('active');
+      if (btn) { btn.textContent = 'Desativado'; btn.classList.remove('btn-primary'); }
+      document.body.classList.remove('sim-dnd-on');
+      document.body.classList.add('sim-dnd-off');
+    }
+    // Só desabilita a instância criada pelo calculadora.js — nunca destroy
+    if (window.Sortable && typeof Sortable.get === 'function') {
+      simDndTargets().forEach(function (list) {
+        try {
+          var inst = Sortable.get(list);
+          if (inst) inst.option('disabled', !SIM_DND_ENABLED);
+        } catch (e) {}
+      });
+    }
+  }
+
+  function toggleSimDnd() {
+    if (!SIM_DND_ENABLED) {
+      if (!confirm('Ativar Drag and Drop no Simulador?\n\nCom o modo ativo você reordena itens (cima/baixo).\nDesativado: rolagem prioritária no toque.')) {
+        return;
+      }
+    }
+    SIM_DND_ENABLED = !SIM_DND_ENABLED;
+    applySimDndState();
+  }
+
+  // Após calculadora.js montar os Sortables, aplica o estado (padrão: Ativado)
+  document.addEventListener('DOMContentLoaded', function () {
+    setTimeout(applySimDndState, 800);
+    setTimeout(applySimDndState, 2000);
+  });
+
+  // LEADS
+  function getFilteredLeads() {
+    var search = ($('#leadSearch').value || '').toLowerCase();
+    var status = $('#leadStatusFilter').value;
+    var origem = $('#leadOrigemFilter').value;
+    return DATA.leads.filter(function (l) {
+      if (search) {
+        var nm = (l.nome || '').toLowerCase(), wa = (l.whatsapp || '').toLowerCase(), te = (l.tipo_evento || '').toLowerCase();
+        if (nm.indexOf(search) < 0 && wa.indexOf(search) < 0 && te.indexOf(search) < 0) return false;
+      }
+      if (status && (l.status || 'novo') !== status) return false;
+      if (origem && (l.origem || '') !== origem) return false;
+      return true;
+    });
+  }
+  function renderLeads() {
+    var c = $('#leadsContainer'); if (!c) return;
+    var leads = getFilteredLeads();
+    $('#leadsTotal').textContent = DATA.leads.length;
+    if (!leads.length) { c.innerHTML = '<div class="empty-state"><div class="icon">📊</div>Nenhum lead.</div>'; return; }
+    var h = '';
+    leads.forEach(function (l) {
+      var status = l.status || 'novo';
+      var waLink = l.whatsapp ? 'https://wa.me/' + l.whatsapp.replace(/\D/g, '') : '';
+      h += '<div class="lead-card"><div class="lead-top"><div><input type="checkbox" ' + (selectedLeads[l.id] ? 'checked' : '') + ' onchange="toggleLeadSelect(\'' + l.id + '\',this.checked)" style="width:auto;margin-right:8px;accent-color:var(--accent)"><span class="lead-name">' + esc(l.nome || 'Sem nome') + '</span></div><span class="lead-date">' + (l.criado_em ? new Date(l.criado_em).toLocaleDateString('pt-BR', { day: '2-digit', month: '2-digit', year: '2-digit', hour: '2-digit', minute: '2-digit' }) : '—') + '</span></div><div class="lead-tags">';
+      if (l.whatsapp) h += '<span class="lead-tag clickable" onclick="window.open(\'' + waLink + '\',\'_blank\')">📱 ' + esc(l.whatsapp) + '</span>';
+      if (l.email) h += '<span class="lead-tag">✉ ' + esc(l.email) + '</span>';
+      if (l.tipo_evento) h += '<span class="lead-tag">' + esc(l.tipo_evento) + '</span>';
+      if (l.total) h += '<span class="lead-tag">💰 ' + esc(l.total) + '</span>';
+      if (l.origem) h += '<span class="lead-tag">📍 ' + esc(l.origem) + '</span>';
+      h += '</div><div style="margin:8px 0"><select class="lead-status-select" onchange="updateLeadField(\'' + l.id + '\',\'status\',this.value)"><option value="novo"' + (status === 'novo' ? ' selected' : '') + '>🟡 Novo</option><option value="em_contato"' + (status === 'em_contato' ? ' selected' : '') + '>🔵 Em contato</option><option value="fechado"' + (status === 'fechado' ? ' selected' : '') + '>🟢 Fechado</option><option value="perdido"' + (status === 'perdido' ? ' selected' : '') + '>🔴 Perdido</option></select></div>';
+      if (l.mensagem) h += '<div class="lead-msg">' + esc(l.mensagem).substring(0, 300) + '</div>';
+      h += '<div class="form-group" style="margin:0"><label style="font-size:0.65rem">Notas</label><textarea onchange="updateLeadField(\'' + l.id + '\',\'observacoes\',this.value)" rows="2" placeholder="Anotações..." style="font-size:0.82rem">' + (l.observacoes || '') + '</textarea></div></div>';
+    });
+    c.innerHTML = h;
+  }
+  function filterLeads() { renderLeads(); updateLeadSelectUI(); }
+  function toggleLeadSelect(id, checked) { if (checked) selectedLeads[id] = true; else delete selectedLeads[id]; updateLeadSelectUI(); }
+  function toggleSelectAll() {
+    var leads = getFilteredLeads();
+    var all = leads.every(function (l) { return selectedLeads[l.id]; });
+    if (all) leads.forEach(function (l) { delete selectedLeads[l.id]; });
+    else leads.forEach(function (l) { selectedLeads[l.id] = true; });
+    renderLeads(); updateLeadSelectUI();
+  }
+  function updateLeadSelectUI() {
+    var count = Object.keys(selectedLeads).length;
+    $('#btnDeleteLeads').style.display = count > 0 ? '' : 'none';
+    $('#leadsSelectedCount').style.display = count > 0 ? '' : 'none';
+    $('#leadsSelCount').textContent = count;
+  }
+  async function updateLeadField(id, field, value) {
+    var body = {}; body[field] = value;
+    if (await sbPatch('co_leads', id, body)) {
+      DATA.leads.forEach(function (l) { if (String(l.id) === String(id)) l[field] = value; });
+      toast('Lead atualizado', 'ok');
+    } else toast('Erro', 'err');
+  }
+  function deleteSelectedLeads() {
+    var ids = Object.keys(selectedLeads);
+    if (!ids.length) return;
+    confirmShow('Excluir ' + ids.length + ' lead(s)?', async function (yes) {
+      if (!yes) return;
+      for (var i = 0; i < ids.length; i++) await sbDel('co_leads', ids[i]);
+      selectedLeads = {};
+      toast(ids.length + ' excluído(s)', 'ok');
+      await loadCalc1Data();
+    });
+  }
+  function exportCSV() {
+    var leads = getFilteredLeads();
+    if (!leads.length) { toast('Nenhum lead', 'err'); return; }
+    var headers = ['Nome','WhatsApp','Email','Tipo Evento','Data Evento','Local','Convidados','Horas','Total','Pacote','Origem','Status','Notas','Data Criação','Mensagem'];
+    var rows = [headers.join(';')];
+    leads.forEach(function (l) {
+      rows.push([l.nome||'',l.whatsapp||'',l.email||'',l.tipo_evento||'',l.data_evento||'',l.local||'',l.convidados||'',l.horas||'',l.total||'',l.pacote||'',l.origem||'',l.status||'novo',l.observacoes||'',l.criado_em||'', '"'+(l.mensagem||'').replace(/"/g,'""').substring(0,200)+'"'].join(';'));
+    });
+    var blob = new Blob(['\uFEFF' + rows.join('\n')], { type: 'text/csv;charset=utf-8' });
+    var a = document.createElement('a'); a.href = URL.createObjectURL(blob);
+    a.download = '432up_leads_' + new Date().toISOString().slice(0, 10) + '.csv'; a.click();
+    toast('CSV exportado', 'ok');
+  }
+
+  // ============================================================
+  // GALERIA
+  // ============================================================
+  function toggleGaleriaEditMode() {
+    if (!GALERIA_EDIT_MODE) {
+      if (!confirm('Ativar modo drag and drop?\n\nCom o modo ativo você poderá arrastar mídias e specs para reordenar.\nSem o modo ativo, a rolagem tem prioridade e nada reordena.')) {
+        return;
+      }
+    }
+    GALERIA_EDIT_MODE = !GALERIA_EDIT_MODE;
+    var bar = el('galeria-edit-mode-bar');
+    var btn = el('btn-edit-mode-galeria');
+    var modalCase = el('modal-galeria-case');
+    if (GALERIA_EDIT_MODE) {
+      if (bar) bar.classList.add('active');
+      if (btn) { btn.textContent = '✓ Drag & Drop ON'; btn.classList.add('btn-primary'); }
+      if (modalCase) modalCase.classList.add('edit-mode-active');
+      // Reativa Sortable se o modal do case estiver aberto
+      if (CURRENT_CASE && CURRENT_CASE.case_slug) {
+        carregarMidiasModal(CURRENT_CASE.case_slug);
+        carregarSpecsModal(CURRENT_CASE.case_slug);
+      }
+    } else {
+      if (bar) bar.classList.remove('active');
+      if (btn) { btn.textContent = '↕️ Ativar drag and drop'; btn.classList.remove('btn-primary'); }
+      if (modalCase) modalCase.classList.remove('edit-mode-active');
+      if (MEDIAS_SORTABLE_INSTANCE) { try { MEDIAS_SORTABLE_INSTANCE.destroy(); } catch(e){} MEDIAS_SORTABLE_INSTANCE = null; }
+      if (SPECS_SORTABLE_INSTANCE) { try { SPECS_SORTABLE_INSTANCE.destroy(); } catch(e){} SPECS_SORTABLE_INSTANCE = null; }
+    }
+  }
+
+  function sanitizarNomeArquivo(name) {
+    return name.toLowerCase().normalize('NFD').replace(/[\u0300-\u036f]/g, '').replace(/[^a-z0-9.]+/g, '-').replace(/-+/g, '-');
+  }
+  function normalizarTipoUpload(file) {
+    if (file.type && file.type.startsWith('video/')) return 'video';
+    return 'image';
+  }
+  function isVideoTipo(tipo, url) {
+    if (tipo === 'video') return true;
+    if (url && /\.(mp4|webm|mov)(\?|$)/i.test(url)) return true;
+    return false;
+  }
+  function videoTagPausado(url, style) {
+    return '<video src="' + url + '" style="' + (style || '') + '" muted playsinline preload="metadata"></video>';
+  }
+
+  async function otimizarImagemSeNecessario(file, warningId) {
+    if (!file) return file;
+    var isHeic = /heic|heif/i.test(file.type) || /\.heic$/i.test(file.name);
+    if (isHeic && warningId) {
+      var w = document.getElementById(warningId);
+      if (w) w.style.display = 'flex';
+    }
+    if (typeof imageCompression === 'undefined') return file;
+    if (!file.type.startsWith('image/') && !isHeic) return file;
+    try {
+      var compressed = await imageCompression(file, { maxSizeMB: 1.2, maxWidthOrHeight: 1920, useWebWorker: true });
+      if (warningId) { var w2 = document.getElementById(warningId); if (w2) w2.style.display = 'none'; }
+      return compressed;
+    } catch (e) {
+      console.warn('compress fail', e);
+      return file;
+    }
+  }
+
+  async function carregarGridCases() {
+    var { data, error } = await _supabase.from('co_galeria_fotos').select('*').order('ordem', { ascending: true });
+    if (error) { toast('Erro ao carregar cases', 'err'); setDbStatus(false); return; }
+    setDbStatus(true);
+    ALL_CASES_CACHE = data || [];
+    filtrarCases();
+  }
+
+  function filtrarCases() {
+    var search = ($('#galeria-search') && $('#galeria-search').value || '').toLowerCase();
+    var cat = ($('#galeria-cat-filter') && $('#galeria-cat-filter').value) || '';
+    var list = ALL_CASES_CACHE.filter(function (c) {
+      if (cat && c.cat !== cat) return false;
+      if (search) {
+        var blob = ((c.cliente || '') + ' ' + (c.titulo || '') + ' ' + (c.local || '')).toLowerCase();
+        if (blob.indexOf(search) < 0) return false;
+      }
+      return true;
+    });
+    var grid = $('#galeria-grid');
+    if (!grid) return;
+    if (!list.length) {
+      grid.innerHTML = '<div class="empty-state"><div class="icon">🖼️</div>Nenhum case encontrado.</div>';
+      return;
+    }
+    grid.innerHTML = list.map(function (c) {
+      var catClass = 'cat-' + (c.cat || 'corporativo');
+      var media = c.url_thumb || c.url || '';
+      var isVid = isVideoTipo(c.tipo, media);
+      return '<div class="adm-card">'
+        + (isVid ? videoTagPausado(media, 'width:100%;height:180px;object-fit:cover;') : '<img class="adm-card-media" src="' + esc(media) + '" alt="" onclick="abrirEdicaoModal(\'' + c.id + '\')">')
+        + '<div class="adm-card-body"><div class="adm-card-title">' + esc(c.cliente || c.titulo || '—') + '</div>'
+        + '<div class="adm-card-sub">' + esc(c.titulo || '') + (c.local ? ' · ' + esc(c.local) : '') + '</div>'
+        + '<div class="adm-card-footer"><span class="cat-pill ' + catClass + '">' + esc(c.cat || '') + '</span>'
+        + '<div style="display:flex;gap:6px"><button class="btn btn-sm" onclick="abrirEdicaoModal(\'' + c.id + '\')">Editar</button></div></div></div></div>';
+    }).join('');
+  }
+
+  function abrirNovoCase() {
+    try {
+      CURRENT_CASE = null;
+      el('modal-title-header').innerText = 'Novo Case';
+      el('modal-edit-cliente').value = '';
+      el('modal-edit-titulo').value = '';
+      el('modal-edit-cat').value = 'corporativo';
+      el('modal-edit-local').value = '';
+      el('modal-edit-slug').value = '';
+      el('modal-edit-descricao').value = '';
+      el('modal-edit-ordem').value = 1;
+      el('modal-edit-destaque').checked = false;
+      el('btn-delete-case').style.display = 'none';
+      el('modal-album-section').style.display = 'none';
+      el('cover-file-name').textContent = 'nenhum';
+      el('modal-edit-cover-file').value = '';
+      var modal = el('modal-galeria-case');
+      if (modal) { modal.classList.add('open'); modal.style.display = 'flex'; }
+    } catch (err) {
+      console.error('abrirNovoCase', err);
+      toast('Erro: ' + err.message, 'err');
+    }
+  }
+
+  function abrirEdicaoModal(id) {
+    try {
+      var dataCache = ALL_CASES_CACHE.find(function (c) { return String(c.id) === String(id); });
+      if (!dataCache) { toast('Case não encontrado', 'err'); return; }
+      CURRENT_CASE = dataCache;
+      el('modal-title-header').innerText = 'Editar Case';
+      el('modal-edit-cliente').value = dataCache.cliente || '';
+      el('modal-edit-titulo').value = dataCache.titulo || '';
+      var catSel = el('modal-edit-cat');
+      if (catSel && [...catSel.options].some(function (o) { return o.value === dataCache.cat; })) catSel.value = dataCache.cat;
+      el('modal-edit-local').value = dataCache.local || '';
+      el('modal-edit-slug').value = dataCache.case_slug || '';
+      el('modal-edit-descricao').value = dataCache.descricao || '';
+      el('modal-edit-ordem').value = dataCache.ordem || 1;
+      el('modal-edit-destaque').checked = !!dataCache.destaque;
+      el('btn-delete-case').style.display = 'inline-flex';
+      el('modal-album-section').style.display = 'block';
+      el('cover-file-name').textContent = 'nenhum';
+      el('modal-edit-cover-file').value = '';
+      el('modal-media-list').innerHTML = '<div style="font-size:0.8rem;opacity:0.5">Carregando álbum...</div>';
+      el('modal-specs-list').innerHTML = '<div style="font-size:0.8rem;opacity:0.5">Carregando specs...</div>';
+      var modal = el('modal-galeria-case');
+      if (modal) { modal.classList.add('open'); modal.style.display = 'flex'; }
+      else { toast('Modal não encontrado', 'err'); return; }
+      Promise.all([
+        carregarMidiasModal(dataCache.case_slug),
+        carregarSpecsModal(dataCache.case_slug)
+      ]);
+    } catch (err) {
+      console.error('abrirEdicaoModal', err);
+      toast('Erro ao abrir case: ' + err.message, 'err');
+    }
+  }
+
+  function fecharModalEdicao() {
+    var modal = el('modal-galeria-case');
+    if (modal) { modal.classList.remove('open'); modal.style.display = 'none'; }
+    CURRENT_CASE = null;
+  }
+
+  async function salvarAlteracoesCase() {
+    var btn = document.getElementById('btn-save-case');
+    btn.innerText = 'Salvando...';
+    var cliente = document.getElementById('modal-edit-cliente').value;
+    var titulo = document.getElementById('modal-edit-titulo').value;
+    var cat = document.getElementById('modal-edit-cat').value;
+    var local = document.getElementById('modal-edit-local').value;
+    var case_slug = document.getElementById('modal-edit-slug').value.trim();
+    var descricao = document.getElementById('modal-edit-descricao').value;
+    var ordem = parseInt(document.getElementById('modal-edit-ordem').value) || 1;
+    var destaque = document.getElementById('modal-edit-destaque').checked;
+    var fileInput = document.getElementById('modal-edit-cover-file');
+
+    if (!cliente) { toast('Cliente obrigatório', 'err'); btn.innerText = '💾 Salvar Alterações'; return; }
+    if (!case_slug) {
+      case_slug = cliente.toLowerCase().normalize('NFD').replace(/[\u0300-\u036f]/g, '').replace(/[^a-z0-9]+/g, '-').replace(/(^-|-$)/g, '');
+    }
+
+    var payload = { cliente: cliente, titulo: titulo, cat: cat, local: local, case_slug: case_slug, ordem: ordem, destaque: destaque, descricao: descricao };
+
+    if (fileInput.files.length > 0) {
+      try {
+        var file = await otimizarImagemSeNecessario(fileInput.files[0], 'heic-warning-cover');
+        var fileName = 'full/' + sanitizarNomeArquivo(file.name);
+        var { error: uploadErr } = await _supabase.storage.from('432up_galeria').upload(fileName, file);
+        if (uploadErr) { toast('Erro upload capa: ' + uploadErr.message, 'err'); btn.innerText = '💾 Salvar Alterações'; return; }
+        var newUrl = SUPABASE_URL_ADM + '/storage/v1/object/public/432up_galeria/' + fileName;
+        payload.url = newUrl;
+        payload.url_thumb = newUrl;
+        payload.tipo = normalizarTipoUpload(file);
+      } catch (e) {
+        btn.innerText = '💾 Salvar Alterações';
+        return;
+      }
+    }
+
+    var slugAntigo = CURRENT_CASE ? (CURRENT_CASE.case_slug || '') : null;
+    var slugMudou = CURRENT_CASE && slugAntigo !== case_slug;
+    if (slugMudou) {
+      await Promise.all([
+        _supabase.from('co_galeria_case_midias').update({ case_slug: case_slug }).eq('case_slug', slugAntigo),
+        _supabase.from('co_galeria_case_specs').update({ case_slug: case_slug }).eq('case_slug', slugAntigo)
+      ]);
+    }
+
+    var error;
+    if (CURRENT_CASE) {
+      var res = await _supabase.from('co_galeria_fotos').update(payload).eq('id', CURRENT_CASE.id);
+      error = res.error;
+    } else {
+      var res2 = await _supabase.from('co_galeria_fotos').insert([payload]);
+      error = res2.error;
+    }
+
+    if (error) toast('Erro: ' + error.message, 'err');
+    else {
+      toast('Case salvo!', 'ok');
+      markSaved();
+      fecharModalEdicao();
+      carregarGridCases();
+    }
+    btn.innerText = '💾 Salvar Alterações';
+  }
+
+  async function carregarMidiasModal(slug) {
+    var wrap = document.getElementById('modal-media-list');
+    if (!slug) { wrap.innerHTML = '<div style="font-size:0.8rem;opacity:0.5">Defina um slug para o álbum.</div>'; return; }
+    var { data } = await _supabase.from('co_galeria_case_midias').select('*').eq('case_slug', slug).order('ordem', { ascending: true });
+    wrap.innerHTML = (data || []).map(function (m) {
+      var video = isVideoTipo(m.tipo, m.url);
+      return '<div class="edit-media-thumb" data-midia-id="' + m.id + '">'
+        + '<span class="admin-drag-handle" title="Arraste">⠿</span>'
+        + '<button type="button" class="btn-del-media" onclick="deletarMidiaModal(\'' + m.id + '\')">✕</button>'
+        + (video ? videoTagPausado(m.url, 'width:100%;height:100%;object-fit:cover;') : '<img src="' + m.url + '">')
+        + '</div>';
+    }).join('');
+
+    if (MEDIAS_SORTABLE_INSTANCE) { MEDIAS_SORTABLE_INSTANCE.destroy(); MEDIAS_SORTABLE_INSTANCE = null; }
+    if (GALERIA_EDIT_MODE && window.Sortable) {
+      MEDIAS_SORTABLE_INSTANCE = Sortable.create(wrap, {
+        animation: 180, handle: '.admin-drag-handle', ghostClass: 'sortable-ghost',
+        onEnd: async function () {
+          var thumbs = Array.from(wrap.querySelectorAll('.edit-media-thumb'));
+          await Promise.all(thumbs.map(function (el, i) {
+            return _supabase.from('co_galeria_case_midias').update({ ordem: i + 1 }).eq('id', el.dataset.midiaId);
+          }));
+          toast('Ordem salva', 'ok');
         }
       });
-    });
+    }
+  }
 
-    async function autenticarAdmin() {
-      const emailInput = document.getElementById('auth-email-admin');
-      const passInput = document.getElementById('auth-pass-admin');
-      const btn = document.getElementById('btn-login-admin');
-      const errBox = document.getElementById('auth-error-admin');
-
-      errBox.style.display = 'none';
-      btn.innerText = 'Autenticando...';
-      btn.disabled = true;
-
-      try {
-        const { data, error } = await _supabaseAdmin.auth.signInWithPassword({
-          email: emailInput.value,
-          password: passInput.value
-        });
-
-        if (error) throw error;
-      } catch (error) {
-        errBox.textContent = 'E-mail ou senha incorretos.';
-        errBox.style.display = 'block';
-      } finally {
-        btn.innerText = 'Entrar no Painel';
-        btn.disabled = false;
+  async function uploadMidiasLote(files) {
+    if (!files || !files.length || !CURRENT_CASE) return;
+    var slug = CURRENT_CASE.case_slug;
+    var statusLabel = document.getElementById('upload-lote-status');
+    if (!slug) { toast('Salve o case antes', 'err'); return; }
+    var { data: midiasExistentes } = await _supabase.from('co_galeria_case_midias').select('ordem').eq('case_slug', slug).order('ordem', { ascending: false }).limit(1);
+    var proximaOrdem = (midiasExistentes && midiasExistentes[0] && midiasExistentes[0].ordem) ? midiasExistentes[0].ordem + 1 : 1;
+    var concluidos = 0;
+    for (var i = 0; i < files.length; i++) {
+      statusLabel.innerText = 'Enviando ' + (concluidos + 1) + ' de ' + files.length + '...';
+      var file;
+      try { file = await otimizarImagemSeNecessario(files[i], 'heic-warning-lote'); } catch (e) { concluidos++; continue; }
+      var path = 'midias/' + sanitizarNomeArquivo(file.name);
+      var { error: uploadErr } = await _supabase.storage.from('432up_galeria').upload(path, file);
+      if (!uploadErr) {
+        var url = SUPABASE_URL_ADM + '/storage/v1/object/public/432up_galeria/' + path;
+        await _supabase.from('co_galeria_case_midias').insert([{ case_slug: slug, url: url, tipo: normalizarTipoUpload(file), ordem: proximaOrdem }]);
+        proximaOrdem++;
       }
+      concluidos++;
     }
+    statusLabel.innerText = '✅ Upload concluído!';
+    setTimeout(function () { statusLabel.innerText = ''; }, 3000);
+    carregarMidiasModal(slug);
+  }
 
-    function exibirPainel() {
-      document.getElementById('auth-overlay-admin').style.display = 'none';
-      document.getElementById('painel-conteudo-admin').style.display = 'block';
-    }
+  async function deletarMidiaModal(id) {
+    await _supabase.from('co_galeria_case_midias').delete().eq('id', id);
+    if (CURRENT_CASE) carregarMidiasModal(CURRENT_CASE.case_slug);
+  }
 
-    function exibirLogin() {
-      document.getElementById('auth-overlay-admin').style.display = 'flex';
-      document.getElementById('painel-conteudo-admin').style.display = 'none';
-    }
+  async function carregarSpecsModal(slug) {
+    var wrap = document.getElementById('modal-specs-list');
+    if (!slug) { wrap.innerHTML = ''; return; }
+    var { data } = await _supabase.from('co_galeria_case_specs').select('*').eq('case_slug', slug).order('ordem');
+    wrap.innerHTML = (data || []).map(function (s) {
+      return '<div class="spec-edit-item" data-spec-item-id="' + s.id + '">'
+        + '<span class="spec-drag-handle">⠿</span>'
+        + '<input type="text" value="' + esc(s.item || '') + '" class="adm-input-admin" style="flex:1;padding:8px 10px;border-radius:8px;background:rgba(255,255,255,0.04);border:1px solid var(--border);color:#fff" data-spec-id="' + s.id + '" data-original-value="' + esc(s.item || '') + '" onblur="salvarSpecEditado(this)" onkeydown="if(event.key===\'Enter\')this.blur()">'
+        + '<button type="button" class="btn btn-sm btn-danger" onclick="deletarSpec(\'' + s.id + '\')">✕</button></div>';
+    }).join('');
 
-    async function deslogarAdmin() {
-      await _supabaseAdmin.auth.signOut();
-    }
-
-    function switchAdminTab(tabName, event) {
-      document.querySelectorAll('.admin-panel-content').forEach(el => el.style.display = 'none');
-      document.querySelectorAll('.admin-tab-btn').forEach(el => {
-        el.style.background = 'rgba(255, 255, 255, 0.04)';
-        el.style.borderColor = 'rgba(255,255,255,0.1)';
-        el.style.color = '#fff';
+    if (SPECS_SORTABLE_INSTANCE) { SPECS_SORTABLE_INSTANCE.destroy(); SPECS_SORTABLE_INSTANCE = null; }
+    if (GALERIA_EDIT_MODE && window.Sortable) {
+      SPECS_SORTABLE_INSTANCE = Sortable.create(wrap, {
+        animation: 180, handle: '.spec-drag-handle',
+        onEnd: async function () {
+          var rows = Array.from(wrap.querySelectorAll('.spec-edit-item'));
+          await Promise.all(rows.map(function (el, i) {
+            return _supabase.from('co_galeria_case_specs').update({ ordem: i + 1 }).eq('id', el.dataset.specItemId);
+          }));
+          toast('Ordem specs salva', 'ok');
+        }
       });
-
-      const target = document.getElementById('tab-' + tabName);
-      if (target) target.style.display = 'block';
-
-      if (event && event.currentTarget) {
-        event.currentTarget.style.background = 'rgba(0, 255, 102, 0.15)';
-        event.currentTarget.style.borderColor = '#00FF66';
-        event.currentTarget.style.color = '#00FF66';
-      }
-
-      if (tabName === 'galeria' && typeof carregarGaleria === 'function') carregarGaleria();
-      if (tabName === 'leads' && typeof carregarLeads === 'function') carregarLeads();
     }
+  }
+
+  async function salvarSpecEditado(inputEl) {
+    var novoValor = inputEl.value.trim();
+    var valorOriginal = inputEl.dataset.originalValue;
+    var specId = inputEl.dataset.specId;
+    if (novoValor === valorOriginal) return;
+    if (!novoValor) { inputEl.value = valorOriginal; return; }
+    var { error } = await _supabase.from('co_galeria_case_specs').update({ item: novoValor }).eq('id', specId);
+    if (error) { toast('Erro spec', 'err'); inputEl.value = valorOriginal; }
+    else inputEl.dataset.originalValue = novoValor;
+  }
+
+  async function adicionarSpecItem() {
+    var input = document.getElementById('new-spec-item');
+    var slug = CURRENT_CASE && CURRENT_CASE.case_slug;
+    if (!input.value || !slug) { toast('Salve o case antes / preencha a spec', 'err'); return; }
+    await _supabase.from('co_galeria_case_specs').insert([{ case_slug: slug, item: input.value }]);
+    input.value = '';
+    carregarSpecsModal(slug);
+  }
+
+  async function deletarSpec(id) {
+    await _supabase.from('co_galeria_case_specs').delete().eq('id', id);
+    if (CURRENT_CASE) carregarSpecsModal(CURRENT_CASE.case_slug);
+  }
+
+  async function excluirCaseAtual() {
+    if (!CURRENT_CASE) return;
+    confirmShow('Apagar o case "' + (CURRENT_CASE.cliente || CURRENT_CASE.titulo) + '"?', async function (yes) {
+      if (!yes) return;
+      var { error } = await _supabase.from('co_galeria_fotos').delete().eq('id', CURRENT_CASE.id);
+      if (error) toast('Erro: ' + error.message, 'err');
+      else { toast('Case excluído', 'ok'); fecharModalEdicao(); carregarGridCases(); }
+    });
+  }
+
+  async function carregarMarcas() {
+    var wrap = document.getElementById('marcas-container');
+    if (!wrap) return;
+    var { data } = await _supabase.from('co_galeria_marcas').select('*').order('created_at', { ascending: false });
+    if (!data || !data.length) {
+      wrap.innerHTML = '<span style="font-size:0.8rem;opacity:0.5">Nenhuma marca.</span>';
+      return;
+    }
+    wrap.innerHTML = data.map(function (m) {
+      return '<div class="marca-chip"><img src="' + m.logo_url + '" alt=""><span>' + esc(m.nome) + '</span>'
+        + '<button style="background:none;border:none;color:var(--danger);cursor:pointer;font-weight:800" onclick="deletarMarca(\'' + m.id + '\')">✕</button></div>';
+    }).join('');
+  }
+
+  async function salvarMarca() {
+    var btn = document.getElementById('btn-add-marca');
+    var nome = document.getElementById('marca-nome').value;
+    var fileInput = document.getElementById('marca-file');
+    if (!fileInput.files.length) { toast('Selecione um logo', 'err'); return; }
+    btn.innerText = 'Enviando...';
+    var file;
+    try { file = await otimizarImagemSeNecessario(fileInput.files[0]); } catch (e) { btn.innerText = '+ Enviar Logo'; return; }
+    var path = 'marcas/' + sanitizarNomeArquivo(file.name);
+    var { error: uploadErr } = await _supabase.storage.from('432up_galeria').upload(path, file);
+    if (uploadErr) { toast('Erro: ' + uploadErr.message, 'err'); btn.innerText = '+ Enviar Logo'; return; }
+    var logo_url = SUPABASE_URL_ADM + '/storage/v1/object/public/432up_galeria/' + path;
+    var { error: dbErr } = await _supabase.from('co_galeria_marcas').insert([{ nome: nome || 'Marca', logo_url: logo_url }]);
+    if (dbErr) toast('Erro DB: ' + dbErr.message, 'err');
+    else {
+      document.getElementById('marca-nome').value = '';
+      fileInput.value = '';
+      document.getElementById('marca-file-name').textContent = 'nenhum arquivo';
+      carregarMarcas();
+      toast('Marca salva', 'ok');
+    }
+    btn.innerText = '+ Enviar Logo';
+  }
+
+  async function deletarMarca(id) {
+    confirmShow('Remover este logo?', async function (yes) {
+      if (!yes) return;
+      await _supabase.from('co_galeria_marcas').delete().eq('id', id);
+      carregarMarcas();
+    });
+  }
+
+  // Expose
+  window.navTo = navTo;
+  window.logoutAdmin = logoutAdmin;
+  window.autenticarAdmin = autenticarAdmin;
+  window.toggleMobileMenu = toggleMobileMenu;
+  window.openServicoModal = openServicoModal;
+  window.closeServicoModal = closeServicoModal;
+  window.saveServico = saveServico;
+  window.removeServico = removeServico;
+  window.addFaixaUI = addFaixaUI;
+  window.toggleAdvanced = toggleAdvanced;
+  window.openPacoteModal = openPacoteModal;
+  window.closePacoteModal = closePacoteModal;
+  window.savePacote = savePacote;
+  window.duplicarPacote = duplicarPacote;
+  window.removePacote = removePacote;
+  window.updatePkgSrvCount = updatePkgSrvCount;
+  window.saveConfigTransporte = saveConfigTransporte;
+  window.buscarCepOrigem = buscarCepOrigem;
+  window.toggleSimDnd = toggleSimDnd;
+  window.loadCalc1Data = loadCalc1Data;
+  window.filterLeads = filterLeads;
+  window.toggleLeadSelect = toggleLeadSelect;
+  window.toggleSelectAll = toggleSelectAll;
+  window.deleteSelectedLeads = deleteSelectedLeads;
+  window.exportCSV = exportCSV;
+  window.updateLeadField = updateLeadField;
+  window.confirmClose = confirmClose;
+  window.carregarGridCases = carregarGridCases;
+  window.filtrarCases = filtrarCases;
+  window.abrirEdicaoModal = abrirEdicaoModal;
+  window.abrirNovoCase = abrirNovoCase;
+  window.fecharModalEdicao = fecharModalEdicao;
+  window.salvarAlteracoesCase = salvarAlteracoesCase;
+  window.uploadMidiasLote = uploadMidiasLote;
+  window.deletarMidiaModal = deletarMidiaModal;
+  window.salvarSpecEditado = salvarSpecEditado;
+  window.adicionarSpecItem = adicionarSpecItem;
+  window.deletarSpec = deletarSpec;
+  window.excluirCaseAtual = excluirCaseAtual;
+  window.salvarMarca = salvarMarca;
+  window.deletarMarca = deletarMarca;
+  window.toggleGaleriaEditMode = toggleGaleriaEditMode;
+  window.carregarMarcas = carregarMarcas;
   </script>
 
   <script src="script/script.js" defer></script>
   <script src="script/calculadora.js" defer></script>
-  <script src="script/admin.js" defer></script>
 </body>
 </html>
