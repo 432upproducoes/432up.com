@@ -313,6 +313,51 @@
       font-weight: 500;
     }
 
+    /* --- TABELA DE DISCRIMINAÇÃO DE ITENS (ESTRUTURA ELEGANTE INTEGRADA) --- */
+    .items-table-container {
+      width: 100%;
+      margin: 15px 0;
+      border-radius: 6px;
+      overflow: hidden;
+      border: 1px solid #E5E7EB;
+    }
+    .items-table {
+      width: 100%;
+      border-collapse: collapse;
+      font-size: 13px;
+    }
+    .items-table th {
+      background: #F3F4F6;
+      font-family: var(--tech-font);
+      font-weight: 700;
+      color: var(--purple-deep);
+      text-transform: uppercase;
+      font-size: 12px;
+      letter-spacing: 0.5px;
+      padding: 10px 14px;
+      text-align: left;
+      border-bottom: 2px solid #E5E7EB;
+    }
+    .items-table td {
+      padding: 10px 14px;
+      border-bottom: 1px solid #F3F4F6;
+      vertical-align: top;
+      color: #222;
+    }
+    .items-table tr:last-child td {
+      border-bottom: none;
+    }
+    .items-table tr:nth-child(even) {
+      background-color: #FAFAFA;
+    }
+    .items-table .item-desc {
+      font-size: 11.5px;
+      color: var(--text-muted);
+      margin-top: 3px;
+      line-height: 1.3;
+      font-weight: 400;
+    }
+
     /* --- CARD DE CONTATO / VENDEDOR --- */
     .contact-box-wrapper {
       position: relative;
@@ -472,8 +517,6 @@
           </div>
         </div>
 
-        <p style="margin-bottom: 15px; font-size: 13.5px;"><strong>Descrição:</strong> <span id="p2-descricao">O objetivo do evento é garantir uma experiência fluida e marcante na palestra.</span></p>
-
         <div class="section-header">A EXPERIÊNCIA</div>
         <p style="margin-bottom: 10px; text-align: justify; font-size: 13px; font-weight: 500;">
           Acreditamos que uma comunicação clara exige tecnologia de ponta e precisão técnica. Por isso, oferecemos mais do que o aluguel de som e projeção - garantimos total estabilidade técnica em cada detalhe da palestra, conduzindo a apresentação com clareza, estilo e alto padrão.
@@ -591,19 +634,41 @@
         </div>
 
         <div class="page-body" style="padding-top: 15px;">
-          <div class="section-header">VALORES</div>
-          <ol style="margin-left: 18px; font-weight: 700; line-height: 1.8; font-size: 13.5px;">
-            <li>Apresentação Artística</li>
-            <li>Sonorização</li>
-            <li>Projeção</li>
-            <li>Logistica</li>
-          </ol>
+          <div class="section-header">SERVIÇOS INCLUÍDOS E VALORES</div>
+          
+          <!-- TABELA DE DISCRIMINAÇÃO DINÂMICA DOS ITENS -->
+          <div class="items-table-container">
+            <table class="items-table">
+              <thead>
+                <tr>
+                  <th style="width: 55%;">ITEM</th>
+                  <th style="width: 20%; text-align: center;">QTD.</th>
+                  <th style="width: 25%; text-align: right;">VALOR</th>
+                </tr>
+              </thead>
+              <tbody id="fin-itens-tbody">
+                <!-- Preenchido dinamicamente via JS -->
+              </tbody>
+            </table>
+          </div>
 
-          <p style="font-size: 17px; font-weight: 800; color: #7B1FA2; margin: 15px 0;">
-            Totalizando <span id="fin-valor-total">R$ 2400,00</span> pelos serviços solicitados.
-          </p>
+          <!-- RESUMO FINANCEIRO (SUBTOTAL, DESCONTO, TOTAL) -->
+          <div id="fin-resumo-container" style="margin-top: 10px; padding: 12px 14px; background: #F9FAFB; border-radius: 6px; border: 1px solid #E5E7EB; font-size: 13px;">
+            <div id="row-subtotal" style="display: flex; justify-content: space-between; margin-bottom: 4px; color: var(--text-muted);">
+              <span>Subtotal:</span>
+              <span id="fin-valor-subtotal" style="font-weight: 600;">R$ 0,00</span>
+            </div>
+            <div id="row-desconto" style="display: none; justify-content: space-between; margin-bottom: 4px; color: #D32F2F;">
+              <span>Desconto (<span id="fin-desconto-perc">0</span>%):</span>
+              <span id="fin-valor-desconto">- R$ 0,00</span>
+            </div>
+            <div style="display: flex; justify-content: space-between; font-size: 16px; font-weight: 800; color: #7B1FA2; margin-top: 6px; padding-top: 6px; border-top: 1px dashed #CBD5E1;">
+              <span>Valor Total:</span>
+              <span id="fin-valor-total">R$ 0,00</span>
+            </div>
+          </div>
 
-          <div class="section-header">» FORMAS DE PAGAMENTO</div>
+          <div class="section-header" style="margin-top: 15px;">» FORMAS DE PAGAMENTO</div>
           <ul style="list-style: disc; margin-left: 18px; line-height: 1.6; font-size: 13px; font-weight: 600;">
             <li>50% para reserva da data e 50% um dia antes do evento. (PIX)</li>
             <li>Parcelado no cartão de crédito em até 12x. (5% + Juros do Cartão)</li>
@@ -652,8 +717,14 @@
   <script>
     function formatarMoeda(val) {
       const num = parseFloat(val);
-      if (isNaN(num)) return 'R$ 2400,00';
+      if (isNaN(num)) return 'R$ 0,00';
       return num.toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' });
+    }
+
+    function formatarNumeroBR(val, casas = 1) {
+      const num = parseFloat(val);
+      if (isNaN(num)) return '0';
+      return num.toLocaleString('pt-BR', { minimumFractionDigits: 0, maximumFractionDigits: casas });
     }
 
     function formatarDataBR(dataStr) {
@@ -690,6 +761,87 @@
       document.getElementById('status-title').textContent = titulo;
       document.getElementById('status-desc').textContent = mensagem;
       container.style.display = 'block';
+    }
+
+    function renderizarTabelaItens(proposta) {
+      const tbody = document.getElementById('fin-itens-tbody');
+      if (!tbody) return;
+      
+      tbody.innerHTML = '';
+
+      let rawItens = proposta.itens;
+      if (typeof rawItens === 'string') {
+        try {
+          rawItens = JSON.parse(rawItens);
+        } catch (e) {
+          rawItens = [];
+        }
+      }
+
+      if (!Array.isArray(rawItens) || rawItens.length === 0) {
+        const tr = document.createElement('tr');
+        tr.innerHTML = `<td colspan="3" style="text-align: center; color: var(--text-muted); padding: 15px;">Nenhum item discriminado nesta proposta.</td>`;
+        tbody.appendChild(tr);
+        return;
+      }
+
+      rawItens.forEach(item => {
+        if (!item) return;
+
+        const tr = document.createElement('tr');
+
+        let nome = item.nome || 'Item do Evento';
+        let qtdStr = '1 un.';
+        let valorNum = parseFloat(item.valor);
+        if (isNaN(valorNum)) valorNum = 0;
+        let descText = item.descricao || item.desc || '';
+
+        const tipo = (item.tipo || '').toLowerCase();
+
+        if (tipo === 'pacote') {
+          qtdStr = '1 un.';
+        } else if (tipo === 'servico') {
+          if (item.metragem && !isNaN(parseFloat(item.metragem)) && parseFloat(item.metragem) > 0) {
+            qtdStr = `${formatarNumeroBR(item.metragem)} m`;
+          } else {
+            qtdStr = '1 serviço';
+          }
+        } else if (tipo === 'transporte') {
+          if (item.distancia_km && !isNaN(parseFloat(item.distancia_km))) {
+            qtdStr = `${formatarNumeroBR(item.distancia_km, 1)} km`;
+          } else {
+            qtdStr = '1 un.';
+          }
+        } else if (tipo === 'horas_extras' || tipo === 'hora_extra') {
+          const h = parseFloat(item.horas_extras || item.horas || item.qtd);
+          if (!isNaN(h) && h > 0) {
+            qtdStr = `${formatarNumeroBR(h, 0)} h`;
+          } else {
+            qtdStr = '1 un.';
+          }
+        } else {
+          if (item.metragem) {
+            qtdStr = `${formatarNumeroBR(item.metragem)} m`;
+          } else if (item.distancia_km) {
+            qtdStr = `${formatarNumeroBR(item.distancia_km, 1)} km`;
+          } else if (item.qtd || item.quantidade) {
+            qtdStr = `${formatarNumeroBR(item.qtd || item.quantidade)} un.`;
+          }
+        }
+
+        let descHtml = descText ? `<div class="item-desc">${safeText(descText)}</div>` : '';
+
+        tr.innerHTML = `
+          <td>
+            <div style="font-weight: 600;">${safeText(nome)}</div>
+            ${descHtml}
+          </td>
+          <td style="text-align: center; font-weight: 600;">${qtdStr}</td>
+          <td style="text-align: right; font-weight: 700;">${formatarMoeda(valorNum)}</td>
+        `;
+
+        tbody.appendChild(tr);
+      });
     }
 
     async function inicializarProposta() {
@@ -754,7 +906,7 @@
           }
         }
 
-        // Preenchimento dos dados
+        // Preenchimento dos dados do evento
         setText('cover-tipo-evento', safeText(proposta.tipo_evento, 'PALESTRA'));
         setText('cover-cliente-nome', nomeCliente);
         
@@ -773,7 +925,31 @@
         setText('p2-duracao', !isNaN(durHoras) && durHoras > 0 ? `${durHoras} Horas.` : '4 Horas.');
         setText('p2-endereco', safeText(proposta.local_evento, 'R. Nazaré, 530 - Jardim Satélite, São José dos Campos - SP, 12230-670'));
 
-        setText('fin-valor-total', formatarMoeda(proposta.valor_total || 2400));
+        // Renderização da tabela de itens reais salvos
+        renderizarTabelaItens(proposta);
+
+        // Preenchimento da área financeira
+        const valSubtotal = parseFloat(proposta.valor_subtotal);
+        const valTotal = parseFloat(proposta.valor_total);
+        const descValor = parseFloat(proposta.desconto_valor);
+        const descPerc = parseFloat(proposta.desconto_percentual);
+
+        if (!isNaN(valSubtotal) && valSubtotal > 0) {
+          setText('fin-valor-subtotal', formatarMoeda(valSubtotal));
+          document.getElementById('row-subtotal').style.display = 'flex';
+        } else {
+          document.getElementById('row-subtotal').style.display = 'none';
+        }
+
+        if (!isNaN(descValor) && descValor > 0) {
+          setText('fin-desconto-perc', !isNaN(descPerc) ? descPerc : '0');
+          setText('fin-valor-desconto', `- ${formatarMoeda(descValor)}`);
+          document.getElementById('row-desconto').style.display = 'flex';
+        } else {
+          document.getElementById('row-desconto').style.display = 'none';
+        }
+
+        setClassText('fin-valor-total', formatarMoeda(!isNaN(valTotal) ? valTotal : 0));
 
         document.getElementById('document-content').style.display = 'block';
 
