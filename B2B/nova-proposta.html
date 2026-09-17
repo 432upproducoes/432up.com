@@ -94,7 +94,11 @@
       backdrop-filter: blur(12px);
       transition: all 0.3s cubic-bezier(0.25, 1, 0.5, 1);
     }
-    .glass-card-interactive:hover, .glass-card-interactive.selected {
+    .glass-card-interactive:hover {
+      background: rgba(0, 240, 255, 0.04);
+      border-color: rgba(0, 240, 255, 0.4);
+    }
+    .glass-card-interactive.selected {
       background: rgba(0, 240, 255, 0.08);
       border-color: #00F0FF;
       box-shadow: 0 0 20px rgba(0, 240, 255, 0.25);
@@ -112,11 +116,15 @@
       transition: all 0.4s cubic-bezier(0.25, 1, 0.5, 1);
     }
     .chip-item {
+      display: inline-flex;
+      align-items: center;
       cursor: pointer;
       padding: 6px 14px;
       border-radius: 20px;
       font-size: 11px;
       font-weight: 600;
+      line-height: 1.3;
+      white-space: nowrap;
       border: 1px solid rgba(255, 255, 255, 0.15);
       background: rgba(255, 255, 255, 0.04);
       color: #94a3b8;
@@ -203,7 +211,7 @@
       pointer-events: none;
     }
 
-    input[type="date"], input[type="text"] {
+    input[type="date"], input[type="text"], input[type="time"], input[type="number"] {
       color-scheme: dark !important;
       -webkit-appearance: none;
       -moz-appearance: none;
@@ -356,6 +364,23 @@
       letter-spacing: -0.01em;
     }
 
+    /* ---- Modal Cadastro Cliente: campos alinhados (mesma altura / base) ---- */
+    #formCadastroCliente .grid.grid-cols-1.md\:grid-cols-2 {
+      align-items: end;
+    }
+    #formCadastroCliente .grid.grid-cols-1.md\:grid-cols-2 > div {
+      display: flex;
+      flex-direction: column;
+      min-width: 0;
+    }
+    #formCadastroCliente .grid.grid-cols-1.md\:grid-cols-2 label {
+      min-height: 2.4em;
+      line-height: 1.25;
+    }
+    #formCadastroCliente .grid.grid-cols-1.md\:grid-cols-2 input {
+      box-sizing: border-box;
+    }
+
     /* ---- Modal Cadastro Cliente: acima do header/menu, sem ficar esmagado ---- */
     #modalCliente {
       z-index: 99999 !important;
@@ -485,6 +510,17 @@
                 </div>
               </div>
 
+              <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                <div>
+                  <label for="fHorarioInicio" class="block text-xs uppercase tracking-wider text-slate-300 font-semibold mb-1.5">Horário de Início</label>
+                  <input type="time" id="fHorarioInicio" class="w-full border border-white/20 rounded-xl px-3 py-2 text-sm text-white focus:border-cyan-400 focus:ring-1 focus:ring-cyan-400 focus:outline-none transition">
+                </div>
+                <div>
+                  <label for="fHorarioFinal" class="block text-xs uppercase tracking-wider text-slate-300 font-semibold mb-1.5">Horário de Final</label>
+                  <input type="time" id="fHorarioFinal" class="w-full border border-white/20 rounded-xl px-3 py-2 text-sm text-white focus:border-cyan-400 focus:ring-1 focus:ring-cyan-400 focus:outline-none transition">
+                </div>
+              </div>
+
               <!-- ENDEREÇO DO EVENTO — controle "mesmo endereço do cliente" -->
               <div class="p-3 rounded-xl bg-slate-900/60 border border-white/10 space-y-3">
                 <label class="flex items-center gap-2 cursor-pointer select-none">
@@ -528,20 +564,18 @@
               <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
                 <div>
                   <span class="block text-xs uppercase tracking-wider text-slate-300 font-semibold mb-1.5">Tipo de Evento</span>
-                  <div id="chipsTipo" class="flex flex-wrap gap-1.5">
-                    <span class="chip-item" data-val="Casamento">Casamento</span>
-                    <span class="chip-item" data-val="Aniversário">Aniversário</span>
-                    <span class="chip-item active" data-val="Corporativo">Corporativo</span>
-                    <span class="chip-item" data-val="Formatura">Formatura</span>
+                  <div id="chipsTipo" class="flex flex-wrap gap-1.5 items-center">
+                    <!-- carregados dinamicamente de co_tipos_evento -->
                   </div>
                 </div>
                 <div>
                   <span class="block text-xs uppercase tracking-wider text-slate-300 font-semibold mb-1.5">Convidados (Porte do Som)</span>
-                  <div id="chipsConvidados" class="flex flex-wrap gap-1.5">
+                  <div id="chipsConvidados" class="flex flex-wrap gap-1.5 items-center">
                     <span class="chip-item active" data-val="80">80</span>
                     <span class="chip-item" data-val="150">150</span>
                     <span class="chip-item" data-val="250">250</span>
                     <span class="chip-item" data-val="500">500+</span>
+                    <input type="number" id="fConvidadosLivre" min="1" max="99999" inputmode="numeric" placeholder="Outro" title="Digite o número de pessoas" class="w-20 bg-slate-900/80 border border-white/20 rounded-xl px-2 py-1.5 text-sm text-white placeholder-slate-500 focus:border-cyan-400 focus:ring-1 focus:ring-cyan-400 focus:outline-none transition" style="min-height:32px;">
                   </div>
                 </div>
               </div>
@@ -717,6 +751,16 @@
         </div>
 
         <div id="mcBlocoPJ" class="hidden space-y-3">
+          <div class="grid grid-cols-1 md:grid-cols-2 gap-3">
+            <div>
+              <label for="mcContatoNome" class="block text-xs uppercase tracking-wider text-slate-300 font-semibold mb-1.5">Nome do contato / solicitante</label>
+              <input type="text" id="mcContatoNome" class="w-full bg-slate-900/80 border border-white/20 rounded-xl px-4 py-2.5 text-sm text-white placeholder-slate-500 focus:border-cyan-400 focus:ring-1 focus:ring-cyan-400 focus:outline-none transition" placeholder="Quem solicita / contato principal">
+            </div>
+            <div>
+              <label for="mcContatoCargo" class="block text-xs uppercase tracking-wider text-slate-300 font-semibold mb-1.5">Cargo</label>
+              <input type="text" id="mcContatoCargo" class="w-full bg-slate-900/80 border border-white/20 rounded-xl px-4 py-2.5 text-sm text-white placeholder-slate-500 focus:border-cyan-400 focus:ring-1 focus:ring-cyan-400 focus:outline-none transition" placeholder="Ex: Gerente de Marketing">
+            </div>
+          </div>
           <div>
             <label for="mcNomeFantasia" class="block text-xs uppercase tracking-wider text-slate-300 font-semibold mb-1.5">Nome Fantasia (Opcional)</label>
             <input type="text" id="mcNomeFantasia" class="w-full bg-slate-900/80 border border-white/20 rounded-xl px-4 py-2.5 text-sm text-white placeholder-slate-500 focus:border-cyan-400 focus:ring-1 focus:ring-cyan-400 focus:outline-none transition">
@@ -808,6 +852,7 @@
       var svcMetragem = {};       // servico_id -> metragem atual (0 = desligado)
       var evConvidados = 80;
       var evTipoVal = 'Corporativo';
+      var tiposEventoCarregados = [];
 
       // Estado do transporte
       var transporteAtivo = true;      // toggle "incluir transporte"
@@ -919,6 +964,11 @@
         s.descricao = s.descricao || '';
         s.icone = s.icone || '🎵';
 
+        // Componente por pessoa/convidado
+        s.valor_por_pessoa = Number(s.valor_por_pessoa) || 0;
+        s.calc_por_pessoa = (s.calc_por_pessoa === true || s.calc_por_pessoa === 'true' || s.calc_por_pessoa === 't');
+        s.calc_por_hora = (s.calc_por_hora === true || s.calc_por_hora === 'true' || s.calc_por_hora === 't');
+
         // Campos do tipo "por metro"
         s.metragem_minima = s.metragem_minima != null ? Number(s.metragem_minima) : null;
         s.metragem_maxima = s.metragem_maxima != null ? Number(s.metragem_maxima) : null; // null = sem teto
@@ -977,6 +1027,65 @@
         }
       }
 
+      async function carregarTiposEvento() {
+        var container = document.getElementById('chipsTipo');
+        if (!container) return;
+        try {
+          var res = await sbPartner
+            .from('co_tipos_evento')
+            .select('id, nome, ativo, ordem')
+            .eq('ativo', true)
+            .order('ordem', { ascending: true });
+          if (res.error) throw res.error;
+          tiposEventoCarregados = res.data || [];
+          if (!tiposEventoCarregados.length) {
+            container.innerHTML = '<span class="text-[11px] text-slate-500">Nenhum tipo ativo</span>';
+            return;
+          }
+          var html = tiposEventoCarregados.map(function (t) {
+            var ativo = (t.nome === evTipoVal) ? ' active' : '';
+            return '<span class="chip-item' + ativo + '" data-val="' + esc(t.nome) + '">' + esc(t.nome) + '</span>';
+          }).join('');
+          container.innerHTML = html;
+          // se nenhum chip ficou ativo (evTipoVal não está na lista), ativa o primeiro
+          if (!container.querySelector('.chip-item.active') && tiposEventoCarregados.length) {
+            var primeiro = container.querySelector('.chip-item');
+            if (primeiro) {
+              primeiro.classList.add('active');
+              evTipoVal = primeiro.dataset.val;
+            }
+          }
+          container.querySelectorAll('.chip-item').forEach(function (c) {
+            c.addEventListener('click', function () {
+              if (formularioBloqueadoSomenteLeitura) return;
+              container.querySelectorAll('.chip-item').forEach(function (x) { x.classList.remove('active'); });
+              c.classList.add('active');
+              evTipoVal = c.dataset.val;
+              recalc();
+            });
+          });
+        } catch (e) {
+          console.error('[432UP Partner] Falha ao carregar tipos de evento:', e);
+          // fallback seguro: mantém chips estáticos mínimos para não quebrar a proposta
+          if (!container.children.length) {
+            container.innerHTML =
+              '<span class="chip-item" data-val="Casamento">Casamento</span>' +
+              '<span class="chip-item" data-val="Aniversário">Aniversário</span>' +
+              '<span class="chip-item active" data-val="Corporativo">Corporativo</span>' +
+              '<span class="chip-item" data-val="Formatura">Formatura</span>';
+            container.querySelectorAll('.chip-item').forEach(function (c) {
+              c.addEventListener('click', function () {
+                if (formularioBloqueadoSomenteLeitura) return;
+                container.querySelectorAll('.chip-item').forEach(function (x) { x.classList.remove('active'); });
+                c.classList.add('active');
+                evTipoVal = c.dataset.val;
+                recalc();
+              });
+            });
+          }
+        }
+      }
+
       partnerRequireAuth().then(async function (parceiro) {
         parceiroAtual = parceiro;
         partnerFillSidebar(parceiro);
@@ -984,6 +1093,7 @@
 
         await carregarCatalogo();
         await carregarConfigTransporte();
+        await carregarTiposEvento();
 
         renderPacotes();
         renderServicos();
@@ -1000,9 +1110,23 @@
         if (propostaEdicaoId) {
           carregarPropostaExistente(propostaEdicaoId);
         } else {
+          aplicarHorarioPadrao();
           recalc();
         }
       });
+
+      // Preenche os campos de horário com a hora atual do dispositivo,
+      // sempre com os minutos zerados (ex.: 16:37 -> 16:00). Só é chamado
+      // ao criar uma proposta nova; não sobrescreve valores já salvos
+      // (carregarPropostaExistente não chama esta função).
+      function aplicarHorarioPadrao() {
+        var agora = new Date();
+        var horaAtual = String(agora.getHours()).padStart(2, '0') + ':00';
+        var campoInicio = document.getElementById('fHorarioInicio');
+        var campoFinal = document.getElementById('fHorarioFinal');
+        if (campoInicio && !campoInicio.value) campoInicio.value = horaAtual;
+        if (campoFinal && !campoFinal.value) campoFinal.value = horaAtual;
+      }
 
       function setupMobileBarAutoFade() {
         var target = document.getElementById('sidebarTargetAnchor');
@@ -1052,7 +1176,7 @@
           try {
             var res = await sbPartner
               .from('co_clientes')
-              .select('id, nome_razao, nome_fantasia, cidade, bairro')
+              .select('id, nome_razao, nome_fantasia, cidade, bairro, cep, cpf_cnpj, responsavel_legal, contato_nome, contato_cargo')
               .eq('id', p.cliente_id)
               .maybeSingle();
             if (!res.error && res.data) {
@@ -1155,11 +1279,34 @@
               recalcularTransporteEfetivo();
             }
 
+            if (p.horario_inicio) {
+              var hi = String(p.horario_inicio);
+              // aceita "19:30:00" ou "19:30"
+              if (hi.length >= 5) document.getElementById('fHorarioInicio').value = hi.slice(0, 5);
+            } else {
+              document.getElementById('fHorarioInicio').value = '';
+            }
+
+            if (p.horario_final) {
+              var hf = String(p.horario_final);
+              // aceita "23:30:00" ou "23:30"
+              if (hf.length >= 5) document.getElementById('fHorarioFinal').value = hf.slice(0, 5);
+            } else {
+              document.getElementById('fHorarioFinal').value = '';
+            }
+
             if (p.convidados_estimados) {
-              evConvidados = p.convidados_estimados;
+              evConvidados = Number(p.convidados_estimados) || 80;
+              var matchChip = false;
               document.querySelectorAll('#chipsConvidados .chip-item').forEach(function (c) {
-                c.classList.toggle('active', parseInt(c.dataset.val, 10) === evConvidados);
+                var isMatch = parseInt(c.dataset.val, 10) === evConvidados;
+                c.classList.toggle('active', isMatch);
+                if (isMatch) matchChip = true;
               });
+              var livreEl = document.getElementById('fConvidadosLivre');
+              if (livreEl) {
+                livreEl.value = matchChip ? '' : String(evConvidados);
+              }
             }
 
             if (p.tipo_evento) {
@@ -1180,6 +1327,7 @@
             }
 
             updateUI();
+            renderServicos();
             recalc();
 
             if (stNorm === 'aprovada' || stNorm === 'cancelada') {
@@ -1255,6 +1403,73 @@
         return { valor: metragem * s.valor_por_metro, valorPorMetroAplicado: s.valor_por_metro, faixaAplicada: null };
       }
 
+      // ========================================================================
+      // FONTE ÚNICA DE VERDADE para o preço de um serviço "não-metro".
+      // Usada tanto no cálculo interno (recalc) quanto no valor exibido no
+      // card/botão (renderServicos), para garantir que os dois nunca divirjam.
+      //
+      // PREÇO FINAL = valor_base
+      //             + (calc_por_hora  ? horasExtrasAplicaveis * valor_hora    : 0)
+      //             + (calc_por_pessoa? convidados * valor_por_pessoa        : 0)
+      //             + (faixas.length  ? adicional da faixa correspondente    : 0)
+      //
+      // Cada componente só entra se estiver de fato configurado/ativo. A regra
+      // de horas extras (só quando não há pacote ativo e horas > 4) é a mesma
+      // já existente no sistema — não foi criada uma regra paralela.
+      // ========================================================================
+      function calcularPrecoServico(s, opts) {
+        opts = opts || {};
+        var convidados = opts.convidados != null ? opts.convidados : evConvidados;
+        var horas = opts.horas != null ? opts.horas : parseInt(document.getElementById('sliderHoras').value, 10) || 4;
+        var temPacoteAtivo = !!opts.temPacoteAtivo;
+
+        var v = s.valor_base;
+        var detalhe = { base: s.valor_base, porHora: 0, porPessoa: 0, faixaAdicional: 0, faixaAplicada: null };
+
+        if (s.calc_por_hora && s.valor_hora && !temPacoteAtivo && horas > 4) {
+          detalhe.porHora = (horas - 4) * s.valor_hora;
+          v += detalhe.porHora;
+        }
+
+        if (s.calc_por_pessoa && s.valor_por_pessoa) {
+          detalhe.porPessoa = convidados * s.valor_por_pessoa;
+          v += detalhe.porPessoa;
+        }
+
+        if (s.faixas && s.faixas.length) {
+          var fx = s.faixas.find(function (f) { return convidados >= f.min && convidados <= (f.max != null ? f.max : Infinity); }) || s.faixas[0];
+          detalhe.faixaAdicional = fx.adicional || 0;
+          detalhe.faixaAplicada = fx;
+          v += detalhe.faixaAdicional;
+        }
+
+        detalhe.total = v;
+        return detalhe;
+      }
+
+      // Texto de composição do preço, usado quando valor_base = 0 e/ou existem
+      // outros componentes configurados, para não exibir o serviço como se
+      // tivesse preço zero sem explicação.
+      function composicaoPrecoTexto(s) {
+        var partes = [];
+        partes.push('Base: ' + fmtMoeda(s.valor_base));
+        if (s.calc_por_pessoa && s.valor_por_pessoa) {
+          partes.push('Por pessoa: ' + fmtMoeda(s.valor_por_pessoa) + '/convidado');
+        }
+        if (s.calc_por_hora && s.valor_hora) {
+          partes.push('Por hora extra: ' + fmtMoeda(s.valor_hora) + '/h (acima de 4h, fora de pacote)');
+        }
+        if (s.faixas && s.faixas.length) {
+          s.faixas.forEach(function (f) {
+            if (f.adicional) {
+              var faixaLabel = f.min + ' a ' + (f.max != null ? f.max : '∞') + ' convidados';
+              partes.push('Faixa: +' + fmtMoeda(f.adicional) + ' de ' + faixaLabel);
+            }
+          });
+        }
+        return partes.join(' · ');
+      }
+
       function renderServicos() {
         var grid = document.getElementById('gridServicos');
 
@@ -1290,10 +1505,13 @@
             '</div>';
           }
 
+          var precoCalc = calcularPrecoServico(s, { temPacoteAtivo: !!activePkg });
+          var temComposicaoExtra = precoCalc.porHora || precoCalc.porPessoa || precoCalc.faixaAdicional;
           return '<div data-svc="' + s.servico_id + '" id="card-svc-' + s.servico_id + '" class="glass-card-interactive p-4 rounded-xl cursor-pointer">' +
             '<span class="block text-xs font-bold text-white">' + s.icone + ' ' + esc(s.nome) + '</span>' +
             (s.descricao ? '<span class="card-desc">' + esc(s.descricao) + '</span>' : '') +
-            '<span class="block text-[11px] font-semibold text-cyan-400 mt-2">' + fmtMoeda(s.valor_base) + '</span>' +
+            '<span class="block text-[11px] font-semibold text-cyan-400 mt-2">' + fmtMoeda(precoCalc.total) + '</span>' +
+            ((s.valor_base === 0 || temComposicaoExtra) ? '<span class="card-desc" style="margin-top:2px;">' + esc(composicaoPrecoTexto(s)) + '</span>' : '') +
           '</div>';
         }).join('');
 
@@ -1828,7 +2046,11 @@ updateUI();
           nome_fantasia: c.nome_fantasia,
           cidade: c.cidade,
           bairro: c.bairro,
-          cep: c.cep
+          cep: c.cep,
+          cpf_cnpj: c.cpf_cnpj || null,
+          responsavel_legal: c.responsavel_legal || null,
+          contato_nome: c.contato_nome || null,
+          contato_cargo: c.contato_cargo || null
         };
         document.getElementById('clienteResultados').classList.add('hidden');
         setClienteSelecionadoUI();
@@ -1910,7 +2132,7 @@ updateUI();
         try {
           var res = await sbPartner
             .from('co_clientes')
-            .select('id, tipo_pessoa, nome_razao, nome_fantasia, cidade, bairro, cpf_cnpj, telefone, cep')
+            .select('id, tipo_pessoa, nome_razao, nome_fantasia, cidade, bairro, cpf_cnpj, telefone, cep, responsavel_legal, contato_nome, contato_cargo')
             .or(filtros.join(','))
             .limit(8);
 
@@ -1974,7 +2196,7 @@ updateUI();
         try {
           var res = await sbPartner
             .from('co_clientes')
-            .select('id, tipo_pessoa, nome_razao, telefone, cpf_cnpj, email, nome_fantasia, responsavel_legal, cep, logradouro, numero, complemento, bairro, cidade, uf, observacoes_comerciais')
+            .select('id, tipo_pessoa, nome_razao, telefone, cpf_cnpj, email, nome_fantasia, responsavel_legal, contato_nome, contato_cargo, cep, logradouro, numero, complemento, bairro, cidade, uf, observacoes_comerciais')
             .eq('id', clienteId)
             .maybeSingle();
 
@@ -1992,6 +2214,8 @@ updateUI();
           document.getElementById('mcTelefone').value = c.telefone || '';
           document.getElementById('mcDocNumero').value = c.cpf_cnpj ? handleMcDocFormatarValor(c.cpf_cnpj) : '';
           document.getElementById('mcEmail').value = c.email || '';
+          document.getElementById('mcContatoNome').value = c.contato_nome || '';
+          document.getElementById('mcContatoCargo').value = c.contato_cargo || '';
           document.getElementById('mcNomeFantasia').value = c.nome_fantasia || '';
           document.getElementById('mcRepNome').value = c.responsavel_legal || '';
           document.getElementById('mcCep').value = c.cep ? aplicarMascaraCep(c.cep) : '';
@@ -2100,6 +2324,8 @@ updateUI();
         var telefone = document.getElementById('mcTelefone').value.trim();
         var docNumero = document.getElementById('mcDocNumero').value.trim();
         var email = document.getElementById('mcEmail').value.trim();
+        var contatoNome = document.getElementById('mcContatoNome').value.trim();
+        var contatoCargo = document.getElementById('mcContatoCargo').value.trim();
         var nomeFantasia = document.getElementById('mcNomeFantasia').value.trim();
         var repNome = document.getElementById('mcRepNome').value.trim();
         var cep = document.getElementById('mcCep').value.trim();
@@ -2142,6 +2368,8 @@ updateUI();
             telefone: telefone,
             cpf_cnpj: docNormalizado || null,
             email: email || null,
+            contato_nome: contatoNome || null,
+            contato_cargo: contatoCargo || null,
             nome_fantasia: tipoPessoa === 'PJ' ? (nomeFantasia || null) : null,
             responsavel_legal: tipoPessoa === 'PJ' ? (repNome || null) : null,
             cep: cep || null,
@@ -2157,11 +2385,11 @@ updateUI();
           var saveResult;
           if (editandoId) {
             saveResult = await sbPartner.from('co_clientes').update(payload).eq('id', editandoId)
-              .select('id, nome_razao, nome_fantasia, cidade, bairro, cep').single();
+              .select('id, nome_razao, nome_fantasia, cidade, bairro, cep, cpf_cnpj, responsavel_legal, contato_nome, contato_cargo').single();
           } else {
             payload.parceiro_responsavel_id = parceiroAtual.id;
             saveResult = await sbPartner.from('co_clientes').insert([payload])
-              .select('id, nome_razao, nome_fantasia, cidade, bairro, cep').single();
+              .select('id, nome_razao, nome_fantasia, cidade, bairro, cep, cpf_cnpj, responsavel_legal, contato_nome, contato_cargo').single();
           }
 
           if (saveResult.error) {
@@ -2229,6 +2457,8 @@ updateUI();
           cpf_cnpj: null,
           email: null,
           responsavel_legal: null,
+          contato_nome: null,
+          contato_cargo: null,
           cep: null,
           logradouro: null,
           numero: null,
@@ -2302,6 +2532,13 @@ updateUI();
         var respRot = extrairRotuloValor(texto, [
           'Responsável Legal', 'Responsavel Legal', 'Responsável', 'Responsavel', 'Representante'
         ]);
+        var contatoNomeRot = extrairRotuloValor(texto, [
+          'Nome do contato', 'Nome do Contato', 'Contato / solicitante', 'Contato/solicitante',
+          'Solicitante', 'Nome solicitante', 'Nome do solicitante', 'Contato nome'
+        ]);
+        var contatoCargoRot = extrairRotuloValor(texto, [
+          'Cargo do contato', 'Cargo Contato', 'Cargo do solicitante', 'Cargo'
+        ]);
         var logRot = extrairRotuloValor(texto, [
           'Logradouro', 'Endereço', 'Endereco', 'Rua', 'Av.', 'Avenida'
         ]);
@@ -2317,6 +2554,8 @@ updateUI();
         if (nomeRot) resultado.nome_razao = nomeRot.replace(/\s{2,}/g, ' ').trim();
         if (fantasiaRot) resultado.nome_fantasia = fantasiaRot.replace(/\s{2,}/g, ' ').trim();
         if (respRot) resultado.responsavel_legal = respRot.replace(/\s{2,}/g, ' ').trim();
+        if (contatoNomeRot) resultado.contato_nome = contatoNomeRot.replace(/\s{2,}/g, ' ').trim();
+        if (contatoCargoRot) resultado.contato_cargo = contatoCargoRot.replace(/\s{2,}/g, ' ').trim();
         if (logRot) resultado.logradouro = logRot.replace(/\s{2,}/g, ' ').trim();
         if (numRot) resultado.numero = numRot.replace(/\s{2,}/g, ' ').trim();
         if (compRot) resultado.complemento = compRot.replace(/\s{2,}/g, ' ').trim();
@@ -2394,6 +2633,8 @@ updateUI();
         setIf('mcNomeRazao', dados.nome_razao);
         setIf('mcNomeFantasia', dados.nome_fantasia);
         setIf('mcRepNome', dados.responsavel_legal);
+        setIf('mcContatoNome', dados.contato_nome);
+        setIf('mcContatoCargo', dados.contato_cargo);
         setIf('mcTelefone', dados.telefone);
         setIf('mcEmail', dados.email);
         setIf('mcObs', dados.observacoes);
@@ -2510,6 +2751,7 @@ updateUI();
         document.getElementById('sliderHoras').addEventListener('input', function () {
           if (formularioBloqueadoSomenteLeitura) return;
           document.getElementById('lblHoras').textContent = this.value + 'h';
+          renderServicos();
           recalc();
         });
 
@@ -2523,15 +2765,7 @@ updateUI();
           recalc();
         });
 
-        document.querySelectorAll('#chipsTipo .chip-item').forEach(function (c) {
-          c.addEventListener('click', function () {
-            if (formularioBloqueadoSomenteLeitura) return;
-            document.querySelectorAll('#chipsTipo .chip-item').forEach(function (x) { x.classList.remove('active'); });
-            c.classList.add('active');
-            evTipoVal = c.dataset.val;
-            recalc();
-          });
-        });
+        // chipsTipo: binding feito em carregarTiposEvento()
 
         document.querySelectorAll('#chipsConvidados .chip-item').forEach(function (c) {
           c.addEventListener('click', function () {
@@ -2539,9 +2773,48 @@ updateUI();
             document.querySelectorAll('#chipsConvidados .chip-item').forEach(function (x) { x.classList.remove('active'); });
             c.classList.add('active');
             evConvidados = parseInt(c.dataset.val, 10);
+            var livre = document.getElementById('fConvidadosLivre');
+            if (livre) livre.value = '';
+            renderServicos();
             recalc();
           });
         });
+
+        var fConvidadosLivre = document.getElementById('fConvidadosLivre');
+        if (fConvidadosLivre) {
+          fConvidadosLivre.addEventListener('input', function () {
+            if (formularioBloqueadoSomenteLeitura) return;
+            var n = parseInt(this.value, 10);
+            if (isFinite(n) && n > 0) {
+              evConvidados = n;
+              document.querySelectorAll('#chipsConvidados .chip-item').forEach(function (x) { x.classList.remove('active'); });
+              renderServicos();
+              recalc();
+            }
+          });
+          fConvidadosLivre.addEventListener('change', function () {
+            if (formularioBloqueadoSomenteLeitura) return;
+            var n = parseInt(this.value, 10);
+            if (isFinite(n) && n > 0) {
+              evConvidados = n;
+              document.querySelectorAll('#chipsConvidados .chip-item').forEach(function (x) { x.classList.remove('active'); });
+              renderServicos();
+              recalc();
+            } else if (!this.value) {
+              // se limpar, volta para o chip padrão 80 se nenhum chip ativo
+              var ativo = document.querySelector('#chipsConvidados .chip-item.active');
+              if (!ativo) {
+                var c80 = document.querySelector('#chipsConvidados .chip-item[data-val="80"]');
+                if (c80) {
+                  c80.classList.add('active');
+                  evConvidados = 80;
+                }
+              }
+              renderServicos();
+              recalc();
+            }
+          });
+        }
 
         /* AÇÕES DE BOTÃO */
         var btnEnviar = document.getElementById('btnFinalizarEnviar');
@@ -2750,25 +3023,34 @@ updateUI();
           }
 
           if (svcState[s.servico_id] === 'manual') {
-            var v = s.valor_base;
-            var faixaAplicadaSvc = null;
-
-            if (s.faixas && s.faixas.length) {
-              // faixas por convidados (som) — mantém padrão existente e passa a
-              // registrar a faixa aplicada no detalhamento
-              var fx = s.faixas.find(function (f) { return evConvidados >= f.min && evConvidados <= (f.max != null ? f.max : Infinity); }) || s.faixas[0];
-              v += (fx.adicional || 0);
-              faixaAplicadaSvc = fx;
-            }
-            if (!pObj && horas > 4 && s.valor_hora) {
-              v += (horas - 4) * s.valor_hora;
-            }
+            var precoCalc = calcularPrecoServico(s, { temPacoteAtivo: !!pObj });
+            var v = precoCalc.total;
             totalComercial += v;
             listaLinhas.push({ nome: s.nome, val: v });
             itensPayload.push({
               tipo: 'servico', id: s.servico_id, nome: s.nome, valor: v,
-              faixa_aplicada: faixaAplicadaSvc
+              valor_base: precoCalc.base,
+              valor_por_hora_aplicado: precoCalc.porHora,
+              valor_por_pessoa_aplicado: precoCalc.porPessoa,
+              faixa_aplicada: precoCalc.faixaAplicada
             });
+          } else if (svcState[s.servico_id] === 'included') {
+            // Serviço incluído no pacote ativo: o valor_base já está embutido no
+            // preço do pacote (pObj.preco). Aqui somamos apenas os componentes
+            // extras (por hora, por pessoa, faixa) que não estão cobertos pelo
+            // preço fechado do pacote.
+            var precoCalcInc = calcularPrecoServico(s, { temPacoteAtivo: true });
+            var extraInc = precoCalcInc.porHora + precoCalcInc.porPessoa + precoCalcInc.faixaAdicional;
+            if (extraInc) {
+              totalComercial += extraInc;
+              listaLinhas.push({ nome: s.nome + ' (ajuste por convidados)', val: extraInc });
+              itensPayload.push({
+                tipo: 'servico', id: s.servico_id, nome: s.nome, valor: extraInc,
+                valor_por_hora_aplicado: precoCalcInc.porHora,
+                valor_por_pessoa_aplicado: precoCalcInc.porPessoa,
+                faixa_aplicada: precoCalcInc.faixaAplicada, incluso_no_pacote: true
+              });
+            }
           }
         });
 
@@ -2923,12 +3205,20 @@ updateUI();
           return;
         }
 
+        var horarioInicioVal = (document.getElementById('fHorarioInicio') || {}).value || null;
+        if (horarioInicioVal) horarioInicioVal = String(horarioInicioVal).slice(0, 5);
+
+        var horarioFinalVal = (document.getElementById('fHorarioFinal') || {}).value || null;
+        if (horarioFinalVal) horarioFinalVal = String(horarioFinalVal).slice(0, 5);
+
         var payload = {
           parceiro_id: parceiroAtual.id,
           cliente_id: clienteSelecionado ? clienteSelecionado.id : null,
           cliente_nome: clienteSelecionado ? clienteSelecionado.nome_razao : null,
           tipo_evento: evTipoVal,
           data_evento: dataEv,
+          horario_inicio: horarioInicioVal || null,
+          horario_final: horarioFinalVal || null,
           convidados_estimados: evConvidados,
           duracao_horas: horas,
           local_evento: local,

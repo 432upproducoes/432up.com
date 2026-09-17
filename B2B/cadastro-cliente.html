@@ -1,0 +1,814 @@
+<!DOCTYPE html>
+<html lang="pt-BR" class="h-full">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
+  <title>432UP Partner | Cadastro de Cliente</title>
+
+  <link rel="stylesheet" href="../css/style.css">
+  <script src="https://cdn.tailwindcss.com"></script>
+
+  <style>
+    .glass-b2b {
+      background: linear-gradient(135deg, rgba(10, 18, 28, 0.75) 0%, rgba(14, 22, 35, 0.5) 100%);
+      backdrop-filter: blur(24px);
+      -webkit-backdrop-filter: blur(24px);
+      border: 1px solid rgba(0, 240, 255, 0.25);
+      box-shadow: 0 20px 50px rgba(0, 0, 0, 0.8), inset 0 0 15px rgba(0, 240, 255, 0.05);
+    }
+
+    #calc-header.b2b-header-cyan {
+      display: flex !important;
+      align-items: center !important;
+      justify-content: space-between !important;
+      height: 68px !important;
+      padding: 0 1.5rem !important;
+      background: linear-gradient(180deg, rgba(0, 240, 255, 0.08) 0%, rgba(10, 18, 28, 0.88) 100%) !important;
+      backdrop-filter: blur(24px) !important;
+      -webkit-backdrop-filter: blur(24px) !important;
+      border-bottom: 1px solid rgba(0, 240, 255, 0.22) !important;
+      box-shadow: 0 10px 30px rgba(0, 0, 0, 0.6), 0 0 20px rgba(0, 240, 255, 0.12) !important;
+    }
+
+    @media (min-width: 1024px) {
+      #calc-header.b2b-header-cyan .desktop-nav {
+        display: flex !important;
+        align-items: center !important;
+        gap: 1rem !important;
+        height: 100% !important;
+        margin: 0 !important;
+      }
+      #calc-header.b2b-header-cyan .desktop-nav a,
+      #calc-header.b2b-header-cyan .desktop-nav span {
+        display: inline-flex !important;
+        align-items: center !important;
+      }
+    }
+
+    .b2b-user-widget {
+      display: inline-flex !important;
+      align-items: center !important;
+      gap: 0.75rem !important;
+      padding-left: 0.75rem !important;
+      border-left: 1px solid rgba(0, 240, 255, 0.2) !important;
+      height: 32px !important;
+    }
+
+    .b2b-avatar-link {
+      display: block;
+      position: relative;
+      border-radius: 50%;
+      transition: all 0.2s ease;
+    }
+
+    .b2b-avatar-link:hover {
+      transform: scale(1.08);
+      box-shadow: 0 0 12px rgba(0, 240, 255, 0.6);
+    }
+
+    .b2b-avatar-img {
+      width: 34px !important;
+      height: 34px !important;
+      border-radius: 50% !important;
+      border: 1.5px solid rgba(0, 240, 255, 0.8) !important;
+      background-color: rgba(0, 240, 255, 0.15) !important;
+      background-size: cover !important;
+      background-position: center !important;
+      box-shadow: 0 0 12px rgba(0, 240, 255, 0.4) !important;
+      flex-shrink: 0 !important;
+    }
+
+    .chip-item {
+      cursor: pointer;
+      padding: 6px 14px;
+      border-radius: 20px;
+      font-size: 11px;
+      font-weight: 600;
+      border: 1px solid rgba(255, 255, 255, 0.15);
+      background: rgba(255, 255, 255, 0.04);
+      color: #94a3b8;
+      transition: all 0.2s;
+    }
+    .chip-item.active {
+      background: rgba(0, 240, 255, 0.15);
+      border-color: #00F0FF;
+      color: #00F0FF;
+      box-shadow: 0 0 10px rgba(0, 240, 255, 0.2);
+    }
+
+    input[type="text"],
+    input[type="tel"],
+    input[type="email"],
+    textarea {
+      color-scheme: dark !important;
+      -webkit-appearance: none;
+      -moz-appearance: none;
+      appearance: none;
+      min-height: 44px;
+      background-color: rgba(15, 23, 42, 0.85) !important;
+      color: #ffffff !important;
+    }
+
+    #formAlert { display: none; }
+    #formAlert.show { display: block; }
+    .btn-loading { opacity: .6; pointer-events: none; }
+
+    #calc-header,
+    #mobile-menu {
+      z-index: 100 !important;
+    }
+  </style>
+</head>
+<body class="h-full text-slate-200 font-sans antialiased bg-[#06080c] overflow-x-hidden">
+
+  <canvas id="orbit-canvas"></canvas>
+  <div id="plasmaLayer" class="plasma-top-layer"></div>
+
+  <header id="calc-header"></header>
+  <div id="mobile-menu"></div>
+
+  <div class="flex flex-col min-h-screen relative z-10">
+    <main class="flex-1 p-4 lg:p-8 space-y-6 pt-12 lg:pt-14 pb-16 w-full max-w-2xl mx-auto">
+
+      <div id="formAlert" class="p-3 rounded-xl text-xs font-semibold"></div>
+
+      <div class="flex items-start justify-between gap-3 flex-wrap">
+        <div>
+          <span class="text-xs font-bold text-cyan-400 uppercase tracking-widest">Cadastro comercial</span>
+          <h1 id="pageTitle" class="text-2xl md:text-3xl font-bold text-white tracking-tight mt-1">Cadastrar Cliente</h1>
+          <p class="text-xs text-slate-400 mt-1">Preencha manualmente ou cole os dados do WhatsApp para preencher automático.</p>
+        </div>
+        <a href="propostas.html" class="text-[11px] font-semibold text-cyan-300 hover:text-cyan-200 underline underline-offset-2 shrink-0 mt-1">← Voltar</a>
+      </div>
+
+      <div class="glass-b2b p-5 md:p-6 rounded-2xl space-y-4">
+
+        <!-- PF / PJ -->
+        <div class="flex justify-center">
+          <div class="inline-flex rounded-full border border-white/10 bg-slate-900/60 p-1 gap-1">
+            <span id="mcBtnPF" class="chip-item active" data-tipo="PF">Pessoa Física</span>
+            <span id="mcBtnPJ" class="chip-item" data-tipo="PJ">Pessoa Jurídica</span>
+          </div>
+        </div>
+
+        <form id="formCadastroCliente" class="space-y-3">
+          <input type="hidden" id="mcTipoPessoa" value="PF">
+
+          <!-- WhatsApp paste -->
+          <div class="p-3 rounded-xl bg-slate-900/60 border border-cyan-500/25 space-y-2">
+            <label for="mcWhatsappPaste" class="block text-xs uppercase tracking-wider text-cyan-300 font-semibold">Colar dados do WhatsApp — preenchimento automático</label>
+            <textarea id="mcWhatsappPaste" rows="3" placeholder="Cole aqui a mensagem recebida pelo WhatsApp (nome, telefone, CPF/CNPJ, e-mail, endereço… mesmo bagunçado)" class="w-full bg-slate-900/80 border border-white/20 rounded-xl px-3 py-2 text-sm text-white placeholder-slate-500 focus:border-cyan-400 focus:ring-1 focus:ring-cyan-400 focus:outline-none transition resize-y min-h-[72px]"></textarea>
+            <div class="flex items-center gap-2 flex-wrap">
+              <button type="button" id="btnInterpretarWhatsapp" class="px-3 py-1.5 rounded-lg bg-cyan-500/20 hover:bg-cyan-500/30 text-cyan-300 border border-cyan-500/40 text-[11px] font-bold uppercase tracking-wide cursor-pointer transition">Interpretar e Preencher</button>
+              <button type="button" id="btnLimparWhatsappPaste" class="px-2.5 py-1.5 rounded-lg bg-white/5 hover:bg-white/10 text-slate-400 border border-white/10 text-[11px] font-semibold cursor-pointer transition">Limpar</button>
+              <span id="mcWhatsappStatus" class="text-[11px] text-slate-400 flex-1 min-w-0"></span>
+            </div>
+            <p class="text-[10px] text-slate-500 leading-snug">Opcional. Os campos abaixo continuam editáveis manualmente. Após interpretar, confira os dados antes de salvar.</p>
+          </div>
+
+          <div>
+            <label id="mcLabelNome" for="mcNomeRazao" class="block text-xs uppercase tracking-wider text-slate-300 font-semibold mb-1.5">Nome Completo *</label>
+            <input type="text" id="mcNomeRazao" required class="w-full bg-slate-900/80 border border-white/20 rounded-xl px-4 py-2.5 text-sm text-white placeholder-slate-500 focus:border-cyan-400 focus:ring-1 focus:ring-cyan-400 focus:outline-none transition" placeholder="Nome do cliente">
+          </div>
+
+          <div class="grid grid-cols-1 md:grid-cols-2 gap-3">
+            <div>
+              <label for="mcTelefone" class="block text-xs uppercase tracking-wider text-slate-300 font-semibold mb-1.5">Telefone / WhatsApp *</label>
+              <input type="tel" id="mcTelefone" required class="w-full bg-slate-900/80 border border-white/20 rounded-xl px-4 py-2.5 text-sm text-white placeholder-slate-500 focus:border-cyan-400 focus:ring-1 focus:ring-cyan-400 focus:outline-none transition" placeholder="(00) 00000-0000">
+            </div>
+            <div>
+              <label id="mcLabelDoc" for="mcDocNumero" class="block text-xs uppercase tracking-wider text-slate-300 font-semibold mb-1.5">CPF/CNPJ (Opcional)</label>
+              <input type="text" id="mcDocNumero" maxlength="18" inputmode="numeric" class="w-full bg-slate-900/80 border border-white/20 rounded-xl px-4 py-2.5 text-sm text-white placeholder-slate-500 focus:border-cyan-400 focus:ring-1 focus:ring-cyan-400 focus:outline-none transition" placeholder="000.000.000-00">
+            </div>
+          </div>
+
+          <div>
+            <label for="mcEmail" class="block text-xs uppercase tracking-wider text-slate-300 font-semibold mb-1.5">E-mail (Opcional)</label>
+            <input type="email" id="mcEmail" class="w-full bg-slate-900/80 border border-white/20 rounded-xl px-4 py-2.5 text-sm text-white placeholder-slate-500 focus:border-cyan-400 focus:ring-1 focus:ring-cyan-400 focus:outline-none transition" placeholder="exemplo@email.com">
+          </div>
+
+          <div id="mcBlocoPJ" class="hidden space-y-3">
+            <div>
+              <label for="mcNomeFantasia" class="block text-xs uppercase tracking-wider text-slate-300 font-semibold mb-1.5">Nome Fantasia (Opcional)</label>
+              <input type="text" id="mcNomeFantasia" class="w-full bg-slate-900/80 border border-white/20 rounded-xl px-4 py-2.5 text-sm text-white placeholder-slate-500 focus:border-cyan-400 focus:ring-1 focus:ring-cyan-400 focus:outline-none transition">
+            </div>
+            <div>
+              <label for="mcRepNome" class="block text-xs uppercase tracking-wider text-slate-300 font-semibold mb-1.5">Responsável Legal (Opcional)</label>
+              <input type="text" id="mcRepNome" class="w-full bg-slate-900/80 border border-white/20 rounded-xl px-4 py-2.5 text-sm text-white placeholder-slate-500 focus:border-cyan-400 focus:ring-1 focus:ring-cyan-400 focus:outline-none transition" placeholder="Nome completo do representante">
+            </div>
+          </div>
+
+          <div class="pt-1 border-t border-white/10">
+            <span class="block text-xs uppercase tracking-wider text-slate-400 font-semibold mb-3">Endereço (opcional)</span>
+            <div class="grid grid-cols-1 md:grid-cols-3 gap-3">
+              <div>
+                <label for="mcCep" class="block text-xs uppercase tracking-wider text-slate-300 font-semibold mb-1.5">CEP</label>
+                <input type="text" id="mcCep" maxlength="9" inputmode="numeric" class="w-full bg-slate-900/80 border border-white/20 rounded-xl px-4 py-2.5 text-sm text-white placeholder-slate-500 focus:border-cyan-400 focus:ring-1 focus:ring-cyan-400 focus:outline-none transition" placeholder="00000-000">
+                <div id="mcCepStatus" class="mt-1 text-[11px]"></div>
+              </div>
+              <div>
+                <label for="mcCidade" class="block text-xs uppercase tracking-wider text-slate-300 font-semibold mb-1.5">Cidade</label>
+                <input type="text" id="mcCidade" class="w-full bg-slate-900/80 border border-white/20 rounded-xl px-4 py-2.5 text-sm text-white placeholder-slate-500 focus:border-cyan-400 focus:ring-1 focus:ring-cyan-400 focus:outline-none transition">
+              </div>
+              <div>
+                <label for="mcUf" class="block text-xs uppercase tracking-wider text-slate-300 font-semibold mb-1.5">UF</label>
+                <input type="text" id="mcUf" maxlength="2" class="w-full bg-slate-900/80 border border-white/20 rounded-xl px-4 py-2.5 text-sm text-white placeholder-slate-500 focus:border-cyan-400 focus:ring-1 focus:ring-cyan-400 focus:outline-none transition" placeholder="SP">
+              </div>
+            </div>
+            <div class="grid grid-cols-1 md:grid-cols-2 gap-3 mt-3">
+              <div>
+                <label for="mcLogradouro" class="block text-xs uppercase tracking-wider text-slate-300 font-semibold mb-1.5">Logradouro</label>
+                <input type="text" id="mcLogradouro" class="w-full bg-slate-900/80 border border-white/20 rounded-xl px-4 py-2.5 text-sm text-white placeholder-slate-500 focus:border-cyan-400 focus:ring-1 focus:ring-cyan-400 focus:outline-none transition">
+              </div>
+              <div>
+                <label for="mcNumero" class="block text-xs uppercase tracking-wider text-slate-300 font-semibold mb-1.5">Número</label>
+                <input type="text" id="mcNumero" class="w-full bg-slate-900/80 border border-white/20 rounded-xl px-4 py-2.5 text-sm text-white placeholder-slate-500 focus:border-cyan-400 focus:ring-1 focus:ring-cyan-400 focus:outline-none transition">
+              </div>
+            </div>
+            <div class="grid grid-cols-1 md:grid-cols-2 gap-3 mt-3">
+              <div>
+                <label for="mcComplemento" class="block text-xs uppercase tracking-wider text-slate-300 font-semibold mb-1.5">Complemento</label>
+                <input type="text" id="mcComplemento" class="w-full bg-slate-900/80 border border-white/20 rounded-xl px-4 py-2.5 text-sm text-white placeholder-slate-500 focus:border-cyan-400 focus:ring-1 focus:ring-cyan-400 focus:outline-none transition" placeholder="Apto, Sala, Bloco">
+              </div>
+              <div>
+                <label for="mcBairro" class="block text-xs uppercase tracking-wider text-slate-300 font-semibold mb-1.5">Bairro</label>
+                <input type="text" id="mcBairro" class="w-full bg-slate-900/80 border border-white/20 rounded-xl px-4 py-2.5 text-sm text-white placeholder-slate-500 focus:border-cyan-400 focus:ring-1 focus:ring-cyan-400 focus:outline-none transition">
+              </div>
+            </div>
+          </div>
+
+          <div>
+            <label for="mcObs" class="block text-xs uppercase tracking-wider text-slate-300 font-semibold mb-1.5">Observações Comerciais</label>
+            <textarea id="mcObs" rows="2" class="w-full bg-slate-900/80 border border-white/20 rounded-xl px-4 py-2.5 text-sm text-white placeholder-slate-500 focus:border-cyan-400 focus:ring-1 focus:ring-cyan-400 focus:outline-none transition"></textarea>
+          </div>
+
+          <div id="mcAlert" class="hidden p-3 rounded-xl text-xs font-semibold bg-red-500/15 text-red-300 border border-red-500/30"></div>
+
+          <div class="flex flex-col sm:flex-row gap-2 pt-2">
+            <button type="submit" id="mcBtnSalvar" class="flex-1 py-3 rounded-xl bg-amber-500 hover:bg-amber-400 text-slate-950 font-bold text-xs uppercase tracking-wider transition shadow-[0_0_20px_rgba(245,158,11,0.3)] cursor-pointer">
+              Salvar Cliente
+            </button>
+            <a href="propostas.html" class="sm:w-auto px-4 py-3 rounded-xl bg-slate-800/80 hover:bg-slate-700/80 text-center text-xs font-semibold text-cyan-300 transition border border-cyan-500/30">
+              Cancelar
+            </a>
+          </div>
+        </form>
+      </div>
+
+    </main>
+  </div>
+
+  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+  <script src="partner-config.js"></script>
+  <script src="partner-header.js"></script>
+  <script src="../script/script.js" defer></script>
+  <script>
+    (function () {
+      'use strict';
+
+      var parceiroAtual = null;
+      var mcClienteEditandoId = null;
+      var ultimoCepConsultadoModal = null;
+
+      function showAlert(msg, type) {
+        var el = document.getElementById('formAlert');
+        if (!el) return;
+        el.textContent = msg;
+        el.className = 'p-3 rounded-xl text-xs font-semibold show ' +
+          (type === 'success' ? 'bg-emerald-500/15 text-emerald-300 border border-emerald-500/30' : 'bg-red-500/15 text-red-300 border border-red-500/30');
+        window.scrollTo({ top: 0, behavior: 'smooth' });
+      }
+
+      function mcShowAlert(msg) {
+        var el = document.getElementById('mcAlert');
+        el.textContent = msg;
+        el.classList.remove('hidden');
+      }
+
+      function normalizarNumeros(str) { return str ? String(str).replace(/\D/g, '') : ''; }
+
+      function aplicarMascaraCep(valor) {
+        var v = String(valor || '').replace(/\D/g, '').substring(0, 8);
+        if (v.length > 5) v = v.replace(/^(\d{5})(\d{1,3})$/, '$1-$2');
+        return v;
+      }
+
+      async function buscarEnderecoPorCEP(cep) {
+        var cepLimpo = String(cep || '').replace(/\D/g, '');
+        if (cepLimpo.length !== 8) return null;
+        try {
+          var resp = await fetch('https://viacep.com.br/ws/' + cepLimpo + '/json/');
+          if (!resp.ok) return null;
+          var data = await resp.json();
+          if (!data || data.erro) return null;
+          return {
+            logradouro: data.logradouro || '',
+            bairro: data.bairro || '',
+            cidade: data.localidade || '',
+            uf: data.uf || ''
+          };
+        } catch (e) {
+          console.error('[432UP Partner] Erro ao buscar CEP:', e);
+          return null;
+        }
+      }
+
+      function onMcCepInput(e) {
+        e.target.value = aplicarMascaraCep(e.target.value);
+        var cepLimpo = e.target.value.replace(/\D/g, '');
+        var statusEl = document.getElementById('mcCepStatus');
+
+        if (cepLimpo.length < 8) {
+          ultimoCepConsultadoModal = null;
+          if (statusEl) { statusEl.textContent = ''; statusEl.className = 'mt-1 text-[11px]'; }
+          return;
+        }
+        if (cepLimpo.length !== 8) return;
+        if (cepLimpo === ultimoCepConsultadoModal) return;
+
+        ultimoCepConsultadoModal = cepLimpo;
+        if (statusEl) { statusEl.textContent = 'Buscando endereço...'; statusEl.className = 'mt-1 text-[11px] text-cyan-400'; }
+
+        buscarEnderecoPorCEP(cepLimpo).then(function (end) {
+          if (!end) {
+            if (statusEl) { statusEl.textContent = 'CEP não encontrado.'; statusEl.className = 'mt-1 text-[11px] text-red-400'; }
+            return;
+          }
+          if (end.logradouro) document.getElementById('mcLogradouro').value = end.logradouro;
+          if (end.bairro) document.getElementById('mcBairro').value = end.bairro;
+          if (end.cidade) document.getElementById('mcCidade').value = end.cidade;
+          if (end.uf) document.getElementById('mcUf').value = end.uf;
+          if (statusEl) { statusEl.textContent = 'Endereço preenchido automaticamente.'; statusEl.className = 'mt-1 text-[11px] text-emerald-400'; }
+        }).catch(function (e) {
+          console.error('[432UP Partner] Erro no autocomplete de CEP:', e);
+          if (statusEl) { statusEl.textContent = ''; statusEl.className = 'mt-1 text-[11px]'; }
+        });
+      }
+
+      function setMcTipo(tipo) {
+        document.getElementById('mcTipoPessoa').value = tipo;
+        document.getElementById('mcBtnPF').classList.toggle('active', tipo === 'PF');
+        document.getElementById('mcBtnPJ').classList.toggle('active', tipo === 'PJ');
+        document.getElementById('mcBlocoPJ').classList.toggle('hidden', tipo !== 'PJ');
+        document.getElementById('mcLabelNome').textContent = tipo === 'PJ' ? 'Razão Social *' : 'Nome Completo *';
+        document.getElementById('mcLabelDoc').textContent = tipo === 'PJ' ? 'CNPJ (Opcional)' : 'CPF (Opcional)';
+      }
+
+      function handleMcDocFormatarValor(docSalvo) {
+        var value = String(docSalvo || '').replace(/\D/g, '');
+        if (value.length <= 11) {
+          value = value.replace(/(\d{3})(\d)/, '$1.$2');
+          value = value.replace(/(\d{3})(\d)/, '$1.$2');
+          value = value.replace(/(\d{3})(\d{1,2})$/, '$1-$2');
+        } else {
+          value = value.substring(0, 14);
+          value = value.replace(/^(\d{2})(\d)/, '$1.$2');
+          value = value.replace(/^(\d{2})\.(\d{3})(\d)/, '$1.$2.$3');
+          value = value.replace(/\.(\d{3})(\d)/, '.$1/$2');
+          value = value.replace(/(\d{4})(\d{1,2})$/, '$1-$2');
+        }
+        return value;
+      }
+
+      function handleMcDocTyping(e) {
+        var value = e.target.value.replace(/\D/g, '');
+        if (value.length <= 11) {
+          value = value.replace(/(\d{3})(\d)/, '$1.$2');
+          value = value.replace(/(\d{3})(\d)/, '$1.$2');
+          value = value.replace(/(\d{3})(\d{1,2})$/, '$1-$2');
+          e.target.value = value;
+        } else {
+          value = value.substring(0, 14);
+          value = value.replace(/^(\d{2})(\d)/, '$1.$2');
+          value = value.replace(/^(\d{2})\.(\d{3})(\d)/, '$1.$2.$3');
+          value = value.replace(/\.(\d{3})(\d)/, '.$1/$2');
+          value = value.replace(/(\d{4})(\d{1,2})$/, '$1-$2');
+          e.target.value = value;
+        }
+        var digitos = value.replace(/\D/g, '');
+        var tipoAtual = document.getElementById('mcTipoPessoa').value;
+        var tipoDetectado = digitos.length > 11 ? 'PJ' : 'PF';
+        if (digitos.length > 0 && tipoDetectado !== tipoAtual) {
+          setMcTipo(tipoDetectado);
+        }
+      }
+
+      /* ---- WhatsApp paste ---- */
+      function mcSetWhatsappStatus(msg, tipo) {
+        var el = document.getElementById('mcWhatsappStatus');
+        if (!el) return;
+        el.textContent = msg || '';
+        el.className = 'text-[11px] flex-1 min-w-0 ' +
+          (tipo === 'ok' ? 'text-emerald-400' : tipo === 'err' ? 'text-red-400' : 'text-slate-400');
+      }
+
+      function extrairRotuloValor(texto, rotulos) {
+        var linhas = texto.split(/\r?\n/);
+        var i, j, linha, lower, rotulo, idx, val;
+        for (i = 0; i < linhas.length; i++) {
+          linha = linhas[i].replace(/^\s*[-•*]\s*/, '').trim();
+          if (!linha) continue;
+          lower = linha.toLowerCase();
+          for (j = 0; j < rotulos.length; j++) {
+            rotulo = rotulos[j].toLowerCase();
+            if (lower.indexOf(rotulo) === 0) {
+              val = linha.slice(rotulos[j].length).replace(/^[\s:.\-–—]+/, '').trim();
+              if (val) return val;
+            }
+            idx = lower.indexOf(rotulo);
+            if (idx >= 0) {
+              var apos = linha.slice(idx + rotulos[j].length).replace(/^[\s:.\-–—]+/, '').trim();
+              if (apos && apos.length >= 2) return apos;
+            }
+          }
+        }
+        return null;
+      }
+
+      function interpretarTextoWhatsapp(textoBruto) {
+        var texto = String(textoBruto || '').replace(/\u00a0/g, ' ').trim();
+        if (!texto) return null;
+
+        var resultado = {
+          nome_razao: null, nome_fantasia: null, telefone: null, cpf_cnpj: null,
+          email: null, responsavel_legal: null, cep: null, logradouro: null,
+          numero: null, complemento: null, bairro: null, cidade: null, uf: null,
+          tipo_pessoa: null, observacoes: null
+        };
+
+        var mEmail = texto.match(/[a-zA-Z0-9._%+\-]+@[a-zA-Z0-9.\-]+\.[a-zA-Z]{2,}/);
+        if (mEmail) resultado.email = mEmail[0];
+
+        var mCep = texto.match(/\b(\d{5})-?(\d{3})\b/);
+        if (mCep) resultado.cep = mCep[1] + mCep[2];
+
+        var docs = [];
+        var reDoc = /\b(\d{2,3}\.?\d{3}\.?\d{3}\/?\d{0,4}-?\d{0,2})\b/g;
+        var md;
+        while ((md = reDoc.exec(texto)) !== null) {
+          var dig = md[1].replace(/\D/g, '');
+          if (dig.length === 11 || dig.length === 14) docs.push(dig);
+        }
+        var rePure = /\b(\d{11}|\d{14})\b/g;
+        while ((md = rePure.exec(texto)) !== null) {
+          if (docs.indexOf(md[1]) < 0) docs.push(md[1]);
+        }
+        if (docs.length) {
+          var cnpj = docs.filter(function (d) { return d.length === 14; })[0];
+          var cpf = docs.filter(function (d) { return d.length === 11; })[0];
+          resultado.cpf_cnpj = cnpj || cpf || docs[0];
+          if (resultado.cpf_cnpj.length === 14) resultado.tipo_pessoa = 'PJ';
+          else if (resultado.cpf_cnpj.length === 11) resultado.tipo_pessoa = 'PF';
+        }
+
+        var tels = [];
+        var reTel = /(?:\+?55\s*)?(?:\(?\d{2}\)?\s*)?(?:9\s*)?\d{4,5}[-\s]?\d{4}\b/g;
+        var mt;
+        while ((mt = reTel.exec(texto)) !== null) {
+          var tdig = mt[0].replace(/\D/g, '');
+          if (tdig.indexOf('55') === 0 && tdig.length >= 12) tdig = tdig.slice(2);
+          if (tdig.length >= 10 && tdig.length <= 11) tels.push(tdig);
+        }
+        var telRotulo = extrairRotuloValor(texto, ['Telefone', 'WhatsApp', 'Whats', 'Celular', 'Fone', 'Tel', 'Contato']);
+        if (telRotulo) {
+          var td2 = telRotulo.replace(/\D/g, '');
+          if (td2.indexOf('55') === 0 && td2.length >= 12) td2 = td2.slice(2);
+          if (td2.length >= 10 && td2.length <= 11) tels.unshift(td2);
+        }
+        if (tels.length) {
+          var t = tels[0];
+          if (t.length === 11) resultado.telefone = '(' + t.slice(0, 2) + ') ' + t.slice(2, 7) + '-' + t.slice(7);
+          else resultado.telefone = '(' + t.slice(0, 2) + ') ' + t.slice(2, 6) + '-' + t.slice(6);
+        }
+
+        var nomeRot = extrairRotuloValor(texto, ['Nome completo', 'Nome Completo', 'Razão Social', 'Razao Social', 'Razão social', 'Nome do cliente', 'Cliente', 'Nome']);
+        var fantasiaRot = extrairRotuloValor(texto, ['Nome Fantasia', 'Nome fantasia', 'Fantasia']);
+        var respRot = extrairRotuloValor(texto, ['Responsável Legal', 'Responsavel Legal', 'Responsável', 'Responsavel', 'Representante']);
+        var logRot = extrairRotuloValor(texto, ['Logradouro', 'Endereço', 'Endereco', 'Rua', 'Av.', 'Avenida']);
+        var numRot = extrairRotuloValor(texto, ['Número', 'Numero', 'Nº', 'No.', 'N.']);
+        var compRot = extrairRotuloValor(texto, ['Complemento', 'Apto', 'Apartamento', 'Sala', 'Bloco']);
+        var bairroRot = extrairRotuloValor(texto, ['Bairro']);
+        var cidadeRot = extrairRotuloValor(texto, ['Cidade', 'Município', 'Municipio']);
+        var ufRot = extrairRotuloValor(texto, ['UF', 'Estado']);
+        var cepRot = extrairRotuloValor(texto, ['CEP', 'Cep']);
+        var emailRot = extrairRotuloValor(texto, ['E-mail', 'Email', 'E mail']);
+        var obsRot = extrairRotuloValor(texto, ['Observações', 'Observacoes', 'Obs', 'Observação', 'Observacao']);
+
+        if (nomeRot) resultado.nome_razao = nomeRot.replace(/\s{2,}/g, ' ').trim();
+        if (fantasiaRot) resultado.nome_fantasia = fantasiaRot.replace(/\s{2,}/g, ' ').trim();
+        if (respRot) resultado.responsavel_legal = respRot.replace(/\s{2,}/g, ' ').trim();
+        if (logRot) resultado.logradouro = logRot.replace(/\s{2,}/g, ' ').trim();
+        if (numRot) resultado.numero = numRot.replace(/\s{2,}/g, ' ').trim();
+        if (compRot) resultado.complemento = compRot.replace(/\s{2,}/g, ' ').trim();
+        if (bairroRot) resultado.bairro = bairroRot.replace(/\s{2,}/g, ' ').trim();
+        if (cidadeRot) resultado.cidade = cidadeRot.replace(/\s{2,}/g, ' ').trim();
+        if (ufRot) {
+          var ufClean = ufRot.replace(/[^a-zA-Z]/g, '').toUpperCase().slice(0, 2);
+          if (ufClean.length === 2) resultado.uf = ufClean;
+        }
+        if (cepRot) {
+          var c8 = cepRot.replace(/\D/g, '');
+          if (c8.length === 8) resultado.cep = c8;
+        }
+        if (emailRot && !resultado.email) {
+          var em = emailRot.match(/[a-zA-Z0-9._%+\-]+@[a-zA-Z0-9.\-]+\.[a-zA-Z]{2,}/);
+          if (em) resultado.email = em[0];
+        }
+        if (obsRot) resultado.observacoes = obsRot;
+
+        if (!resultado.nome_razao) {
+          var linhas = texto.split(/\r?\n/);
+          for (var li = 0; li < linhas.length; li++) {
+            var L = linhas[li].replace(/^\s*[-•*]\s*/, '').trim();
+            if (!L || L.length < 4) continue;
+            if (/@/.test(L)) continue;
+            if (/\d{5,}/.test(L)) continue;
+            if (/^(telefone|whats|celular|fone|tel|cpf|cnpj|email|e-mail|cep|endere[cç]o|rua|av\.?|bairro|cidade|uf|obs)/i.test(L)) continue;
+            var palavras = L.split(/\s+/).filter(Boolean);
+            if (palavras.length >= 2 || L.replace(/\s/g, '').length >= 6) {
+              resultado.nome_razao = L.replace(/\s{2,}/g, ' ');
+              break;
+            }
+          }
+        }
+
+        if (!resultado.uf) {
+          var mUf = texto.match(/\b(AC|AL|AP|AM|BA|CE|DF|ES|GO|MA|MT|MS|MG|PA|PB|PR|PE|PI|RJ|RN|RS|RO|RR|SC|SP|SE|TO)\b/);
+          if (mUf) resultado.uf = mUf[1];
+        }
+
+        if (resultado.nome_fantasia || (resultado.cpf_cnpj && resultado.cpf_cnpj.length === 14)) {
+          resultado.tipo_pessoa = 'PJ';
+        }
+
+        var preenchidos = 0;
+        Object.keys(resultado).forEach(function (k) {
+          if (resultado[k] != null && String(resultado[k]).trim() !== '') preenchidos++;
+        });
+        resultado._preenchidos = preenchidos;
+        return resultado;
+      }
+
+      function aplicarDadosWhatsappNoForm(dados) {
+        if (!dados) return 0;
+        var n = 0;
+        if (dados.tipo_pessoa === 'PJ' || dados.tipo_pessoa === 'PF') setMcTipo(dados.tipo_pessoa);
+
+        function setIf(id, val, formatFn) {
+          if (val == null || String(val).trim() === '') return;
+          var el = document.getElementById(id);
+          if (!el) return;
+          el.value = formatFn ? formatFn(val) : String(val).trim();
+          n++;
+        }
+
+        setIf('mcNomeRazao', dados.nome_razao);
+        setIf('mcNomeFantasia', dados.nome_fantasia);
+        setIf('mcRepNome', dados.responsavel_legal);
+        setIf('mcTelefone', dados.telefone);
+        setIf('mcEmail', dados.email);
+        setIf('mcObs', dados.observacoes);
+        setIf('mcLogradouro', dados.logradouro);
+        setIf('mcNumero', dados.numero);
+        setIf('mcComplemento', dados.complemento);
+        setIf('mcBairro', dados.bairro);
+        setIf('mcCidade', dados.cidade);
+        setIf('mcUf', dados.uf, function (v) { return String(v).toUpperCase().slice(0, 2); });
+
+        if (dados.cpf_cnpj) {
+          var docFmt = handleMcDocFormatarValor(dados.cpf_cnpj);
+          var docEl = document.getElementById('mcDocNumero');
+          if (docEl) {
+            docEl.value = docFmt;
+            try { handleMcDocTyping({ target: docEl }); } catch (e) {}
+            n++;
+          }
+        }
+
+        if (dados.cep) {
+          var cepEl = document.getElementById('mcCep');
+          if (cepEl) {
+            cepEl.value = aplicarMascaraCep(dados.cep);
+            try { onMcCepInput({ target: cepEl }); } catch (e) {}
+            n++;
+          }
+        }
+        return n;
+      }
+
+      function onInterpretarWhatsapp() {
+        var ta = document.getElementById('mcWhatsappPaste');
+        var texto = ta ? ta.value : '';
+        if (!String(texto || '').trim()) {
+          mcSetWhatsappStatus('Cole o texto do WhatsApp antes de interpretar.', 'err');
+          return;
+        }
+        var dados = interpretarTextoWhatsapp(texto);
+        if (!dados || !dados._preenchidos) {
+          mcSetWhatsappStatus('Não foi possível extrair dados úteis. Tente colar de novo ou preencha manualmente.', 'err');
+          return;
+        }
+        var qtd = aplicarDadosWhatsappNoForm(dados);
+        if (qtd > 0) mcSetWhatsappStatus('✓ ' + qtd + ' campo(s) preenchido(s). Confira e ajuste se necessário.', 'ok');
+        else mcSetWhatsappStatus('Texto interpretado, mas nenhum campo pôde ser aplicado. Preencha manualmente.', 'err');
+      }
+
+      function onLimparWhatsappPaste() {
+        var ta = document.getElementById('mcWhatsappPaste');
+        if (ta) ta.value = '';
+        mcSetWhatsappStatus('', '');
+      }
+
+      async function carregarClienteParaEdicao(clienteId) {
+        try {
+          var res = await sbPartner
+            .from('co_clientes')
+            .select('id, tipo_pessoa, nome_razao, telefone, cpf_cnpj, email, nome_fantasia, responsavel_legal, cep, logradouro, numero, complemento, bairro, cidade, uf, observacoes_comerciais')
+            .eq('id', clienteId)
+            .maybeSingle();
+
+          if (res.error || !res.data) {
+            console.error('[432UP Partner] Falha ao carregar cliente:', res.error);
+            showAlert('Não foi possível carregar os dados deste cliente para edição.', 'error');
+            return;
+          }
+
+          var c = res.data;
+          mcClienteEditandoId = c.id;
+
+          setMcTipo(c.tipo_pessoa === 'PJ' ? 'PJ' : 'PF');
+          document.getElementById('mcNomeRazao').value = c.nome_razao || '';
+          document.getElementById('mcTelefone').value = c.telefone || '';
+          document.getElementById('mcDocNumero').value = c.cpf_cnpj ? handleMcDocFormatarValor(c.cpf_cnpj) : '';
+          document.getElementById('mcEmail').value = c.email || '';
+          document.getElementById('mcNomeFantasia').value = c.nome_fantasia || '';
+          document.getElementById('mcRepNome').value = c.responsavel_legal || '';
+          document.getElementById('mcCep').value = c.cep ? aplicarMascaraCep(c.cep) : '';
+          document.getElementById('mcLogradouro').value = c.logradouro || '';
+          document.getElementById('mcNumero').value = c.numero || '';
+          document.getElementById('mcComplemento').value = c.complemento || '';
+          document.getElementById('mcBairro').value = c.bairro || '';
+          document.getElementById('mcCidade').value = c.cidade || '';
+          document.getElementById('mcUf').value = c.uf || '';
+          document.getElementById('mcObs').value = c.observacoes_comerciais || '';
+
+          if (c.cep) ultimoCepConsultadoModal = String(c.cep).replace(/\D/g, '');
+
+          document.getElementById('pageTitle').textContent = 'Editar Cliente';
+          document.getElementById('mcBtnSalvar').textContent = 'Salvar Alterações';
+          document.title = '432UP Partner | Editar Cliente';
+        } catch (e) {
+          console.error('[432UP Partner] Exceção ao carregar cliente:', e);
+          showAlert('Erro técnico ao abrir a edição do cliente.', 'error');
+        }
+      }
+
+      async function submitCadastroCliente(e) {
+        e.preventDefault();
+        var btn = document.getElementById('mcBtnSalvar');
+        var original = btn.textContent;
+        document.getElementById('mcAlert').classList.add('hidden');
+
+        var tipoPessoa = document.getElementById('mcTipoPessoa').value;
+        var nomeRazao = document.getElementById('mcNomeRazao').value.trim();
+        var telefone = document.getElementById('mcTelefone').value.trim();
+        var docNumero = document.getElementById('mcDocNumero').value.trim();
+        var email = document.getElementById('mcEmail').value.trim();
+        var nomeFantasia = document.getElementById('mcNomeFantasia').value.trim();
+        var repNome = document.getElementById('mcRepNome').value.trim();
+        var cep = document.getElementById('mcCep').value.trim();
+        var logradouro = document.getElementById('mcLogradouro').value.trim();
+        var numero = document.getElementById('mcNumero').value.trim();
+        var complemento = document.getElementById('mcComplemento').value.trim();
+        var bairro = document.getElementById('mcBairro').value.trim();
+        var cidade = document.getElementById('mcCidade').value.trim();
+        var uf = document.getElementById('mcUf').value.trim();
+        var obsComerciais = document.getElementById('mcObs').value.trim();
+
+        if (!nomeRazao || !telefone) {
+          mcShowAlert('Preencha nome/razão social e telefone.');
+          return;
+        }
+
+        var docNormalizado = normalizarNumeros(docNumero);
+        var editandoId = mcClienteEditandoId;
+
+        btn.disabled = true;
+        btn.classList.add('btn-loading');
+        btn.textContent = 'Salvando...';
+
+        try {
+          if (docNormalizado.length > 0) {
+            var dupQuery = sbPartner.from('co_clientes').select('id').eq('cpf_cnpj', docNormalizado);
+            if (editandoId) dupQuery = dupQuery.neq('id', editandoId);
+            var dup = await dupQuery.maybeSingle();
+            if (dup.error) console.error('[432UP Partner] Erro na checagem de duplicidade:', dup.error);
+            if (dup.data) {
+              mcShowAlert('Este cliente já possui cadastro em nossa base comercial e está vinculado a outro responsável. Para verificar a situação, entre em contato com a administração.');
+              btn.disabled = false;
+              btn.classList.remove('btn-loading');
+              btn.textContent = original;
+              return;
+            }
+          }
+
+          var payload = {
+            tipo_pessoa: tipoPessoa,
+            nome_razao: nomeRazao,
+            telefone: telefone,
+            cpf_cnpj: docNormalizado || null,
+            email: email || null,
+            nome_fantasia: tipoPessoa === 'PJ' ? (nomeFantasia || null) : null,
+            responsavel_legal: tipoPessoa === 'PJ' ? (repNome || null) : null,
+            cep: cep || null,
+            logradouro: logradouro || null,
+            numero: numero || null,
+            complemento: complemento || null,
+            bairro: bairro || null,
+            cidade: cidade || null,
+            uf: uf || null,
+            observacoes_comerciais: obsComerciais || null
+          };
+
+          var saveResult;
+          if (editandoId) {
+            saveResult = await sbPartner.from('co_clientes').update(payload).eq('id', editandoId)
+              .select('id, nome_razao').single();
+          } else {
+            payload.parceiro_responsavel_id = parceiroAtual.id;
+            saveResult = await sbPartner.from('co_clientes').insert([payload])
+              .select('id, nome_razao').single();
+          }
+
+          if (saveResult.error) {
+            console.error('[432UP Partner] Erro no salvamento do cliente:', saveResult.error);
+            mcShowAlert('Não foi possível salvar os dados do cliente. Tente novamente ou contate o suporte.');
+          } else {
+            showAlert(
+              editandoId
+                ? 'Cliente atualizado com sucesso.'
+                : 'Cliente cadastrado com sucesso.',
+              'success'
+            );
+            // Após salvar: se veio de edição, permanece; se novo, limpa para próximo cadastro
+            if (!editandoId) {
+              setTimeout(function () {
+                document.getElementById('formCadastroCliente').reset();
+                setMcTipo('PF');
+                onLimparWhatsappPaste();
+                ultimoCepConsultadoModal = null;
+                document.getElementById('mcCepStatus').textContent = '';
+                document.getElementById('mcAlert').classList.add('hidden');
+              }, 600);
+            }
+          }
+        } catch (err) {
+          console.error('[432UP Partner] Exceção no salvamento do cliente:', err);
+          mcShowAlert('Erro técnico ao salvar o cliente. Tente novamente.');
+        } finally {
+          btn.disabled = false;
+          btn.classList.remove('btn-loading');
+          btn.textContent = original;
+        }
+      }
+
+      window.toggleMobileMenu = function () {
+        var mobNav = document.getElementById('mobile-menu');
+        if (mobNav) mobNav.classList.toggle('active');
+      };
+
+      document.addEventListener('keydown', function (e) {
+        if (e.key === 'Escape') {
+          var mobNav = document.getElementById('mobile-menu');
+          if (mobNav && mobNav.classList.contains('active')) mobNav.classList.remove('active');
+        }
+      });
+
+      partnerRequireAuth().then(function (parceiro) {
+        parceiroAtual = parceiro;
+        if (typeof partnerFillSidebar === 'function') partnerFillSidebar(parceiro);
+
+        document.getElementById('mcBtnPF').addEventListener('click', function () { setMcTipo('PF'); });
+        document.getElementById('mcBtnPJ').addEventListener('click', function () { setMcTipo('PJ'); });
+        document.getElementById('mcDocNumero').addEventListener('input', handleMcDocTyping);
+        document.getElementById('mcCep').addEventListener('input', onMcCepInput);
+        document.getElementById('formCadastroCliente').addEventListener('submit', submitCadastroCliente);
+        document.getElementById('btnInterpretarWhatsapp').addEventListener('click', onInterpretarWhatsapp);
+        document.getElementById('btnLimparWhatsappPaste').addEventListener('click', onLimparWhatsappPaste);
+
+        var btnDesk = document.getElementById('btnLogoutDesk');
+        var btnMob = document.getElementById('btnLogoutMob');
+        if (btnDesk) btnDesk.addEventListener('click', partnerLogout);
+        if (btnMob) btnMob.addEventListener('click', partnerLogout);
+
+        var params = new URLSearchParams(window.location.search);
+        var idEdicao = params.get('id');
+        if (idEdicao) {
+          carregarClienteParaEdicao(idEdicao);
+        }
+      });
+    })();
+  </script>
+</body>
+</html>
+
