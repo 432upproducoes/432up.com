@@ -211,7 +211,7 @@
       pointer-events: none;
     }
 
-    input[type="date"], input[type="text"], input[type="time"], input[type="number"] {
+    input[type="date"], input[type="text"], input[type="time"], input[type="number"], textarea {
       color-scheme: dark !important;
       -webkit-appearance: none;
       -moz-appearance: none;
@@ -658,6 +658,24 @@
                 <div id="sumValorTotal" class="text-2xl font-bold text-amber-400 mt-0.5">Selecione as opções acima</div>
               </div>
 
+              <div id="boxPagamento" class="p-3 rounded-xl bg-slate-900/50 border border-white/10 space-y-2.5">
+                <span class="text-[10px] uppercase font-bold tracking-wider text-slate-400 block">Forma de Pagamento</span>
+                <div id="chipsFormaPagamento" class="flex flex-wrap gap-1.5">
+                  <span class="chip-item" data-val="pix">PIX</span>
+                  <span class="chip-item" data-val="cartao">Cartão de Crédito</span>
+                  <span class="chip-item" data-val="outro">Outro</span>
+                </div>
+                <div id="blocoOutraFormaPagamento" class="hidden pt-1">
+                  <input id="fOutraFormaPagamento" type="text" maxlength="100" placeholder="Digite a forma de pagamento" class="w-full rounded-lg bg-slate-950/60 border border-white/10 px-3 py-2 text-xs text-white outline-none">
+                </div>
+                <div id="blocoCondicaoPagamento" class="hidden space-y-1.5 pt-1">
+                  <span class="text-[10px] uppercase font-bold tracking-wider text-slate-400 block">Condição de Pagamento</span>
+                  <div id="chipsCondicaoPagamento" class="flex flex-wrap gap-1.5"></div>
+                </div>
+                <div id="blocoAgendaPagamento" class="hidden space-y-2 pt-1 border-t border-white/10"></div>
+                <div id="descontoPixInfo" class="hidden text-[11px] text-emerald-400 font-semibold"></div>
+              </div>
+
               <div id="boxComissao" class="p-3 rounded-xl bg-amber-500/10 border border-amber-500/30 hidden">
                 <span class="text-[10px] uppercase font-bold tracking-wider text-amber-300 block">Sua Comissão Estimada (<span id="sumComissaoPct">10</span>%)</span>
                 <div id="sumComissaoValor" class="text-lg font-bold text-amber-400 mt-0.5">R$ 0,00</div>
@@ -870,6 +888,27 @@
       var totalDesejadoTemp = null; // apenas UI, NÃO persiste no banco
       var descontoUiUpdating = false; // evita loop entre inputs
 
+      // Estado do pagamento (regra: PIX 100% -> desconto PIX; demais condições -> sem desconto)
+      var formaPagamentoVal = null;       // 'pix' | 'cartao'
+      var condicaoPagamentoVal = null;    // 'pix_integral' | 'pix_50_50' | 'cartao_parcelado_12x'
+      var descontoPixPercentualConfig = 0; // valor vigente lido de co_config_financeiro.desconto_pix_percentual
+      var acrescimoCartaoPercentualConfig = 0; // valor vigente lido de co_config_financeiro.acrescimo_cartao_percentual
+      var descontoPixAplicadoVal = 0;      // percentual efetivamente aplicado nesta proposta (persistido)
+
+      // Agenda de pagamento — datas, parcelas, status e descrição livre.
+      // Persistido integralmente em propostas.pagamento_agenda (jsonb).
+      // O Contrato apenas LÊ este objeto, sem recalcular nada.
+      var pagamentoAgendaState = {
+        data_pagamento: null,   // usado em pix_integral e cartao
+        data_entrada: null,     // usado em pix_50_50
+        data_saldo: null,       // usado em pix_50_50 (default: evento - 1 dia, editável)
+        parcelas_cartao: null,  // usado em cartao
+        descricao_outro: '',    // usado em outro
+        status: 'pendente',           // usado em pix_integral, cartao, outro
+        status_entrada: 'pendente',   // usado em pix_50_50
+        status_saldo: 'pendente'      // usado em pix_50_50
+      };
+
       // Estado do cliente (item 1 a 11 da regra de negócio: co_clientes = fonte única)
       // clienteSelecionado = { id, nome_razao, nome_fantasia, cidade, bairro, legacy }
       // legacy === true => proposta antiga com cliente_nome mas sem cliente_id vinculado
@@ -1027,6 +1066,23 @@
         }
       }
 
+      // Lê o percentual vigente do desconto PIX em public.co_config_financeiro.
+      // O percentual NUNCA é hardcoded — vem sempre desta consulta. Se a leitura
+      // falhar, o desconto PIX simplesmente não é aplicado (fica 0), sem travar
+      // o restante da proposta.
+      async function carregarConfigFinanceiro() {
+        try {
+          var r = await sbPartner.from('co_config_financeiro').select('*').limit(1).single();
+          if (r.error) throw r.error;
+          descontoPixPercentualConfig = Number(r.data.desconto_pix_percentual) || 0;
+          acrescimoCartaoPercentualConfig = Number(r.data.acrescimo_cartao_percentual) || 0;
+        } catch (e) {
+          console.error('[432UP Partner] Falha ao carregar config financeiro:', e);
+          descontoPixPercentualConfig = 0;
+          acrescimoCartaoPercentualConfig = 0;
+        }
+      }
+
       async function carregarTiposEvento() {
         var container = document.getElementById('chipsTipo');
         if (!container) return;
@@ -1093,6 +1149,7 @@
 
         await carregarCatalogo();
         await carregarConfigTransporte();
+        await carregarConfigFinanceiro();
         await carregarTiposEvento();
 
         renderPacotes();
@@ -1100,6 +1157,7 @@
         bindEvents();
         bindClienteEvents();
         bindEventoEnderecoEvents();
+        bindPagamentoEvents();
         atualizarLabelFCep();
         setupMobileBarAutoFade();
         aplicarPermissaoDesconto();
@@ -1244,6 +1302,30 @@
               descontoPercentual = 0;
               descontoValor = 0;
             }
+
+            // Pagamento — restaura forma/condição salvas e re-renderiza os chips
+            formaPagamentoVal = p.forma_pagamento || null;
+            condicaoPagamentoVal = p.condicao_pagamento || null;
+            descontoPixAplicadoVal = Number(p.desconto_pix_aplicado) || 0;
+            var elOutraFormaPagamento = document.getElementById('fOutraFormaPagamento');
+            if (elOutraFormaPagamento) elOutraFormaPagamento.value = p.forma_pagamento_outro || '';
+            // Agenda de pagamento (datas/parcelas/status/descrição) — restaura
+            // exatamente o que foi salvo, sem inventar/recalcular nada.
+            var agendaSalva = p.pagamento_agenda || {};
+            pagamentoAgendaState = {
+              data_pagamento: agendaSalva.data_pagamento || null,
+              data_entrada: agendaSalva.data_entrada || null,
+              data_saldo: agendaSalva.data_saldo || null,
+              parcelas_cartao: agendaSalva.parcelas_cartao || null,
+              descricao_outro: agendaSalva.descricao_outro || '',
+              status: agendaSalva.status || 'pendente',
+              status_entrada: agendaSalva.status_entrada || 'pendente',
+              status_saldo: agendaSalva.status_saldo || 'pendente'
+            };
+            document.querySelectorAll('#chipsFormaPagamento .chip-item').forEach(function (c) {
+              c.classList.toggle('active', c.dataset.val === formaPagamentoVal);
+            });
+            renderCondicoesPagamento();
 
 
             // Regras 7 e 9: propostas antigas não têm evento_endereco_igual_cliente
@@ -1447,27 +1529,19 @@
         return detalhe;
       }
 
-      // Texto de composição do preço, usado quando valor_base = 0 e/ou existem
-      // outros componentes configurados, para não exibir o serviço como se
-      // tivesse preço zero sem explicação.
+      // Resumo curto da forma de cobrança do serviço, exibido no card abaixo do
+      // preço. Mostra apenas os componentes ativos (ex.: "Cobrado por hora +
+      // pessoa"), sem valores, intervalos de faixa ou fórmulas — o cálculo em
+      // si (calcularPrecoServico) não é afetado por esta função.
       function composicaoPrecoTexto(s) {
         var partes = [];
-        partes.push('Base: ' + fmtMoeda(s.valor_base));
-        if (s.calc_por_pessoa && s.valor_por_pessoa) {
-          partes.push('Por pessoa: ' + fmtMoeda(s.valor_por_pessoa) + '/convidado');
-        }
-        if (s.calc_por_hora && s.valor_hora) {
-          partes.push('Por hora extra: ' + fmtMoeda(s.valor_hora) + '/h (acima de 4h, fora de pacote)');
-        }
-        if (s.faixas && s.faixas.length) {
-          s.faixas.forEach(function (f) {
-            if (f.adicional) {
-              var faixaLabel = f.min + ' a ' + (f.max != null ? f.max : '∞') + ' convidados';
-              partes.push('Faixa: +' + fmtMoeda(f.adicional) + ' de ' + faixaLabel);
-            }
-          });
-        }
-        return partes.join(' · ');
+        if (s.calc_por_hora && s.valor_hora) partes.push('hora');
+        if (s.calc_por_pessoa && s.valor_por_pessoa) partes.push('pessoa');
+        if (s.isPorMetro || (s.valor_por_metro && (s.metragem_minima != null))) partes.push('m²');
+        if (s.faixas && s.faixas.some(function (f) { return f.adicional; })) partes.push('faixa');
+
+        if (!partes.length) return '';
+        return 'Cobrado por ' + partes.join(' + ');
       }
 
       function renderServicos() {
@@ -1506,12 +1580,12 @@
           }
 
           var precoCalc = calcularPrecoServico(s, { temPacoteAtivo: !!activePkg });
-          var temComposicaoExtra = precoCalc.porHora || precoCalc.porPessoa || precoCalc.faixaAdicional;
+          var resumoCobranca = composicaoPrecoTexto(s);
           return '<div data-svc="' + s.servico_id + '" id="card-svc-' + s.servico_id + '" class="glass-card-interactive p-4 rounded-xl cursor-pointer">' +
             '<span class="block text-xs font-bold text-white">' + s.icone + ' ' + esc(s.nome) + '</span>' +
             (s.descricao ? '<span class="card-desc">' + esc(s.descricao) + '</span>' : '') +
             '<span class="block text-[11px] font-semibold text-cyan-400 mt-2">' + fmtMoeda(precoCalc.total) + '</span>' +
-            ((s.valor_base === 0 || temComposicaoExtra) ? '<span class="card-desc" style="margin-top:2px;">' + esc(composicaoPrecoTexto(s)) + '</span>' : '') +
+            (resumoCobranca ? '<span class="card-desc" style="margin-top:2px;">' + esc(resumoCobranca) + '</span>' : '') +
           '</div>';
         }).join('');
 
@@ -2421,14 +2495,24 @@ updateUI();
           (tipo === 'ok' ? 'text-emerald-400' : tipo === 'err' ? 'text-red-400' : 'text-slate-400');
       }
 
-      function extrairRotuloValor(texto, rotulos) {
+      function extrairRotuloValor(texto, rotulos, rotulosExcluir) {
         // Procura linhas no estilo "Nome: João" / "Nome - João" / "Nome João"
+        // rotulosExcluir (opcional): se a linha começar com um destes rótulos
+        // (pertencentes a OUTRO campo mais específico), ela é ignorada para
+        // esta busca — evita que um rótulo curto (ex.: "Nome") roube o valor
+        // de um campo distinto (ex.: "Nome Fantasia", "Nome do Contato").
         var linhas = texto.split(/\r?\n/);
         var i, j, linha, lower, rotulo, idx, val;
         for (i = 0; i < linhas.length; i++) {
           linha = linhas[i].replace(/^\s*[-•*]\s*/, '').trim();
           if (!linha) continue;
           lower = linha.toLowerCase();
+
+          if (rotulosExcluir && rotulosExcluir.length) {
+            var linhaExcluida = rotulosExcluir.some(function (rx) { return lower.indexOf(rx.toLowerCase()) === 0; });
+            if (linhaExcluida) continue;
+          }
+
           for (j = 0; j < rotulos.length; j++) {
             rotulo = rotulos[j].toLowerCase();
             if (lower.indexOf(rotulo) === 0) {
@@ -2524,13 +2608,21 @@ updateUI();
         }
 
         // --- Campos por rótulo (linhas típicas de cadastro) ---
+        // 'Nome' é propositalmente o rótulo mais genérico da lista; a exclusão
+        // abaixo impede que ele capture linhas que pertencem a Nome Fantasia ou
+        // a Nome/Cargo do Contato-Solicitante (campos distintos de nome_razao).
         var nomeRot = extrairRotuloValor(texto, [
           'Nome completo', 'Nome Completo', 'Razão Social', 'Razao Social', 'Razão social',
           'Nome do cliente', 'Cliente', 'Nome'
+        ], [
+          'Nome Fantasia', 'Nome fantasia', 'Fantasia',
+          'Nome do contato', 'Nome do Contato', 'Nome solicitante', 'Nome do solicitante',
+          'Contato / solicitante', 'Contato/solicitante', 'Solicitante', 'Contato nome'
         ]);
         var fantasiaRot = extrairRotuloValor(texto, ['Nome Fantasia', 'Nome fantasia', 'Fantasia']);
         var respRot = extrairRotuloValor(texto, [
-          'Responsável Legal', 'Responsavel Legal', 'Responsável', 'Responsavel', 'Representante'
+          'Responsável Legal', 'Responsavel Legal', 'Representante Legal',
+          'Responsável', 'Responsavel', 'Representante'
         ]);
         var contatoNomeRot = extrairRotuloValor(texto, [
           'Nome do contato', 'Nome do Contato', 'Contato / solicitante', 'Contato/solicitante',
@@ -2957,6 +3049,238 @@ updateUI();
         });
       }
 
+      /* ===================== PAGAMENTO (forma_pagamento / condicao_pagamento / desconto_pix_aplicado) ===================== */
+
+      var CONDICOES_POR_FORMA = {
+        pix: [
+          { val: 'pix_50_50', label: '50% na reserva + 50% até 1 dia antes' },
+          { val: 'pix_integral', label: 'Integral (100%) na reserva' }
+        ],
+        cartao: [
+          { val: 'cartao_parcelado_12x', label: 'Parcelado em até 12x' }
+        ],
+        outro: []
+      };
+
+      function renderCondicoesPagamento() {
+        var bloco = document.getElementById('blocoCondicaoPagamento');
+        var container = document.getElementById('chipsCondicaoPagamento');
+        if (!bloco || !container) return;
+
+        var lista = CONDICOES_POR_FORMA[formaPagamentoVal] || [];
+        var outraBloco = document.getElementById('blocoOutraFormaPagamento');
+        if (outraBloco) outraBloco.classList.toggle('hidden', formaPagamentoVal !== 'outro');
+        if (!formaPagamentoVal || !lista.length) {
+          bloco.classList.add('hidden');
+          container.innerHTML = '';
+          renderAgendaPagamento();
+          return;
+        }
+
+        bloco.classList.remove('hidden');
+        container.innerHTML = lista.map(function (c) {
+          var ativo = (c.val === condicaoPagamentoVal) ? ' active' : '';
+          return '<span class="chip-item' + ativo + '" data-val="' + esc(c.val) + '">' + esc(c.label) + '</span>';
+        }).join('');
+
+        container.querySelectorAll('.chip-item').forEach(function (chip) {
+          chip.addEventListener('click', function () {
+            if (formularioBloqueadoSomenteLeitura) return;
+            container.querySelectorAll('.chip-item').forEach(function (x) { x.classList.remove('active'); });
+            chip.classList.add('active');
+            condicaoPagamentoVal = chip.dataset.val;
+            renderAgendaPagamento();
+            recalc();
+          });
+        });
+
+        renderAgendaPagamento();
+      }
+
+      // Retorna a data do evento (fData) menos 1 dia, em formato YYYY-MM-DD,
+      // usada como valor padrão (editável) do Saldo no PIX 50/50.
+      function calcDataSaldoDefault() {
+        var dataEv = (document.getElementById('fData') || {}).value;
+        if (!dataEv) return '';
+        var d = new Date(dataEv + 'T00:00:00');
+        if (isNaN(d.getTime())) return '';
+        d.setDate(d.getDate() - 1);
+        return d.toISOString().slice(0, 10);
+      }
+
+      // Renderiza o bloco de agenda de pagamento (datas, parcelas, status,
+      // descrição livre) de acordo com a forma/condição selecionada.
+      // Apenas coleta/exibe dados em pagamentoAgendaState — não recalcula
+      // nem altera valor_total. Quem lê esse estado no fim é salvarProposta().
+      function renderAgendaPagamento() {
+        var box = document.getElementById('blocoAgendaPagamento');
+        if (!box) return;
+
+        function chipsStatus(campo, valorAtual) {
+          return '<div class="flex gap-1.5" data-status-field="' + campo + '">' +
+            '<span class="chip-item' + (valorAtual === 'pendente' ? ' active' : '') + '" data-status-val="pendente">Pendente</span>' +
+            '<span class="chip-item' + (valorAtual === 'pago' ? ' active' : '') + '" data-status-val="pago">Pago</span>' +
+          '</div>';
+        }
+
+        var html = '';
+        if (formaPagamentoVal === 'pix' && condicaoPagamentoVal === 'pix_integral') {
+          html += '<div class="space-y-1">' +
+            '<span class="text-[10px] uppercase font-bold tracking-wider text-slate-400 block">Data do Pagamento</span>' +
+            '<input type="date" id="fAgendaDataPagamento" value="' + esc(pagamentoAgendaState.data_pagamento || '') + '" class="w-full border border-white/20 rounded-xl px-3 py-2 text-xs text-white focus:border-cyan-400 focus:ring-1 focus:ring-cyan-400 focus:outline-none transition">' +
+          '</div>' +
+          '<div class="space-y-1">' +
+            '<span class="text-[10px] uppercase font-bold tracking-wider text-slate-400 block">Status</span>' +
+            chipsStatus('status', pagamentoAgendaState.status) +
+          '</div>';
+        } else if (formaPagamentoVal === 'pix' && condicaoPagamentoVal === 'pix_50_50') {
+          if (!pagamentoAgendaState.data_saldo) pagamentoAgendaState.data_saldo = calcDataSaldoDefault();
+          html += '<div class="grid grid-cols-2 gap-2">' +
+            '<div class="space-y-1">' +
+              '<span class="text-[10px] uppercase font-bold tracking-wider text-slate-400 block">Data Entrada</span>' +
+              '<input type="date" id="fAgendaDataEntrada" value="' + esc(pagamentoAgendaState.data_entrada || '') + '" class="w-full border border-white/20 rounded-xl px-3 py-2 text-xs text-white focus:border-cyan-400 focus:ring-1 focus:ring-cyan-400 focus:outline-none transition">' +
+            '</div>' +
+            '<div class="space-y-1">' +
+              '<span class="text-[10px] uppercase font-bold tracking-wider text-slate-400 block">Data Saldo</span>' +
+              '<input type="date" id="fAgendaDataSaldo" value="' + esc(pagamentoAgendaState.data_saldo || '') + '" class="w-full border border-white/20 rounded-xl px-3 py-2 text-xs text-white focus:border-cyan-400 focus:ring-1 focus:ring-cyan-400 focus:outline-none transition">' +
+            '</div>' +
+          '</div>' +
+          '<div class="grid grid-cols-2 gap-2">' +
+            '<div class="space-y-1">' +
+              '<span class="text-[10px] uppercase font-bold tracking-wider text-slate-400 block">Status Entrada</span>' +
+              chipsStatus('status_entrada', pagamentoAgendaState.status_entrada) +
+            '</div>' +
+            '<div class="space-y-1">' +
+              '<span class="text-[10px] uppercase font-bold tracking-wider text-slate-400 block">Status Saldo</span>' +
+              chipsStatus('status_saldo', pagamentoAgendaState.status_saldo) +
+            '</div>' +
+          '</div>';
+        } else if (formaPagamentoVal === 'cartao') {
+          html += '<div class="grid grid-cols-2 gap-2 items-end">' +
+            '<div class="space-y-1 flex flex-col justify-end h-full">' +
+              '<span class="text-[10px] uppercase font-bold tracking-wider text-slate-400 block">Nº de Parcelas</span>' +
+              '<input type="number" min="1" max="12" id="fAgendaParcelasCartao" value="' + esc(pagamentoAgendaState.parcelas_cartao || '') + '" class="w-full border border-white/20 rounded-xl px-3 py-2 text-xs text-white focus:border-cyan-400 focus:ring-1 focus:ring-cyan-400 focus:outline-none transition">' +
+            '</div>' +
+            '<div class="space-y-1 flex flex-col justify-end h-full">' +
+              '<span class="text-[10px] uppercase font-bold tracking-wider text-slate-400 block">Data em que o Cartão foi Passado</span>' +
+              '<input type="date" id="fAgendaDataPagamento" value="' + esc(pagamentoAgendaState.data_pagamento || '') + '" class="w-full border border-white/20 rounded-xl px-3 py-2 text-xs text-white focus:border-cyan-400 focus:ring-1 focus:ring-cyan-400 focus:outline-none transition">' +
+            '</div>' +
+          '</div>' +
+          '<div class="space-y-1">' +
+            '<span class="text-[10px] uppercase font-bold tracking-wider text-slate-400 block">Status</span>' +
+            chipsStatus('status', pagamentoAgendaState.status) +
+          '</div>';
+        } else if (formaPagamentoVal === 'outro') {
+          html += '<div class="space-y-1">' +
+            '<span class="text-[10px] uppercase font-bold tracking-wider text-slate-400 block">Descrição da Negociação (valores e datas)</span>' +
+            '<textarea id="fAgendaDescricaoOutro" rows="3" maxlength="500" placeholder="Ex.: R$ 1.000 na assinatura + R$ 2.000 até 10/12, transferência bancária" class="w-full border border-white/20 rounded-xl px-3 py-2 text-xs text-white focus:border-cyan-400 focus:ring-1 focus:ring-cyan-400 focus:outline-none transition">' + esc(pagamentoAgendaState.descricao_outro || '') + '</textarea>' +
+          '</div>' +
+          '<div class="space-y-1">' +
+            '<span class="text-[10px] uppercase font-bold tracking-wider text-slate-400 block">Status</span>' +
+            chipsStatus('status', pagamentoAgendaState.status) +
+          '</div>';
+        }
+
+        if (!html) {
+          box.classList.add('hidden');
+          box.innerHTML = '';
+          return;
+        }
+
+        box.classList.remove('hidden');
+        box.innerHTML = html;
+
+        var elDataPagamento = document.getElementById('fAgendaDataPagamento');
+        if (elDataPagamento) elDataPagamento.addEventListener('change', function () { pagamentoAgendaState.data_pagamento = this.value || null; });
+
+        var elDataEntrada = document.getElementById('fAgendaDataEntrada');
+        if (elDataEntrada) elDataEntrada.addEventListener('change', function () { pagamentoAgendaState.data_entrada = this.value || null; });
+
+        var elDataSaldo = document.getElementById('fAgendaDataSaldo');
+        if (elDataSaldo) elDataSaldo.addEventListener('change', function () { pagamentoAgendaState.data_saldo = this.value || null; });
+
+        var elParcelas = document.getElementById('fAgendaParcelasCartao');
+        if (elParcelas) elParcelas.addEventListener('change', function () {
+          var n = parseInt(this.value, 10);
+          pagamentoAgendaState.parcelas_cartao = (isFinite(n) && n > 0) ? n : null;
+        });
+
+        var elDescricao = document.getElementById('fAgendaDescricaoOutro');
+        if (elDescricao) elDescricao.addEventListener('input', function () { pagamentoAgendaState.descricao_outro = this.value; });
+
+        box.querySelectorAll('[data-status-field]').forEach(function (grupo) {
+          var campo = grupo.dataset.statusField;
+          grupo.querySelectorAll('.chip-item').forEach(function (chip) {
+            chip.addEventListener('click', function () {
+              if (formularioBloqueadoSomenteLeitura) return;
+              grupo.querySelectorAll('.chip-item').forEach(function (x) { x.classList.remove('active'); });
+              chip.classList.add('active');
+              pagamentoAgendaState[campo] = chip.dataset.statusVal;
+            });
+          });
+        });
+      }
+
+      // Se a data do evento mudar e o Saldo do PIX 50/50 ainda não tiver sido
+      // editado manualmente, atualiza o default (evento - 1 dia).
+      (function bindDataEventoParaSaldo() {
+        var elData = document.getElementById('fData');
+        if (!elData) return;
+        elData.addEventListener('change', function () {
+          if (condicaoPagamentoVal === 'pix_50_50' && !pagamentoAgendaState.data_saldo) {
+            pagamentoAgendaState.data_saldo = calcDataSaldoDefault();
+            renderAgendaPagamento();
+          }
+        });
+      })();
+
+      function selecionarFormaPagamento(forma) {
+        formaPagamentoVal = forma;
+        // Ao selecionar uma forma, mantém uma condição válida para que o estado
+        // de pagamento seja efetivamente aplicado ao total já calculado.
+        var lista = CONDICOES_POR_FORMA[forma] || [];
+        if (forma === 'pix') {
+          condicaoPagamentoVal = 'pix_50_50';
+        } else if (!lista.some(function (c) { return c.val === condicaoPagamentoVal; })) {
+          condicaoPagamentoVal = lista.length ? lista[0].val : null;
+        }
+        document.querySelectorAll('#chipsFormaPagamento .chip-item').forEach(function (c) {
+          c.classList.toggle('active', c.dataset.val === forma);
+        });
+        renderCondicoesPagamento();
+        recalc();
+      }
+
+      function bindPagamentoEvents() {
+        document.querySelectorAll('#chipsFormaPagamento .chip-item').forEach(function (chip) {
+          chip.addEventListener('click', function () {
+            if (formularioBloqueadoSomenteLeitura) return;
+            selecionarFormaPagamento(chip.dataset.val);
+          });
+        });
+      }
+
+      // Atualiza a mensagem informativa de pagamento exibida no boxPagamento
+      // (desconto PIX ou acréscimo Cartão — nunca os dois ao mesmo tempo, pois
+      // formaPagamentoVal só assume um valor por vez). Não recalcula nada —
+      // apenas reflete o resultado já produzido em recalc().
+      function atualizarUIPagamento(descontoPixValor, acrescimoCartaoValor) {
+        var infoEl = document.getElementById('descontoPixInfo');
+        if (!infoEl) return;
+        if (condicaoPagamentoVal === 'pix_integral' && descontoPixValor > 0) {
+          infoEl.textContent = 'Desconto PIX (' + descontoPixPercentualConfig.toFixed(0) + '%) aplicado: -' + fmtMoeda(descontoPixValor);
+          infoEl.className = 'text-[11px] text-emerald-400 font-semibold';
+          infoEl.classList.remove('hidden');
+        } else if (formaPagamentoVal === 'cartao' && acrescimoCartaoValor > 0) {
+          infoEl.textContent = 'Acréscimo Cartão (' + acrescimoCartaoPercentualConfig.toFixed(2) + '%) aplicado: +' + fmtMoeda(acrescimoCartaoValor);
+          infoEl.className = 'text-[11px] text-amber-400 font-semibold';
+          infoEl.classList.remove('hidden');
+        } else {
+          infoEl.textContent = '';
+          infoEl.className = 'hidden text-[11px] font-semibold';
+        }
+      }
+
       function onDescontoPctChange() {
         if (descontoUiUpdating || formularioBloqueadoSomenteLeitura || !ehAdmin()) return;
         var el = document.getElementById('fDescontoPct');
@@ -3010,7 +3334,7 @@ updateUI();
             var metragemAtual = svcMetragem[s.servico_id] || 0;
             if (metragemAtual > 0) {
               var calcMetro = calcularValorPorMetro(s, metragemAtual);
-              totalComercial += calcMetro.valor;
+              totalComercial += Number(calcMetro.valor) || 0;
               listaLinhas.push({ nome: s.nome + ' (' + metragemAtual + 'm)', val: calcMetro.valor });
               itensPayload.push({
                 tipo: 'servico', id: s.servico_id, nome: s.nome, valor: calcMetro.valor,
@@ -3024,7 +3348,7 @@ updateUI();
 
           if (svcState[s.servico_id] === 'manual') {
             var precoCalc = calcularPrecoServico(s, { temPacoteAtivo: !!pObj });
-            var v = precoCalc.total;
+            var v = Number(precoCalc.total) || 0;
             totalComercial += v;
             listaLinhas.push({ nome: s.nome, val: v });
             itensPayload.push({
@@ -3079,6 +3403,30 @@ updateUI();
         if (resDesc.dVal > 0) {
           listaLinhas.push({ nome: 'Desconto comercial (' + resDesc.pct.toFixed(2) + '%)', val: -resDesc.dVal });
         }
+
+        // ACRÉSCIMO CARTÃO — percentual vigente lido de co_config_financeiro.
+        // Incide sobre o total já calculado (após desconto comercial + transporte).
+        var acrescimoCartaoValor = 0;
+        if (formaPagamentoVal === 'cartao' && acrescimoCartaoPercentualConfig > 0) {
+          acrescimoCartaoValor = Math.round((total * acrescimoCartaoPercentualConfig / 100) * 100) / 100;
+          total = Math.round((total + acrescimoCartaoValor) * 100) / 100;
+          listaLinhas.push({ nome: 'Acréscimo Cartão (' + acrescimoCartaoPercentualConfig.toFixed(2) + '%)', val: acrescimoCartaoValor });
+        }
+
+        // DESCONTO PIX — aplicado somente quando a condição selecionada é o
+        // pagamento integral (100%) via PIX. O percentual usado é sempre o
+        // vigente lido de co_config_financeiro (nunca hardcoded). Incide sobre
+        // o total já calculado (após desconto comercial + transporte).
+        var descontoPixValor = 0;
+        if (condicaoPagamentoVal === 'pix_integral' && descontoPixPercentualConfig > 0) {
+          descontoPixAplicadoVal = descontoPixPercentualConfig;
+          descontoPixValor = Math.round((total * descontoPixPercentualConfig / 100) * 100) / 100;
+          total = Math.round((total - descontoPixValor) * 100) / 100;
+          listaLinhas.push({ nome: 'Desconto PIX (' + descontoPixPercentualConfig.toFixed(0) + '%)', val: -descontoPixValor });
+        } else {
+          descontoPixAplicadoVal = 0;
+        }
+        atualizarUIPagamento(descontoPixValor, acrescimoCartaoValor);
 
         atualizarUIDesconto(resDesc);
         aplicarPermissaoDesconto();
@@ -3142,6 +3490,7 @@ updateUI();
         window.currentSubtotal = valorSubtotal;
         window.currentDescontoPercentual = descontoPercentual;
         window.currentDescontoValor = descontoValor;
+        window.currentDescontoPixAplicado = descontoPixAplicadoVal;
       }
 
       async function avisarTelegramProposta(dados) {
@@ -3174,6 +3523,12 @@ updateUI();
         var pct = parceiroAtual.comissao_padrao_pct;
         var stNorm = String(statusDesejado || 'enviada').toLowerCase();
 
+        // Forma de pagamento "Outro": lê o texto livre digitado pelo usuário.
+        // Antes, esse campo era apenas visual e nunca era persistido — agora
+        // é lido, validado e enviado ao banco como forma_pagamento_outro.
+        var formaPagamentoOutroVal = (document.getElementById('fOutraFormaPagamento') || {}).value || '';
+        formaPagamentoOutroVal = formaPagamentoOutroVal.trim();
+
         // SANITIZAÇÃO DE SEGURANÇA NO FRONT-END
         if (stNorm === 'aprovada') {
           stNorm = 'enviada';
@@ -3204,6 +3559,30 @@ updateUI();
           showAlert('Selecione ao menos um Pacote ou Serviço do catálogo.', 'error');
           return;
         }
+        if (stNorm !== 'rascunho' && formaPagamentoVal === 'outro' && !formaPagamentoOutroVal) {
+          showAlert('Descreva a forma de pagamento no campo "Outro".', 'error');
+          return;
+        }
+        // Validação da agenda de pagamento — só exigida ao homologar/enviar,
+        // igual às demais regras de obrigatoriedade desta função.
+        if (stNorm !== 'rascunho') {
+          if (formaPagamentoVal === 'pix' && condicaoPagamentoVal === 'pix_integral' && !pagamentoAgendaState.data_pagamento) {
+            showAlert('Preencha a Data do Pagamento (PIX Integral).', 'error');
+            return;
+          }
+          if (formaPagamentoVal === 'pix' && condicaoPagamentoVal === 'pix_50_50' && (!pagamentoAgendaState.data_entrada || !pagamentoAgendaState.data_saldo)) {
+            showAlert('Preencha as datas de Entrada e Saldo (PIX 50/50).', 'error');
+            return;
+          }
+          if (formaPagamentoVal === 'cartao' && (!pagamentoAgendaState.parcelas_cartao || !pagamentoAgendaState.data_pagamento)) {
+            showAlert('Preencha o nº de parcelas e a data em que o cartão foi passado.', 'error');
+            return;
+          }
+          if (formaPagamentoVal === 'outro' && !String(pagamentoAgendaState.descricao_outro || '').trim()) {
+            showAlert('Descreva a negociação (valores e datas) no campo de pagamento "Outro".', 'error');
+            return;
+          }
+        }
 
         var horarioInicioVal = (document.getElementById('fHorarioInicio') || {}).value || null;
         if (horarioInicioVal) horarioInicioVal = String(horarioInicioVal).slice(0, 5);
@@ -3227,10 +3606,16 @@ updateUI();
           valor_subtotal: window.currentSubtotal != null ? window.currentSubtotal : 0,
           desconto_percentual: window.currentDescontoPercentual != null ? window.currentDescontoPercentual : 0,
           desconto_valor: window.currentDescontoValor != null ? window.currentDescontoValor : 0,
-          valor_total: window.currentTotal,
+          valor_total: Number(window.currentTotal) || 0,
           comissao_pct_efetiva: pct,
           status: stNorm,
           enviada_em: new Date().toISOString(),
+          // Pagamento (item 1-6 do escopo de pagamento)
+          forma_pagamento: formaPagamentoVal || null,
+          forma_pagamento_outro: formaPagamentoVal === 'outro' ? formaPagamentoOutroVal : null,
+          condicao_pagamento: condicaoPagamentoVal || null,
+          pagamento_agenda: pagamentoAgendaState,
+          desconto_pix_aplicado: window.currentDescontoPixAplicado != null ? window.currentDescontoPixAplicado : 0,
           // Persistência de detalhamento para nota fiscal
           cep_cliente: transporteCepValido || cepVal,
           lat_cliente: transporteLatLng ? transporteLatLng.lat : null,
