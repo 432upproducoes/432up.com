@@ -7,6 +7,10 @@
   
   <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
   <script src="./partner-config.js"></script>
+
+  <!-- Geração de PDF nativa (sem depender de window.print()) -->
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js"></script>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
   
   <style>
     @import url('https://fonts.googleapis.com/css2?family=Chakra+Petch:ital,wght@0,500;0,600;0,700;1,700&family=Inter:wght@400;500;600;700;800&display=swap');
@@ -425,11 +429,13 @@
         box-shadow: none;
         page-break-after: always;
         page-break-inside: avoid;
-        break-inside: avoid;
+        break-after: page;
+        break-inside: avoid-page;
         overflow: hidden;
       }
       .page:last-child {
         page-break-after: auto;
+        break-after: auto;
       }
       .page-body {
         overflow: hidden;
@@ -441,7 +447,7 @@
 
   <div class="action-bar" id="action-bar">
     <div class="info">Visualização da Proposta Comercial</div>
-    <button class="btn-print" onclick="window.print()">Imprimir / Salvar em PDF</button>
+    <button class="btn-print" id="btn-gerar-pdf" onclick="gerarPDF()">Gerar PDF</button>
   </div>
 
   <div id="status-container">
@@ -457,7 +463,7 @@
           <div class="cover-header">
             <h1>PROPOSTA DE<br>REALIZAÇÃO<br>DE EVENTO.</h1>
             <div class="cover-logo-badge">
-              <img src="https://www.432up.com/imagens/logo.png" alt="432UP! Produções">
+              <img src="https://www.432up.com/imagens/logo.png" alt="432UP! Produções" crossorigin="anonymous">
             </div>
           </div>
 
@@ -1033,6 +1039,119 @@
     }
 
     /* =========================================================
+       GERAÇÃO DE PDF (substitui window.print())
+       Cada .page é capturada individualmente como uma página A4
+       (210 x 297 mm) e adicionada em sequência ao mesmo PDF, sem
+       nenhum metadado automático de navegador (data, URL, caminho,
+       nome de arquivo ou numeração de página).
+       ========================================================= */
+
+    function aguardarImagensCarregadas(container) {
+      const imgs = Array.from(container.querySelectorAll('img'));
+      return Promise.all(imgs.map(img => {
+        if (img.complete && img.naturalWidth !== 0) return Promise.resolve();
+        return new Promise(resolve => {
+          img.addEventListener('load', resolve, { once: true });
+          img.addEventListener('error', resolve, { once: true });
+        });
+      }));
+    }
+
+    async function gerarPDF() {
+      const btn = document.getElementById('btn-gerar-pdf');
+      const actionBar = document.getElementById('action-bar');
+      const docContent = document.getElementById('document-content');
+      const textoOriginalBtn = btn ? btn.textContent : null;
+
+      if (!docContent || docContent.style.display === 'none') {
+        alert('A proposta ainda não foi carregada completamente. Aguarde e tente novamente.');
+        return;
+      }
+
+      if (typeof html2canvas === 'undefined' || typeof window.jspdf === 'undefined') {
+        alert('Não foi possível carregar o gerador de PDF. Verifique sua conexão e tente novamente.');
+        return;
+      }
+
+      try {
+        if (btn) {
+          btn.disabled = true;
+          btn.textContent = 'Gerando PDF...';
+        }
+
+        if (document.fonts && document.fonts.ready) {
+          await document.fonts.ready;
+        }
+        await aguardarImagensCarregadas(docContent);
+
+        const actionBarDisplayOriginal = actionBar ? actionBar.style.display : '';
+        if (actionBar) actionBar.style.display = 'none';
+
+        const paginas = docContent.querySelectorAll('.page');
+
+        const { jsPDF } = window.jspdf;
+        const pdf = new jsPDF({
+          orientation: 'portrait',
+          unit: 'mm',
+          format: 'a4',
+          compress: true
+        });
+
+        for (let i = 0; i < paginas.length; i++) {
+          const pageEl = paginas[i];
+
+          let canvas;
+          try {
+            canvas = await html2canvas(pageEl, {
+              scale: 2,
+              useCORS: true,
+              allowTaint: false,
+              backgroundColor: '#FFFFFF',
+              windowWidth: pageEl.scrollWidth,
+              windowHeight: pageEl.scrollHeight,
+              scrollX: 0,
+              scrollY: -window.scrollY,
+              logging: false
+            });
+          } catch (canvasErr) {
+            console.error(`Erro ao capturar a página ${i + 1}:`, canvasErr);
+            throw new Error(`Não foi possível capturar a página ${i + 1} (provável imagem externa sem CORS habilitado).`);
+          }
+
+          let imgData;
+          try {
+            // PNG preserva nitidez de texto e bordas (evita artefatos do JPEG)
+            imgData = canvas.toDataURL('image/png');
+          } catch (exportErr) {
+            // Canvas contaminado (imagem sem cabeçalho CORS): última tentativa em JPEG
+            console.error(`Canvas contaminado na página ${i + 1}, tentando fallback:`, exportErr);
+            imgData = canvas.toDataURL('image/jpeg', 0.92);
+          }
+
+          if (i > 0) {
+            pdf.addPage('a4', 'portrait');
+          }
+          pdf.addImage(imgData, imgData.startsWith('data:image/png') ? 'PNG' : 'JPEG', 0, 0, 210, 297, undefined, 'FAST');
+        }
+
+        if (actionBar) actionBar.style.display = actionBarDisplayOriginal;
+
+        const numeroProposta = realValue(window.__propostaNumero) || 'documento';
+        pdf.save(`Proposta-Comercial-${numeroProposta}.pdf`);
+
+      } catch (err) {
+        console.error('Erro ao gerar PDF:', err);
+        alert('Ocorreu um erro ao gerar o PDF. Tente novamente.');
+      } finally {
+        if (btn) {
+          btn.disabled = false;
+          btn.textContent = textoOriginalBtn;
+        }
+        if (actionBar) actionBar.style.display = '';
+      }
+    }
+
+    /* =========================================================
        TABELA "SERVIÇOS INCLUÍDOS E VALORES"
        ========================================================= */
 
@@ -1152,6 +1271,9 @@
           return;
         }
 
+        // Número usado para nomear o arquivo PDF gerado (Proposta-Comercial-[numero].pdf)
+        window.__propostaNumero = realValue(proposta.numero) || realValue(proposta.numero_proposta) || realValue(proposta.id) || propostaId;
+
         // Dados legais da empresa (mesma fonte usada pelo Contrato) — usados aqui
         // exclusivamente para tornar a Política de Cancelamento dinâmica.
         // Se não existir/houver erro, a Proposta segue normalmente com o fallback neutro.
@@ -1183,6 +1305,7 @@
               const imgAvatar = document.getElementById('vendedor-avatar');
               const wrapAvatar = document.getElementById('vendedor-avatar-wrap');
               if (imgAvatar && wrapAvatar) {
+                imgAvatar.crossOrigin = 'anonymous';
                 imgAvatar.src = parceiro.avatar_url;
                 wrapAvatar.style.display = 'flex';
               }
