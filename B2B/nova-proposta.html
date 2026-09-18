@@ -6,7 +6,7 @@
   <title>432UP Partner | Nova Proposta</title>
 
   <!-- CSS Global do Site -->
-  <link rel="stylesheet" href="../css/style.css">
+  <link rel="stylesheet" href="https://www.432up.com/css/style.css">
   <script src="https://cdn.tailwindcss.com"></script>
 
   <style>
@@ -118,12 +118,17 @@
     .chip-item {
       display: inline-flex;
       align-items: center;
+      justify-content: center;
       cursor: pointer;
       padding: 6px 14px;
+      min-height: 34px;
+      min-width: 108px;
+      box-sizing: border-box;
       border-radius: 20px;
       font-size: 11px;
       font-weight: 600;
       line-height: 1.3;
+      text-align: center;
       white-space: nowrap;
       border: 1px solid rgba(255, 255, 255, 0.15);
       background: rgba(255, 255, 255, 0.04);
@@ -135,6 +140,21 @@
       border-color: #00F0FF;
       color: #00F0FF;
       box-shadow: 0 0 10px rgba(0, 240, 255, 0.2);
+    }
+
+    #chipsFormaPagamento,
+    #chipsCondicaoPagamento,
+    #chipsTipo,
+    #chipsConvidados {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 8px;
+      align-items: stretch;
+    }
+    #chipsFormaPagamento .chip-item,
+    #chipsCondicaoPagamento .chip-item {
+      flex: 1 1 136px;
+      max-width: 100%;
     }
 
     .card-desc {
@@ -160,15 +180,56 @@
       border: 1px solid rgba(0, 240, 255, 0.3);
     }
 
+    /* INDICADOR VISUAL DE HORAS — mesmo estilo do badge de metragem */
+    .badge-horas {
+      display: inline-flex;
+      align-items: center;
+      gap: 4px;
+      font-size: 11px;
+      font-weight: 700;
+      color: #00F0FF;
+      background: rgba(0, 240, 255, 0.1);
+      padding: 2px 8px;
+      border-radius: 6px;
+      border: 1px solid rgba(0, 240, 255, 0.3);
+    }
+
     /* CONTROLES +/- DO CARD POR METRO */
     .metro-controls {
+      display: flex;
+      flex-direction: column;
+      align-items: stretch;
+      gap: 6px;
+      margin-top: 10px;
+      padding-top: 10px;
+      border-top: 1px solid rgba(0, 240, 255, 0.15);
+    }
+    .qty-row {
       display: flex;
       align-items: center;
       justify-content: space-between;
       gap: 8px;
-      margin-top: 10px;
-      padding-top: 10px;
-      border-top: 1px solid rgba(0, 240, 255, 0.15);
+    }
+    .qty-mid {
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      gap: 4px;
+      flex: 1;
+      min-width: 0;
+    }
+    .qty-unit {
+      font-size: 11px;
+      font-weight: 700;
+      color: #00F0FF;
+      flex-shrink: 0;
+    }
+    .qty-total {
+      text-align: center;
+      font-size: 11px;
+      font-weight: 700;
+      color: #00F0FF;
+      line-height: 1.2;
     }
     .metro-btn {
       width: 28px;
@@ -191,23 +252,96 @@
     .metro-btn:active { transform: scale(0.92); }
     .metro-btn.disabled { opacity: 0.3; pointer-events: none; }
 
+    .btn-add-qty {
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      width: 100%;
+      min-height: 34px;
+      margin-top: 8px;
+      padding: 6px 14px;
+      border-radius: 20px;
+      font-size: 11px;
+      font-weight: 600;
+      line-height: 1.3;
+      text-align: center;
+      color: #94a3b8;
+      background: rgba(255, 255, 255, 0.04);
+      border: 1px solid rgba(255, 255, 255, 0.15);
+      cursor: pointer;
+      user-select: none;
+      touch-action: manipulation;
+      box-sizing: border-box;
+    }
+    .btn-add-qty:hover {
+      background: rgba(0, 240, 255, 0.15);
+      border-color: #00F0FF;
+      color: #00F0FF;
+    }
+    .btn-add-qty:active { transform: scale(0.98); }
+
+    #gridServicos,
+    #gridPacotes {
+      align-items: stretch;
+    }
+    #gridServicos .glass-card-interactive,
+    #gridPacotes .glass-card-interactive {
+      display: flex;
+      flex-direction: column;
+      height: 100%;
+      min-height: 168px;
+    }
+    .svc-qty-actions {
+      margin-top: auto;
+      padding-top: 8px;
+      display: flex;
+      flex-direction: column;
+      gap: 8px;
+    }
+
+    .badge-metragem,
+    .badge-horas {
+      white-space: nowrap;
+      flex: 1 1 auto;
+      justify-content: center;
+      min-width: 0;
+    }
+    .qty-input {
+      width: 3.2rem;
+      min-width: 2.4rem;
+      height: 22px;
+      margin: 0 2px;
+      padding: 0 4px;
+      border-radius: 6px;
+      border: 1px solid rgba(0, 240, 255, 0.35);
+      background: rgba(15, 23, 42, 0.85);
+      color: #00F0FF;
+      font-size: 11px;
+      font-weight: 700;
+      text-align: center;
+      outline: none;
+    }
+
     /* Área clicável do toggle de metragem: garante que TODO o bloco visual
        responda ao toque/clique em qualquer ponto (topo, centro, base,
        laterais e bordas) — inclusive o espaço vazio que sobra quando o
        card fica esticado por um vizinho mais alto no mesmo grid row.
        Nenhuma mudança de tamanho visual, aparência, texto, ícone ou
        comando executado: apenas a área que responde ao clique/toque. */
-    [data-svc][data-metro="1"] {
+    [data-svc][data-metro="1"],
+    [data-svc][data-hora="1"] {
       display: flex;
       flex-direction: column;
     }
-    [data-metro-toggle] {
+    [data-metro-toggle],
+    [data-hora-toggle] {
       cursor: pointer;
       -webkit-tap-highlight-color: transparent;
       touch-action: manipulation;
       flex: 1 1 auto;
     }
-    [data-metro-toggle] * {
+    [data-metro-toggle] *,
+    [data-hora-toggle] * {
       pointer-events: none;
     }
 
@@ -246,6 +380,25 @@
         position: sticky !important;
         top: 6rem !important;
         z-index: 30 !important;
+        display: flex !important;
+        flex-direction: column !important;
+        max-height: calc(100vh - 7.5rem) !important;
+        overflow: hidden !important;
+      }
+      .sticky-card .resumo-scroll {
+        flex: 1 1 auto;
+        min-height: 0;
+        overflow-y: auto;
+        overflow-x: hidden;
+        padding-right: 4px;
+        -webkit-overflow-scrolling: touch;
+      }
+      .sticky-card #containerAcoesBotoes {
+        flex-shrink: 0;
+        padding-top: 0.75rem;
+        margin-top: 0.25rem;
+        border-top: 1px solid rgba(245, 158, 11, 0.2);
+        background: transparent;
       }
     }
 
@@ -362,6 +515,24 @@
     #fTotalDesejado {
       font-variant-numeric: tabular-nums;
       letter-spacing: -0.01em;
+    }
+
+    /* Agenda PIX 50/50: chips não vazam/sobreõem na sidebar estreita */
+    #blocoAgendaPagamento .grid.grid-cols-2 {
+      align-items: start;
+    }
+    #blocoAgendaPagamento [data-status-field] {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 6px;
+      min-width: 0;
+    }
+    #blocoAgendaPagamento [data-status-field] .chip-item {
+      white-space: nowrap;
+      flex: 0 0 auto;
+    }
+    #blocoAgendaPagamento .grid.grid-cols-2 {
+      grid-template-columns: 1fr;
     }
 
     /* ---- Modal Cadastro Cliente: campos alinhados (mesma altura / base) ---- */
@@ -510,15 +681,19 @@
                 </div>
               </div>
 
-              <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+              <div class="grid grid-cols-1 md:grid-cols-2 gap-4 items-end">
                 <div>
                   <label for="fHorarioInicio" class="block text-xs uppercase tracking-wider text-slate-300 font-semibold mb-1.5">Horário de Início</label>
                   <input type="time" id="fHorarioInicio" class="w-full border border-white/20 rounded-xl px-3 py-2 text-sm text-white focus:border-cyan-400 focus:ring-1 focus:ring-cyan-400 focus:outline-none transition">
                 </div>
                 <div>
-                  <label for="fHorarioFinal" class="block text-xs uppercase tracking-wider text-slate-300 font-semibold mb-1.5">Horário de Final</label>
+                  <label for="fHorarioFinal" class="block text-xs uppercase tracking-wider text-slate-300 font-semibold mb-1.5">Horário de Término</label>
                   <input type="time" id="fHorarioFinal" class="w-full border border-white/20 rounded-xl px-3 py-2 text-sm text-white focus:border-cyan-400 focus:ring-1 focus:ring-cyan-400 focus:outline-none transition">
                 </div>
+              </div>
+              <div class="flex justify-between items-center">
+                <span class="text-xs uppercase tracking-wider text-slate-300 font-semibold">Duração do Evento</span>
+                <span id="lblHoras" class="text-xs font-bold text-cyan-400 bg-cyan-500/10 px-2 py-0.5 rounded border border-cyan-500/30">—</span>
               </div>
 
               <!-- ENDEREÇO DO EVENTO — controle "mesmo endereço do cliente" -->
@@ -594,14 +769,6 @@
                 <div id="toggleTransporte" class="toggle-switch on"><div class="knob"></div></div>
               </div>
 
-              <div class="pt-2">
-                <div class="flex justify-between items-center mb-2">
-                  <label for="sliderHoras" class="text-xs uppercase tracking-wider text-slate-300 font-semibold">Duração do Evento</label>
-                  <span id="lblHoras" class="text-xs font-bold text-cyan-400 bg-cyan-500/10 px-2 py-0.5 rounded border border-cyan-500/30">4h</span>
-                </div>
-                <input type="range" id="sliderHoras" min="2" max="12" value="4" step="1" class="w-full accent-cyan-400 cursor-pointer">
-              </div>
-
               <div>
                 <label for="fObs" class="block text-xs uppercase tracking-wider text-slate-300 font-semibold mb-1.5">Observações / Detalhes</label>
                 <textarea id="fObs" rows="2" placeholder="Ex: Necessidade de palco cênico, som para área externa..." class="w-full bg-slate-900/80 border border-white/20 rounded-xl px-4 py-2.5 text-sm text-white placeholder-slate-500 focus:border-cyan-400 focus:ring-1 focus:ring-cyan-400 focus:outline-none transition"></textarea>
@@ -614,8 +781,9 @@
         <!-- SIDEBAR RESUMO COMERCIAL (DESKTOP STICKY) -->
         <div id="sidebarTargetAnchor" class="space-y-6">
           <div class="glass-amber-summary sticky-card p-6 rounded-2xl space-y-5">
-            <h3 class="text-sm font-bold uppercase tracking-wider text-amber-400 border-b border-amber-500/20 pb-2">Resumo do Orçamento</h3>
+            <h3 class="text-sm font-bold uppercase tracking-wider text-amber-400 border-b border-amber-500/20 pb-2 shrink-0">Resumo do Orçamento</h3>
 
+            <div class="resumo-scroll space-y-5">
             <div class="space-y-2 text-xs text-slate-300">
               <div class="flex justify-between"><span>Cliente:</span><strong id="sumCliente" class="text-white truncate max-w-[140px]">—</strong></div>
               <div class="flex justify-between"><span>Data:</span><strong id="sumData" class="text-white">—</strong></div>
@@ -660,7 +828,7 @@
 
               <div id="boxPagamento" class="p-3 rounded-xl bg-slate-900/50 border border-white/10 space-y-2.5">
                 <span class="text-[10px] uppercase font-bold tracking-wider text-slate-400 block">Forma de Pagamento</span>
-                <div id="chipsFormaPagamento" class="flex flex-wrap gap-1.5">
+                <div id="chipsFormaPagamento">
                   <span class="chip-item" data-val="pix">PIX</span>
                   <span class="chip-item" data-val="cartao">Cartão de Crédito</span>
                   <span class="chip-item" data-val="outro">Outro</span>
@@ -680,6 +848,7 @@
                 <span class="text-[10px] uppercase font-bold tracking-wider text-amber-300 block">Sua Comissão Estimada (<span id="sumComissaoPct">10</span>%)</span>
                 <div id="sumComissaoValor" class="text-lg font-bold text-amber-400 mt-0.5">R$ 0,00</div>
               </div>
+            </div>
             </div>
 
             <div id="containerAcoesBotoes" class="space-y-2 pt-2">
@@ -841,9 +1010,9 @@
   </div>
 
   <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
-  <script src="partner-config.js"></script>
-  <script src="partner-header.js"></script>
-  <script src="../script/script.js" defer></script>
+  <script src="https://www.432up.com/B2B/partner-config.js"></script>
+  <script src="https://www.432up.com/B2B/partner-header.js"></script>
+  <script src="https://www.432up.com/script/script.js" defer></script>
   <script>
     (function () {
       'use strict';
@@ -868,6 +1037,7 @@
       var activePkg = null;
       var svcState = {};          // 'off' | 'manual' | 'included'
       var svcMetragem = {};       // servico_id -> metragem atual (0 = desligado)
+      var svcHoras = {};          // servico_id -> horas tarifadas (0 = desligado)
       var evConvidados = 80;
       var evTipoVal = 'Corporativo';
       var tiposEventoCarregados = [];
@@ -933,7 +1103,61 @@
         bairro: null, cidade: null, uf: null, lat: null, lng: null
       };
 
+      function getDuracaoHorasEvento() {
+        var iniEl = document.getElementById('fHorarioInicio');
+        var fimEl = document.getElementById('fHorarioFinal');
+        var ini = iniEl ? String(iniEl.value || '').trim() : '';
+        var fim = fimEl ? String(fimEl.value || '').trim() : '';
+        if (!ini || !fim) return null;
+        var p1 = ini.split(':');
+        var p2 = fim.split(':');
+        var h1 = parseInt(p1[0], 10);
+        var m1 = parseInt(p1[1], 10) || 0;
+        var h2 = parseInt(p2[0], 10);
+        var m2 = parseInt(p2[1], 10) || 0;
+        if (!isFinite(h1) || !isFinite(h2)) return null;
+        var startMin = h1 * 60 + m1;
+        var endMin = h2 * 60 + m2;
+        if (endMin <= startMin) endMin += 24 * 60;
+        return (endMin - startMin) / 60;
+      }
+
+      function formatarDuracaoHoras(horas) {
+        if (horas == null || !isFinite(horas) || horas <= 0) return '—';
+        var hInt = Math.floor(horas);
+        var mins = Math.round((horas - hInt) * 60);
+        if (mins === 60) { hInt += 1; mins = 0; }
+        if (mins === 0) return hInt + 'h';
+        return hInt + 'h' + String(mins).padStart(2, '0');
+      }
+
+      function atualizarLblDuracao() {
+        var lbl = document.getElementById('lblHoras');
+        if (!lbl) return;
+        lbl.textContent = formatarDuracaoHoras(getDuracaoHorasEvento());
+      }
+
+      function normalizarUnidadeMetragem(raw) {
+        var u = String(raw || '').toLowerCase().trim();
+        if (u === 'm3' || u === 'm³' || u === 'metro_cubico' || u === 'metro cúbico' || u === 'cubico') return 'm3';
+        if (u === 'm2' || u === 'm²' || u === 'metro_quadrado' || u === 'metro quadrado' || u === 'quadrado') return 'm2';
+        return 'm';
+      }
+      function rotuloUnidadeMetragem(u) {
+        var n = normalizarUnidadeMetragem(u);
+        if (n === 'm3') return 'm³';
+        if (n === 'm2') return 'm²';
+        return 'm';
+      }
+
       function fmtMoeda(n) { return 'R$ ' + Number(n || 0).toLocaleString('pt-BR', { minimumFractionDigits: 2 }); }
+      function fmtMoedaCurta(n) {
+        var v = Number(n || 0);
+        if (!isFinite(v)) v = 0;
+        var arred = Math.round(v);
+        if (Math.abs(v - arred) < 0.005) return 'R$ ' + arred.toLocaleString('pt-BR');
+        return fmtMoeda(v);
+      }
       function fmtData(d) { return d ? new Date(d + 'T12:00:00').toLocaleDateString('pt-BR') : '—'; }
       function esc(s) { return String(s == null ? '' : s).replace(/</g, '&lt;').replace(/>/g, '&gt;'); }
       function toArr(v) {
@@ -1014,6 +1238,13 @@
         s.valor_por_metro = Number(s.valor_por_metro) || 0;
         s.passo_metro = Number(s.passo_metro) || 1;
         s.isPorMetro = s.metragem_minima != null && s.metragem_minima > 0;
+        s.unidade_metragem = normalizarUnidadeMetragem(s.unidade_metragem || s.unidade_metro || s.unidade);
+
+        // Campos do tipo "por hora" (tarifação independente do METRO e de calc_por_hora)
+        s.horas_minimas = s.horas_minimas != null ? Number(s.horas_minimas) : null;
+        s.horas_maximas = s.horas_maximas != null ? Number(s.horas_maximas) : null;
+        s.passo_hora = Number(s.passo_hora) || 1;
+        s.isPorHora = s.horas_minimas != null && s.horas_minimas > 0;
 
         return s;
       }
@@ -1047,6 +1278,7 @@
         SVC.forEach(function (s) {
           svcState[s.servico_id] = 'off';
           svcMetragem[s.servico_id] = 0;
+          svcHoras[s.servico_id] = 0;
         });
       }
 
@@ -1179,11 +1411,15 @@
       // (carregarPropostaExistente não chama esta função).
       function aplicarHorarioPadrao() {
         var agora = new Date();
-        var horaAtual = String(agora.getHours()).padStart(2, '0') + ':00';
+        var hIni = agora.getHours();
+        var horaAtual = String(hIni).padStart(2, '0') + ':00';
+        var hFim = (hIni + 4) % 24;
+        var horaFim = String(hFim).padStart(2, '0') + ':00';
         var campoInicio = document.getElementById('fHorarioInicio');
         var campoFinal = document.getElementById('fHorarioFinal');
         if (campoInicio && !campoInicio.value) campoInicio.value = horaAtual;
-        if (campoFinal && !campoFinal.value) campoFinal.value = horaAtual;
+        if (campoFinal && !campoFinal.value) campoFinal.value = horaFim;
+        atualizarLblDuracao();
       }
 
       function setupMobileBarAutoFade() {
@@ -1266,10 +1502,7 @@
             await carregarClienteDaProposta(p);
             document.getElementById('fData').value = p.data_evento || '';
 
-            if (p.duracao_horas) {
-              document.getElementById('sliderHoras').value = p.duracao_horas;
-              document.getElementById('lblHoras').textContent = p.duracao_horas + 'h';
-            }
+            atualizarLblDuracao();
             if (p.local_evento) document.getElementById('fLocal').value = p.local_evento;
             if (p.observacoes) document.getElementById('fObs').value = p.observacoes;
             if (p.cep_cliente) {
@@ -1376,6 +1609,7 @@
             } else {
               document.getElementById('fHorarioFinal').value = '';
             }
+            atualizarLblDuracao();
 
             if (p.convidados_estimados) {
               evConvidados = Number(p.convidados_estimados) || 80;
@@ -1404,6 +1638,7 @@
                 if (it.tipo === 'servico') {
                   svcState[it.id] = 'manual';
                   if (it.metragem != null) svcMetragem[it.id] = Number(it.metragem);
+                  if (it.horas != null) svcHoras[it.id] = Number(it.horas);
                 }
               });
             }
@@ -1447,7 +1682,7 @@
             var pid = card.dataset.pkg;
             if (activePkg === pid) {
               activePkg = null;
-              SVC.forEach(function (s) { svcState[s.servico_id] = 'off'; svcMetragem[s.servico_id] = 0; });
+              SVC.forEach(function (s) { svcState[s.servico_id] = 'off'; svcMetragem[s.servico_id] = 0; svcHoras[s.servico_id] = 0; });
             } else {
               activePkg = pid;
               var pObj = PKG.find(function (x) { return x.pacote_id === pid; });
@@ -1460,9 +1695,12 @@
                 } else if (!incluido) {
                   svcMetragem[s.servico_id] = 0;
                 }
+                if (incluido && s.isPorHora) {
+                  svcHoras[s.servico_id] = s.horas_minimas;
+                } else if (!incluido) {
+                  svcHoras[s.servico_id] = 0;
+                }
               });
-              document.getElementById('sliderHoras').value = pObj.horas;
-              document.getElementById('lblHoras').textContent = pObj.horas + 'h';
             }
             updateUI();
             renderServicos();
@@ -1485,6 +1723,12 @@
         return { valor: metragem * s.valor_por_metro, valorPorMetroAplicado: s.valor_por_metro, faixaAplicada: null };
       }
 
+      function calcularValorPorHora(s, horas) {
+        if (!horas || horas <= 0) return { valor: 0, valorPorHoraAplicado: 0 };
+        var vph = Number(s.valor_por_hora || s.valor_hora) || 0;
+        return { valor: horas * vph, valorPorHoraAplicado: vph };
+      }
+
       // ========================================================================
       // FONTE ÚNICA DE VERDADE para o preço de um serviço "não-metro".
       // Usada tanto no cálculo interno (recalc) quanto no valor exibido no
@@ -1502,7 +1746,8 @@
       function calcularPrecoServico(s, opts) {
         opts = opts || {};
         var convidados = opts.convidados != null ? opts.convidados : evConvidados;
-        var horas = opts.horas != null ? opts.horas : parseInt(document.getElementById('sliderHoras').value, 10) || 4;
+        var horasEvento = getDuracaoHorasEvento();
+        var horas = opts.horas != null ? opts.horas : (horasEvento != null ? horasEvento : 4);
         var temPacoteAtivo = !!opts.temPacoteAtivo;
 
         var v = s.valor_base;
@@ -1535,7 +1780,7 @@
       // si (calcularPrecoServico) não é afetado por esta função.
       function composicaoPrecoTexto(s) {
         var partes = [];
-        if (s.calc_por_hora && s.valor_hora) partes.push('hora');
+        if ((s.calc_por_hora && s.valor_hora) || s.isPorHora) partes.push('hora');
         if (s.calc_por_pessoa && s.valor_por_pessoa) partes.push('pessoa');
         if (s.isPorMetro || (s.valor_por_metro && (s.metragem_minima != null))) partes.push('m²');
         if (s.faixas && s.faixas.some(function (f) { return f.adicional; })) partes.push('faixa');
@@ -1558,25 +1803,57 @@
         }
 
         grid.innerHTML = SVC.map(function (s) {
-          if (s.isPorMetro) {
+          if (s.isPorMetro || s.isPorHora) {
             var metragemAtual = svcMetragem[s.servico_id] || 0;
-            var ligado = metragemAtual > 0;
-            var calc = calcularValorPorMetro(s, metragemAtual);
+            var horasAtual = svcHoras[s.servico_id] || 0;
+            var ligadoMetro = s.isPorMetro && metragemAtual > 0;
+            var ligadoHora = s.isPorHora && horasAtual > 0;
+            var calc = s.isPorMetro ? calcularValorPorMetro(s, metragemAtual) : null;
+            var calcH = s.isPorHora ? calcularValorPorHora(s, horasAtual) : null;
+            var attrs = 'data-svc="' + s.servico_id + '" id="card-svc-' + s.servico_id + '" class="glass-card-interactive p-4 rounded-xl"' +
+              (s.isPorMetro ? ' data-metro="1"' : '') +
+              (s.isPorHora ? ' data-hora="1"' : '');
 
-            return '<div data-svc="' + s.servico_id + '" data-metro="1" id="card-svc-' + s.servico_id + '" class="glass-card-interactive p-4 rounded-xl">' +
-              '<div class="cursor-pointer" data-metro-toggle="' + s.servico_id + '">' +
-                '<span class="block text-xs font-bold text-white">' + s.icone + ' ' + esc(s.nome) + '</span>' +
-                (s.descricao ? '<span class="card-desc">' + esc(s.descricao) + '</span>' : '') +
-                '<span class="block text-[11px] font-semibold text-cyan-400 mt-2">' + fmtMoeda(s.valor_por_metro) + ' / metro' + (s.metragem_maxima ? ' (mín. ' + s.metragem_minima + 'm, máx. ' + s.metragem_maxima + 'm)' : ' (mín. ' + s.metragem_minima + 'm)') + '</span>' +
-              '</div>' +
-              (ligado ?
-                '<div class="metro-controls">' +
-                  '<div class="metro-btn" data-metro-menos="' + s.servico_id + '">−</div>' +
-                  '<span class="badge-metragem">📐 ' + metragemAtual + 'm selecionado · ' + fmtMoeda(calc.valor) + '</span>' +
-                  '<div class="metro-btn' + (s.metragem_maxima != null && metragemAtual >= s.metragem_maxima ? ' disabled' : '') + '" data-metro-mais="' + s.servico_id + '">+</div>' +
-                '</div>'
-              : '') +
-            '</div>';
+            var html = '<div ' + attrs + '>';
+            html += '<span class="block text-xs font-bold text-white">' + s.icone + ' ' + esc(s.nome) + '</span>';
+            if (s.descricao) html += '<span class="card-desc">' + esc(s.descricao) + '</span>';
+
+            html += '<div class="svc-qty-actions">';
+            if (s.isPorMetro) {
+              var uniM = rotuloUnidadeMetragem(s.unidade_metragem);
+              html += '<span class="block text-[11px] font-semibold text-cyan-400">' + fmtMoedaCurta(s.valor_por_metro) + ' / ' + uniM + (s.metragem_maxima ? ' (mín. ' + s.metragem_minima + ' ' + uniM + ', máx. ' + s.metragem_maxima + ' ' + uniM + ')' : ' (mín. ' + s.metragem_minima + ' ' + uniM + ')') + '</span>';
+              if (ligadoMetro) {
+                html += '<div class="metro-controls">' +
+                  '<div class="qty-row">' +
+                    '<div class="metro-btn" data-metro-menos="' + s.servico_id + '">−</div>' +
+                    '<div class="qty-mid"><input class="qty-input" type="number" inputmode="decimal" data-qty-metro="' + s.servico_id + '" value="' + metragemAtual + '" min="' + s.metragem_minima + '"' + (s.metragem_maxima != null ? ' max="' + s.metragem_maxima + '"' : '') + ' step="' + s.passo_metro + '"><span class="qty-unit">' + uniM + '</span></div>' +
+                    '<div class="metro-btn' + (s.metragem_maxima != null && metragemAtual >= s.metragem_maxima ? ' disabled' : '') + '" data-metro-mais="' + s.servico_id + '">+</div>' +
+                  '</div>' +
+                  '<div class="qty-total">' + fmtMoedaCurta(calc.valor) + '</div>' +
+                '</div>';
+              } else {
+                html += '<div class="btn-add-qty chip-item" data-metro-toggle="' + s.servico_id + '">Adicionar metro</div>';
+              }
+            }
+            if (s.isPorHora) {
+              var vph = Number(s.valor_por_hora || s.valor_hora) || 0;
+              html += '<span class="block text-[11px] font-semibold text-cyan-400">' + fmtMoedaCurta(vph) + ' / h' + (s.horas_maximas ? ' (mín. ' + s.horas_minimas + 'h, máx. ' + s.horas_maximas + 'h)' : ' (mín. ' + s.horas_minimas + 'h)') + '</span>';
+              if (ligadoHora) {
+                html += '<div class="hora-controls metro-controls">' +
+                  '<div class="qty-row">' +
+                    '<div class="metro-btn" data-hora-menos="' + s.servico_id + '">−</div>' +
+                    '<div class="qty-mid"><input class="qty-input" type="number" inputmode="decimal" data-qty-hora="' + s.servico_id + '" value="' + horasAtual + '" min="' + s.horas_minimas + '"' + (s.horas_maximas != null ? ' max="' + s.horas_maximas + '"' : '') + ' step="' + s.passo_hora + '"><span class="qty-unit">h</span></div>' +
+                    '<div class="metro-btn' + (s.horas_maximas != null && horasAtual >= s.horas_maximas ? ' disabled' : '') + '" data-hora-mais="' + s.servico_id + '">+</div>' +
+                  '</div>' +
+                  '<div class="qty-total">' + fmtMoedaCurta(calcH.valor) + '</div>' +
+                '</div>';
+              } else {
+                html += '<div class="btn-add-qty chip-item" data-hora-toggle="' + s.servico_id + '">Adicionar hora</div>';
+              }
+            }
+            html += '</div>';
+            html += '</div>';
+            return html;
           }
 
           var precoCalc = calcularPrecoServico(s, { temPacoteAtivo: !!activePkg });
@@ -1590,7 +1867,7 @@
         }).join('');
 
         // Clique nos cards normais (não-metro)
-        grid.querySelectorAll('[data-svc]:not([data-metro])').forEach(function (card) {
+        grid.querySelectorAll('[data-svc]:not([data-metro]):not([data-hora])').forEach(function (card) {
           card.addEventListener('click', function () {
             if (formularioBloqueadoSomenteLeitura) return;
             var sid = card.dataset.svc;
@@ -1622,7 +1899,7 @@
             if (svcMetragem[sid] > 0) {
               // já ligado -> desliga
               svcMetragem[sid] = 0;
-              svcState[sid] = 'off';
+              if (!svcHoras[sid]) svcState[sid] = 'off';
             } else {
               svcMetragem[sid] = s.metragem_minima;
               svcState[sid] = 'manual';
@@ -1663,7 +1940,7 @@
             if (novo <= s.metragem_minima - s.passo_metro || novo < s.metragem_minima) {
               // desce abaixo do mínimo -> desliga completamente
               svcMetragem[sid] = 0;
-              svcState[sid] = 'off';
+              if (!svcHoras[sid]) svcState[sid] = 'off';
             } else {
               svcMetragem[sid] = novo;
             }
@@ -1671,7 +1948,111 @@
             recalc();
           });
         });
-updateUI();
+
+        grid.querySelectorAll('[data-hora-toggle]').forEach(function (el) {
+          el.addEventListener('click', function () {
+            if (formularioBloqueadoSomenteLeitura) return;
+            var sid = el.dataset.horaToggle;
+            var s = SVC.find(function (x) { return x.servico_id === sid; });
+            if (!s) return;
+            if (svcHoras[sid] > 0) {
+              svcHoras[sid] = 0;
+              if (!svcMetragem[sid]) svcState[sid] = 'off';
+            } else {
+              svcHoras[sid] = s.horas_minimas;
+              svcState[sid] = 'manual';
+            }
+            updateUI();
+            renderServicos();
+            recalc();
+          });
+        });
+
+        grid.querySelectorAll('[data-hora-mais]').forEach(function (btn) {
+          btn.addEventListener('click', function (e) {
+            e.stopPropagation();
+            if (formularioBloqueadoSomenteLeitura) return;
+            var sid = btn.dataset.horaMais;
+            var s = SVC.find(function (x) { return x.servico_id === sid; });
+            if (!s) return;
+            var atual = svcHoras[sid] || s.horas_minimas;
+            var novo = atual + s.passo_hora;
+            if (s.horas_maximas != null && novo > s.horas_maximas) novo = s.horas_maximas;
+            svcHoras[sid] = novo;
+            renderServicos();
+            recalc();
+          });
+        });
+
+        grid.querySelectorAll('[data-hora-menos]').forEach(function (btn) {
+          btn.addEventListener('click', function (e) {
+            e.stopPropagation();
+            if (formularioBloqueadoSomenteLeitura) return;
+            var sid = btn.dataset.horaMenos;
+            var s = SVC.find(function (x) { return x.servico_id === sid; });
+            if (!s) return;
+            var atual = svcHoras[sid] || s.horas_minimas;
+            var novo = atual - s.passo_hora;
+            if (novo <= s.horas_minimas - s.passo_hora || novo < s.horas_minimas) {
+              svcHoras[sid] = 0;
+              if (!svcMetragem[sid]) svcState[sid] = 'off';
+            } else {
+              svcHoras[sid] = novo;
+            }
+            renderServicos();
+            recalc();
+          });
+        });
+
+        function aplicarQtyMetroDigitada(sid, raw) {
+          var s = SVC.find(function (x) { return x.servico_id === sid; });
+          if (!s) return;
+          var n = parseFloat(String(raw).replace(',', '.'));
+          if (!isFinite(n) || n < s.metragem_minima) {
+            svcMetragem[sid] = 0;
+            if (!svcHoras[sid]) svcState[sid] = 'off';
+          } else {
+            if (s.metragem_maxima != null && n > s.metragem_maxima) n = s.metragem_maxima;
+            svcMetragem[sid] = n;
+            svcState[sid] = 'manual';
+          }
+          renderServicos();
+          recalc();
+        }
+        function aplicarQtyHoraDigitada(sid, raw) {
+          var s = SVC.find(function (x) { return x.servico_id === sid; });
+          if (!s) return;
+          var n = parseFloat(String(raw).replace(',', '.'));
+          if (!isFinite(n) || n < s.horas_minimas) {
+            svcHoras[sid] = 0;
+            if (!svcMetragem[sid]) svcState[sid] = 'off';
+          } else {
+            if (s.horas_maximas != null && n > s.horas_maximas) n = s.horas_maximas;
+            svcHoras[sid] = n;
+            svcState[sid] = 'manual';
+          }
+          renderServicos();
+          recalc();
+        }
+        grid.querySelectorAll('[data-qty-metro]').forEach(function (inp) {
+          inp.addEventListener('click', function (e) { e.stopPropagation(); });
+          inp.addEventListener('keydown', function (e) {
+            if (e.key === 'Enter') { e.preventDefault(); aplicarQtyMetroDigitada(inp.dataset.qtyMetro, inp.value); }
+          });
+          inp.addEventListener('change', function () {
+            aplicarQtyMetroDigitada(inp.dataset.qtyMetro, inp.value);
+          });
+        });
+        grid.querySelectorAll('[data-qty-hora]').forEach(function (inp) {
+          inp.addEventListener('click', function (e) { e.stopPropagation(); });
+          inp.addEventListener('keydown', function (e) {
+            if (e.key === 'Enter') { e.preventDefault(); aplicarQtyHoraDigitada(inp.dataset.qtyHora, inp.value); }
+          });
+          inp.addEventListener('change', function () {
+            aplicarQtyHoraDigitada(inp.dataset.qtyHora, inp.value);
+          });
+        });
+        updateUI();
       }
 
       function updateUI() {
@@ -2840,12 +3221,16 @@ updateUI();
         if (btnDesk) btnDesk.addEventListener('click', partnerLogout);
         if (btnMob) btnMob.addEventListener('click', partnerLogout);
 
-        document.getElementById('sliderHoras').addEventListener('input', function () {
+        function onHorarioEventoChange() {
           if (formularioBloqueadoSomenteLeitura) return;
-          document.getElementById('lblHoras').textContent = this.value + 'h';
+          atualizarLblDuracao();
           renderServicos();
           recalc();
-        });
+        }
+        var elIni = document.getElementById('fHorarioInicio');
+        var elFim = document.getElementById('fHorarioFinal');
+        if (elIni) elIni.addEventListener('change', onHorarioEventoChange);
+        if (elFim) elFim.addEventListener('change', onHorarioEventoChange);
 
         document.getElementById('fData').addEventListener('change', recalc);
         document.getElementById('fCep').addEventListener('input', onCepChange);
@@ -3309,7 +3694,9 @@ updateUI();
       function recalc() {
         var cliente = clienteSelecionado ? clienteSelecionado.nome_razao : '—';
         var dataEv = document.getElementById('fData').value;
-        var horas = parseInt(document.getElementById('sliderHoras').value, 10) || 4;
+        var duracaoEv = getDuracaoHorasEvento();
+        var horas = duracaoEv != null ? duracaoEv : 4;
+        atualizarLblDuracao();
 
         var totalComercial = 0; // valor comercial ANTES do desconto (sem transporte)
         var listaLinhas = [];
@@ -3326,22 +3713,51 @@ updateUI();
             var valExtraH = extraH * 350;
             totalComercial += valExtraH;
             listaLinhas.push({ nome: '+' + extraH + 'h Horas Extras', val: valExtraH });
+            itensPayload.push({
+              tipo: 'horas_extras',
+              id: 'horas_extras',
+              nome: '+' + extraH + 'h Horas Extras',
+              valor: valExtraH,
+              horas: extraH
+            });
           }
         }
 
         SVC.forEach(function (s) {
-          if (s.isPorMetro) {
-            var metragemAtual = svcMetragem[s.servico_id] || 0;
-            if (metragemAtual > 0) {
-              var calcMetro = calcularValorPorMetro(s, metragemAtual);
-              totalComercial += Number(calcMetro.valor) || 0;
-              listaLinhas.push({ nome: s.nome + ' (' + metragemAtual + 'm)', val: calcMetro.valor });
-              itensPayload.push({
-                tipo: 'servico', id: s.servico_id, nome: s.nome, valor: calcMetro.valor,
-                metragem: metragemAtual,
-                valor_por_metro_aplicado: calcMetro.valorPorMetroAplicado,
-                faixa_aplicada: calcMetro.faixaAplicada
-              });
+          if (s.isPorMetro || s.isPorHora) {
+            var valorCombo = 0;
+            var itemCombo = { tipo: 'servico', id: s.servico_id, nome: s.nome, valor: 0 };
+            var partesNome = [];
+
+            if (s.isPorMetro) {
+              var metragemAtual = svcMetragem[s.servico_id] || 0;
+              if (metragemAtual > 0) {
+                var calcMetro = calcularValorPorMetro(s, metragemAtual);
+                valorCombo += Number(calcMetro.valor) || 0;
+                partesNome.push(metragemAtual + ' ' + rotuloUnidadeMetragem(s.unidade_metragem));
+                itemCombo.metragem = metragemAtual;
+                itemCombo.unidade_metragem = s.unidade_metragem || 'm';
+                itemCombo.valor_por_metro_aplicado = calcMetro.valorPorMetroAplicado;
+                itemCombo.faixa_aplicada = calcMetro.faixaAplicada;
+              }
+            }
+
+            if (s.isPorHora) {
+              var horasAtual = svcHoras[s.servico_id] || 0;
+              if (horasAtual > 0) {
+                var calcHora = calcularValorPorHora(s, horasAtual);
+                valorCombo += Number(calcHora.valor) || 0;
+                partesNome.push(horasAtual + 'h');
+                itemCombo.horas = horasAtual;
+                itemCombo.valor_por_hora_aplicado = calcHora.valorPorHoraAplicado;
+              }
+            }
+
+            if (valorCombo > 0) {
+              itemCombo.valor = valorCombo;
+              totalComercial += valorCombo;
+              listaLinhas.push({ nome: s.nome + ' (' + partesNome.join(' + ') + ')', val: valorCombo });
+              itensPayload.push(itemCombo);
             }
             return;
           }
@@ -3437,7 +3853,7 @@ updateUI();
 
         document.getElementById('sumCliente').textContent = cliente;
         document.getElementById('sumData').textContent = fmtData(dataEv);
-        document.getElementById('sumInfoBase').textContent = horas + 'h / ' + evConvidados + ' pessoas';
+        document.getElementById('sumInfoBase').textContent = formatarDuracaoHoras(duracaoEv) + ' / ' + evConvidados + ' pessoas';
 
         var sumTotalEl = document.getElementById('sumValorTotal');
         var sumComissaoValEl = document.getElementById('sumComissaoValor');
@@ -3517,8 +3933,12 @@ updateUI();
         var dataEv = document.getElementById('fData').value;
         var local = document.getElementById('fLocal').value.trim();
         var obs = document.getElementById('fObs').value.trim();
-        var horas = parseInt(document.getElementById('sliderHoras').value, 10) || 4;
+        var duracaoEvSave = getDuracaoHorasEvento();
+        var horas = duracaoEvSave != null ? duracaoEvSave : 4;
         var cepVal = document.getElementById('fCep').value.trim();
+        var nomeCliente = clienteSelecionado && clienteSelecionado.nome_razao
+          ? String(clienteSelecionado.nome_razao).trim()
+          : String((document.getElementById('fClienteBusca') || {}).value || '').trim();
 
         var pct = parceiroAtual.comissao_padrao_pct;
         var stNorm = String(statusDesejado || 'enviada').toLowerCase();
@@ -3534,30 +3954,35 @@ updateUI();
           stNorm = 'enviada';
         }
 
-        if (!dataEv) {
-          showAlert('Preencha a Data Prevista.', 'error');
+        if (!nomeCliente) {
+          showAlert('Preencha o nome do cliente.', 'error');
           return;
         }
-        // Regra 6: cliente é opcional para rascunho/simulação, mas obrigatório
-        // para homologar/enviar formalmente a proposta (e, mais adiante, para o contrato).
-        if (stNorm !== 'rascunho' && (!clienteSelecionado || !clienteSelecionado.id)) {
-          showAlert('Selecione ou cadastre um cliente para enviar/homologar a proposta.', 'error');
-          return;
-        }
-        if (eventoEnderecoIgualCliente) {
-          if (!cepVal) {
-            showAlert('Preencha o CEP do local do evento para calcular o transporte.', 'error');
+
+        if (stNorm !== 'rascunho') {
+          if (!dataEv) {
+            showAlert('Preencha a Data Prevista.', 'error');
             return;
           }
-        } else {
-          if (!eventoEndereco.cep || String(eventoEndereco.cep).replace(/\D/g, '').length !== 8) {
-            showAlert('Preencha o CEP específico do local do evento para calcular o transporte.', 'error');
+          if (!clienteSelecionado || !clienteSelecionado.id) {
+            showAlert('Selecione ou cadastre um cliente para enviar/homologar a proposta.', 'error');
             return;
           }
-        }
-        if (!window.currentItensPayload || !window.currentItensPayload.filter(function (i) { return i.tipo !== 'transporte'; }).length) {
-          showAlert('Selecione ao menos um Pacote ou Serviço do catálogo.', 'error');
-          return;
+          if (eventoEnderecoIgualCliente) {
+            if (!cepVal) {
+              showAlert('Preencha o CEP do local do evento para calcular o transporte.', 'error');
+              return;
+            }
+          } else {
+            if (!eventoEndereco.cep || String(eventoEndereco.cep).replace(/\D/g, '').length !== 8) {
+              showAlert('Preencha o CEP específico do local do evento para calcular o transporte.', 'error');
+              return;
+            }
+          }
+          if (!window.currentItensPayload || !window.currentItensPayload.filter(function (i) { return i.tipo !== 'transporte'; }).length) {
+            showAlert('Selecione ao menos um Pacote ou Serviço do catálogo.', 'error');
+            return;
+          }
         }
         if (stNorm !== 'rascunho' && formaPagamentoVal === 'outro' && !formaPagamentoOutroVal) {
           showAlert('Descreva a forma de pagamento no campo "Outro".', 'error');
@@ -3584,20 +4009,37 @@ updateUI();
           }
         }
 
+        function vazioParaNulo(v) {
+          if (v == null) return null;
+          var s = String(v).trim();
+          return s === '' ? null : s;
+        }
+
         var horarioInicioVal = (document.getElementById('fHorarioInicio') || {}).value || null;
         if (horarioInicioVal) horarioInicioVal = String(horarioInicioVal).slice(0, 5);
 
         var horarioFinalVal = (document.getElementById('fHorarioFinal') || {}).value || null;
         if (horarioFinalVal) horarioFinalVal = String(horarioFinalVal).slice(0, 5);
 
+        var agendaEnvio = {
+          data_pagamento: vazioParaNulo(pagamentoAgendaState.data_pagamento),
+          data_entrada: vazioParaNulo(pagamentoAgendaState.data_entrada),
+          data_saldo: vazioParaNulo(pagamentoAgendaState.data_saldo),
+          parcelas_cartao: pagamentoAgendaState.parcelas_cartao || null,
+          descricao_outro: pagamentoAgendaState.descricao_outro || '',
+          status: pagamentoAgendaState.status || 'pendente',
+          status_entrada: pagamentoAgendaState.status_entrada || 'pendente',
+          status_saldo: pagamentoAgendaState.status_saldo || 'pendente'
+        };
+
         var payload = {
           parceiro_id: parceiroAtual.id,
           cliente_id: clienteSelecionado ? clienteSelecionado.id : null,
-          cliente_nome: clienteSelecionado ? clienteSelecionado.nome_razao : null,
+          cliente_nome: clienteSelecionado ? clienteSelecionado.nome_razao : (nomeCliente || null),
           tipo_evento: evTipoVal,
-          data_evento: dataEv,
-          horario_inicio: horarioInicioVal || null,
-          horario_final: horarioFinalVal || null,
+          data_evento: vazioParaNulo(dataEv),
+          horario_inicio: vazioParaNulo(horarioInicioVal),
+          horario_final: vazioParaNulo(horarioFinalVal),
           convidados_estimados: evConvidados,
           duracao_horas: horas,
           local_evento: local,
@@ -3614,7 +4056,7 @@ updateUI();
           forma_pagamento: formaPagamentoVal || null,
           forma_pagamento_outro: formaPagamentoVal === 'outro' ? formaPagamentoOutroVal : null,
           condicao_pagamento: condicaoPagamentoVal || null,
-          pagamento_agenda: pagamentoAgendaState,
+          pagamento_agenda: agendaEnvio,
           desconto_pix_aplicado: window.currentDescontoPixAplicado != null ? window.currentDescontoPixAplicado : 0,
           // Persistência de detalhamento para nota fiscal
           cep_cliente: transporteCepValido || cepVal,
