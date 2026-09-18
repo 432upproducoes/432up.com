@@ -2,7 +2,7 @@
 <html lang="pt-BR">
 <head>
   <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0, minimum-scale=1.0, maximum-scale=5.0, user-scalable=yes">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>Contrato de Prestação de Serviços - 432UP!</title>
   <style>
     @import url('https://fonts.googleapis.com/css2?family=Montserrat:wght@400;600;700;800&family=Inter:wght@300;400;500;600;700&display=swap');
@@ -18,27 +18,7 @@
     }
 
     * { box-sizing: border-box; margin: 0; padding: 0; }
-    html, body {
-      overflow-x: hidden;
-    }
     body { font-family: 'Inter', sans-serif; color: var(--text-dark); background: #D6D6DC; line-height: 1.5; font-size: 12px; }
-
-    /* Wrapper de viewport: garante que o scale aplicado ao conteúdo
-       não altere o fluxo do documento nem cause overflow horizontal,
-       mantendo tudo centralizado mesmo após o pinch-zoom nativo. */
-    #viewport-fit {
-      width: 100%;
-      display: flex;
-      justify-content: center;
-    }
-
-    /* O conteúdo em si mantém suas dimensões A4 fixas (210mm) e é
-       apenas escalado visualmente via transform, sem alterar layout
-       interno, proporções ou espaçamentos das páginas. */
-    #scale-wrapper {
-      transform-origin: top center;
-      transition: none;
-    }
 
     /* MENSAGEM DE STATUS / CARREGAMENTO */
     .status-message {
@@ -352,8 +332,6 @@
   </div>
 
   <!-- CONTEÚDO DO CONTRATO -->
-  <div id="viewport-fit">
-  <div id="scale-wrapper">
   <div id="contractContent" style="display: none;">
 
     <!-- PÁGINA 1 -->
@@ -757,56 +735,12 @@
     </div>
 
   </div>
-  </div>
-  </div>
 
   <!-- DEPENDÊNCIAS FIXAS -->
   <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
   <script src="./partner-config.js"></script>
 
   <script>
-    /* =========================================================
-       FIT MOBILE — escala o conteúdo A4 para caber na largura da
-       tela, sem alterar o layout interno (mesma folha, mesmas
-       proporções). O usuário ainda pode dar pinch-zoom nativo
-       livremente para cima ou para baixo a partir desse ponto,
-       e o conteúdo permanece centralizado (justify-content:
-       center no wrapper cuida disso mesmo após o zoom do browser).
-       ========================================================= */
-
-    function aplicarFitMobile() {
-      const wrapper = document.getElementById('scale-wrapper');
-      if (!wrapper) return;
-
-      const pageEl = wrapper.querySelector('.page') || wrapper.querySelector('.status-message');
-      const larguraConteudo = pageEl ? pageEl.getBoundingClientRect().width : wrapper.getBoundingClientRect().width;
-
-      if (!larguraConteudo) return;
-
-      const larguraTela = window.innerWidth;
-      const escala = larguraTela / larguraConteudo;
-
-      wrapper.style.transform = `scale(${escala})`;
-
-      const alturaOriginal = wrapper.getBoundingClientRect().height / escala;
-      wrapper.parentElement.style.height = (alturaOriginal * escala) + 'px';
-    }
-
-    function recalcularFit() {
-      if (window.innerWidth < 850) {
-        aplicarFitMobile();
-      } else {
-        const wrapper = document.getElementById('scale-wrapper');
-        if (wrapper) {
-          wrapper.style.transform = 'none';
-          wrapper.parentElement.style.height = '';
-        }
-      }
-    }
-
-    window.addEventListener('resize', recalcularFit);
-    window.addEventListener('orientationchange', () => setTimeout(recalcularFit, 200));
-
     // ID DA PROPOSTA VIA URL (SEM FALLBACK FIXO)
     const urlParams = new URLSearchParams(window.location.search);
     const propostaId = urlParams.get('id');
@@ -1475,9 +1409,6 @@
         statusEl.style.display = 'none';
         contentEl.style.display = 'block';
 
-        // Recalcula o fit assim que o conteúdo real é exibido.
-        recalcularFit();
-
       } catch (err) {
         console.error(
           'Erro ao montar contrato:',
@@ -1488,8 +1419,6 @@
           'Ocorreu um erro ao processar os dados do contrato.';
 
         statusEl.classList.add('error');
-
-        recalcularFit();
       }
     }
 
