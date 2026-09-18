@@ -1041,9 +1041,9 @@
     /* =========================================================
        GERAÇÃO DE PDF (substitui window.print())
        Cada .page é capturada individualmente como uma página A4
-       (210 x 297 mm) e adicionada em sequência ao mesmo PDF, sem
-       nenhum metadado automático de navegador (data, URL, caminho,
-       nome de arquivo ou numeração de página).
+       (210 x 297 mm) e adicionada em sequência ao mesmo PDF.
+       - onclone: corrige o vazamento do avatar (overflow + posicionamento)
+       - pdf.link(): adiciona área clicável real sobre o botão do WhatsApp
        ========================================================= */
 
     function aguardarImagensCarregadas(container) {
@@ -1100,6 +1100,31 @@
         for (let i = 0; i < paginas.length; i++) {
           const pageEl = paginas[i];
 
+          // Guarda a posição do botão WhatsApp (se existir nesta página) ANTES da captura
+          let linkInfo = null;
+          const btnWhats = pageEl.querySelector('.btn-whatsapp-pill');
+          if (btnWhats && btnWhats.href) {
+            const pageRect = pageEl.getBoundingClientRect();
+            const btnRect = btnWhats.getBoundingClientRect();
+            const pageW = pageEl.offsetWidth || pageRect.width;
+            const pageH = pageEl.offsetHeight || pageRect.height;
+
+            // Converte coordenadas de pixels da página para mm (A4 = 210 x 297)
+            const xMm = ((btnRect.left - pageRect.left) / pageW) * 210;
+            const yMm = ((btnRect.top  - pageRect.top)  / pageH) * 297;
+            const wMm = (btnRect.width  / pageW) * 210;
+            const hMm = (btnRect.height / pageH) * 297;
+
+            // Pequena margem de segurança para facilitar o clique
+            linkInfo = {
+              x: Math.max(0, xMm - 1),
+              y: Math.max(0, yMm - 1),
+              w: wMm + 2,
+              h: hMm + 2,
+              url: btnWhats.href
+            };
+          }
+
           let canvas;
           try {
             canvas = await html2canvas(pageEl, {
@@ -1107,11 +1132,38 @@
               useCORS: true,
               allowTaint: false,
               backgroundColor: '#FFFFFF',
-              windowWidth: pageEl.scrollWidth,
-              windowHeight: pageEl.scrollHeight,
+              logging: false,
               scrollX: 0,
-              scrollY: -window.scrollY,
-              logging: false
+              scrollY: 0,
+              // onclone: corrige o vazamento clássico do avatar com position absolute + right negativo
+              onclone: (clonedDoc) => {
+                // Garante que todas as páginas no clone tenham overflow cortado
+                clonedDoc.querySelectorAll('.page').forEach(p => {
+                  p.style.overflow = 'hidden';
+                  p.style.height = '297mm';
+                });
+
+                // Força o wrapper de contato a cortar qualquer overflow
+                const wrappers = clonedDoc.querySelectorAll('.contact-box-wrapper');
+                wrappers.forEach(w => {
+                  w.style.overflow = 'hidden';
+                  w.style.position = 'relative';
+                });
+
+                // Ajusta o avatar para não "vazar" no clone (mantém o visual quase idêntico)
+                const avatars = clonedDoc.querySelectorAll('.vendedor-avatar-container');
+                avatars.forEach(av => {
+                  av.style.right = '-40px';          // reduz o estouro
+                  av.style.overflow = 'hidden';
+                  // Garante que a imagem dentro do círculo não estique
+                  const img = av.querySelector('img');
+                  if (img) {
+                    img.style.objectFit = 'cover';
+                    img.style.width = '100%';
+                    img.style.height = '100%';
+                  }
+                });
+              }
             });
           } catch (canvasErr) {
             console.error(`Erro ao capturar a página ${i + 1}:`, canvasErr);
@@ -1120,10 +1172,9 @@
 
           let imgData;
           try {
-            // PNG preserva nitidez de texto e bordas (evita artefatos do JPEG)
+            // PNG preserva nitidez de texto e bordas
             imgData = canvas.toDataURL('image/png');
           } catch (exportErr) {
-            // Canvas contaminado (imagem sem cabeçalho CORS): última tentativa em JPEG
             console.error(`Canvas contaminado na página ${i + 1}, tentando fallback:`, exportErr);
             imgData = canvas.toDataURL('image/jpeg', 0.92);
           }
@@ -1132,6 +1183,11 @@
             pdf.addPage('a4', 'portrait');
           }
           pdf.addImage(imgData, imgData.startsWith('data:image/png') ? 'PNG' : 'JPEG', 0, 0, 210, 297, undefined, 'FAST');
+
+          // Adiciona a área clicável invisível sobre o botão do WhatsApp (se existir nesta página)
+          if (linkInfo) {
+            pdf.link(linkInfo.x, linkInfo.y, linkInfo.w, linkInfo.h, { url: linkInfo.url });
+          }
         }
 
         if (actionBar) actionBar.style.display = actionBarDisplayOriginal;
