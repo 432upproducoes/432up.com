@@ -56,6 +56,13 @@
       border-radius: 6px;
       cursor: pointer;
     }
+    .action-bar .btn-print.btn-system {
+      background: #374151;
+    }
+    .action-bar .buttons {
+      display: flex;
+      gap: 10px;
+    }
 
     #status-container {
       width: 210mm;
@@ -447,7 +454,10 @@
 
   <div class="action-bar" id="action-bar">
     <div class="info">Visualização da Proposta Comercial</div>
-    <button class="btn-print" id="btn-gerar-pdf" onclick="gerarPDF()">Gerar PDF</button>
+    <div class="buttons">
+      <button class="btn-print" id="btn-gerar-pdf" onclick="gerarPDF()">Gerar PDF</button>
+      <button class="btn-print btn-system" onclick="window.print()">Imprimir</button>
+    </div>
   </div>
 
   <div id="status-container">
@@ -691,8 +701,6 @@
       return s.length > 0 ? s : null;
     }
 
-    // ===== Funções reutilizadas do Contrato (mesma lógica, sem alteração de comportamento) =====
-
     function formatarPercentual(valor) {
       const num = Number(valor) || 0;
       return num.toLocaleString('pt-BR', {
@@ -729,11 +737,7 @@
     }
 
     /* =========================================================
-       FORMAS DE PAGAMENTO — DINÂMICO (mesma lógica do Contrato)
-       Fonte: proposta.forma_pagamento, condicao_pagamento, pagamento_agenda,
-       desconto_pix_aplicado, forma_pagamento_outro.
-       Sem texto fixo (6%, 12x). Composição só é exibida se reconciliar
-       com valor_total.
+       FORMAS DE PAGAMENTO
        ========================================================= */
 
     function renderFormasPagamento(proposta) {
@@ -752,7 +756,6 @@
       const valorTotalProposta = primeiroValorNumerico(proposta, ['valor_total']);
       const itensLi = [];
 
-      // PIX INTEGRAL
       if (forma === 'pix' && condicao === 'pix_integral') {
         const temValorTotal = valorTotalProposta !== null && !isNaN(valorTotalProposta);
         const valorFinal = temValorTotal ? arredondarCentavos(valorTotalProposta) : null;
@@ -767,7 +770,6 @@
         }
         itensLi.push(texto);
 
-      // PIX 50/50
       } else if (forma === 'pix' && condicao === 'pix_50_50') {
         const temValorTotal = valorTotalProposta !== null && !isNaN(valorTotalProposta);
         const valorTotal = temValorTotal ? arredondarCentavos(valorTotalProposta) : null;
@@ -787,7 +789,6 @@
         texto += '.';
         itensLi.push(texto);
 
-      // CARTÃO
       } else if (forma === 'cartao') {
         const parcelas = realValue(agenda.parcelas_cartao);
         const temValorTotal = valorTotalProposta !== null && !isNaN(valorTotalProposta);
@@ -799,7 +800,6 @@
         texto += '.';
         itensLi.push(texto);
 
-      // OUTRO
       } else if (forma === 'outro') {
         const formaOutro = realValue(proposta.forma_pagamento_outro);
         const desc = realValue(agenda.descricao_outro);
@@ -828,11 +828,7 @@
     }
 
     /* =========================================================
-       POLÍTICA DE CANCELAMENTO — DINÂMICO (mesma lógica do Contrato)
-       Fonte: co_dados_legais_empresa.{base_multa_cancelamento,
-       multa_cancelamento_percentual, politica_cancelamento_faixas}
-       Sem regra fixa de 50%/100%/15 dias. Fallback neutro apenas
-       quando não houver configuração.
+       POLÍTICA DE CANCELAMENTO
        ========================================================= */
 
     function baseMultaLabel(base) {
@@ -929,7 +925,6 @@
       }
     }
 
-    // Aplica valor a todos os elementos de uma classe; se não houver valor, oculta apenas o próprio elemento
     function setClassTextOrHideParent(className, value) {
       const elements = document.getElementsByClassName(className);
       const v = realValue(value);
@@ -953,16 +948,6 @@
       container.style.display = 'block';
     }
 
-    /* =========================================================
-       MONTAGEM DE ENDEREÇO COMPLETO (co_clientes)
-       Fonte oficial: co_clientes.{logradouro,numero,complemento,bairro,cidade,uf,cep}
-       Regras: nunca mostrar null/undefined/vírgulas sobrando; nunca inventar dado.
-       Formato esperado:
-         Logradouro, número, complemento
-         Bairro — Cidade/UF
-         CEP
-       ========================================================= */
-
     function montarEnderecoCompleto(cliente) {
       if (!cliente) return null;
 
@@ -974,11 +959,9 @@
       const uf = realValue(cliente.uf);
       const cep = realValue(cliente.cep);
 
-      // Linha 1: Logradouro, número, complemento
       const linha1Partes = [logradouro, numero, complemento].filter(p => p !== null);
       const linha1 = linha1Partes.length > 0 ? linha1Partes.join(', ') : null;
 
-      // Linha 2: Bairro — Cidade/UF
       let cidadeUf = null;
       if (cidade && uf) cidadeUf = `${cidade}/${uf}`;
       else if (cidade) cidadeUf = cidade;
@@ -989,7 +972,6 @@
       else if (bairro) linha2 = bairro;
       else if (cidadeUf) linha2 = cidadeUf;
 
-      // Linha 3: CEP
       const linha3 = cep ? `CEP ${cep}` : null;
 
       const linhas = [linha1, linha2, linha3].filter(l => l !== null);
@@ -997,10 +979,6 @@
 
       return linhas.join(' — ');
     }
-
-    /* =========================================================
-       COPIAR CHAVE PIX
-       ========================================================= */
 
     function fallbackCopiarTexto(texto) {
       const textarea = document.createElement('textarea');
@@ -1039,11 +1017,9 @@
     }
 
     /* =========================================================
-       GERAÇÃO DE PDF (substitui window.print())
-       Cada .page é capturada individualmente como uma página A4
-       (210 x 297 mm) e adicionada em sequência ao mesmo PDF.
-       - onclone: corrige o vazamento do avatar (overflow + posicionamento)
-       - pdf.link(): adiciona área clicável real sobre o botão do WhatsApp
+       GERAÇÃO DE PDF (versão imagem)
+       - Dois botões: Gerar PDF + Imprimir (sistema)
+       - Correção da foto do vendedor (sem over-clipping)
        ========================================================= */
 
     function aguardarImagensCarregadas(container) {
@@ -1100,7 +1076,7 @@
         for (let i = 0; i < paginas.length; i++) {
           const pageEl = paginas[i];
 
-          // Guarda a posição do botão WhatsApp (se existir nesta página) ANTES da captura
+          // Posição do botão WhatsApp (se existir)
           let linkInfo = null;
           const btnWhats = pageEl.querySelector('.btn-whatsapp-pill');
           if (btnWhats && btnWhats.href) {
@@ -1109,13 +1085,11 @@
             const pageW = pageEl.offsetWidth || pageRect.width;
             const pageH = pageEl.offsetHeight || pageRect.height;
 
-            // Converte coordenadas de pixels da página para mm (A4 = 210 x 297)
             const xMm = ((btnRect.left - pageRect.left) / pageW) * 210;
             const yMm = ((btnRect.top  - pageRect.top)  / pageH) * 297;
             const wMm = (btnRect.width  / pageW) * 210;
             const hMm = (btnRect.height / pageH) * 297;
 
-            // Pequena margem de segurança para facilitar o clique
             linkInfo = {
               x: Math.max(0, xMm - 1),
               y: Math.max(0, yMm - 1),
@@ -1135,34 +1109,25 @@
               logging: false,
               scrollX: 0,
               scrollY: 0,
-              // onclone: corrige o vazamento clássico do avatar com position absolute + right negativo
+              width: pageEl.offsetWidth,
+              height: pageEl.offsetHeight,
               onclone: (clonedDoc) => {
-                // Garante que todas as páginas no clone tenham overflow cortado
+                // Força o tamanho exato e o overflow:hidden da página
+                // sem alterar a posição original do avatar (right: -60px)
                 clonedDoc.querySelectorAll('.page').forEach(p => {
                   p.style.overflow = 'hidden';
+                  p.style.width = '210mm';
                   p.style.height = '297mm';
+                  p.style.boxShadow = 'none';
+                  p.style.margin = '0';
                 });
 
-                // Força o wrapper de contato a cortar qualquer overflow
-                const wrappers = clonedDoc.querySelectorAll('.contact-box-wrapper');
-                wrappers.forEach(w => {
+                // Garante que o wrapper de contato também corte o overflow
+                clonedDoc.querySelectorAll('.contact-box-wrapper').forEach(w => {
                   w.style.overflow = 'hidden';
-                  w.style.position = 'relative';
                 });
 
-                // Ajusta o avatar para não "vazar" no clone (mantém o visual quase idêntico)
-                const avatars = clonedDoc.querySelectorAll('.vendedor-avatar-container');
-                avatars.forEach(av => {
-                  av.style.right = '-40px';          // reduz o estouro
-                  av.style.overflow = 'hidden';
-                  // Garante que a imagem dentro do círculo não estique
-                  const img = av.querySelector('img');
-                  if (img) {
-                    img.style.objectFit = 'cover';
-                    img.style.width = '100%';
-                    img.style.height = '100%';
-                  }
-                });
+                // NÃO mexe no .vendedor-avatar-container → mantém o visual do HTML
               }
             });
           } catch (canvasErr) {
@@ -1172,7 +1137,6 @@
 
           let imgData;
           try {
-            // PNG preserva nitidez de texto e bordas
             imgData = canvas.toDataURL('image/png');
           } catch (exportErr) {
             console.error(`Canvas contaminado na página ${i + 1}, tentando fallback:`, exportErr);
@@ -1184,7 +1148,6 @@
           }
           pdf.addImage(imgData, imgData.startsWith('data:image/png') ? 'PNG' : 'JPEG', 0, 0, 210, 297, undefined, 'FAST');
 
-          // Adiciona a área clicável invisível sobre o botão do WhatsApp (se existir nesta página)
           if (linkInfo) {
             pdf.link(linkInfo.x, linkInfo.y, linkInfo.w, linkInfo.h, { url: linkInfo.url });
           }
@@ -1208,7 +1171,7 @@
     }
 
     /* =========================================================
-       TABELA "SERVIÇOS INCLUÍDOS E VALORES"
+       TABELA DE ITENS
        ========================================================= */
 
     function parseItens(proposta) {
@@ -1221,8 +1184,6 @@
         }
       }
       if (!Array.isArray(rawItens)) return [];
-      // Exclui itens de transporte (mesma regra do Contrato) para não duplicar
-      // com proposta.valor_transporte, que é exibido separadamente.
       return rawItens.filter(Boolean).filter(item =>
         !(item.tipo === 'transporte' || item.id === 'transporte' || item.is_transporte === true)
       );
@@ -1262,7 +1223,6 @@
       tbody.innerHTML = '';
 
       if (itens.length === 0) {
-        // Sem itens válidos: oculta o bloco inteiro da tabela (sem texto de placeholder).
         if (containerTabela) containerTabela.style.display = 'none';
         return;
       }
@@ -1272,7 +1232,6 @@
       itens.forEach(item => {
         const tr = document.createElement('tr');
 
-        // Nome: mesma prioridade usada pelo Contrato (item.nome || item.item_nome).
         const nome = realValue(item.nome || item.item_nome);
         const descText = realValue(item.descricao || item.desc);
         const valorNum = parseFloat(item.valor || item.preco);
@@ -1327,12 +1286,8 @@
           return;
         }
 
-        // Número usado para nomear o arquivo PDF gerado (Proposta-Comercial-[numero].pdf)
         window.__propostaNumero = realValue(proposta.numero) || realValue(proposta.numero_proposta) || realValue(proposta.id) || propostaId;
 
-        // Dados legais da empresa (mesma fonte usada pelo Contrato) — usados aqui
-        // exclusivamente para tornar a Política de Cancelamento dinâmica.
-        // Se não existir/houver erro, a Proposta segue normalmente com o fallback neutro.
         let dadosEmpresa = null;
         try {
           const { data: dadosEmpresaData } = await sbPartner
@@ -1346,7 +1301,6 @@
         }
         renderPoliticaCancelamento(dadosEmpresa);
 
-        // Vendedor/Parceiro Dinâmico
         let nomeVendedor = null;
         if (proposta.parceiro_id) {
           const { data: parceiro } = await sbPartner
@@ -1372,13 +1326,12 @@
         setTextOrHide('cover-por', nomeVendedor, 'cover-por-wrap');
         setTextOrHide('footer-vendedor-nome', nomeVendedor, 'footer-vendedor-wrap');
 
-        // Cliente
         let nomeCliente = null;
         let cpfCnpjCliente = null;
         let contatoNome = null;
         let contatoCargo = null;
         let tipoPessoa = null;
-        let enderecoCompletoCliente = null; // endereço oficial vindo de co_clientes
+        let enderecoCompletoCliente = null;
 
         if (proposta.cliente_id) {
           const { data: cliente } = await sbPartner
@@ -1391,18 +1344,12 @@
             tipoPessoa = realValue(cliente.tipo_pessoa) ? String(cliente.tipo_pessoa).trim().toLowerCase() : null;
             contatoNome = realValue(cliente.contato_nome);
             contatoCargo = realValue(cliente.contato_cargo);
-            // Fonte canônica do nome: nome_razao (PJ/PF razão social/nome legal). Sem fallback para
-            // nome_fantasia nem para proposta.cliente_nome (campo de outra tabela).
             nomeCliente = realValue(cliente.nome_razao);
             cpfCnpjCliente = realValue(cliente.cpf_cnpj);
-
-            // Monta o endereço completo a partir dos campos oficiais de co_clientes
             enderecoCompletoCliente = montarEnderecoCompleto(cliente);
           }
         }
 
-        // "para:" na capa — cada tipo de pessoa tem sua fonte canônica; sem cair para outro campo
-        // apenas para evitar bloco vazio.
         let nomeParaCapa = null;
         let cargoParaCapa = null;
         if (tipoPessoa === 'pj') {
@@ -1411,7 +1358,6 @@
         } else if (tipoPessoa === 'pf') {
           nomeParaCapa = nomeCliente;
         }
-        // tipo_pessoa não informado: sem fonte canônica definida para "para", bloco permanece oculto.
 
         setTextOrHide('cover-tipo-evento', proposta.tipo_evento, null);
         setTextOrHide('cover-cliente-nome', nomeParaCapa, 'cover-cliente-wrap');
@@ -1456,22 +1402,16 @@
         const durHoras = parseFloat(proposta.duracao_horas);
         setTextOrHide('p2-duracao', !isNaN(durHoras) && durHoras > 0 ? `${durHoras} Horas.` : null, 'p2-duracao-wrap');
 
-        // ENDEREÇO: fonte exclusiva é co_clientes. SEM fallback para local_evento.
-        // Se não houver endereço estruturado do cliente, o campo inteiro é ocultado.
         setTextOrHide('p2-endereco', enderecoCompletoCliente, 'p2-endereco-wrap');
 
         const itens = parseItens(proposta);
         renderizarTabelaItens(itens);
         renderFormasPagamento(proposta);
 
-        const valSubtotal = parseFloat(proposta.valor_subtotal);
         const valTotal = parseFloat(proposta.valor_total);
         const descValor = parseFloat(proposta.desconto_valor);
         const descPerc = parseFloat(proposta.desconto_percentual);
 
-        // Desconto: só exibe o bloco se houver valor de desconto válido. Percentual só aparece se também existir;
-        // não inventamos percentual quando ausente. Quando não há percentual, o próprio "(...%)" some do rótulo,
-        // deixando apenas "Desconto:".
         if (!isNaN(descValor) && descValor > 0) {
           const descPercValido = !isNaN(descPerc) ? descPerc : null;
           const descValorFormatado = formatarMoeda(descValor);
@@ -1488,7 +1428,6 @@
           document.getElementById('row-desconto').style.display = 'none';
         }
 
-        // Valor Total: bloco inteiro (rótulo + valor) só aparece se existir valor total válido.
         const valorTotalFormatado = formatarMoeda(!isNaN(valTotal) ? valTotal : null);
         const rowValorTotal = document.getElementById('row-valor-total');
         if (valorTotalFormatado !== null) {
