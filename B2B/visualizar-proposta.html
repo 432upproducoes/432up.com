@@ -6,7 +6,7 @@
   <title>Proposta Comercial - 432UP! Produções</title>
   
   <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
-  <script src="./partner-config.js"></script>
+  <script src="https://www.432up.com/B2B/partner-config.js"></script>
 
   <style>
     @import url('https://fonts.googleapis.com/css2?family=Chakra+Petch:ital,wght@0,500;0,600;0,700;1,700&family=Inter:wght@400;500;600;700;800&display=swap');
@@ -523,8 +523,8 @@
             <table class="items-table">
               <thead>
                 <tr>
-                  <th style="width: 55%;">ITEM</th>
-                  <th style="width: 20%; text-align: center;">QTD.</th>
+                  <th style="width: 50%;">ITEM / DESCRIÇÃO</th>
+                  <th style="width: 25%; text-align: center;">ESPECIFICAÇÃO</th>
                   <th style="width: 25%; text-align: right;">VALOR</th>
                 </tr>
               </thead>
@@ -1001,22 +1001,27 @@
 
     function calcularQtdStr(item) {
       const tipo = (item.tipo || '').toLowerCase();
+      const partes = [];
 
-      if (tipo === 'servico' || (!tipo && item.metragem)) {
-        const m = parseFloat(item.metragem);
-        if (!isNaN(m) && m > 0) return `${formatarNumeroBR(m)} m²`;
-      }
+      const m = parseFloat(item.metragem);
+      if (!isNaN(m) && m > 0) partes.push(`${formatarNumeroBR(m, 0)} m`);
+
+      const h = parseFloat(item.horas != null ? item.horas : (item.horas_extras || item.qtd_horas));
+      if (!isNaN(h) && h > 0) partes.push(`${formatarNumeroBR(h, 0)} h`);
+
+      if (partes.length) return partes.join(' + ');
+
       if (tipo === 'transporte' || (!tipo && item.distancia_km)) {
         const km = parseFloat(item.distancia_km);
         if (!isNaN(km)) return `${formatarNumeroBR(km, 1)} km`;
       }
       if (tipo === 'horas_extras' || tipo === 'hora_extra') {
-        const h = parseFloat(item.horas_extras || item.horas || item.qtd);
-        if (!isNaN(h) && h > 0) return `${formatarNumeroBR(h, 0)} h`;
+        const hx = parseFloat(item.horas_extras || item.horas || item.qtd);
+        if (!isNaN(hx) && hx > 0) return `${formatarNumeroBR(hx, 0)} h`;
       }
       if (item.area || item.area_m2 || item.m2) {
         const a = parseFloat(item.area || item.area_m2 || item.m2);
-        if (!isNaN(a) && a > 0) return `${formatarNumeroBR(a)} m²`;
+        if (!isNaN(a) && a > 0) return `${formatarNumeroBR(a)} m`;
       }
       if (item.qtd || item.quantidade) {
         const q = formatarNumeroBR(item.qtd || item.quantidade);
@@ -1048,11 +1053,11 @@
         const descText = realValue(item.descricao || item.desc);
         const valorNum = parseFloat(item.valor || item.preco);
         const valorStr = !isNaN(valorNum) ? formatarMoeda(valorNum) : null;
-        const qtdStr = calcularQtdStr(item);
+        const especificacaoStr = realValue(item.especificacao) || calcularQtdStr(item);
 
         const nomeHtml = nome !== null ? `<div style="font-weight: 600;">${nome}</div>` : '';
         const descHtml = descText !== null ? `<div class="item-desc">${descText}</div>` : '';
-        const qtdHtml = qtdStr !== null ? qtdStr : '';
+        const especificacaoHtml = especificacaoStr !== null ? especificacaoStr : '';
         const valorHtml = valorStr !== null ? valorStr : '';
 
         tr.innerHTML = `
@@ -1060,7 +1065,7 @@
             ${nomeHtml}
             ${descHtml}
           </td>
-          <td style="text-align: center; font-weight: 600;">${qtdHtml}</td>
+          <td style="text-align: center; font-weight: 600;">${especificacaoHtml}</td>
           <td style="text-align: right; font-weight: 700;">${valorHtml}</td>
         `;
 
