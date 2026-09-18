@@ -1295,13 +1295,26 @@
           const tdBase =
             document.createElement('td');
 
-          if (
-            item.metragem &&
-            item.valor_por_metro_aplicado
-          ) {
-            tdBase.textContent =
-              `${item.metragem} m² × ` +
-              `${formatarMoeda(item.valor_por_metro_aplicado)}/m²`;
+          const partesQtd = [];
+          const mItem = parseFloat(item.metragem);
+          const hItem = parseFloat(
+            item.horas != null
+              ? item.horas
+              : item.horas_extras
+          );
+          if (!isNaN(mItem) && mItem > 0) {
+            const rawU = String(item.unidade_metragem || item.unidade_metro || '').toLowerCase();
+            let uni = 'm';
+            if (rawU === 'm3' || rawU === 'm³') uni = 'm³';
+            else if (rawU === 'm2' || rawU === 'm²') uni = 'm²';
+            partesQtd.push(mItem + ' ' + uni);
+          }
+          if (!isNaN(hItem) && hItem > 0) {
+            partesQtd.push(hItem + ' h');
+          }
+
+          if (partesQtd.length) {
+            tdBase.textContent = partesQtd.join(' + ');
           } else if (
             item.quantidade &&
             Number(item.quantidade) > 1
