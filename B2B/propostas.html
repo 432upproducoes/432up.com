@@ -44,6 +44,44 @@
       filter: invert(0.8);
     }
 
+    /* Padronização dos campos de filtro (input/select/date) */
+    #filterBusca,
+    #filterStatus,
+    #filterDataEvento {
+      box-sizing: border-box;
+      height: 38px;
+      min-height: 38px;
+      max-height: 38px;
+    }
+
+    /* O <input type="date"> do WebKit/Safari renderiza seu conteúdo (o texto
+       dia/mês/ano) dentro de um shadow DOM interno com métricas próprias do
+       sistema, que o CSS externo normalmente não alcança — por isso a caixa
+       parecia "desalinhada" mesmo com a altura do container batendo com os
+       outros filtros. Miramos diretamente esses pseudo-elementos internos. */
+    #filterDataEvento {
+      padding: 0 12px;
+      display: flex;
+      align-items: center;
+    }
+    #filterDataEvento::-webkit-datetime-edit {
+      display: flex;
+      align-items: center;
+      height: 100%;
+      padding: 0;
+    }
+    #filterDataEvento::-webkit-datetime-edit-fields-wrapper {
+      display: flex;
+      align-items: center;
+    }
+    #filterDataEvento::-webkit-inner-spin-button {
+      display: none;
+    }
+    #filterDataEvento::-webkit-calendar-picker-indicator {
+      margin: 0;
+      padding: 0;
+    }
+
     /* ===== OVERLAY / MODAL DE VISUALIZAÇÃO (PROPOSTA/CONTRATO) ===== */
     #docOverlay {
       display: none;
@@ -103,6 +141,81 @@
       #docOverlay { padding: 0; }
       #docOverlayPanel { max-width: 100%; max-height: 100%; border-radius: 0; }
     }
+
+    /* ===== MODAL DE SELEÇÃO WHATSAPP (PROPOSTA / CONTRATO / OS DOIS) ===== */
+    #waModal {
+      display: none;
+      position: fixed;
+      inset: 0;
+      z-index: 10000;
+      background: rgba(0, 0, 0, 0.7);
+      backdrop-filter: blur(4px);
+      -webkit-backdrop-filter: blur(4px);
+      align-items: center;
+      justify-content: center;
+      padding: 16px;
+    }
+    #waModal.show { display: flex; }
+    #waModalPanel {
+      width: 100%;
+      max-width: 360px;
+      background: #0a0f16;
+      border: 1px solid rgba(255,255,255,0.12);
+      border-radius: 16px;
+      box-shadow: 0 20px 60px rgba(0,0,0,0.9);
+      padding: 20px;
+    }
+    #waModalPanel h3 {
+      font-size: 14px;
+      font-weight: 700;
+      color: #fff;
+      margin-bottom: 4px;
+    }
+    #waModalPanel p {
+      font-size: 11px;
+      color: #94a3b8;
+      margin-bottom: 16px;
+    }
+    .wa-opt {
+      width: 100%;
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      padding: 12px 14px;
+      border-radius: 12px;
+      font-size: 13px;
+      font-weight: 700;
+      margin-bottom: 8px;
+      cursor: pointer;
+      transition: all 0.2s ease;
+      border: 1px solid transparent;
+    }
+    .wa-opt-proposta {
+      background: rgba(0, 240, 255, 0.12);
+      color: #67e8f9;
+      border-color: rgba(0, 240, 255, 0.3);
+    }
+    .wa-opt-proposta:hover { background: rgba(0, 240, 255, 0.22); }
+    .wa-opt-contrato {
+      background: rgba(167, 139, 250, 0.12);
+      color: #c4b5fd;
+      border-color: rgba(167, 139, 250, 0.3);
+    }
+    .wa-opt-contrato:hover { background: rgba(167, 139, 250, 0.22); }
+    .wa-opt-ambos {
+      background: rgba(245, 158, 11, 0.12);
+      color: #fcd34d;
+      border-color: rgba(245, 158, 11, 0.3);
+    }
+    .wa-opt-ambos:hover { background: rgba(245, 158, 11, 0.22); }
+    .wa-opt-cancelar {
+      background: rgba(148, 163, 184, 0.1);
+      color: #cbd5e1;
+      border-color: rgba(148, 163, 184, 0.25);
+      margin-bottom: 0;
+      margin-top: 4px;
+    }
+    .wa-opt-cancelar:hover { background: rgba(148, 163, 184, 0.18); }
   </style>
 </head>
 <body class="h-full text-slate-200 font-sans antialiased bg-[#06080c] overflow-x-hidden">
@@ -202,6 +315,18 @@
     <div id="docOverlayPanel">
       <button type="button" id="docOverlayClose" onclick="fecharDocOverlay()">✕ Fechar</button>
       <iframe id="docOverlayFrame" src="" title="Documento"></iframe>
+    </div>
+  </div>
+
+  <!-- MODAL DE SELEÇÃO WHATSAPP -->
+  <div id="waModal">
+    <div id="waModalPanel">
+      <h3>Enviar no WhatsApp</h3>
+      <p>O que você deseja enviar para o cliente?</p>
+      <button type="button" id="waOptProposta" class="wa-opt wa-opt-proposta">📄 Proposta</button>
+      <button type="button" id="waOptContrato" class="wa-opt wa-opt-contrato">📑 Contrato</button>
+      <button type="button" id="waOptAmbos" class="wa-opt wa-opt-ambos">📄📑 Os dois</button>
+      <button type="button" id="waOptCancelar" class="wa-opt wa-opt-cancelar">Cancelar</button>
     </div>
   </div>
 
@@ -321,6 +446,174 @@
 
       window.abrirContrato = function (propostaId) {
         window.abrirDocOverlay('visualizar-contrato.html?id=' + encodeURIComponent(propostaId));
+      };
+
+      /* ===== MODAL DE SELEÇÃO WHATSAPP (PROPOSTA / CONTRATO / OS DOIS) ===== */
+      var BASE_PUBLICA_432UP = 'https://www.432up.com/B2B';
+      var waPropostaAtual = null;
+      var waFoneAtual = null;
+
+      /* Normaliza um telefone bruto vindo do banco para o formato E.164 sem "+",
+         garantindo o DDI 55 sem duplicar. Retorna '' se não houver dígitos válidos. */
+      function normalizarFoneBR(foneBruto) {
+        var digitos = String(foneBruto || '').replace(/\D/g, '');
+        if (!digitos) return '';
+
+        // Remove zeros à esquerda acidentais
+        digitos = digitos.replace(/^0+/, '');
+        if (!digitos) return '';
+
+        // Se já começar com 55 e tiver tamanho compatível com DDI+DDD+numero (12 ou 13 dígitos), mantém.
+        if (digitos.indexOf('55') === 0 && (digitos.length === 12 || digitos.length === 13)) {
+          return digitos;
+        }
+
+        // Caso contrário, assume que são apenas DDD+numero (10 ou 11 dígitos) e prefixa 55.
+        if (digitos.length === 10 || digitos.length === 11) {
+          return '55' + digitos;
+        }
+
+        // Já vem com 55 mas em tamanho fora do esperado — usa como está (não duplica).
+        if (digitos.indexOf('55') === 0) {
+          return digitos;
+        }
+
+        // Fallback: prefixa 55 mesmo assim.
+        return '55' + digitos;
+      }
+
+      /* Busca o telefone do cliente em co_clientes.telefone usando o cliente_id da proposta. */
+      async function buscarFoneCliente(p) {
+        if (!p || !p.cliente_id) return '';
+        try {
+          var res = await sbPartner.from('co_clientes').select('telefone').eq('id', p.cliente_id).single();
+          if (res.error || !res.data) return '';
+          return String(res.data.telefone || '');
+        } catch (erro) {
+          console.error('[432UP WhatsApp] Falha ao buscar telefone do cliente:', erro);
+          return '';
+        }
+      }
+
+      async function abrirWaModal(p) {
+        waPropostaAtual = p;
+        waFoneAtual = null;
+
+        var foneBruto = await buscarFoneCliente(p);
+        var foneNormalizado = normalizarFoneBR(foneBruto);
+
+        if (!foneNormalizado) {
+          showAlert('Não há telefone válido cadastrado para este cliente. Não é possível enviar pelo WhatsApp.', 'error');
+          return;
+        }
+
+        waFoneAtual = foneNormalizado;
+
+        var temProposta = true; // proposta é sempre considerada disponível
+        var temContrato = !!(p.contrato_disponivel !== false); // assume disponível salvo indicação contrária
+
+        var btnAmbos = document.getElementById('waOptAmbos');
+        btnAmbos.style.display = (temProposta && temContrato) ? 'flex' : 'none';
+
+        document.getElementById('waModal').classList.add('show');
+        document.addEventListener('keydown', onWaModalKeydown);
+      }
+
+      function fecharWaModal() {
+        document.getElementById('waModal').classList.remove('show');
+        document.removeEventListener('keydown', onWaModalKeydown);
+        waPropostaAtual = null;
+        waFoneAtual = null;
+      }
+
+      function onWaModalKeydown(e) {
+        if (e.key === 'Escape') fecharWaModal();
+      }
+
+      function montarLinkProposta(p) {
+        return BASE_PUBLICA_432UP + '/visualizar-proposta.html?id=' + encodeURIComponent(p.id);
+      }
+
+      function montarLinkContrato(p) {
+        return BASE_PUBLICA_432UP + '/visualizar-contrato.html?id=' + encodeURIComponent(p.id);
+      }
+
+      function dispararWhatsApp(fone, msg) {
+        if (!fone) {
+          showAlert('Não há telefone válido cadastrado para este cliente. Não é possível enviar pelo WhatsApp.', 'error');
+          return;
+        }
+        var url = 'https://api.whatsapp.com/send?phone=' + fone + '&text=' + encodeURIComponent(msg);
+        var win = window.open(url, '_blank');
+        if (!win || win.closed || typeof win.closed === 'undefined') {
+          window.location.href = url;
+        }
+      }
+
+      function enviarWaProposta(p, fone) {
+        var linkPublico = montarLinkProposta(p);
+        var msg = 'Olá, ' + (p.cliente_nome || 'Cliente') + '! 👋\n\n' +
+          'Segue a proposta comercial para o evento em ' + fmtData(p.data_evento) + ':\n' +
+          '👉 ' + linkPublico + '\n\n' +
+          'Fico à disposição para esclarecer qualquer dúvida!';
+        dispararWhatsApp(fone, msg);
+      }
+
+      function enviarWaContrato(p, fone) {
+        var linkPublico = montarLinkContrato(p);
+        var msg = 'Olá, ' + (p.cliente_nome || 'Cliente') + '! 👋\n\n' +
+          'Segue o contrato referente ao evento em ' + fmtData(p.data_evento) + ':\n' +
+          '👉 ' + linkPublico + '\n\n' +
+          'Fico à disposição para esclarecer qualquer dúvida!';
+        dispararWhatsApp(fone, msg);
+      }
+
+      function enviarWaAmbos(p, fone) {
+        var linkProposta = montarLinkProposta(p);
+        var linkContrato = montarLinkContrato(p);
+        var msg = 'Olá, ' + (p.cliente_nome || 'Cliente') + '! 👋\n\n' +
+          'Seguem a proposta e o contrato referentes ao evento em ' + fmtData(p.data_evento) + ':\n' +
+          '📄 Proposta: ' + linkProposta + '\n' +
+          '📑 Contrato: ' + linkContrato + '\n\n' +
+          'Fico à disposição para esclarecer qualquer dúvida!';
+        dispararWhatsApp(fone, msg);
+      }
+
+      document.getElementById('waOptProposta').addEventListener('click', function () {
+        var p = waPropostaAtual;
+        var fone = waFoneAtual;
+        fecharWaModal();
+        if (p && fone) enviarWaProposta(p, fone);
+      });
+
+      document.getElementById('waOptContrato').addEventListener('click', function () {
+        var p = waPropostaAtual;
+        var fone = waFoneAtual;
+        fecharWaModal();
+        if (p && fone) enviarWaContrato(p, fone);
+      });
+
+      document.getElementById('waOptAmbos').addEventListener('click', function () {
+        var p = waPropostaAtual;
+        var fone = waFoneAtual;
+        fecharWaModal();
+        if (p && fone) enviarWaAmbos(p, fone);
+      });
+
+      document.getElementById('waOptCancelar').addEventListener('click', function () {
+        fecharWaModal();
+      });
+
+      document.getElementById('waModal').addEventListener('click', function (e) {
+        if (e.target === document.getElementById('waModal')) {
+          fecharWaModal();
+        }
+      });
+
+      window.enviarWhatsApp = function (propostaId) {
+        var p = listaPropostas.find(function (item) { return String(item.id) === String(propostaId); });
+        if (!p) return;
+        abrirWaModal(p);
       };
 
       partnerRequireAuth().then(function (parceiro) {
@@ -463,7 +756,6 @@
               '<div class="inline-flex items-center justify-end gap-1.5 flex-nowrap">' +
                 btnEnviarHtml +
                 '<button onclick="enviarWhatsApp(\'' + p.id + '\')" class="action-btn bg-emerald-500/20 hover:bg-emerald-500/30 text-emerald-300 border border-emerald-500/30 cursor-pointer" title="Enviar no WhatsApp">💬</button>' +
-                '<button onclick="copiarLink(\'' + p.id + '\', this)" class="action-btn bg-slate-800 hover:bg-slate-700 text-slate-300 border border-white/10 cursor-pointer" title="Copiar Link da Proposta">🔗</button>' +
                 '<button onclick="abrirProposta(\'' + p.id + '\')" class="action-btn bg-cyan-500/20 hover:bg-cyan-500/30 text-cyan-300 border border-cyan-500/30 cursor-pointer" title="Visualizar Proposta">📄 Proposta</button>' +
                 '<button onclick="abrirContrato(\'' + p.id + '\')" class="action-btn bg-cyan-500/20 hover:bg-cyan-500/30 text-cyan-300 border border-cyan-500/30 cursor-pointer" title="Visualizar Contrato">📑 Contrato</button>' +
                 btnEditarOuVisualizarHtml +
@@ -492,47 +784,6 @@
           });
         });
       }
-
-      /* DISPARO DIRETO DE WHATSAPP COM SUPORTE A IPAD / MOBILE */
-      window.enviarWhatsApp = function (propostaId) {
-        var p = listaPropostas.find(function (item) { return String(item.id) === String(propostaId); });
-        if (!p) return;
-
-        var fone = String(p.cliente_whatsapp || p.cliente_telefone || p.whatsapp || '').replace(/\D/g, '');
-        var linkPublico = window.location.origin + '/partner/nova-proposta.html?id=' + p.id;
-        
-        var msg = 'Olá, ' + (p.cliente_nome || 'Cliente') + '! 👋\n\n' +
-          'Segue a proposta comercial para o evento em ' + fmtData(p.data_evento) + ':\n' +
-          '👉 ' + linkPublico + '\n\n' +
-          'Fico à disposição para esclarecer qualquer dúvida!';
-
-        var url = 'https://api.whatsapp.com/send?' + (fone ? 'phone=55' + fone + '&' : '') + 'text=' + encodeURIComponent(msg);
-        
-        var win = window.open(url, '_blank');
-        if (!win || win.closed || typeof win.closed === 'undefined') {
-          window.location.href = url;
-        }
-      };
-
-      /* COPIAR LINK DA PROPOSTA PARA A ÁREA DE TRANSFERÊNCIA */
-      window.copiarLink = function (propostaId, btn) {
-        var p = listaPropostas.find(function (item) { return String(item.id) === String(propostaId); });
-        if (!p) return;
-
-        var linkPublico = window.location.origin + '/partner/nova-proposta.html?id=' + p.id;
-        
-        if (navigator.clipboard && navigator.clipboard.writeText) {
-          navigator.clipboard.writeText(linkPublico).then(function () {
-            var txtOrig = btn.innerHTML;
-            btn.innerHTML = '✅';
-            setTimeout(function () { btn.innerHTML = txtOrig; }, 2000);
-          }).catch(function () {
-            prompt('Copie o link da proposta:', linkPublico);
-          });
-        } else {
-          prompt('Copie o link da proposta:', linkPublico);
-        }
-      };
 
       function alterarStatusProposta(propostaId, novoStatus, btn) {
         btn.classList.add('btn-loading');

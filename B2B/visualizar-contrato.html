@@ -18,42 +18,7 @@
     }
 
     * { box-sizing: border-box; margin: 0; padding: 0; }
-    body { font-family: 'Inter', sans-serif; color: var(--text-dark); background: #D6D6DC; line-height: 1.5; font-size: 12px; -webkit-print-color-adjust: exact; }
-
-    /* BARRA DE AÇÃO FIXA FORA DA IMPRESSÃO */
-    .action-bar {
-      max-width: 210mm;
-      margin: 15px auto 5px auto;
-      display: flex;
-      justify-content: space-between;
-      align-items: center;
-      background: #FFFFFF;
-      padding: 12px 20px;
-      border-radius: 8px;
-      box-shadow: 0 2px 10px rgba(0,0,0,0.1);
-    }
-    .action-bar h2 {
-      font-family: 'Montserrat', sans-serif;
-      font-size: 15px;
-      color: var(--purple-primary);
-    }
-    .btn-print {
-      background: var(--gradient-accent);
-      color: #FFFFFF;
-      border: none;
-      padding: 10px 20px;
-      font-family: 'Montserrat', sans-serif;
-      font-weight: 700;
-      font-size: 12px;
-      border-radius: 6px;
-      cursor: pointer;
-      box-shadow: 0 2px 6px rgba(138, 16, 216, 0.3);
-      transition: transform 0.2s, box-shadow 0.2s;
-    }
-    .btn-print:hover {
-      transform: translateY(-1px);
-      box-shadow: 0 4px 12px rgba(138, 16, 216, 0.4);
-    }
+    body { font-family: 'Inter', sans-serif; color: var(--text-dark); background: #D6D6DC; line-height: 1.5; font-size: 12px; }
 
     /* MENSAGEM DE STATUS / CARREGAMENTO */
     .status-message {
@@ -82,7 +47,6 @@
       background: #FFFFFF;
       position: relative;
       box-shadow: 0 5px 15px rgba(0,0,0,0.15);
-      page-break-after: always;
       display: flex;
       flex-direction: column;
       justify-content: space-between;
@@ -358,31 +322,9 @@
       color: var(--text-muted);
     }
 
-    @media print {
-      body { background: none; }
-
-      .action-bar {
-        display: none !important;
-      }
-
-      .page {
-        margin: 0;
-        box-shadow: none;
-        page-break-after: always;
-        width: 100%;
-        height: 100%;
-        padding: 15mm 15mm;
-      }
-    }
   </style>
 </head>
 <body>
-
-  <!-- BARRA DE AÇÃO (TELA) -->
-  <div class="action-bar" id="actionBar">
-    <h2>Contrato de Prestação de Serviços - 432UP!</h2>
-    <button class="btn-print" onclick="window.print()">Imprimir / Salvar PDF</button>
-  </div>
 
   <!-- STATUS MENSAGEM -->
   <div id="statusMessage" class="status-message">
@@ -427,6 +369,9 @@
             <p id="empresa_rep_row" style="display: none;">
               <strong>Representante Legal:</strong> <span id="empresa_representante_legal">—</span>
             </p>
+            <p id="parceiro_row" style="display: none;">
+              <strong>Parceiro / Vendedor:</strong> <span id="parceiro_nome">—</span>
+            </p>
           </div>
 
           <div class="card-legal">
@@ -457,6 +402,10 @@
 
               <p id="evento_data_row" style="display: none;">
                 <strong>Data do Evento:</strong> <span id="evento_data">—</span>
+              </p>
+
+              <p id="evento_horario_row" style="display: none;">
+                <strong>Horário:</strong> <span id="evento_horario">—</span>
               </p>
 
               <p id="evento_duracao_row" style="display: none;">
@@ -834,6 +783,12 @@
       });
     }
 
+    function formatarHorario(horaStr) {
+      if (!horaStr) return null;
+      const match = String(horaStr).match(/^(\d{1,2}:\d{2})/);
+      return match ? match[1] : String(horaStr).trim() || null;
+    }
+
     function setSafeText(idOrClass, text, isClass = false) {
       const str =
         (text !== null && text !== undefined)
@@ -1025,6 +980,23 @@
           dataEmissaoExt || '—'
         );
 
+        // Parceiro / Vendedor (mesma fonte da Proposta)
+        if (proposta.parceiro_id) {
+          const { data: parceiro } = await sbPartner
+            .from('parceiros')
+            .select('nome_completo')
+            .eq('id', proposta.parceiro_id)
+            .single();
+
+          if (parceiro && parceiro.nome_completo) {
+            const nomeParceiro = String(parceiro.nome_completo).trim();
+            if (nomeParceiro) {
+              setSafeText('parceiro_nome', nomeParceiro);
+              toggleRow('parceiro_row', nomeParceiro);
+            }
+          }
+        }
+
         // 2b. CLÁUSULA 5 — CONDIÇÕES DE PAGAMENTO
         // Usa os dados financeiros já salvos na proposta.
         // Não refaz o motor financeiro da Nova Proposta.
@@ -1169,6 +1141,17 @@
           'evento_data_row',
           dataEvBR
         );
+
+        const horarioInicio = formatarHorario(proposta.horario_inicio);
+        const horarioFinal = formatarHorario(proposta.horario_final);
+        let horarioTexto = null;
+        if (horarioInicio && horarioFinal) {
+          horarioTexto = `${horarioInicio} às ${horarioFinal}`;
+        } else if (horarioInicio) {
+          horarioTexto = horarioInicio;
+        }
+        setSafeText('evento_horario', horarioTexto);
+        toggleRow('evento_horario_row', horarioTexto);
 
         setSafeText(
           'evento_duracao',

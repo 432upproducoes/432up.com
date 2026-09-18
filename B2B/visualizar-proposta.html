@@ -8,10 +8,6 @@
   <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
   <script src="./partner-config.js"></script>
 
-  <!-- Geração de PDF nativa (sem depender de window.print()) -->
-  <script src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js"></script>
-  <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
-  
   <style>
     @import url('https://fonts.googleapis.com/css2?family=Chakra+Petch:ital,wght@0,500;0,600;0,700;1,700&family=Inter:wght@400;500;600;700;800&display=swap');
 
@@ -32,36 +28,6 @@
       background: #D6D6DC; 
       line-height: 1.4; 
       font-size: 13.5px; 
-      -webkit-print-color-adjust: exact; 
-    }
-
-    .action-bar {
-      width: 210mm;
-      margin: 15px auto 5px auto;
-      display: flex;
-      justify-content: space-between;
-      align-items: center;
-      background: #FFFFFF;
-      padding: 12px 20px;
-      border-radius: 8px;
-      box-shadow: 0 4px 12px rgba(0,0,0,0.08);
-    }
-    .action-bar .btn-print {
-      background: var(--bar-gradient);
-      color: #FFFFFF;
-      border: none;
-      padding: 10px 20px;
-      font-size: 13px;
-      font-weight: 700;
-      border-radius: 6px;
-      cursor: pointer;
-    }
-    .action-bar .btn-print.btn-system {
-      background: #374151;
-    }
-    .action-bar .buttons {
-      display: flex;
-      gap: 10px;
     }
 
     #status-container {
@@ -85,7 +51,6 @@
       background: #FFFFFF;
       position: relative;
       box-shadow: 0 5px 15px rgba(0,0,0,0.15);
-      page-break-after: always;
       display: flex;
       flex-direction: column;
       justify-content: space-between;
@@ -415,50 +380,9 @@
       font-weight: 600;
     }
 
-    @page {
-      size: A4;
-      margin: 0;
-    }
-
-    @media print {
-      html, body {
-        width: 210mm;
-        height: auto;
-        background: none;
-        margin: 0;
-        padding: 0;
-      }
-      .action-bar { display: none !important; }
-      .page {
-        width: 210mm;
-        height: 297mm;
-        margin: 0;
-        box-shadow: none;
-        page-break-after: always;
-        page-break-inside: avoid;
-        break-after: page;
-        break-inside: avoid-page;
-        overflow: hidden;
-      }
-      .page:last-child {
-        page-break-after: auto;
-        break-after: auto;
-      }
-      .page-body {
-        overflow: hidden;
-      }
-    }
   </style>
 </head>
 <body>
-
-  <div class="action-bar" id="action-bar">
-    <div class="info">Visualização da Proposta Comercial</div>
-    <div class="buttons">
-      <button class="btn-print" id="btn-gerar-pdf" onclick="gerarPDF()">Gerar PDF</button>
-      <button class="btn-print btn-system" onclick="window.print()">Imprimir</button>
-    </div>
-  </div>
 
   <div id="status-container">
     <div id="status-title">Proposta não especificada.</div>
@@ -512,6 +436,8 @@
 
       <div class="page-body">
         <div class="section-header" style="margin-top: 32px;">SOBRE O EVENTO</div>
+        <p id="p2-contratada-wrap" style="font-size: 14px; font-weight: 700;">CONTRATADA: <span id="p2-contratada-nome" style="font-weight: 800;"></span></p>
+        <p id="p2-contratada-cnpj-wrap" style="font-size: 14px; font-weight: 700;">CNPJ: <span id="p2-contratada-cnpj"></span></p>
         <p id="p2-contratante-wrap" style="font-size: 14px; font-weight: 700;">CONTRATANTE: <span id="p2-contratante-nome" style="font-weight: 800;"></span></p>
         <p id="p2-cnpj-wrap" style="font-size: 14px; font-weight: 700;">CPF/CNPJ: <span id="p2-contratante-cnpj"></span></p>
         <p id="p2-contato-wrap" style="font-size: 14px; font-weight: 700;">Contato/Solicitante: <span id="p2-contato-nome" style="font-weight: 800;"></span></p>
@@ -612,6 +538,10 @@
               <span>Desconto<span id="desconto-perc-wrap"> (<span id="fin-desconto-perc"></span>%)</span>:</span>
               <span id="fin-valor-desconto"></span>
             </div>
+            <div id="row-transporte" style="display: none; justify-content: space-between; margin-bottom: 4px;">
+              <span>Transporte / Logística:</span>
+              <span id="fin-valor-transporte"></span>
+            </div>
             <div id="row-valor-total" style="display: flex; justify-content: space-between; font-size: 16px; font-weight: 800; color: #7B1FA2; margin-top: 6px; padding-top: 6px; border-top: 1px dashed #CBD5E1;">
               <span>Valor Total:</span>
               <span id="fin-valor-total" style="color: #2E7D32;"></span>
@@ -701,6 +631,8 @@
       return s.length > 0 ? s : null;
     }
 
+    // ===== Funções reutilizadas do Contrato (mesma lógica, sem alteração de comportamento) =====
+
     function formatarPercentual(valor) {
       const num = Number(valor) || 0;
       return num.toLocaleString('pt-BR', {
@@ -737,7 +669,11 @@
     }
 
     /* =========================================================
-       FORMAS DE PAGAMENTO
+       FORMAS DE PAGAMENTO — DINÂMICO (mesma lógica do Contrato)
+       Fonte: proposta.forma_pagamento, condicao_pagamento, pagamento_agenda,
+       desconto_pix_aplicado, forma_pagamento_outro.
+       Sem texto fixo (6%, 12x). Composição só é exibida se reconciliar
+       com valor_total.
        ========================================================= */
 
     function renderFormasPagamento(proposta) {
@@ -756,6 +692,7 @@
       const valorTotalProposta = primeiroValorNumerico(proposta, ['valor_total']);
       const itensLi = [];
 
+      // PIX INTEGRAL
       if (forma === 'pix' && condicao === 'pix_integral') {
         const temValorTotal = valorTotalProposta !== null && !isNaN(valorTotalProposta);
         const valorFinal = temValorTotal ? arredondarCentavos(valorTotalProposta) : null;
@@ -770,6 +707,7 @@
         }
         itensLi.push(texto);
 
+      // PIX 50/50
       } else if (forma === 'pix' && condicao === 'pix_50_50') {
         const temValorTotal = valorTotalProposta !== null && !isNaN(valorTotalProposta);
         const valorTotal = temValorTotal ? arredondarCentavos(valorTotalProposta) : null;
@@ -789,6 +727,7 @@
         texto += '.';
         itensLi.push(texto);
 
+      // CARTÃO
       } else if (forma === 'cartao') {
         const parcelas = realValue(agenda.parcelas_cartao);
         const temValorTotal = valorTotalProposta !== null && !isNaN(valorTotalProposta);
@@ -800,6 +739,7 @@
         texto += '.';
         itensLi.push(texto);
 
+      // OUTRO
       } else if (forma === 'outro') {
         const formaOutro = realValue(proposta.forma_pagamento_outro);
         const desc = realValue(agenda.descricao_outro);
@@ -828,7 +768,11 @@
     }
 
     /* =========================================================
-       POLÍTICA DE CANCELAMENTO
+       POLÍTICA DE CANCELAMENTO — DINÂMICO (mesma lógica do Contrato)
+       Fonte: co_dados_legais_empresa.{base_multa_cancelamento,
+       multa_cancelamento_percentual, politica_cancelamento_faixas}
+       Sem regra fixa de 50%/100%/15 dias. Fallback neutro apenas
+       quando não houver configuração.
        ========================================================= */
 
     function baseMultaLabel(base) {
@@ -925,6 +869,7 @@
       }
     }
 
+    // Aplica valor a todos os elementos de uma classe; se não houver valor, oculta apenas o próprio elemento
     function setClassTextOrHideParent(className, value) {
       const elements = document.getElementsByClassName(className);
       const v = realValue(value);
@@ -939,7 +884,6 @@
     }
 
     function mostrarErro(titulo, mensagem = '') {
-      document.getElementById('action-bar').style.display = 'none';
       document.getElementById('document-content').style.display = 'none';
       
       const container = document.getElementById('status-container');
@@ -948,20 +892,33 @@
       container.style.display = 'block';
     }
 
-    function montarEnderecoCompleto(cliente) {
-      if (!cliente) return null;
+    /* =========================================================
+       MONTAGEM DE ENDEREÇO COMPLETO
+       Aceita objeto com {logradouro,numero,complemento,bairro,cidade,uf,cep}
+       (co_clientes ou campos de evento da proposta).
+       Regras: nunca mostrar null/undefined/vírgulas sobrando; nunca inventar dado.
+       Formato esperado:
+         Logradouro, número, complemento
+         Bairro — Cidade/UF
+         CEP
+       ========================================================= */
 
-      const logradouro = realValue(cliente.logradouro);
-      const numero = realValue(cliente.numero);
-      const complemento = realValue(cliente.complemento);
-      const bairro = realValue(cliente.bairro);
-      const cidade = realValue(cliente.cidade);
-      const uf = realValue(cliente.uf);
-      const cep = realValue(cliente.cep);
+    function montarEnderecoCompleto(fonte) {
+      if (!fonte) return null;
 
+      const logradouro = realValue(fonte.logradouro);
+      const numero = realValue(fonte.numero);
+      const complemento = realValue(fonte.complemento);
+      const bairro = realValue(fonte.bairro);
+      const cidade = realValue(fonte.cidade);
+      const uf = realValue(fonte.uf);
+      const cep = realValue(fonte.cep);
+
+      // Linha 1: Logradouro, número, complemento
       const linha1Partes = [logradouro, numero, complemento].filter(p => p !== null);
       const linha1 = linha1Partes.length > 0 ? linha1Partes.join(', ') : null;
 
+      // Linha 2: Bairro — Cidade/UF
       let cidadeUf = null;
       if (cidade && uf) cidadeUf = `${cidade}/${uf}`;
       else if (cidade) cidadeUf = cidade;
@@ -972,6 +929,7 @@
       else if (bairro) linha2 = bairro;
       else if (cidadeUf) linha2 = cidadeUf;
 
+      // Linha 3: CEP
       const linha3 = cep ? `CEP ${cep}` : null;
 
       const linhas = [linha1, linha2, linha3].filter(l => l !== null);
@@ -979,6 +937,10 @@
 
       return linhas.join(' — ');
     }
+
+    /* =========================================================
+       COPIAR CHAVE PIX
+       ========================================================= */
 
     function fallbackCopiarTexto(texto) {
       const textarea = document.createElement('textarea');
@@ -1017,161 +979,7 @@
     }
 
     /* =========================================================
-       GERAÇÃO DE PDF (versão imagem)
-       - Dois botões: Gerar PDF + Imprimir (sistema)
-       - Correção da foto do vendedor (sem over-clipping)
-       ========================================================= */
-
-    function aguardarImagensCarregadas(container) {
-      const imgs = Array.from(container.querySelectorAll('img'));
-      return Promise.all(imgs.map(img => {
-        if (img.complete && img.naturalWidth !== 0) return Promise.resolve();
-        return new Promise(resolve => {
-          img.addEventListener('load', resolve, { once: true });
-          img.addEventListener('error', resolve, { once: true });
-        });
-      }));
-    }
-
-    async function gerarPDF() {
-      const btn = document.getElementById('btn-gerar-pdf');
-      const actionBar = document.getElementById('action-bar');
-      const docContent = document.getElementById('document-content');
-      const textoOriginalBtn = btn ? btn.textContent : null;
-
-      if (!docContent || docContent.style.display === 'none') {
-        alert('A proposta ainda não foi carregada completamente. Aguarde e tente novamente.');
-        return;
-      }
-
-      if (typeof html2canvas === 'undefined' || typeof window.jspdf === 'undefined') {
-        alert('Não foi possível carregar o gerador de PDF. Verifique sua conexão e tente novamente.');
-        return;
-      }
-
-      try {
-        if (btn) {
-          btn.disabled = true;
-          btn.textContent = 'Gerando PDF...';
-        }
-
-        if (document.fonts && document.fonts.ready) {
-          await document.fonts.ready;
-        }
-        await aguardarImagensCarregadas(docContent);
-
-        const actionBarDisplayOriginal = actionBar ? actionBar.style.display : '';
-        if (actionBar) actionBar.style.display = 'none';
-
-        const paginas = docContent.querySelectorAll('.page');
-
-        const { jsPDF } = window.jspdf;
-        const pdf = new jsPDF({
-          orientation: 'portrait',
-          unit: 'mm',
-          format: 'a4',
-          compress: true
-        });
-
-        for (let i = 0; i < paginas.length; i++) {
-          const pageEl = paginas[i];
-
-          // Posição do botão WhatsApp (se existir)
-          let linkInfo = null;
-          const btnWhats = pageEl.querySelector('.btn-whatsapp-pill');
-          if (btnWhats && btnWhats.href) {
-            const pageRect = pageEl.getBoundingClientRect();
-            const btnRect = btnWhats.getBoundingClientRect();
-            const pageW = pageEl.offsetWidth || pageRect.width;
-            const pageH = pageEl.offsetHeight || pageRect.height;
-
-            const xMm = ((btnRect.left - pageRect.left) / pageW) * 210;
-            const yMm = ((btnRect.top  - pageRect.top)  / pageH) * 297;
-            const wMm = (btnRect.width  / pageW) * 210;
-            const hMm = (btnRect.height / pageH) * 297;
-
-            linkInfo = {
-              x: Math.max(0, xMm - 1),
-              y: Math.max(0, yMm - 1),
-              w: wMm + 2,
-              h: hMm + 2,
-              url: btnWhats.href
-            };
-          }
-
-          let canvas;
-          try {
-            canvas = await html2canvas(pageEl, {
-              scale: 2,
-              useCORS: true,
-              allowTaint: false,
-              backgroundColor: '#FFFFFF',
-              logging: false,
-              scrollX: 0,
-              scrollY: 0,
-              width: pageEl.offsetWidth,
-              height: pageEl.offsetHeight,
-              onclone: (clonedDoc) => {
-                // Força o tamanho exato e o overflow:hidden da página
-                // sem alterar a posição original do avatar (right: -60px)
-                clonedDoc.querySelectorAll('.page').forEach(p => {
-                  p.style.overflow = 'hidden';
-                  p.style.width = '210mm';
-                  p.style.height = '297mm';
-                  p.style.boxShadow = 'none';
-                  p.style.margin = '0';
-                });
-
-                // Garante que o wrapper de contato também corte o overflow
-                clonedDoc.querySelectorAll('.contact-box-wrapper').forEach(w => {
-                  w.style.overflow = 'hidden';
-                });
-
-                // NÃO mexe no .vendedor-avatar-container → mantém o visual do HTML
-              }
-            });
-          } catch (canvasErr) {
-            console.error(`Erro ao capturar a página ${i + 1}:`, canvasErr);
-            throw new Error(`Não foi possível capturar a página ${i + 1} (provável imagem externa sem CORS habilitado).`);
-          }
-
-          let imgData;
-          try {
-            imgData = canvas.toDataURL('image/png');
-          } catch (exportErr) {
-            console.error(`Canvas contaminado na página ${i + 1}, tentando fallback:`, exportErr);
-            imgData = canvas.toDataURL('image/jpeg', 0.92);
-          }
-
-          if (i > 0) {
-            pdf.addPage('a4', 'portrait');
-          }
-          pdf.addImage(imgData, imgData.startsWith('data:image/png') ? 'PNG' : 'JPEG', 0, 0, 210, 297, undefined, 'FAST');
-
-          if (linkInfo) {
-            pdf.link(linkInfo.x, linkInfo.y, linkInfo.w, linkInfo.h, { url: linkInfo.url });
-          }
-        }
-
-        if (actionBar) actionBar.style.display = actionBarDisplayOriginal;
-
-        const numeroProposta = realValue(window.__propostaNumero) || 'documento';
-        pdf.save(`Proposta-Comercial-${numeroProposta}.pdf`);
-
-      } catch (err) {
-        console.error('Erro ao gerar PDF:', err);
-        alert('Ocorreu um erro ao gerar o PDF. Tente novamente.');
-      } finally {
-        if (btn) {
-          btn.disabled = false;
-          btn.textContent = textoOriginalBtn;
-        }
-        if (actionBar) actionBar.style.display = '';
-      }
-    }
-
-    /* =========================================================
-       TABELA DE ITENS
+       TABELA "SERVIÇOS INCLUÍDOS E VALORES"
        ========================================================= */
 
     function parseItens(proposta) {
@@ -1184,6 +992,8 @@
         }
       }
       if (!Array.isArray(rawItens)) return [];
+      // Exclui itens de transporte (mesma regra do Contrato) para não duplicar
+      // com proposta.valor_transporte, que é exibido separadamente.
       return rawItens.filter(Boolean).filter(item =>
         !(item.tipo === 'transporte' || item.id === 'transporte' || item.is_transporte === true)
       );
@@ -1223,6 +1033,7 @@
       tbody.innerHTML = '';
 
       if (itens.length === 0) {
+        // Sem itens válidos: oculta o bloco inteiro da tabela (sem texto de placeholder).
         if (containerTabela) containerTabela.style.display = 'none';
         return;
       }
@@ -1232,6 +1043,7 @@
       itens.forEach(item => {
         const tr = document.createElement('tr');
 
+        // Nome: mesma prioridade usada pelo Contrato (item.nome || item.item_nome).
         const nome = realValue(item.nome || item.item_nome);
         const descText = realValue(item.descricao || item.desc);
         const valorNum = parseFloat(item.valor || item.preco);
@@ -1286,13 +1098,14 @@
           return;
         }
 
-        window.__propostaNumero = realValue(proposta.numero) || realValue(proposta.numero_proposta) || realValue(proposta.id) || propostaId;
-
+        // Dados legais da empresa (mesma fonte usada pelo Contrato) — usados aqui
+        // exclusivamente para tornar a Política de Cancelamento dinâmica.
+        // Se não existir/houver erro, a Proposta segue normalmente com o fallback neutro.
         let dadosEmpresa = null;
         try {
           const { data: dadosEmpresaData } = await sbPartner
             .from('co_dados_legais_empresa')
-            .select('base_multa_cancelamento, multa_cancelamento_percentual, politica_cancelamento_faixas')
+            .select('base_multa_cancelamento, multa_cancelamento_percentual, politica_cancelamento_faixas, razao_social, cnpj')
             .limit(1)
             .maybeSingle();
           dadosEmpresa = dadosEmpresaData;
@@ -1301,6 +1114,16 @@
         }
         renderPoliticaCancelamento(dadosEmpresa);
 
+        // Dados básicos da contratada (razão social / CNPJ)
+        if (dadosEmpresa) {
+          setTextOrHide('p2-contratada-nome', dadosEmpresa.razao_social, 'p2-contratada-wrap');
+          setTextOrHide('p2-contratada-cnpj', dadosEmpresa.cnpj, 'p2-contratada-cnpj-wrap');
+        } else {
+          setTextOrHide('p2-contratada-nome', null, 'p2-contratada-wrap');
+          setTextOrHide('p2-contratada-cnpj', null, 'p2-contratada-cnpj-wrap');
+        }
+
+        // Vendedor/Parceiro Dinâmico
         let nomeVendedor = null;
         if (proposta.parceiro_id) {
           const { data: parceiro } = await sbPartner
@@ -1326,12 +1149,13 @@
         setTextOrHide('cover-por', nomeVendedor, 'cover-por-wrap');
         setTextOrHide('footer-vendedor-nome', nomeVendedor, 'footer-vendedor-wrap');
 
+        // Cliente
         let nomeCliente = null;
         let cpfCnpjCliente = null;
         let contatoNome = null;
         let contatoCargo = null;
         let tipoPessoa = null;
-        let enderecoCompletoCliente = null;
+        let enderecoCompletoCliente = null; // endereço oficial vindo de co_clientes
 
         if (proposta.cliente_id) {
           const { data: cliente } = await sbPartner
@@ -1344,12 +1168,18 @@
             tipoPessoa = realValue(cliente.tipo_pessoa) ? String(cliente.tipo_pessoa).trim().toLowerCase() : null;
             contatoNome = realValue(cliente.contato_nome);
             contatoCargo = realValue(cliente.contato_cargo);
+            // Fonte canônica do nome: nome_razao (PJ/PF razão social/nome legal). Sem fallback para
+            // nome_fantasia nem para proposta.cliente_nome (campo de outra tabela).
             nomeCliente = realValue(cliente.nome_razao);
             cpfCnpjCliente = realValue(cliente.cpf_cnpj);
+
+            // Monta o endereço completo a partir dos campos oficiais de co_clientes
             enderecoCompletoCliente = montarEnderecoCompleto(cliente);
           }
         }
 
+        // "para:" na capa — cada tipo de pessoa tem sua fonte canônica; sem cair para outro campo
+        // apenas para evitar bloco vazio.
         let nomeParaCapa = null;
         let cargoParaCapa = null;
         if (tipoPessoa === 'pj') {
@@ -1358,6 +1188,7 @@
         } else if (tipoPessoa === 'pf') {
           nomeParaCapa = nomeCliente;
         }
+        // tipo_pessoa não informado: sem fonte canônica definida para "para", bloco permanece oculto.
 
         setTextOrHide('cover-tipo-evento', proposta.tipo_evento, null);
         setTextOrHide('cover-cliente-nome', nomeParaCapa, 'cover-cliente-wrap');
@@ -1402,16 +1233,37 @@
         const durHoras = parseFloat(proposta.duracao_horas);
         setTextOrHide('p2-duracao', !isNaN(durHoras) && durHoras > 0 ? `${durHoras} Horas.` : null, 'p2-duracao-wrap');
 
-        setTextOrHide('p2-endereco', enderecoCompletoCliente, 'p2-endereco-wrap');
+        // ENDEREÇO DO EVENTO: mesma lógica do Contrato.
+        // Se evento_endereco_igual_cliente === true, usa endereço de co_clientes;
+        // caso contrário, usa os campos evento_* da proposta.
+        let enderecoEvento = null;
+        if (proposta.evento_endereco_igual_cliente === true) {
+          enderecoEvento = enderecoCompletoCliente;
+        } else {
+          enderecoEvento = montarEnderecoCompleto({
+            logradouro: proposta.evento_logradouro,
+            numero: proposta.evento_numero,
+            complemento: proposta.evento_complemento,
+            bairro: proposta.evento_bairro,
+            cidade: proposta.evento_cidade,
+            uf: proposta.evento_uf,
+            cep: proposta.evento_cep
+          });
+        }
+        setTextOrHide('p2-endereco', enderecoEvento, 'p2-endereco-wrap');
 
         const itens = parseItens(proposta);
         renderizarTabelaItens(itens);
         renderFormasPagamento(proposta);
 
+        const valSubtotal = parseFloat(proposta.valor_subtotal);
         const valTotal = parseFloat(proposta.valor_total);
         const descValor = parseFloat(proposta.desconto_valor);
         const descPerc = parseFloat(proposta.desconto_percentual);
 
+        // Desconto: só exibe o bloco se houver valor de desconto válido. Percentual só aparece se também existir;
+        // não inventamos percentual quando ausente. Quando não há percentual, o próprio "(...%)" some do rótulo,
+        // deixando apenas "Desconto:".
         if (!isNaN(descValor) && descValor > 0) {
           const descPercValido = !isNaN(descPerc) ? descPerc : null;
           const descValorFormatado = formatarMoeda(descValor);
@@ -1428,6 +1280,18 @@
           document.getElementById('row-desconto').style.display = 'none';
         }
 
+        // Transporte / Logística: só exibe se houver valor > 0 (mesma regra do Contrato).
+        const transpVal = parseFloat(proposta.valor_transporte);
+        const rowTransporte = document.getElementById('row-transporte');
+        if (!isNaN(transpVal) && transpVal > 0) {
+          const transpFormatado = formatarMoeda(transpVal);
+          setTextOrHide('fin-valor-transporte', transpFormatado, null);
+          if (rowTransporte) rowTransporte.style.display = 'flex';
+        } else {
+          if (rowTransporte) rowTransporte.style.display = 'none';
+        }
+
+        // Valor Total: bloco inteiro (rótulo + valor) só aparece se existir valor total válido.
         const valorTotalFormatado = formatarMoeda(!isNaN(valTotal) ? valTotal : null);
         const rowValorTotal = document.getElementById('row-valor-total');
         if (valorTotalFormatado !== null) {
