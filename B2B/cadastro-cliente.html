@@ -99,6 +99,8 @@
     input[type="text"],
     input[type="tel"],
     input[type="email"],
+    input[type="date"],
+    select,
     textarea {
       color-scheme: dark !important;
       -webkit-appearance: none;
@@ -107,6 +109,18 @@
       min-height: 44px;
       background-color: rgba(15, 23, 42, 0.85) !important;
       color: #ffffff !important;
+    }
+
+    select option {
+      background-color: #0f172a;
+      color: #ffffff;
+    }
+
+    .mc-data-row {
+      border: 1px solid rgba(255, 255, 255, 0.12);
+      background: rgba(15, 23, 42, 0.45);
+      border-radius: 12px;
+      padding: 10px;
     }
 
     #formAlert { display: none; }
@@ -199,6 +213,49 @@
           </div>
 
           <div class="pt-1 border-t border-white/10">
+            <span class="block text-xs uppercase tracking-wider text-slate-400 font-semibold mb-3">Perfil comercial</span>
+            <div class="grid grid-cols-1 md:grid-cols-2 gap-3">
+              <div>
+                <label for="mcTipoCliente" class="block text-xs uppercase tracking-wider text-slate-300 font-semibold mb-1.5">Tipo de Cliente</label>
+                <select id="mcTipoCliente" class="w-full bg-slate-900/80 border border-white/20 rounded-xl px-4 py-2.5 text-sm text-white focus:border-cyan-400 focus:ring-1 focus:ring-cyan-400 focus:outline-none transition">
+                  <option value="">Selecionar</option>
+                </select>
+              </div>
+              <div>
+                <label for="mcStatusComercial" class="block text-xs uppercase tracking-wider text-slate-300 font-semibold mb-1.5">Status comercial</label>
+                <select id="mcStatusComercial" class="w-full bg-slate-900/80 border border-white/20 rounded-xl px-4 py-2.5 text-sm text-white focus:border-cyan-400 focus:ring-1 focus:ring-cyan-400 focus:outline-none transition">
+                  <option value="Novo">Novo</option>
+                  <option value="Em contato">Em contato</option>
+                  <option value="Cliente">Cliente</option>
+                  <option value="Cliente recorrente">Cliente recorrente</option>
+                  <option value="Inativo">Inativo</option>
+                </select>
+              </div>
+            </div>
+            <div class="grid grid-cols-1 md:grid-cols-2 gap-3 mt-3">
+              <div>
+                <label for="mcOrigemCliente" class="block text-xs uppercase tracking-wider text-slate-300 font-semibold mb-1.5">Origem do Cliente</label>
+                <select id="mcOrigemCliente" class="w-full bg-slate-900/80 border border-white/20 rounded-xl px-4 py-2.5 text-sm text-white focus:border-cyan-400 focus:ring-1 focus:ring-cyan-400 focus:outline-none transition">
+                  <option value="">Selecionar</option>
+                </select>
+              </div>
+              <div>
+                <label for="mcOrigemDetalhe" class="block text-xs uppercase tracking-wider text-slate-300 font-semibold mb-1.5">Detalhe da origem</label>
+                <input type="text" id="mcOrigemDetalhe" class="w-full bg-slate-900/80 border border-white/20 rounded-xl px-4 py-2.5 text-sm text-white placeholder-slate-500 focus:border-cyan-400 focus:ring-1 focus:ring-cyan-400 focus:outline-none transition" placeholder="Ex.: Indicação → João da empresa X">
+              </div>
+            </div>
+          </div>
+
+          <div class="pt-1 border-t border-white/10">
+            <div class="flex items-center justify-between gap-2 mb-3">
+              <span class="block text-xs uppercase tracking-wider text-slate-400 font-semibold">Datas importantes</span>
+              <button type="button" id="btnAddDataImportante" class="px-2.5 py-1 rounded-lg bg-cyan-500/20 hover:bg-cyan-500/30 text-cyan-300 border border-cyan-500/40 text-[11px] font-bold cursor-pointer transition">+</button>
+            </div>
+            <div id="mcDatasImportantesList" class="space-y-2"></div>
+            <p class="text-[10px] text-slate-500 mt-2 leading-snug">Use + para adicionar e − para remover. A data pode ser completa ou só dia/mês.</p>
+          </div>
+
+          <div class="pt-1 border-t border-white/10">
             <span class="block text-xs uppercase tracking-wider text-slate-400 font-semibold mb-3">Endereço (opcional)</span>
             <div class="grid grid-cols-1 md:grid-cols-3 gap-3">
               <div>
@@ -270,6 +327,95 @@
       var mcClienteEditandoId = null;
       var ultimoCepConsultadoModal = null;
 
+      var TIPOS_DATA = [];
+      var OPCOES_TIPO_CLIENTE = [];
+      var OPCOES_ORIGEM_CLIENTE = [];
+      var RECORRENCIAS = ['nenhuma', 'anual', 'mensal'];
+      var opcoesCarregadasPromise = null;
+
+      function ordenarOpcoesNome(lista) {
+        var arr = (lista || []).slice();
+        arr.sort(function (a, b) {
+          var an = String(a || '');
+          var bn = String(b || '');
+          var aOutro = an === 'Outro' ? 1 : 0;
+          var bOutro = bn === 'Outro' ? 1 : 0;
+          if (aOutro !== bOutro) return aOutro - bOutro;
+          return an.localeCompare(bn, 'pt-BR', { sensitivity: 'base' });
+        });
+        return arr;
+      }
+
+      function optionLabel(nome, inativo) {
+        return inativo ? (nome + ' (inativo)') : nome;
+      }
+
+      function preencherSelectOpcoes(selectEl, nomes, opts) {
+        if (!selectEl) return;
+        opts = opts || {};
+        var valorAtual = opts.valorSalvo != null ? String(opts.valorSalvo) : '';
+        var incluirVazio = opts.incluirVazio !== false;
+        var html = incluirVazio ? '<option value="">Selecionar</option>' : '';
+        var i, nome;
+        var vistos = {};
+        var lista = ordenarOpcoesNome(nomes || []);
+        for (i = 0; i < lista.length; i++) {
+          nome = String(lista[i] || '');
+          if (!nome || vistos[nome]) continue;
+          vistos[nome] = true;
+          html += '<option value="' + nome.replace(/"/g, '&quot;') + '">' + nome + '</option>';
+        }
+        if (valorAtual && !vistos[valorAtual]) {
+          html += '<option value="' + valorAtual.replace(/"/g, '&quot;') + '">' + optionLabel(valorAtual, true) + '</option>';
+        }
+        selectEl.innerHTML = html;
+        if (valorAtual) selectEl.value = valorAtual;
+        else if (incluirVazio) selectEl.value = '';
+      }
+
+      async function carregarOpcoesClientes() {
+        if (opcoesCarregadasPromise) return opcoesCarregadasPromise;
+        opcoesCarregadasPromise = (async function () {
+          try {
+            var res = await sbPartner
+              .from('co_clientes_opcoes')
+              .select('categoria, nome, ativo')
+              .eq('ativo', true)
+              .in('categoria', ['origem_cliente', 'tipo_cliente', 'tipo_data_importante']);
+
+            if (res.error) {
+              console.error('[432UP Partner] Erro ao carregar co_clientes_opcoes:', res.error);
+              return;
+            }
+
+            var tipo = [];
+            var origem = [];
+            var dataTipo = [];
+            var rows = res.data || [];
+            var i, row, cat, nome;
+            for (i = 0; i < rows.length; i++) {
+              row = rows[i] || {};
+              cat = row.categoria;
+              nome = row.nome != null ? String(row.nome).trim() : '';
+              if (!nome) continue;
+              if (cat === 'tipo_cliente') tipo.push(nome);
+              else if (cat === 'origem_cliente') origem.push(nome);
+              else if (cat === 'tipo_data_importante') dataTipo.push(nome);
+            }
+
+            OPCOES_TIPO_CLIENTE = ordenarOpcoesNome(tipo);
+            OPCOES_ORIGEM_CLIENTE = ordenarOpcoesNome(origem);
+            TIPOS_DATA = ordenarOpcoesNome(dataTipo);
+
+            preencherSelectOpcoes(document.getElementById('mcTipoCliente'), OPCOES_TIPO_CLIENTE, { incluirVazio: true });
+            preencherSelectOpcoes(document.getElementById('mcOrigemCliente'), OPCOES_ORIGEM_CLIENTE, { incluirVazio: true });
+          } catch (e) {
+            console.error('[432UP Partner] Exceção ao carregar co_clientes_opcoes:', e);
+          }
+        })();
+        return opcoesCarregadasPromise;
+      }
+
       function showAlert(msg, type) {
         var el = document.getElementById('formAlert');
         if (!el) return;
@@ -291,6 +437,110 @@
         var v = String(valor || '').replace(/\D/g, '').substring(0, 8);
         if (v.length > 5) v = v.replace(/^(\d{5})(\d{1,3})$/, '$1-$2');
         return v;
+      }
+
+      function optionsHtml(lista, selecionado) {
+        var html = '';
+        var i, val;
+        for (i = 0; i < lista.length; i++) {
+          val = lista[i];
+          html += '<option value="' + val + '"' + (val === selecionado ? ' selected' : '') + '>' + val + '</option>';
+        }
+        return html;
+      }
+
+      function adicionarLinhaData(item) {
+        item = item || {};
+        var wrap = document.getElementById('mcDatasImportantesList');
+        if (!wrap) return;
+        var row = document.createElement('div');
+        row.className = 'mc-data-row space-y-2';
+        row.innerHTML =
+          '<div class="grid grid-cols-1 md:grid-cols-2 gap-2">' +
+            '<div>' +
+              '<label class="block text-[10px] uppercase tracking-wider text-slate-400 font-semibold mb-1">Tipo da data</label>' +
+              '<select class="mc-data-tipo w-full bg-slate-900/80 border border-white/20 rounded-xl px-3 py-2 text-sm text-white focus:border-cyan-400 focus:outline-none"></select>' +
+            '</div>' +
+            '<div>' +
+              '<label class="block text-[10px] uppercase tracking-wider text-slate-400 font-semibold mb-1">Data</label>' +
+              '<input type="text" class="mc-data-data w-full bg-slate-900/80 border border-white/20 rounded-xl px-3 py-2 text-sm text-white placeholder-slate-500 focus:border-cyan-400 focus:outline-none" placeholder="15/12 ou 15-12 ou 2026-12-15" value="' + String(item.data || '').replace(/"/g, '&quot;') + '">' +
+            '</div>' +
+          '</div>' +
+          '<div class="grid grid-cols-1 md:grid-cols-2 gap-2">' +
+            '<div>' +
+              '<label class="block text-[10px] uppercase tracking-wider text-slate-400 font-semibold mb-1">Descrição</label>' +
+              '<input type="text" class="mc-data-desc w-full bg-slate-900/80 border border-white/20 rounded-xl px-3 py-2 text-sm text-white placeholder-slate-500 focus:border-cyan-400 focus:outline-none" placeholder="Festa anual da empresa" value="' + String(item.descricao || '').replace(/"/g, '&quot;') + '">' +
+            '</div>' +
+            '<div class="flex items-end gap-2">' +
+              '<div class="flex-1">' +
+                '<label class="block text-[10px] uppercase tracking-wider text-slate-400 font-semibold mb-1">Recorrência</label>' +
+                '<select class="mc-data-recorrencia w-full bg-slate-900/80 border border-white/20 rounded-xl px-3 py-2 text-sm text-white focus:border-cyan-400 focus:outline-none">' +
+                  optionsHtml(RECORRENCIAS, item.recorrencia || 'anual') +
+                '</select>' +
+              '</div>' +
+              '<button type="button" class="mc-data-remove px-2.5 py-2 rounded-lg bg-white/5 hover:bg-red-500/20 text-slate-300 hover:text-red-300 border border-white/10 text-sm font-bold cursor-pointer transition">−</button>' +
+            '</div>' +
+          '</div>';
+        row.querySelector('.mc-data-remove').addEventListener('click', function () {
+          row.remove();
+        });
+        preencherSelectOpcoes(row.querySelector('.mc-data-tipo'), TIPOS_DATA, {
+          incluirVazio: true,
+          valorSalvo: item.tipo || ''
+        });
+        wrap.appendChild(row);
+      }
+
+      function limparDatasImportantes() {
+        var wrap = document.getElementById('mcDatasImportantesList');
+        if (wrap) wrap.innerHTML = '';
+      }
+
+      function carregarDatasImportantes(lista) {
+        limparDatasImportantes();
+        var arr = [];
+        if (Array.isArray(lista)) arr = lista;
+        else if (typeof lista === 'string') {
+          try { arr = JSON.parse(lista); } catch (e) { arr = []; }
+        }
+        if (!arr || !arr.length) return;
+        var i;
+        for (i = 0; i < arr.length; i++) adicionarLinhaData(arr[i] || {});
+      }
+
+      function coletarDatasImportantes() {
+        var wrap = document.getElementById('mcDatasImportantesList');
+        if (!wrap) return [];
+        var rows = wrap.querySelectorAll('.mc-data-row');
+        var out = [];
+        var i, row, tipo, data, desc, rec;
+        for (i = 0; i < rows.length; i++) {
+          row = rows[i];
+          tipo = (row.querySelector('.mc-data-tipo') || {}).value || '';
+          data = ((row.querySelector('.mc-data-data') || {}).value || '').trim();
+          desc = ((row.querySelector('.mc-data-desc') || {}).value || '').trim();
+          rec = (row.querySelector('.mc-data-recorrencia') || {}).value || '';
+          if (!tipo && !data && !desc) continue;
+          out.push({
+            tipo: tipo || null,
+            data: data || null,
+            descricao: desc || null,
+            recorrencia: rec || null
+          });
+        }
+        return out;
+      }
+
+      function resetCamposComerciaisNovos() {
+        var tipoEl = document.getElementById('mcTipoCliente');
+        var origemEl = document.getElementById('mcOrigemCliente');
+        var detalheEl = document.getElementById('mcOrigemDetalhe');
+        var statusEl = document.getElementById('mcStatusComercial');
+        if (tipoEl) tipoEl.value = '';
+        if (origemEl) origemEl.value = '';
+        if (detalheEl) detalheEl.value = '';
+        if (statusEl) statusEl.value = 'Novo';
+        limparDatasImportantes();
       }
 
       async function buscarEnderecoPorCEP(cep) {
@@ -621,9 +871,10 @@
 
       async function carregarClienteParaEdicao(clienteId) {
         try {
+          await carregarOpcoesClientes();
           var res = await sbPartner
             .from('co_clientes')
-            .select('id, tipo_pessoa, nome_razao, telefone, cpf_cnpj, email, nome_fantasia, responsavel_legal, cep, logradouro, numero, complemento, bairro, cidade, uf, observacoes_comerciais')
+            .select('id, tipo_pessoa, nome_razao, telefone, cpf_cnpj, email, nome_fantasia, responsavel_legal, cep, logradouro, numero, complemento, bairro, cidade, uf, observacoes_comerciais, tipo_cliente, origem_cliente, origem_detalhe, status_comercial, datas_importantes')
             .eq('id', clienteId)
             .maybeSingle();
 
@@ -651,6 +902,18 @@
           document.getElementById('mcCidade').value = c.cidade || '';
           document.getElementById('mcUf').value = c.uf || '';
           document.getElementById('mcObs').value = c.observacoes_comerciais || '';
+
+          preencherSelectOpcoes(document.getElementById('mcTipoCliente'), OPCOES_TIPO_CLIENTE, {
+            incluirVazio: true,
+            valorSalvo: c.tipo_cliente || ''
+          });
+          preencherSelectOpcoes(document.getElementById('mcOrigemCliente'), OPCOES_ORIGEM_CLIENTE, {
+            incluirVazio: true,
+            valorSalvo: c.origem_cliente || ''
+          });
+          document.getElementById('mcOrigemDetalhe').value = c.origem_detalhe || '';
+          document.getElementById('mcStatusComercial').value = c.status_comercial || 'Novo';
+          carregarDatasImportantes(c.datas_importantes);
 
           if (c.cep) ultimoCepConsultadoModal = String(c.cep).replace(/\D/g, '');
 
@@ -684,6 +947,11 @@
         var cidade = document.getElementById('mcCidade').value.trim();
         var uf = document.getElementById('mcUf').value.trim();
         var obsComerciais = document.getElementById('mcObs').value.trim();
+        var tipoCliente = document.getElementById('mcTipoCliente').value.trim();
+        var origemCliente = document.getElementById('mcOrigemCliente').value.trim();
+        var origemDetalhe = document.getElementById('mcOrigemDetalhe').value.trim();
+        var statusComercial = document.getElementById('mcStatusComercial').value.trim() || 'Novo';
+        var datasImportantes = coletarDatasImportantes();
 
         if (!nomeRazao || !telefone) {
           mcShowAlert('Preencha nome/razão social e telefone.');
@@ -727,7 +995,12 @@
             bairro: bairro || null,
             cidade: cidade || null,
             uf: uf || null,
-            observacoes_comerciais: obsComerciais || null
+            observacoes_comerciais: obsComerciais || null,
+            tipo_cliente: tipoCliente || null,
+            origem_cliente: origemCliente || null,
+            origem_detalhe: origemDetalhe || null,
+            status_comercial: statusComercial || 'Novo',
+            datas_importantes: datasImportantes
           };
 
           var saveResult;
@@ -756,6 +1029,7 @@
                 document.getElementById('formCadastroCliente').reset();
                 setMcTipo('PF');
                 onLimparWhatsappPaste();
+                resetCamposComerciaisNovos();
                 ultimoCepConsultadoModal = null;
                 document.getElementById('mcCepStatus').textContent = '';
                 document.getElementById('mcAlert').classList.add('hidden');
@@ -795,20 +1069,22 @@
         document.getElementById('formCadastroCliente').addEventListener('submit', submitCadastroCliente);
         document.getElementById('btnInterpretarWhatsapp').addEventListener('click', onInterpretarWhatsapp);
         document.getElementById('btnLimparWhatsappPaste').addEventListener('click', onLimparWhatsappPaste);
+        document.getElementById('btnAddDataImportante').addEventListener('click', function () {
+          adicionarLinhaData({ tipo: '', data: '', descricao: '', recorrencia: 'anual' });
+        });
+
+        var params = new URLSearchParams(window.location.search);
+        var idEdicao = params.get('id');
+        carregarOpcoesClientes().then(function () {
+          if (idEdicao) carregarClienteParaEdicao(idEdicao);
+        });
 
         var btnDesk = document.getElementById('btnLogoutDesk');
         var btnMob = document.getElementById('btnLogoutMob');
         if (btnDesk) btnDesk.addEventListener('click', partnerLogout);
         if (btnMob) btnMob.addEventListener('click', partnerLogout);
-
-        var params = new URLSearchParams(window.location.search);
-        var idEdicao = params.get('id');
-        if (idEdicao) {
-          carregarClienteParaEdicao(idEdicao);
-        }
       });
     })();
   </script>
 </body>
 </html>
-
