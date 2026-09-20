@@ -1,0 +1,1905 @@
+<!DOCTYPE html>
+<html lang="pt-BR" class="min-h-screen">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
+  <title>432UP Admin | Gestão de Usuários, Vendedores & Vitrine Artística</title>
+  
+  <link rel="stylesheet" href="../../css/style.css">
+  <script src="https://cdn.tailwindcss.com"></script>
+  
+  <style>
+    .glass-b2b {
+      background: linear-gradient(135deg, rgba(255, 255, 255, 0.08) 0%, rgba(14, 22, 35, 0.45) 100%);
+      backdrop-filter: blur(20px);
+      -webkit-backdrop-filter: blur(20px);
+      border: 1px solid rgba(0, 240, 255, 0.25);
+      box-shadow: 0 20px 50px rgba(0, 0, 0, 0.3), inset 0 0 15px rgba(255, 255, 255, 0.04);
+    }
+    .glass-amber {
+      background: linear-gradient(135deg, rgba(245, 158, 11, 0.12) 0%, rgba(10, 18, 28, 0.5) 100%);
+      backdrop-filter: blur(20px);
+      border: 1px solid rgba(245, 158, 11, 0.4);
+    }
+    table thead tr, table thead th {
+      background-color: transparent !important;
+      color: #94a3b8 !important;
+    }
+    .filter-box-glass {
+      overflow: visible !important;
+    }
+    input[type="date"]::-webkit-calendar-picker-indicator {
+      cursor: pointer;
+      filter: invert(0.8);
+    }
+    input[type="date"] {
+      color-scheme: dark !important;
+    }
+    .portfolio-grid-admin {
+      display: grid;
+      grid-template-columns: repeat(auto-fill, minmax(110px, 1fr));
+      gap: 0.75rem;
+    }
+    .portfolio-item-admin {
+      position: relative;
+      border-radius: 10px;
+      overflow: hidden;
+      height: 90px;
+      background: #000;
+      border: 1px solid rgba(255, 255, 255, 0.15);
+    }
+    .portfolio-item-admin img {
+      width: 100%;
+      height: 100%;
+      object-fit: cover;
+    }
+    .portfolio-item-admin.item-pendente {
+      border: 2px solid rgba(245, 158, 11, 0.8);
+    }
+    
+    .btn-remove-galeria-admin {
+      position: absolute;
+      top: 4px;
+      right: 4px;
+      background: rgba(239, 68, 68, 0.95);
+      color: #ffffff;
+      border-radius: 50%;
+      width: 22px;
+      height: 22px;
+      font-weight: bold;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 0.8rem;
+      cursor: pointer;
+      z-index: 10;
+      box-shadow: 0 2px 6px rgba(0,0,0,0.5);
+      transition: all 0.2s ease;
+    }
+    .btn-remove-galeria-admin:hover {
+      background: #dc2626;
+      transform: scale(1.1);
+    }
+  </style>
+</head>
+<body class="min-h-screen text-slate-200 font-sans antialiased bg-[#06080c]">
+
+  <canvas id="orbit-canvas"></canvas>
+  <div id="plasmaLayer" class="plasma-top-layer"></div>
+
+  <header id="calc-header"></header>
+  <div id="mobile-menu"></div>
+
+  <div class="flex flex-col min-h-screen relative z-10 pb-16">
+
+    <main class="flex-1 p-4 lg:p-8 space-y-6 pt-28 lg:pt-28 w-full max-w-7xl mx-auto">
+      
+      <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+        <div>
+          <span class="text-xs font-bold text-amber-400 uppercase tracking-widest">Controle de Acessos & Moderação de Vitrine</span>
+          <h1 class="text-2xl lg:text-3xl font-bold text-white tracking-tight mt-1">Gestão de Vendedores & Atrações Artísticas</h1>
+          <p class="text-sm text-slate-400 mt-1">Aprove solicitações de acesso, modere mídias enviadas, gerencie comissões e acompanhe a telemetria.</p>
+        </div>
+      </div>
+
+      <!-- CARDS DE MÉTRICAS KPI -->
+      <div class="grid grid-cols-1 md:grid-cols-3 gap-4">
+        <div class="glass-b2b p-5 rounded-2xl">
+          <span class="text-xs font-semibold uppercase tracking-wider text-slate-400">Total de Usuários</span>
+          <div id="kpiTotalParceiros" class="text-2xl font-bold text-white mt-2">0 cadastrados</div>
+        </div>
+        <div class="glass-amber p-5 rounded-2xl">
+          <span class="text-xs font-semibold uppercase tracking-wider text-amber-300">Aprovações Pendentes</span>
+          <div id="kpiParceirosPendentes" class="text-2xl font-bold text-amber-400 mt-2">0 aguardando</div>
+        </div>
+        <div class="glass-b2b p-5 rounded-2xl">
+          <span class="text-xs font-semibold uppercase tracking-wider text-cyan-400">Comissão Padrão Geral</span>
+          <div id="kpiComissaoMedia" class="text-2xl font-bold text-cyan-300 mt-2">10,0%</div>
+        </div>
+      </div>
+
+      <!-- PAINEL DE FILTROS AVANÇADOS -->
+      <div class="glass-b2b filter-box-glass rounded-2xl p-4 sm:pr-6 border border-cyan-500/20 space-y-3 relative z-30">
+        <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-5 gap-3">
+          
+          <div>
+            <label class="block text-[10px] uppercase text-slate-400 font-bold mb-1">Buscar Nome / E-mail</label>
+            <input type="text" id="filterBusca" placeholder="Ex: Roberto ou roberto@email.com" oninput="aplicarFiltros()" class="w-full bg-slate-900/80 border border-white/10 rounded-xl px-3 py-2 text-xs text-white focus:border-cyan-400 focus:outline-none transition">
+          </div>
+
+          <div class="relative" id="boxDropdownParceiro">
+            <label class="block text-[10px] uppercase text-slate-400 font-bold mb-1">Seleção Específica</label>
+            <div class="relative">
+              <span class="absolute inset-y-0 left-0 pl-2.5 flex items-center pointer-events-none text-slate-400 text-xs">🔍</span>
+              <input type="text" id="filterParceiroSearch" placeholder="Digite para buscar..." autocomplete="off" class="w-full bg-slate-900/80 border border-white/10 rounded-xl pl-7 pr-2 py-2 text-xs text-white focus:border-cyan-400 focus:outline-none transition">
+            </div>
+            <input type="hidden" id="filterParceiroVal" value="">
+            
+            <div id="dropdownParceiroList" class="hidden absolute left-0 right-0 top-full mt-1 max-h-48 overflow-y-auto bg-[#0a121c] border border-cyan-500/50 rounded-xl shadow-[0_20px_40px_rgba(0,0,0,0.95)] z-[9999] divide-y divide-white/10 text-xs">
+            </div>
+          </div>
+
+          <div>
+            <label class="block text-[10px] uppercase text-slate-400 font-bold mb-1">Status de Acesso</label>
+            <select id="filterStatus" onchange="aplicarFiltros()" class="w-full bg-slate-900 border border-white/10 rounded-xl px-3 py-2 text-xs text-white focus:border-cyan-400 focus:outline-none transition cursor-pointer">
+              <option value="">Todos os Status</option>
+              <option value="aprovado">🟢 Aprovado / Ativo</option>
+              <option value="pendente">🟡 Pendente</option>
+              <option value="bloqueado">🔴 Bloqueado</option>
+            </select>
+          </div>
+
+          <div>
+            <label class="block text-[10px] uppercase text-slate-400 font-bold mb-1">Perfil Base (Taxonomia)</label>
+            <select id="filterPerfilTaxonomia" onchange="aplicarFiltros()" class="w-full bg-slate-900 border border-white/10 rounded-xl px-3 py-2 text-xs text-white focus:border-cyan-400 focus:outline-none transition cursor-pointer">
+              <option value="">Todos os Perfis</option>
+            </select>
+          </div>
+
+          <div>
+            <label class="block text-[10px] uppercase text-amber-400 font-bold mb-1">⚡ Ordenar Acesso</label>
+            <select id="filterOrdemAcesso" onchange="aplicarFiltros()" class="w-full bg-slate-900 border border-amber-500/30 rounded-xl px-3 py-2 text-xs text-white focus:border-amber-400 focus:outline-none transition cursor-pointer">
+              <option value="cadastro_desc" selected>Mais Recentes (Cadastro)</option>
+              <option value="destaque_topo">⭐ Destaques / Premium no Topo</option>
+              <option value="midia_pendente">⏳ Mídias Pendentes no Topo</option>
+              <option value="acesso_desc">Acesso Recente ➔ Antigo</option>
+              <option value="acesso_asc">Acesso Antigo / Sem Acesso</option>
+              <option value="nome_asc">Nome (A ➔ Z)</option>
+            </select>
+          </div>
+
+        </div>
+
+        <div class="flex items-center justify-end gap-2 pt-2 border-t border-white/5 flex-wrap">
+          <button type="button" onclick="abrirModalGerenciarTaxonomia()" class="px-3.5 py-1.5 rounded-lg bg-amber-500/20 hover:bg-amber-500/30 text-amber-300 border border-amber-500/40 text-xs font-bold transition flex items-center gap-1.5 cursor-pointer shadow-[0_0_12px_rgba(245,158,11,0.2)]">
+            🏷️ Gerenciar Taxonomia (Categorias)
+          </button>
+          <button type="button" onclick="limparFiltros()" class="px-3.5 py-1.5 rounded-lg bg-slate-800/80 hover:bg-slate-700 text-slate-300 border border-white/10 text-xs font-semibold transition flex items-center gap-1.5 cursor-pointer">
+            🔄 Resetar Filtros
+          </button>
+          <button type="button" onclick="exportarCSV()" class="px-3.5 py-1.5 rounded-lg bg-cyan-500/10 hover:bg-cyan-500/20 text-cyan-300 border border-cyan-500/30 text-xs font-semibold transition flex items-center gap-1.5 cursor-pointer">
+            📥 Exportar Usuários (CSV)
+          </button>
+          <button type="button" onclick="window.print()" class="px-3.5 py-1.5 rounded-lg bg-purple-500/10 hover:bg-purple-500/20 text-purple-300 border border-purple-500/30 text-xs font-semibold transition flex items-center gap-1.5 cursor-pointer">
+            🖨️ Relatório (PDF)
+          </button>
+        </div>
+      </div>
+
+      <!-- TABELA DE USUÁRIOS COM INDICADORES INLINE -->
+      <div class="glass-b2b rounded-2xl p-6 border border-cyan-500/20">
+        <div class="overflow-x-auto">
+          <table class="w-full text-left text-xs min-w-[950px]">
+            <thead>
+              <tr class="border-b border-white/10 text-slate-400 uppercase tracking-wider">
+                <th class="pb-3 px-3">Usuário / Email</th>
+                <th class="pb-3 px-3 text-center">Perfil Base & Especialidade</th>
+                <th class="pb-3 px-3 text-center">Nível Acesso</th>
+                <th class="pb-3 px-3 text-center">Último Acesso</th>
+                <th class="pb-3 px-3 text-center">Status Acesso</th>
+                <th class="pb-3 px-3 text-center">% Comissão Padronizada</th>
+                <th class="pb-3 px-3 text-right">Ações de Gestão</th>
+              </tr>
+            </thead>
+            <tbody id="tbodyParceiros" class="divide-y divide-white/5 text-slate-200">
+              <tr>
+                <td colspan="7" class="py-6 text-center text-slate-500">Carregando usuários do sistema...</td>
+              </tr>
+            </tbody>
+          </table>
+        </div>
+
+        <!-- CONTROLES DE PAGINAÇÃO -->
+        <div class="flex flex-col sm:flex-row items-center justify-between gap-3 pt-4 mt-4 border-t border-white/5 text-xs text-slate-400">
+          <div class="flex items-center gap-2">
+            <span>Exibir</span>
+            <select id="selectItensPorPagina" onchange="mudarItensPorPagina(this.value)" class="bg-slate-900 border border-white/10 rounded px-2 py-1 text-white focus:outline-none cursor-pointer">
+              <option value="10" selected>10</option>
+              <option value="25">25</option>
+              <option value="50">50</option>
+            </select>
+            <span>registros por página</span>
+          </div>
+
+          <div id="txtInfoPaginacao" class="text-slate-400">
+            Exibindo 0-0 de 0 registros
+          </div>
+
+          <div class="flex items-center gap-1.5">
+            <button id="btnPagAnterior" onclick="mudarPagina(-1)" class="px-3 py-1 rounded-lg bg-white/5 hover:bg-white/10 disabled:opacity-30 disabled:cursor-not-allowed transition">
+              ◀ Anterior
+            </button>
+            <span id="txtPaginaAtual" class="font-bold text-white px-2">1</span>
+            <button id="btnPagProxima" onclick="mudarPagina(1)" class="px-3 py-1 rounded-lg bg-white/5 hover:bg-white/10 disabled:opacity-30 disabled:cursor-not-allowed transition">
+              Próxima ▶
+            </button>
+          </div>
+        </div>
+      </div>
+
+    </main>
+  </div>
+
+  <!-- MODAL DE GERENCIAMENTO DA TAXONOMIA (CATEGORIAS E ESPECIAIS) -->
+  <div id="modalTaxonomia" class="fixed inset-0 bg-black/80 backdrop-blur-md hidden items-center justify-center p-4 sm:p-6 z-[9999]">
+    <div class="glass-b2b w-full max-w-3xl max-h-[88vh] overflow-y-auto rounded-2xl border border-amber-500/40 text-slate-200 shadow-[0_0_50px_rgba(245,158,11,0.2)] flex flex-col">
+      
+      <div class="flex items-center justify-between border-b border-white/10 px-6 py-4 sticky top-0 bg-[#0e1623]/95 backdrop-blur-md z-40 shrink-0">
+        <div>
+          <span class="text-[10px] font-bold text-amber-400 uppercase tracking-widest block">Estrutura de Perfis & Especialidades</span>
+          <h3 class="text-base font-bold text-white tracking-tight">Gerenciador da Taxonomia (perfis_parceiros)</h3>
+        </div>
+        <button id="btnFecharTaxonomia" class="text-slate-400 hover:text-white text-lg font-bold p-1 transition cursor-pointer">✕</button>
+      </div>
+
+      <div class="p-6 space-y-6 flex-1 text-xs">
+        
+        <!-- PAINEL DE CRIAÇÃO / EDIÇÃO RÁPIDA -->
+        <div class="bg-slate-900/80 p-4 rounded-xl border border-amber-500/30 space-y-3">
+          <h4 id="lblTituloFormTax" class="font-bold text-amber-400 uppercase tracking-wider text-[11px]">➕ Criar Nova Categoria / Especialidade</h4>
+          <input type="hidden" id="taxEditId" value="">
+
+          <div class="grid grid-cols-1 sm:grid-cols-2 gap-3">
+            <div>
+              <label class="block text-slate-300 font-semibold mb-1 uppercase text-[10px]">Nome da Categoria *</label>
+              <input type="text" id="taxNome" placeholder="Ex: Fotógrafo, Barman, Hotelaria..." class="w-full bg-slate-950 border border-white/20 rounded-xl px-3 py-2 text-white focus:outline-none focus:border-amber-400">
+            </div>
+            <div>
+              <label class="block text-slate-300 font-semibold mb-1 uppercase text-[10px]">Categoria Pai (Se for Especialidade)</label>
+              <select id="taxPaiId" class="w-full bg-slate-950 border border-white/20 rounded-xl px-3 py-2 text-white focus:outline-none focus:border-amber-400">
+                <option value="">Nenhuma (É um Perfil Base Principal)</option>
+              </select>
+            </div>
+          </div>
+
+          <div class="flex items-center justify-between gap-3 pt-2 flex-wrap">
+            <label class="flex items-center gap-2 cursor-pointer select-none">
+              <input type="checkbox" id="taxTemFicha" class="w-4 h-4 text-amber-500 bg-slate-950 border-white/20 rounded focus:ring-amber-400">
+              <span class="font-bold text-cyan-300">⭐ Requer Ficha Complementar (Fotos, Vídeos, Bio, Rider)</span>
+            </label>
+
+            <div class="flex items-center gap-2">
+              <button type="button" id="btnCancelarEditTax" onclick="resetFormTaxonomia()" class="hidden px-3 py-1.5 rounded-lg bg-slate-800 text-slate-300 font-semibold hover:bg-slate-700">Cancelar</button>
+              <button type="button" onclick="salvarItemTaxonomia()" class="px-4 py-1.5 rounded-lg bg-amber-500 hover:bg-amber-400 text-slate-950 font-bold uppercase tracking-wider shadow-[0_0_12px_rgba(245,158,11,0.3)]">Salvar Categoria</button>
+            </div>
+          </div>
+        </div>
+
+        <!-- LISTA HIERÁRQUICA DA TAXONOMIA -->
+        <div class="space-y-3">
+          <h4 class="font-bold text-white uppercase tracking-wider text-[11px] border-b border-white/10 pb-1">📂 Categorias Cadastradas no Sistema</h4>
+          <div id="containerListaTaxonomia" class="space-y-3 max-h-96 overflow-y-auto pr-1">
+            <span class="text-slate-500 block text-center py-4">Carregando categorias...</span>
+          </div>
+        </div>
+
+      </div>
+
+    </div>
+  </div>
+
+  <!-- MODAL DE AUDITORIA DE COMISSÃO -->
+  <div id="modalAuditoriaComissao" class="fixed inset-0 bg-black/80 backdrop-blur-md hidden items-center justify-center p-4 z-[9999]">
+    <div class="glass-b2b w-full max-w-lg p-6 rounded-2xl border border-amber-500/30 space-y-4 text-slate-200 shadow-[0_0_50px_rgba(245,158,11,0.2)]">
+      <div class="flex items-center justify-between border-b border-white/10 pb-3">
+        <div>
+          <span class="text-[10px] font-bold text-amber-400 uppercase tracking-widest block">Registro de Auditoria de Comissão</span>
+          <h3 id="modalAuditoriaNome" class="text-base font-bold text-white mt-0.5">Vendedor</h3>
+        </div>
+        <button id="btnFecharAuditoria" class="text-slate-400 hover:text-white text-lg font-bold">✕</button>
+      </div>
+
+      <div class="space-y-3 text-xs">
+        <div class="grid grid-cols-2 gap-3 bg-white/5 p-3 rounded-xl border border-white/10">
+          <div>
+            <span class="text-slate-400 block text-[10px] uppercase font-bold">Comissão Atual:</span>
+            <strong id="modalComissaoAtualVal" class="text-white text-sm">10.0%</strong>
+          </div>
+          <div>
+            <label class="block text-amber-400 text-[10px] uppercase font-bold">Nova Comissão (%):</label>
+            <input type="number" step="0.5" min="0" max="100" id="inputNovaComissao" class="w-full bg-slate-900 border border-amber-500/50 rounded-lg p-1.5 text-white font-bold text-sm focus:outline-none">
+          </div>
+        </div>
+
+        <div>
+          <label class="block text-slate-300 uppercase font-semibold mb-1">Escopo de Aplicação da Nova Regra</label>
+          <div class="space-y-2">
+            <label class="flex items-start gap-2 p-2.5 rounded-xl border border-cyan-500/40 bg-cyan-500/10 cursor-pointer hover:bg-cyan-500/20 transition">
+              <input type="radio" name="escopoRegra" value="futuros" checked class="mt-0.5 text-cyan-400 focus:ring-cyan-400">
+              <div>
+                <strong class="text-cyan-300 block">Contratos Futuros (Recomendado)</strong>
+                <span class="text-[10px] text-slate-400 block">A nova % será aplicada apenas às propostas criadas a partir de agora. As anteriores mantêm a % pactuada na época.</span>
+              </div>
+            </label>
+
+            <label class="flex items-start gap-2 p-2.5 rounded-xl border border-amber-500/30 bg-slate-900 cursor-pointer hover:bg-slate-800 transition">
+              <input type="radio" name="escopoRegra" value="retroativo" class="mt-0.5 text-amber-400 focus:ring-amber-400">
+              <div>
+                <strong class="text-amber-300 block">Aplicar Retroativamente a Contratos Legados</strong>
+                <span class="text-[10px] text-slate-400 block">Atualiza a comissão efetiva de propostas antigas pendentes/adiantadas deste vendedor.</span>
+              </div>
+            </label>
+          </div>
+        </div>
+
+        <div>
+          <label class="block text-slate-300 uppercase font-semibold mb-1">Justificativa / Motivo da Alteração</label>
+          <input type="text" id="inputMotivoAuditoria" placeholder="Ex: Promoção de meta, repactuação contratual, ajuste de perfil" class="w-full bg-slate-900 border border-white/20 rounded-xl px-3 py-2 text-xs text-white focus:border-amber-400 focus:outline-none">
+        </div>
+
+        <div class="border-t border-white/10 pt-3">
+          <span class="text-[10px] uppercase text-slate-400 font-bold block mb-1.5">📜 Histórico Recente de Alterações</span>
+          <div id="boxHistoricoAuditoria" class="max-h-32 overflow-y-auto space-y-1.5 bg-slate-950 p-2 rounded-xl border border-white/5 text-[11px] text-slate-300">
+            <span class="text-slate-500 block text-center py-2">Nenhum registro prévio encontrado para este parceiro.</span>
+          </div>
+        </div>
+      </div>
+
+      <div class="flex justify-end gap-2 pt-2 border-t border-white/10">
+        <button id="btnCancelarAuditoria" class="px-4 py-2 rounded-xl bg-slate-800 hover:bg-slate-700 text-slate-300 font-bold text-xs uppercase transition cursor-pointer">Cancelar</button>
+        <button id="btnConfirmarAuditoria" class="px-5 py-2 rounded-xl bg-amber-500 hover:bg-amber-400 text-slate-950 font-bold text-xs uppercase tracking-wider transition shadow-[0_0_15px_rgba(245,158,11,0.3)] cursor-pointer">Salvar & Registrar Auditoria</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- MODAL DE FICHA COMPLETA DO PARCEIRO & CURADORIA DE MÍDIAS -->
+  <div id="modalFicha" class="fixed inset-0 bg-black/80 backdrop-blur-md hidden items-center justify-center p-4 sm:p-6 z-[9999]">
+    <div class="glass-b2b w-full max-w-4xl max-h-[90vh] overflow-y-auto rounded-2xl border border-cyan-500/30 text-slate-200 shadow-[0_0_50px_rgba(0,240,255,0.15)] relative flex flex-col">
+      
+      <div class="flex items-center justify-between border-b border-white/10 px-6 py-4 sticky top-0 bg-[#0e1623]/95 backdrop-blur-md z-40 shrink-0">
+        <div>
+          <span class="text-[10px] font-bold text-cyan-400 uppercase tracking-widest block">Credenciamento & Cadastro Unificado B2B</span>
+          <h3 class="text-base font-bold text-white tracking-tight">Ficha Completa do Parceiro</h3>
+        </div>
+        <div class="flex items-center gap-3">
+          <button id="btnSalvarFicha" class="px-4 py-2 rounded-xl bg-cyan-500 hover:bg-cyan-400 text-slate-950 font-bold text-xs uppercase tracking-wider transition shadow-[0_0_15px_rgba(0,240,255,0.3)] cursor-pointer">Salvar Ficha Completa</button>
+          <button id="btnFecharFicha" class="text-slate-400 hover:text-white text-lg font-bold p-1 transition cursor-pointer">✕</button>
+        </div>
+      </div>
+
+      <div class="p-6 space-y-6 flex-1">
+
+        <div class="flex items-center gap-4 bg-white/5 p-4 rounded-xl border border-white/10">
+          <div id="mAvatarPreview" class="w-16 h-16 rounded-full bg-slate-900 border border-cyan-500/40 bg-cover bg-center flex items-center justify-center text-2xl text-slate-500 shrink-0 overflow-hidden shadow-[0_0_15px_rgba(0,240,255,0.2)]">
+            <span id="mAvatarPlaceholder">📷</span>
+          </div>
+          <div class="flex-1">
+            <span class="text-base font-bold text-white block" id="mAvatarNome">—</span>
+            <span class="text-xs text-cyan-400 font-mono block mt-0.5" id="mAvatarId">User ID: —</span>
+          </div>
+          <div class="text-right hidden sm:block">
+            <span class="text-[10px] uppercase font-bold text-slate-400 block">Termos & LGPD</span>
+            <span id="mTermosBadge" class="text-xs font-semibold text-emerald-400">Aceito</span>
+          </div>
+        </div>
+
+        <div class="bg-slate-900/60 p-3.5 rounded-xl border border-white/10 space-y-2 text-xs">
+          <span class="text-[10px] font-bold text-amber-400 uppercase tracking-widest block">⚡ Controle de Atividade & Telemetria</span>
+          <div class="grid grid-cols-2 sm:grid-cols-4 gap-3 text-[11px]">
+            <div>
+              <span class="text-slate-400 block text-[10px] uppercase font-semibold">Último Login:</span>
+              <strong id="mUltimoLogin" class="text-white">—</strong>
+            </div>
+            <div>
+              <span class="text-slate-400 block text-[10px] uppercase font-semibold">Última Atividade:</span>
+              <strong id="mUltimaAtividade" class="text-cyan-300">—</strong>
+            </div>
+            <div>
+              <span class="text-slate-400 block text-[10px] uppercase font-semibold">Última Página:</span>
+              <span id="mUltimaPagina" class="text-slate-300 font-mono truncate block">—</span>
+            </div>
+            <div>
+              <span class="text-slate-400 block text-[10px] uppercase font-semibold">Navegador / SO:</span>
+              <span id="mDispositivo" class="text-slate-300 truncate block">—</span>
+            </div>
+          </div>
+        </div>
+
+        <!-- BLOCO 1: DADOS CADASTRAIS -->
+        <div class="space-y-3">
+          <h4 class="text-xs font-bold text-cyan-400 uppercase tracking-wider border-b border-white/10 pb-2">1. Dados de Identificação & Atuação Cadastral</h4>
+          
+          <div class="grid grid-cols-1 sm:grid-cols-2 gap-3 text-xs">
+            <div>
+              <label class="block text-slate-300 uppercase font-semibold mb-1">Nome Completo *</label>
+              <input type="text" id="mNome" class="w-full bg-slate-900 border border-white/20 rounded-xl px-3 py-2 text-white focus:outline-none focus:border-cyan-400">
+            </div>
+            <div>
+              <label class="block text-slate-300 uppercase font-semibold mb-1">Empresa / Agência *</label>
+              <input type="text" id="mEmpresa" class="w-full bg-slate-900 border border-white/20 rounded-xl px-3 py-2 text-white focus:outline-none focus:border-cyan-400">
+            </div>
+          </div>
+
+          <div class="grid grid-cols-1 sm:grid-cols-3 gap-3 text-xs">
+            <div>
+              <label class="block text-slate-300 uppercase font-semibold mb-1">CPF ou CNPJ</label>
+              <input type="text" id="mCpfCnpj" maxlength="18" placeholder="000.000.000-00" class="w-full bg-slate-900 border border-white/20 rounded-xl px-3 py-2 text-white focus:outline-none focus:border-cyan-400">
+            </div>
+            <div>
+              <label class="block text-slate-300 uppercase font-semibold mb-1">Data de Nascimento</label>
+              <input type="date" id="mNascimento" class="w-full bg-slate-900 border border-white/20 rounded-xl px-3 py-2 text-white focus:outline-none focus:border-cyan-400 [color-scheme:dark]">
+            </div>
+            <div>
+              <label class="block text-slate-300 uppercase font-semibold mb-1">WhatsApp *</label>
+              <input type="tel" id="mWhatsapp" maxlength="15" placeholder="(11) 99999-9999" class="w-full bg-slate-900 border border-white/20 rounded-xl px-3 py-2 text-white font-sans text-xs focus:outline-none focus:border-cyan-400 leading-normal tracking-wide">
+            </div>
+          </div>
+
+          <div class="grid grid-cols-1 sm:grid-cols-3 gap-3 text-xs">
+            <div>
+              <label class="block text-slate-300 uppercase font-semibold mb-1">E-mail de Login</label>
+              <input type="email" id="mEmail" disabled class="w-full bg-slate-950/80 border border-white/10 rounded-xl px-3 py-2 text-slate-300 cursor-not-allowed">
+            </div>
+            <div>
+              <label class="block text-slate-300 uppercase font-semibold mb-1">Instagram / Site / Portfólio</label>
+              <input type="text" id="mInstagram" placeholder="@suaempresa ou https://..." class="w-full bg-slate-900 border border-white/20 rounded-xl px-3 py-2 text-white focus:outline-none focus:border-cyan-400">
+            </div>
+            <div>
+              <label class="block text-slate-300 uppercase font-semibold mb-1">Perfil Base (Taxonomia)</label>
+              <select id="mPerfilBase" class="w-full bg-slate-900 border border-white/20 rounded-xl px-3 py-2 text-xs text-white focus:outline-none focus:border-cyan-400 truncate">
+                <option value="">Carregando...</option>
+              </select>
+            </div>
+          </div>
+
+          <div class="grid grid-cols-1 sm:grid-cols-1 gap-3 text-xs">
+            <div>
+              <label class="block text-slate-300 uppercase font-semibold mb-1">Especialidade (Taxonomia)</label>
+              <select id="mEspecialidade" disabled class="w-full bg-slate-900 border border-white/20 rounded-xl px-3 py-2 text-xs text-white focus:outline-none focus:border-cyan-400 truncate">
+                <option value="">Selecione um Perfil Base primeiro...</option>
+              </select>
+            </div>
+          </div>
+        </div>
+
+        <!-- BLOCO 2: ENDEREÇO -->
+        <div class="space-y-3 pt-2">
+          <h4 class="text-xs font-bold text-cyan-400 uppercase tracking-wider border-b border-white/10 pb-2">2. Endereço Comercial</h4>
+
+          <div class="grid grid-cols-1 sm:grid-cols-3 gap-3 text-xs">
+            <div>
+              <label class="block text-slate-300 uppercase font-semibold mb-1">CEP (Busca Automática)</label>
+              <div class="relative">
+                <input type="text" id="mCep" maxlength="9" placeholder="00000-000" class="w-full bg-slate-900 border border-white/20 rounded-xl px-3 py-2 text-white focus:outline-none focus:border-cyan-400">
+                <span id="mCepSpinner" class="hidden absolute right-3 top-2.5 text-xs text-cyan-400 animate-spin">⌛</span>
+              </div>
+            </div>
+            <div class="sm:col-span-2">
+              <label class="block text-slate-300 uppercase font-semibold mb-1">Endereço (Rua, Nº, Complemento)</label>
+              <input type="text" id="mEndereco" placeholder="Ex: Av. Paulista, 1000 - Cj 42" class="w-full bg-slate-900 border border-white/20 rounded-xl px-3 py-2 text-white focus:outline-none focus:border-cyan-400">
+            </div>
+          </div>
+
+          <div class="grid grid-cols-1 sm:grid-cols-3 gap-3 text-xs">
+            <div>
+              <label class="block text-slate-300 uppercase font-semibold mb-1">Bairro</label>
+              <input type="text" id="mBairro" placeholder="Bairro" class="w-full bg-slate-900 border border-white/20 rounded-xl px-3 py-2 text-white focus:outline-none focus:border-cyan-400">
+            </div>
+            <div>
+              <label class="block text-slate-300 uppercase font-semibold mb-1">Cidade</label>
+              <input type="text" id="mCidade" placeholder="Cidade" class="w-full bg-slate-900 border border-white/20 rounded-xl px-3 py-2 text-white focus:outline-none focus:border-cyan-400">
+            </div>
+            <div>
+              <label class="block text-slate-300 uppercase font-semibold mb-1">Estado (UF)</label>
+              <input type="text" id="mEstado" maxlength="2" placeholder="SP" class="w-full bg-slate-900 border border-white/20 rounded-xl px-3 py-2 text-white uppercase focus:outline-none focus:border-cyan-400">
+            </div>
+          </div>
+        </div>
+
+        <!-- BLOCO 3: FINANCEIRO (PIX) -->
+        <div class="space-y-3 pt-2">
+          <h4 class="text-xs font-bold text-amber-400 uppercase tracking-wider border-b border-amber-500/20 pb-2">3. Dados Financeiros (Repasse de Comissão)</h4>
+
+          <div class="grid grid-cols-1 sm:grid-cols-3 gap-3 text-xs">
+            <div>
+              <label class="block text-slate-300 uppercase font-semibold mb-1">Tipo de Chave PIX</label>
+              <select id="mTipoPix" class="w-full bg-slate-900 border border-white/20 rounded-xl px-3 py-2 text-white focus:outline-none focus:border-amber-400">
+                <option value="cpf_cnpj">CPF / CNPJ</option>
+                <option value="email">E-mail</option>
+                <option value="celular">Celular</option>
+                <option value="chave_aleatoria">Chave Aleatória (EVP)</option>
+              </select>
+            </div>
+            <div class="sm:col-span-2">
+              <label class="block text-slate-300 uppercase font-semibold mb-1">Chave PIX para Recebimento</label>
+              <input type="text" id="mChavePix" placeholder="Informe a chave PIX do parceiro" class="w-full bg-slate-900 border border-amber-500/30 rounded-xl px-3 py-2 text-white focus:outline-none focus:border-amber-400">
+            </div>
+          </div>
+        </div>
+
+        <!-- BLOCO 4: PERFIL ARTÍSTICO, CURADORIA & DESTAQUE PREMIUM -->
+        <div id="mBlocoArtisticoAdmin" class="space-y-5 pt-4 border-t border-cyan-500/30 hidden">
+          <div class="flex items-center justify-between border-b border-cyan-500/30 pb-2">
+            <h4 class="text-xs font-bold text-cyan-400 uppercase tracking-wider flex items-center gap-2">
+              <span>🎭 4. Apresentação Comercial, Vitrine & Curadoria de Mídias</span>
+            </h4>
+            <span id="mMediaPendingBadge" class="hidden px-2.5 py-1 rounded-full text-[10px] font-extrabold bg-amber-500/20 text-amber-300 border border-amber-500/50 animate-pulse">
+              ⏳ Mídias Aguardando Curadoria
+            </span>
+          </div>
+
+          <div class="bg-gradient-to-r from-amber-500/10 via-slate-900 to-cyan-500/10 border border-amber-500/40 rounded-2xl p-4 space-y-3">
+            <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
+              <div>
+                <strong class="text-xs text-white block uppercase tracking-wider">Painel de Curadoria & Destaque</strong>
+                <span class="text-[11px] text-slate-400 block">Exclua fotos indesejadas, defina se a atração terá Destaque no Topo e aprove a publicação.</span>
+              </div>
+              
+              <div class="flex items-center gap-3 flex-wrap">
+                <label class="inline-flex items-center gap-2 px-3.5 py-2 rounded-xl bg-amber-500/10 border border-amber-500/30 cursor-pointer hover:bg-amber-500/20 transition h-[38px]">
+                  <input type="checkbox" id="mIsDestaque" class="w-4 h-4 text-amber-500 bg-slate-900 border-amber-500/50 rounded focus:ring-amber-400 transition cursor-pointer">
+                  <span class="text-xs font-bold text-amber-300 select-none whitespace-nowrap">⭐ Destacar no Topo da Vitrine (Premium)</span>
+                </label>
+
+                <select id="mStatusArtista" class="bg-slate-900 border border-amber-500/50 rounded-xl px-3.5 py-2 text-xs text-amber-300 font-bold focus:outline-none cursor-pointer h-[38px]">
+                  <option value="aprovado">🟢 Vitrine Aprovada</option>
+                  <option value="pendente">🟡 Em Análise / Pendente</option>
+                  <option value="recusado">🔴 Vitrine Recusada</option>
+                </select>
+              </div>
+            </div>
+
+            <div id="mContainerAcaoMidias" class="flex items-center justify-end gap-2 pt-2 border-t border-white/10">
+              <button type="button" onclick="recusarMidiasArtista()" class="px-4 py-2 rounded-xl bg-red-500/20 hover:bg-red-500/30 text-red-300 border border-red-500/40 text-xs font-bold transition cursor-pointer">
+                ❌ Recusar Mídias / Solicitar Ajuste
+              </button>
+              <button type="button" onclick="aprovarMidiasArtista()" class="px-5 py-2 rounded-xl bg-emerald-500 hover:bg-emerald-400 text-slate-950 text-xs font-extrabold uppercase tracking-wider transition shadow-[0_0_15px_rgba(16,185,129,0.4)] cursor-pointer">
+                ✅ Aprovar Mídias & Publicar Vitrine
+              </button>
+            </div>
+
+            <div id="mMidiasEmDiaMsg" class="hidden text-right pt-2 border-t border-white/10">
+              <span class="inline-flex items-center gap-1.5 text-xs text-emerald-400 font-bold bg-emerald-500/10 border border-emerald-500/30 px-3 py-1.5 rounded-xl">
+                ✓ Nenhuma mídia pendente de aprovação
+              </span>
+            </div>
+          </div>
+
+          <div class="grid grid-cols-1 md:grid-cols-3 gap-4">
+            <div class="space-y-1.5">
+              <div class="flex items-center justify-between">
+                <label class="block text-[10px] uppercase font-bold text-slate-300">Foto de Capa Principal</label>
+                <button type="button" id="btnRemoverCapaAdmin" onclick="removerCapaAdmin()" class="text-[10px] text-red-400 hover:text-red-300 font-bold hidden">
+                  🗑️ Remover Capa
+                </button>
+              </div>
+              <div id="mCapaBox" class="w-full h-36 rounded-xl bg-slate-900 border border-cyan-500/30 overflow-hidden relative bg-cover bg-center flex items-center justify-center">
+                <span id="mCapaEmptyTxt" class="text-xs text-slate-500">Sem capa enviada</span>
+              </div>
+            </div>
+
+            <div class="md:col-span-2 space-y-1.5">
+              <div class="flex items-center justify-between">
+                <label class="block text-[10px] uppercase font-bold text-slate-300">Galeria de Imagens & Vídeos Pendentes (Exclua os indesejados)</label>
+                <span id="mGaleriaContadorTxt" class="text-[10px] text-cyan-400 font-mono">0 fotos</span>
+              </div>
+              <div id="mGaleriaGrid" class="portfolio-grid-admin bg-slate-950/60 p-2.5 rounded-xl border border-white/10 min-h-[144px]">
+                <span class="text-xs text-slate-500 col-span-full text-center py-8">Nenhuma imagem na galeria</span>
+              </div>
+            </div>
+          </div>
+
+          <div class="space-y-3 pt-2">
+            <div class="grid grid-cols-1 sm:grid-cols-2 gap-3 text-xs">
+              <div>
+                <label class="block text-slate-300 uppercase font-semibold mb-1">Nome Comercial / Nome Fantasia</label>
+                <input type="text" id="mArtNomeArtistico" class="w-full bg-slate-900 border border-cyan-500/30 rounded-xl px-3 py-2 text-white focus:outline-none focus:border-cyan-400">
+              </div>
+              <div>
+                <label class="block text-slate-300 uppercase font-semibold mb-1">Tagline / Subtítulo</label>
+                <input type="text" id="mArtTagline" class="w-full bg-slate-900 border border-cyan-500/30 rounded-xl px-3 py-2 text-white focus:outline-none focus:border-cyan-400">
+              </div>
+            </div>
+
+            <div class="grid grid-cols-1 sm:grid-cols-2 gap-3 text-xs">
+              <div>
+                <label class="block text-slate-300 uppercase font-semibold mb-1">Cachê / Valor Base Estimado (R$)</label>
+                <input type="number" id="mArtCacheBase" class="w-full bg-slate-900 border border-cyan-500/30 rounded-xl px-3 py-2 text-white focus:outline-none focus:border-cyan-400">
+              </div>
+              <div>
+                <label class="block text-slate-300 uppercase font-semibold mb-1">Histórico & Experiência Comercial</label>
+                <input type="text" id="mArtExperiencia" class="w-full bg-slate-900 border border-cyan-500/30 rounded-xl px-3 py-2 text-white focus:outline-none focus:border-cyan-400">
+              </div>
+            </div>
+
+            <div class="text-xs">
+              <label class="block text-slate-300 uppercase font-semibold mb-1">Bio / Proposta Comercial</label>
+              <textarea id="mArtBio" rows="3" class="w-full bg-slate-900 border border-cyan-500/30 rounded-xl p-3 text-white focus:outline-none focus:border-cyan-400"></textarea>
+            </div>
+
+            <div class="text-xs">
+              <label class="block text-slate-300 uppercase font-semibold mb-1">Rider / Estrutura Técnica Exigida</label>
+              <textarea id="mArtRider" rows="2" class="w-full bg-slate-900 border border-cyan-500/30 rounded-xl p-3 text-white focus:outline-none focus:border-cyan-400"></textarea>
+            </div>
+
+            <div class="grid grid-cols-1 sm:grid-cols-2 gap-3 text-xs">
+              <div>
+                <label class="block text-slate-300 uppercase font-semibold mb-1">YouTube / Vídeo Principal</label>
+                <input type="url" id="mArtYoutube1" class="w-full bg-slate-900 border border-cyan-500/30 rounded-xl px-3 py-2 text-white focus:outline-none focus:border-cyan-400">
+              </div>
+              <div>
+                <label class="block text-slate-300 uppercase font-semibold mb-1">YouTube / Vídeo Secundário</label>
+                <input type="url" id="mArtYoutube2" class="w-full bg-slate-900 border border-cyan-500/30 rounded-xl px-3 py-2 text-white focus:outline-none focus:border-cyan-400">
+              </div>
+            </div>
+
+            <div class="text-xs pt-1">
+              <label class="block text-amber-400 font-bold uppercase mb-1">📅 Períodos de Agenda Declarados Indisponíveis</label>
+              <div id="mListaBloqueiosAdmin" class="space-y-1.5 bg-slate-950 p-2.5 rounded-xl border border-white/5 text-[11px]">
+                <span class="text-slate-500 block text-center py-2">Nenhum bloqueio cadastrado</span>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <div class="pt-2">
+          <label class="block text-xs text-amber-400 font-bold uppercase tracking-wider mb-2">🔒 Observações Internas (Visível apenas para o Master)</label>
+          <textarea id="mObsAdmin" rows="3" placeholder="Anotações internas sobre este parceiro..." class="w-full bg-slate-950/80 border border-amber-500/30 rounded-xl p-3 text-xs text-white focus:outline-none focus:border-amber-400"></textarea>
+        </div>
+
+      </div>
+
+    </div>
+  </div>
+
+  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+  <script src="../partner-config.js" onerror="this.src='../../partner-config.js'"></script>
+  <script src="../partner-header.js"></script>
+  <script src="../../script/script.js" onerror="this.src='../script/script.js'" defer></script>
+  
+  <script>
+    (function () {
+      'use strict';
+
+      var listaParceiros = [];
+      var listaFiltrada = [];
+      var listaTaxonomia = [];
+      var parceiroSelecionadoId = null;
+      var parceiroAuditoriaAtivo = null;
+
+      var mGaleriaFotosAtual = [];
+      var mMidiasPendentesAtual = [];
+      var mFotoCapaUrlAtual = null;
+
+      var paginaAtual = 1;
+      var itensPorPagina = 10;
+
+      function esc(s) { return String(s == null ? '' : s).replace(/</g, '&lt;').replace(/>/g, '&gt;'); }
+
+      function temFotosPendentes(p) {
+        if (!p) return false;
+        if (p.fotos_pendentes_aprovacao) return true;
+        if (Array.isArray(p.midias_pendentes) && p.midias_pendentes.length > 0) return true;
+        return false;
+      }
+
+      function formatarAcesso(dataIso) {
+        if (!dataIso) return '<span class="text-slate-600">—</span>';
+        
+        var data = new Date(dataIso);
+        var agora = new Date();
+        var diffMinutos = (agora - data) / (1000 * 60);
+        
+        var badgeAtivo = diffMinutos <= 15 
+          ? '<span class="inline-block w-2 h-2 rounded-full bg-emerald-400 mr-1.5 shadow-[0_0_8px_rgba(52,211,153,0.8)]" title="Atividade recente (últimos 15 min)"></span>' 
+          : '';
+
+        var dataFormatada = data.toLocaleDateString('pt-BR', { day: '2-digit', month: '2-digit' }) + 
+                            ' ' + data.toLocaleTimeString('pt-BR', { hour: '2-digit', minute: '2-digit' });
+
+        return '<div class="flex items-center justify-center text-[11px] text-slate-300 font-mono whitespace-nowrap">' + 
+                  badgeAtivo + dataFormatada + 
+               '</div>';
+      }
+
+      function formatarDataHora(dt) {
+        if (!dt) return '—';
+        return new Date(dt).toLocaleString('pt-BR', { day: '2-digit', month: '2-digit', year: 'numeric', hour: '2-digit', minute: '2-digit' });
+      }
+
+      function formatWhatsApp(v) {
+        if (!v) return '';
+        v = String(v).trim().replace(/\D/g, '');
+        if (v.length > 11) v = v.substring(0, 11);
+        if (v.length > 10) return v.replace(/^(\d{2})(\d{5})(\d{4})$/, '($1) $2-$3');
+        if (v.length > 6) return v.replace(/^(\d{2})(\d{4})(\d{0,4})$/, '($1) $2-$3');
+        if (v.length > 2) return v.replace(/^(\d{2})(\d{0,5})$/, '($1) $2');
+        return v;
+      }
+
+      function formatCep(v) {
+        if (!v) return '';
+        v = v.replace(/\D/g, '');
+        if (v.length > 8) v = v.substring(0, 8);
+        if (v.length > 5) return v.replace(/^(\d{5})(\d{1,3})$/, '$1-$2');
+        return v;
+      }
+
+      function formatCpfCnpj(v) {
+        if (!v) return '';
+        v = v.replace(/\D/g, '');
+        if (v.length > 14) v = v.substring(0, 14);
+        if (v.length > 11) {
+          return v.replace(/^(\d{2})(\d{3})(\d{3})(\d{4})(\d{2})$/, '$1.$2.$3/$4-$5');
+        }
+        if (v.length > 9) {
+          return v.replace(/^(\d{3})(\d{3})(\d{3})(\d{1,2})$/, '$1.$2.$3-$4');
+        }
+        return v;
+      }
+
+      function traduzirPerfilLegado(nomePerfilBase) {
+        var mapa = {
+          'Agência': 'agencia_corporativa',
+          'Artista': 'outro',
+          'Cerimonialista': 'cerimonialista',
+          'Hotelaria / Espaço': 'hotelaria_espaco',
+          'Produtor': 'produtor_independente',
+          'Serviços': 'outro',
+          'Outro': 'outro'
+        };
+        return mapa[nomePerfilBase] || 'outro';
+      }
+
+      function traduzirEnumParaPerfilBase(perfilEnum) {
+        var mapaInverso = {
+          'agencia_corporativa': 'Agência',
+          'cerimonialista': 'Cerimonialista',
+          'hotelaria_espaco': 'Hotelaria / Espaço',
+          'produtor_independente': 'Produtor'
+        };
+        return mapaInverso[perfilEnum] || null;
+      }
+
+      function resolverTaxonomiaParceiro(p) {
+        var res = { perfilPaiId: null, especialidadeId: null, perfilPaiNome: 'Outro', especialidadeNome: '' };
+
+        if (p.perfil_parceiro_id && listaTaxonomia.length > 0) {
+          var itemTax = listaTaxonomia.find(function(t) { return t.id === p.perfil_parceiro_id; });
+          if (itemTax) {
+            if (itemTax.pai_id) {
+              res.especialidadeId = itemTax.id;
+              res.especialidadeNome = itemTax.nome;
+              res.perfilPaiId = itemTax.pai_id;
+              var paiObj = listaTaxonomia.find(function(t) { return t.id === itemTax.pai_id; });
+              if (paiObj) res.perfilPaiNome = paiObj.nome;
+            } else {
+              res.perfilPaiId = itemTax.id;
+              res.perfilPaiNome = itemTax.nome;
+            }
+            return res;
+          }
+        }
+
+        var nomePaiVisual = traduzirEnumParaPerfilBase(p.perfil);
+        if (!nomePaiVisual) {
+          if (p.perfil === 'outro' && (p.categoria_artistica || p.especialidade_artistica)) {
+            nomePaiVisual = 'Artista';
+          } else {
+            nomePaiVisual = 'Outro';
+          }
+        }
+        res.perfilPaiNome = nomePaiVisual;
+        var paiEncontrado = listaTaxonomia.find(function(t) { return !t.pai_id && t.nome === nomePaiVisual; });
+        if (paiEncontrado) res.perfilPaiId = paiEncontrado.id;
+
+        return res;
+      }
+
+      // MODAL DE GERENCIAMENTO DA TAXONOMIA
+      window.abrirModalGerenciarTaxonomia = function() {
+        resetFormTaxonomia();
+        renderListaGerenciadorTaxonomia();
+        var modal = document.getElementById('modalTaxonomia');
+        modal.classList.remove('hidden');
+        modal.classList.add('flex');
+      };
+
+      document.getElementById('btnFecharTaxonomia').addEventListener('click', function() {
+        var modal = document.getElementById('modalTaxonomia');
+        modal.classList.add('hidden');
+        modal.classList.remove('flex');
+      });
+
+      function popularSelectPaiTaxonomia() {
+        var selPai = document.getElementById('taxPaiId');
+        if (!selPai) return;
+
+        var perfisPais = listaTaxonomia.filter(function(t) { return !t.pai_id; });
+        var html = '<option value="">Nenhuma (É um Perfil Base Principal)</option>';
+        perfisPais.forEach(function(p) {
+          html += '<option value="' + p.id + '">' + esc(p.nome) + '</option>';
+        });
+        selPai.innerHTML = html;
+      }
+
+      window.resetFormTaxonomia = function() {
+        document.getElementById('taxEditId').value = '';
+        document.getElementById('taxNome').value = '';
+        document.getElementById('taxTemFicha').checked = false;
+        document.getElementById('lblTituloFormTax').textContent = '➕ Criar Nova Categoria / Especialidade';
+        document.getElementById('btnCancelarEditTax').classList.add('hidden');
+        popularSelectPaiTaxonomia();
+      };
+
+      function renderListaGerenciadorTaxonomia() {
+        var container = document.getElementById('containerListaTaxonomia');
+        if (!container) return;
+
+        if (!listaTaxonomia.length) {
+          container.innerHTML = '<span class="text-slate-500 block text-center py-4">Nenhuma categoria cadastrada.</span>';
+          return;
+        }
+
+        var perfisPais = listaTaxonomia.filter(function(t) { return !t.pai_id; });
+        var html = '';
+
+        perfisPais.forEach(function(pai) {
+          var filhos = listaTaxonomia.filter(function(t) { return t.pai_id === pai.id; });
+          var badgeFicha = pai.tem_ficha_complementar ? '<span class="px-1.5 py-0.5 rounded text-[9px] font-bold bg-cyan-500/20 text-cyan-300 border border-cyan-500/40">Ficha Ativa</span>' : '';
+
+          html += '<div class="bg-slate-900/90 p-3 rounded-xl border border-white/10 space-y-2">';
+          html += '<div class="flex items-center justify-between gap-2">' +
+            '<div class="flex items-center gap-2">' +
+              '<strong class="text-white text-sm">' + esc(pai.nome) + '</strong>' +
+              badgeFicha +
+            '</div>' +
+            '<div class="flex items-center gap-1.5">' +
+              '<button type="button" onclick="editarTaxonomiaItem(\'' + pai.id + '\')" class="px-2 py-0.5 bg-amber-500/20 hover:bg-amber-500/30 text-amber-300 rounded text-[10px] font-bold border border-amber-500/30">Editar</button>' +
+              '<button type="button" onclick="alternarStatusTaxonomia(\'' + pai.id + '\', ' + !pai.ativo + ')" class="px-2 py-0.5 ' + (pai.ativo ? 'bg-emerald-500/20 text-emerald-300 border-emerald-500/30' : 'bg-red-500/20 text-red-300 border-red-500/30') + ' rounded text-[10px] font-bold border">' + (pai.ativo ? 'Ativo' : 'Inativo') + '</button>' +
+            '</div>' +
+          '</div>';
+
+          if (filhos.length) {
+            html += '<div class="pl-4 space-y-1.5 border-l-2 border-amber-500/30 mt-2">';
+            filhos.forEach(function(f) {
+              var badgeFichaFilho = f.tem_ficha_complementar ? '<span class="px-1.5 py-0.5 rounded text-[8px] font-bold bg-cyan-500/20 text-cyan-300 border border-cyan-500/40">Ficha</span>' : '';
+              html += '<div class="flex items-center justify-between text-[11px] bg-slate-950/60 p-1.5 rounded border border-white/5">' +
+                '<span class="text-slate-300 flex items-center gap-1.5">↳ ' + esc(f.nome) + ' ' + badgeFichaFilho + '</span>' +
+                '<div class="flex items-center gap-1">' +
+                  '<button type="button" onclick="editarTaxonomiaItem(\'' + f.id + '\')" class="px-1.5 py-0.5 bg-amber-500/20 text-amber-300 rounded text-[9px] font-semibold">Editar</button>' +
+                  '<button type="button" onclick="alternarStatusTaxonomia(\'' + f.id + '\', ' + !f.ativo + ')" class="px-1.5 py-0.5 ' + (f.ativo ? 'text-emerald-400' : 'text-red-400') + ' rounded text-[9px] font-semibold">' + (f.ativo ? 'Ativo' : 'Inativo') + '</button>' +
+                '</div>' +
+              '</div>';
+            });
+            html += '</div>';
+          }
+
+          html += '</div>';
+        });
+
+        container.innerHTML = html;
+      }
+
+      window.editarTaxonomiaItem = function(id) {
+        var item = listaTaxonomia.find(function(t) { return t.id === id; });
+        if (!item) return;
+
+        document.getElementById('taxEditId').value = item.id;
+        document.getElementById('taxNome').value = item.nome || '';
+        document.getElementById('taxTemFicha').checked = Boolean(item.tem_ficha_complementar);
+        
+        popularSelectPaiTaxonomia();
+        document.getElementById('taxPaiId').value = item.pai_id || '';
+
+        document.getElementById('lblTituloFormTax').textContent = '✏️ Editar Categoria';
+        document.getElementById('btnCancelarEditTax').classList.remove('hidden');
+      };
+
+      window.salvarItemTaxonomia = async function() {
+        var editId = document.getElementById('taxEditId').value;
+        var nome = document.getElementById('taxNome').value.trim();
+        var paiId = document.getElementById('taxPaiId').value || null;
+        var temFicha = document.getElementById('taxTemFicha').checked;
+
+        if (!nome) return alert('Por favor, digite o nome da categoria.');
+
+        var payload = {
+          nome: nome,
+          pai_id: paiId,
+          tem_ficha_complementar: temFicha,
+          ativo: true
+        };
+
+        var res;
+        if (editId) {
+          res = await sbPartner.from('perfis_parceiros').update(payload).eq('id', editId);
+        } else {
+          res = await sbPartner.from('perfis_parceiros').insert([payload]);
+        }
+
+        if (res.error) {
+          alert('Erro ao salvar categoria: ' + res.error.message);
+        } else {
+          alert('Categoria salva com sucesso!');
+          resetFormTaxonomia();
+          carregarTaxonomiaEParceiros();
+        }
+      };
+
+      window.alternarStatusTaxonomia = async function(id, novoStatus) {
+        var res = await sbPartner.from('perfis_parceiros').update({ ativo: novoStatus }).eq('id', id);
+        if (!res.error) carregarTaxonomiaEParceiros();
+      };
+
+      partnerRequireAuth({ requireAdmin: true }).then(function (parceiro) {
+        partnerFillSidebar(parceiro);
+        carregarTaxonomiaEParceiros();
+        configurarAutocompleteParceiro();
+        configurarListenersModalTaxonomia();
+      }).catch(function (err) {
+        console.error('Acesso negado ao Master Admin:', err);
+      });
+
+      async function carregarTaxonomiaEParceiros() {
+        if (typeof sbPartner === 'undefined') {
+          setTimeout(carregarTaxonomiaEParceiros, 200);
+          return;
+        }
+
+        try {
+          var resTax = await sbPartner.from('perfis_parceiros').select('*').order('ordem', { ascending: true });
+          if (!resTax.error && resTax.data) {
+            listaTaxonomia = resTax.data;
+            popularSelectsFiltroTaxonomia();
+            popularSelectModalPerfilBase();
+            renderListaGerenciadorTaxonomia();
+          }
+
+          var resParc = await sbPartner.from('parceiros').select('*').order('criado_em', { ascending: false });
+          var tbody = document.getElementById('tbodyParceiros');
+          if (resParc.error) {
+            tbody.innerHTML = '<tr><td colspan="7" class="py-4 text-center text-red-400">Erro ao carregar usuários: ' + esc(resParc.error.message) + '</td></tr>';
+            return;
+          }
+
+          listaParceiros = resParc.data || [];
+          limparFiltros();
+        } catch(e) {
+          console.error("Erro no carregamento:", e);
+        }
+      }
+
+      function popularSelectsFiltroTaxonomia() {
+        var selFiltro = document.getElementById('filterPerfilTaxonomia');
+        if (!selFiltro) return;
+
+        var perfisPais = listaTaxonomia.filter(function(t) { return !t.pai_id && t.ativo; });
+        var html = '<option value="">Todos os Perfis</option>';
+        perfisPais.forEach(function(p) {
+          html += '<option value="' + p.id + '">' + esc(p.nome) + '</option>';
+        });
+        selFiltro.innerHTML = html;
+      }
+
+      function popularSelectModalPerfilBase() {
+        var selBase = document.getElementById('mPerfilBase');
+        if (!selBase) return;
+
+        var perfisPais = listaTaxonomia.filter(function(t) { return !t.pai_id && t.ativo; });
+        var html = '<option value="">Selecione...</option>';
+        perfisPais.forEach(function(p) {
+          html += '<option value="' + p.id + '">' + esc(p.nome) + '</option>';
+        });
+        selBase.innerHTML = html;
+      }
+
+      function atualizarSelectModalEspecialidade(perfilBaseId, espSelecionadaId) {
+        var selEsp = document.getElementById('mEspecialidade');
+        if (!selEsp) return;
+
+        if (!perfilBaseId) {
+          selEsp.innerHTML = '<option value="">Selecione um Perfil Base primeiro...</option>';
+          selEsp.disabled = true;
+          return;
+        }
+
+        var filhos = listaTaxonomia.filter(function(t) { return t.pai_id === perfilBaseId && t.ativo; });
+
+        if (!filhos.length) {
+          selEsp.innerHTML = '<option value="">Nenhuma especialidade</option>';
+          selEsp.disabled = true;
+        } else {
+          selEsp.disabled = false;
+          var html = '<option value="">Selecione uma especialidade...</option>';
+          filhos.forEach(function(f) {
+            var selected = (espSelecionadaId && f.id === espSelecionadaId) ? 'selected' : '';
+            html += '<option value="' + f.id + '" ' + selected + '>' + esc(f.nome) + '</option>';
+          });
+          selEsp.innerHTML = html;
+        }
+      }
+
+      function configurarListenersModalTaxonomia() {
+        var selBase = document.getElementById('mPerfilBase');
+        var selEsp = document.getElementById('mEspecialidade');
+
+        if (selBase) {
+          selBase.addEventListener('change', function(e) {
+            var baseId = e.target.value;
+            atualizarSelectModalEspecialidade(baseId, null);
+            verificarExibicaoFichaComplementarAdmin(baseId, null);
+          });
+        }
+
+        if (selEsp) {
+          selEsp.addEventListener('change', function(e) {
+            var espId = e.target.value;
+            var baseId = document.getElementById('mPerfilBase').value;
+            verificarExibicaoFichaComplementarAdmin(baseId, espId);
+          });
+        }
+      }
+
+      function verificarExibicaoFichaComplementarAdmin(baseId, espId) {
+        var blocoArt = document.getElementById('mBlocoArtisticoAdmin');
+        if (!blocoArt) return;
+
+        var itemSel = null;
+        if (espId) itemSel = listaTaxonomia.find(function(t) { return t.id === espId; });
+        if (!itemSel && baseId) itemSel = listaTaxonomia.find(function(t) { return t.id === baseId; });
+
+        var deveExibir = false;
+        if (itemSel) {
+          if (itemSel.tem_ficha_complementar !== undefined && itemSel.tem_ficha_complementar !== null) {
+            deveExibir = Boolean(itemSel.tem_ficha_complementar);
+          } else {
+            deveExibir = (itemSel.nome || '').indexOf('Artista') > -1;
+            if (!deveExibir && itemSel.pai_id) {
+              var pai = listaTaxonomia.find(function(t) { return t.id === itemSel.pai_id; });
+              if (pai) deveExibir = (pai.nome || '').indexOf('Artista') > -1;
+            }
+          }
+        }
+
+        if (deveExibir) {
+          blocoArt.classList.remove('hidden');
+        } else {
+          blocoArt.classList.add('hidden');
+        }
+      }
+
+      function configurarAutocompleteParceiro() {
+        var inputSearch = document.getElementById('filterParceiroSearch');
+        var inputVal = document.getElementById('filterParceiroVal');
+        var listContainer = document.getElementById('dropdownParceiroList');
+
+        if (!inputSearch) return;
+
+        inputSearch.addEventListener('focus', function() {
+          renderListaParceiros(inputSearch.value);
+          listContainer.classList.remove('hidden');
+        });
+
+        inputSearch.addEventListener('input', function() {
+          renderListaParceiros(inputSearch.value);
+          listContainer.classList.remove('hidden');
+          if (!inputSearch.value) {
+            inputVal.value = '';
+            aplicarFiltros();
+          }
+        });
+
+        document.addEventListener('click', function(e) {
+          var box = document.getElementById('boxDropdownParceiro');
+          if (box && !box.contains(e.target)) {
+            listContainer.classList.add('hidden');
+          }
+        });
+      }
+
+      function renderListaParceiros(termo) {
+        var listContainer = document.getElementById('dropdownParceiroList');
+        var termoLower = (termo || '').toLowerCase().trim();
+
+        var filtrados = listaParceiros.filter(function(v) {
+          var nome = (v.nome_completo || '').toLowerCase();
+          var email = (v.email || '').toLowerCase();
+          return !termoLower || nome.includes(termoLower) || email.includes(termoLower);
+        });
+
+        var html = '<div onclick="selecionarParceiro(\'\', \'Todos os Parceiros\')" class="p-2.5 hover:bg-white/10 cursor-pointer text-slate-300 font-semibold border-b border-white/5">Todos os Parceiros</div>';
+        
+        if (filtrados.length) {
+          html += filtrados.map(function(v) {
+            var label = esc(v.nome_completo || v.email);
+            return '<div onclick="selecionarParceiro(\'' + v.id + '\', \'' + label.replace(/'/g, "\\'") + '\')" class="p-2.5 hover:bg-white/10 cursor-pointer text-white flex justify-between items-center transition">' +
+              '<span>' + label + '</span>' +
+              '<span class="text-[10px] text-cyan-400 font-bold">' + (v.comissao_padrao_pct || 10) + '%</span>' +
+            '</div>';
+          }).join('');
+        } else {
+          html += '<div class="p-3 text-slate-500 text-center">Nenhum parceiro encontrado</div>';
+        }
+
+        listContainer.innerHTML = html;
+      }
+
+      window.selecionarParceiro = function(id, label) {
+        document.getElementById('filterParceiroVal').value = id;
+        document.getElementById('filterParceiroSearch').value = id ? label : '';
+        document.getElementById('dropdownParceiroList').classList.add('hidden');
+        aplicarFiltros();
+      };
+
+      window.aplicarFiltros = function() {
+        var busca = (document.getElementById('filterBusca').value || '').toLowerCase().trim();
+        var parceiroId = document.getElementById('filterParceiroVal').value;
+        var statusFiltro = document.getElementById('filterStatus').value;
+        var filtroTaxId = document.getElementById('filterPerfilTaxonomia').value;
+        var ordemAcesso = document.getElementById('filterOrdemAcesso').value;
+
+        listaFiltrada = listaParceiros.filter(function(p) {
+          var nomeStr = String(p.nome_completo || '').toLowerCase();
+          var emailStr = String(p.email || '').toLowerCase();
+          var matchBusca = !busca || nomeStr.includes(busca) || emailStr.includes(busca);
+
+          var matchParceiro = !parceiroId || (p.id === parceiroId);
+
+          var stRaw = String(p.status || 'pendente').toLowerCase().trim();
+          var isAprovado = (stRaw === 'aprovado' || stRaw === 'aprovada' || stRaw === 'ativo');
+          var isPendente = (stRaw === 'pendente');
+          var stNormalized = isAprovado ? 'aprovado' : (isPendente ? 'pendente' : 'bloqueado');
+          var matchStatus = !statusFiltro || (stNormalized === statusFiltro);
+
+          var matchTaxonomia = true;
+          if (filtroTaxId) {
+            var taxInfo = resolverTaxonomiaParceiro(p);
+            matchTaxonomia = (taxInfo.perfilPaiId === filtroTaxId || taxInfo.especialidadeId === filtroTaxId);
+          }
+
+          return matchBusca && matchParceiro && matchStatus && matchTaxonomia;
+        });
+
+        listaFiltrada.sort(function(a, b) {
+          if (ordemAcesso === 'destaque_topo') {
+            var destA = a.is_destaque ? 1 : 0;
+            var destB = b.is_destaque ? 1 : 0;
+            return destB - destA;
+          } else if (ordemAcesso === 'midia_pendente') {
+            var pendA = temFotosPendentes(a) ? 1 : 0;
+            var pendB = temFotosPendentes(b) ? 1 : 0;
+            return pendB - pendA;
+          } else if (ordemAcesso === 'acesso_desc') {
+            var dtA = new Date(a.ultima_atividade || a.ultimo_login || 0).getTime();
+            var dtB = new Date(b.ultima_atividade || b.ultimo_login || 0).getTime();
+            return dtB - dtA;
+          } else if (ordemAcesso === 'acesso_asc') {
+            var dtA = new Date(a.ultima_atividade || a.ultimo_login || 0).getTime();
+            var dtB = new Date(b.ultima_atividade || b.ultimo_login || 0).getTime();
+            return dtA - dtB;
+          } else if (ordemAcesso === 'nome_asc') {
+            var nomeA = String(a.nome_completo || a.email).toLowerCase();
+            var nomeB = String(b.nome_completo || b.email).toLowerCase();
+            return nomeA.localeCompare(nomeB);
+          } else {
+            var dtCadA = new Date(a.criado_em || 0).getTime();
+            var dtCadB = new Date(b.criado_em || 0).getTime();
+            return dtCadB - dtCadA;
+          }
+        });
+
+        paginaAtual = 1;
+        atualizarKPIs(listaFiltrada);
+        renderTabela(listaFiltrada);
+      };
+
+      window.limparFiltros = function() {
+        document.getElementById('filterBusca').value = '';
+        document.getElementById('filterParceiroVal').value = '';
+        document.getElementById('filterParceiroSearch').value = '';
+        document.getElementById('filterStatus').value = '';
+        document.getElementById('filterPerfilTaxonomia').value = '';
+        document.getElementById('filterOrdemAcesso').value = 'cadastro_desc';
+        aplicarFiltros();
+      };
+
+      function atualizarKPIs(lista) {
+        document.getElementById('kpiTotalParceiros').textContent = lista.length + ' cadastrados';
+        var pendentes = lista.filter(function (p) { 
+          return String(p.status || '').toLowerCase().trim() === 'pendente' || temFotosPendentes(p); 
+        }).length;
+        document.getElementById('kpiParceirosPendentes').textContent = pendentes + ' aguardando';
+
+        if (lista.length) {
+          var soma = lista.reduce(function (acc, p) { return acc + Number(p.comissao_padrao_pct || 10); }, 0);
+          var media = soma / lista.length;
+          document.getElementById('kpiComissaoMedia').textContent = media.toFixed(1).replace('.', ',') + '%';
+        }
+      }
+
+      function renderTabela(lista) {
+        var tbody = document.getElementById('tbodyParceiros');
+        var totalRegistros = lista.length;
+
+        if (!totalRegistros) {
+          tbody.innerHTML = '<tr><td colspan="7" class="py-6 text-center text-slate-500">Nenhum usuário encontrado para os filtros aplicados.</td></tr>';
+          atualizarControlesPaginacao(0, 0, 0);
+          return;
+        }
+
+        var totalPaginas = Math.ceil(totalRegistros / itensPorPagina);
+        if (paginaAtual > totalPaginas) paginaAtual = totalPaginas;
+
+        var inicio = (paginaAtual - 1) * itensPorPagina;
+        var fim = Math.min(inicio + itensPorPagina, totalRegistros);
+        var itensPagina = lista.slice(inicio, fim);
+
+        tbody.innerHTML = itensPagina.map(function (p) {
+          var stRaw = String(p.status || 'pendente').toLowerCase().trim();
+          var isAprovado = (stRaw === 'aprovado' || stRaw === 'aprovada' || stRaw === 'ativo');
+          var isPendente = (stRaw === 'pendente');
+
+          var stColorClass = isAprovado ? 'text-emerald-400 border-emerald-500/40' : (isPendente ? 'text-amber-400 border-amber-500/40' : 'text-red-400 border-red-500/40');
+          var nivelVal = String(p.role || p.nivel || 'vendedor').toLowerCase().trim();
+
+          var taxInfo = resolverTaxonomiaParceiro(p);
+
+          var qtdPendentesArr = Array.isArray(p.midias_pendentes) ? p.midias_pendentes.length : 0;
+          var totalPendentesReal = qtdPendentesArr > 0 ? qtdPendentesArr : (p.fotos_pendentes_aprovacao ? 1 : 0);
+          var txtMidias = totalPendentesReal + ' Mídia' + (totalPendentesReal > 1 ? 's' : '');
+
+          var badgeDestaqueHtml = p.is_destaque 
+            ? '<span class="inline-flex items-center px-1.5 py-0.5 rounded text-[9px] font-extrabold bg-amber-400/20 text-amber-300 border border-amber-400/50 whitespace-nowrap shadow-[0_0_8px_rgba(245,158,11,0.3)]">⭐ Destaque</span>' 
+            : '';
+
+          var badgeMidiasPendenteHtml = temFotosPendentes(p) 
+            ? '<span class="inline-flex items-center px-2 py-0.5 rounded text-[10px] font-extrabold bg-amber-500/20 text-amber-300 border border-amber-500/50 animate-pulse whitespace-nowrap">⏳ ' + txtMidias + ' P/ Aprovar</span>' 
+            : '';
+
+          return '<tr class="hover:bg-white/[0.02] transition border-b border-white/5">' +
+            '<td class="py-3 px-3 min-w-[220px] text-left">' +
+              '<div class="flex items-center gap-1.5 flex-wrap">' +
+                '<strong class="text-white text-sm font-semibold truncate">' + esc(p.nome_completo || p.email) + '</strong>' +
+                badgeDestaqueHtml +
+                badgeMidiasPendenteHtml +
+              '</div>' +
+              '<span class="text-slate-400 text-[11px] block truncate mt-0.5">' + esc(p.email) + ' • ' + esc(formatWhatsApp(p.whatsapp || p.telefone) || 'S/ Telefone') + '</span>' +
+            '</td>' +
+            '<td class="py-3 px-3 text-center whitespace-nowrap">' +
+              '<div class="text-[11px] font-semibold text-cyan-300">' + esc(taxInfo.perfilPaiNome) + '</div>' +
+              '<div class="text-[10px] text-slate-400">' + esc(taxInfo.especialidadeNome || '—') + '</div>' +
+            '</td>' +
+            '<td class="py-3 px-3 text-center whitespace-nowrap">' +
+              '<select onchange="salvarNivel(\'' + p.id + '\', this.value)" class="bg-slate-900 border border-white/20 rounded-lg px-2 py-1 text-[11px] text-slate-300 font-semibold focus:outline-none cursor-pointer">' +
+                '<option value="vendedor" ' + (nivelVal === 'vendedor' ? 'selected' : '') + '>Vendedor B2B</option>' +
+                '<option value="gerente" ' + (nivelVal === 'gerente' ? 'selected' : '') + '>Gerente Regional</option>' +
+                '<option value="admin" ' + (nivelVal === 'admin' ? 'selected' : '') + '>Master Admin</option>' +
+              '</select>' +
+            '</td>' +
+            '<td class="py-3 px-3 text-center whitespace-nowrap">' + formatarAcesso(p.ultima_atividade || p.ultimo_login) + '</td>' +
+            '<td class="py-3 px-3 text-center whitespace-nowrap">' +
+              '<select onchange="alterarStatus(\'' + p.id + '\', this.value)" class="bg-slate-900 border rounded-lg px-2 py-1 text-[11px] font-bold uppercase focus:outline-none cursor-pointer ' + stColorClass + '">' +
+                '<option value="aprovado" class="text-emerald-400" ' + (isAprovado ? 'selected' : '') + '>Aprovado</option>' +
+                '<option value="pendente" class="text-amber-400" ' + (isPendente ? 'selected' : '') + '>Pendente</option>' +
+                '<option value="bloqueado" class="text-red-400" ' + (!isAprovado && !isPendente ? 'selected' : '') + '>Bloqueado</option>' +
+              '</select>' +
+            '</td>' +
+            '<td class="py-3 px-3 text-center whitespace-nowrap">' +
+              '<div class="inline-flex items-center justify-center gap-1.5 bg-slate-900/90 border border-amber-500/30 rounded-lg px-2.5 py-1">' +
+                '<strong class="font-bold text-amber-400 text-xs">' + Number(p.comissao_padrao_pct || 10).toFixed(1) + '%</strong>' +
+              '</div>' +
+            '</td>' +
+            '<td class="py-3 px-3 text-right whitespace-nowrap shrink-0">' +
+              '<div class="inline-flex items-center justify-end gap-1.5">' +
+                '<button onclick="abrirFichaParceiro(\'' + p.id + '\')" class="px-2.5 py-1 rounded-lg bg-amber-500/20 hover:bg-amber-500/30 text-amber-300 border border-amber-500/30 text-[11px] font-semibold transition cursor-pointer">Ficha</button>' +
+                '<button onclick="abrirModalAuditoria(\'' + p.id + '\')" class="px-2.5 py-1 rounded-lg bg-cyan-500/20 hover:bg-cyan-500/30 text-cyan-300 border border-cyan-500/30 text-[11px] font-semibold transition cursor-pointer">Ajustar %</button>' +
+                '<button onclick="excluirUsuario(\'' + p.id + '\')" class="px-2.5 py-1 rounded-lg bg-red-500/20 hover:bg-red-500/30 text-red-300 border border-red-500/30 text-[11px] font-semibold transition cursor-pointer">Excluir</button>' +
+              '</div>' +
+            '</td>' +
+          '</tr>';
+        }).join('');
+
+        atualizarControlesPaginacao(inicio + 1, fim, totalRegistros);
+      }
+
+      function atualizarControlesPaginacao(inicio, fim, total) {
+        document.getElementById('txtInfoPaginacao').textContent = 'Exibindo ' + inicio + '-' + fim + ' de ' + total + ' registros';
+        document.getElementById('txtPaginaAtual').textContent = paginaAtual;
+
+        var totalPaginas = Math.ceil(total / itensPorPagina) || 1;
+        document.getElementById('btnPagAnterior').disabled = (paginaAtual <= 1);
+        document.getElementById('btnPagProxima').disabled = (paginaAtual >= totalPaginas);
+      }
+
+      window.mudarPagina = function(delta) {
+        paginaAtual += delta;
+        renderTabela(listaFiltrada);
+      };
+
+      window.mudarItensPorPagina = function(qtd) {
+        itensPorPagina = parseInt(qtd, 10) || 10;
+        paginaAtual = 1;
+        renderTabela(listaFiltrada);
+      };
+
+      window.exportarCSV = function() {
+        if (!listaFiltrada.length) {
+          alert('Nenhum dado disponível para exportar.');
+          return;
+        }
+
+        var header = ["ID", "Nome Completo", "Email", "WhatsApp", "Status", "Nivel", "Perfil Base", "Especialidade", "% Comissao", "Is Destaque", "Fotos Pendentes", "Ultima Atividade"];
+        var rows = listaFiltrada.map(function(p) {
+          var taxInfo = resolverTaxonomiaParceiro(p);
+          return [
+            '="' + p.id + '"',
+            '"' + (p.nome_completo || '').replace(/"/g, '""') + '"',
+            '"' + (p.email || '').replace(/"/g, '""') + '"',
+            '"' + (p.whatsapp || p.telefone || '').replace(/"/g, '""') + '"',
+            p.status || 'pendente',
+            p.role || p.nivel || 'vendedor',
+            '"' + taxInfo.perfilPaiNome + '"',
+            '"' + taxInfo.especialidadeNome + '"',
+            Number(p.comissao_padrao_pct || 10),
+            p.is_destaque ? 'SIM' : 'NAO',
+            temFotosPendentes(p) ? 'SIM' : 'NAO',
+            '"' + (p.ultima_atividade || p.ultimo_login || '') + '"'
+          ].join(';');
+        });
+
+        var csvContent = 'data:text/csv;charset=utf-8,\uFEFF' + header.join(';') + '\n' + rows.join('\n');
+        var encodedUri = encodeURI(csvContent);
+        var link = document.createElement('a');
+        link.setAttribute('href', encodedUri);
+        link.setAttribute('download', 'Usuarios_432UP_' + new Date().toISOString().split('T')[0] + '.csv');
+        document.body.appendChild(link);
+        link.click();
+        document.body.removeChild(link);
+      };
+
+      window.abrirModalAuditoria = function(id) {
+        var p = listaParceiros.find(function(item) { return String(item.id) === String(id); });
+        if (!p) return;
+
+        parceiroAuditoriaAtivo = p;
+        document.getElementById('modalAuditoriaNome').textContent = p.nome_completo || p.email;
+        document.getElementById('modalComissaoAtualVal').textContent = Number(p.comissao_padrao_pct || 10).toFixed(1) + '%';
+        document.getElementById('inputNovaComissao').value = Number(p.comissao_padrao_pct || 10);
+        document.getElementById('inputMotivoAuditoria').value = '';
+
+        renderHistoricoAuditoria(p.historico_comissao);
+
+        var modal = document.getElementById('modalAuditoriaComissao');
+        modal.classList.remove('hidden');
+        modal.classList.add('flex');
+      };
+
+      function renderHistoricoAuditoria(historicoRaw) {
+        var container = document.getElementById('boxHistoricoAuditoria');
+        var log = [];
+        try {
+          log = typeof historicoRaw === 'string' ? JSON.parse(historicoRaw) : (Array.isArray(historicoRaw) ? historicoRaw : []);
+        } catch(e) { log = []; }
+
+        if (!log.length) {
+          container.innerHTML = '<span class="text-slate-500 block text-center py-2">Nenhum registro prévio encontrado para este parceiro.</span>';
+          return;
+        }
+
+        container.innerHTML = log.map(function(item) {
+          var dtStr = item.data ? new Date(item.data).toLocaleString('pt-BR') : '—';
+          return '<div class="p-1.5 border-b border-white/5 last:border-0">' +
+            '<div class="flex justify-between font-bold text-slate-200">' +
+              '<span class="text-amber-400">' + item.de + '% ➔ ' + item.para + '%</span>' +
+              '<span class="text-[10px] text-slate-400">' + dtStr + '</span>' +
+            '</div>' +
+            '<div class="text-[10px] text-slate-400 mt-0.5">' +
+              'Escopo: <strong class="text-white">' + (item.escopo === 'retroativo' ? 'Retroativo (Contratos Legados)' : 'Contratos Futuros') + '</strong> | Motivo: ' + esc(item.motivo || 'Não informado') +
+            '</div>' +
+          '</div>';
+        }).join('');
+      }
+
+      document.getElementById('btnFecharAuditoria').addEventListener('click', fecharModalAuditoria);
+      document.getElementById('btnCancelarAuditoria').addEventListener('click', fecharModalAuditoria);
+
+      function fecharModalAuditoria() {
+        var modal = document.getElementById('modalAuditoriaComissao');
+        modal.classList.add('hidden');
+        modal.classList.remove('flex');
+        parceiroAuditoriaAtivo = null;
+      }
+
+      document.getElementById('btnConfirmarAuditoria').addEventListener('click', function() {
+        if (!parceiroAuditoriaAtivo) return;
+
+        var novaPct = parseFloat(document.getElementById('inputNovaComissao').value);
+
+        if (isNaN(novaPct) || novaPct < 0 || novaPct > 100) {
+          alert('A porcentagem de comissão deve ser um valor entre 0% e 100%.');
+          return;
+        }
+
+        var escopo = document.querySelector('input[name="escopoRegra"]:checked').value;
+        var motivo = document.getElementById('inputMotivoAuditoria').value.trim();
+
+        var historico = [];
+        try {
+          var hRaw = parceiroAuditoriaAtivo.historico_comissao;
+          historico = typeof hRaw === 'string' ? JSON.parse(hRaw) : (Array.isArray(hRaw) ? hRaw : []);
+        } catch(e) { historico = []; }
+
+        var novoLog = {
+          data: new Date().toISOString(),
+          de: Number(parceiroAuditoriaAtivo.comissao_padrao_pct || 10),
+          para: novaPct,
+          escopo: escopo,
+          motivo: motivo || 'Ajuste executado via Master Admin'
+        };
+
+        historico.unshift(novoLog);
+
+        var payload = {
+          comissao_padrao_pct: novaPct,
+          historico_comissao: JSON.stringify(historico)
+        };
+
+        var btn = this;
+        btn.disabled = true;
+        btn.textContent = 'Gravando...';
+
+        sbPartner.from('parceiros').update(payload).eq('id', parceiroAuditoriaAtivo.id).then(function(res) {
+          if (res.error) {
+            alert('Erro ao atualizar comissão: ' + res.error.message);
+            btn.disabled = false;
+            btn.textContent = 'Salvar & Registrar Auditoria';
+            return;
+          }
+
+          if (escopo === 'retroativo') {
+            sbPartner.from('propostas')
+              .update({ comissao_pct_efetiva: novaPct })
+              .eq('parceiro_id', parceiroAuditoriaAtivo.id)
+              .neq('comissao_status', 'liquidado')
+              .then(function() {
+                btn.disabled = false;
+                btn.textContent = 'Salvar & Registrar Auditoria';
+                fecharModalAuditoria();
+                carregarTaxonomiaEParceiros();
+              });
+          } else {
+            btn.disabled = false;
+            btn.textContent = 'Salvar & Registrar Auditoria';
+            fecharModalAuditoria();
+            carregarTaxonomiaEParceiros();
+          }
+        });
+      });
+
+      window.alterarStatus = function (id, novoStatus) {
+        sbPartner.from('parceiros').update({ status: novoStatus }).eq('id', id).then(function (res) {
+          if (res.error) {
+            alert('Erro ao atualizar status: ' + res.error.message);
+          } else {
+            carregarTaxonomiaEParceiros();
+          }
+        });
+      };
+
+      window.salvarNivel = function (id, novoNivel) {
+        var payload = { role: novoNivel, nivel: novoNivel };
+
+        sbPartner.from('parceiros').update(payload).eq('id', id).then(function (res) {
+          if (!res.error) carregarTaxonomiaEParceiros();
+        });
+      };
+
+      window.excluirUsuario = function (id) {
+        if (confirm('Tem certeza de que deseja excluir permanentemente este usuário da base?')) {
+          sbPartner.from('parceiros').delete().eq('id', id).then(function (res) {
+            if (res.error) {
+              alert('Erro ao excluir usuário: ' + res.error.message);
+            } else {
+              alert('Usuário excluído com sucesso!');
+              carregarTaxonomiaEParceiros();
+            }
+          });
+        }
+      };
+
+      /* ABRIR FICHA COMPLETA DO PARCEIRO */
+      window.abrirFichaParceiro = function (id) {
+        var parceiro = listaParceiros.find(function (item) { return String(item.id) === String(id); });
+        if (!parceiro) return;
+
+        parceiroSelecionadoId = parceiro.id;
+
+        mGaleriaFotosAtual = Array.isArray(parceiro.galeria_fotos) ? parceiro.galeria_fotos.slice() : [];
+        mMidiasPendentesAtual = Array.isArray(parceiro.midias_pendentes) ? parceiro.midias_pendentes.slice() : [];
+        mFotoCapaUrlAtual = parceiro.foto_capa_url || null;
+
+        document.getElementById('mUltimoLogin').textContent = formatarDataHora(parceiro.ultimo_login);
+        document.getElementById('mUltimaAtividade').textContent = formatarDataHora(parceiro.ultima_atividade);
+        document.getElementById('mUltimaPagina').textContent = parceiro.ultima_pagina || '—';
+        document.getElementById('mDispositivo').textContent = parceiro.user_agent ? (parceiro.user_agent.substring(0, 28) + '...') : '—';
+
+        document.getElementById('mNome').value = parceiro.nome_completo || '';
+        document.getElementById('mEmpresa').value = parceiro.empresa || '';
+        document.getElementById('mCpfCnpj').value = formatCpfCnpj(parceiro.cpf_cnpj || '');
+        document.getElementById('mNascimento').value = parceiro.data_nascimento || '';
+        document.getElementById('mWhatsapp').value = formatWhatsApp(parceiro.whatsapp || parceiro.telefone || '');
+        document.getElementById('mEmail').value = parceiro.email || '';
+        document.getElementById('mInstagram').value = parceiro.instagram || parceiro.site_portfolio || '';
+
+        var taxInfo = resolverTaxonomiaParceiro(parceiro);
+        var selectBase = document.getElementById('mPerfilBase');
+        if (selectBase && taxInfo.perfilPaiId) {
+          selectBase.value = taxInfo.perfilPaiId;
+        }
+        atualizarSelectModalEspecialidade(taxInfo.perfilPaiId, taxInfo.especialidadeId);
+        verificarExibicaoFichaComplementarAdmin(taxInfo.perfilPaiId, taxInfo.especialidadeId);
+
+        document.getElementById('mCep').value = formatCep(parceiro.cep || '');
+        document.getElementById('mEndereco').value = parceiro.endereco || '';
+        document.getElementById('mBairro').value = parceiro.bairro || '';
+        document.getElementById('mCidade').value = parceiro.cidade || '';
+        document.getElementById('mEstado').value = (parceiro.estado || '').toUpperCase();
+
+        document.getElementById('mTipoPix').value = parceiro.tipo_pix || 'cpf_cnpj';
+        document.getElementById('mChavePix').value = parceiro.chave_pix || '';
+
+        var badgePending = document.getElementById('mMediaPendingBadge');
+        var containerAcao = document.getElementById('mContainerAcaoMidias');
+        var msgEmDia = document.getElementById('mMidiasEmDiaMsg');
+
+        if (temFotosPendentes(parceiro)) {
+          badgePending.classList.remove('hidden');
+          containerAcao.classList.remove('hidden');
+          containerAcao.classList.add('flex');
+          msgEmDia.classList.add('hidden');
+        } else {
+          badgePending.classList.add('hidden');
+          containerAcao.classList.add('hidden');
+          containerAcao.classList.remove('flex');
+          msgEmDia.classList.remove('hidden');
+        }
+
+        document.getElementById('mIsDestaque').checked = Boolean(parceiro.is_destaque);
+        document.getElementById('mStatusArtista').value = (parceiro.status_artista || 'pendente').toLowerCase();
+        document.getElementById('mArtNomeArtistico').value = parceiro.nome_artistico || '';
+        document.getElementById('mArtTagline').value = parceiro.tagline_artistica || '';
+        document.getElementById('mArtCacheBase').value = parceiro.cache_base || '';
+        document.getElementById('mArtExperiencia').value = parceiro.experiencia_comercial || '';
+        document.getElementById('mArtBio').value = parceiro.bio_artistica || '';
+        document.getElementById('mArtRider').value = parceiro.rider_tecnico || '';
+        document.getElementById('mArtYoutube1').value = parceiro.youtube_1 || '';
+        document.getElementById('mArtYoutube2').value = parceiro.youtube_2 || '';
+
+        renderCapaAdmin();
+        renderGaleriaAdmin();
+
+        var listaBloqueios = document.getElementById('mListaBloqueiosAdmin');
+        if (Array.isArray(parceiro.periodos_bloqueados) && parceiro.periodos_bloqueados.length > 0) {
+          listaBloqueios.innerHTML = parceiro.periodos_bloqueados.map(function(b) {
+            return '<div class="flex items-center justify-between bg-slate-900 p-2 rounded border border-white/5">' +
+              '<span>De <strong>' + b.inicio + '</strong> até <strong>' + b.fim + '</strong></span>' +
+              '<span class="text-slate-400">Motivo: ' + esc(b.motivo || '—') + '</span>' +
+            '</div>';
+          }).join('');
+        } else {
+          listaBloqueios.innerHTML = '<span class="text-slate-500 block text-center py-2">Nenhum bloqueio cadastrado</span>';
+        }
+
+        document.getElementById('mObsAdmin').value = parceiro.observacoes_admin || '';
+
+        var badgeTermos = document.getElementById('mTermosBadge');
+        if (badgeTermos) {
+          if (parceiro.termos_aceitos) {
+            var dtAceite = parceiro.termos_aceitos_em ? new Date(parceiro.termos_aceitos_em).toLocaleDateString('pt-BR') : '';
+            badgeTermos.textContent = 'Aceito ' + (dtAceite ? '(' + dtAceite + ')' : '');
+            badgeTermos.className = 'text-xs font-semibold text-emerald-400';
+          } else {
+            badgeTermos.textContent = 'Pendente';
+            badgeTermos.className = 'text-xs font-semibold text-amber-400';
+          }
+        }
+
+        document.getElementById('mAvatarNome').textContent = parceiro.nome_completo || parceiro.email;
+        document.getElementById('mAvatarId').textContent = 'User ID: ' + (parceiro.user_id ? parceiro.user_id.substring(0, 8) + '...' : '—');
+
+        var avatarPreview = document.getElementById('mAvatarPreview');
+        var avatarPlaceholder = document.getElementById('mAvatarPlaceholder');
+        var urlAvatar = parceiro.avatar_url || (typeof partnerAvatarUrl === 'function' ? partnerAvatarUrl(parceiro.user_id, true) : null);
+
+        if (urlAvatar) {
+          avatarPlaceholder.style.display = 'none';
+          avatarPreview.style.backgroundImage = 'url(' + urlAvatar + ')';
+        } else {
+          avatarPlaceholder.style.display = 'inline';
+          avatarPreview.style.backgroundImage = 'none';
+        }
+
+        var modal = document.getElementById('modalFicha');
+        modal.classList.remove('hidden');
+        modal.classList.add('flex');
+      };
+
+      function renderCapaAdmin() {
+        var capaBox = document.getElementById('mCapaBox');
+        var capaEmptyTxt = document.getElementById('mCapaEmptyTxt');
+        var btnRemover = document.getElementById('btnRemoverCapaAdmin');
+
+        var capaPendente = mMidiasPendentesAtual.find(function(m) { return m.tipo === 'capa'; });
+        var urlExibir = capaPendente ? capaPendente.url : mFotoCapaUrlAtual;
+
+        if (urlExibir) {
+          capaEmptyTxt.classList.add('hidden');
+          capaBox.style.backgroundImage = 'url("' + urlExibir + '")';
+          btnRemover.classList.remove('hidden');
+        } else {
+          capaEmptyTxt.classList.remove('hidden');
+          capaBox.style.backgroundImage = 'none';
+          btnRemover.classList.add('hidden');
+        }
+      }
+
+      window.removerCapaAdmin = function() {
+        if (confirm('Deseja realmente remover a foto de capa deste parceiro?')) {
+          mFotoCapaUrlAtual = null;
+          mMidiasPendentesAtual = mMidiasPendentesAtual.filter(function(m) { return m.tipo !== 'capa'; });
+          renderCapaAdmin();
+        }
+      };
+
+      function renderGaleriaAdmin() {
+        var galeriaGrid = document.getElementById('mGaleriaGrid');
+        var contadorTxt = document.getElementById('mGaleriaContadorTxt');
+
+        var midiasPendentesFila = mMidiasPendentesAtual.filter(function(m) { return m.tipo !== 'capa'; });
+        var totalExibido = mGaleriaFotosAtual.length + midiasPendentesFila.length;
+
+        contadorTxt.textContent = totalExibido + ' mídia' + (totalExibido !== 1 ? 's' : '');
+
+        var html = '';
+
+        mGaleriaFotosAtual.forEach(function(url, idx) {
+          html += '<div class="portfolio-item-admin">' +
+            '<span class="absolute top-1 left-1 px-1 py-0.5 rounded text-[8px] font-extrabold bg-emerald-500/90 text-white z-10 shadow">✓ Ativa</span>' +
+            '<button type="button" class="btn-remove-galeria-admin" onclick="removerFotoGaleriaAdmin(' + idx + ')" title="Excluir esta foto da galeria">×</button>' +
+            '<img src="' + url + '">' +
+          '</div>';
+        });
+
+        midiasPendentesFila.forEach(function(item, idx) {
+          if (item.tipo === 'video') {
+            html += '<div class="portfolio-item-admin item-pendente bg-slate-950 flex flex-col items-center justify-center p-2 text-center border-amber-500/80">' +
+              '<span class="absolute top-1 left-1 px-1 py-0.5 rounded text-[8px] font-extrabold bg-amber-500/90 text-slate-950 z-10 shadow">🎬 Vídeo Pendente</span>' +
+              '<button type="button" class="btn-remove-galeria-admin" onclick="removerFotoPendenteAdmin(' + idx + ')" title="Excluir vídeo pendente">×</button>' +
+              '<span class="text-xl mb-0.5 mt-2">🎬</span>' +
+              '<a href="' + item.url + '" target="_blank" class="text-[9px] text-cyan-400 underline truncate max-w-full hover:text-cyan-300 font-mono">' + esc(item.url) + '</a>' +
+            '</div>';
+          } else {
+            html += '<div class="portfolio-item-admin item-pendente">' +
+              '<span class="absolute top-1 left-1 px-1 py-0.5 rounded text-[8px] font-extrabold bg-amber-500/90 text-slate-950 z-10 shadow">⏳ Pendente</span>' +
+              '<button type="button" class="btn-remove-galeria-admin" onclick="removerFotoPendenteAdmin(' + idx + ')" title="Excluir mídia pendente">×</button>' +
+              '<img src="' + item.url + '">' +
+            '</div>';
+          }
+        });
+
+        if (totalExibido > 0) {
+          galeriaGrid.innerHTML = html;
+        } else {
+          galeriaGrid.innerHTML = '<span class="text-xs text-slate-500 col-span-full text-center py-8">Nenhuma imagem na galeria</span>';
+        }
+      }
+
+      window.removerFotoGaleriaAdmin = function(idx) {
+        if (confirm('Deseja realmente remover esta imagem ativa da galeria?')) {
+          mGaleriaFotosAtual.splice(idx, 1);
+          renderGaleriaAdmin();
+        }
+      };
+
+      window.removerFotoPendenteAdmin = function(idx) {
+        if (confirm('Deseja recusar e remover esta mídia da fila de pendentes?')) {
+          var pendentesFila = mMidiasPendentesAtual.filter(function(m) { return m.tipo !== 'capa'; });
+          var itemRemover = pendentesFila[idx];
+          if (itemRemover) {
+            mMidiasPendentesAtual = mMidiasPendentesAtual.filter(function(m) { return m !== itemRemover; });
+          }
+          renderGaleriaAdmin();
+        }
+      };
+
+      window.aprovarMidiasArtista = function() {
+        if (!parceiroSelecionadoId) return;
+
+        var payloadToUpdate = {};
+
+        var capaPendente = mMidiasPendentesAtual.find(function(m) { return m.tipo === 'capa'; });
+        if (capaPendente) {
+          mFotoCapaUrlAtual = capaPendente.url;
+        }
+
+        var videosPendentes = mMidiasPendentesAtual.filter(function(m) { return m.tipo === 'video'; });
+        videosPendentes.forEach(function(vid) {
+          var campoDestino = vid.campo_destino || 'youtube_1';
+          payloadToUpdate[campoDestino] = vid.url;
+          document.getElementById('mArt' + (campoDestino === 'youtube_2' ? 'Youtube2' : 'Youtube1')).value = vid.url;
+        });
+
+        var pendentesGaleria = mMidiasPendentesAtual.filter(function(m) { return m.tipo === 'galeria' || !m.tipo; });
+        pendentesGaleria.forEach(function(item) {
+          if (!mGaleriaFotosAtual.includes(item.url)) {
+            mGaleriaFotosAtual.push(item.url);
+          }
+        });
+
+        var qtdPendentes = mMidiasPendentesAtual.length || 1;
+        var ehDestaque = document.getElementById('mIsDestaque').checked;
+
+        if (confirm('Deseja aprovar e publicar a(s) ' + qtdPendentes + ' mídia(s) pendente(s) deste parceiro?')) {
+          payloadToUpdate.fotos_pendentes_aprovacao = false;
+          payloadToUpdate.status_artista = 'aprovado';
+          payloadToUpdate.is_destaque = ehDestaque;
+          payloadToUpdate.galeria_fotos = mGaleriaFotosAtual;
+          payloadToUpdate.foto_capa_url = mFotoCapaUrlAtual;
+
+          var parceiro = listaParceiros.find(function(item) { return String(item.id) === String(parceiroSelecionadoId); });
+          if (parceiro && parceiro.midias_pendentes !== undefined) {
+            payloadToUpdate.midias_pendentes = [];
+          }
+
+          sbPartner.from('parceiros').update(payloadToUpdate).eq('id', parceiroSelecionadoId).then(function(res) {
+            if (res.error) {
+              alert('Erro ao aprovar mídias: ' + res.error.message);
+            } else {
+              alert('✅ Mídias aprovadas com sucesso!');
+              mMidiasPendentesAtual = [];
+              document.getElementById('mMediaPendingBadge').classList.add('hidden');
+              document.getElementById('mContainerAcaoMidias').classList.add('hidden');
+              document.getElementById('mContainerAcaoMidias').classList.remove('flex');
+              document.getElementById('mMidiasEmDiaMsg').classList.remove('hidden');
+              document.getElementById('mStatusArtista').value = 'aprovado';
+              renderCapaAdmin();
+              renderGaleriaAdmin();
+              carregarTaxonomiaEParceiros();
+            }
+          });
+        }
+      };
+
+      window.recusarMidiasArtista = function() {
+        if (!parceiroSelecionadoId) return;
+
+        var motivo = prompt('Informe o motivo da recusa:');
+        if (motivo !== null) {
+          var obsAtual = document.getElementById('mObsAdmin').value.trim();
+          var novaObs = obsAtual + (obsAtual ? '\n' : '') + '[Recusa de Mídia ' + new Date().toLocaleDateString('pt-BR') + ']: ' + motivo;
+
+          var payload = {
+            fotos_pendentes_aprovacao: false,
+            status_artista: 'recusado',
+            observacoes_admin: novaObs
+          };
+
+          var parceiro = listaParceiros.find(function(item) { return String(item.id) === String(parceiroSelecionadoId); });
+          if (parceiro && parceiro.midias_pendentes !== undefined) {
+            payload.midias_pendentes = [];
+          }
+
+          sbPartner.from('parceiros').update(payload).eq('id', parceiroSelecionadoId).then(function(res) {
+            if (res.error) {
+              alert('Erro ao recusar mídias: ' + res.error.message);
+            } else {
+              alert('Status alterado para Recusado.');
+              mMidiasPendentesAtual = [];
+              document.getElementById('mObsAdmin').value = novaObs;
+              document.getElementById('mStatusArtista').value = 'recusado';
+              carregarTaxonomiaEParceiros();
+            }
+          });
+        }
+      };
+
+      document.getElementById('btnFecharFicha').addEventListener('click', function () {
+        var modal = document.getElementById('modalFicha');
+        modal.classList.add('hidden');
+        modal.classList.remove('flex');
+      });
+
+      /* SALVAR FICHA COMPLETA UNIFICADA */
+      document.getElementById('btnSalvarFicha').addEventListener('click', function () {
+        if (!parceiroSelecionadoId) return;
+
+        var btn = this;
+        btn.disabled = true;
+        btn.textContent = 'Salvando...';
+
+        var baseId = document.getElementById('mPerfilBase').value;
+        var espId = document.getElementById('mEspecialidade').value;
+        var perfilParceiroIdFinal = espId || baseId || null;
+
+        var objBase = listaTaxonomia.find(function(t) { return t.id === baseId; });
+        var nomeBase = objBase ? objBase.nome : '';
+        var enumLegado = traduzirPerfilLegado(nomeBase);
+
+        var rawCache = document.getElementById('mArtCacheBase').value;
+
+        var payload = {
+          nome_completo: document.getElementById('mNome').value.trim(),
+          empresa: document.getElementById('mEmpresa').value.trim(),
+          cpf_cnpj: document.getElementById('mCpfCnpj').value.trim(),
+          data_nascimento: document.getElementById('mNascimento').value || null,
+          whatsapp: document.getElementById('mWhatsapp').value.replace(/\D/g, ''),
+          instagram: document.getElementById('mInstagram').value.trim(),
+          
+          perfil_parceiro_id: perfilParceiroIdFinal,
+          perfil: enumLegado,
+
+          cep: document.getElementById('mCep').value.replace(/\D/g, ''),
+          endereco: document.getElementById('mEndereco').value.trim(),
+          bairro: document.getElementById('mBairro').value.trim(),
+          cidade: document.getElementById('mCidade').value.trim(),
+          estado: document.getElementById('mEstado').value.trim().toUpperCase(),
+          tipo_pix: document.getElementById('mTipoPix').value,
+          chave_pix: document.getElementById('mChavePix').value.trim(),
+          observacoes_admin: document.getElementById('mObsAdmin').value.trim(),
+
+          status_artista: document.getElementById('mStatusArtista').value,
+          is_destaque: document.getElementById('mIsDestaque').checked,
+          nome_artistico: document.getElementById('mArtNomeArtistico').value.trim() || null,
+          tagline_artistica: document.getElementById('mArtTagline').value.trim() || null,
+          cache_base: rawCache !== "" && !isNaN(rawCache) ? parseFloat(rawCache) : null,
+          experiencia_comercial: document.getElementById('mArtExperiencia').value.trim() || null,
+          bio_artistica: document.getElementById('mArtBio').value.trim() || null,
+          rider_tecnico: document.getElementById('mArtRider').value.trim() || null,
+          youtube_1: document.getElementById('mArtYoutube1').value.trim() || null,
+          youtube_2: document.getElementById('mArtYoutube2').value.trim() || null,
+          galeria_fotos: mGaleriaFotosAtual,
+          foto_capa_url: mFotoCapaUrlAtual
+        };
+
+        var parceiro = listaParceiros.find(function(item) { return String(item.id) === String(parceiroSelecionadoId); });
+        if (parceiro && parceiro.midias_pendentes !== undefined) {
+          payload.midias_pendentes = mMidiasPendentesAtual;
+        }
+
+        sbPartner
+          .from('parceiros')
+          .update(payload)
+          .eq('id', parceiroSelecionadoId)
+          .then(function (res) {
+            btn.disabled = false;
+            btn.textContent = 'Salvar Ficha Completa';
+
+            if (res.error) {
+              alert('Erro ao salvar ficha: ' + res.error.message);
+            } else {
+              alert('Ficha completa atualizada com sucesso!');
+              document.getElementById('btnFecharFicha').click();
+              carregarTaxonomiaEParceiros();
+            }
+          })
+          .catch(function() {
+            btn.disabled = false;
+            btn.textContent = 'Salvar Ficha Completa';
+            alert('Erro inesperado ao salvar os dados.');
+          });
+      });
+    })();
+  </script>
+</body>
+</html>
