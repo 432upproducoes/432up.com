@@ -25,6 +25,27 @@
       background-color: transparent !important;
       color: #94a3b8 !important;
     }
+    #paginacaoClientes button {
+      min-height: 44px;
+      min-width: 44px;
+      position: relative;
+      z-index: 20;
+      -webkit-tap-highlight-color: transparent;
+      touch-action: manipulation;
+    }
+    input[type="date"], input[type="month"] {
+      min-height: 40px;
+      height: 40px;
+      max-height: 40px;
+      width: 100%;
+      min-width: 0;
+      box-sizing: border-box;
+      -webkit-appearance: none;
+      appearance: none;
+      line-height: 1.2;
+      padding: 0 8px;
+    }
+    .filtro-celula { min-width: 0; }
 
     /* ==========================================================================
        ESTILIZAÇÃO EXCLUSIVA DO MODAL DE CLIENTE (#modalCliente)
@@ -131,6 +152,62 @@
   <canvas id="orbit-canvas"></canvas>
   <div id="plasmaLayer" class="plasma-top-layer"></div>
 
+  
+  <div id="modalMensagem" class="fixed inset-0 bg-black/80 backdrop-blur-md hidden items-center justify-center p-4 z-[10000]">
+    <div class="glass-b2b w-full max-w-md rounded-2xl border border-emerald-500/30 p-5 space-y-3">
+      <div class="flex items-center justify-between">
+        <h3 class="text-sm font-bold text-white">Mensagem do WhatsApp</h3>
+        <button type="button" onclick="fecharModalMensagem()" class="text-slate-400 hover:text-white">✕</button>
+      </div>
+      <div class="flex items-center justify-between gap-2">
+        <p class="text-[11px] text-slate-400">Texto do WhatsApp da lista. Fica neste navegador.</p>
+        <button type="button" onclick="toggleManualTokens()" class="w-6 h-6 rounded-full border border-emerald-400/50 text-emerald-300 text-xs font-bold" title="Como usar os campos">?</button>
+      </div>
+      <div id="boxManualTokens" class="hidden text-[11px] text-slate-300 bg-slate-950/80 border border-white/10 rounded-xl p-3 space-y-1"></div>
+      <div id="chipsTokensWa" class="flex flex-wrap gap-1.5"></div>
+      <textarea id="txtMensagemWa" rows="6" class="w-full bg-slate-950 border border-white/10 rounded-xl p-2.5 text-white text-xs"></textarea>
+      <div class="flex justify-end gap-2">
+        <button type="button" onclick="fecharModalMensagem()" class="px-3 py-1.5 rounded-lg text-xs text-slate-300 border border-white/10">Cancelar</button>
+        <button type="button" onclick="salvarMensagemWa()" class="px-4 py-1.5 rounded-lg bg-emerald-500 text-slate-950 text-xs font-bold">Salvar</button>
+      </div>
+    </div>
+  </div>
+
+  
+  <div id="modalAjudaFiltros" class="fixed inset-0 bg-black/80 backdrop-blur-md hidden items-center justify-center p-4 z-[10001]">
+    <div class="glass-b2b w-full max-w-lg rounded-2xl border border-cyan-500/30 p-5 space-y-3">
+      <div class="flex items-center justify-between">
+        <h3 class="text-sm font-bold text-white">Como pedir e gravar filtros</h3>
+        <button type="button" onclick="toggleAjudaFiltros(false)" class="text-slate-400">✕</button>
+      </div>
+      <pre id="txtAjudaFiltros" class="text-[11px] text-slate-300 whitespace-pre-wrap leading-relaxed m-0">Coluna: origem_cliente
+Nome exato: Nova Prospecção
+(P maiúsculo — igual ao que já está no banco)
+
+No chat, peça: filtro origem Nova Prospecção
+Não use: nova prospecção | nova-prospeccao | NP
+
+Gravar
+• Ficha: Origem → Nova Prospecção → Salvar
+• Código: origem_cliente = "Nova Prospecção"
+• SQL: UPDATE co_clientes SET origem_cliente = 'Nova Prospecção' WHERE ...
+
+Outras origens (texto idêntico)
+GetNinjas | Contrata Show | Site 432UP | Equipamentos | Orgânico | Modelo Promote | Nova Prospecção
+
+Outros filtros
+tipo_cliente = Casamento | Aniversário | Corporativo | Formatura | Social | Palestra | Ação de Marca
+servico = DJ | Música ao vivo | Equipamentos
+status_comercial = Novo | Cliente
+tipo_pessoa = PF | PJ
+Data: preencha Dia e/ou Mês e/ou Ano (Ano Qualquer = qualquer ano)</pre>
+      <div class="flex justify-end gap-2">
+        <button type="button" onclick="copiarAjudaFiltros()" class="px-3 py-1.5 rounded-lg bg-cyan-500 text-slate-950 text-xs font-bold">Copiar</button>
+        <button type="button" onclick="toggleAjudaFiltros(false)" class="px-3 py-1.5 rounded-lg border border-white/15 text-xs text-slate-300">Fechar</button>
+      </div>
+    </div>
+  </div>
+
   <header id="calc-header"></header>
   <div id="mobile-menu"></div>
 
@@ -144,41 +221,143 @@
           <h1 class="text-2xl lg:text-3xl font-bold text-white tracking-tight mt-1">Administração de Clientes</h1>
           <p class="text-sm text-slate-400 mt-1">Gestão centralizada de clientes (PF/PJ), integração direta via WhatsApp e dados cadastrais.</p>
         </div>
-        <button type="button" onclick="abrirModalNovoCliente()" class="px-5 py-2.5 rounded-xl bg-cyan-500 hover:bg-cyan-400 text-slate-950 font-extrabold text-xs uppercase tracking-wider transition shadow-[0_0_20px_rgba(0,240,255,0.4)] cursor-pointer self-start sm:self-auto flex items-center gap-2">
-          <span>➕ Novo Cliente</span>
-        </button>
+        <div class="flex items-center gap-2 self-start sm:self-auto">
+          <button type="button" onclick="toggleAjudaFiltros(true)" class="w-10 h-10 rounded-xl bg-emerald-500/20 hover:bg-emerald-500/30 text-emerald-300 border border-emerald-500/40 font-extrabold text-lg leading-none cursor-pointer" title="Como gravar origem e filtros">?</button>
+          <button type="button" onclick="abrirModalMensagem()" class="px-5 py-2.5 rounded-xl bg-emerald-500/20 hover:bg-emerald-500/30 text-emerald-300 border border-emerald-500/40 font-extrabold text-xs uppercase tracking-wider transition cursor-pointer">Mensagem</button>
+          <button type="button" onclick="abrirModalNovoCliente()" class="px-5 py-2.5 rounded-xl bg-cyan-500 hover:bg-cyan-400 text-slate-950 font-extrabold text-xs uppercase tracking-wider transition shadow-[0_0_20px_rgba(0,240,255,0.4)] cursor-pointer flex items-center gap-2">
+            <span>➕ Novo Cliente</span>
+          </button>
+        </div>
       </div>
 
       <!-- PAINEL DE FILTROS -->
       <div class="glass-b2b rounded-2xl p-4 border border-cyan-500/20 space-y-3">
-        <div class="grid grid-cols-1 sm:grid-cols-3 gap-3">
-          <div>
-            <label class="block text-[10px] uppercase text-slate-400 font-bold mb-1">Buscar Nome / Razão / Tel / CPF / CNPJ</label>
-            <input type="text" id="filterBusca" placeholder="Digite para buscar..." oninput="aplicarFiltros()" class="w-full bg-slate-900/80 border border-white/10 rounded-xl px-3 py-2 text-xs text-white focus:border-cyan-400 focus:outline-none transition">
+        <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3">
+          <div class="sm:col-span-2">
+            <label class="block text-[10px] uppercase text-slate-400 font-bold mb-1">Buscar na ficha</label>
+            <input type="text" id="filterBusca" placeholder="Nome, fantasia, tel, doc, e-mail, obs, tipo, serviço, origem..." oninput="agendarBusca()" class="w-full bg-slate-900/80 border border-white/10 rounded-xl px-3 py-2 text-xs text-white focus:border-cyan-400 focus:outline-none transition">
           </div>
           <div>
             <label class="block text-[10px] uppercase text-slate-400 font-bold mb-1">Tipo de Pessoa</label>
             <select id="filterTipoPessoa" onchange="aplicarFiltros()" class="w-full bg-slate-900 border border-white/10 rounded-xl px-3 py-2 text-xs text-white focus:border-cyan-400 focus:outline-none transition cursor-pointer">
-              <option value="">Todos os Tipos</option>
+              <option value="">Todos</option>
               <option value="PF">Pessoa Física (PF)</option>
               <option value="PJ">Pessoa Jurídica (PJ)</option>
             </select>
           </div>
           <div>
             <label class="block text-[10px] uppercase text-slate-400 font-bold mb-1">Cidade / UF</label>
-            <input type="text" id="filterCidade" placeholder="Ex: São Paulo" oninput="aplicarFiltros()" class="w-full bg-slate-900/80 border border-white/10 rounded-xl px-3 py-2 text-xs text-white focus:border-cyan-400 focus:outline-none transition">
+            <input type="text" id="filterCidade" placeholder="Ex: São Paulo" oninput="agendarBusca()" class="w-full bg-slate-900/80 border border-white/10 rounded-xl px-3 py-2 text-xs text-white focus:border-cyan-400 focus:outline-none transition">
+          </div>
+          <div>
+            <label class="block text-[10px] uppercase text-slate-400 font-bold mb-1">Tipo de evento</label>
+            <select id="filterTipoCliente" onchange="aplicarFiltros()" class="w-full bg-slate-900 border border-white/10 rounded-xl px-3 py-2 text-xs text-white focus:border-cyan-400 focus:outline-none transition cursor-pointer">
+              <option value="">Todos</option>
+              <option value="__vazio">Em branco</option>
+              <option value="Casamento">Casamento</option>
+              <option value="Aniversário">Aniversário</option>
+              <option value="Corporativo">Corporativo</option>
+              <option value="Formatura">Formatura</option>
+              <option value="Social">Social</option>
+              <option value="Palestra">Palestra</option>
+              <option value="Ação de Marca">Ação de Marca</option>
+            </select>
+          </div>
+          <div>
+            <label class="block text-[10px] uppercase text-slate-400 font-bold mb-1">Serviço</label>
+            <select id="filterServico" onchange="aplicarFiltros()" class="w-full bg-slate-900 border border-white/10 rounded-xl px-3 py-2 text-xs text-white focus:border-cyan-400 focus:outline-none transition cursor-pointer">
+              <option value="">Todos</option>
+              <option value="__vazio">Em branco</option>
+              <option value="DJ">DJ</option>
+              <option value="Música ao vivo">Música ao vivo</option>
+              <option value="Equipamentos">Equipamentos</option>
+            </select>
+          </div>
+          <div>
+            <label class="block text-[10px] uppercase text-slate-400 font-bold mb-1">Status</label>
+            <select id="filterStatus" onchange="aplicarFiltros()" class="w-full bg-slate-900 border border-white/10 rounded-xl px-3 py-2 text-xs text-white focus:border-cyan-400 focus:outline-none transition cursor-pointer">
+              <option value="">Todos</option>
+              <option value="Novo">Novo</option>
+              <option value="Cliente">Cliente</option>
+            </select>
+          </div>
+          <div>
+            <label class="block text-[10px] uppercase text-slate-400 font-bold mb-1">Origem</label>
+            <select id="filterOrigem" onchange="aplicarFiltros()" class="w-full bg-slate-900 border border-white/10 rounded-xl px-3 py-2 text-xs text-white focus:border-cyan-400 focus:outline-none transition cursor-pointer">
+              <option value="">Todas</option>
+              <option value="__vazio">Em branco</option>
+              <option value="GetNinjas">GetNinjas</option>
+              <option value="Contrata Show">Contrata Show</option>
+              <option value="Site 432UP">Site 432UP</option>
+              <option value="Equipamentos">Equipamentos</option>
+              <option value="Orgânico">Orgânico</option>
+              <option value="Modelo Promote">Modelo Promote</option>
+              <option value="Nova Prospecção">Nova Prospecção</option>
+            </select>
+          </div>
+          <div>
+            <label class="block text-[10px] uppercase text-slate-400 font-bold mb-1">Proposta</label>
+            <select id="filterProposta" onchange="aplicarFiltros()" class="w-full bg-slate-900 border border-white/10 rounded-xl px-3 py-2 text-xs text-white focus:border-cyan-400 focus:outline-none transition cursor-pointer">
+              <option value="">Todas</option>
+              <option value="sim">Tem proposta</option>
+              <option value="nao">Sem proposta</option>
+            </select>
+          </div>
+          <div class="filtro-celula">
+            <label class="block text-[10px] uppercase text-slate-400 font-bold mb-1">Dia</label>
+            <select id="filterDia" onchange="aplicarFiltros()" class="w-full bg-slate-900 border border-white/10 rounded-xl px-3 py-2 text-xs text-white">
+              <option value="">—</option>
+            </select>
+          </div>
+          <div class="filtro-celula">
+            <label class="block text-[10px] uppercase text-slate-400 font-bold mb-1">Mês</label>
+            <select id="filterMes" onchange="aplicarFiltros()" class="w-full bg-slate-900 border border-white/10 rounded-xl px-3 py-2 text-xs text-white">
+              <option value="">—</option>
+              <option value="1">Janeiro</option>
+              <option value="2">Fevereiro</option>
+              <option value="3">Março</option>
+              <option value="4">Abril</option>
+              <option value="5">Maio</option>
+              <option value="6">Junho</option>
+              <option value="7">Julho</option>
+              <option value="8">Agosto</option>
+              <option value="9">Setembro</option>
+              <option value="10">Outubro</option>
+              <option value="11">Novembro</option>
+              <option value="12">Dezembro</option>
+            </select>
+          </div>
+          <div class="filtro-celula">
+            <label class="block text-[10px] uppercase text-slate-400 font-bold mb-1">Ano</label>
+            <select id="filterAno" onchange="aplicarFiltros()" class="w-full bg-slate-900 border border-white/10 rounded-xl px-3 py-2 text-xs text-white">
+              <option value="">Qualquer</option>
+            </select>
+          </div>
+          <div class="filtro-celula">
+            <label class="block text-[10px] uppercase text-slate-400 font-bold mb-1">Usar data de</label>
+            <select id="filterDataFonte" onchange="aplicarFiltros()" class="w-full bg-slate-900 border border-white/10 rounded-xl px-3 py-2 text-xs text-white">
+              <option value="evento">Evento (agenda)</option>
+              <option value="cadastro">Cadastro no sistema</option>
+            </select>
           </div>
         </div>
       </div>
 
+
+
       <!-- TABELA PRINCIPAL DE CLIENTES -->
       <div class="glass-b2b rounded-2xl p-6 border border-cyan-500/20">
-        <div class="overflow-x-auto">
+        <div class="overflow-x-auto" id="lista-clientes">
           <table class="w-full text-left text-xs min-w-[800px]">
             <thead>
               <tr class="border-b border-white/10 text-slate-400 uppercase tracking-wider">
                 <th class="pb-3 px-3">Cliente (Nome / Razão)</th>
+                <th class="pb-3 px-3">Fantasia</th>
                 <th class="pb-3 px-3 text-center">WhatsApp</th>
+                <th class="pb-3 px-3 text-center">Tipo</th>
+                <th class="pb-3 px-3 text-center">Serviço</th>
+                <th class="pb-3 px-3 text-center">Origem</th>
+                <th class="pb-3 px-3 text-center">Status</th>
                 <th class="pb-3 px-3 text-center">Cidade / UF</th>
                 <th class="pb-3 px-3 text-center">Responsável</th>
                 <th class="pb-3 px-3 text-center">Última Atividade</th>
@@ -187,7 +366,7 @@
             </thead>
             <tbody id="tbodyClientes" class="divide-y divide-white/5 text-slate-200">
               <tr>
-                <td colspan="6" class="py-6 text-center text-slate-500">Carregando clientes do sistema...</td>
+                <td colspan="11" class="py-6 text-center text-slate-500">Carregando clientes do sistema...</td>
               </tr>
             </tbody>
           </table>
@@ -211,15 +390,9 @@
             <span id="infoPaginacao">—</span>
           </div>
 
-          <div class="flex items-center gap-2">
-            <button type="button" id="btnPaginaAnterior" onclick="irParaPagina(paginaAtual - 1)"
-                    class="px-3 py-1.5 rounded-lg bg-slate-800 hover:bg-slate-700 text-slate-300 border border-white/10 disabled:opacity-40 disabled:cursor-not-allowed transition">
-              ← Anterior
-            </button>
-            <button type="button" id="btnPaginaProxima" onclick="irParaPagina(paginaAtual + 1)"
-                    class="px-3 py-1.5 rounded-lg bg-slate-800 hover:bg-slate-700 text-slate-300 border border-white/10 disabled:opacity-40 disabled:cursor-not-allowed transition">
-              Próxima →
-            </button>
+          <div class="flex items-center gap-2" id="boxPaginacaoNova">
+            <a href="#lista-clientes" id="lnkPaginaAnterior" class="inline-flex items-center justify-center px-4 h-11 rounded-lg bg-slate-800 text-slate-200 border border-white/10">← Anterior</a>
+            <a href="#lista-clientes" id="lnkPaginaProxima" class="inline-flex items-center justify-center px-4 h-11 rounded-lg bg-cyan-600 text-slate-950 font-bold border border-cyan-400/40">Próxima →</a>
           </div>
         </div>
       </div>
@@ -313,7 +486,7 @@
         </div>
 
         <!-- 3. DADOS ADICIONAIS PJ -->
-        <div id="secaoPJ" class="space-y-3 pt-2 hidden">
+        <div id="secaoPJ" class="space-y-3 pt-2">
           <h4 class="text-xs font-bold text-amber-400 uppercase tracking-wider border-b border-amber-500/20 pb-2">3. Dados de Pessoa Jurídica</h4>
           <div class="grid grid-cols-1 sm:grid-cols-2 gap-3">
             <div>
@@ -375,6 +548,49 @@
         <!-- 5. INFORMAÇÕES COMERCIAIS -->
         <div class="space-y-3 pt-2">
           <h4 class="text-xs font-bold text-cyan-400 uppercase tracking-wider border-b border-white/10 pb-2">5. Informações Comerciais</h4>
+          <div class="grid grid-cols-1 sm:grid-cols-2 gap-3">
+            <div>
+              <label class="block text-slate-300 uppercase font-semibold mb-1">Tipo de evento</label>
+              <div class="flex gap-2">
+                <select id="cTipoCliente" class="flex-1 bg-slate-900 border border-white/20 rounded-xl px-3 py-2 text-white focus:outline-none focus:border-cyan-400"></select>
+                <button type="button" onclick="adicionarOpcaoTipo()" class="px-2 rounded-xl border border-white/15 text-cyan-300 text-[10px] font-bold">+</button>
+                <button type="button" onclick="removerOpcaoTipo()" class="px-2 rounded-xl border border-white/15 text-red-300 text-[10px] font-bold">−</button>
+              </div>
+            </div>
+            <div>
+              <label class="block text-slate-300 uppercase font-semibold mb-1">Serviço</label>
+              <div class="flex gap-2">
+                <select id="cServico" class="flex-1 bg-slate-900 border border-white/20 rounded-xl px-3 py-2 text-white focus:outline-none focus:border-cyan-400"></select>
+                <button type="button" onclick="adicionarOpcaoServico()" class="px-2 rounded-xl border border-white/15 text-cyan-300 text-[10px] font-bold">+</button>
+                <button type="button" onclick="removerOpcaoServico()" class="px-2 rounded-xl border border-white/15 text-red-300 text-[10px] font-bold">−</button>
+              </div>
+            </div>
+            <div>
+              <label class="block text-slate-300 uppercase font-semibold mb-1">Origem</label>
+              <select id="cOrigemCliente" class="w-full bg-slate-900 border border-white/20 rounded-xl px-3 py-2 text-white focus:outline-none focus:border-cyan-400">
+                <option value="">—</option>
+                <option value="GetNinjas">GetNinjas</option>
+                <option value="Contrata Show">Contrata Show</option>
+                <option value="Site 432UP">Site 432UP</option>
+                <option value="Equipamentos">Equipamentos</option>
+                <option value="Orgânico">Orgânico</option>
+                <option value="Modelo Promote">Modelo Promote</option>
+                <option value="Nova Prospecção">Nova Prospecção</option>
+              </select>
+            </div>
+            <div>
+              <label class="block text-slate-300 uppercase font-semibold mb-1">Status comercial</label>
+              <select id="cStatusComercial" class="w-full bg-slate-900 border border-white/20 rounded-xl px-3 py-2 text-white focus:outline-none focus:border-cyan-400">
+                <option value="">—</option>
+                <option value="Novo">Novo</option>
+                <option value="Cliente">Cliente</option>
+              </select>
+            </div>
+          </div>
+          <div>
+            <label class="block text-slate-300 uppercase font-semibold mb-1">Datas importantes</label>
+            <div id="boxDatasImportantes" class="text-[11px] text-slate-400 bg-slate-950 border border-white/10 rounded-xl px-3 py-2">—</div>
+          </div>
           <div>
             <label class="block text-slate-300 uppercase font-semibold mb-1">Observações Comerciais</label>
             <textarea id="cObservacoesComerciais" rows="3" class="w-full bg-slate-900 border border-white/20 rounded-xl p-3 text-white focus:outline-none focus:border-cyan-400"></textarea>
@@ -412,6 +628,98 @@
       var itensPorPagina = 20;
       var totalRegistros = 0;
 
+      var SERVICOS_PADRAO = ['DJ', 'Música ao vivo', 'Equipamentos'];
+      var SERVICO_EXTRA_KEY = '432up_servico_opcoes';
+      var tiposEventoLista = [];
+
+      function extrasServico() {
+        try { return JSON.parse(localStorage.getItem(SERVICO_EXTRA_KEY) || '[]'); } catch (e) { return []; }
+      }
+      function salvarExtrasServico(arr) {
+        try { localStorage.setItem(SERVICO_EXTRA_KEY, JSON.stringify(arr)); } catch (e) {}
+      }
+
+      async function carregarOpcoesCadastro() {
+        tiposEventoLista = ['Casamento', 'Aniversário', 'Corporativo', 'Formatura', 'Social', 'Palestra', 'Ação de Marca'];
+        try {
+          var res = await sbPartner.from('co_tipos_evento').select('nome, ativo, ordem').eq('ativo', true).order('ordem');
+          if (!res.error && res.data && res.data.length) {
+            tiposEventoLista = res.data.map(function (r) { return r.nome; }).filter(Boolean);
+          }
+        } catch (e) {}
+        preencherSelectsTipoServico();
+      }
+
+      function preencherSelectsTipoServico(selTipo, selServ) {
+        var tipos = [''] .concat(tiposEventoLista);
+        var servs = [''].concat(SERVICOS_PADRAO).concat(extrasServico());
+        function fill(id, lista, atual) {
+          var el = document.getElementById(id);
+          if (!el) return;
+          var cur = atual != null ? atual : el.value;
+          el.innerHTML = lista.map(function (n, i) {
+            return '<option value="' + String(n).replace(/"/g, '&quot;') + '">' + (n || '—') + '</option>';
+          }).join('');
+          if (cur && lista.indexOf(cur) < 0 && cur !== '') {
+            el.innerHTML += '<option value="' + String(cur).replace(/"/g, '&quot;') + '">' + cur + '</option>';
+          }
+          el.value = cur || '';
+        }
+        fill('cTipoCliente', tipos, selTipo);
+        fill('cServico', servs, selServ);
+        var fTipo = document.getElementById('filterTipoCliente');
+        if (fTipo) {
+          var keep = fTipo.value;
+          var opts = '<option value="">Todos</option><option value="__vazio">Em branco</option>';
+          tiposEventoLista.forEach(function (n) {
+            opts += '<option value="' + String(n).replace(/"/g, '&quot;') + '">' + n + '</option>';
+          });
+          fTipo.innerHTML = opts;
+          fTipo.value = keep || '';
+        }
+      }
+
+      window.adicionarOpcaoTipo = async function () {
+        var nome = prompt('Novo tipo de evento:');
+        if (!nome) return;
+        nome = nome.trim();
+        if (!nome) return;
+        try {
+          var res = await sbPartner.from('co_tipos_evento').insert({ nome: nome, ativo: true, ordem: 99 });
+          if (res.error) { alert(res.error.message); return; }
+        } catch (e) { alert('Não deu para gravar o tipo.'); return; }
+        await carregarOpcoesCadastro();
+        document.getElementById('cTipoCliente').value = nome;
+      };
+      window.removerOpcaoTipo = async function () {
+        var nome = document.getElementById('cTipoCliente').value;
+        if (!nome) return;
+        if (!confirm('Remover o tipo "' + nome + '" da lista? Clientes que já têm esse tipo mantêm o texto.')) return;
+        try {
+          await sbPartner.from('co_tipos_evento').update({ ativo: false }).eq('nome', nome);
+        } catch (e) {}
+        await carregarOpcoesCadastro();
+      };
+      window.adicionarOpcaoServico = function () {
+        var nome = prompt('Novo serviço:');
+        if (!nome) return;
+        nome = nome.trim();
+        if (!nome) return;
+        var extra = extrasServico();
+        if (extra.indexOf(nome) < 0 && SERVICOS_PADRAO.indexOf(nome) < 0) {
+          extra.push(nome);
+          salvarExtrasServico(extra);
+        }
+        preencherSelectsTipoServico(document.getElementById('cTipoCliente').value, nome);
+      };
+      window.removerOpcaoServico = function () {
+        var nome = document.getElementById('cServico').value;
+        if (!nome) return;
+        if (SERVICOS_PADRAO.indexOf(nome) >= 0) { alert('Serviço padrão não remove daqui.'); return; }
+        salvarExtrasServico(extrasServico().filter(function (x) { return x !== nome; }));
+        preencherSelectsTipoServico(document.getElementById('cTipoCliente').value, '');
+      };
+
       function esc(s) { return String(s == null ? '' : s).replace(/</g, '&lt;').replace(/>/g, '&gt;'); }
 
       function formatWhatsAppPhone(tel) {
@@ -421,11 +729,153 @@
         return num;
       }
 
-      function gerarLinkWhatsapp(tel, nome) {
+      var WA_MSG_KEY = '432up_wa_msg_draft';
+      var WA_MSG_PADRAO = 'Olá, {nome}! Tudo bem? Aqui é da 432UP. Estamos entrando em contato para dar continuidade ao seu atendimento.';
+      var buscaTimer = null;
+
+      function lerMensagemWa() {
+        try {
+          return localStorage.getItem(WA_MSG_KEY) || WA_MSG_PADRAO;
+        } catch (e) {
+          return WA_MSG_PADRAO;
+        }
+      }
+
+      var TOKENS_WA = [
+        { k: '{nome}', d: 'Nome / razão' },
+        { k: '{fantasia}', d: 'Nome fantasia' },
+        { k: '{servico}', d: 'Serviço (DJ, ao vivo…)' },
+        { k: '{tipo}', d: 'Tipo de evento' },
+        { k: '{cidade}', d: 'Cidade' },
+        { k: '{uf}', d: 'UF' },
+        { k: '{origem}', d: 'Origem do contato' },
+        { k: '{status}', d: 'Status comercial' },
+        { k: '{telefone}', d: 'Telefone' },
+        { k: '{data}', d: 'Primeira data importante' }
+      ];
+
+      function aplicarTokensWa(tpl, c) {
+        var data = '—';
+        if (c && Array.isArray(c.datas_importantes) && c.datas_importantes[0]) data = c.datas_importantes[0].data || '—';
+        var mapa = {
+          '{nome}': (c && c.nome_razao) || 'Cliente',
+          '{fantasia}': (c && c.nome_fantasia) || '',
+          '{servico}': (c && c.servico) || '',
+          '{tipo}': (c && c.tipo_cliente) || '',
+          '{cidade}': (c && c.cidade) || '',
+          '{uf}': (c && c.uf) || '',
+          '{origem}': (c && c.origem_cliente) || '',
+          '{status}': (c && c.status_comercial) || '',
+          '{telefone}': (c && c.telefone) || '',
+          '{data}': data
+        };
+        var out = String(tpl || '');
+        Object.keys(mapa).forEach(function (k) { out = out.split(k).join(mapa[k]); });
+        return out;
+      }
+
+      function gerarLinkWhatsapp(tel, cOuNome) {
         var num = formatWhatsAppPhone(tel);
         if (!num) return '#';
-        var msg = "Olá, " + (nome || 'Cliente') + "! Tudo bem? Aqui é da 432UP. Estamos entrando em contato para dar continuidade ao seu atendimento.";
-        return "https://wa.me/" + num + "?text=" + encodeURIComponent(msg);
+        var c = (cOuNome && typeof cOuNome === 'object') ? cOuNome : { nome_razao: cOuNome };
+        var msg = aplicarTokensWa(lerMensagemWa(), c);
+        return 'https://wa.me/' + num + '?text=' + encodeURIComponent(msg);
+      }
+
+      window.toggleManualTokens = function () {
+        var box = document.getElementById('boxManualTokens');
+        if (!box) return;
+        if (!box.dataset.ready) {
+          box.innerHTML = TOKENS_WA.map(function (t) {
+            return '<div><code class="text-emerald-300">' + t.k + '</code> — ' + t.d + '</div>';
+          }).join('');
+          box.dataset.ready = '1';
+        }
+        box.classList.toggle('hidden');
+      };
+
+      window.inserirTokenWa = function (tok) {
+        var ta = document.getElementById('txtMensagemWa');
+        if (!ta) return;
+        var start = ta.selectionStart || ta.value.length;
+        ta.value = ta.value.slice(0, start) + tok + ta.value.slice(ta.selectionEnd || start);
+        ta.focus();
+      };
+
+      window.abrirModalMensagem = function () {
+        document.getElementById('txtMensagemWa').value = lerMensagemWa();
+        var chips = document.getElementById('chipsTokensWa');
+        if (chips && !chips.dataset.ready) {
+          chips.innerHTML = TOKENS_WA.map(function (t) {
+            return '<button type="button" onclick="inserirTokenWa(\'' + t.k + '\')" class="px-2 py-0.5 rounded-lg border border-emerald-500/30 text-emerald-300 text-[10px]">' + t.k + '</button>';
+          }).join('');
+          chips.dataset.ready = '1';
+        }
+        var m = document.getElementById('modalMensagem');
+        m.classList.remove('hidden');
+        m.classList.add('flex');
+      };
+      window.fecharModalMensagem = function () {
+        var m = document.getElementById('modalMensagem');
+        m.classList.add('hidden');
+        m.classList.remove('flex');
+      };
+      window.salvarMensagemWa = function () {
+        var txt = (document.getElementById('txtMensagemWa').value || '').trim() || WA_MSG_PADRAO;
+        try { localStorage.setItem(WA_MSG_KEY, txt); } catch (e) {}
+        fecharModalMensagem();
+      };
+
+      window.copiarInstrucoesOrigem = function () {
+        var el = document.getElementById('txtInstrucoesOrigem');
+        var txt = el ? el.textContent : '';
+        function ok() {
+          var m = document.getElementById('okCopiaInstrucoes');
+          if (m) { m.classList.remove('hidden'); setTimeout(function () { m.classList.add('hidden'); }, 1500); }
+        }
+        if (navigator.clipboard && navigator.clipboard.writeText) {
+          navigator.clipboard.writeText(txt).then(ok).catch(function () { fallback(); });
+        } else fallback();
+        function fallback() {
+          var ta = document.createElement('textarea');
+          ta.value = txt;
+          document.body.appendChild(ta);
+          ta.select();
+          try { document.execCommand('copy'); ok(); } catch (e) {}
+          document.body.removeChild(ta);
+        }
+      };
+
+
+      window.toggleAjudaFiltros = function (forcar) {
+        var m = document.getElementById('modalAjudaFiltros');
+        if (!m) return;
+        var abrir = forcar === true || (forcar !== false && m.classList.contains('hidden'));
+        m.classList.toggle('hidden', !abrir);
+        m.classList.toggle('flex', abrir);
+      };
+      window.copiarAjudaFiltros = function () {
+        var el = document.getElementById('txtAjudaFiltros');
+        var txt = el ? el.textContent : '';
+        function ok() { alert('Copiado.'); }
+        if (navigator.clipboard && navigator.clipboard.writeText) {
+          navigator.clipboard.writeText(txt).then(ok).catch(function () { fb(); });
+        } else fb();
+        function fb() {
+          var ta = document.createElement('textarea');
+          ta.value = txt; document.body.appendChild(ta); ta.select();
+          try { document.execCommand('copy'); ok(); } catch (e) {}
+          document.body.removeChild(ta);
+        }
+      };
+
+      window.agendarBusca = function () {
+        clearTimeout(buscaTimer);
+        buscaTimer = setTimeout(function () { aplicarFiltros(); }, 280);
+      };
+
+      function sanitizarBusca(s) {
+        return String(s || '').replace(/[,()%\\]/g, ' ').replace(/\s+/g, ' ').trim();
       }
 
       partnerRequireAuth({ requireAdmin: true }).then(function () {
@@ -452,7 +902,7 @@
             });
           }
 
-          // Carrega a primeira página já com filtros
+          await carregarOpcoesCadastro();
           await aplicarFiltros();
         } catch(e) {
           console.error("Erro geral:", e);
@@ -465,53 +915,125 @@
       window.aplicarFiltros = async function(resetPage) {
         if (resetPage !== false) paginaAtual = 1;
 
-        var busca = (document.getElementById('filterBusca').value || '').trim();
+        var busca = sanitizarBusca(document.getElementById('filterBusca').value);
         var tipo  = document.getElementById('filterTipoPessoa').value;
-        var cid   = (document.getElementById('filterCidade').value || '').trim();
+        var cid   = sanitizarBusca(document.getElementById('filterCidade').value);
+        var tipoEv = (document.getElementById('filterTipoCliente') || {}).value || '';
+        var servF = (document.getElementById('filterServico') || {}).value || '';
+        var stF = (document.getElementById('filterStatus') || {}).value || '';
+        var origF = (document.getElementById('filterOrigem') || {}).value || '';
+        var propF = (document.getElementById('filterProposta') || {}).value || '';
+        var fDia = parseInt((document.getElementById('filterDia') || {}).value || '', 10) || 0;
+        var fMes = parseInt((document.getElementById('filterMes') || {}).value || '', 10) || 0;
+        var fAno = parseInt((document.getElementById('filterAno') || {}).value || '', 10) || 0;
+        var fonteData = (document.getElementById('filterDataFonte') || {}).value || 'evento';
+        var usaData = !!(fDia || fMes || fAno);
+        var usaExtra = usaData || !!propF;
 
         var tbody = document.getElementById('tbodyClientes');
-        tbody.innerHTML = '<tr><td colspan="6" class="py-6 text-center text-slate-500">Carregando...</td></tr>';
+        tbody.innerHTML = '<tr><td colspan="11" class="py-6 text-center text-slate-500">Carregando...</td></tr>';
 
         try {
           var query = sbPartner
             .from('co_clientes')
             .select('*', { count: 'exact' });
 
-          // Filtros no servidor
           if (busca) {
-            // Busca em nome, telefone e documento
-            query = query.or(
-              'nome_razao.ilike.%' + busca + '%,telefone.ilike.%' + busca + '%,cpf_cnpj.ilike.%' + busca + '%'
-            );
+            var like = '%' + busca + '%';
+            query = query.or([
+              'nome_razao.ilike.' + like,
+              'nome_fantasia.ilike.' + like,
+              'responsavel_legal.ilike.' + like,
+              'contato_nome.ilike.' + like,
+              'telefone.ilike.' + like,
+              'email.ilike.' + like,
+              'cpf_cnpj.ilike.' + like,
+              'observacoes_comerciais.ilike.' + like,
+              'tipo_cliente.ilike.' + like,
+              'servico.ilike.' + like,
+              'origem_cliente.ilike.' + like,
+              'cidade.ilike.' + like
+            ].join(','));
           }
           if (tipo) query = query.eq('tipo_pessoa', tipo);
           if (cid)  query = query.ilike('cidade', '%' + cid + '%');
+          if (tipoEv === '__vazio') query = query.or('tipo_cliente.is.null,tipo_cliente.eq.');
+          else if (tipoEv) query = query.eq('tipo_cliente', tipoEv);
+          if (servF === '__vazio') query = query.or('servico.is.null,servico.eq.');
+          else if (servF) query = query.ilike('servico', '%' + servF + '%');
+          if (stF) query = query.eq('status_comercial', stF);
+          if (origF === '__vazio') query = query.or('origem_cliente.is.null,origem_cliente.eq.');
+          else if (origF) query = query.eq('origem_cliente', origF);
 
-          // Ordenação + paginação
-          var from = (paginaAtual - 1) * itensPorPagina;
-          var to   = from + itensPorPagina - 1;
-
-          query = query
-            .order('nome_razao', { ascending: true })
-            .range(from, to);
+          query = query.order('nome_razao', { ascending: true });
+          if (!usaExtra) {
+            var from = (paginaAtual - 1) * itensPorPagina;
+            var to   = from + itensPorPagina - 1;
+            query = query.range(from, to);
+          } else {
+            query = query.range(0, 4999);
+          }
 
           var res = await query;
 
           if (res.error) {
             console.error(res.error);
-            tbody.innerHTML = '<tr><td colspan="6" class="py-4 text-center text-red-400">Erro: ' + esc(res.error.message) + '</td></tr>';
+            tbody.innerHTML = '<tr><td colspan="11" class="py-4 text-center text-red-400">Erro: ' + esc(res.error.message) + '</td></tr>';
             return;
           }
 
-          clientes = res.data || [];
+          var lista = res.data || [];
+
+          if (propF) {
+            var idsProp = {};
+            var rp = await sbPartner.from('propostas').select('cliente_id');
+            (rp.data || []).forEach(function (p) { if (p.cliente_id) idsProp[p.cliente_id] = true; });
+            lista = lista.filter(function (c) {
+              var tem = !!idsProp[c.id];
+              return propF === 'sim' ? tem : !tem;
+            });
+          }
+
+          if (usaData) {
+            function dataBate(d) {
+              if (!(d instanceof Date) || isNaN(d.getTime())) return false;
+              if (fAno && d.getFullYear() !== fAno) return false;
+              if (fMes && (d.getMonth() + 1) !== fMes) return false;
+              if (fDia && d.getDate() !== fDia) return false;
+              return true;
+            }
+            lista = lista.filter(function (c) {
+              if (fonteData === 'cadastro') {
+                return c.criado_em ? dataBate(new Date(c.criado_em)) : false;
+              }
+              var arr = c.datas_importantes;
+              if (!Array.isArray(arr) || !arr.length) return false;
+              return arr.some(function (x) {
+                if (!x || !x.data) return false;
+                return dataBate(new Date(String(x.data) + (String(x.data).length <= 10 ? 'T12:00:00' : '')));
+              });
+            });
+          }
+
+          if (usaExtra) {
+            totalRegistros = lista.length;
+            var from2 = (paginaAtual - 1) * itensPorPagina;
+            clientes = lista.slice(from2, from2 + itensPorPagina);
+          } else {
+            clientes = lista;
+            if (typeof res.count === 'number') totalRegistros = res.count;
+            else {
+              var cheio = clientes.length >= itensPorPagina;
+              totalRegistros = (paginaAtual - 1) * itensPorPagina + clientes.length + (cheio ? 1 : 0);
+            }
+          }
           clientesFiltrados = clientes;
-          totalRegistros = res.count || 0;
 
           renderTabela();
           renderPaginacao();
         } catch (e) {
           console.error(e);
-          tbody.innerHTML = '<tr><td colspan="6" class="py-4 text-center text-red-400">Erro ao carregar clientes.</td></tr>';
+          tbody.innerHTML = '<tr><td colspan="11" class="py-4 text-center text-red-400">Erro ao carregar clientes.</td></tr>';
         }
       };
 
@@ -523,16 +1045,42 @@
         document.getElementById('infoPaginacao').textContent =
           'Mostrando ' + inicio + '–' + fim + ' de ' + totalRegistros + ' clientes';
 
-        document.getElementById('btnPaginaAnterior').disabled = paginaAtual <= 1;
-        document.getElementById('btnPaginaProxima').disabled  = paginaAtual >= totalPaginas;
+        var ant = document.getElementById('lnkPaginaAnterior');
+        var prox = document.getElementById('lnkPaginaProxima');
+        if (ant) ant.style.opacity = paginaAtual <= 1 ? '0.4' : '1';
+        if (prox) prox.style.opacity = (clientes.length >= itensPorPagina || paginaAtual < totalPaginas) ? '1' : '0.4';
       }
 
-      window.irParaPagina = function(p) {
-        var totalPaginas = Math.ceil(totalRegistros / itensPorPagina) || 1;
-        if (p < 1 || p > totalPaginas) return;
+      function montarCombosData() {
+        var d = document.getElementById('filterDia');
+        var a = document.getElementById('filterAno');
+        if (d && d.options.length < 3) {
+          var i;
+          for (i = 1; i <= 31; i++) d.appendChild(new Option(String(i), String(i)));
+        }
+        if (a && a.options.length < 3) {
+          var y, y0 = new Date().getFullYear() + 1;
+          for (y = y0; y >= 2018; y--) a.appendChild(new Option(String(y), String(y)));
+        }
+      }
+      montarCombosData();
+
+      window.irParaPagina = function (p) {
+        if (p < 1) return;
         paginaAtual = p;
-        aplicarFiltros(false); // false = não reseta a página
+        aplicarFiltros(false);
+        var alvo = document.getElementById('lista-clientes');
+        if (alvo && alvo.scrollIntoView) alvo.scrollIntoView({ block: 'start' });
       };
+
+      function ligarPaginacaoNova() {
+        var ant = document.getElementById('lnkPaginaAnterior');
+        var prox = document.getElementById('lnkPaginaProxima');
+        if (ant) ant.onclick = function (e) { e.preventDefault(); irParaPagina(paginaAtual - 1); };
+        if (prox) prox.onclick = function (e) { e.preventDefault(); irParaPagina(paginaAtual + 1); };
+      }
+      ligarPaginacaoNova();
+
 
       window.mudarItensPorPagina = function(val) {
         itensPorPagina = parseInt(val, 10) || 20;
@@ -546,29 +1094,34 @@
       function renderTabela() {
         var tbody = document.getElementById('tbodyClientes');
         if (!clientesFiltrados.length) {
-          tbody.innerHTML = '<tr><td colspan="6" class="py-6 text-center text-slate-500">Nenhum cliente cadastrado ou encontrado.</td></tr>';
+          tbody.innerHTML = '<tr><td colspan="11" class="py-6 text-center text-slate-500">Nenhum cliente cadastrado ou encontrado.</td></tr>';
           return;
         }
 
         var htmlArr = [];
         for (var i = 0; i < clientesFiltrados.length; i++) {
           var c = clientesFiltrados[i];
-          var linkWa = gerarLinkWhatsapp(c.telefone, c.nome_razao);
+          var linkWa = gerarLinkWhatsapp(c.telefone, c);
           var respNome = c.parceiro_responsavel_id && mapaParceiros[c.parceiro_responsavel_id] ? mapaParceiros[c.parceiro_responsavel_id] : '—';
           // Última atividade removida da listagem (pesava demais). Continua disponível no modal.
           var ultimaAtiv = '—';
 
           var cidUf = [c.cidade, c.uf].filter(Boolean).join(' / ') || '—';
 
+          var seloPfPj = c.tipo_pessoa === 'PJ'
+            ? ' <span class="text-[9px] px-1.5 py-0.5 rounded bg-amber-500/20 text-amber-300 font-bold ml-1">PJ</span>'
+            : ' <span class="text-[9px] px-1.5 py-0.5 rounded bg-slate-500/20 text-slate-300 font-bold ml-1">PF</span>';
           htmlArr.push(
             '<tr class="hover:bg-white/5 transition">' +
-              '<td class="py-3 px-3 font-semibold text-white">' +
-                esc(c.nome_razao) +
-                (c.tipo_pessoa === 'PJ' ? ' <span class="text-[9px] px-1.5 py-0.5 rounded bg-amber-500/20 text-amber-300 font-bold ml-1">PJ</span>' : '') +
-              '</td>' +
+              '<td class="py-3 px-3 font-semibold text-white">' + esc(c.nome_razao) + seloPfPj + '</td>' +
+              '<td class="py-3 px-3 text-slate-300">' + esc(c.nome_fantasia || '—') + '</td>' +
               '<td class="py-3 px-3 text-center">' +
                 (c.telefone ? '<a href="' + linkWa + '" target="_blank" class="inline-flex items-center gap-1 text-emerald-400 hover:text-emerald-300 font-bold bg-emerald-500/10 px-2.5 py-1 rounded-lg border border-emerald-500/30 text-xs">💬 WhatsApp</a>' : '<span class="text-slate-500">—</span>') +
               '</td>' +
+              '<td class="py-3 px-3 text-center text-slate-300">' + esc(c.tipo_cliente || '—') + '</td>' +
+              '<td class="py-3 px-3 text-center text-slate-300">' + esc(c.servico || '—') + '</td>' +
+              '<td class="py-3 px-3 text-center text-slate-300">' + esc(c.origem_cliente || '—') + '</td>' +
+              '<td class="py-3 px-3 text-center text-slate-300">' + esc(c.status_comercial || '—') + '</td>' +
               '<td class="py-3 px-3 text-center text-slate-300">' + esc(cidUf) + '</td>' +
               '<td class="py-3 px-3 text-center text-slate-400">' + esc(respNome) + '</td>' +
               '<td class="py-3 px-3 text-center text-slate-400 font-mono text-[11px]">' + esc(ultimaAtiv) + '</td>' +
@@ -589,12 +1142,11 @@
         var lblNome = document.getElementById('lblNomeRazao');
         var lblCpf = document.getElementById('lblCpfCnpj');
 
+        secaoPJ.classList.remove('hidden');
         if (tipo === 'PJ') {
-          secaoPJ.classList.remove('hidden');
           lblNome.textContent = 'Razão Social *';
           lblCpf.textContent = 'CNPJ (Opcional)';
         } else {
-          secaoPJ.classList.add('hidden');
           lblNome.textContent = 'Nome Completo *';
           lblCpf.textContent = 'CPF (Opcional)';
         }
@@ -708,6 +1260,11 @@
         document.getElementById('cUf').value = '';
         document.getElementById('cObservacoesComerciais').value = '';
         document.getElementById('cParceiroResponsavelId').value = '';
+        preencherSelectsTipoServico('', '');
+        document.getElementById('cOrigemCliente').value = '';
+        document.getElementById('cStatusComercial').value = '';
+        var boxD0 = document.getElementById('boxDatasImportantes');
+        if (boxD0) boxD0.textContent = '—';
         document.getElementById('txtPasteWhatsapp').value = '';
 
         alternarCamposPJ();
@@ -755,6 +1312,18 @@
         document.getElementById('cUf').value = c.uf || '';
         document.getElementById('cObservacoesComerciais').value = c.observacoes_comerciais || '';
         document.getElementById('cParceiroResponsavelId').value = c.parceiro_responsavel_id || '';
+        preencherSelectsTipoServico(c.tipo_cliente || '', c.servico || '');
+        document.getElementById('cOrigemCliente').value = c.origem_cliente || '';
+        document.getElementById('cStatusComercial').value = c.status_comercial || '';
+        var boxD = document.getElementById('boxDatasImportantes');
+        if (boxD) {
+          var ds = c.datas_importantes;
+          if (Array.isArray(ds) && ds.length) {
+            boxD.textContent = ds.map(function (d) {
+              return (d.tipo || 'Data') + ': ' + (d.data || '');
+            }).join(' · ');
+          } else boxD.textContent = '—';
+        }
 
         alternarCamposPJ();
         carregarHistoricoRelacionadoReal(c.id);
@@ -824,8 +1393,8 @@
           email: document.getElementById('cEmail').value.trim() || null,
           contato_nome: document.getElementById('cContatoNome').value.trim() || null,
           contato_cargo: document.getElementById('cContatoCargo').value.trim() || null,
-          nome_fantasia: tipoPessoa === 'PJ' ? (document.getElementById('cNomeFantasia').value.trim() || null) : null,
-          responsavel_legal: tipoPessoa === 'PJ' ? (document.getElementById('cResponsavelLegal').value.trim() || null) : null,
+          nome_fantasia: document.getElementById('cNomeFantasia').value.trim() || null,
+          responsavel_legal: document.getElementById('cResponsavelLegal').value.trim() || null,
           cep: document.getElementById('cCep').value.trim() || null,
           logradouro: document.getElementById('cLogradouro').value.trim() || null,
           numero: document.getElementById('cNumero').value.trim() || null,
@@ -834,7 +1403,12 @@
           cidade: document.getElementById('cCidade').value.trim() || null,
           uf: document.getElementById('cUf').value.trim() || null,
           observacoes_comerciais: document.getElementById('cObservacoesComerciais').value.trim() || null,
-          parceiro_responsavel_id: document.getElementById('cParceiroResponsavelId').value || null
+          parceiro_responsavel_id: document.getElementById('cParceiroResponsavelId').value || null,
+          tipo_cliente: document.getElementById('cTipoCliente').value || null,
+          servico: document.getElementById('cServico').value || null,
+          origem_cliente: document.getElementById('cOrigemCliente').value || null,
+          status_comercial: document.getElementById('cStatusComercial').value || null,
+          nome_fantasia: document.getElementById('cNomeFantasia').value.trim() || null
         };
 
         var res;

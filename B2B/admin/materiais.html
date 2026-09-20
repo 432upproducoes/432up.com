@@ -1,0 +1,397 @@
+<!DOCTYPE html>
+<html lang="pt-BR" class="min-h-screen">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
+  <title>432UP Admin | Gestão de Materiais & Acervo v1.0</title>
+  
+  <!-- CSS Global do Site -->
+  <link rel="stylesheet" href="../../css/style.css">
+  <script src="https://cdn.tailwindcss.com"></script>
+  
+  <style>
+    .glass-b2b {
+      background: linear-gradient(135deg, rgba(147, 51, 234, 0.22) 0%, rgba(30, 20, 50, 0.65) 100%);
+      backdrop-filter: blur(24px);
+      -webkit-backdrop-filter: blur(24px);
+      border: 1px solid rgba(192, 132, 252, 0.35);
+      box-shadow: 0 20px 50px rgba(0, 0, 0, 0.4), inset 0 0 20px rgba(216, 180, 254, 0.1);
+    }
+    .glass-amber {
+      background: linear-gradient(135deg, rgba(245, 158, 11, 0.12) 0%, rgba(88, 28, 135, 0.35) 100%);
+      backdrop-filter: blur(24px);
+      -webkit-backdrop-filter: blur(24px);
+      border: 1px solid rgba(245, 158, 11, 0.4);
+    }
+    table thead tr, table thead th {
+      background-color: transparent !important;
+      color: #94a3b8 !important;
+    }
+  </style>
+</head>
+<body class="min-h-screen text-slate-200 font-sans antialiased bg-[#06080c]">
+
+  <!-- NOTIFICAÇÕES TOAST -->
+  <div id="toast-container" class="fixed top-20 right-5 z-50 flex flex-col gap-2 pointer-events-none"></div>
+
+  <canvas id="orbit-canvas"></canvas>
+  <div id="plasmaLayer" class="plasma-top-layer"></div>
+
+  <!-- HEADER E MENU MOBILE INJETADOS VIA PARTNER-HEADER.JS -->
+  <header id="calc-header"></header>
+  <div id="mobile-menu"></div>
+
+  <!-- CONTAINER DE CONTEÚDO EM FLUXO VERTICAL -->
+  <div class="flex flex-col min-h-screen relative z-10 pb-16">
+
+    <!-- CONTEÚDO PRINCIPAL -->
+    <main class="flex-1 p-4 lg:p-8 space-y-6 pt-28 lg:pt-28 w-full max-w-7xl mx-auto">
+      
+      <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+        <div>
+          <span class="text-xs font-bold text-amber-400 uppercase tracking-widest">Controle de Mídias & PDFs</span>
+          <h1 class="text-2xl lg:text-3xl font-bold text-white tracking-tight mt-1">Gestão de Materiais de Venda</h1>
+          <p class="text-sm text-slate-400 mt-1">Administre o acervo de apresentações, riders técnicos, vídeos e imagens exibidos na central do parceiro.</p>
+        </div>
+        <div>
+          <a href="../materiais.html" class="inline-flex items-center gap-2 px-3.5 py-2 rounded-xl bg-amber-500/10 text-amber-300 border border-amber-500/30 text-xs font-semibold hover:bg-amber-500/20 transition">
+            <span>👁️</span> Visão dos Parceiros
+          </a>
+        </div>
+      </div>
+
+      <!-- CARDS DE MÉTRICAS DO ACERVO -->
+      <div class="grid grid-cols-1 md:grid-cols-3 gap-4">
+        <div class="glass-b2b p-5 rounded-2xl border-l-4 border-l-purple-500">
+          <span class="text-xs font-semibold uppercase tracking-wider text-purple-200">Total de Materiais</span>
+          <div id="admTotalMateriais" class="text-2xl font-bold text-white mt-2">0</div>
+          <span id="admSubTotalMateriais" class="text-xs text-cyan-300 mt-2 block border-t border-white/10 pt-2">Cadastrados no Supabase</span>
+        </div>
+
+        <div class="glass-amber p-5 rounded-2xl border-l-4 border-l-amber-500">
+          <span class="text-xs font-semibold uppercase tracking-wider text-amber-300">Materiais Ativos</span>
+          <div id="admMateriaisAtivos" class="text-2xl font-bold text-amber-400 mt-2">0</div>
+          <span class="text-xs text-amber-200/80 mt-2 block border-t border-amber-500/20 pt-2">Visíveis para download</span>
+        </div>
+
+        <div class="glass-b2b p-5 rounded-2xl border-l-4 border-l-emerald-500">
+          <span class="text-xs font-semibold uppercase tracking-wider text-emerald-400">Categorias Únicas</span>
+          <div id="admCategoriasQtd" class="text-2xl font-bold text-emerald-300 mt-2">0</div>
+          <span class="text-xs text-emerald-400/90 mt-2 block border-t border-white/10 pt-2">Organização comercial</span>
+        </div>
+      </div>
+
+      <!-- FORMULÁRIO DE CADASTRO / EDIÇÃO -->
+      <div class="glass-b2b rounded-2xl p-6 border border-purple-400/20 space-y-4">
+        <div class="flex items-center justify-between border-b border-purple-400/20 pb-3">
+          <h2 id="form-title" class="text-base font-bold text-white flex items-center gap-2">
+            <span>➕</span> Cadastrar / Editar Material de Venda
+          </h2>
+          <button type="button" onclick="limparFormulario()" class="px-3 py-1 rounded-lg bg-white/5 hover:bg-white/10 text-slate-300 text-xs font-medium transition cursor-pointer">
+            Limpar Campos
+          </button>
+        </div>
+
+        <input type="hidden" id="mat-id">
+
+        <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4 text-xs">
+          <div>
+            <label class="block text-[10px] uppercase text-slate-400 font-bold mb-1">Título do Material</label>
+            <input type="text" id="mat-titulo" placeholder="Ex: Apresentação Comercial 2026" class="w-full bg-slate-900/80 border border-white/10 rounded-xl px-3 py-2 text-xs text-white focus:border-purple-400 focus:outline-none transition">
+          </div>
+
+          <div>
+            <label class="block text-[10px] uppercase text-slate-400 font-bold mb-1">Categoria</label>
+            <select id="mat-categoria" class="w-full bg-slate-900 border border-white/10 rounded-xl px-3 py-2 text-xs text-white focus:border-purple-400 focus:outline-none transition cursor-pointer">
+              <option value="apresentacao_institucional">Apresentação Institucional</option>
+              <option value="ficha_tecnica">Ficha Técnica / Rider</option>
+              <option value="imagens">Imagens & Fotos HD</option>
+              <option value="video">Vídeo / Showreel</option>
+              <option value="outro">Outros Recursos</option>
+            </select>
+          </div>
+
+          <div>
+            <label class="block text-[10px] uppercase text-slate-400 font-bold mb-1">Bucket do Storage</label>
+            <input type="text" id="mat-bucket" value="materiais-publicos" class="w-full bg-slate-900/80 border border-white/10 rounded-xl px-3 py-2 text-xs text-white focus:border-purple-400 focus:outline-none transition">
+          </div>
+
+          <div class="md:col-span-2">
+            <label class="block text-[10px] uppercase text-slate-400 font-bold mb-1">Caminho do Arquivo (Storage Path)</label>
+            <input type="text" id="mat-path" placeholder="Ex: pdf/apresentacao_comercial_432up.pdf" class="w-full bg-slate-900/80 border border-white/10 rounded-xl px-3 py-2 text-xs text-white focus:border-purple-400 focus:outline-none transition font-mono">
+          </div>
+
+          <div>
+            <label class="block text-[10px] uppercase text-slate-400 font-bold mb-1">Ordem de Exibição</label>
+            <input type="number" id="mat-ordem" value="1" class="w-full bg-slate-900/80 border border-white/10 rounded-xl px-3 py-2 text-xs text-white focus:border-purple-400 focus:outline-none transition">
+          </div>
+
+          <div class="lg:col-span-3">
+            <label class="block text-[10px] uppercase text-slate-400 font-bold mb-1">Descrição Comercial</label>
+            <input type="text" id="mat-descricao" placeholder="Breve explicação sobre o arquivo para o parceiro" class="w-full bg-slate-900/80 border border-white/10 rounded-xl px-3 py-2 text-xs text-white focus:border-purple-400 focus:outline-none transition">
+          </div>
+        </div>
+
+        <div class="flex justify-end gap-2 pt-2 border-t border-white/5">
+          <button type="button" onclick="salvarMaterial()" class="px-5 py-2.5 rounded-xl bg-purple-600 hover:bg-purple-500 text-white font-bold text-xs transition shadow-lg cursor-pointer">
+            💾 Salvar e Atualizar Acervo
+          </button>
+        </div>
+      </div>
+
+      <!-- TABELA DE MATERIAIS CADASTRADOS COM PAGINAÇÃO -->
+      <div class="glass-b2b rounded-2xl p-6">
+        <h2 class="text-base font-bold text-white mb-4 border-b border-purple-400/20 pb-3">Acervo de Materiais Cadastrados</h2>
+        
+        <div class="overflow-x-auto">
+          <table class="w-full text-left text-xs whitespace-nowrap min-w-[600px]">
+            <thead>
+              <tr class="border-b border-purple-400/20 text-slate-400 uppercase tracking-wider">
+                <th class="pb-3 px-3">Ordem</th>
+                <th class="pb-3 px-3">Título / Categoria</th>
+                <th class="pb-3 px-3">Caminho (Storage)</th>
+                <th class="pb-3 px-3 text-center">Status</th>
+                <th class="pb-3 px-3 text-right">Ações</th>
+              </tr>
+            </thead>
+            <tbody id="tbodyMateriaisGestao" class="divide-y divide-purple-500/10 text-slate-200">
+              <tr>
+                <td colspan="5" class="py-6 text-center text-slate-500">Carregando acervo do banco...</td>
+              </tr>
+            </tbody>
+          </table>
+        </div>
+
+        <!-- RODAPÉ DE PAGINAÇÃO -->
+        <div class="flex flex-col sm:flex-row items-center justify-between gap-3 pt-4 mt-4 border-t border-white/5 text-xs text-slate-400">
+          <div class="flex items-center gap-2">
+            <span>Exibir</span>
+            <select id="selectItensPorPagina" onchange="mudarItensPorPagina(this.value)" class="bg-slate-900 border border-white/10 rounded px-2 py-1 text-white focus:outline-none cursor-pointer">
+              <option value="10" selected>10</option>
+              <option value="25">25</option>
+              <option value="50">50</option>
+            </select>
+            <span>registros por página</span>
+          </div>
+
+          <div id="txtInfoPaginacao" class="text-slate-400">
+            Exibindo 0-0 de 0 registros
+          </div>
+
+          <div class="flex items-center gap-1.5">
+            <button id="btnPagAnterior" onclick="mudarPagina(-1)" class="px-3 py-1 rounded-lg bg-white/5 hover:bg-white/10 disabled:opacity-30 disabled:cursor-not-allowed transition">
+              ◀ Anterior
+            </button>
+            <span id="txtPaginaAtual" class="font-bold text-white px-2">1</span>
+            <button id="btnPagProxima" onclick="mudarPagina(1)" class="px-3 py-1 rounded-lg bg-white/5 hover:bg-white/10 disabled:opacity-30 disabled:cursor-not-allowed transition">
+              Próxima ▶
+            </button>
+          </div>
+        </div>
+      </div>
+
+    </main>
+  </div>
+
+  <!-- SCRIPTS DA APLICAÇÃO -->
+  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+  <script src="../partner-config.js" onerror="this.src='../../partner-config.js'"></script>
+  <script src="../partner-header.js"></script>
+  <script src="../../script/script.js" onerror="this.src='../script/script.js'" defer></script>
+  
+  <script>
+    (function () {
+      'use strict';
+
+      var listaMateriais = [];
+      var paginaAtual = 1;
+      var itensPorPagina = 10;
+
+      function esc(s) { return String(s == null ? '' : s).replace(/</g, '&lt;').replace(/>/g, '&gt;'); }
+
+      function showToast(message) {
+        const container = document.getElementById('toast-container');
+        const toast = document.createElement('div');
+        toast.className = 'pointer-events-auto bg-slate-950 text-cyan-300 text-xs px-4 py-2.5 rounded-xl border border-cyan-500/40 shadow-xl';
+        toast.innerText = '✓ ' + message;
+        container.appendChild(toast);
+        setTimeout(() => toast.remove(), 2500);
+      }
+
+      window.toggleMobileMenu = function () {
+        var mobNav = document.getElementById('mobile-menu');
+        if (mobNav) mobNav.classList.toggle('active');
+      };
+
+      partnerRequireAuth({ requireAdmin: true }).then(function (parceiro) {
+        partnerFillSidebar(parceiro);
+        carregarMateriaisAdmin();
+      }).catch(function (err) {
+        console.error('Acesso negado ao Master Admin:', err);
+      });
+
+      function carregarMateriaisAdmin() {
+        if (typeof sbPartner === 'undefined') {
+          setTimeout(carregarMateriaisAdmin, 200);
+          return;
+        }
+
+        sbPartner.from('materiais')
+          .select('*')
+          .order('ordem', { ascending: true })
+          .then(function (res) {
+            var tbody = document.getElementById('tbodyMateriaisGestao');
+            if (res.error) {
+              tbody.innerHTML = '<tr><td colspan="5" class="py-4 text-center text-red-400">Erro ao carregar dados: ' + esc(res.error.message) + '</td></tr>';
+              return;
+            }
+
+            listaMateriais = res.data || [];
+            recalcularMetricas();
+            renderTabela();
+          });
+      }
+
+      function recalcularMetricas() {
+        var total = listaMateriais.length;
+        var ativos = listaMateriais.filter(m => m.ativo).length;
+        var categorias = new Set(listaMateriais.map(m => m.categoria)).size;
+
+        document.getElementById('admTotalMateriais').textContent = total;
+        document.getElementById('admMateriaisAtivos').textContent = ativos;
+        document.getElementById('admCategoriasQtd').textContent = categorias;
+      }
+
+      function renderTabela() {
+        var tbody = document.getElementById('tbodyMateriaisGestao');
+        var totalRegistros = listaMateriais.length;
+
+        if (!totalRegistros) {
+          tbody.innerHTML = '<tr><td colspan="5" class="py-6 text-center text-slate-500">Nenhum material cadastrado no momento.</td></tr>';
+          atualizarControlesPaginacao(0, 0, 0);
+          return;
+        }
+
+        var totalPaginas = Math.ceil(totalRegistros / itensPorPagina);
+        if (paginaAtual > totalPaginas) paginaAtual = totalPaginas;
+
+        var inicio = (paginaAtual - 1) * itensPorPagina;
+        var fim = Math.min(inicio + itensPorPagina, totalRegistros);
+        var itensPagina = listaMateriais.slice(inicio, fim);
+
+        tbody.innerHTML = itensPagina.map(function (m) {
+          return '<tr class="hover:bg-white/[0.02] transition">' +
+            '<td class="py-3 px-3 font-bold text-amber-400">#' + m.ordem + '</td>' +
+            '<td class="py-3 px-3">' +
+              '<strong class="text-white block text-sm">' + esc(m.titulo) + '</strong>' +
+              '<span class="text-slate-400 text-[11px] uppercase">' + esc(m.categoria) + '</span>' +
+            '</td>' +
+            '<td class="py-3 px-3 font-mono text-slate-300 text-[11px]">' + esc(m.storage_path) + '</td>' +
+            '<td class="py-3 px-3 text-center">' +
+              '<span class="px-2.5 py-1 rounded-full text-[10px] font-bold ' + (m.ativo ? 'bg-emerald-500/20 text-emerald-400 border border-emerald-500/30' : 'bg-red-500/20 text-red-400 border border-red-500/30') + '">' +
+                (m.ativo ? 'ATIVO' : 'INATIVO') +
+              '</span>' +
+            '</td>' +
+            '<td class="py-3 px-3 text-right space-x-1.5">' +
+              '<button onclick=\'editarMaterial(' + JSON.stringify(m) + ')\' class="px-2.5 py-1 rounded bg-purple-500/20 hover:bg-purple-500/30 text-purple-300 border border-purple-500/30 text-[11px] font-semibold transition cursor-pointer">Editar</button>' +
+              '<button onclick="toggleAtivo(\'' + m.id + '\', ' + m.ativo + ')" class="px-2.5 py-1 rounded bg-amber-500/20 hover:bg-amber-500/30 text-amber-300 border border-amber-500/30 text-[11px] font-semibold transition cursor-pointer">' + (m.ativo ? 'Desativar' : 'Ativar') + '</button>' +
+              '<button onclick="excluirMaterial(\'' + m.id + '\')" class="px-2.5 py-1 rounded bg-red-500/20 hover:bg-red-500/30 text-red-300 border border-red-500/30 text-[11px] font-semibold transition cursor-pointer">Excluir</button>' +
+            '</td>' +
+          '</tr>';
+        }).join('');
+
+        atualizarControlesPaginacao(inicio + 1, fim, totalRegistros);
+      }
+
+      function atualizarControlesPaginacao(inicio, fim, total) {
+        document.getElementById('txtInfoPaginacao').textContent = 'Exibindo ' + inicio + '-' + fim + ' de ' + total + ' registros';
+        document.getElementById('txtPaginaAtual').textContent = paginaAtual;
+
+        var totalPaginas = Math.ceil(total / itensPorPagina) || 1;
+        document.getElementById('btnPagAnterior').disabled = (paginaAtual <= 1);
+        document.getElementById('btnPagProxima').disabled = (paginaAtual >= totalPaginas);
+      }
+
+      window.mudarPagina = function(delta) {
+        paginaAtual += delta;
+        renderTabela();
+      };
+
+      window.mudarItensPorPagina = function(qtd) {
+        itensPorPagina = parseInt(qtd, 10) || 10;
+        paginaAtual = 1;
+        renderTabela();
+      };
+
+      window.salvarMaterial = function() {
+        const id = document.getElementById('mat-id').value;
+        const dados = {
+          titulo: document.getElementById('mat-titulo').value,
+          categoria: document.getElementById('mat-categoria').value,
+          descricao: document.getElementById('mat-descricao').value,
+          storage_bucket: document.getElementById('mat-bucket').value,
+          storage_path: document.getElementById('mat-path').value,
+          ordem: parseInt(document.getElementById('mat-ordem').value) || 1,
+          ativo: true
+        };
+
+        if (!dados.titulo || !dados.storage_path) {
+          alert('Preencha o Título e o Caminho do Arquivo!');
+          return;
+        }
+
+        let query = id 
+          ? sbPartner.from('materiais').update(dados).eq('id', id)
+          : sbPartner.from('materiais').insert([dados]);
+
+        query.then(res => {
+          if (res.error) {
+            alert('Erro ao salvar: ' + res.error.message);
+          } else {
+            showToast(id ? 'Material atualizado com sucesso!' : 'Novo material cadastrado!');
+            limparFormulario();
+            carregarMateriaisAdmin();
+          }
+        });
+      };
+
+      window.editarMaterial = function(m) {
+        document.getElementById('mat-id').value = m.id;
+        document.getElementById('mat-titulo').value = m.titulo;
+        document.getElementById('mat-categoria').value = m.categoria;
+        document.getElementById('mat-descricao').value = m.descricao || '';
+        document.getElementById('mat-bucket').value = m.storage_bucket;
+        document.getElementById('mat-path').value = m.storage_path;
+        document.getElementById('mat-ordem').value = m.ordem;
+        document.getElementById('form-title').innerHTML = '<span>✏️</span> Editar Material #' + m.ordem;
+        window.scrollTo({ top: 0, behavior: 'smooth' });
+      };
+
+      window.toggleAtivo = function(id, statusAtual) {
+        sbPartner.from('materiais').update({ ativo: !statusAtual }).eq('id', id).then(function() {
+          showToast('Status do material atualizado!');
+          carregarMateriaisAdmin();
+        });
+      };
+
+      window.excluirMaterial = function(id) {
+        if (confirm('Tem certeza que deseja excluir permanentemente este material?')) {
+          sbPartner.from('materiais').delete().eq('id', id).then(function() {
+            showToast('Material removido do acervo!');
+            carregarMateriaisAdmin();
+          });
+        }
+      };
+
+      window.limparFormulario = function() {
+        document.getElementById('mat-id').value = '';
+        document.getElementById('mat-titulo').value = '';
+        document.getElementById('mat-descricao').value = '';
+        document.getElementById('mat-path').value = '';
+        document.getElementById('mat-ordem').value = '1';
+        document.getElementById('form-title').innerHTML = '<span>➕</span> Cadastrar / Editar Material de Venda';
+      };
+    })();
+  </script>
+</body>
+</html>

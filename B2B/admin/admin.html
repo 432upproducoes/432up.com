@@ -21,12 +21,7 @@
   <link class="js-site-favicon" rel="icon" type="image/png" href="imagens/favicon.png">
   <title>Admin 432UP | Painel Administrativo</title>
 
-  <link rel="preconnect" href="https://fonts.googleapis.com">
-  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&display=swap" rel="stylesheet">
-
-  <script src="https://unpkg.com/@supabase/supabase-js@2"></script>
-  <script src="https://cdnjs.cloudflare.com/ajax/libs/html2pdf.js/0.10.1/html2pdf.bundle.min.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
   <link rel="stylesheet" href="https://www.432up.com/css/style.css">
 
   <style>
@@ -60,86 +55,17 @@
       overflow-x: hidden;
     }
 
-    /* ========== AUTH ========== */
-    #auth-overlay-admin {
-      position: fixed; inset: 0; z-index: 99999;
-      background: rgba(8, 8, 10, 0.92);
-      backdrop-filter: blur(20px); -webkit-backdrop-filter: blur(20px);
-      display: flex; align-items: center; justify-content: center; padding: 20px;
-    }
-    .auth-card-admin {
-      width: 100%; max-width: 420px;
-      background: linear-gradient(135deg, rgba(14,14,22,0.95), rgba(10,10,16,0.9));
-      border: 1px solid rgba(0,255,102,0.25);
-      border-radius: 24px; padding: 36px; text-align: center;
-      box-shadow: 0 25px 60px rgba(0,0,0,0.85), 0 0 30px rgba(0,255,102,0.12);
-    }
-    .auth-card-admin h2 { font-size: 1.4rem; font-weight: 800; margin-bottom: 6px; color: #fff; }
-    .auth-card-admin p { font-size: 0.82rem; color: rgba(255,255,255,0.55); margin-bottom: 24px; }
-    .adm-field-admin { text-align: left; margin-bottom: 16px; }
-    .adm-field-admin label {
-      display: block; font-size: 0.72rem; font-weight: 700; text-transform: uppercase;
-      letter-spacing: 0.8px; color: #00FF66; margin-bottom: 6px;
-    }
-    .adm-input-admin {
-      width: 100%; background: rgba(255,255,255,0.05);
-      border: 1px solid rgba(0,255,102,0.25);
-      padding: 12px 14px; border-radius: 12px; color: #fff; font-size: 0.88rem;
-      outline: none; box-sizing: border-box;
-    }
-    .adm-input-admin:focus { border-color: #00FF66; box-shadow: 0 0 12px rgba(0,255,102,0.3); }
-    .btn-adm-primary-admin {
-      width: 100%; padding: 12px 20px; margin-top: 4px;
-      background: rgba(10,10,16,0.85); border: 1px solid transparent;
-      border-radius: 20px; color: #fff; font-weight: 700; font-size: 0.9rem; cursor: pointer;
-      transition: all 0.2s;
-    }
-    .btn-adm-primary-admin:hover { background: #00FF66; color: #000; box-shadow: 0 0 25px rgba(0,255,102,0.5); }
-    .auth-error-admin { color: #FF4D4D; font-size: 0.78rem; margin-top: 10px; display: none; }
-
-    #painel-conteudo-admin { display: none; position: relative; min-height: 100vh; }
+    #painel-conteudo-admin { display: none; position: relative; min-height: 100vh; z-index: 2; }
 
     .scroll-stretcher-pixel { position: fixed; inset: 0; pointer-events: none; z-index: 0; }
     #orbit-canvas { position: fixed; inset: 0; width: 100%; height: 100%; pointer-events: none; z-index: 0; }
     #plasmaLayer { position: fixed; inset: 0; pointer-events: none; z-index: 1; }
 
-    /* ========== TOP NAV ========== */
-    .admin-topnav {
-      position: fixed; top: 0; left: 0; right: 0; z-index: 500;
-      display: flex; align-items: center; justify-content: space-between;
-      height: 64px; padding: 0 20px;
-      background: linear-gradient(180deg, rgba(10,10,16,0.96) 0%, rgba(8,8,12,0.94) 100%);
-      backdrop-filter: blur(20px) saturate(140%);
-      -webkit-backdrop-filter: blur(20px) saturate(140%);
-      border-bottom: 1px solid var(--border);
-      box-shadow: 0 8px 30px rgba(0,0,0,0.4);
+    .admin-status-bar {
+      display: flex; align-items: center; gap: 8px;
+      font-size: 0.72rem; color: var(--text-muted);
+      max-width: 1280px; margin: 0 auto; padding: 8px 28px 0;
     }
-    .topnav-brand { display: flex; align-items: center; gap: 10px; flex-shrink: 0; }
-    .adm-logo-img { width: 36px; height: 36px; object-fit: contain; display: block; border-radius: 8px; flex-shrink: 0; }
-    .topnav-brand h1 { font-size: 1.1rem; font-weight: 800; letter-spacing: -0.02em; }
-    .topnav-brand h1 span { color: var(--accent); }
-    .topnav-brand .badge {
-      font-size: 0.62rem; font-weight: 700; text-transform: uppercase;
-      letter-spacing: 0.8px; color: var(--accent);
-      background: var(--accent-dim); border: 1px solid var(--border);
-      padding: 2px 8px; border-radius: 20px;
-    }
-    .topnav-links { display: flex; align-items: center; gap: 4px; }
-    .topnav-links a, .topnav-links button.nav-link {
-      background: none; border: none; cursor: pointer;
-      color: rgba(255,255,255,0.7);
-      font-size: 0.84rem; font-weight: 600;
-      padding: 8px 14px; border-radius: 12px;
-      font-family: inherit; transition: all 0.15s; white-space: nowrap;
-    }
-    .topnav-links a:hover, .topnav-links button.nav-link:hover {
-      color: #fff; background: var(--accent-dim);
-    }
-    .topnav-links a.active, .topnav-links button.nav-link.active {
-      color: var(--accent); background: var(--accent-dim); border: 1px solid var(--border-strong);
-    }
-    .topnav-right { display: flex; align-items: center; gap: 12px; flex-shrink: 0; }
-    .topnav-status { display: flex; align-items: center; gap: 6px; font-size: 0.72rem; color: var(--text-muted); }
     .status-dot { width: 8px; height: 8px; border-radius: 50%; background: var(--accent); box-shadow: 0 0 8px var(--accent); }
     .status-dot.err { background: var(--danger); box-shadow: 0 0 8px var(--danger); }
     .admin-busy-spin {
@@ -152,115 +78,6 @@
     }
     .admin-busy-spin[hidden] { display: none !important; }
     @keyframes adminSpin { to { transform: rotate(360deg); } }
-    .btn-logout-top {
-      background: transparent; border: 1px solid rgba(255,77,77,0.35); color: var(--danger);
-      padding: 7px 14px; border-radius: 12px; font-size: 0.78rem; font-weight: 600;
-      cursor: pointer; transition: all 0.15s; font-family: inherit;
-    }
-    .btn-logout-top:hover { background: rgba(255,77,77,0.15); border-color: var(--danger); }
-    /* ===== Menu mobile (padrão do projeto: overlay + .active) ===== */
-    .mobile-hamburger {
-      display: none;
-      background: rgba(0,255,102,0.08);
-      border: 1px solid rgba(0,255,102,0.25);
-      color: #00FF66;
-      width: 44px; height: 44px;
-      border-radius: 12px;
-      font-size: 1.25rem; line-height: 1;
-      cursor: pointer;
-      align-items: center; justify-content: center;
-      flex-shrink: 0;
-      font-family: inherit;
-      -webkit-tap-highlight-color: transparent;
-      z-index: 520;
-    }
-    .mobile-hamburger:hover { background: rgba(0,255,102,0.18); }
-
-    #mobile-menu.mobile-menu-overlay {
-      display: none;
-      position: fixed;
-      inset: 0;
-      z-index: 100080;
-      background: rgba(8, 8, 12, 0.97);
-      backdrop-filter: blur(20px);
-      -webkit-backdrop-filter: blur(20px);
-      flex-direction: column;
-      padding: 72px 24px 32px;
-      overflow-y: auto;
-      -webkit-overflow-scrolling: touch;
-      box-sizing: border-box;
-    }
-    #mobile-menu.mobile-menu-overlay.active {
-      display: flex;
-    }
-    #mobile-menu .mm-close {
-      position: absolute; top: 18px; right: 18px;
-      background: transparent; border: none; color: #fff;
-      font-size: 1.6rem; cursor: pointer; line-height: 1;
-      width: 44px; height: 44px;
-      display: flex; align-items: center; justify-content: center;
-      border-radius: 12px;
-    }
-    #mobile-menu .mm-close:hover { color: #00FF66; background: rgba(0,255,102,0.1); }
-    #mobile-menu .mm-cat {
-      font-size: 0.68rem; font-weight: 700; text-transform: uppercase;
-      letter-spacing: 1.2px; color: rgba(0,255,102,0.7);
-      margin: 18px 0 8px; padding: 0 4px;
-    }
-    #mobile-menu .mm-cat:first-of-type { margin-top: 8px; }
-    #mobile-menu a.mm-link,
-    #mobile-menu button.mm-link {
-      display: block; width: 100%;
-      background: none; border: 1px solid transparent;
-      color: rgba(255,255,255,0.9);
-      font-size: 1.05rem; font-weight: 600;
-      padding: 14px 16px; border-radius: 14px;
-      text-align: left; cursor: pointer;
-      font-family: inherit; text-decoration: none;
-      transition: background 0.15s, border-color 0.15s, color 0.15s;
-    }
-    #mobile-menu a.mm-link:hover,
-    #mobile-menu button.mm-link:hover {
-      background: rgba(0,255,102,0.1);
-      border-color: rgba(0,255,102,0.25);
-      color: #00FF66;
-    }
-    #mobile-menu a.mm-link.active,
-    #mobile-menu button.mm-link.active {
-      color: #00FF66;
-      background: rgba(0,255,102,0.12);
-      border-color: rgba(0,255,102,0.35);
-    }
-    #mobile-menu .mm-sair {
-      margin-top: 24px;
-      background: transparent;
-      border: 1px solid rgba(255,77,77,0.4);
-      color: #FF6B6B;
-      font-size: 0.95rem; font-weight: 600;
-      padding: 14px 16px; border-radius: 14px;
-      cursor: pointer; font-family: inherit; width: 100%;
-      text-align: center;
-    }
-    #mobile-menu .mm-sair:hover {
-      background: rgba(255,77,77,0.12);
-      border-color: #FF4D4D;
-    }
-    #mobile-menu .mm-header-label {
-      font-size: 0.75rem; color: rgba(255,255,255,0.4);
-      margin-bottom: 4px; padding: 0 4px;
-    }
-    #mobile-menu .mm-title {
-      font-size: 1.15rem; font-weight: 800; color: #fff;
-      margin-bottom: 8px; padding: 0 4px;
-    }
-    #mobile-menu .mm-title span { color: #00FF66; }
-
-    @media (max-width: 900px) {
-      .topnav-links { display: none !important; }
-      .mobile-hamburger { display: flex !important; }
-      .topnav-status { display: none !important; }
-      .btn-logout-top { display: none !important; }
-    }
 
     /* Bloqueio visual/interativo do drag quando Modo Drag está OFF (simulador + galeria) */
     .sim-dnd-locked #dynamic-addons-list,
@@ -304,7 +121,7 @@
     .module-page { display: none; }
     .module-page.active { display: block; }
     .module-page:not(#module-simulador) > .admin-content-area {
-      padding-top: 88px;
+      padding-top: 112px;
     }
     .module-page:not(#module-simulador) .mod-header {
       margin-top: 0;
@@ -318,7 +135,7 @@
     }
     #module-simulador .mod-header {
       margin: 0;
-      padding: 88px 28px 16px;
+      padding: 112px 28px 16px;
     }
     #module-simulador .mod-header h2 {
       font-size: 1.45rem;
@@ -360,6 +177,13 @@
       background: transparent; border: 1px solid var(--border); color: var(--text-muted);
     }
     .btn-ghost:hover { border-color: var(--accent); color: var(--accent); }
+    .adm-input-admin {
+      width: 100%; background: rgba(255,255,255,0.05);
+      border: 1px solid rgba(0,255,102,0.25);
+      padding: 12px 14px; border-radius: 12px; color: #fff; font-size: 0.88rem;
+      outline: none; box-sizing: border-box;
+    }
+    .adm-input-admin:focus { border-color: #00FF66; box-shadow: 0 0 12px rgba(0,255,102,0.3); }
 
     /* Cards */
     .cards-grid {
@@ -917,78 +741,19 @@
 </head>
 <body>
 
-  <!-- AUTH -->
-  <div id="auth-overlay-admin">
-    <div class="auth-card-admin">
-      <h2>Painel Admin 432UP!</h2>
-      <p>Simulador · Calculadora · Leads · Galeria</p>
-      <form onsubmit="event.preventDefault(); autenticarAdmin();">
-        <div class="adm-field-admin">
-          <label>E-mail</label>
-          <input type="email" id="auth-email-admin" class="adm-input-admin" placeholder="seu@email.com" required autocomplete="username">
-        </div>
-        <div class="adm-field-admin">
-          <label>Senha</label>
-          <input type="password" id="auth-pass-admin" class="adm-input-admin" placeholder="••••••••" required autocomplete="current-password">
-        </div>
-        <button type="submit" id="btn-login-admin" class="btn-adm-primary-admin">Entrar</button>
-        <div id="auth-error-admin" class="auth-error-admin"></div>
-      </form>
-    </div>
-  </div>
+  <canvas id="orbit-canvas"></canvas>
+  <div id="plasmaLayer" class="plasma-top-layer"></div>
+  <div class="scroll-stretcher-pixel"></div>
+
+  <header id="calc-header"></header>
+  <div id="mobile-menu"></div>
 
   <div id="painel-conteudo-admin">
-    <div class="scroll-stretcher-pixel"></div>
-    <canvas id="orbit-canvas"></canvas>
-    <div id="plasmaLayer" class="plasma-top-layer"></div>
-
-    <!-- TOP NAV -->
-    <header class="admin-topnav">
-      <div class="topnav-brand">
-        <img src="https://www.432up.com/imagens/logo.png" alt="432UP" class="adm-logo-img" width="36" height="36" style="width:36px;height:36px;object-fit:contain;display:block;border-radius:8px;">
-        <span class="badge">Admin</span>
-      </div>
-
-      <nav class="topnav-links" id="topnav-links">
-        <button type="button" class="nav-link active" data-module="simulador" onclick="navTo('simulador')">🎧 Simulador</button>
-        <button type="button" class="nav-link" data-module="calc1-servicos" onclick="navTo('calc1-servicos')">🛠 Serviços</button>
-        <button type="button" class="nav-link" data-module="calc1-pacotes" onclick="navTo('calc1-pacotes')">📦 Pacotes</button>
-        <button type="button" class="nav-link" data-module="calc1-transporte" onclick="navTo('calc1-transporte')">🚚 Transporte</button>
-        <button type="button" class="nav-link" data-module="leads" onclick="navTo('leads')">📊 Leads</button>
-        <button type="button" class="nav-link" data-module="galeria" onclick="navTo('galeria')">🖼 Galeria</button>
-      </nav>
-
-      <div class="topnav-right">
-        <div class="topnav-status">
-          <span class="admin-busy-spin" id="admin-busy" hidden></span>
-          <span class="status-dot" id="db-dot"></span>
-          <span id="db-status-text">—</span>
-          <span id="last-save-text" style="margin-left:8px;"></span>
-        </div>
-        <button class="btn-logout-top" onclick="logoutAdmin()">Sair</button>
-        <button type="button" class="mobile-hamburger" aria-label="Menu" onclick="window.toggleMobileMenu()">☰</button>
-      </div>
-    </header>
-
-    <!-- Menu mobile (padrão do projeto: #mobile-menu + .active) -->
-    <div id="mobile-menu" class="mobile-menu-overlay" role="navigation" aria-label="Menu admin">
-      <button type="button" class="mm-close" onclick="window.toggleMobileMenu()" aria-label="Fechar">✕</button>
-      <div class="mm-header-label">Painel Administrativo</div>
-      <div class="mm-title">432UP<span>!</span> Admin</div>
-
-      <div class="mm-cat">Calculadora & Simulador</div>
-      <button type="button" class="mm-link active" data-module="simulador" onclick="navTo('simulador')">🎧 Simulador</button>
-      <button type="button" class="mm-link" data-module="calc1-servicos" onclick="navTo('calc1-servicos')">🛠 Serviços</button>
-      <button type="button" class="mm-link" data-module="calc1-pacotes" onclick="navTo('calc1-pacotes')">📦 Pacotes</button>
-      <button type="button" class="mm-link" data-module="calc1-transporte" onclick="navTo('calc1-transporte')">🚚 Transporte</button>
-
-      <div class="mm-cat">Comercial</div>
-      <button type="button" class="mm-link" data-module="leads" onclick="navTo('leads')">📊 Leads</button>
-
-      <div class="mm-cat">Conteúdo</div>
-      <button type="button" class="mm-link" data-module="galeria" onclick="navTo('galeria')">🖼 Galeria</button>
-
-      <button type="button" class="mm-sair" onclick="logoutAdmin()">🔒 Sair</button>
+    <div class="admin-status-bar">
+      <span class="admin-busy-spin" id="admin-busy" hidden></span>
+      <span class="status-dot" id="db-dot"></span>
+      <span id="db-status-text">—</span>
+      <span id="last-save-text" style="margin-left:8px;"></span>
     </div>
 
     <!-- ========================================================
@@ -1591,6 +1356,8 @@
     </div>
   </div>
 
+  <script src="../partner-config.js" onerror="this.src='../../partner-config.js'"></script>
+  <script src="../partner-header.js" onerror="this.src='../../partner-header.js'"></script>
   <script>
   // ============================================================
   // AUTH + SUPABASE
@@ -1602,49 +1369,32 @@
   const SB = SUPABASE_URL_ADM;
   const SK = SUPABASE_KEY_ADM;
 
-  document.addEventListener('DOMContentLoaded', async () => {
-    const { data: { session } } = await _supabaseAdmin.auth.getSession();
-    if (session) iniciarPainelAdmin();
-  });
-
-  async function autenticarAdmin() {
-    const email = document.getElementById('auth-email-admin').value;
-    const password = document.getElementById('auth-pass-admin').value;
-    const btn = document.getElementById('btn-login-admin');
-    const errBox = document.getElementById('auth-error-admin');
-    errBox.style.display = 'none';
-    btn.innerText = 'Autenticando...';
-    const { error } = await _supabaseAdmin.auth.signInWithPassword({ email, password });
-    if (error) {
-      errBox.textContent = 'E-mail ou senha incorretos.';
-      errBox.style.display = 'block';
-      btn.innerText = 'Entrar';
-    } else {
-      iniciarPainelAdmin();
-    }
-  }
-
   function iniciarPainelAdmin() {
-    document.getElementById('auth-overlay-admin').style.display = 'none';
-    document.getElementById('painel-conteudo-admin').style.display = 'block';
+    var painel = document.getElementById('painel-conteudo-admin');
+    if (painel) painel.style.display = 'block';
     loadCalc1Data();
     carregarCategorias();
+    aplicarHashAdmin();
   }
 
-  async function logoutAdmin() {
-    await _supabaseAdmin.auth.signOut();
-    location.reload();
+  function bootAdminAuth() {
+    if (typeof partnerRequireAuth !== 'function') {
+      setTimeout(bootAdminAuth, 50);
+      return;
+    }
+    partnerRequireAuth({ requireAdmin: true }).then(function (parceiro) {
+      if (typeof partnerFillSidebar === 'function') partnerFillSidebar(parceiro);
+      if (typeof window.updateAdminState === 'function') window.updateAdminState(true);
+      iniciarPainelAdmin();
+    }).catch(function (err) {
+      console.error('Acesso negado ao Painel do Site:', err);
+    });
   }
-
-  /* ===== Menu mobile — padrão do projeto (toggle .active em #mobile-menu) ===== */
-  window.toggleMobileMenu = function () {
-    var mobNav = document.getElementById('mobile-menu');
-    if (mobNav) mobNav.classList.toggle('active');
-  };
-  window.closeMobileMenu = function () {
-    var mobNav = document.getElementById('mobile-menu');
-    if (mobNav) mobNav.classList.remove('active');
-  };
+  if (document.readyState === 'loading') {
+    document.addEventListener('DOMContentLoaded', bootAdminAuth);
+  } else {
+    bootAdminAuth();
+  }
 
   /* Flag de preço do simulador: só aparece com valor > 0 */
   function syncSimPriceFlag() {
@@ -1679,25 +1429,40 @@
   window.isAdminMode = isAdminMode;
 
   // ============================================================
-  // NAV
+  // NAV (hashes do partner-header.js → módulos internos)
   // ============================================================
+  var HASH_TO_MOD = {
+    simulador: 'simulador',
+    servicos: 'calc1-servicos',
+    pacotes: 'calc1-pacotes',
+    transporte: 'calc1-transporte',
+    leads: 'leads',
+    galeria: 'galeria'
+  };
+  var MOD_TO_HASH = {
+    simulador: 'simulador',
+    'calc1-servicos': 'servicos',
+    'calc1-pacotes': 'pacotes',
+    'calc1-transporte': 'transporte',
+    leads: 'leads',
+    galeria: 'galeria'
+  };
+  var _applyingHash = false;
+
+  function aplicarHashAdmin() {
+    var raw = (window.location.hash || '#simulador').replace('#', '');
+    var mod = HASH_TO_MOD[raw] || HASH_TO_MOD.simulador;
+    _applyingHash = true;
+    navTo(mod);
+    _applyingHash = false;
+  }
+
   function navTo(mod) {
     document.body.style.overflow = '';
     document.documentElement.style.overflow = '';
     document.querySelectorAll('.module-page').forEach(p => p.classList.remove('active'));
-    document.querySelectorAll('.nav-link').forEach(n => n.classList.remove('active'));
     const page = document.getElementById('module-' + mod);
     if (page) page.classList.add('active');
-    document.querySelectorAll('.nav-link[data-module="' + mod + '"]').forEach(n => n.classList.add('active'));
-    // sincroniza + fecha menu mobile (não usa toggle — evita reabrir)
-    var mnav = document.getElementById('mobile-menu');
-    if (mnav) {
-      mnav.querySelectorAll('.mm-link').forEach(function (b) {
-        b.classList.toggle('active', b.getAttribute('data-module') === mod);
-      });
-      mnav.classList.remove('active');
-    }
-    // flag de preço só no simulador
     var flag = document.getElementById('sim-price-flag');
     if (flag) {
       if (mod === 'simulador') syncSimPriceFlag();
@@ -1711,7 +1476,29 @@
     if (mod === 'simulador' && typeof calculateAtmosphere === 'function') {
       calculateAtmosphere();
     }
+    if (!_applyingHash) {
+      var h = MOD_TO_HASH[mod] || 'simulador';
+      if ((window.location.hash || '').replace('#', '') !== h) {
+        history.replaceState(null, '', '#' + h);
+      }
+    }
   }
+
+  window.addEventListener('hashchange', aplicarHashAdmin);
+
+  document.addEventListener('click', function (e) {
+    var a = e.target && e.target.closest ? e.target.closest('a[href]') : null;
+    if (!a) return;
+    var href = a.getAttribute('href') || '';
+    var m = href.match(/(?:admin\.html)?#([a-z0-9_-]+)$/i);
+    if (!m || !HASH_TO_MOD[m[1]]) return;
+    e.preventDefault();
+    if ((window.location.hash || '').replace('#', '') === m[1]) {
+      aplicarHashAdmin();
+    } else {
+      window.location.hash = m[1];
+    }
+  });
 
   // ============================================================
   // HELPERS
@@ -2964,8 +2751,10 @@
 
   // Expor funções globais necessárias
   window.navTo = navTo;
-  window.logoutAdmin = logoutAdmin;
-  window.autenticarAdmin = autenticarAdmin;
+  window.logoutAdmin = function (e) {
+    if (typeof partnerLogout === 'function') partnerLogout(e);
+  };
+  window.aplicarHashAdmin = aplicarHashAdmin;
   window.toggleSrvDnd = toggleSrvDnd;
   window.openServicoModal = openServicoModal;
   window.closeServicoModal = closeServicoModal;
