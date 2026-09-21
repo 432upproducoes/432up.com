@@ -17,6 +17,7 @@
   /* ---------- 1. Nível do usuário (leitura síncrona do cache) ---------- */
   var cachedIsAdmin = false;
   var cachedLoggedIn = false;
+  var logoutLock = false;
   try {
     cachedIsAdmin = sessionStorage.getItem('432up_is_admin') === 'true';
     cachedLoggedIn = sessionStorage.getItem('432up_is_logged') === 'true' || cachedIsAdmin;
@@ -230,11 +231,16 @@
       @media (max-width: 1024px) {
         #calc-header.mn-ready > .desktop-nav,
         #calc-header.b2b-header-cyan .desktop-nav,
-        #calc-header .desktop-nav {
+        #calc-header .desktop-nav,
+        #calc-header .mn-items,
+        #calc-header .desktop-nav a,
+        #calc-header .desktop-nav .mn-group-btn {
           display: none !important;
         }
         #calc-header > .mn-toggle-d {
-          display: none !important;
+          display: inline-flex !important;
+          margin-left: auto !important;
+          margin-right: .5rem !important;
         }
         #calc-header .b2b-user-widget {
           display: none !important;
@@ -242,9 +248,10 @@
         #calc-header .mobile-hamburger,
         #calc-header.mn-ready .mobile-hamburger {
           display: block !important;
-          margin-left: auto !important;
+          margin-left: 0 !important;
           position: relative !important;
           z-index: 30 !important;
+          flex-shrink: 0 !important;
         }
       }
       .mn-tab { font: inherit; font-size: .78rem; line-height: 1; padding: .42rem .85rem; border: 0; border-radius: 999px;
@@ -261,6 +268,9 @@
       .mn-tab:focus-visible, .mn-group-btn:focus-visible { outline: 2px solid #00f0ff; outline-offset: 2px; }
       .mn-toggle-m { display: flex; width: 100%; margin: 0 0 14px; }
       .mn-toggle-m .mn-tab { flex: 1; padding: .6rem .4rem; font-size: .85rem; }
+      #mobile-menu.mn-theme-cyan .mn-tab[aria-pressed="true"] { background: #00f0ff !important; color: #04121a !important; font-weight: 700; }
+      #mobile-menu.mn-theme-amber .mn-tab[aria-pressed="true"] { background: #c5a059 !important; color: #1a1200 !important; font-weight: 700; }
+      #mobile-menu.mn-theme-admin .mn-tab[aria-pressed="true"] { background: #f59e0b !important; color: #1a1200 !important; font-weight: 700; }
 
       #calc-header.mn-theme-amber .mn-toggle { border-color: rgba(168,85,247,.35) !important; }
       #calc-header.mn-theme-amber,
@@ -411,10 +421,13 @@
   }
 
   function syncTheme() {
-    var headerEl = document.getElementById('calc-header');
-    if (!headerEl) return;
-    headerEl.classList.remove('mn-theme-amber', 'mn-theme-cyan', 'mn-theme-admin');
-    headerEl.classList.add(themeClass());
+    var theme = themeClass();
+    ['calc-header', 'mobile-menu'].forEach(function (id) {
+      var el = document.getElementById(id);
+      if (!el) return;
+      el.classList.remove('mn-theme-amber', 'mn-theme-cyan', 'mn-theme-admin');
+      el.classList.add(theme);
+    });
   }
 
   function renderItems() {
@@ -518,8 +531,12 @@
     ['btnLogoutDesk', 'btnLogoutMob'].forEach(function (id) {
       var b = document.getElementById(id);
       if (b) {
+        if (b.getAttribute('data-mn-bound')) return;
+        b.setAttribute('data-mn-bound', '1');
         b.addEventListener('click', function (e) {
           e.preventDefault();
+          e.stopPropagation();
+          logoutLock = true;
           cachedLoggedIn = false;
           cachedIsAdmin = false;
           try {
@@ -527,9 +544,9 @@
             sessionStorage.removeItem('432up_is_admin');
           } catch (err) {}
           function go() {
-            if (onSite) window.location.href = (rootPath || '') + 'index.html';
+            if (onSite) window.location.replace((rootPath || '') + 'index.html');
             else if (typeof partnerLogout === 'function') partnerLogout(e);
-            else window.location.href = (B2B || '') + 'login.html';
+            else window.location.replace((B2B || '') + 'login.html');
           }
           if (typeof sbPartner !== 'undefined' && sbPartner.auth) {
             Promise.resolve(sbPartner.auth.signOut()).then(go).catch(go);
@@ -617,6 +634,7 @@
   };
 
   window.updateAuthState = function (opts) {
+    if (logoutLock) return;
     opts = opts || {};
     cachedLoggedIn = !!opts.loggedIn;
     cachedIsAdmin = !!opts.isAdmin;
@@ -649,6 +667,7 @@
   }
 
   function peekAuth() {
+    if (logoutLock) return Promise.resolve(null);
     if (typeof partnerPeekAuth === 'function') return Promise.resolve(partnerPeekAuth());
     if (typeof sbPartner === 'undefined' || !sbPartner.auth) return Promise.resolve(null);
     return sbPartner.auth.getSession().then(function (res) {
@@ -671,8 +690,10 @@
   var _authSyncTries = 0;
   function syncAuth() {
     if (onSite) {
+      if (logoutLock) return;
       peekAuth().then(function (parceiro) {
-        if (parceiro) applyParceiro(parceiro);
+        if (logoutLock || !parceiro) return;
+        applyParceiro(parceiro);
       });
       return;
     }
