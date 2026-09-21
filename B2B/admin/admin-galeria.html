@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
-  <title>Galeria In Loco — Admin | 432UP!</title>
+  <title>Admin Galeria — 432UP!</title>
 
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
@@ -32,6 +32,8 @@
   <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
   <script src="https://cdn.jsdelivr.net/npm/browser-image-compression@2.0.2/dist/browser-image-compression.min.js"></script>
   <script src="https://cdn.jsdelivr.net/npm/sortablejs@1.15.2/Sortable.min.js"></script>
+  <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/cropperjs@1.6.2/dist/cropper.min.css">
+  <script src="https://cdn.jsdelivr.net/npm/cropperjs@1.6.2/dist/cropper.min.js"></script>
 
   <style>
     body { min-height: 100vh; margin: 0; background: #06080c; color: #e2e8f0; font-family: Inter, system-ui, sans-serif; }
@@ -201,6 +203,47 @@
     }
     .toggle-switch.on::after { transform: translateX(18px); background: #00FF66; }
 
+
+    /* tip / help */
+    .help-tip {
+      display: inline-flex; align-items: center; justify-content: center;
+      width: 18px; height: 18px; border-radius: 50%;
+      border: 1px solid rgba(168,85,247,0.45); color: #c4b5fd;
+      font-size: 0.7rem; font-weight: 800; cursor: help; position: relative;
+      flex-shrink: 0; line-height: 1;
+    }
+    .help-tip .help-bubble {
+      display: none; position: absolute; bottom: calc(100% + 8px); left: 50%;
+      transform: translateX(-50%); width: min(260px, 70vw); padding: 10px 12px;
+      background: rgba(14,14,22,0.98); border: 1px solid rgba(168,85,247,0.4);
+      border-radius: 12px; font-size: 0.72rem; font-weight: 500; color: #e2e8f0;
+      line-height: 1.45; text-align: left; z-index: 40;
+      box-shadow: 0 12px 28px rgba(0,0,0,0.55); pointer-events: none;
+      white-space: normal;
+    }
+    .help-tip:hover .help-bubble, .help-tip:focus .help-bubble { display: block; }
+
+    /* crop modal */
+    #crop-modal-overlay {
+      position: fixed; inset: 0; z-index: 100080;
+      display: flex; align-items: center; justify-content: center;
+      opacity: 0; pointer-events: none; visibility: hidden;
+      transition: opacity .25s, visibility .25s; padding: 16px;
+      background: rgba(6,8,12,0.88); backdrop-filter: blur(14px);
+    }
+    #crop-modal-overlay.open { opacity: 1; pointer-events: auto; visibility: visible; }
+    .crop-panel {
+      width: min(96vw, 720px); max-height: 92vh; overflow: auto;
+      background: linear-gradient(135deg, rgba(14,14,22,0.98), rgba(28,20,48,0.95));
+      border: 1px solid rgba(168,85,247,0.35); border-radius: 20px;
+      box-shadow: 0 24px 60px rgba(0,0,0,0.85); padding: 20px;
+    }
+    .crop-stage {
+      width: 100%; max-height: 55vh; background: #0a0a10; border-radius: 12px; overflow: hidden;
+    }
+    .crop-stage img { display: block; max-width: 100%; }
+    .marca-chip { cursor: grab; }
+    .marca-chip.sortable-ghost { opacity: 0.35; }
     @media (max-width: 720px) {
       .glx-panel { padding: 20px 16px; }
       .admin-grid { grid-template-columns: 1fr; }
@@ -220,8 +263,8 @@
 
       <div class="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
         <div>
-          <h1 class="text-2xl sm:text-3xl font-extrabold text-white tracking-tight">Galeria In Loco</h1>
-          <p class="text-sm text-slate-400 mt-1">Gerencie cases, álbuns, specs e marcas</p>
+          <h1 class="text-2xl sm:text-3xl font-extrabold text-white tracking-tight">Admin Galeria</h1>
+          <p class="text-sm text-slate-400 mt-1">Edição de cases, álbuns, specs e marcas da galeria pública</p>
         </div>
         <div class="flex flex-wrap items-center gap-3">
           <div class="flex items-center gap-2 px-3 py-2 rounded-full border border-white/10 bg-white/5 text-xs text-slate-300">
@@ -247,8 +290,11 @@
           <input type="text" id="marca-nome" class="adm-input" placeholder="Nome da marca" style="max-width:220px; flex:1; min-width:160px;" required>
           <div class="file-upload-wrap">
             <label class="btn-file-upload" for="marca-file">Escolher Arquivo</label>
-            <input type="file" id="marca-file" class="file-upload-input" accept="image/*" onchange="atualizarNomeArquivo(this, 'marca-file-name')">
+            <input type="file" id="marca-file" class="file-upload-input" accept="image/*" onchange="onMarcaFileSelected(this)">
             <span class="file-upload-filename" id="marca-file-name">nenhum arquivo — usa texto</span>
+            <span class="help-tip" tabindex="0" aria-label="Tamanho recomendado do logo">?
+              <span class="help-bubble">Logo da strip: PNG transparente preferível.<br>Altura ideal da arte: <strong>80–160 px</strong> (exibe ~26 px no site).<br>Largura livre. Após escolher, você pode <strong>recortar</strong> e a imagem é comprimida automaticamente.</span>
+            </span>
           </div>
           <label id="marca-remove-logo-wrap" style="display:none;" class="text-xs text-red-300 cursor-pointer inline-flex items-center gap-1.5">
             <input type="checkbox" id="marca-remove-logo" style="accent-color:#FF4D4D;"> Remover logo
@@ -322,8 +368,11 @@
           <label class="block text-xs font-bold uppercase tracking-wider text-purple-300 mb-1.5">Capa (imagem ou vídeo)</label>
           <div class="file-upload-wrap">
             <label class="btn-file-upload" for="modal-edit-cover-file">📎 Escolher Arquivo</label>
-            <input type="file" id="modal-edit-cover-file" class="file-upload-input" accept="image/*,video/*" onchange="atualizarNomeArquivo(this, 'cover-file-name')">
+            <input type="file" id="modal-edit-cover-file" class="file-upload-input" accept="image/*,video/*" onchange="onCoverFileSelected(this)">
             <span class="file-upload-filename" id="cover-file-name">nenhum arquivo selecionado</span>
+            <span class="help-tip" tabindex="0" aria-label="Tamanho recomendado da capa">?
+              <span class="help-bubble">Capa do card: ideal <strong>1920×1080</strong> (16:9) ou no mínimo 1200 px de largura.<br>Fotos são comprimidas (~0,8 MB / máx. 1920 px).<br>Em imagens, você pode <strong>recortar</strong> antes do envio. Vídeos seguem sem crop.</span>
+            </span>
           </div>
           <div class="heic-warning" id="heic-warning-cover">⚠️ HEIC detectado — convertendo para JPEG.</div>
         </div>
@@ -363,6 +412,25 @@
     </div>
   </div>
 
+  <!-- Crop modal -->
+  <div id="crop-modal-overlay" role="dialog" aria-modal="true" aria-label="Recortar imagem">
+    <div class="crop-panel">
+      <div class="flex items-center justify-between gap-3 mb-3">
+        <div>
+          <h3 class="text-base font-bold text-white m-0">Recortar imagem</h3>
+          <p id="crop-hint" class="text-xs text-slate-400 mt-1 mb-0">Ajuste o enquadramento e confirme.</p>
+        </div>
+        <button type="button" class="glx-close" style="position:static;" onclick="fecharCropModal(true)" aria-label="Cancelar">&times;</button>
+      </div>
+      <div class="crop-stage"><img id="crop-image" alt="Prévia"></div>
+      <div class="flex flex-wrap gap-2 mt-4 justify-end">
+        <button type="button" class="btn-ghost" onclick="fecharCropModal(true)">Cancelar</button>
+        <button type="button" class="btn-ghost" id="crop-skip-btn" onclick="confirmarCrop(false)">Usar original</button>
+        <button type="button" class="btn-adm-primary" onclick="confirmarCrop(true)">✂️ Aplicar recorte</button>
+      </div>
+    </div>
+  </div>
+
   <script src="https://www.432up.com/B2B/partner-config.js"></script>
   <script src="https://www.432up.com/script/script.js" defer></script>
   <script src="https://www.432up.com/B2B/partner-header.js"></script>
@@ -391,6 +459,15 @@
     let DRAG_ENABLED = false;
     let MARCAS_CACHE = [];
     let MARCA_EDITANDO_ID = null;
+    let MARCAS_SORTABLE_INSTANCE = null;
+
+    /* Crop state */
+    let CROP_INSTANCE = null;
+    let CROP_OBJECT_URL = null;
+    let CROP_TARGET = null; // 'marca' | 'cover'
+    let CROP_ORIGINAL_FILE = null;
+    let MARCA_PENDING_FILE = null; // File after crop/skip for marca upload
+    let COVER_PENDING_FILE = null;
 
     function hexToRgba(hex, alpha) {
       const h = (hex || '').replace('#', '');
@@ -457,6 +534,129 @@
       } else {
         span.textContent = inputEl.files.length + ' arquivos selecionados';
       }
+    }
+
+
+    /* ---------- CROP + FILE PICKERS ---------- */
+    function onMarcaFileSelected(inputEl) {
+      atualizarNomeArquivo(inputEl, 'marca-file-name');
+      if (!inputEl.files || !inputEl.files[0]) {
+        MARCA_PENDING_FILE = null;
+        return;
+      }
+      const file = inputEl.files[0];
+      if (!file.type.startsWith('image/') && !isHeicFile(file)) {
+        MARCA_PENDING_FILE = file;
+        return;
+      }
+      abrirCropModal(file, 'marca', 'Logo: recorte livre. Ideal altura 80–160 px na arte final.');
+    }
+
+    function onCoverFileSelected(inputEl) {
+      atualizarNomeArquivo(inputEl, 'cover-file-name');
+      if (!inputEl.files || !inputEl.files[0]) {
+        COVER_PENDING_FILE = null;
+        return;
+      }
+      const file = inputEl.files[0];
+      if (file.type.startsWith('video/') || (!file.type.startsWith('image/') && !isHeicFile(file))) {
+        COVER_PENDING_FILE = file; // vídeo ou não-imagem: sem crop
+        return;
+      }
+      abrirCropModal(file, 'cover', 'Capa: proporção 16:9 sugerida. Ideal 1920×1080.');
+    }
+
+    function abrirCropModal(file, target, hint) {
+      if (typeof Cropper === 'undefined') {
+        // fallback sem cropper
+        if (target === 'marca') MARCA_PENDING_FILE = file;
+        else COVER_PENDING_FILE = file;
+        return;
+      }
+      CROP_TARGET = target;
+      CROP_ORIGINAL_FILE = file;
+      const hintEl = document.getElementById('crop-hint');
+      if (hintEl) hintEl.textContent = hint || 'Ajuste o enquadramento e confirme.';
+
+      if (CROP_OBJECT_URL) URL.revokeObjectURL(CROP_OBJECT_URL);
+      CROP_OBJECT_URL = URL.createObjectURL(file);
+      const img = document.getElementById('crop-image');
+      img.onload = function () {
+        if (CROP_INSTANCE) { CROP_INSTANCE.destroy(); CROP_INSTANCE = null; }
+        var opts = {
+          viewMode: 1,
+          autoCropArea: 0.9,
+          responsive: true,
+          background: false
+        };
+        if (target === 'cover') opts.aspectRatio = 16 / 9;
+        CROP_INSTANCE = new Cropper(img, opts);
+      };
+      img.src = CROP_OBJECT_URL;
+      document.getElementById('crop-modal-overlay').classList.add('open');
+      document.body.style.overflow = 'hidden';
+    }
+
+    function fecharCropModal(cancel) {
+      const overlay = document.getElementById('crop-modal-overlay');
+      overlay.classList.remove('open');
+      // only unlock body if case modal is not open
+      if (!document.getElementById('edit-modal-overlay').classList.contains('open')) {
+        document.body.style.overflow = '';
+      }
+      if (CROP_INSTANCE) { CROP_INSTANCE.destroy(); CROP_INSTANCE = null; }
+      if (CROP_OBJECT_URL) { URL.revokeObjectURL(CROP_OBJECT_URL); CROP_OBJECT_URL = null; }
+      if (cancel) {
+        if (CROP_TARGET === 'marca') {
+          MARCA_PENDING_FILE = null;
+          const fi = document.getElementById('marca-file');
+          if (fi) { fi.value = ''; }
+          const span = document.getElementById('marca-file-name');
+          if (span) span.textContent = 'nenhum arquivo — usa texto';
+        } else if (CROP_TARGET === 'cover') {
+          COVER_PENDING_FILE = null;
+          const fi = document.getElementById('modal-edit-cover-file');
+          if (fi) fi.value = '';
+          const span = document.getElementById('cover-file-name');
+          if (span) span.textContent = 'nenhum arquivo selecionado';
+        }
+      }
+      CROP_TARGET = null;
+      CROP_ORIGINAL_FILE = null;
+    }
+
+    async function confirmarCrop(doCrop) {
+      if (!CROP_ORIGINAL_FILE) { fecharCropModal(true); return; }
+      let outFile = CROP_ORIGINAL_FILE;
+      if (doCrop && CROP_INSTANCE) {
+        try {
+          const canvas = CROP_INSTANCE.getCroppedCanvas({
+            maxWidth: CROP_TARGET === 'cover' ? 1920 : 800,
+            maxHeight: CROP_TARGET === 'cover' ? 1080 : 800,
+            imageSmoothingEnabled: true,
+            imageSmoothingQuality: 'high'
+          });
+          if (canvas) {
+            const blob = await new Promise(res => canvas.toBlob(res, 'image/jpeg', 0.92));
+            if (blob) {
+              const base = (CROP_ORIGINAL_FILE.name || 'imagem').replace(/\.[^.]+$/, '');
+              outFile = new File([blob], base + '-crop.jpg', { type: 'image/jpeg' });
+            }
+          }
+        } catch (e) {
+          console.warn('crop falhou, usando original', e);
+        }
+      }
+      if (CROP_TARGET === 'marca') {
+        MARCA_PENDING_FILE = outFile;
+        const span = document.getElementById('marca-file-name');
+        if (span) span.textContent = outFile.name + (doCrop ? ' (recortado)' : '');
+      } else {
+        COVER_PENDING_FILE = outFile;
+        const span = document.getElementById('cover-file-name');
+        if (span) span.textContent = outFile.name + (doCrop ? ' (recortado)' : '');
+      }
+      fecharCropModal(false);
     }
 
     function isHeicFile(file) {
@@ -626,6 +826,7 @@
       });
       const a = document.getElementById('cover-file-name'); if (a) a.textContent = 'nenhum arquivo selecionado';
       const b = document.getElementById('lote-file-name'); if (b) b.textContent = 'nenhum arquivo selecionado';
+      COVER_PENDING_FILE = null;
     }
 
     function abrirNovoCaseModal() {
@@ -716,9 +917,10 @@
 
       let payload = { cliente, titulo, cat, local, case_slug, ordem, destaque, descricao };
 
-      if (fileInput.files.length > 0) {
+      const coverFile = COVER_PENDING_FILE || (fileInput.files.length > 0 ? fileInput.files[0] : null);
+      if (coverFile) {
         let file;
-        try { file = await otimizarImagemSeNecessario(fileInput.files[0], 'heic-warning-cover'); }
+        try { file = await otimizarImagemSeNecessario(coverFile, 'heic-warning-cover'); }
         catch (e) { btn.innerText = '💾 Salvar Alterações'; return; }
         const fileName = `full/${sanitizarNomeArquivo(file.name)}`;
         const { error: uploadErr } = await _supabase.storage.from('432up_galeria').upload(fileName, file);
@@ -727,6 +929,7 @@
         payload.url = newUrl;
         payload.url_thumb = newUrl;
         payload.tipo = normalizarTipoUpload(file);
+        COVER_PENDING_FILE = null;
       }
 
       const slugAntigo = CURRENT_CASE ? (CURRENT_CASE.case_slug || '') : null;
@@ -898,15 +1101,49 @@
           ? '<span class="text-[0.6rem] opacity-50 ml-0.5">🖼</span>'
           : '<span class="text-[0.6rem] opacity-50 ml-0.5">Aa</span>';
         return `<div class="marca-chip" data-marca-id="${m.id}">
+          <span class="marca-drag-handle" title="Arraste para reordenar" style="cursor:grab;opacity:0.55;margin-right:2px;">⠿</span>
           ${preview}${tipo}
           <button type="button" class="chip-btn chip-edit" title="Editar" onclick="iniciarEdicaoMarca('${m.id}')">✎</button>
           <button type="button" class="chip-btn chip-del" title="Remover" onclick="deletarMarca('${m.id}')">✕</button>
         </div>`;
       }).join('');
+
+      if (MARCAS_SORTABLE_INSTANCE) {
+        MARCAS_SORTABLE_INSTANCE.destroy();
+        MARCAS_SORTABLE_INSTANCE = null;
+      }
+      if (window.Sortable) {
+        MARCAS_SORTABLE_INSTANCE = Sortable.create(wrap, {
+          animation: 160,
+          handle: '.marca-drag-handle',
+          draggable: '.marca-chip',
+          ghostClass: 'sortable-ghost',
+          onEnd: async function () {
+            const chips = Array.from(wrap.querySelectorAll('.marca-chip'));
+            const updates = chips.map((el, i) => ({ id: el.dataset.marcaId, ordem: i + 1 }));
+            try {
+              await Promise.all(updates.map(u =>
+                _supabase.from('co_galeria_marcas').update({ ordem: u.ordem }).eq('id', u.id)
+              ));
+              // sync cache order
+              const byId = Object.fromEntries(MARCAS_CACHE.map(m => [String(m.id), m]));
+              MARCAS_CACHE = updates.map(u => {
+                const m = byId[String(u.id)];
+                if (m) m.ordem = u.ordem;
+                return m;
+              }).filter(Boolean);
+            } catch (err) {
+              alert('Erro ao salvar ordem das marcas: ' + err.message);
+              carregarMarcas();
+            }
+          }
+        });
+      }
     }
 
     function resetMarcaForm() {
       MARCA_EDITANDO_ID = null;
+      MARCA_PENDING_FILE = null;
       document.getElementById('marca-edit-id').value = '';
       document.getElementById('marca-nome').value = '';
       const fileInput = document.getElementById('marca-file');
@@ -950,7 +1187,7 @@
         return;
       }
 
-      const temArquivoNovo = fileInput && fileInput.files && fileInput.files.length > 0;
+      const temArquivoNovo = !!(MARCA_PENDING_FILE || (fileInput && fileInput.files && fileInput.files.length > 0));
       const isEdit = !!editId;
 
       btn.innerText = temArquivoNovo ? 'Otimizando...' : 'Salvando...';
@@ -959,8 +1196,10 @@
       let logo_url = undefined;
       if (temArquivoNovo) {
         let file;
-        try { file = await otimizarImagemSeNecessario(fileInput.files[0]); }
-        catch (e) {
+        try {
+          const raw = MARCA_PENDING_FILE || fileInput.files[0];
+          file = await otimizarImagemSeNecessario(raw);
+        } catch (e) {
           btn.innerText = isEdit ? '💾 Salvar Edição' : '+ Adicionar Marca';
           btn.disabled = false;
           return;
@@ -974,6 +1213,7 @@
           return;
         }
         logo_url = `${SUPABASE_URL_ADM}/storage/v1/object/public/432up_galeria/${path}`;
+        MARCA_PENDING_FILE = null;
       } else if (isEdit && removeLogo) {
         logo_url = null;
       } else if (!isEdit) {
