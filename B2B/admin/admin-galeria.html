@@ -1,0 +1,1053 @@
+<!DOCTYPE html>
+<html lang="pt-BR" class="h-full" data-theme="dark">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
+  <title>Galeria In Loco — Admin | 432UP!</title>
+
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&display=swap" rel="stylesheet">
+
+  <link rel="stylesheet" href="https://www.432up.com/css/style.css">
+  <script src="https://cdn.tailwindcss.com"></script>
+  <script>
+    tailwind.config = {
+      theme: {
+        extend: {
+          colors: {
+            ink: '#06080c',
+            panel: 'rgba(14,14,22,0.72)',
+            lilac: '#A855F7',
+            lime: '#00FF66',
+            cyan: '#00F0FF',
+            amber: '#f59e0b'
+          },
+          fontFamily: { sans: ['Inter', 'system-ui', 'sans-serif'] }
+        }
+      }
+    }
+  </script>
+
+  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+  <script src="https://cdn.jsdelivr.net/npm/browser-image-compression@2.0.2/dist/browser-image-compression.min.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/sortablejs@1.15.2/Sortable.min.js"></script>
+
+  <style>
+    body { min-height: 100vh; margin: 0; background: #06080c; color: #e2e8f0; font-family: Inter, system-ui, sans-serif; }
+    .adm-input {
+      width: 100%; background: rgba(255,255,255,0.05);
+      border: 1px solid rgba(168,85,247,0.28);
+      padding: 10px 14px; border-radius: 12px; color: #fff; font-size: 0.88rem;
+      outline: none; box-sizing: border-box; font-family: inherit;
+      transition: border-color .2s, box-shadow .2s;
+    }
+    .adm-input:focus { border-color: #A855F7; box-shadow: 0 0 12px rgba(168,85,247,0.25); }
+    textarea.adm-input { resize: vertical; min-height: 72px; }
+
+    .btn-adm-primary {
+      background: linear-gradient(135deg, rgba(168,85,247,0.18), rgba(168,85,247,0.06));
+      border: 1px solid #A855F7; color: #c4b5fd; font-weight: 700;
+      padding: 10px 18px; border-radius: 20px; cursor: pointer;
+      display: inline-flex; align-items: center; justify-content: center; gap: 8px;
+      font-size: 0.84rem; transition: all .25s ease; white-space: nowrap;
+    }
+    .btn-adm-primary:hover { background: #A855F7; color: #08080A; box-shadow: 0 0 22px rgba(168,85,247,0.45); transform: translateY(-1px); }
+    .btn-adm-primary:disabled { opacity: .55; cursor: not-allowed; transform: none; }
+
+    .btn-lime {
+      background: linear-gradient(135deg, rgba(0,255,102,0.14), rgba(0,255,102,0.04));
+      border: 1px solid #00FF66; color: #00FF66; font-weight: 700;
+      padding: 10px 18px; border-radius: 20px; cursor: pointer;
+      display: inline-flex; align-items: center; gap: 8px; font-size: 0.84rem;
+      transition: all .25s ease; white-space: nowrap;
+    }
+    .btn-lime:hover { background: #00FF66; color: #08080A; box-shadow: 0 0 22px rgba(0,255,102,0.4); }
+
+    .btn-ghost {
+      background: rgba(255,255,255,0.04); border: 1px solid rgba(255,255,255,0.12);
+      color: #cbd5e1; font-weight: 600; padding: 10px 16px; border-radius: 20px;
+      cursor: pointer; font-size: 0.82rem; transition: all .2s;
+    }
+    .btn-ghost:hover { border-color: rgba(255,255,255,0.28); color: #fff; }
+
+    .btn-danger-outline {
+      background: linear-gradient(135deg, rgba(255,77,77,0.12), rgba(255,77,77,0.04));
+      border: 1px solid #FF4D4D; color: #FF8080; font-weight: 700;
+      padding: 10px 18px; border-radius: 20px; cursor: pointer;
+      display: inline-flex; align-items: center; gap: 8px; font-size: 0.84rem;
+      transition: all .25s;
+    }
+    .btn-danger-outline:hover { background: #FF4D4D; color: #08080A; }
+
+    .file-upload-wrap { display: flex; flex-wrap: wrap; align-items: center; gap: 10px; }
+    .file-upload-input { position: absolute; width: 1px; height: 1px; padding: 0; margin: -1px; overflow: hidden; clip: rect(0,0,0,0); white-space: nowrap; border: 0; }
+    .btn-file-upload {
+      background: linear-gradient(135deg, rgba(0,255,102,0.12), rgba(0,255,102,0.04));
+      border: 1px solid #00FF66; color: #00FF66; font-weight: 700;
+      padding: 10px 16px; border-radius: 18px; cursor: pointer;
+      display: inline-flex; align-items: center; gap: 8px; font-size: 0.8rem;
+      transition: all .25s; user-select: none;
+    }
+    .btn-file-upload:hover { background: #00FF66; color: #08080A; }
+    .file-upload-filename { font-size: 0.76rem; color: #94a3b8; max-width: 180px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+
+    .glass-card {
+      background: rgba(14,14,22,0.75); backdrop-filter: blur(20px); -webkit-backdrop-filter: blur(20px);
+      border: 1px solid rgba(168,85,247,0.22); border-radius: 20px;
+    }
+
+    .marca-chip {
+      display: inline-flex; align-items: center; gap: 8px;
+      background: rgba(255,255,255,0.04); border: 1px solid rgba(255,255,255,0.1);
+      padding: 6px 10px 6px 12px; border-radius: 999px; font-size: 0.82rem; font-weight: 600;
+    }
+    .marca-chip img { height: 22px; width: auto; object-fit: contain; }
+    .marca-chip .chip-btn {
+      background: none; border: none; cursor: pointer; padding: 0 2px;
+      font-size: 0.85rem; line-height: 1; opacity: .75;
+    }
+    .marca-chip .chip-btn:hover { opacity: 1; }
+    .marca-chip .chip-edit { color: #c4b5fd; }
+    .marca-chip .chip-del { color: #FF8080; }
+
+    .admin-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(280px, 1fr)); gap: 18px; }
+    .adm-card {
+      background: rgba(14,14,22,0.8); border: 1px solid rgba(168,85,247,0.2);
+      border-radius: 18px; overflow: hidden; display: flex; flex-direction: column;
+      transition: transform .2s, border-color .2s, box-shadow .2s;
+    }
+    .adm-card:hover { border-color: #A855F7; transform: translateY(-3px); box-shadow: 0 16px 36px rgba(0,0,0,0.5), 0 0 18px rgba(168,85,247,0.12); }
+    .adm-card-media { width: 100%; height: 170px; object-fit: cover; background: #111; cursor: pointer; }
+    .adm-card-body { padding: 14px 16px 16px; flex: 1; display: flex; flex-direction: column; gap: 6px; }
+    .adm-card-title { font-size: 1rem; font-weight: 800; color: #fff; }
+    .adm-card-sub { font-size: 0.72rem; color: #94a3b8; text-transform: uppercase; letter-spacing: 0.3px; }
+    .btn-edit-modal {
+      background: linear-gradient(135deg, rgba(168,85,247,0.15), rgba(168,85,247,0.05));
+      color: #c4b5fd; border: 1px solid #A855F7; padding: 7px 14px; border-radius: 16px;
+      font-weight: 700; font-size: 0.76rem; cursor: pointer; transition: all .2s; white-space: nowrap;
+    }
+    .btn-edit-modal:hover { background: #A855F7; color: #08080A; }
+    .btn-icon-action {
+      background: rgba(255,255,255,0.04); border: 1px solid rgba(255,255,255,0.12); color: #fff;
+      width: 30px; height: 30px; border-radius: 8px; cursor: pointer; font-size: 0.78rem;
+      display: inline-flex; align-items: center; justify-content: center;
+    }
+    .btn-icon-action:hover { border-color: #A855F7; background: rgba(168,85,247,0.15); }
+
+    #edit-modal-overlay {
+      position: fixed; inset: 0; z-index: 100050;
+      display: flex; align-items: center; justify-content: center;
+      opacity: 0; pointer-events: none; visibility: hidden;
+      transition: opacity .3s, visibility .3s; padding: 20px;
+    }
+    #edit-modal-overlay.open { opacity: 1; pointer-events: auto; visibility: visible; }
+    .glx-backdrop { position: absolute; inset: 0; background: rgba(6,8,12,0.82); backdrop-filter: blur(18px); }
+    .glx-stage {
+      position: relative; width: min(96vw, 900px); max-height: 90vh;
+      transform: scale(0.96) translateY(12px); transition: transform .3s cubic-bezier(0.22,1,0.36,1); z-index: 2;
+    }
+    #edit-modal-overlay.open .glx-stage { transform: scale(1) translateY(0); }
+    .glx-panel {
+      max-height: 90vh; overflow-y: auto;
+      background: linear-gradient(135deg, rgba(14,14,22,0.98), rgba(28,20,48,0.94));
+      border: 1px solid rgba(168,85,247,0.3); border-radius: 22px;
+      box-shadow: 0 25px 60px rgba(0,0,0,0.85), 0 0 36px rgba(168,85,247,0.15);
+      padding: 28px;
+    }
+    .glx-close {
+      position: absolute; top: 16px; right: 16px; z-index: 5;
+      width: 36px; height: 36px; border-radius: 50%;
+      background: rgba(255,255,255,0.08); border: 1px solid rgba(255,255,255,0.15);
+      color: #fff; font-size: 1.2rem; cursor: pointer; display: flex; align-items: center; justify-content: center;
+    }
+    .glx-close:hover { color: #00FF66; border-color: #00FF66; }
+
+    .edit-section-title {
+      font-size: 0.7rem; font-weight: 700; text-transform: uppercase; letter-spacing: 1.4px;
+      color: #c4b5fd; margin: 22px 0 12px;
+    }
+    .edit-media-grid { display: flex; gap: 12px; overflow-x: auto; padding-bottom: 10px; }
+    .edit-media-thumb {
+      flex: 0 0 auto; width: 132px; height: 100px; border-radius: 12px; overflow: hidden;
+      position: relative; border: 1px solid rgba(168,85,247,0.3); background: rgba(0,0,0,0.4);
+    }
+    .edit-media-thumb img, .edit-media-thumb video { width: 100%; height: 100%; object-fit: cover; }
+    .btn-del-media {
+      position: absolute; top: 6px; right: 6px; background: rgba(255,77,77,0.9); border: none;
+      color: #fff; width: 22px; height: 22px; border-radius: 50%; cursor: pointer; font-weight: 800; font-size: 0.7rem; z-index: 10;
+    }
+    .specs-edit-list { display: flex; flex-direction: column; gap: 8px; margin-bottom: 10px; }
+    .spec-edit-item { display: flex; gap: 8px; align-items: center; }
+    .spec-drag-handle { cursor: grab; padding: 8px 6px; color: #c4b5fd; font-size: 1rem; user-select: none; }
+    .spec-edit-item.sortable-ghost, .admin-card-draggable.sortable-ghost { opacity: 0.35; }
+
+    .heic-warning, .slug-warning {
+      font-size: 0.74rem; padding: 8px 12px; border-radius: 10px; margin-top: 6px;
+      display: none; align-items: center; gap: 6px;
+    }
+    .heic-warning { background: rgba(255,184,0,0.1); border: 1px solid rgba(255,184,0,0.4); color: #FFB800; }
+    .slug-warning { background: rgba(255,77,77,0.08); border: 1px solid rgba(255,77,77,0.35); color: #FF8080; }
+
+    .toggle-switch {
+      position: relative; width: 42px; height: 24px; border-radius: 999px;
+      background: rgba(255,255,255,0.12); border: 1px solid rgba(255,255,255,0.18);
+      cursor: pointer; transition: background .2s;
+    }
+    .toggle-switch.on { background: rgba(0,255,102,0.35); border-color: #00FF66; }
+    .toggle-switch::after {
+      content: ''; position: absolute; top: 2px; left: 2px; width: 18px; height: 18px;
+      border-radius: 50%; background: #cbd5e1; transition: transform .2s, background .2s;
+    }
+    .toggle-switch.on::after { transform: translateX(18px); background: #00FF66; }
+
+    @media (max-width: 720px) {
+      .glx-panel { padding: 20px 16px; }
+      .admin-grid { grid-template-columns: 1fr; }
+    }
+  </style>
+</head>
+<body class="h-full text-slate-200 font-sans antialiased bg-[#06080c] overflow-x-hidden">
+
+  <canvas id="orbit-canvas"></canvas>
+  <div id="plasmaLayer" class="plasma-top-layer"></div>
+
+  <header id="calc-header"></header>
+  <div id="mobile-menu"></div>
+
+  <div class="flex flex-col min-h-screen relative z-10 pb-16">
+    <main class="flex-1 p-4 lg:p-8 space-y-6 pt-20 lg:pt-24 w-full max-w-7xl mx-auto">
+
+      <div class="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
+        <div>
+          <h1 class="text-2xl sm:text-3xl font-extrabold text-white tracking-tight">Galeria In Loco</h1>
+          <p class="text-sm text-slate-400 mt-1">Gerencie cases, álbuns, specs e marcas</p>
+        </div>
+        <div class="flex flex-wrap items-center gap-3">
+          <div class="flex items-center gap-2 px-3 py-2 rounded-full border border-white/10 bg-white/5 text-xs text-slate-300">
+            <span>Modo Drag</span>
+            <button type="button" id="toggle-drag" class="toggle-switch" title="Ativar/desativar arrastar para reordenar" aria-pressed="false"></button>
+            <span id="drag-label" class="text-slate-500">Arrastar bloqueado</span>
+          </div>
+          <button type="button" class="btn-lime" onclick="abrirNovoCaseModal()">+ Novo Case</button>
+          <button type="button" class="btn-ghost" onclick="carregarGridCases(); carregarMarcas();">Atualizar</button>
+        </div>
+      </div>
+
+      <section class="glass-card p-5 sm:p-6">
+        <h2 class="text-xs font-bold uppercase tracking-widest text-purple-300 mb-1">Marcas / Logos</h2>
+        <p class="text-xs text-slate-500 mb-4">Envie <strong class="text-slate-300">só o nome</strong> (aparece como texto na strip) <strong class="text-slate-300">ou</strong> nome + logo (aparece a imagem). Um ou outro.</p>
+
+        <div id="marcas-container" class="flex flex-wrap gap-2 mb-4 min-h-[36px]">
+          <span class="text-xs text-slate-500">Carregando marcas...</span>
+        </div>
+
+        <form id="marca-form" onsubmit="event.preventDefault(); salvarMarca();" class="flex flex-wrap items-center gap-3">
+          <input type="hidden" id="marca-edit-id" value="">
+          <input type="text" id="marca-nome" class="adm-input" placeholder="Nome da marca" style="max-width:220px; flex:1; min-width:160px;" required>
+          <div class="file-upload-wrap">
+            <label class="btn-file-upload" for="marca-file">Escolher Arquivo</label>
+            <input type="file" id="marca-file" class="file-upload-input" accept="image/*" onchange="atualizarNomeArquivo(this, 'marca-file-name')">
+            <span class="file-upload-filename" id="marca-file-name">nenhum arquivo — usa texto</span>
+          </div>
+          <label id="marca-remove-logo-wrap" style="display:none;" class="text-xs text-red-300 cursor-pointer inline-flex items-center gap-1.5">
+            <input type="checkbox" id="marca-remove-logo" style="accent-color:#FF4D4D;"> Remover logo
+          </label>
+          <button type="submit" id="btn-add-marca" class="btn-adm-primary">+ Adicionar Marca</button>
+          <button type="button" id="btn-cancel-marca-edit" class="btn-ghost" style="display:none;" onclick="cancelarEdicaoMarca()">Cancelar</button>
+        </form>
+      </section>
+
+      <div class="flex flex-col sm:flex-row gap-3">
+        <input type="text" id="filter-search" class="adm-input" placeholder="Buscar case..." oninput="filtrarCases()" style="flex:1;">
+        <select id="filter-cat" class="adm-input" style="max-width:220px;" onchange="filtrarCases()">
+          <option value="">Todas categorias</option>
+        </select>
+      </div>
+
+      <div id="cases-grid" class="admin-grid">
+        <div class="text-sm text-slate-500 col-span-full">Carregando cases...</div>
+      </div>
+
+    </main>
+  </div>
+
+  <div id="edit-modal-overlay" role="dialog" aria-modal="true">
+    <div class="glx-backdrop" onclick="fecharModalEdicao()"></div>
+    <div class="glx-stage">
+      <button class="glx-close" onclick="fecharModalEdicao()" aria-label="Fechar">&times;</button>
+      <div class="glx-panel">
+        <div class="edit-section-title" id="modal-title-header">01. Dados Principais do Case</div>
+
+        <div style="display:grid; grid-template-columns:2fr 1fr; gap:12px;">
+          <div>
+            <label class="block text-xs font-bold uppercase tracking-wider text-purple-300 mb-1.5">Cliente / Marca *</label>
+            <input type="text" id="modal-edit-cliente" class="adm-input" placeholder="Ex: Burger King, Gerdau..." oninput="autoGerarSlug(this.value)">
+          </div>
+          <div>
+            <label class="block text-xs font-bold uppercase tracking-wider text-purple-300 mb-1.5">Ordem</label>
+            <input type="number" id="modal-edit-ordem" class="adm-input" placeholder="10">
+          </div>
+        </div>
+
+        <div style="display:grid; grid-template-columns:1fr 1fr; gap:12px; margin-top:12px;">
+          <div>
+            <label class="block text-xs font-bold uppercase tracking-wider text-purple-300 mb-1.5">Serviço / Subtítulo</label>
+            <input type="text" id="modal-edit-titulo" class="adm-input" placeholder="Ex: Pool Party & Iluminação">
+          </div>
+          <div>
+            <label class="block text-xs font-bold uppercase tracking-wider text-purple-300 mb-1.5">Categoria</label>
+            <select id="modal-edit-cat" class="adm-input"></select>
+          </div>
+        </div>
+
+        <div style="display:grid; grid-template-columns:1fr 1fr; gap:12px; margin-top:12px;">
+          <div>
+            <label class="block text-xs font-bold uppercase tracking-wider text-purple-300 mb-1.5">Localização</label>
+            <input type="text" id="modal-edit-local" class="adm-input" placeholder="Ex: São Paulo - SP">
+          </div>
+          <div>
+            <label class="block text-xs font-bold uppercase tracking-wider text-purple-300 mb-1.5">Case Slug</label>
+            <input type="text" id="modal-edit-slug" class="adm-input" placeholder="gerdau-pool-party">
+            <div class="slug-warning" id="slug-warning">⚠️ Slug alterado — salve para reconectar o álbum.</div>
+          </div>
+        </div>
+
+        <div style="margin-top:12px;">
+          <label class="block text-xs font-bold uppercase tracking-wider text-purple-300 mb-1.5">Descrição</label>
+          <textarea id="modal-edit-descricao" class="adm-input" rows="3" placeholder="Breve descrição do projeto..."></textarea>
+        </div>
+
+        <div style="margin-top:12px;">
+          <label class="block text-xs font-bold uppercase tracking-wider text-purple-300 mb-1.5">Capa (imagem ou vídeo)</label>
+          <div class="file-upload-wrap">
+            <label class="btn-file-upload" for="modal-edit-cover-file">📎 Escolher Arquivo</label>
+            <input type="file" id="modal-edit-cover-file" class="file-upload-input" accept="image/*,video/*" onchange="atualizarNomeArquivo(this, 'cover-file-name')">
+            <span class="file-upload-filename" id="cover-file-name">nenhum arquivo selecionado</span>
+          </div>
+          <div class="heic-warning" id="heic-warning-cover">⚠️ HEIC detectado — convertendo para JPEG.</div>
+        </div>
+
+        <label class="mt-4 inline-flex items-center gap-2 text-sm text-white cursor-pointer">
+          <input type="checkbox" id="modal-edit-destaque" style="accent-color:#00FF66; width:18px; height:18px;">
+          ⭐ Exibir nos Super Cases (Destaque)
+        </label>
+
+        <div id="modal-album-section">
+          <div class="edit-section-title">02. Álbum do Modal</div>
+          <div id="modal-media-list" class="edit-media-grid"></div>
+          <div style="margin-top:10px;">
+            <label class="block text-xs font-bold uppercase tracking-wider text-purple-300 mb-1.5">Adicionar mídias em lote</label>
+            <div class="file-upload-wrap">
+              <label class="btn-file-upload" for="modal-new-media-files">📎 Escolher Arquivos</label>
+              <input type="file" id="modal-new-media-files" class="file-upload-input" accept="image/*,video/*" multiple onchange="atualizarNomeArquivo(this, 'lote-file-name'); uploadMidiasLote(this.files)">
+              <span class="file-upload-filename" id="lote-file-name">nenhum arquivo selecionado</span>
+            </div>
+            <span id="upload-lote-status" style="font-size:0.75rem; color:#00FF66; display:block; margin-top:4px;"></span>
+            <div class="heic-warning" id="heic-warning-lote">⚠️ HEIC detectado — convertendo.</div>
+          </div>
+
+          <div class="edit-section-title">03. O Que Foi Entregue (Specs)</div>
+          <div id="modal-specs-list" class="specs-edit-list"></div>
+          <div style="display:flex; gap:8px; margin-top:8px;">
+            <input type="text" id="new-spec-item" class="adm-input" placeholder="Ex: Som Line Array 12kW">
+            <button type="button" class="btn-adm-primary" onclick="adicionarSpecItem()">+ Add</button>
+          </div>
+        </div>
+
+        <div style="display:flex; justify-content:space-between; margin-top:28px; padding-top:16px; border-top:1px solid rgba(168,85,247,0.25); flex-wrap:wrap; gap:12px;">
+          <button type="button" id="btn-delete-case" class="btn-danger-outline" onclick="excluirCaseAtual()">Excluir Case</button>
+          <button type="button" id="btn-save-case" class="btn-adm-primary" onclick="salvarAlteracoesCase()">💾 Salvar Alterações</button>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <script src="https://www.432up.com/B2B/partner-config.js"></script>
+  <script src="https://www.432up.com/script/script.js" defer></script>
+  <script src="https://www.432up.com/B2B/partner-header.js"></script>
+
+  <script>
+    const SUPABASE_URL_ADM = (typeof PARTNER_CFG !== 'undefined' && PARTNER_CFG.SB_URL)
+      ? PARTNER_CFG.SB_URL
+      : 'https://paetkspbfejtjjkngqej.supabase.co';
+    const SUPABASE_KEY_ADM = (typeof PARTNER_CFG !== 'undefined' && PARTNER_CFG.SB_KEY)
+      ? PARTNER_CFG.SB_KEY
+      : 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InBhZXRrc3BiZmVqdGpqa25ncWVqIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzA5MDU2OTgsImV4cCI6MjA4NjQ4MTY5OH0.IiYweZ2g3bP7b0o7VvBW5LLb6d1oHtSNFUZlVkIsdsA';
+
+    const _supabase = (typeof sbPartner !== 'undefined')
+      ? sbPartner
+      : supabase.createClient(SUPABASE_URL_ADM, SUPABASE_KEY_ADM);
+
+    const CAT_COLOR_FALLBACK_POOL = ['#06B6D4', '#D4AF37', '#A855F7', '#FF8A4C', '#00FF66', '#FF4D6D', '#00F0FF', '#F472B6'];
+    let CAT_THEME = {};
+    const CAT_THEME_DEFAULT = { accent: '#A855F7', glow: 'rgba(168,85,247,0.25)', pig: 'rgba(168,85,247,0.08)' };
+    let CATEGORIAS_CACHE = [];
+    let CURRENT_CASE = null;
+    let ALL_CASES_CACHE = [];
+    let CASES_SORTABLE_INSTANCE = null;
+    let MEDIAS_SORTABLE_INSTANCE = null;
+    let SPECS_SORTABLE_INSTANCE = null;
+    let DRAG_ENABLED = false;
+    let MARCAS_CACHE = [];
+    let MARCA_EDITANDO_ID = null;
+
+    function hexToRgba(hex, alpha) {
+      const h = (hex || '').replace('#', '');
+      if (h.length < 6) return `rgba(168,85,247,${alpha})`;
+      const r = parseInt(h.substring(0, 2), 16);
+      const g = parseInt(h.substring(2, 4), 16);
+      const b = parseInt(h.substring(4, 6), 16);
+      return `rgba(${r},${g},${b},${alpha})`;
+    }
+
+    async function carregarCategorias() {
+      const { data, error } = await _supabase.from('co_galeria_categorias').select('*').order('ordem', { ascending: true });
+      CATEGORIAS_CACHE = error ? [] : (data || []);
+      CAT_THEME = {};
+      CATEGORIAS_CACHE.forEach((c, idx) => {
+        const accent = CAT_COLOR_FALLBACK_POOL[idx % CAT_COLOR_FALLBACK_POOL.length];
+        CAT_THEME[c.slug] = { accent, glow: hexToRgba(accent, 0.25), pig: hexToRgba(accent, 0.08), nome: c.nome, emoji: c.emoji || '' };
+      });
+      popularSelectsCategorias();
+      injetarEstilosDinamicosCategorias();
+    }
+
+    function popularSelectsCategorias() {
+      const filterSel = document.getElementById('filter-cat');
+      const modalSel = document.getElementById('modal-edit-cat');
+      const optsHtml = CATEGORIAS_CACHE.map(c =>
+        `<option value="${c.slug}">${c.emoji ? c.emoji + ' ' : ''}${c.nome}</option>`
+      ).join('');
+      if (filterSel) {
+        const v = filterSel.value;
+        filterSel.innerHTML = '<option value="">Todas categorias</option>' + optsHtml;
+        if ([...filterSel.options].some(o => o.value === v)) filterSel.value = v;
+      }
+      if (modalSel) {
+        const v = modalSel.value;
+        modalSel.innerHTML = optsHtml;
+        if ([...modalSel.options].some(o => o.value === v)) modalSel.value = v;
+      }
+    }
+
+    function injetarEstilosDinamicosCategorias() {
+      let styleTag = document.getElementById('cat-dynamic-styles');
+      if (!styleTag) {
+        styleTag = document.createElement('style');
+        styleTag.id = 'cat-dynamic-styles';
+        document.head.appendChild(styleTag);
+      }
+      let css = '';
+      Object.keys(CAT_THEME).forEach(slug => {
+        const t = CAT_THEME[slug];
+        css += `.adm-card[data-cat="${slug}"]{border-color:${hexToRgba(t.accent,0.35)};}
+          .adm-card[data-cat="${slug}"]:hover{border-color:${t.accent};box-shadow:0 16px 36px rgba(0,0,0,0.5),0 0 18px ${hexToRgba(t.accent,0.22)};}`;
+      });
+      styleTag.textContent = css;
+    }
+
+    function atualizarNomeArquivo(inputEl, spanId) {
+      const span = document.getElementById(spanId);
+      if (!span) return;
+      if (!inputEl.files || inputEl.files.length === 0) {
+        span.textContent = spanId === 'marca-file-name' ? 'nenhum arquivo — usa texto' : 'nenhum arquivo selecionado';
+      } else if (inputEl.files.length === 1) {
+        span.textContent = inputEl.files[0].name;
+      } else {
+        span.textContent = inputEl.files.length + ' arquivos selecionados';
+      }
+    }
+
+    function isHeicFile(file) {
+      if (!file) return false;
+      const nome = (file.name || '').toLowerCase();
+      const tipo = (file.type || '').toLowerCase();
+      return tipo === 'image/heic' || tipo === 'image/heif' || nome.endsWith('.heic') || nome.endsWith('.heif');
+    }
+
+    async function otimizarImagemSeNecessario(file, warningElId) {
+      if (!file.type.startsWith('image/') && !isHeicFile(file)) return file;
+      const eraHeic = isHeicFile(file);
+      if (eraHeic && warningElId) {
+        const w = document.getElementById(warningElId);
+        if (w) w.style.display = 'flex';
+      }
+      try {
+        const resultado = await imageCompression(file, { maxSizeMB: 0.8, maxWidthOrHeight: 1920, useWebWorker: true, fileType: 'image/jpeg' });
+        if (resultado.type === 'image/jpeg' && !/\.jpe?g$/i.test(resultado.name || '')) {
+          const base = (resultado.name || file.name || 'imagem').replace(/\\.[^.]+$/, '');
+          return new File([resultado], base + '.jpg', { type: 'image/jpeg' });
+        }
+        return resultado;
+      } catch (e) {
+        if (eraHeic) {
+          alert('Não foi possível converter este HEIC. Exporte como JPEG no iPhone (Ajustes > Câmera > Formatos > Mais Compatível).');
+          throw e;
+        }
+        return file;
+      }
+    }
+
+    function sanitizarNomeArquivo(nomeOriginal) {
+      const ext = nomeOriginal.split('.').pop();
+      const base = nomeOriginal.substring(0, nomeOriginal.lastIndexOf('.')).toLowerCase().replace(/[^a-z0-9]/g, '-');
+      return `${Date.now()}_${base}.${ext}`;
+    }
+
+    function autoGerarSlug(valor) {
+      if (!CURRENT_CASE) {
+        const slug = valor.toLowerCase().normalize('NFD').replace(/[\u0300-\u036f]/g, '').replace(/[^a-z0-9]+/g, '-').replace(/(^-|-$)/g, '');
+        document.getElementById('modal-edit-slug').value = slug;
+      }
+    }
+
+    function checarAlteracaoSlug() {
+      const warnEl = document.getElementById('slug-warning');
+      if (!CURRENT_CASE || !warnEl) { if (warnEl) warnEl.style.display = 'none'; return; }
+      const atual = document.getElementById('modal-edit-slug').value.trim();
+      warnEl.style.display = (atual !== (CURRENT_CASE.case_slug || '')) ? 'flex' : 'none';
+    }
+
+    function isVideoTipo(tipo, url) {
+      return tipo === 'video_yt' || tipo === 'video_up' || tipo === 'video' || (url && /\.(mp4|webm|mov)$/i.test(url));
+    }
+    function normalizarTipoUpload(file) {
+      return file.type.startsWith('video') ? 'video_up' : 'foto';
+    }
+    function videoTagPausado(url, extraStyle) {
+      return `<video src="${url}" autoplay loop muted playsinline preload="metadata" style="${extraStyle || ''}"></video>`;
+    }
+
+    document.getElementById('toggle-drag').addEventListener('click', function () {
+      DRAG_ENABLED = !DRAG_ENABLED;
+      this.classList.toggle('on', DRAG_ENABLED);
+      this.setAttribute('aria-pressed', DRAG_ENABLED ? 'true' : 'false');
+      document.getElementById('drag-label').textContent = DRAG_ENABLED ? 'Arrastar ativo' : 'Arrastar bloqueado';
+      filtrarCases();
+    });
+
+    async function carregarGridCases() {
+      const grid = document.getElementById('cases-grid');
+      grid.innerHTML = '<div class="text-sm text-slate-500 col-span-full">Carregando cases...</div>';
+      const { data, error } = await _supabase.from('co_galeria_fotos').select('*').order('ordem', { ascending: true });
+      if (error) { grid.innerHTML = '<div class="text-sm text-red-400">Erro: ' + error.message + '</div>'; return; }
+      ALL_CASES_CACHE = data || [];
+      filtrarCases();
+    }
+
+    function nomeCategoria(slug) {
+      const t = CAT_THEME[slug];
+      if (t && t.nome) return (t.emoji ? t.emoji + ' ' : '') + t.nome;
+      return slug || 'Sem categoria';
+    }
+
+    function renderizarGrid(lista) {
+      const grid = document.getElementById('cases-grid');
+      const filtroAtivo = (document.getElementById('filter-search')?.value.trim() !== '') ||
+                         (document.getElementById('filter-cat')?.value !== '');
+
+      if (!lista.length) {
+        grid.innerHTML = '<div class="text-sm text-slate-500 col-span-full">Nenhum case encontrado.</div>';
+        return;
+      }
+
+      grid.innerHTML = lista.map((c, index) => {
+        const video = isVideoTipo(c.tipo, c.url);
+        const mediaHtml = video
+          ? videoTagPausado(c.url, 'width:100%;height:170px;object-fit:cover;background:#111;cursor:pointer;')
+          : `<img src="${c.url || c.url_thumb || 'https://www.432up.com/imagens/favicon.png'}" class="adm-card-media" onclick="abrirEdicaoModal('${c.id}')" alt="">`;
+        return `
+          <div class="adm-card admin-card-draggable" data-case-id="${c.id}" data-cat="${c.cat || ''}">
+            <div style="position:relative;">
+              ${mediaHtml}
+              ${DRAG_ENABLED && !filtroAtivo ? `<span class="admin-drag-handle" title="Arraste" style="position:absolute;top:8px;left:8px;background:rgba(8,6,14,0.75);border-radius:8px;padding:2px 6px;cursor:grab;font-size:0.9rem;">⠿</span>` : ''}
+            </div>
+            <div class="adm-card-body">
+              <div class="flex justify-between items-start gap-2">
+                <div class="adm-card-title">${c.cliente || c.titulo || 'Sem Título'}</div>
+                <span class="text-[0.68rem] opacity-50 font-bold">#${c.ordem ?? index + 1}</span>
+              </div>
+              <div class="adm-card-sub">${nomeCategoria(c.cat)} · ${c.local || 'N/A'}</div>
+              <div class="flex justify-between items-center gap-2 pt-2 mt-auto border-t border-white/10 flex-wrap">
+                <div class="flex gap-1.5">
+                  <button class="btn-icon-action" title="Destaque" onclick="toggleDestaqueRapido('${c.id}', ${!c.destaque})">${c.destaque ? '⭐' : '☆'}</button>
+                  <button class="btn-icon-action" title="Subir" onclick="alterarOrdemRapida('${c.id}', ${(c.ordem || index + 1) - 1})">▲</button>
+                  <button class="btn-icon-action" title="Descer" onclick="alterarOrdemRapida('${c.id}', ${(c.ordem || index + 1) + 1})">▼</button>
+                </div>
+                <button class="btn-edit-modal" onclick="abrirEdicaoModal('${c.id}')">✏️ Editar</button>
+              </div>
+            </div>
+          </div>`;
+      }).join('');
+
+      if (CASES_SORTABLE_INSTANCE) { CASES_SORTABLE_INSTANCE.destroy(); CASES_SORTABLE_INSTANCE = null; }
+      if (DRAG_ENABLED && !filtroAtivo && window.Sortable) {
+        CASES_SORTABLE_INSTANCE = Sortable.create(grid, {
+          animation: 180, handle: '.admin-drag-handle', ghostClass: 'sortable-ghost',
+          onEnd: async function () {
+            const cards = Array.from(grid.querySelectorAll('.admin-card-draggable'));
+            const updates = cards.map((card, i) => ({ id: card.dataset.caseId, ordem: i + 1 }));
+            try {
+              await Promise.all(updates.map(u => _supabase.from('co_galeria_fotos').update({ ordem: u.ordem }).eq('id', u.id)));
+              await carregarGridCases();
+            } catch (err) {
+              alert('Erro ao salvar ordem: ' + err.message);
+              carregarGridCases();
+            }
+          }
+        });
+      }
+    }
+
+    function filtrarCases() {
+      const q = document.getElementById('filter-search').value.toLowerCase();
+      const cat = document.getElementById('filter-cat').value;
+      renderizarGrid(ALL_CASES_CACHE.filter(c => {
+        const matchNome = (c.cliente || '').toLowerCase().includes(q) || (c.titulo || '').toLowerCase().includes(q);
+        return matchNome && (cat === '' || c.cat === cat);
+      }));
+    }
+
+    async function toggleDestaqueRapido(id, novo) {
+      await _supabase.from('co_galeria_fotos').update({ destaque: novo }).eq('id', id);
+      carregarGridCases();
+    }
+    async function alterarOrdemRapida(id, nova) {
+      if (nova < 1) nova = 1;
+      await _supabase.from('co_galeria_fotos').update({ ordem: nova }).eq('id', id);
+      carregarGridCases();
+    }
+
+    function limparCamposFileUpload() {
+      ['modal-edit-cover-file', 'modal-new-media-files'].forEach(id => {
+        const el = document.getElementById(id);
+        if (el) el.value = '';
+      });
+      const a = document.getElementById('cover-file-name'); if (a) a.textContent = 'nenhum arquivo selecionado';
+      const b = document.getElementById('lote-file-name'); if (b) b.textContent = 'nenhum arquivo selecionado';
+    }
+
+    function abrirNovoCaseModal() {
+      CURRENT_CASE = null;
+      document.getElementById('modal-title-header').innerText = '01. Novo Case da Galeria';
+      document.getElementById('modal-edit-cliente').value = '';
+      document.getElementById('modal-edit-titulo').value = '';
+      const catSel = document.getElementById('modal-edit-cat');
+      if (catSel.options.length) catSel.selectedIndex = 0;
+      document.getElementById('modal-edit-local').value = '';
+      document.getElementById('modal-edit-slug').value = '';
+      document.getElementById('modal-edit-descricao').value = '';
+      document.getElementById('modal-edit-ordem').value = ALL_CASES_CACHE.length + 1;
+      document.getElementById('modal-edit-destaque').checked = false;
+      limparCamposFileUpload();
+      document.getElementById('btn-delete-case').style.display = 'none';
+      document.getElementById('slug-warning').style.display = 'none';
+      document.getElementById('heic-warning-cover').style.display = 'none';
+      document.getElementById('heic-warning-lote').style.display = 'none';
+      document.getElementById('modal-album-section').style.display = 'none';
+      const modal = document.getElementById('edit-modal-overlay');
+      document.body.style.overflow = 'hidden';
+      requestAnimationFrame(() => modal.classList.add('open'));
+    }
+
+    function abrirEdicaoModal(id) {
+      const dataCache = ALL_CASES_CACHE.find(c => c.id === id);
+      if (!dataCache) { alert('Case não encontrado. Atualize a página.'); return; }
+      CURRENT_CASE = dataCache;
+      document.getElementById('modal-title-header').innerText = '01. Dados Principais do Case';
+      document.getElementById('modal-edit-cliente').value = dataCache.cliente || '';
+      document.getElementById('modal-edit-titulo').value = dataCache.titulo || '';
+      const catSel = document.getElementById('modal-edit-cat');
+      if ([...catSel.options].some(o => o.value === dataCache.cat)) catSel.value = dataCache.cat;
+      else if (catSel.options.length) catSel.selectedIndex = 0;
+      document.getElementById('modal-edit-local').value = dataCache.local || '';
+      document.getElementById('modal-edit-slug').value = dataCache.case_slug || '';
+      document.getElementById('modal-edit-descricao').value = dataCache.descricao || '';
+      document.getElementById('modal-edit-ordem').value = dataCache.ordem || 1;
+      document.getElementById('modal-edit-destaque').checked = !!dataCache.destaque;
+      limparCamposFileUpload();
+      document.getElementById('btn-delete-case').style.display = 'inline-flex';
+      document.getElementById('slug-warning').style.display = 'none';
+      document.getElementById('heic-warning-cover').style.display = 'none';
+      document.getElementById('heic-warning-lote').style.display = 'none';
+      document.getElementById('modal-album-section').style.display = 'block';
+      const modal = document.getElementById('edit-modal-overlay');
+      document.body.style.overflow = 'hidden';
+      requestAnimationFrame(() => modal.classList.add('open'));
+      document.getElementById('modal-media-list').innerHTML = '<div style="font-size:0.8rem;opacity:0.5;">Carregando álbum...</div>';
+      document.getElementById('modal-specs-list').innerHTML = '<div style="font-size:0.8rem;opacity:0.5;">Carregando specs...</div>';
+      Promise.all([
+        carregarMidiasModal(dataCache.case_slug),
+        carregarSpecsModal(dataCache.case_slug),
+        _supabase.from('co_galeria_fotos').select('*').eq('id', id).single()
+      ]).then(([, , freshRes]) => {
+        if (freshRes && freshRes.data && CURRENT_CASE && CURRENT_CASE.id === id) {
+          CURRENT_CASE = freshRes.data;
+          const idx = ALL_CASES_CACHE.findIndex(c => c.id === id);
+          if (idx !== -1) ALL_CASES_CACHE[idx] = freshRes.data;
+        }
+      }).catch(err => console.warn(err));
+    }
+
+    function fecharModalEdicao() {
+      document.getElementById('edit-modal-overlay').classList.remove('open');
+      document.body.style.overflow = '';
+      CURRENT_CASE = null;
+    }
+
+    async function salvarAlteracoesCase() {
+      const btn = document.getElementById('btn-save-case');
+      btn.innerText = 'Salvando...';
+      const cliente = document.getElementById('modal-edit-cliente').value;
+      const titulo = document.getElementById('modal-edit-titulo').value;
+      const cat = document.getElementById('modal-edit-cat').value;
+      const local = document.getElementById('modal-edit-local').value;
+      let case_slug = document.getElementById('modal-edit-slug').value.trim();
+      const descricao = document.getElementById('modal-edit-descricao').value;
+      const ordem = parseInt(document.getElementById('modal-edit-ordem').value) || 1;
+      const destaque = document.getElementById('modal-edit-destaque').checked;
+      const fileInput = document.getElementById('modal-edit-cover-file');
+
+      if (!cliente) { alert('O nome do Cliente é obrigatório.'); btn.innerText = '💾 Salvar Alterações'; return; }
+      if (!case_slug) {
+        case_slug = cliente.toLowerCase().normalize('NFD').replace(/[\u0300-\u036f]/g, '').replace(/[^a-z0-9]+/g, '-').replace(/(^-|-$)/g, '');
+      }
+
+      let payload = { cliente, titulo, cat, local, case_slug, ordem, destaque, descricao };
+
+      if (fileInput.files.length > 0) {
+        let file;
+        try { file = await otimizarImagemSeNecessario(fileInput.files[0], 'heic-warning-cover'); }
+        catch (e) { btn.innerText = '💾 Salvar Alterações'; return; }
+        const fileName = `full/${sanitizarNomeArquivo(file.name)}`;
+        const { error: uploadErr } = await _supabase.storage.from('432up_galeria').upload(fileName, file);
+        if (uploadErr) { alert('Erro no upload: ' + uploadErr.message); btn.innerText = '💾 Salvar Alterações'; return; }
+        const newUrl = `${SUPABASE_URL_ADM}/storage/v1/object/public/432up_galeria/${fileName}`;
+        payload.url = newUrl;
+        payload.url_thumb = newUrl;
+        payload.tipo = normalizarTipoUpload(file);
+      }
+
+      const slugAntigo = CURRENT_CASE ? (CURRENT_CASE.case_slug || '') : null;
+      const slugMudou = CURRENT_CASE && slugAntigo !== case_slug;
+      if (slugMudou) {
+        await Promise.all([
+          _supabase.from('co_galeria_case_midias').update({ case_slug }).eq('case_slug', slugAntigo),
+          _supabase.from('co_galeria_case_specs').update({ case_slug }).eq('case_slug', slugAntigo)
+        ]);
+      }
+
+      let error;
+      if (CURRENT_CASE) {
+        const res = await _supabase.from('co_galeria_fotos').update(payload).eq('id', CURRENT_CASE.id);
+        error = res.error;
+      } else {
+        const res = await _supabase.from('co_galeria_fotos').insert([payload]);
+        error = res.error;
+      }
+
+      if (error) alert('Erro ao salvar: ' + error.message);
+      else {
+        alert('Case salvo!' + (slugMudou ? ' Álbum reconectado ao novo slug.' : ''));
+        fecharModalEdicao();
+        carregarGridCases();
+      }
+      btn.innerText = '💾 Salvar Alterações';
+    }
+
+    async function carregarMidiasModal(slug) {
+      const wrap = document.getElementById('modal-media-list');
+      if (!slug) { wrap.innerHTML = '<div style="font-size:0.8rem;opacity:0.5;">Defina um Case Slug para o álbum.</div>'; return; }
+      const { data } = await _supabase.from('co_galeria_case_midias').select('*').eq('case_slug', slug).order('ordem', { ascending: true });
+      wrap.innerHTML = (data || []).map(m => {
+        const video = isVideoTipo(m.tipo, m.url);
+        return `<div class="edit-media-thumb" data-midia-id="${m.id}">
+          <span class="admin-drag-handle" style="position:absolute;top:4px;left:4px;z-index:2;background:rgba(8,6,14,0.7);border-radius:6px;font-size:0.8rem;padding:2px 5px;cursor:grab;">⠿</span>
+          <button type="button" class="btn-del-media" onclick="deletarMidiaModal('${m.id}')">✕</button>
+          ${video ? videoTagPausado(m.url, 'width:100%;height:100%;object-fit:cover;') : `<img src="${m.url}" alt="">`}
+        </div>`;
+      }).join('');
+      if (MEDIAS_SORTABLE_INSTANCE) { MEDIAS_SORTABLE_INSTANCE.destroy(); MEDIAS_SORTABLE_INSTANCE = null; }
+      if (window.Sortable) {
+        MEDIAS_SORTABLE_INSTANCE = Sortable.create(wrap, {
+          animation: 180, handle: '.admin-drag-handle', ghostClass: 'sortable-ghost',
+          onEnd: async function () {
+            const thumbs = Array.from(wrap.querySelectorAll('.edit-media-thumb'));
+            await Promise.all(thumbs.map((el, i) =>
+              _supabase.from('co_galeria_case_midias').update({ ordem: i + 1 }).eq('id', el.dataset.midiaId)
+            ));
+          }
+        });
+      }
+    }
+
+    async function uploadMidiasLote(files) {
+      if (!files || !files.length || !CURRENT_CASE) return;
+      const slug = CURRENT_CASE.case_slug;
+      const statusLabel = document.getElementById('upload-lote-status');
+      document.getElementById('heic-warning-lote').style.display = 'none';
+      if (!slug) { alert('Salve o case antes de adicionar mídias.'); return; }
+
+      const { data: midiasExistentes } = await _supabase.from('co_galeria_case_midias').select('ordem').eq('case_slug', slug).order('ordem', { ascending: false }).limit(1);
+      let proximaOrdem = (midiasExistentes && midiasExistentes[0] && midiasExistentes[0].ordem) ? midiasExistentes[0].ordem + 1 : 1;
+
+      let concluidos = 0;
+      for (let originalFile of files) {
+        statusLabel.innerText = `Enviando ${concluidos + 1} de ${files.length}...`;
+        let file;
+        try { file = await otimizarImagemSeNecessario(originalFile, 'heic-warning-lote'); }
+        catch (e) { concluidos++; continue; }
+        const path = `midias/${sanitizarNomeArquivo(file.name)}`;
+        const { error: uploadErr } = await _supabase.storage.from('432up_galeria').upload(path, file);
+        if (!uploadErr) {
+          const url = `${SUPABASE_URL_ADM}/storage/v1/object/public/432up_galeria/${path}`;
+          await _supabase.from('co_galeria_case_midias').insert([{ case_slug: slug, url, tipo: normalizarTipoUpload(file), ordem: proximaOrdem }]);
+          proximaOrdem++;
+        }
+        concluidos++;
+      }
+      statusLabel.innerText = '✅ Upload concluído!';
+      setTimeout(() => statusLabel.innerText = '', 3000);
+      carregarMidiasModal(slug);
+    }
+
+    async function deletarMidiaModal(id) {
+      await _supabase.from('co_galeria_case_midias').delete().eq('id', id);
+      carregarMidiasModal(CURRENT_CASE.case_slug);
+    }
+
+    async function carregarSpecsModal(slug) {
+      const wrap = document.getElementById('modal-specs-list');
+      if (!slug) { wrap.innerHTML = ''; return; }
+      const { data } = await _supabase.from('co_galeria_case_specs').select('*').eq('case_slug', slug).order('ordem');
+      wrap.innerHTML = (data || []).map(s => `
+        <div class="spec-edit-item" data-spec-item-id="${s.id}">
+          <span class="spec-drag-handle" title="Arraste">⠿</span>
+          <input type="text" value="${(s.item || '').replace(/"/g, '&quot;')}" class="adm-input"
+            data-spec-id="${s.id}" data-original-value="${(s.item || '').replace(/"/g, '&quot;')}"
+            onblur="salvarSpecEditado(this)" onkeydown="if(event.key==='Enter'){this.blur();}">
+          <button type="button" class="btn-danger-outline" style="padding:8px 12px;" onclick="deletarSpec('${s.id}')">✕</button>
+        </div>`).join('');
+      if (SPECS_SORTABLE_INSTANCE) { SPECS_SORTABLE_INSTANCE.destroy(); SPECS_SORTABLE_INSTANCE = null; }
+      if (window.Sortable) {
+        SPECS_SORTABLE_INSTANCE = Sortable.create(wrap, {
+          animation: 180, handle: '.spec-drag-handle', ghostClass: 'sortable-ghost',
+          onEnd: async function () {
+            const rows = Array.from(wrap.querySelectorAll('.spec-edit-item'));
+            await Promise.all(rows.map((el, i) =>
+              _supabase.from('co_galeria_case_specs').update({ ordem: i + 1 }).eq('id', el.dataset.specItemId)
+            ));
+          }
+        });
+      }
+    }
+
+    async function salvarSpecEditado(inputEl) {
+      const novo = inputEl.value.trim();
+      const original = inputEl.dataset.originalValue;
+      if (novo === original) return;
+      if (!novo) { inputEl.value = original; return; }
+      inputEl.style.opacity = '0.6';
+      const { error } = await _supabase.from('co_galeria_case_specs').update({ item: novo }).eq('id', inputEl.dataset.specId);
+      inputEl.style.opacity = '1';
+      if (error) { alert('Erro: ' + error.message); inputEl.value = original; }
+      else inputEl.dataset.originalValue = novo;
+    }
+
+    async function adicionarSpecItem() {
+      const input = document.getElementById('new-spec-item');
+      const slug = CURRENT_CASE?.case_slug;
+      if (!input.value || !slug) { alert('Insira o texto da spec. Salve o case antes se ainda não tiver slug.'); return; }
+      await _supabase.from('co_galeria_case_specs').insert([{ case_slug: slug, item: input.value }]);
+      input.value = '';
+      carregarSpecsModal(slug);
+    }
+
+    async function deletarSpec(id) {
+      await _supabase.from('co_galeria_case_specs').delete().eq('id', id);
+      carregarSpecsModal(CURRENT_CASE.case_slug);
+    }
+
+    async function excluirCaseAtual() {
+      if (!CURRENT_CASE) return;
+      if (!confirm(`Apagar o case "${CURRENT_CASE.cliente || CURRENT_CASE.titulo}"?`)) return;
+      const { error } = await _supabase.from('co_galeria_fotos').delete().eq('id', CURRENT_CASE.id);
+      if (error) alert('Erro: ' + error.message);
+      else { fecharModalEdicao(); carregarGridCases(); }
+    }
+
+    async function carregarMarcas() {
+      const wrap = document.getElementById('marcas-container');
+      const { data, error } = await _supabase.from('co_galeria_marcas').select('*').order('ordem', { ascending: true }).order('created_at', { ascending: false });
+      if (error) {
+        wrap.innerHTML = '<span class="text-xs text-red-400">Erro: ' + error.message + '</span>';
+        return;
+      }
+      MARCAS_CACHE = data || [];
+      if (!MARCAS_CACHE.length) {
+        wrap.innerHTML = '<span class="text-xs text-slate-500">Nenhuma marca. Adicione um nome (texto) ou nome + logo.</span>';
+        return;
+      }
+      wrap.innerHTML = MARCAS_CACHE.map(m => {
+        const temLogo = !!m.logo_url;
+        const preview = temLogo
+          ? `<img src="${m.logo_url}" alt="${m.nome || ''}" onerror="this.style.display='none';this.nextElementSibling.style.display='inline';"><span style="display:none;">${m.nome || '—'}</span>`
+          : `<span>${m.nome || '—'}</span>`;
+        const tipo = temLogo
+          ? '<span class="text-[0.6rem] opacity-50 ml-0.5">🖼</span>'
+          : '<span class="text-[0.6rem] opacity-50 ml-0.5">Aa</span>';
+        return `<div class="marca-chip" data-marca-id="${m.id}">
+          ${preview}${tipo}
+          <button type="button" class="chip-btn chip-edit" title="Editar" onclick="iniciarEdicaoMarca('${m.id}')">✎</button>
+          <button type="button" class="chip-btn chip-del" title="Remover" onclick="deletarMarca('${m.id}')">✕</button>
+        </div>`;
+      }).join('');
+    }
+
+    function resetMarcaForm() {
+      MARCA_EDITANDO_ID = null;
+      document.getElementById('marca-edit-id').value = '';
+      document.getElementById('marca-nome').value = '';
+      const fileInput = document.getElementById('marca-file');
+      if (fileInput) fileInput.value = '';
+      document.getElementById('marca-file-name').textContent = 'nenhum arquivo — usa texto';
+      document.getElementById('marca-remove-logo').checked = false;
+      document.getElementById('marca-remove-logo-wrap').style.display = 'none';
+      document.getElementById('btn-add-marca').innerText = '+ Adicionar Marca';
+      document.getElementById('btn-cancel-marca-edit').style.display = 'none';
+    }
+
+    function cancelarEdicaoMarca() { resetMarcaForm(); }
+
+    function iniciarEdicaoMarca(id) {
+      const m = MARCAS_CACHE.find(x => String(x.id) === String(id));
+      if (!m) { alert('Marca não encontrada.'); return; }
+      MARCA_EDITANDO_ID = m.id;
+      document.getElementById('marca-edit-id').value = m.id;
+      document.getElementById('marca-nome').value = m.nome || '';
+      const fileInput = document.getElementById('marca-file');
+      if (fileInput) fileInput.value = '';
+      document.getElementById('marca-file-name').textContent = m.logo_url
+        ? 'logo atual mantido (escolha outro para substituir)'
+        : 'nenhum arquivo — usa texto';
+      document.getElementById('marca-remove-logo').checked = false;
+      document.getElementById('marca-remove-logo-wrap').style.display = m.logo_url ? 'inline-flex' : 'none';
+      document.getElementById('btn-add-marca').innerText = '💾 Salvar Edição';
+      document.getElementById('btn-cancel-marca-edit').style.display = 'inline-flex';
+      document.getElementById('marca-nome').focus();
+    }
+
+    async function salvarMarca() {
+      const btn = document.getElementById('btn-add-marca');
+      const nome = (document.getElementById('marca-nome').value || '').trim();
+      const fileInput = document.getElementById('marca-file');
+      const removeLogo = document.getElementById('marca-remove-logo').checked;
+      const editId = MARCA_EDITANDO_ID || document.getElementById('marca-edit-id').value || null;
+
+      if (!nome) {
+        alert('O nome da marca é obrigatório (mesmo com logo — serve de fallback e legenda).');
+        return;
+      }
+
+      const temArquivoNovo = fileInput && fileInput.files && fileInput.files.length > 0;
+      const isEdit = !!editId;
+
+      btn.innerText = temArquivoNovo ? 'Otimizando...' : 'Salvando...';
+      btn.disabled = true;
+
+      let logo_url = undefined;
+      if (temArquivoNovo) {
+        let file;
+        try { file = await otimizarImagemSeNecessario(fileInput.files[0]); }
+        catch (e) {
+          btn.innerText = isEdit ? '💾 Salvar Edição' : '+ Adicionar Marca';
+          btn.disabled = false;
+          return;
+        }
+        const path = `marcas/${sanitizarNomeArquivo(file.name)}`;
+        const { error: uploadErr } = await _supabase.storage.from('432up_galeria').upload(path, file);
+        if (uploadErr) {
+          alert('Erro no envio: ' + uploadErr.message);
+          btn.innerText = isEdit ? '💾 Salvar Edição' : '+ Adicionar Marca';
+          btn.disabled = false;
+          return;
+        }
+        logo_url = `${SUPABASE_URL_ADM}/storage/v1/object/public/432up_galeria/${path}`;
+      } else if (isEdit && removeLogo) {
+        logo_url = null;
+      } else if (!isEdit) {
+        logo_url = null;
+      }
+
+      try {
+        if (isEdit) {
+          const payload = { nome, ativo: true };
+          if (logo_url !== undefined) payload.logo_url = logo_url;
+          const { error: dbErr } = await _supabase.from('co_galeria_marcas').update(payload).eq('id', editId);
+          if (dbErr) alert('Erro ao atualizar: ' + dbErr.message);
+          else { resetMarcaForm(); await carregarMarcas(); }
+        } else {
+          let proximaOrdem = 1;
+          if (MARCAS_CACHE.length) {
+            const maxOrd = Math.max(...MARCAS_CACHE.map(m => Number(m.ordem) || 0));
+            proximaOrdem = maxOrd + 1;
+          }
+          const payload = {
+            nome,
+            logo_url: logo_url === undefined ? null : logo_url,
+            ativo: true,
+            ordem: proximaOrdem
+          };
+          const { error: dbErr } = await _supabase.from('co_galeria_marcas').insert([payload]);
+          if (dbErr) alert('Erro ao salvar: ' + dbErr.message);
+          else { resetMarcaForm(); await carregarMarcas(); }
+        }
+      } finally {
+        btn.disabled = false;
+        btn.innerText = MARCA_EDITANDO_ID ? '💾 Salvar Edição' : '+ Adicionar Marca';
+      }
+    }
+
+    async function deletarMarca(id) {
+      const m = MARCAS_CACHE.find(x => String(x.id) === String(id));
+      const label = m ? (m.nome || 'esta marca') : 'esta marca';
+      if (!confirm(`Remover "${label}" da faixa de marcas?`)) return;
+      const { error } = await _supabase.from('co_galeria_marcas').delete().eq('id', id);
+      if (error) alert('Erro: ' + error.message);
+      else {
+        if (String(MARCA_EDITANDO_ID) === String(id)) resetMarcaForm();
+        await carregarMarcas();
+      }
+    }
+
+    function iniciarPainel() {
+      carregarCategorias().then(() => carregarGridCases());
+      carregarMarcas();
+      const slugInput = document.getElementById('modal-edit-slug');
+      if (slugInput) slugInput.addEventListener('input', checarAlteracaoSlug);
+    }
+
+    if (typeof partnerRequireAuth === 'function') {
+      partnerRequireAuth({ requireAdmin: true }).then(function (parceiro) {
+        if (typeof partnerFillSidebar === 'function') partnerFillSidebar(parceiro);
+        var roleNorm = String(parceiro.role || parceiro.nivel || '').toLowerCase().trim();
+        var isAdmin = roleNorm === 'admin' || roleNorm === 'master' || parceiro.is_admin === true;
+        if (typeof window.updateAdminState === 'function') window.updateAdminState(isAdmin);
+        try {
+          sessionStorage.setItem('432up_is_admin', isAdmin ? 'true' : 'false');
+          sessionStorage.setItem('432up_is_logged', 'true');
+        } catch (e) {}
+        iniciarPainel();
+      }).catch(function (err) {
+        console.error('Auth admin galeria:', err);
+      });
+    } else {
+      _supabase.auth.getSession().then(function (res) {
+        if (res.data && res.data.session) iniciarPainel();
+        else window.location.href = 'https://www.432up.com/B2B/login.html';
+      });
+    }
+  </script>
+</body>
+</html>
