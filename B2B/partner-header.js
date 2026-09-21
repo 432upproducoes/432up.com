@@ -31,9 +31,9 @@
   var isSubdirAdmin = pathName.indexOf('/admin/') !== -1;
   var onSite = pathName.indexOf('/B2B/') === -1 && pathName.indexOf('/b2b/') === -1 && !isSubdirAdmin;
   if (!onSite && !cachedLoggedIn) cachedLoggedIn = true;
-  var rootPath = SITE;
-  var B2B = SITE + 'B2B/';
-  var ADM = SITE + 'B2B/admin/';
+  var rootPath = isSubdirAdmin ? '../../' : (onSite ? '' : '../');
+  var B2B = isSubdirAdmin ? '../' : (onSite ? 'B2B/' : '');
+  var ADM = isSubdirAdmin ? '' : (onSite ? 'B2B/admin/' : 'admin/');
   var currentPath = pathName.split('/').pop() || 'index.html';
   var pageArea = isSubdirAdmin ? 'admin' : (onSite ? 'site' : 'parceiro');
   var areaAtual = pageArea;
@@ -344,8 +344,8 @@
       headerEl.className = 'b2b-header-cyan mn-ready ' + themeClass();
       headerEl.innerHTML =
         '<div class="logo-container flex items-center">' +
-          '<a href="' + rootPath + 'index.html" class="logo-link flex items-center" aria-label="Página Inicial 432UP">' +
-            '<img src="' + SITE + 'imagens/logo.png" alt="432UP! Produções" class="logo-img" onerror="this.src=\'' + SITE + 'imagens/logo.png\'">' +
+          '<a href="' + (onSite ? (rootPath || SITE) + (rootPath ? 'index.html' : '') : rootPath + 'index.html') + '" class="logo-link flex items-center" aria-label="Página Inicial 432UP">' +
+            '<img src="' + (onSite ? SITE + 'imagens/logo.png' : rootPath + 'imagens/logo.png') + '" alt="432UP! Produções" class="logo-img" onerror="this.src=\'../imagens/logo.png\'">' +
           '</a>' +
         '</div>' +
         toggleHTML('mn-toggle-d') +
