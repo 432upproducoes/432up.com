@@ -226,12 +226,6 @@
         border: 1px solid rgba(0,240,255,.25); border-radius: 999px; background: rgba(0,0,0,.28); }
       #calc-header > .mn-toggle-d { display: inline-flex !important; flex-shrink: 0 !important; }
       #calc-header > .mn-toggle-d[data-hidden="1"] { display: none !important; }
-      @media (max-width: 1024px) {
-        #calc-header .desktop-nav { display: none !important; }
-        #calc-header > .mn-toggle-d { display: none !important; }
-        #calc-header .b2b-user-widget { display: none !important; }
-        #calc-header .mobile-hamburger { display: block !important; }
-      }
       .mn-tab { font: inherit; font-size: .78rem; line-height: 1; padding: .42rem .85rem; border: 0; border-radius: 999px;
         background: none; color: #8da2b5; cursor: pointer; white-space: nowrap; transition: background .15s, color .15s; }
       .mn-tab:hover { color: #e6edf3; }
@@ -504,23 +498,7 @@
       var b = document.getElementById(id);
       if (b) {
         b.addEventListener('click', function (e) {
-          e.preventDefault();
-          cachedLoggedIn = false;
-          cachedIsAdmin = false;
-          try {
-            sessionStorage.removeItem('432up_is_logged');
-            sessionStorage.removeItem('432up_is_admin');
-          } catch (err) {}
-          function go() {
-            if (onSite) window.location.href = (rootPath || '') + 'index.html';
-            else if (typeof partnerLogout === 'function') partnerLogout(e);
-            else window.location.href = (B2B || '') + 'login.html';
-          }
-          if (typeof sbPartner !== 'undefined' && sbPartner.auth) {
-            Promise.resolve(sbPartner.auth.signOut()).then(go).catch(go);
-          } else {
-            go();
-          }
+          if (typeof partnerLogout === 'function') partnerLogout(e);
         });
       }
     });
