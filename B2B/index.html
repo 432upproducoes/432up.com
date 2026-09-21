@@ -1,462 +1,407 @@
 <!DOCTYPE html>
-<html lang="pt-BR" class="h-full">
+<html lang="pt-BR" data-theme="dark">
 <head>
-  <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
-  <title>432UP Partner | Meu Painel</title>
+  <!-- Google Analytics GA4 -->
+  <script async src="https://www.googletagmanager.com/gtag/js?id=G-7SWNCP1NV6"></script>
 
-  <!-- 1. REDIRECIONAMENTO E MODO ADMIN SÍNCRONO (ANTI-FLICKER) -->
   <script>
-    (function() {
-      try {
-        if (localStorage.getItem('432_is_admin') === 'true') {
-          document.documentElement.classList.add('is-admin');
-        } else {
-          document.documentElement.classList.remove('is-admin');
-        }
-      } catch (e) {}
-    })();
+    window.dataLayer = window.dataLayer || [];
+    function gtag(){dataLayer.push(arguments);}
+    gtag('js', new Date());
+    gtag('config', 'G-7SWNCP1NV6');
   </script>
 
-  <!-- 2. REGRAS DE CSS SÍNCRONAS PARA EXIBIÇÃO ADMIN -->
-  <style>
-    #navAdminLinkContainer,
-    #navAdminLinkContainerMobile,
-    [data-admin-menu-desk],
-    [data-admin-menu-mob] {
-      display: none !important;
-    }
+<script>
+    !function(t,e){var o,n,p,r;e.__SV||(window.posthog && window.posthog.__loaded)||(window.posthog=e,e._i=[],e.init=function(i,s,a){function g(t,e){var o=e.split(".");2==o.length&&(t=t[o[0]],e=o[1]),t[e]=function(){t.push([e].concat(Array.prototype.slice.call(arguments,0)))}}(p=t.createElement("script")).type="text/javascript",p.crossOrigin="anonymous",p.async=!0,p.src=s.api_host.replace(".i.posthog.com","-assets.i.posthog.com")+"/static/array.js",(r=t.getElementsByTagName("script")[0]).parentNode.insertBefore(p,r);var u=e;for(void 0!==a?u=e[a]=[]:a="posthog",u.people=u.people||[],u.toString=function(t){var e="posthog";return"posthog"!==a&&(e+="."+a),t||(e+=" (stub)"),e},u.people.toString=function(){return u.toString(1)+".people (stub)"},o="an ln init xn Cn Br kn In capture Fn nn calculateEventProperties On register register_once register_for_session unregister unregister_for_session Ln getFeatureFlag getFeatureFlagPayload getFeatureFlagResult getAllFeatureFlags isFeatureEnabled reloadFeatureFlags updateFlags updateEarlyAccessFeatureEnrollment getEarlyAccessFeatures on onFeatureFlags onSurveysLoaded onSessionId getSurveys getActiveMatchingSurveys renderSurvey displaySurvey cancelPendingSurvey canRenderSurvey canRenderSurveyAsync Dn identify setPersonProperties unsetPersonProperties group resetGroups setPersonPropertiesForFlags resetPersonPropertiesForFlags setGroupPropertiesForFlags resetGroupPropertiesForFlags reset shutdown setIdentity clearIdentity get_distinct_id getGroups get_session_id get_session_replay_url alias set_config startSessionRecording stopSessionRecording sessionRecordingStarted captureException addExceptionStep captureLog startExceptionAutocapture stopExceptionAutocapture loadToolbar get_property getSessionProperty An Rn createPersonProfile setInternalOrTestUser $n yn jn opt_in_capturing opt_out_capturing has_opted_in_capturing has_opted_out_capturing get_explicit_consent_status is_capturing clear_opt_in_out_capturing Tn debug Ur Rt getPageViewId captureTraceFeedback captureTraceMetric pn".split(" "),n=0;n<o.length;n++)g(u,o[n]);e._i.push([i,s,a])},e.__SV=1)}(document,window.posthog||[]);
+    posthog.init('phc_t76fhhCgdrhmPwLXSxXD79vv7sX3yBK3w7V57wQqxccw', {
+        api_host: 'https://us.i.posthog.com',
+        defaults: '2026-05-30',
+        person_profiles: 'identified_only', // or 'always' to create profiles for anonymous users as well
+    })
+</script>
 
-    html.is-admin #navAdminLinkContainer,
-    html.is-admin [data-admin-menu-desk] {
-      display: inline-flex !important;
-    }
-    html.is-admin #navAdminLinkContainerMobile,
-    html.is-admin [data-admin-menu-mob] {
-      display: block !important;
-    }
-  </style>
+  <!-- Supabase CDN -->
+  <script src="https://unpkg.com/@supabase/supabase-js@2"></script>
 
-  <!-- CSS Global do Site -->
-  <link rel="stylesheet" href="../css/style.css">
-  <script src="https://cdn.tailwindcss.com"></script>
+<!-- Tracker unificado -->
+<script src="https://www.432up.com/script/tracker.js"></script>
 
-  <style>
-    .glass-b2b {
-      background: linear-gradient(135deg, rgba(10, 18, 28, 0.75) 0%, rgba(14, 22, 35, 0.5) 100%);
-      backdrop-filter: blur(24px);
-      -webkit-backdrop-filter: blur(24px);
-      border: 1px solid rgba(0, 240, 255, 0.25);
-      box-shadow: 0 20px 50px rgba(0, 0, 0, 0.8), inset 0 0 15px rgba(0, 240, 255, 0.05);
-    }
-    .glass-amber {
-      background: linear-gradient(135deg, rgba(245, 158, 11, 0.08) 0%, rgba(10, 18, 28, 0.85) 100%);
-      backdrop-filter: blur(20px);
-      -webkit-backdrop-filter: blur(20px);
-      border: 1px solid rgba(245, 158, 11, 0.35);
-      box-shadow: 0 0 25px rgba(245, 158, 11, 0.15);
-    }
+<script>
+// Fecha o dropdown de Projetos ao clicar fora
+document.addEventListener('click', function(e) {
+  const dropdown = document.querySelector('.nav-dropdown-desktop');
+  if (!dropdown) return;
 
-    #calc-header.b2b-header-cyan {
-      display: flex !important;
-      align-items: center !important;
-      justify-content: space-between !important;
-      height: 72px !important;
-      padding: 0 1.5rem !important;
-      background: linear-gradient(180deg, rgba(0, 240, 255, 0.08) 0%, rgba(10, 18, 28, 0.88) 100%) !important;
-      backdrop-filter: blur(24px) !important;
-      -webkit-backdrop-filter: blur(24px) !important;
-      border-bottom: 1px solid rgba(0, 240, 255, 0.22) !important;
-      box-shadow: 0 10px 30px rgba(0, 0, 0, 0.6), 0 0 20px rgba(0, 240, 255, 0.12) !important;
-    }
+  if (!dropdown.contains(e.target)) {
+    dropdown.removeAttribute('open');
+  }
+});
+</script>
 
-    @media (min-width: 1024px) {
-      #calc-header.b2b-header-cyan .desktop-nav {
-        display: flex !important;
-        align-items: center !important;
-        gap: 0.75rem !important;
-        height: 100% !important;
-        margin: 0 !important;
+
+ 
+ <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
+  <meta name="version" content="1.0-Enterprise-Modular">
+  
+  <!-- INTEGRAÇÃO CROMÁTICA TRANSLÚCIDA COM O SAFARI / IOS -->
+  <meta name="theme-color" content="#08080A">
+  <meta name="apple-mobile-web-app-capable" content="yes">
+  <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+
+  <link class="js-site-favicon" rel="icon" type="image/png" href="imagens/favicon.png">
+  
+  <!-- SEO & COPY SENSORIAL -->
+  <title>432UP! Produções | Design de Atmosferas & Curadoria Artística</title>
+  <meta name="description" content="Curadoria artística e maestria em atmosferas para eventos de alto padrão. Iluminação cênica integrada, pureza sonora e performance musical ao vivo.">
+  <meta name="robots" content="index, follow">
+  <link rel="canonical" href="https://www.432up.com">
+
+  <!-- Open Graph Tags -->
+  <meta property="og:title" content="432UP! Produções | Maestramos Atmosferas Inesquecíveis">
+  <meta property="og:description" content="A harmonia perfeita entre a sensibilidade artística de quem canta com a alma e a sofisticação visual da iluminação cênica.">
+  <meta property="og:image" content="https://www.432up.com/imagens/logo.png">
+  <meta property="og:url" content="https://www.432up.com">
+  <meta property="og:type" content="website">
+
+  <!-- ========================================================================= -->
+  <!-- DADOS ESTRUTURADOS SCHEMA.ORG (FUSÃO DE ALTA AUTORIDADE + FAQ VISÍVEL)   -->
+  <!-- ========================================================================= -->
+  <script type="application/ld+json">
+  {
+    "@context": "https://schema.org",
+    "@graph": [
+      {
+        "@type": ["LocalBusiness", "Organization"],
+        "@id": "https://www.432up.com/#business",
+        "name": "432UP! Produções",
+        "alternateName": ["432UP", "432 UP Produções", "432UP Eventos & Experiências"],
+        "description": "Produtora de alta curadoria e arquitetura de atmosfera sonora e cênica em São Paulo. Especializada em performances autorais de alto impacto vocal, coquetéis privativos, celebrações exclusivas e sonorização de altíssima fidelidade.",
+        "url": "https://www.432up.com/",
+        "logo": {
+          "@type": "ImageObject",
+          "@id": "https://www.432up.com/#logo",
+          "url": "https://www.432up.com/imagens/logo.png",
+          "contentUrl": "https://www.432up.com/imagens/logo.png",
+          "width": 300,
+          "height": 100,
+          "caption": "Logo 432UP! Produções"
+        },
+        "image": [
+          "https://www.432up.com/imagens/og-image.jpg",
+          "https://www.432up.com/imagens/foto-performance-1.jpg",
+          "https://www.432up.com/imagens/foto-performance-2.jpg"
+        ],
+        "telephone": "+55-11-94856-4577",
+        "email": "contato@432up.com",
+        "priceRange": "$$$$",
+        "currenciesAccepted": "BRL",
+        "paymentAccepted": "PIX, Transferência Bancária, Cartão de Crédito",
+        "address": {
+          "@type": "PostalAddress",
+          "streetAddress": "Rua Dr. Fabrício Vampré, 186",
+          "addressLocality": "São Paulo",
+          "addressRegion": "SP",
+          "postalCode": "04014-020",
+          "addressCountry": "BR"
+        },
+        "geo": {
+          "@type": "GeoCoordinates",
+          "latitude": -23.5855,
+          "longitude": -46.6433
+        },
+        "areaServed": [
+          { "@type": "City", "name": "São Paulo" },
+          { "@type": "City", "name": "Bragança Paulista" },
+          { "@type": "City", "name": "Atibaia" },
+          { "@type": "City", "name": "Ribeirão Preto" },
+          { "@type": "Place", "name": "Alphaville" },
+          { "@type": "Place", "name": "Itaim Bibi" },
+          { "@type": "Place", "name": "Vila Nova Conceição" },
+          { "@type": "Place", "name": "Jardim Europa" },
+          { "@type": "Place", "name": "Moema" },
+          { "@type": "Place", "name": "Morumbi" },
+          { "@type": "Place", "name": "Quinta da Baroneza" }
+        ],
+        "openingHoursSpecification": [
+          {
+            "@type": "OpeningHoursSpecification",
+            "dayOfWeek": ["Monday","Tuesday","Wednesday","Thursday","Friday"],
+            "opens": "09:00",
+            "closes": "18:00"
+          },
+          {
+            "@type": "OpeningHoursSpecification",
+            "dayOfWeek": "Saturday",
+            "opens": "09:00",
+            "closes": "14:00"
+          }
+        ],
+        "contactPoint": {
+          "@type": "ContactPoint",
+          "contactType": "customer service",
+          "telephone": "+55-11-94856-4577",
+          "email": "contato@432up.com",
+          "url": "https://wa.me/5511948564577",
+          "areaServed": "BR",
+          "availableLanguage": ["Portuguese"]
+        },
+        "sameAs": [
+          "https://www.instagram.com/432up.producoes"
+        ],
+        "hasOfferCatalog": {
+          "@type": "OfferCatalog",
+          "name": "Experiências e Curadoria Artística — 432UP!",
+          "itemListElement": [
+            {
+              "@type": "Offer",
+              "itemOffered": {
+                "@type": "Service",
+                "name": "Pocket Show Premium & Duo Autoral de Alta Sensibilidade",
+                "description": "A vitrine de elite da 432UP. Performance vocal autoral, interpretação visceral e arranjos exclusivos para recepções, coquetéis privativos e casamentos de alto padrão.",
+                "provider": { "@id": "https://www.432up.com/#business" },
+                "performer": { "@id": "https://www.432up.com/#performing-group" }
+              },
+              "availability": "https://schema.org/InStock",
+              "url": "https://www.432up.com/#performing-group"
+            },
+            {
+              "@type": "Offer",
+              "itemOffered": {
+                "@type": "Service",
+                "name": "Experiência de Brasilidade & Ápice Cênico",
+                "description": "Show vibrante com formação estendida de 7 integrantes. Fusão autêntica de ritmos brasileiros com arranjos refinados que conduzem a pista no ápice do entretenimento.",
+                "provider": { "@id": "https://www.432up.com/#business" },
+                "performer": { "@id": "https://www.432up.com/#swing-tropical" }
+              },
+              "availability": "https://schema.org/InStock",
+              "url": "https://www.432up.com/#swing-tropical"
+            },
+            {
+              "@type": "Offer",
+              "itemOffered": {
+                "@type": "Service",
+                "name": "Sonorização de Alta Fidelidade & Iluminação Cênica Discreta",
+                "description": "Engenharia de áudio acústico sem poluição visual, projetada para cobrir o ambiente com clareza cristalina, aliada à iluminação que desenha a atmosfera do evento.",
+                "provider": { "@id": "https://www.432up.com/#business" }
+              },
+              "availability": "https://schema.org/InStock",
+              "url": "https://www.432up.com/"
+            },
+            {
+              "@type": "Offer",
+              "itemOffered": {
+                "@type": "Service",
+                "name": "Simulador de Experiência & Projetos Sob Medida",
+                "description": "Ferramenta de estimativa e construção de atmosfera sob medida para eventos corporativos e sociais de alto padrão.",
+                "provider": { "@id": "https://www.432up.com/#business" }
+              },
+              "price": "0.00",
+              "priceCurrency": "BRL",
+              "availability": "https://schema.org/InStock",
+              "url": "https://www.432up.com/calculadora.html"
+            }
+          ]
+        }
+      },
+      {
+        "@type": "MusicGroup",
+        "@id": "https://www.432up.com/#performing-group",
+        "name": "Duo Autoral de Alta Sensibilidade (432UP!)",
+        "url": "https://www.432up.com/",
+        "worksFor": { "@id": "https://www.432up.com/#business" },
+        "genre": ["Brasilidade Refinada", "MPB Premium", "Acoustic Live", "Pocket Show Exclusivo"],
+        "description": "Atração autoral reconhecida pela interpretação vocal profunda, afinação impecável e presença cênica magnética. Uma experiência sonora que arrepia e conecta.",
+        "knowsAbout": [
+          "Performance vocal autoral de alto impacto",
+          "Arranjos acústicos refinados",
+          "Curadoria musical para recepções corporativas e privativas",
+          "Harmonia e presença cênica viva"
+        ]
+      },
+      {
+        "@type": "MusicGroup",
+        "@id": "https://www.432up.com/#swing-tropical",
+        "name": "Show Baile & Brasilidade Cênica",
+        "url": "https://www.432up.com/",
+        "worksFor": { "@id": "https://www.432up.com/#business" },
+        "genre": ["Brasilidade", "Axé Cênico", "Samba-Rock Refinado", "Pop Brasil"],
+        "description": "Experiência completa de brasilidade com 7 integrantes. Fusão autêntica e enérgica desenhada para manter a sofisticação no topo da celebração."
+      },
+      {
+        "@type": "FAQPage",
+        "@id": "https://www.432up.com/#faq",
+        "mainEntity": [
+          {
+            "@type": "Question",
+            "name": "Qual é o custo para contratar DJ, sonorização e estrutura para eventos em São Paulo?",
+            "acceptedAnswer": {
+              "@type": "Answer",
+              "text": "O valor varia de acordo com a engenharia acústica do espaço, número de convidados e formação artística. Para obter uma estimativa em tempo real com valores de referência para DJ, som e iluminação cênica, utilize o nosso Simulador de Atmosfera."
+            }
+          },
+          {
+            "@type": "Question",
+            "name": "Como é calculado o investimento para os shows ao vivo e performances autorais?",
+            "acceptedAnswer": {
+              "@type": "Answer",
+              "text": "Cada celebração recebe um projeto de atmosfera exclusivo — seja para recepções de alto impacto vocal ou apresentações de alta energia. O orçamento é dimensionado sob medida pela nossa Mesa de Produção."
+            }
+          },
+          {
+            "@type": "Question",
+            "name": "A 432UP atende casamentos, celebrações privativas e eventos corporativos?",
+            "acceptedAnswer": {
+              "@type": "Answer",
+              "text": "Sim. Atendemos eventos corporativos, coquetéis privativos, casamentos e celebrações de alto padrão na capital paulista (Itaim Bibi, Vila Nova Conceição, Moema, Jardins) e regiões como Alphaville, Atibaia, Bragança Paulista e Ribeirão Preto."
+            }
+          },
+          {
+            "@type": "Question",
+            "name": "Qual é o diferencial técnico da sonorização e iluminação oferecidas?",
+            "acceptedAnswer": {
+              "@type": "Answer",
+              "text": "Utilizamos sistemas acústicos de altíssima fidelidade projetados para cobrir o ambiente com clareza cristalina no volume ideal, aliados à iluminação cênica discreta e sem poluição de cabos expostos."
+            }
+          }
+        ]
+      },
+      {
+        "@type": "WebSite",
+        "@id": "https://www.432up.com/#website",
+        "url": "https://www.432up.com/",
+        "name": "432UP! Produções",
+        "description": "Curadoria artística, performances autorais de alta voz e sonorização cênica para eventos exclusivos em São Paulo e região.",
+        "inLanguage": "pt-BR",
+        "publisher": { "@id": "https://www.432up.com/#business" }
+      },
+      {
+        "@type": "WebPage",
+        "@id": "https://www.432up.com/#webpage",
+        "url": "https://www.432up.com/",
+        "name": "432UP! Produções — Curadoria de Atmosfera para Eventos Exclusivos",
+        "isPartOf": { "@id": "https://www.432up.com/#website" },
+        "about": { "@id": "https://www.432up.com/#business" },
+        "inLanguage": "pt-BR"
       }
-      #calc-header.b2b-header-cyan .desktop-nav a,
-      #calc-header.b2b-header-cyan .desktop-nav span {
-        display: inline-flex !important;
-        align-items: center !important;
-      }
-    }
+    ]
+  }
+  </script>
 
-    .b2b-user-widget {
-      display: inline-flex !important;
-      align-items: center !important;
-      gap: 0.75rem !important;
-      padding-left: 0.75rem !important;
-      border-left: 1px solid rgba(0, 240, 255, 0.2) !important;
-      height: 32px !important;
-    }
+  <!-- Google Fonts -->
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
 
-    .b2b-avatar-link {
-      display: block;
-      position: relative;
-      border-radius: 50%;
-      transition: all 0.2s ease;
-    }
 
-    .b2b-avatar-link:hover {
-      transform: scale(1.08);
-      box-shadow: 0 0 12px rgba(0, 240, 255, 0.6);
-    }
-
-    .b2b-avatar-img {
-      width: 32px !important;
-      height: 32px !important;
-      border-radius: 50% !important;
-      border: 1.5px solid rgba(0, 240, 255, 0.5) !important;
-      background-color: rgba(0, 240, 255, 0.15) !important;
-      background-size: cover !important;
-      background-position: center !important;
-      box-shadow: 0 0 10px rgba(0, 240, 255, 0.25) !important;
-      flex-shrink: 0 !important;
-    }
-  </style>
+  <!-- CSS Modularizado -->
+  <link rel="stylesheet" href="css/style.css">
+  <script src="script/script.js" defer></script>
 </head>
-<body class="h-full text-slate-200 font-sans antialiased bg-[#06080c] overflow-x-hidden">
+<body>
 
-  <!-- Fundo Espacial Integrado -->
+  <!-- PIXEL DE ROLAGEM ESTABILIZADO PARA O SAFARI -->
+  <div class="scroll-stretcher-pixel"></div>
+
+  <!-- CANVAS DE BACKGROUND FIXO -->
   <canvas id="orbit-canvas"></canvas>
+
   <div id="plasmaLayer" class="plasma-top-layer"></div>
 
-  <!-- HEADER TOPO PARCEIROS -->
-  <header id="calc-header" class="b2b-header-cyan">
-    <div class="logo-container flex items-center">
-      <a href="../index.html" class="logo-link flex items-center" aria-label="Página Inicial 432UP">
-        <img src="../imagens/logo.png" alt="432UP! Produções" class="logo-img" onerror="this.src='imagens/logo.png'">
-      </a>
-    </div>
+  <div class="drawer-backdrop-overlay" id="drawer-backdrop" onclick="closeLpsDrawer()"></div>
 
-    <!-- NAV DESKTOP PARCEIROS -->
-    <nav class="desktop-nav">
-      <a href="index.html" class="active">Meu Painel</a>
-      <a href="nova-proposta.html" style="color: #f59e0b; font-weight: 700;">⚡ Nova Proposta</a>
-      <a href="propostas.html">Minhas Propostas</a>
-      <a href="comissoes.html">Comissões</a>
-      <a href="materiais.html">Materiais</a>
-
-      <span id="navAdminLinkContainer">
-        <a href="admin/index.html" style="color: #f59e0b; font-weight: 700; border: 1px solid rgba(245,158,11,0.4); padding: 4px 10px; border-radius: 8px; background: rgba(245,158,11,0.1); font-size: 0.75rem;">👑 Master Admin</a>
-      </span>
-
-      <div class="b2b-user-widget">
-        <a href="perfil.html" title="Meu Perfil" class="b2b-avatar-link">
-          <div data-partner-avatar class="b2b-avatar-img"></div>
-        </a>
-        <button id="btnLogoutDesk" title="Sair do Portal" class="text-xs text-slate-400 hover:text-red-400 transition p-1 cursor-pointer">
-          🔒 Sair
-        </button>
-      </div>
-    </nav>
-
-    <button class="mobile-hamburger" onclick="toggleMobileMenu()" aria-label="Abrir menu">☰</button>
-  </header>
-
-  <!-- OVERLAY MENU MOBILE PARCEIROS -->
-  <div class="mobile-menu-overlay" id="mobile-menu">
-    <button onclick="toggleMobileMenu()" style="position: absolute; top: 20px; right: 20px; background: transparent; border: none; color: #fff; font-size: 1.5rem; cursor: pointer;" aria-label="Fechar menu">✕</button>
-    
-    <a href="perfil.html" onclick="toggleMobileMenu()" class="flex items-center gap-3 mb-4 border-b border-cyan-500/20 pb-3 hover:opacity-80 transition">
-      <div data-partner-avatar class="w-10 h-10 rounded-full bg-cyan-500/20 border border-cyan-500/40 bg-cover bg-center shrink-0"></div>
-      <div class="text-left">
-        <span data-partner-nome class="text-sm font-bold text-white block">—</span>
-        <span class="text-[10px] text-cyan-400 font-bold uppercase tracking-wider">Ver Meu Perfil ➔</span>
-      </div>
-    </a>
-
-    <div id="navAdminLinkContainerMobile" class="w-full mb-2">
-      <a href="admin/index.html" onclick="toggleMobileMenu()" style="color: #f59e0b; font-weight: 700; display: block; text-align: center; border: 1px solid rgba(245,158,11,0.4); padding: 8px; border-radius: 8px; background: rgba(245,158,11,0.1);">👑 Painel Master Admin</a>
-    </div>
-
-    <a href="index.html" onclick="toggleMobileMenu()" class="active">❖ Meu Painel</a>
-    <a href="nova-proposta.html" onclick="toggleMobileMenu()" style="color: #f59e0b; font-weight: 700;">⚡ Nova Proposta</a>
-    <a href="propostas.html" onclick="toggleMobileMenu()">▤ Minhas Propostas</a>
-    <a href="comissoes.html" onclick="toggleMobileMenu()">$ Comissões</a>
-    <a href="materiais.html" onclick="toggleMobileMenu()">📁 Materiais</a>
-
-    <button id="btnLogoutMob" class="btn-header-cta" style="margin-left: 0; margin-top: 15px; padding: 12px 28px; width: 100%; border-color: rgba(239, 68, 68, 0.4); color: #f87171;">
-      🔒 Sair do Portal
-    </button>
-  </div>
-
-  <!-- CONTAINER DE CONTEÚDO EM FLUXO VERTICAL -->
-  <div class="flex flex-col min-h-screen relative z-10 pb-16">
-
-    <!-- CONTEÚDO PRINCIPAL (DASHBOARD) -->
-    <main class="flex-1 p-4 lg:p-8 space-y-6 pt-28 lg:pt-28 w-full max-w-7xl mx-auto">
+  <!-- ========================================================================= -->
+  <!-- GAVETA POP-UP DO RODAPÉ (FAQ COM DESIGN VIDRO AMETISTA GLASS INTEGRAL)    -->
+  <!-- ========================================================================= -->
+  <div class="lps-drawer-root plasma-glow-overlay aurora-border-glow" id="lps-drawer">
+    <div style="padding: 10px 5px; text-align: left;">
+      <h3 style="font-size: 0.9rem; letter-spacing: 1.5px; color: #fff; margin-bottom: 15px; opacity: 0.9; text-transform: uppercase; font-weight: 600;">Diretrizes & Dúvidas Frequentes</h3>
       
-      <!-- HEADER CONTEXTUAL -->
-      <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
-        <div>
-          <h1 class="text-2xl lg:text-3xl font-bold text-white tracking-tight">Olá, <span id="dashNomeParceiro">Parceiro</span></h1>
-          <p class="text-sm text-slate-400 mt-1">Veja suas propostas recentes e acompanhe suas oportunidades comerciais.</p>
-        </div>
-        <a href="nova-proposta.html" class="inline-flex items-center justify-center space-x-2 px-5 py-3 rounded-xl bg-amber-500 hover:bg-amber-400 text-slate-950 font-bold text-xs uppercase tracking-wider transition shadow-[0_0_20px_rgba(245,158,11,0.3)] shrink-0">
-          <span>⚡</span><span>Criar Nova Proposta</span>
-        </a>
+      <div style="display: flex; flex-direction: column; gap: 10px;">
+        <details style="background: rgba(255, 255, 255, 0.03); border: 1px solid rgba(255, 255, 255, 0.08); border-radius: 8px; padding: 10px 14px; cursor: pointer;">
+          <summary style="font-weight: 500; color: #fff; font-size: 0.85rem; outline: none;">Qual é o custo para contratar DJ, sonorização e estrutura para eventos em SP?</summary>
+          <p style="margin-top: 8px; font-size: 0.78rem; opacity: 0.75; line-height: 1.5;">O valor varia de acordo com a engenharia acústica do espaço, número de convidados e formação artística. Para obter uma estimativa em tempo real com valores de referência para DJ, som e iluminação cênica, utilize o nosso <a href="calculadora.html" style="color: #fff; text-decoration: underline;">Simulador de Atmosfera</a>.</p>
+        </details>
+
+        <details style="background: rgba(255, 255, 255, 0.03); border: 1px solid rgba(255, 255, 255, 0.08); border-radius: 8px; padding: 10px 14px; cursor: pointer;">
+          <summary style="font-weight: 500; color: #fff; font-size: 0.85rem; outline: none;">Como é calculado o investimento para os shows ao vivo e performances autorais?</summary>
+          <p style="margin-top: 8px; font-size: 0.78rem; opacity: 0.75; line-height: 1.5;">Cada celebração recebe um projeto de atmosfera exclusivo — seja para recepções de alto impacto vocal ou apresentações de alta energia. O orçamento é dimensionado sob medida pela nossa Mesa de Produção.</p>
+        </details>
+
+        <details style="background: rgba(255, 255, 255, 0.03); border: 1px solid rgba(255, 255, 255, 0.08); border-radius: 8px; padding: 10px 14px; cursor: pointer;">
+          <summary style="font-weight: 500; color: #fff; font-size: 0.85rem; outline: none;">A 432UP atende casamentos, celebrações e corporativo?</summary>
+          <p style="margin-top: 8px; font-size: 0.78rem; opacity: 0.75; line-height: 1.5;">Sim. Atendemos eventos corporativos, coquetéis privativos, casamentos e celebrações de alto padrão em São Paulo (Itaim Bibi, Vila Nova Conceição, Moema, Jardins) e regiões como Alphaville, Atibaia, Bragança Paulista e Ribeirão Preto.</p>
+        </details>
+
+        <details style="background: rgba(255, 255, 255, 0.03); border: 1px solid rgba(255, 255, 255, 0.08); border-radius: 8px; padding: 10px 14px; cursor: pointer;">
+          <summary style="font-weight: 500; color: #fff; font-size: 0.85rem; outline: none;">Qual é o diferencial técnico de som e iluminação?</summary>
+          <p style="margin-top: 8px; font-size: 0.78rem; opacity: 0.75; line-height: 1.5;">Utilizamos sistemas acústicos de altíssima fidelidade projetados para cobrir o ambiente com clareza cristalina, aliados à iluminação cênica discreta e sem poluição de cabos expostos.</p>
+        </details>
       </div>
-
-      <!-- KPIs DIRETOS -->
-      <div class="grid grid-cols-1 md:grid-cols-3 gap-4 items-stretch">
-        <div class="glass-b2b p-5 rounded-2xl flex flex-col justify-between">
-          <div>
-            <span class="text-xs font-semibold uppercase tracking-wider text-slate-400">Em Andamento</span>
-            <div id="kpiAndamento" class="text-2xl font-bold text-white mt-2">0 propostas</div>
-          </div>
-          <span id="kpiAndamentoSub" class="text-xs text-cyan-400 mt-3 block border-t border-white/5 pt-2">Aguardando confirmação do cliente</span>
-        </div>
-
-        <div class="glass-b2b p-5 rounded-2xl flex flex-col justify-between">
-          <div>
-            <span class="text-xs font-semibold uppercase tracking-wider text-slate-400">Aprovadas (Mês)</span>
-            <div id="kpiAprovadas" class="text-2xl font-bold text-emerald-400 mt-2">0 propostas</div>
-          </div>
-          <span id="kpiValorFechado" class="text-xs text-emerald-500/90 mt-3 block border-t border-white/5 pt-2">R$ 0,00 fechados</span>
-        </div>
-
-        <!-- CARD DE COMISSÃO LÍQUIDA SINCRONIZADO -->
-        <div class="glass-amber p-5 rounded-2xl flex flex-col justify-between border-l-4 border-l-amber-500">
-          <div>
-            <span class="text-xs font-semibold uppercase tracking-wider text-amber-300">Comissão Acumulada</span>
-            <div id="kpiComissaoLiberada" class="text-2xl font-bold text-amber-400 mt-2">R$ 0,00</div>
-          </div>
-          <span id="kpiComissaoSub" class="text-xs text-amber-200/80 mt-3 block border-t border-amber-500/20 pt-2">Liberado para resgate em conta</span>
-        </div>
-      </div>
-
-      <!-- PAINEL DE ATENÇÃO PRIORITÁRIA -->
-      <div class="glass-b2b rounded-2xl p-6 border border-cyan-500/20">
-        <div class="flex items-center justify-between mb-4 border-b border-white/10 pb-3">
-          <h2 class="text-base font-bold text-white">O que exige sua atenção?</h2>
-          <a href="propostas.html" class="text-xs text-cyan-400 hover:text-cyan-300 font-semibold transition">Ver todas →</a>
-        </div>
-
-        <div id="listaAtencao" class="space-y-3">
-          <p class="text-xs text-slate-500 py-4 text-center">Carregando oportunidades...</p>
-        </div>
-      </div>
-
-    </main>
+    </div>
   </div>
 
-  <!-- SCRIPTS DO SUPABASE E CONFIGURAÇÕES -->
-  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
-  <script src="partner-config.js"></script>
-  <script src="partner-header.js"></script>
-  <script src="../script/script.js" defer></script>
-  
-  <script>
-    (function () {
-      'use strict';
+  <!-- HERO (TEXTO EM 1 LINHA NO MOBILE COM MÁXIMO IMPACTO) -->
+  <main class="hero-center">
+    <span class="tagline">DESIGN DE EXPERIÊNCIAS </span>
+    <h1>Não Criamos Eventos.<br>Maestramos <span>Atmosferas</span>.</h1>
+    <p class="hero-desc">Pureza acústica, curadoria artística e iluminação cênica para momentos inesquecíveis.</p>
+    
+    <div class="btn-fire-wrapper">
+      <a href="calculadora.html" class="btn-primary aurora-border-glow">Simular Atmosfera</a>
+    </div>
+  </main>
 
-      var timerInterval = null;
+  <!-- RODAPÉ ULTRA-FINO EM LINHA ÚNICA -->
+  <footer>
+    <div class="footer-bar">
+      <button class="btn-accordion-lps" id="btn-toggle-lps" onclick="toggleLpsDrawer()">
+        <span class="desktop-only">[+] Dúvidas Frequentes & Diretrizes</span>
+        <span class="mobile-only" style="display:none;">[+] FAQ</span>
+      </button>
+      <div class="footer-copy-text" style="opacity: 0.6; font-size: 0.72rem;">© 2026 432UP!</div>
+    </div>
+  </footer>
 
-      var STATUS_LABEL = {
-        hold: { text: 'Hold 48h', cls: 'bg-amber-500/20 text-amber-300 border border-amber-500/40' },
-        enviada: { text: 'Enviada', cls: 'bg-cyan-500/20 text-cyan-300 border border-cyan-500/40' },
-        rascunho: { text: 'Rascunho', cls: 'bg-slate-500/20 text-slate-300 border border-slate-500/40' },
-        aprovada: { text: 'Aprovada', cls: 'bg-emerald-500/20 text-emerald-300 border border-emerald-500/40' }
-      };
+  <!-- MODAL DE CAPTURA (COM ATALHO WHATSAPP DIRECT NEON) -->
+  <div class="modal-overlay" id="lead-modal">
+    <div class="modal-box plasma-glow-overlay aurora-border-glow">
+      <button class="modal-close" onclick="closeLeadModal()">✕</button>
+      <div>
+        <h3>Conectar com a Mesa de Produção</h3>
+        <p>Receba um atendimento exclusivo via WhatsApp ou e-mail.</p>
+      </div>
 
-      function fmtMoeda(n) { return 'R$ ' + Number(n || 0).toLocaleString('pt-BR', { minimumFractionDigits: 2 }); }
-      function fmtData(d) { return d ? new Date(d + 'T12:00:00').toLocaleDateString('pt-BR') : '—'; }
-      function esc(s) { return String(s == null ? '' : s).replace(/</g, '&lt;').replace(/>/g, '&gt;'); }
-
-      function formatarTempoRestante(dataExpira) {
-        if (!dataExpira) return '48H 00M';
-        var difMs = new Date(dataExpira) - new Date();
-        if (difMs <= 0) return 'EXPIRADO';
-
-        var horas = Math.floor(difMs / (1000 * 60 * 60));
-        var minutos = Math.floor((difMs % (1000 * 60 * 60)) / (1000 * 60));
-
-        return (horas < 10 ? '0' : '') + horas + 'H ' + (minutos < 10 ? '0' : '') + minutos + 'M';
-      }
-
-      function iniciarTimersHold() {
-        if (timerInterval) clearInterval(timerInterval);
-        timerInterval = setInterval(function () {
-          var badgesHold = document.querySelectorAll('[data-hold-expira]');
-          badgesHold.forEach(function (el) {
-            var expira = el.getAttribute('data-hold-expira');
-            if (expira) {
-              el.textContent = '⏳ ' + formatarTempoRestante(expira);
-            }
-          });
-        }, 10000);
-      }
-
-      window.toggleMobileMenu = function () {
-        var mobNav = document.getElementById('mobile-menu');
-        if (mobNav) {
-          mobNav.classList.toggle('active');
-        }
-      };
-
-      partnerRequireAuth().then(function (parceiro) {
-        partnerFillSidebar(parceiro);
+      <!-- BOTÃO DIRETO WHATSAPP -->
+      <a href="https://wa.me/5511948564577?text=Ol%C3%A1!%20Vim%20pelo%20site%20da%20432UP!%20e%20gostaria%20de%20alinhar%20um%20projeto%20de%20atmosfera%20para%20o%20meu%20evento." target="_blank" class="btn-modal-wa-direct">
         
-        var primeiroNome = parceiro.nome_completo ? parceiro.nome_completo.split(' ')[0] : 'Parceiro';
-        document.getElementById('dashNomeParceiro').textContent = primeiroNome;
+<!-- DEPOIS (ícone válido, mesmo da sua página que funciona) -->
+<svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+  <path d="M21 11.5a8.38 8.38 0 0 1-.9 3.8 8.5 8.5 0 0 1-7.6 4.7 8.38 8.38 0 0 1-3.8-.9L3 21l1.9-5.7a8.38 8.38 0 0 1-.9-3.8 8.5 8.5 0 0 1 4.7-7.6 8.38 8.38 0 0 1 3.8-.9h.5a8.48 8.48 0 0 1 8 8v.5z"/>
+</svg>
 
-        carregarKPIsDirecto(parceiro);
-        carregarAtencao(parceiro.id);
 
-        bindEvents();
-      }).catch(function (err) {
-        console.error('[432UP Partner] Erro de autenticação no painel:', err);
-      });
+        Conversar Direto via WhatsApp
+      </a>
 
-      function bindEvents() {
-        var btnDesk = document.getElementById('btnLogoutDesk');
-        var btnMob = document.getElementById('btnLogoutMob');
+      <div class="modal-form-divider">ou envie suas informações</div>
 
-        if (btnDesk) btnDesk.addEventListener('click', partnerLogout);
-        if (btnMob) btnMob.addEventListener('click', partnerLogout);
-      }
+      <form onsubmit="handleProgressFormSubmit(event)">
+        <input type="text" id="modal-lead-name" required placeholder="Seu nome ou empresa">
+        
+        <input type="text" id="modal-lead-contact" required placeholder="WhatsApp (com DDD) ou E-mail">
+        <span id="contact-error-msg" style="display: none; color: #FF007F; font-size: 0.72rem; margin-top: 4px; margin-bottom: 8px;">Por favor, insira um e-mail válido ou um telefone/WhatsApp com DDD.</span>
 
-      function carregarKPIsDirecto(parceiro) {
-        sbPartner.from('propostas')
-          .select('*')
-          .eq('parceiro_id', parceiro.id)
-          .then(function (res) {
-            if (!res.data || res.data.length === 0) {
-              atualizarKPIsTela(0, 0, 0, 0, 0);
-              return;
-            }
+        <textarea id="modal-lead-msg" placeholder="Observações sobre o evento (data, local ou perfil)..." style="height: 65px; resize: none;"></textarea>
+        <button type="submit" id="btn-submit-modal" class="btn-header-cta" style="width:100%; margin-left:0; padding:12px; margin-top:4px;">Enviar Solicitação</button>
+      </form>
+    </div>
+  </div>
 
-            var list = res.data;
-            var hoje = new Date().toISOString().split('T')[0];
+<header id="calc-header"></header>
+<div id="mobile-menu"></div>
+<script src="B2B/partner-config.js"></script>
+<script src="B2B/partner-header.js"></script>
 
-            // 1. Propostas em andamento
-            var emAndamento = list.filter(function (p) {
-              var st = String(p.status || '').toLowerCase().trim();
-              return st === 'enviada' || st === 'hold' || st === 'rascunho';
-            }).length;
-
-            // 2. Propostas Aprovadas
-            var aprovadas = list.filter(function (p) {
-              var st = String(p.status || '').toLowerCase().trim();
-              return st === 'aprovada' || st === 'aprovado';
-            });
-
-            // 3. Faturamento Bruto Aprovado
-            var valorFechado = aprovadas.reduce(function (acc, p) { 
-              return acc + Number(p.valor_total || 0); 
-            }, 0);
-
-            // 4. Cálculo de Comissão Líquida Item por Item
-            var comissaoLiberada = 0;
-            var comissaoPendente = 0;
-
-            aprovadas.forEach(function (p) {
-              var val = Number(p.valor_total || 0);
-              var pct = Number(p.comissao_pct_efetiva !== undefined && p.comissao_pct_efetiva !== null ? p.comissao_pct_efetiva : (parceiro.comissao_padrao_pct || 10));
-              var valorComissao = (val * pct) / 100;
-
-              var dataEv = p.data_evento ? String(p.data_evento).split('T')[0] : '';
-
-              if (dataEv && dataEv <= hoje) {
-                comissaoLiberada += valorComissao;
-              } else {
-                comissaoPendente += valorComissao;
-              }
-            });
-
-            atualizarKPIsTela(emAndamento, aprovadas.length, valorFechado, comissaoLiberada, comissaoPendente);
-          }).catch(function (err) {
-            console.error('[432UP Partner] Erro ao carregar KPIs diretos:', err);
-            atualizarKPIsTela(0, 0, 0, 0, 0);
-          });
-      }
-
-      function atualizarKPIsTela(andamento, aprovadas, valorFechado, comissaoLiberada, comissaoPendente) {
-        document.getElementById('kpiAndamento').textContent = andamento + ' ' + (andamento === 1 ? 'proposta' : 'propostas');
-        document.getElementById('kpiAprovadas').textContent = aprovadas + ' ' + (aprovadas === 1 ? 'proposta' : 'propostas');
-        document.getElementById('kpiValorFechado').textContent = fmtMoeda(valorFechado) + ' fechados';
-        document.getElementById('kpiComissaoLiberada').textContent = fmtMoeda(comissaoLiberada);
-
-        var subEl = document.getElementById('kpiComissaoSub');
-        if (comissaoPendente > 0) {
-          subEl.textContent = fmtMoeda(comissaoPendente) + ' a liberar pós-evento';
-        } else {
-          subEl.textContent = 'Liberado para resgate em conta';
-        }
-      }
-
-      function carregarAtencao(parceiroId) {
-        sbPartner.from('propostas')
-          .select('*')
-          .eq('parceiro_id', parceiroId)
-          .order('criado_em', { ascending: false })
-          .then(function (res) {
-            var el = document.getElementById('listaAtencao');
-            if (res.error) {
-              el.innerHTML = '<p class="text-xs text-red-400 py-2 text-center">Erro ao carregar oportunidades.</p>';
-              return;
-            }
-
-            var filtrados = (res.data || []).filter(function(p) {
-              var st = String(p.status || '').toLowerCase().trim();
-              return st === 'hold' || st === 'enviada' || st === 'rascunho';
-            }).slice(0, 5);
-
-            // Estado Zero Alinhado com CTA
-            if (!filtrados.length) {
-              el.innerHTML = 
-                '<div class="py-6 px-4 text-center space-y-3">' +
-                  '<p class="text-xs text-slate-400">Nenhuma proposta pendente de atenção no momento. 🎉</p>' +
-                  '<a href="nova-proposta.html" class="inline-flex items-center space-x-2 px-4 py-2 rounded-xl bg-cyan-500/10 hover:bg-cyan-500/20 text-cyan-300 border border-cyan-500/30 text-xs font-bold transition">' +
-                    '<span>⚡ Criar Nova Proposta</span>' +
-                  '</a>' +
-                '</div>';
-              return;
-            }
-
-            el.innerHTML = filtrados.map(function (p) {
-              var stKey = String(p.status || '').toLowerCase().trim();
-              var st = STATUS_LABEL[stKey] || STATUS_LABEL.enviada;
-              var isHold = stKey === 'hold';
-              var bordaCls = isHold ? 'border-amber-500/30' : 'border-white/10';
-              
-              var badgeStatusHtml = isHold 
-                ? '<span data-hold-expira="' + (p.hold_expira_em || '') + '" class="px-2 py-0.5 rounded text-[10px] font-bold ' + st.cls + '">⏳ ' + formatarTempoRestante(p.hold_expira_em) + '</span>'
-                : '<span class="px-2 py-0.5 rounded text-[10px] font-bold ' + st.cls + '">' + st.text + '</span>';
-
-              var subInfoHtml = isHold 
-                ? 'Reserva de agenda expira em breve • ' + fmtMoeda(p.valor_total)
-                : fmtMoeda(p.valor_total);
-
-              return '<div class="flex flex-col sm:flex-row sm:items-center justify-between p-4 rounded-xl bg-white/[0.02] hover:bg-white/[0.04] ' + bordaCls + ' border gap-3 transition">' +
-                '<div>' +
-                  '<div class="flex items-center space-x-2 flex-wrap gap-y-1">' +
-                    '<span class="font-bold text-white text-sm">#' + (p.numero || '—') + ' — ' + esc(p.cliente_nome) + '</span>' +
-                    badgeStatusHtml +
-                  '</div>' +
-                  '<p class="text-xs text-slate-400 mt-1">Data do Evento: ' + fmtData(p.data_evento) + ' • ' + subInfoHtml + '</p>' +
-                '</div>' +
-                '<div class="flex items-center space-x-2 shrink-0">' +
-                  '<a href="nova-proposta.html?id=' + p.id + '" class="px-3.5 py-1.5 rounded-lg bg-cyan-500/20 hover:bg-cyan-500/30 text-xs font-semibold text-cyan-300 border border-cyan-500/30 transition">Acompanhar / Editar</a>' +
-                '</div>' +
-              '</div>';
-            }).join('');
-
-            iniciarTimersHold();
-          }).catch(function (err) {
-            console.error('[432UP Partner] Erro ao carregar painel de atenção:', err);
-            var el = document.getElementById('listaAtencao');
-            if (el) {
-              el.innerHTML = '<p class="text-xs text-red-400 py-2 text-center">Erro ao carregar oportunidades.</p>';
-            }
-          });
-      }
-    })();
-  </script>
 </body>
 </html>

@@ -1,0 +1,565 @@
+<!DOCTYPE html>
+<html lang="pt-BR" data-theme="dark">
+<head>
+  <!-- Google Analytics GA4 -->
+  <script async src="https://www.googletagmanager.com/gtag/js?id=G-7SWNCP1NV6"></script>
+  <script>
+    window.dataLayer = window.dataLayer || [];
+    function gtag(){dataLayer.push(arguments);}
+    gtag('js', new Date());
+    gtag('config', 'G-7SWNCP1NV6');
+  </script>
+
+  <!-- Anti-FOUC para a transição de abertura das cortinas -->
+  <script>
+    if (sessionStorage.getItem('curtain_transition_opening') === 'true') {
+      document.documentElement.classList.add('curtain-pre-closed');
+    }
+  </script>
+
+  <!-- PostHog Analytics -->
+  <script>
+    !function(t,e){var o,n,p,r;e.__SV||(window.posthog && window.posthog.__loaded)||(window.posthog=e,e._i=[],e.init=function(i,s,a){function g(t,e){var o=e.split(".");2==o.length&&(t=t[o[0]],e=o[1]),t[e]=function(){t.push([e].concat(Array.prototype.slice.call(arguments,0)))}}(p=t.createElement("script")).type="text/javascript",p.crossOrigin="anonymous",p.async=!0,p.src=s.api_host.replace(".i.posthog.com","-assets.i.posthog.com")+"/static/array.js",(r=t.getElementsByTagName("script")[0]).parentNode.insertBefore(p,r);var u=e;for(void 0!==a?u=e[a]=[]:a="posthog",u.people=u.people||[],u.toString=function(t){var e="posthog";return"posthog"!==a&&(e+="."+a),t||(e+=" (stub)"),e},u.people.toString=function(){return u.toString(1)+".people (stub)"},o="an ln init xn Cn Br kn In capture Fn nn calculateEventProperties On register register_once register_for_session unregister unregister_for_session Ln getFeatureFlag getFeatureFlagPayload getFeatureFlagResult getAllFeatureFlags isFeatureEnabled reloadFeatureFlags updateFlags updateEarlyAccessFeatureEnrollment getEarlyAccessFeatures on onFeatureFlags onSurveysLoaded onSessionId getSurveys getActiveMatchingSurveys renderSurvey displaySurvey cancelPendingSurvey canRenderSurveyAsync Dn identify setPersonProperties unsetPersonProperties group resetGroups setPersonPropertiesForFlags resetPersonPropertiesForFlags setGroupPropertiesForFlags resetGroupPropertiesForFlags reset shutdown setIdentity clearIdentity get_distinct_id getGroups get_session_id get_session_replay_url alias set_config startSessionRecording stopSessionRecording sessionRecordingStarted captureException addExceptionStep captureLog startExceptionAutocapture stopExceptionAutocapture loadToolbar get_property getSessionProperty An Rn createPersonProfile setInternalOrTestUser $n yn jn opt_in_capturing opt_out_capturing has_opted_in_capturing has_opted_out_capturing get_explicit_consent_status is_capturing clear_opt_in_out_capturing Tn debug Ur Rt getPageViewId captureTraceFeedback captureTraceMetric pn".split(" "),n=0;n<o.length;n++)g(u,o[n]);e._i.push([i,s,a])},e.__SV=1)}(document,window.posthog||[]);
+    posthog.init('phc_t76fhhCgdrhmPwLXSxXD79vv7sX3yBK3w7V57wQqxccw', {
+        api_host: 'https://us.i.posthog.com',
+        defaults: '2026-05-30',
+        person_profiles: 'identified_only',
+    })
+  </script>
+
+  <!-- Supabase CDN -->
+  <script src="https://unpkg.com/@supabase/supabase-js@2"></script>
+  <!-- Tracker unificado -->
+  <script src="https://www.432up.com/script/tracker.js"></script>
+
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
+  <meta name="theme-color" content="#08080A">
+  <meta name="apple-mobile-web-app-capable" content="yes">
+  <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+
+  <link class="js-site-favicon" rel="icon" type="image/png" href="imagens/favicon.png">
+
+  <title>O Palco — A Quarta Via</title>
+  <meta name="description" content="Como funciona o encantamento? Uma perspectiva sobre a arquitetura e composição da experiência.">
+  <link rel="canonical" href="https://www.432up.com/quando-a-cortina-se-abre">
+
+  <!-- Open Graph -->
+  <meta property="og:locale" content="pt_BR">
+  <meta property="og:title" content="O Palco — A Quarta Via">
+  <meta property="og:description" content="Como funciona o encantamento? Descubra a arquitetura poética da experiência.">
+  <meta property="og:image" content="https://www.432up.com/imagens/logo.png">
+  <meta property="og:url" content="https://www.432up.com/quando-a-cortina-se-abre">
+  <meta property="og:type" content="book">
+
+  <!-- Google Fonts & CSS Base -->
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Cinzel:wght@600;700;900&family=EB+Garamond:ital,wght@0,400;0,500;0,600;0,700;1,400;1,600&family=Fira+Code:wght@400;600&family=Inter:wght@300;400;500;600;700;800&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="css/style.css">
+
+  <style>
+    :root {
+      --curtain-cyan: #00F0FF;
+      --curtain-glow: rgba(0, 240, 255, 0.3);
+      --curtain-pigment: rgba(0, 240, 255, 0.08);
+
+      --maestro-purple: #A855F7;
+      --maestro-glow: rgba(168, 85, 247, 0.3);
+      --maestro-pigment: rgba(168, 85, 247, 0.08);
+
+      --event-gold: #FFB800;
+      --event-lime: #00FF66;
+      --event-glow: rgba(0, 255, 102, 0.25);
+
+      --book-glass-bg: rgba(10, 12, 18, 0.85);
+      --book-glass-border: rgba(0, 240, 255, 0.18);
+    }
+
+    .book-wrapper {
+      position: relative;
+      z-index: 2;
+      max-width: 860px;
+      margin: 0 auto;
+      padding: 120px 24px 100px 24px;
+    }
+
+    /* HERO */
+    .book-hero-cover {
+      background: linear-gradient(135deg, rgba(10, 18, 28, 0.95), var(--curtain-pigment), var(--maestro-pigment));
+      border: 1px solid var(--curtain-cyan);
+      border-radius: 28px;
+      padding: 60px 36px;
+      margin-bottom: 50px;
+      text-align: center;
+      position: relative;
+      overflow: hidden;
+      box-shadow: 0 25px 60px rgba(0, 0, 0, 0.85), 0 0 35px var(--curtain-glow);
+    }
+
+    .book-dossier-tag {
+      font-family: 'Fira Code', monospace;
+      font-size: 0.8rem;
+      font-weight: 700;
+      letter-spacing: 3px;
+      color: var(--curtain-cyan);
+      text-transform: uppercase;
+      display: block;
+      margin-bottom: 16px;
+    }
+
+    .book-title-main {
+      font-family: 'Cinzel', serif;
+      font-size: clamp(2.2rem, 5vw, 3.8rem);
+      font-weight: 900;
+      line-height: 1.1;
+      color: #FFFFFF;
+      letter-spacing: 1px;
+      margin-bottom: 24px;
+    }
+
+    .book-subtitle {
+      font-family: 'EB Garamond', serif;
+      font-style: italic;
+      font-size: clamp(1.2rem, 2.2vw, 1.5rem);
+      color: rgba(255, 255, 255, 0.9);
+      max-width: 680px;
+      margin: 0 auto;
+      line-height: 1.6;
+    }
+
+    /* CARDS DA EXPERIÊNCIA */
+    .book-chapter-block {
+      background: var(--book-glass-bg);
+      backdrop-filter: blur(24px);
+      -webkit-backdrop-filter: blur(24px);
+      border: 1px solid var(--book-glass-border);
+      border-radius: 24px;
+      padding: 40px 36px;
+      margin-bottom: 40px;
+      box-shadow: 0 20px 50px rgba(0, 0, 0, 0.6);
+      transition: border-color 0.4s ease, transform 0.4s ease;
+    }
+
+    .book-chapter-block:hover {
+      border-color: rgba(0, 240, 255, 0.4);
+      transform: translateY(-2px);
+    }
+
+    .chapter-heading {
+      font-family: 'Cinzel', serif;
+      font-size: clamp(1.6rem, 3vw, 2.1rem);
+      font-weight: 700;
+      color: #FFFFFF;
+      margin-bottom: 20px;
+      letter-spacing: 1px;
+    }
+
+    .chapter-body {
+      font-family: 'EB Garamond', serif;
+      font-size: 1.25rem;
+      line-height: 1.8;
+      color: rgba(241, 245, 249, 0.92);
+    }
+
+    .chapter-body p {
+      margin-bottom: 16px;
+    }
+
+    .chapter-body p:last-child {
+      margin-bottom: 0;
+    }
+
+    /* CARD 4 - PERSPECTIVA */
+    .card-perspective {
+      border-color: rgba(168, 85, 247, 0.35) !important;
+      background: linear-gradient(180deg, rgba(14, 10, 22, 0.95), rgba(20, 12, 28, 0.98)) !important;
+      box-shadow: 0 20px 60px rgba(0, 0, 0, 0.85), 0 0 25px var(--maestro-glow);
+    }
+
+    /* CARD FINAL - A PASSAGEM */
+    .card-backstage {
+      background: linear-gradient(180deg, rgba(5, 6, 10, 0.98), rgba(2, 3, 5, 0.99)) !important;
+      border: 1px solid rgba(255, 255, 255, 0.12) !important;
+      padding: 70px 40px;
+      margin-top: 60px;
+      margin-bottom: 20px;
+      text-align: center;
+      position: relative;
+      box-shadow: 0 30px 80px rgba(0, 0, 0, 0.95);
+    }
+
+    .backstage-title {
+      font-family: 'Cinzel', serif;
+      font-size: clamp(1.8rem, 3.5vw, 2.6rem);
+      font-weight: 700;
+      color: #FFFFFF;
+      letter-spacing: 2px;
+      margin-bottom: 32px;
+    }
+
+    .backstage-text-1 {
+      font-family: 'EB Garamond', serif;
+      font-size: 1.35rem;
+      font-style: italic;
+      color: rgba(255, 255, 255, 0.85);
+      margin-bottom: 48px;
+    }
+
+    .backstage-pause {
+      font-family: 'EB Garamond', serif;
+      font-size: 1.45rem;
+      color: #FFFFFF;
+      margin-bottom: 48px;
+      letter-spacing: 0.5px;
+    }
+
+    /* CTA GRUTA */
+    .curtain-next-stage-wrapper {
+      margin-top: 20px;
+      text-align: center;
+    }
+
+    .btn-curtain-trigger {
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      gap: 14px;
+      padding: 20px 48px;
+      border-radius: 40px;
+      background: linear-gradient(135deg, rgba(0, 240, 255, 0.15), rgba(168, 85, 247, 0.2));
+      border: 1px solid var(--curtain-cyan);
+      color: #FFFFFF;
+      font-family: 'Cinzel', serif;
+      font-size: 1.05rem;
+      font-weight: 700;
+      letter-spacing: 3px;
+      text-decoration: none;
+      cursor: pointer;
+      box-shadow: 0 0 30px rgba(0, 240, 255, 0.25);
+      transition: all 0.4s cubic-bezier(0.16, 1, 0.3, 1);
+    }
+
+    .btn-curtain-trigger:hover {
+      transform: translateY(-3px) scale(1.02);
+      box-shadow: 0 0 50px rgba(0, 240, 255, 0.45);
+      background: linear-gradient(135deg, rgba(0, 240, 255, 0.25), rgba(168, 85, 247, 0.35));
+      border-color: #FFFFFF;
+    }
+
+    /* ESTRUTURA DAS CORTINAS TEATRAIS */
+    .curtain-stage-overlay {
+      position: fixed;
+      top: 0;
+      left: 0;
+      right: 0;
+      bottom: 0;
+      width: 100vw;
+      height: 100vh;
+      z-index: 999999;
+      pointer-events: none;
+      overflow: hidden;
+      visibility: hidden;
+    }
+
+    .curtain-stage-overlay.is-active {
+      visibility: visible;
+      pointer-events: all;
+    }
+
+    .curtain-ambient-dimmer {
+      position: absolute;
+      inset: 0;
+      background: #030305;
+      opacity: 0;
+      transition: opacity 1.5s cubic-bezier(0.65, 0, 0.35, 1);
+    }
+
+    .curtain-stage-overlay.is-closing .curtain-ambient-dimmer,
+    .curtain-stage-overlay.is-closed .curtain-ambient-dimmer {
+      opacity: 0.85;
+    }
+
+    .curtain-leaf {
+      position: absolute;
+      top: 0;
+      width: 50.5vw;
+      height: 100vh;
+      will-change: transform;
+      background-color: #0d0614;
+      background-image: 
+        linear-gradient(90deg, 
+          rgba(5, 2, 8, 0.98) 0%, 
+          rgba(28, 12, 38, 0.95) 12%, 
+          rgba(8, 3, 12, 0.98) 25%, 
+          rgba(35, 15, 48, 0.92) 38%, 
+          rgba(6, 2, 10, 0.99) 50%, 
+          rgba(32, 14, 42, 0.94) 63%, 
+          rgba(5, 2, 8, 0.98) 78%, 
+          rgba(20, 8, 28, 0.96) 90%, 
+          rgba(2, 1, 4, 1) 100%),
+        repeating-linear-gradient(90deg, 
+          rgba(255, 255, 255, 0.03) 0px, 
+          rgba(0, 0, 0, 0.25) 18px, 
+          rgba(255, 255, 255, 0.015) 36px);
+      box-shadow: inset 0 0 100px rgba(0, 0, 0, 0.9);
+      transition: transform 1.6s cubic-bezier(0.77, 0, 0.175, 1);
+    }
+
+    .curtain-leaf-left {
+      left: 0;
+      transform: translateX(-100%);
+      box-shadow: 15px 0 45px rgba(0, 0, 0, 0.95), inset -20px 0 35px rgba(0, 0, 0, 0.85);
+    }
+
+    .curtain-leaf-right {
+      right: 0;
+      transform: translateX(100%);
+      box-shadow: -15px 0 45px rgba(0, 0, 0, 0.95), inset 20px 0 35px rgba(0, 0, 0, 0.85);
+    }
+
+    .curtain-center-seam-shadow {
+      position: absolute;
+      top: 0;
+      bottom: 0;
+      width: 40px;
+      pointer-events: none;
+      opacity: 0;
+      transition: opacity 0.5s ease;
+    }
+
+    .curtain-leaf-left .curtain-center-seam-shadow {
+      right: 0;
+      background: linear-gradient(90deg, transparent, rgba(0, 0, 0, 0.95));
+    }
+
+    .curtain-leaf-right .curtain-center-seam-shadow {
+      left: 0;
+      background: linear-gradient(-90deg, transparent, rgba(0, 0, 0, 0.95));
+    }
+
+    .curtain-stage-overlay.is-closing .curtain-leaf-left,
+    .curtain-stage-overlay.is-closed .curtain-leaf-left,
+    .curtain-stage-overlay.is-closing .curtain-leaf-right,
+    .curtain-stage-overlay.is-closed .curtain-leaf-right {
+      transform: translateX(0);
+    }
+
+    .curtain-stage-overlay.is-closed .curtain-center-seam-shadow {
+      opacity: 1;
+    }
+
+    html.curtain-pre-closed .curtain-stage-overlay {
+      visibility: visible !important;
+      pointer-events: all !important;
+    }
+    html.curtain-pre-closed .curtain-ambient-dimmer {
+      opacity: 0.85 !important;
+    }
+    html.curtain-pre-closed .curtain-leaf-left,
+    html.curtain-pre-closed .curtain-leaf-right {
+      transform: translateX(0) !important;
+      transition: none !important;
+    }
+
+    @media (prefers-reduced-motion: reduce) {
+      .curtain-leaf { transition: opacity 0.4s ease !important; }
+      .curtain-leaf-left { transform: translateX(0); opacity: 0; }
+      .curtain-leaf-right { transform: translateX(0); opacity: 0; }
+      .curtain-stage-overlay.is-closing .curtain-leaf-left,
+      .curtain-stage-overlay.is-closing .curtain-leaf-right,
+      .curtain-stage-overlay.is-closed .curtain-leaf-left,
+      .curtain-stage-overlay.is-closed .curtain-leaf-right { opacity: 1; }
+    }
+
+    @media (max-width: 768px) {
+      .book-wrapper { padding: 100px 16px 80px 16px; }
+      .book-chapter-block { padding: 28px 20px; }
+      .book-hero-cover { padding: 40px 20px; }
+      .card-backstage { padding: 50px 20px; }
+      .chapter-body { font-size: 1.15rem; }
+      .btn-curtain-trigger { width: 100%; padding: 18px 20px; font-size: 0.95rem; }
+    }
+  </style>
+
+  <script src="script/script.js" defer></script>
+</head>
+<body>
+
+  <!-- CANVAS DE BACKGROUND FIXO -->
+  <canvas id="orbit-canvas"></canvas>
+  <div id="plasmaLayer" class="plasma-top-layer"></div>
+
+  <!-- CONTAINER DE HEADER GLOBAL -->
+
+
+  <!-- ESTRUTURA DAS CORTINAS TEATRAIS (OVERLAY DE TRANSIÇÃO CINEMATOGRÁFICA) -->
+  <div id="curtain-stage-overlay" class="curtain-stage-overlay" aria-hidden="true">
+    <div class="curtain-ambient-dimmer"></div>
+    <div class="curtain-leaf curtain-leaf-left">
+      <div class="curtain-center-seam-shadow"></div>
+    </div>
+    <div class="curtain-leaf curtain-leaf-right">
+      <div class="curtain-center-seam-shadow"></div>
+    </div>
+  </div>
+
+  <!-- CONTEÚDO PRINCIPAL: O PALCO -->
+  <main class="book-wrapper">
+
+    <!-- HERO -->
+    <section class="book-hero-cover aurora-border-glow">
+      <span class="book-dossier-tag">O PALCO</span>
+      <h1 class="book-title-main">COMO FUNCIONA O ENCANTAMENTO?</h1>
+      <p class="book-subtitle">Você já atravessou a experiência.<br>Agora pode olhar para ela de outro ângulo.</p>
+    </section>
+
+    <!-- CARD 1: A ATMOSFERA -->
+    <article class="book-chapter-block">
+      <h2 class="chapter-heading">A ATMOSFERA</h2>
+      <div class="chapter-body">
+        <p>Antes de qualquer palavra, existe uma atmosfera.</p>
+        <p>Luz, espaço, silêncio, contraste, movimento e ritmo preparam o terreno para aquilo que será percebido.</p>
+      </div>
+    </article>
+
+    <!-- CARD 2: A NARRATIVA -->
+    <article class="book-chapter-block">
+      <h2 class="chapter-heading">A NARRATIVA</h2>
+      <div class="chapter-body">
+        <p>Depois vem a história.</p>
+        <p>Cada passagem foi pensada para que uma descoberta conduza naturally à próxima.</p>
+      </div>
+    </article>
+
+    <!-- CARD 3: A DESCOBERTA -->
+    <article class="book-chapter-block">
+      <h2 class="chapter-heading">A DESCOBERTA</h2>
+      <div class="chapter-body">
+        <p>O objetivo não é mostrar tudo.</p>
+        <p>É deixar espaço suficiente para que você queira descobrir o que ainda não apareceu.</p>
+      </div>
+    </article>
+
+    <!-- CARD 4: E VOCÊ? -->
+    <article class="book-chapter-block card-perspective">
+      <h2 class="chapter-heading">E VOCÊ?</h2>
+      <div class="chapter-body">
+        <p>Em algum momento, você deixa de apenas observar.</p>
+        <p>Começa a escolher onde olhar.</p>
+      </div>
+    </article>
+
+    <!-- CARD FINAL — A PASSAGEM -->
+    <article class="book-chapter-block card-backstage">
+      <h2 class="backstage-title">TODO PALCO TEM SEUS BASTIDORES.</h2>
+      
+      <p class="backstage-text-1">Mas este foi construído no meio da floresta.</p>
+      
+      <p class="backstage-pause">Você quer descobrir o que existe atrás dele?</p>
+
+      <div class="curtain-next-stage-wrapper">
+        <a href="livros/gruta.html" id="btn-to-gruta" class="btn-curtain-trigger">
+          <span>ATRÁS DO PALCO</span>
+          <span style="font-size: 1.2rem; line-height: 1;">→</span>
+        </a>
+      </div>
+    </article>
+
+  </main>
+
+  <!-- RODAPÉ -->
+  <footer>
+    <div class="footer-bar">
+      <div class="footer-copy-text" style="opacity: 0.6; font-size: 0.72rem;">© 2026 O PALCO — A QUARTA VIA</div>
+      <div style="opacity: 0.8; font-size: 0.72rem; color: var(--curtain-cyan);">A ARQUITETURA DA EXPERIÊNCIA</div>
+    </div>
+  </footer>
+
+  <script>
+    // Injeta o header.html mantendo a performance e o estilo original da aplicação
+    async function injectGlobalHeader() {
+      try {
+        const response = await fetch('header.html');
+        if (response.ok) {
+          const headerHTML = await response.text();
+          const parser = new DOMParser();
+          const doc = parser.parseFromString(headerHTML, 'text/html');
+          const content = doc.body ? doc.body.innerHTML : headerHTML;
+          
+          document.getElementById('global-header-container').innerHTML = content;
+        }
+      } catch (error) {
+        console.error('Erro ao carregar o header global:', error);
+      }
+    }
+
+    document.addEventListener('DOMContentLoaded', injectGlobalHeader);
+
+    /* MOTOR DA TRANSIÇÃO TEATRAL CINEMATOGRÁFICA */
+    (function initStageCurtainEngine() {
+      const stageOverlay = document.getElementById('curtain-stage-overlay');
+      if (!stageOverlay) return;
+
+      const prefersReducedMotion = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+      const CLOSE_DURATION = prefersReducedMotion ? 400 : 1600;
+      const PAUSE_DURATION = prefersReducedMotion ? 100 : 350;
+      const OPEN_DURATION = prefersReducedMotion ? 400 : 1600;
+
+      const isIncomingTransition = sessionStorage.getItem('curtain_transition_opening') === 'true';
+
+      if (isIncomingTransition) {
+        sessionStorage.removeItem('curtain_transition_opening');
+        
+        document.documentElement.classList.remove('curtain-pre-closed');
+        stageOverlay.classList.add('is-active', 'is-closed');
+
+        requestAnimationFrame(() => {
+          setTimeout(() => {
+            stageOverlay.classList.remove('is-closed');
+            
+            setTimeout(() => {
+              stageOverlay.classList.remove('is-active');
+            }, OPEN_DURATION + 100);
+          }, 150);
+        });
+      } else {
+        document.documentElement.classList.remove('curtain-pre-closed');
+      }
+
+      function triggerCurtainTransition(targetUrl) {
+        if (stageOverlay.classList.contains('is-active')) return;
+
+        stageOverlay.classList.add('is-active');
+        
+        requestAnimationFrame(() => {
+          stageOverlay.classList.add('is-closing');
+        });
+
+        setTimeout(() => {
+          sessionStorage.setItem('curtain_transition_opening', 'true');
+          window.location.href = targetUrl;
+        }, CLOSE_DURATION + PAUSE_DURATION);
+      }
+
+      document.addEventListener('click', function(e) {
+        const link = e.target.closest('a[href*="gruta.html"], a[href*="/index.html"], a[href="index"]');
+        if (link) {
+          e.preventDefault();
+          const targetUrl = link.getAttribute('href');
+          triggerCurtainTransition(targetUrl);
+        }
+      });
+
+      window.triggerCurtainTransition = triggerCurtainTransition;
+    })();
+  </script>
+
+<header id="calc-header"></header>
+<div id="mobile-menu"></div>
+<script src="https://unpkg.com/@supabase/supabase-js@2"></script>
+<script src="B2B/partner-config.js"></script>
+<script src="B2B/partner-header.js"></script>
+
+</body>
+</html>
