@@ -1046,6 +1046,32 @@
       if (containerTabela) containerTabela.style.display = '';
 
       itens.forEach(item => {
+        let inclusos = item.itens_inclusos;
+        if (typeof inclusos === 'string') {
+          try { inclusos = JSON.parse(inclusos); } catch (e) { inclusos = []; }
+        }
+        if (!Array.isArray(inclusos)) inclusos = [];
+        const tipoNorm = String(item.tipo || '').toLowerCase();
+        const ehPacote = tipoNorm === 'pacote' || tipoNorm === 'package' || inclusos.length > 0;
+
+        if (ehPacote && inclusos.length) {
+          inclusos.forEach(inc => {
+            const trInc = document.createElement('tr');
+            const nomeInc = realValue(inc.nome || inc.item_nome) || 'Item incluso';
+            const specInc = realValue(inc.especificacao) || calcularQtdStr(inc) || 'incluso';
+            const refNum = parseFloat(inc.valor_referencia || inc.valor || inc.preco);
+            const refStr = !isNaN(refNum) ? formatarMoeda(refNum) : '';
+            trInc.innerHTML = `
+              <td>
+                <div style="font-weight: 500; color: #6B7280; padding-left: 10px;">${nomeInc}</div>
+              </td>
+              <td style="text-align: center; font-weight: 500; color: #6B7280;">${specInc}</td>
+              <td style="text-align: right; font-weight: 500; color: #9CA3AF; text-decoration: line-through;">${refStr}</td>
+            `;
+            tbody.appendChild(trInc);
+          });
+        }
+
         const tr = document.createElement('tr');
 
         // Nome: mesma prioridade usada pelo Contrato (item.nome || item.item_nome).

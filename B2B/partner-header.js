@@ -75,12 +75,12 @@
         { label: 'Configurar Contrato', href: ADM + 'configure-contrato.html', file: 'configure-contrato.html' }
       ]},
       { label: 'Painel do Site', sub: [
-        { label: 'Simulador', href: ADM + 'admin.html#simulador', file: 'admin.html', hash: 'simulador' },
-        { label: 'Serviços', href: ADM + 'admin.html#servicos', file: 'admin.html', hash: 'servicos' },
-        { label: 'Pacotes', href: ADM + 'admin.html#pacotes', file: 'admin.html', hash: 'pacotes' },
-        { label: 'Transporte', href: ADM + 'admin.html#transporte', file: 'admin.html', hash: 'transporte' },
-        { label: 'Leads', href: ADM + 'admin.html#leads', file: 'admin.html', hash: 'leads' },
-        { label: 'Galeria', href: ADM + 'admin-galeria.html', file: 'admin-galeria' }
+        { label: 'Simulador', href: ADM + 'admin-simulador.html', file: 'admin-simulador.html' },
+        { label: 'Serviços', href: ADM + 'admin-servicos.html', file: 'admin-servicos.html' },
+        { label: 'Pacotes', href: ADM + 'admin-pacotes.html', file: 'admin-pacotes.html' },
+        { label: 'Transporte', href: ADM + 'admin-transporte.html', file: 'admin-transporte.html' },
+        { label: 'Leads', href: ADM + 'admin-leads.html', file: 'admin-leads.html' },
+        { label: 'Galeria', href: ADM + 'admin-galeria.html', file: 'admin-galeria.html' }
       ]},
       { label: 'Studio', href: ADM + 'studio.html', file: 'studio.html' }
     ]
@@ -97,10 +97,6 @@
     return String(s).replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;');
   }
 
-  function currentHash() {
-    return (window.location.hash || '').replace('#', '');
-  }
-
   function up(e, selector) {
     return e.target && e.target.closest ? e.target.closest(selector) : null;
   }
@@ -114,9 +110,7 @@
 
   function isActive(item, area) {
     if (area !== pageArea || !item.file) return false;
-    if (item.file !== currentPath) return false;
-    if (item.hash) return (currentHash() || 'simulador') === item.hash;
-    return true;
+    return item.file === currentPath;
   }
 
   /* ---------- 5. Montagem do HTML ---------- */
@@ -141,9 +135,7 @@
     var tagId = item.tagId ? (mobile ? item.tagId + '-mobile' : item.tagId) : '';
     var tag = tagId ? ' <span id="' + esc(tagId) + '" class="lp-tag"></span>' : '';
     var label = (mobile && item.icon ? item.icon + ' ' : '') + esc(item.label) + tag;
-    var href = item.href;
-    if (item.hash && currentPath === 'admin.html') href = '#' + item.hash;
-    return '<a href="' + esc(href) + '"' + cls + style + '>' + label + '</a>';
+    return '<a href="' + esc(item.href) + '"' + cls + style + '>' + label + '</a>';
   }
 
   function itemsHTML(area, mobile) {
@@ -622,7 +614,6 @@
 
     window.addEventListener('scroll', closePanel, { passive: true });
     window.addEventListener('resize', closePanel);
-    window.addEventListener('hashchange', renderItems);
   }
 
   /* ---------- 9. API global ---------- */

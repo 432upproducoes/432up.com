@@ -1259,12 +1259,38 @@
 
         tbody.innerHTML = '';
 
-        const itens =
-          Array.isArray(proposta.itens)
-            ? proposta.itens
-            : [];
+        let itensBrutos = proposta.itens;
+        if (typeof itensBrutos === 'string') {
+          try { itensBrutos = JSON.parse(itensBrutos); } catch (e) { itensBrutos = []; }
+        }
+        const itens = Array.isArray(itensBrutos) ? itensBrutos : [];
 
         let temItemValido = false;
+
+        function baseCalculoItem(item, fallback) {
+          const partesQtd = [];
+          const mItem = parseFloat(item.metragem);
+          const hItem = parseFloat(
+            item.horas != null
+              ? item.horas
+              : item.horas_extras
+          );
+          if (!isNaN(mItem) && mItem > 0) {
+            const rawU = String(item.unidade_metragem || item.unidade_metro || '').toLowerCase();
+            let uni = 'm';
+            if (rawU === 'm3' || rawU === 'm³') uni = 'm³';
+            else if (rawU === 'm2' || rawU === 'm²') uni = 'm²';
+            partesQtd.push(mItem + ' ' + uni);
+          }
+          if (!isNaN(hItem) && hItem > 0) {
+            partesQtd.push(hItem + ' h');
+          }
+          if (partesQtd.length) return partesQtd.join(' + ');
+          if (item.quantidade && Number(item.quantidade) > 1) {
+            return `Qtd: ${item.quantidade}`;
+          }
+          return fallback;
+        }
 
         itens.forEach(item => {
           if (
@@ -1276,6 +1302,38 @@
           }
 
           temItemValido = true;
+
+          let inclusos = item.itens_inclusos;
+          if (typeof inclusos === 'string') {
+            try { inclusos = JSON.parse(inclusos); } catch (e) { inclusos = []; }
+          }
+          if (!Array.isArray(inclusos)) inclusos = [];
+          const tipoNorm = String(item.tipo || '').toLowerCase();
+          const ehPacote = tipoNorm === 'pacote' || tipoNorm === 'package' || inclusos.length > 0;
+
+          if (ehPacote && inclusos.length) {
+            inclusos.forEach(inc => {
+              const trInc = document.createElement('tr');
+              const tdNomeInc = document.createElement('td');
+              tdNomeInc.style.paddingLeft = '16px';
+              tdNomeInc.style.color = 'var(--text-muted)';
+              tdNomeInc.textContent = inc.nome || 'Item incluso';
+              const tdBaseInc = document.createElement('td');
+              tdBaseInc.style.color = 'var(--text-muted)';
+              tdBaseInc.textContent = baseCalculoItem(inc, 'Incluso no pacote');
+              const tdValorInc = document.createElement('td');
+              tdValorInc.style.textAlign = 'right';
+              tdValorInc.style.color = 'var(--text-muted)';
+              tdValorInc.style.textDecoration = 'line-through';
+              tdValorInc.textContent = formatarMoeda(
+                inc.valor_referencia || inc.valor || inc.preco || 0
+              );
+              trInc.appendChild(tdNomeInc);
+              trInc.appendChild(tdBaseInc);
+              trInc.appendChild(tdValorInc);
+              tbody.appendChild(trInc);
+            });
+          }
 
           const tr = document.createElement('tr');
 
@@ -1295,41 +1353,10 @@
           const tdBase =
             document.createElement('td');
 
-          const partesQtd = [];
-          const mItem = parseFloat(item.metragem);
-          const hItem = parseFloat(
-            item.horas != null
-              ? item.horas
-              : item.horas_extras
+          tdBase.textContent = baseCalculoItem(
+            item,
+            ehPacote ? 'Pacote contratado' : 'Serviço contratado'
           );
-          if (!isNaN(mItem) && mItem > 0) {
-            const rawU = String(item.unidade_metragem || item.unidade_metro || '').toLowerCase();
-            let uni = 'm';
-            if (rawU === 'm3' || rawU === 'm³') uni = 'm³';
-            else if (rawU === 'm2' || rawU === 'm²') uni = 'm²';
-            partesQtd.push(mItem + ' ' + uni);
-          }
-          if (!isNaN(hItem) && hItem > 0) {
-            partesQtd.push(hItem + ' h');
-          }
-
-          if (partesQtd.length) {
-            tdBase.textContent = partesQtd.join(' + ');
-          } else if (
-            item.quantidade &&
-            Number(item.quantidade) > 1
-          ) {
-            tdBase.textContent =
-              `Qtd: ${item.quantidade}`;
-          } else if (
-            item.tipo === 'pacote'
-          ) {
-            tdBase.textContent =
-              'Pacote contratado';
-          } else {
-            tdBase.textContent =
-              'Serviço contratado';
-          }
 
           const tdValor =
             document.createElement('td');

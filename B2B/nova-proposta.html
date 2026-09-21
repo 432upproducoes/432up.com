@@ -90,6 +90,27 @@
       margin-top: 6px;
       font-weight: 400;
     }
+    .card-inclui {
+      display: block;
+      margin-top: 6px;
+      padding-top: 5px;
+      border-top: 1px solid rgba(255, 255, 255, 0.08);
+    }
+    .card-inclui-item {
+      display: block;
+      font-size: 10px;
+      line-height: 1.35;
+      color: #94a3b8;
+      font-weight: 500;
+      padding: 1px 0 1px 8px;
+    }
+    .sum-sub {
+      padding-left: 8px;
+    }
+    .sum-strike {
+      text-decoration: line-through;
+      text-decoration-color: rgba(148, 163, 184, 0.7);
+    }
     /* INDICADOR VISUAL DE METRAGEM — mesmo estilo/fonte do badge de horas já usado */
     .badge-metragem {
       display: inline-flex;
@@ -1491,10 +1512,17 @@
           return;
         }
         grid.innerHTML = PKG.map(function (p) {
+          var nomesInc = nomesServicosInclusosPacote(p);
+          var linhaInclui = nomesInc.length
+            ? '<span class="card-inclui">' + nomesInc.map(function (n) {
+                return '<span class="card-inclui-item">' + esc(n) + '</span>';
+              }).join('') + '</span>'
+            : '';
           return '<div data-pkg="' + p.pacote_id + '" class="glass-card-interactive p-4 rounded-xl cursor-pointer">' +
             '<span class="block text-xs font-bold text-amber-400">Pacote ' + esc(p.nome) + '</span>' +
             '<span class="block text-base font-bold text-white mt-1">' + fmtMoeda(p.preco) + '</span>' +
             '<span class="block text-[10px] text-slate-400 mt-1">' + p.horas + 'h inclusas (' + p.desconto_pct + '% OFF)</span>' +
+            linhaInclui +
             (p.descricao ? '<span class="card-desc">' + esc(p.descricao) + '</span>' : '') +
           '</div>';
         }).join('');
@@ -1598,6 +1626,52 @@
         if (s.faixas && s.faixas.some(function (f) { return f.adicional; })) partes.push('faixa');
         if (!partes.length) return '';
         return 'Cobrado por ' + partes.join(' + ');
+      }
+      function idsServicosInclusosPacote(p) {
+        if (!p) return [];
+        var raw = (p.servicos_ids && p.servicos_ids.length) ? p.servicos_ids : toArr(p.itens);
+        return raw.map(function (x) { return String(x).toLowerCase().trim(); }).filter(Boolean);
+      }
+      function servicosInclusosPacote(p) {
+        var ids = idsServicosInclusosPacote(p);
+        if (!ids.length) return [];
+        return SVC.filter(function (s) { return ids.indexOf(s.servico_id) >= 0; });
+      }
+      function nomesServicosInclusosPacote(p) {
+        return servicosInclusosPacote(p).map(function (s) { return s.nome; });
+      }
+      function valorReferenciaAvulso(s, horasRef, metroRef) {
+        if (!s) return 0;
+        var v = 0;
+        var temQty = false;
+        if (s.isPorMetro) {
+          var m = metroRef != null ? metroRef : (s.metragem_minima || 0);
+          if (m > 0) {
+            v += Number(calcularValorPorMetro(s, m).valor) || 0;
+            temQty = true;
+          }
+        }
+        if (s.isPorHora) {
+          var h = horasRef != null ? horasRef : (s.horas_minimas || 0);
+          if (h > 0) {
+            v += Number(calcularValorPorHora(s, h).valor) || 0;
+            temQty = true;
+          }
+        }
+        if (temQty) return v;
+        return Number(calcularPrecoServico(s, { temPacoteAtivo: false }).total) || 0;
+      }
+      function rotuloQtyIncluso(s, horasRef, metroRef) {
+        var partes = [];
+        if (s.isPorHora) {
+          var h = horasRef != null ? horasRef : (s.horas_minimas || 0);
+          if (h > 0) partes.push(h + 'h');
+        }
+        if (s.isPorMetro) {
+          var m = metroRef != null ? metroRef : (s.metragem_minima || 0);
+          if (m > 0) partes.push(m + ' ' + rotuloUnidadeMetragem(s.unidade_metragem));
+        }
+        return partes.length ? ' (' + partes.join(' + ') + ')' : '';
       }
       function renderServicos() {
         var grid = document.getElementById('gridServicos');
@@ -3447,9 +3521,47 @@
         var itensPayload = [];
         var pObj = PKG.find(function (x) { return x.pacote_id === activePkg; });
         if (pObj) {
+          var inclusos = servicosInclusosPacote(pObj);
+          var somaAvulsa = 0;
+          inclusos.forEach(function (s) {
+            var hRef = s.isPorHora ? (s.horas_minimas || 0) : null;
+            var mRef = s.isPorMetro ? (s.metragem_minima || 0) : null;
+            var refVal = valorReferenciaAvulso(s, hRef, mRef);
+            somaAvulsa += refVal;
+            listaLinhas.push({
+              nome: s.nome + rotuloQtyIncluso(s, hRef, mRef),
+              val: refVal,
+              kind: 'incluso'
+            });
+          });
+          if (somaAvulsa > 0) {
+            listaLinhas.push({ nome: 'Soma avulsa (referência)', val: somaAvulsa, kind: 'ref' });
+            var economiaPkg = Math.max(0, somaAvulsa - pObj.preco);
+            if (economiaPkg > 0) {
+              listaLinhas.push({ nome: 'Economia do pacote', val: -economiaPkg, kind: 'economia' });
+            }
+          }
           totalComercial += pObj.preco;
-          listaLinhas.push({ nome: 'Pacote ' + pObj.nome, val: pObj.preco });
-          itensPayload.push({ tipo: 'pacote', id: pObj.pacote_id, nome: 'Pacote ' + pObj.nome, valor: pObj.preco });
+          listaLinhas.push({ nome: 'Pacote ' + pObj.nome, val: pObj.preco, kind: 'pacote' });
+          itensPayload.push({
+            tipo: 'pacote',
+            id: pObj.pacote_id,
+            nome: 'Pacote ' + pObj.nome,
+            valor: pObj.preco,
+            horas: pObj.horas,
+            itens_inclusos: inclusos.map(function (s) {
+              var hRef = s.isPorHora ? (s.horas_minimas || 0) : null;
+              var mRef = s.isPorMetro ? (s.metragem_minima || 0) : null;
+              return {
+                nome: s.nome,
+                valor_referencia: valorReferenciaAvulso(s, hRef, mRef),
+                horas: hRef || null,
+                metragem: mRef || null,
+                unidade_metragem: s.unidade_metragem || null,
+                incluso_no_pacote: true
+              };
+            })
+          });
           var extraH = Math.max(0, horas - pObj.horas);
           if (extraH > 0) {
             var valExtraH = extraH * 350;
@@ -3465,12 +3577,15 @@
           }
         }
         SVC.forEach(function (s) {
+          var stSvc = svcState[s.servico_id];
           if (s.isPorMetro || s.isPorHora) {
             var valorCombo = 0;
+            var valorInclusoQty = 0;
             var itemCombo = { tipo: 'servico', id: s.servico_id, nome: s.nome, valor: 0 };
             var partesNome = [];
             if (s.isPorMetro) {
               var metragemAtual = svcMetragem[s.servico_id] || 0;
+              var metroIncluso = (stSvc === 'included' && pObj) ? (s.metragem_minima || 0) : 0;
               if (metragemAtual > 0) {
                 var calcMetro = calcularValorPorMetro(s, metragemAtual);
                 valorCombo += Number(calcMetro.valor) || 0;
@@ -3480,9 +3595,13 @@
                 itemCombo.valor_por_metro_aplicado = calcMetro.valorPorMetroAplicado;
                 itemCombo.faixa_aplicada = calcMetro.faixaAplicada;
               }
+              if (metroIncluso > 0) {
+                valorInclusoQty += Number(calcularValorPorMetro(s, metroIncluso).valor) || 0;
+              }
             }
             if (s.isPorHora) {
               var horasAtual = svcHoras[s.servico_id] || 0;
+              var horaInclusa = (stSvc === 'included' && pObj) ? (s.horas_minimas || 0) : 0;
               if (horasAtual > 0) {
                 var calcHora = calcularValorPorHora(s, horasAtual);
                 valorCombo += Number(calcHora.valor) || 0;
@@ -3490,16 +3609,24 @@
                 itemCombo.horas = horasAtual;
                 itemCombo.valor_por_hora_aplicado = calcHora.valorPorHoraAplicado;
               }
+              if (horaInclusa > 0) {
+                valorInclusoQty += Number(calcularValorPorHora(s, horaInclusa).valor) || 0;
+              }
             }
-            if (valorCombo > 0) {
-              itemCombo.valor = valorCombo;
-              totalComercial += valorCombo;
-              listaLinhas.push({ nome: s.nome + ' (' + partesNome.join(' + ') + ')', val: valorCombo });
+            var valorCobrar = Math.max(0, valorCombo - valorInclusoQty);
+            if (valorCobrar > 0) {
+              itemCombo.valor = valorCobrar;
+              if (stSvc === 'included') itemCombo.incluso_no_pacote = true;
+              totalComercial += valorCobrar;
+              listaLinhas.push({
+                nome: s.nome + ' (' + partesNome.join(' + ') + (stSvc === 'included' ? ', excedente' : '') + ')',
+                val: valorCobrar
+              });
               itensPayload.push(itemCombo);
             }
             return;
           }
-          if (svcState[s.servico_id] === 'manual') {
+          if (stSvc === 'manual') {
             var precoCalc = calcularPrecoServico(s, { temPacoteAtivo: !!pObj });
             var v = Number(precoCalc.total) || 0;
             totalComercial += v;
@@ -3511,7 +3638,7 @@
               valor_por_pessoa_aplicado: precoCalc.porPessoa,
               faixa_aplicada: precoCalc.faixaAplicada
             });
-          } else if (svcState[s.servico_id] === 'included') {
+          } else if (stSvc === 'included') {
             // Serviço incluído no pacote ativo: o valor_base já está embutido no
             // preço do pacote (pObj.preco). Aqui somamos apenas os componentes
             // extras (por hora, por pessoa, faixa) que não estão cobertos pelo
@@ -3613,6 +3740,30 @@
         var containerLista = document.getElementById('sumListaItens');
         if (listaLinhas.length) {
           containerLista.innerHTML = listaLinhas.map(function (l) {
+            if (l.kind === 'incluso') {
+              return '<div class="flex justify-between text-[10px] text-slate-500 sum-sub">' +
+                '<span class="truncate max-w-[140px]">' + esc(l.nome) + '</span>' +
+                '<strong class="text-slate-500 font-medium sum-strike">' + fmtMoeda(l.val) + '</strong>' +
+              '</div>';
+            }
+            if (l.kind === 'ref') {
+              return '<div class="flex justify-between text-[10px] text-slate-500">' +
+                '<span>' + esc(l.nome) + '</span>' +
+                '<strong class="text-slate-500 font-medium">' + fmtMoeda(l.val) + '</strong>' +
+              '</div>';
+            }
+            if (l.kind === 'economia') {
+              return '<div class="flex justify-between text-[10px] text-emerald-400/90">' +
+                '<span>' + esc(l.nome) + '</span>' +
+                '<strong>' + fmtMoeda(l.val) + '</strong>' +
+              '</div>';
+            }
+            if (l.kind === 'pacote') {
+              return '<div class="flex justify-between text-[11px] text-amber-300">' +
+                '<span class="truncate max-w-[140px] font-semibold">' + esc(l.nome) + '</span>' +
+                '<strong class="text-white">' + fmtMoeda(l.val) + '</strong>' +
+              '</div>';
+            }
             var valClass = l.val < 0 ? 'text-emerald-400' : 'text-white';
             return '<div class="flex justify-between text-[11px] text-slate-300">' +
               '<span class="truncate max-w-[130px]">' + esc(l.nome) + '</span>' +
