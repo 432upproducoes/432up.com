@@ -228,10 +228,24 @@
       #calc-header > .mn-toggle-d { display: inline-flex !important; flex-shrink: 0 !important; }
       #calc-header > .mn-toggle-d[data-hidden="1"] { display: none !important; }
       @media (max-width: 1024px) {
-        #calc-header .desktop-nav { display: none !important; }
-        #calc-header > .mn-toggle-d { display: none !important; }
-        #calc-header .b2b-user-widget { display: none !important; }
-        #calc-header .mobile-hamburger { display: block !important; }
+        #calc-header.mn-ready > .desktop-nav,
+        #calc-header.b2b-header-cyan .desktop-nav,
+        #calc-header .desktop-nav {
+          display: none !important;
+        }
+        #calc-header > .mn-toggle-d {
+          display: none !important;
+        }
+        #calc-header .b2b-user-widget {
+          display: none !important;
+        }
+        #calc-header .mobile-hamburger,
+        #calc-header.mn-ready .mobile-hamburger {
+          display: block !important;
+          margin-left: auto !important;
+          position: relative !important;
+          z-index: 30 !important;
+        }
       }
       .mn-tab { font: inherit; font-size: .78rem; line-height: 1; padding: .42rem .85rem; border: 0; border-radius: 999px;
         background: none; color: #8da2b5; cursor: pointer; white-space: nowrap; transition: background .15s, color .15s; }
