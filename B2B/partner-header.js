@@ -80,7 +80,7 @@
         { label: 'Pacotes', href: ADM + 'admin.html#pacotes', file: 'admin.html', hash: 'pacotes' },
         { label: 'Transporte', href: ADM + 'admin.html#transporte', file: 'admin.html', hash: 'transporte' },
         { label: 'Leads', href: ADM + 'admin.html#leads', file: 'admin.html', hash: 'leads' },
-        { label: 'Galeria', href: ADM + 'admin.html#galeria', file: 'admin.html', hash: 'galeria' }
+        { label: 'Galeria', href: ADM + 'admin-galeria.html', file: 'admin-galeria' }
       ]},
       { label: 'Studio', href: ADM + 'studio.html', file: 'studio.html' }
     ]
