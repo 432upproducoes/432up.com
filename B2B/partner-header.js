@@ -68,7 +68,7 @@
       { label: 'Pessoas', sub: [
         { label: 'Gestão de Usuários', href: ADM + 'parceiros.html', file: 'parceiros.html' },
         { label: 'Contato Cliente', href: ADM + 'admin-clientes.html', file: 'admin-clientes.html' },
-        { label: 'Contatos', href: ADM + 'clientes.html', file: 'clientes.html' },
+
         { label: 'Converter Contatos', href: ADM + 'contatos-converter.html', file: 'contatos-converter.html' }
       ]},
       { label: 'Contratos', sub: [
