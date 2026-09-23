@@ -6,6 +6,7 @@
   <title>432UP Admin | Gestão de Usuários, Vendedores & Vitrine Artística</title>
   
   <link rel="stylesheet" href="../../css/style.css">
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/cropperjs/1.5.13/cropper.min.css">
   <script src="https://cdn.tailwindcss.com"></script>
   
   <style>
@@ -80,9 +81,45 @@
       background: #dc2626;
       transform: scale(1.1);
     }
+
+    /* Crop + loading (mesmo padrão do Perfil Unificado) */
+    .modal-crop-overlay {
+      position: fixed; top: 0; left: 0; width: 100vw; height: 100vh;
+      background: rgba(8, 10, 16, 0.85); backdrop-filter: blur(16px);
+      z-index: 99999; display: none; align-items: center; justify-content: center; padding: 20px;
+    }
+    .modal-crop-overlay.active { display: flex; }
+
+    #loadingOverlayAdmin {
+      position: fixed;
+      top: 0; left: 0; width: 100vw; height: 100vh;
+      background: rgba(14, 10, 20, 0.88);
+      backdrop-filter: blur(18px);
+      -webkit-backdrop-filter: blur(18px);
+      z-index: 100000;
+      display: none;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      padding: 20px;
+    }
+    #loadingOverlayAdmin.active { display: flex; }
   </style>
 </head>
 <body class="min-h-screen text-slate-200 font-sans antialiased bg-[#06080c]">
+
+  <div id="loadingOverlayAdmin">
+    <div class="glass-b2b p-8 rounded-2xl max-w-sm w-full text-center space-y-4 border border-cyan-500/40 shadow-[0_0_35px_rgba(0,240,255,0.25)]">
+      <div class="w-12 h-12 border-4 border-cyan-400 border-t-transparent rounded-full animate-spin mx-auto mb-2"></div>
+      <div>
+        <span id="loadingMessageAdmin" class="text-xs font-bold text-cyan-300 uppercase tracking-wider block">Otimizando e Enviando Mídias...</span>
+        <span id="loadingPercentageTextAdmin" class="text-2xl font-extrabold text-white mt-1 block">0%</span>
+      </div>
+      <div class="w-full bg-slate-950/80 rounded-full h-2.5 overflow-hidden border border-cyan-500/30">
+        <div id="loadingProgressBarAdmin" class="bg-gradient-to-r from-cyan-500 via-cyan-400 to-amber-400 h-2.5 rounded-full transition-all duration-150 shadow-[0_0_12px_rgba(0,240,255,0.8)]" style="width: 0%"></div>
+      </div>
+    </div>
+  </div>
 
   <canvas id="orbit-canvas"></canvas>
   <div id="plasmaLayer" class="plasma-top-layer"></div>
@@ -576,7 +613,7 @@
                 <div class="flex items-center gap-2">
                   <label class="text-[10px] text-cyan-400 hover:text-cyan-300 font-bold cursor-pointer">
                     📤 Enviar Capa
-                    <input type="file" id="inputUploadCapaAdmin" accept="image/*" class="hidden" onchange="uploadFotoAdmin(this, 'capa')">
+                    <input type="file" id="inputUploadCapaAdmin" accept="image/png,image/jpeg,image/webp" class="hidden" onchange="openCropCapaAdmin(event)">
                   </label>
                   <button type="button" id="btnRemoverCapaAdmin" onclick="removerCapaAdmin()" class="text-[10px] text-red-400 hover:text-red-300 font-bold hidden">
                     🗑️ Remover Capa
@@ -594,7 +631,7 @@
                 <div class="flex items-center gap-2">
                   <label class="text-[10px] text-cyan-400 hover:text-cyan-300 font-bold cursor-pointer">
                     📤 Adicionar Foto
-                    <input type="file" id="inputUploadGaleriaAdmin" accept="image/*" class="hidden" onchange="uploadFotoAdmin(this, 'galeria')">
+                    <input type="file" id="inputUploadGaleriaAdmin" accept="image/png,image/jpeg,image/webp" class="hidden" multiple onchange="handleMultipleGaleriaAdmin(event)">
                   </label>
                   <span id="mGaleriaContadorTxt" class="text-[10px] text-cyan-400 font-mono">0 fotos</span>
                 </div>
@@ -668,6 +705,23 @@
     </div>
   </div>
 
+  <!-- Modal de recorte (Cropper.js — mesmo fluxo do Perfil Unificado) -->
+  <div id="modal-crop-admin" class="modal-crop-overlay">
+    <div class="glass-b2b w-full max-w-lg rounded-2xl border border-cyan-500/40 overflow-hidden flex flex-col max-h-[90vh]">
+      <div class="flex items-center justify-between border-b border-white/10 px-5 py-3.5 shrink-0">
+        <h3 id="modalCropTitleAdmin" class="text-sm font-bold text-white tracking-tight">Recortar Imagem</h3>
+        <button type="button" onclick="closeCropModalAdmin()" class="text-slate-400 hover:text-white text-lg font-bold p-1 cursor-pointer">✕</button>
+      </div>
+      <div class="p-4 bg-slate-950/80 overflow-hidden" style="max-height: 55vh;">
+        <img id="image-to-crop-admin" src="" alt="Recorte" style="max-width: 100%; display: block;">
+      </div>
+      <div class="flex items-center justify-end gap-2 px-5 py-3.5 border-t border-white/10 shrink-0">
+        <button type="button" onclick="closeCropModalAdmin()" class="px-4 py-2 rounded-xl bg-slate-800 hover:bg-slate-700 text-slate-300 text-xs font-bold uppercase cursor-pointer">Cancelar</button>
+        <button type="button" onclick="cropAndCompressAdmin()" class="px-4 py-2 rounded-xl bg-cyan-500 hover:bg-cyan-400 text-slate-950 text-xs font-bold uppercase cursor-pointer shadow-[0_0_12px_rgba(0,240,255,0.3)]">Confirmar Recorte</button>
+      </div>
+    </div>
+  </div>
+
   <!-- Modal WhatsApp — mensagens por etapa (sem disparo automático) -->
   <div id="modalWhatsAppMsg" class="fixed inset-0 bg-black/80 backdrop-blur-md hidden items-center justify-center p-4 z-[9999]">
     <div class="glass-b2b w-full max-w-lg max-h-[90vh] overflow-y-auto rounded-2xl border border-emerald-500/40 text-slate-200 shadow-[0_0_50px_rgba(16,185,129,0.2)] flex flex-col">
@@ -724,6 +778,7 @@
   </div>
 
   <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/cropperjs/1.5.13/cropper.min.js"></script>
   <script src="../partner-config.js" onerror="this.src='../../partner-config.js'"></script>
   <script src="../partner-header.js"></script>
   <script src="../../script/script.js" onerror="this.src='../script/script.js'" defer></script>
@@ -748,9 +803,9 @@
       var parceiroWaAtivo = null;
 
       var MSGS_WHATSAPP = {
-        1: '✨ Boas notícias!\n\nVocê foi convidado para ter sua própria página na Vitrine de Parceiros 432UP.\n\nUma página online para mostrar seu trabalho, com fotos, portfólio, área de atuação e vídeos.\n\nQuer fazer parte?\n\nMe responde só: SIM. ❤️',
-        2: '🚀 Para começar, é simples:\n\n1. Acesse:\nhttps://www.432up.com/B2B/login\n\n2. Clique em “Solicitar Acesso B2B”\n\n3. Preencha e envie.\n\nPronto.\n\nNós fazemos a curadoria e, sendo aprovado, eu mesma te aviso por aqui. 😉\n\nClique → solicite → aguarde.',
-        3: '🎉 Aprovado! Bem-vindo à Vitrine de Parceiros 432UP!\n\nAgora é só entrar no Portal e montar sua apresentação.\n\nEscolha as fotos, textos, portfólio, área de atuação e vídeos que você quer colocar na sua página.\n\nVocê decide como quer ser apresentado.\n\n✨ Depois de concluir, sua página estará pronta na Vitrine 432UP!\n\n❤️ Agora você faz oficialmente parte da nossa rede.'
+        1: '✨ *Boas notícias!*\n\nVocê foi convidado para ter sua própria página na *Vitrine de Parceiros 432UP*.\n\nUma página online para mostrar seu trabalho, com fotos, portfólio, área de atuação e vídeos.\n\nQuer fazer parte?\n\nMe responde só: *SIM*. ❤️',
+        2: '🚀 *Para começar, é simples:*\n\n1. Acesse:\nhttps://www.432up.com/B2B/login\n\n2. Clique em *“Solicitar Acesso B2B”*\n\n3. Preencha e envie.\n\n*Pronto.*\n\nNós fazemos a curadoria e, sendo aprovado, eu mesma te aviso por aqui. 😉\n\n*Clique → solicite → aguarde.*',
+        3: '🎉 *Aprovado!* Bem-vindo à *Vitrine de Parceiros 432UP*!\n\nAgora é só entrar no Portal e montar sua apresentação.\n\nEscolha as fotos, textos, portfólio, área de atuação e vídeos que você quer colocar na sua página.\n\nVocê decide como quer ser apresentado.\n\n✨ Depois de concluir, sua página estará pronta na *Vitrine 432UP*!\n\n❤️ *Agora você faz oficialmente parte da nossa rede.*'
       };
 
       function esc(s) { return String(s == null ? '' : s).replace(/</g, '&lt;').replace(/>/g, '&gt;'); }
@@ -1883,49 +1938,174 @@
         }
       });
 
-      /* Upload admin — mesmo bucket e padrão de path do Perfil Unificado (PARTNER_CFG.AVATAR_BUCKET) */
-      window.uploadFotoAdmin = async function (inputEl, tipo) {
-        if (!inputEl || !inputEl.files || !inputEl.files[0]) return;
+      /* ── Mídia admin: crop + compressão WebP + loading (igual Perfil Unificado) ── */
+      var MAX_FOTOS_GALERIA_ADMIN = 20;
+      var cropperAdmin = null;
+      var cropModeAdmin = 'capa';
+      var filaCropGaleriaAdmin = [];
+
+      function startLoadingProgressAdmin(pct, msg) {
+        var ov = document.getElementById('loadingOverlayAdmin');
+        if (!ov) return;
+        ov.classList.add('active');
+        updateLoadingProgressAdmin(pct || 0, msg || 'Processando...');
+      }
+      function updateLoadingProgressAdmin(pct, msg) {
+        var bar = document.getElementById('loadingProgressBarAdmin');
+        var txt = document.getElementById('loadingPercentageTextAdmin');
+        var m = document.getElementById('loadingMessageAdmin');
+        if (bar) bar.style.width = Math.max(0, Math.min(100, pct)) + '%';
+        if (txt) txt.textContent = Math.round(pct) + '%';
+        if (m && msg) m.textContent = msg;
+      }
+      function hideLoadingProgressAdmin() {
+        var ov = document.getElementById('loadingOverlayAdmin');
+        if (ov) ov.classList.remove('active');
+      }
+
+      function contarFotosGaleriaAdmin() {
+        return (mGaleriaFotosAtual ? mGaleriaFotosAtual.length : 0);
+      }
+
+      window.openCropCapaAdmin = function (e) {
         if (!parceiroSelecionadoId) {
           alert('Abra o cadastro de um parceiro antes de enviar fotos.');
-          inputEl.value = '';
+          e.target.value = '';
+          return;
+        }
+        var file = e.target.files && e.target.files[0];
+        if (!file) return;
+        cropModeAdmin = 'capa';
+        document.getElementById('modalCropTitleAdmin').textContent = 'Recortar Foto de Capa (WebP 80%)';
+        initCropImageAdmin(file, 1 / 1);
+      };
+
+      window.handleMultipleGaleriaAdmin = function (e) {
+        if (!parceiroSelecionadoId) {
+          alert('Abra o cadastro de um parceiro antes de enviar fotos.');
+          e.target.value = '';
+          return;
+        }
+        var files = e.target.files;
+        if (!files || files.length === 0) return;
+
+        var todos = Array.prototype.slice.call(files);
+        var vagas = MAX_FOTOS_GALERIA_ADMIN - contarFotosGaleriaAdmin();
+        if (vagas <= 0) {
+          alert('Limite de ' + MAX_FOTOS_GALERIA_ADMIN + ' fotos na galeria já atingido.');
+          e.target.value = '';
+          return;
+        }
+        if (todos.length > vagas) {
+          alert('Apenas ' + vagas + ' foto(s) serão adicionadas (limite: ' + MAX_FOTOS_GALERIA_ADMIN + ').');
+          todos = todos.slice(0, vagas);
+        }
+        filaCropGaleriaAdmin = todos;
+        processarProximoDaFilaGaleriaAdmin();
+      };
+
+      function processarProximoDaFilaGaleriaAdmin() {
+        if (filaCropGaleriaAdmin.length === 0) {
+          var inp = document.getElementById('inputUploadGaleriaAdmin');
+          if (inp) inp.value = '';
+          return;
+        }
+        var prox = filaCropGaleriaAdmin.shift();
+        cropModeAdmin = 'galeria';
+        var rest = filaCropGaleriaAdmin.length;
+        document.getElementById('modalCropTitleAdmin').textContent = rest > 0
+          ? 'Recortar Foto da Galeria (WebP 80%) — restam ' + (rest + 1) + ' foto(s)'
+          : 'Recortar Foto da Galeria (WebP 80%)';
+        initCropImageAdmin(prox, 4 / 3);
+      }
+
+      function initCropImageAdmin(file, ratio) {
+        if (!file) return;
+        if (typeof Cropper === 'undefined') {
+          alert('Cropper.js não carregou. Verifique a conexão com a CDN.');
+          return;
+        }
+        var reader = new FileReader();
+        reader.onload = function (evt) {
+          var img = document.getElementById('image-to-crop-admin');
+          img.src = evt.target.result;
+          document.getElementById('modal-crop-admin').classList.add('active');
+          if (cropperAdmin) {
+            try { cropperAdmin.destroy(); } catch (e) {}
+            cropperAdmin = null;
+          }
+          cropperAdmin = new Cropper(img, { aspectRatio: ratio, viewMode: 1 });
+        };
+        reader.readAsDataURL(file);
+      }
+
+      window.closeCropModalAdmin = function () {
+        document.getElementById('modal-crop-admin').classList.remove('active');
+        if (cropperAdmin) {
+          try { cropperAdmin.destroy(); } catch (e) {}
+          cropperAdmin = null;
+        }
+        if (cropModeAdmin === 'galeria') {
+          processarProximoDaFilaGaleriaAdmin();
+        } else {
+          var inp = document.getElementById('inputUploadCapaAdmin');
+          if (inp) inp.value = '';
+        }
+      };
+
+      window.cropAndCompressAdmin = function () {
+        if (!cropperAdmin) return;
+
+        if (cropModeAdmin === 'galeria' && contarFotosGaleriaAdmin() >= MAX_FOTOS_GALERIA_ADMIN) {
+          alert('Limite de ' + MAX_FOTOS_GALERIA_ADMIN + ' fotos atingido.');
+          document.getElementById('modal-crop-admin').classList.remove('active');
+          if (cropperAdmin) { try { cropperAdmin.destroy(); } catch (e) {} cropperAdmin = null; }
+          filaCropGaleriaAdmin = [];
+          var inp = document.getElementById('inputUploadGaleriaAdmin');
+          if (inp) inp.value = '';
           return;
         }
 
+        var targetWidth = cropModeAdmin === 'capa' ? 600 : 800;
+        var targetHeight = cropModeAdmin === 'capa' ? 600 : 600;
+        var canvas = cropperAdmin.getCroppedCanvas({ width: targetWidth, height: targetHeight });
+
+        canvas.toBlob(function (blob) {
+          document.getElementById('modal-crop-admin').classList.remove('active');
+          if (cropperAdmin) {
+            try { cropperAdmin.destroy(); } catch (e) {}
+            cropperAdmin = null;
+          }
+
+          var modo = cropModeAdmin;
+          enviarBlobAdmin(blob, modo).then(function () {
+            if (modo === 'galeria') {
+              processarProximoDaFilaGaleriaAdmin();
+            } else {
+              var inpC = document.getElementById('inputUploadCapaAdmin');
+              if (inpC) inpC.value = '';
+            }
+          });
+        }, 'image/webp', 0.8);
+      };
+
+      async function enviarBlobAdmin(blob, tipo) {
         var parceiro = listaParceiros.find(function (item) {
           return String(item.id) === String(parceiroSelecionadoId);
         });
         if (!parceiro || !parceiro.user_id) {
           alert('Parceiro sem user_id. Não é possível enviar a foto.');
-          inputEl.value = '';
           return;
         }
-
-        var file = inputEl.files[0];
-        if (!file.type || file.type.indexOf('image/') !== 0) {
-          alert('Selecione um arquivo de imagem válido.');
-          inputEl.value = '';
-          return;
-        }
-        if (file.size > 12 * 1024 * 1024) {
-          alert('A imagem ultrapassa 12 MB. Escolha um arquivo menor.');
-          inputEl.value = '';
-          return;
-        }
-
         if (typeof sbPartner === 'undefined' || !sbPartner.storage) {
-          alert('Cliente Supabase não disponível. Verifique se partner-config.js carregou.');
-          inputEl.value = '';
+          alert('Cliente Supabase não disponível.');
           return;
         }
-
         var bucket = (typeof PARTNER_CFG !== 'undefined' && PARTNER_CFG.AVATAR_BUCKET)
           ? PARTNER_CFG.AVATAR_BUCKET
           : null;
-
         if (!bucket) {
-          alert('PARTNER_CFG.AVATAR_BUCKET não encontrado. O mesmo config do Perfil Unificado precisa estar carregado.');
-          inputEl.value = '';
+          alert('PARTNER_CFG.AVATAR_BUCKET não encontrado.');
           return;
         }
 
@@ -1934,46 +2114,17 @@
           : (parceiro.user_id + '/galeria_' + Date.now() + '.webp');
 
         try {
-          // Converte para WebP (mesmo fluxo do perfil) quando possível
-          var blobToUpload = file;
-          var contentType = file.type || 'image/jpeg';
-
-          try {
-            var dataUrl = await new Promise(function (resolve, reject) {
-              var reader = new FileReader();
-              reader.onload = function () { resolve(reader.result); };
-              reader.onerror = reject;
-              reader.readAsDataURL(file);
-            });
-            var img = await new Promise(function (resolve, reject) {
-              var i = new Image();
-              i.onload = function () { resolve(i); };
-              i.onerror = reject;
-              i.src = dataUrl;
-            });
-            var maxW = tipo === 'capa' ? 600 : 800;
-            var maxH = tipo === 'capa' ? 600 : 600;
-            var ratio = Math.min(maxW / img.width, maxH / img.height, 1);
-            var canvas = document.createElement('canvas');
-            canvas.width = Math.round(img.width * ratio) || maxW;
-            canvas.height = Math.round(img.height * ratio) || maxH;
-            canvas.getContext('2d').drawImage(img, 0, 0, canvas.width, canvas.height);
-            blobToUpload = await new Promise(function (resolve) {
-              canvas.toBlob(function (b) { resolve(b || file); }, 'image/webp', 0.8);
-            });
-            contentType = 'image/webp';
-          } catch (convErr) {
-            console.warn('Conversão WebP falhou, enviando arquivo original:', convErr);
-            path = path.replace(/\.webp$/, '.' + ((file.name.split('.').pop() || 'jpg').toLowerCase()));
-          }
+          startLoadingProgressAdmin(20, tipo === 'capa' ? 'Enviando foto de capa...' : 'Enviando foto da galeria...');
 
           var upRes = await sbPartner.storage
             .from(bucket)
-            .upload(path, blobToUpload, { upsert: true, contentType: contentType });
+            .upload(path, blob, { upsert: true, contentType: 'image/webp' });
 
           if (upRes.error) {
             throw new Error('Falha no upload: ' + upRes.error.message);
           }
+
+          updateLoadingProgressAdmin(70, 'Gravando no cadastro...');
 
           var publicUrlData = sbPartner.storage.from(bucket).getPublicUrl(path);
           var uploadedUrl = publicUrlData && publicUrlData.data ? publicUrlData.data.publicUrl : null;
@@ -2002,18 +2153,20 @@
 
           var resSave = await sbPartner.from('parceiros').update(payloadFoto).eq('id', parceiroSelecionadoId);
           if (resSave.error) {
-            alert('Foto enviada ao Storage, mas falhou ao gravar no cadastro: ' + resSave.error.message +
-              '\nClique em “Salvar Cadastro Completo” para tentar de novo.');
-          } else {
-            parceiro.galeria_fotos = mGaleriaFotosAtual.slice();
-            parceiro.foto_capa_url = mFotoCapaUrlAtual;
+            throw new Error('Foto no Storage, mas falhou ao gravar: ' + resSave.error.message);
           }
+
+          parceiro.galeria_fotos = mGaleriaFotosAtual.slice();
+          parceiro.foto_capa_url = mFotoCapaUrlAtual;
+
+          updateLoadingProgressAdmin(100, 'Concluído!');
         } catch (err) {
           console.error(err);
           alert('Erro ao enviar a imagem: ' + (err && err.message ? err.message : 'falha desconhecida'));
+        } finally {
+          setTimeout(hideLoadingProgressAdmin, 500);
         }
-        inputEl.value = '';
-      };
+      }
 
       window.abrirFichaParceiro = function (id) {
         var parceiro = listaParceiros.find(function (item) { return String(item.id) === String(id); });
