@@ -43,6 +43,24 @@ html[data-theme="dark"],
   --warning: #f59e0b;
   --warning-bg: rgba(245, 158, 11, 0.12);
 
+  /* --- PNL / STATUS DE DECISÃO (não são marca — não viram âmbar) --- */
+  --pnl-draft: #94a3b8;
+  --pnl-draft-bg: rgba(148, 163, 184, 0.16);
+  --pnl-hold: #f59e0b;
+  --pnl-hold-bg: rgba(245, 158, 11, 0.16);
+  --pnl-sent: #22d3ee;
+  --pnl-sent-bg: rgba(34, 211, 238, 0.14);
+  --pnl-ok: #10b981;
+  --pnl-ok-bg: rgba(16, 185, 129, 0.16);
+  --pnl-paused: #a78bfa;
+  --pnl-paused-bg: rgba(167, 139, 250, 0.16);
+  --pnl-stop: #ef4444;
+  --pnl-stop-bg: rgba(239, 68, 68, 0.16);
+  --pnl-new: #fbbf24;
+  --pnl-new-bg: rgba(251, 191, 36, 0.16);
+  --pnl-talk: #22d3ee;
+  --pnl-talk-bg: rgba(34, 211, 238, 0.14);
+
   /* --- ALIASES DE COMPATIBILIDADE ---
      Usados pelos <style> internos das páginas (admin-leads, admin-pacotes,
      admin-servicos, admin-simulador, admin-transporte, studio) que referenciam
@@ -871,14 +889,14 @@ html, body {
   border-color: rgba(245, 158, 11, 0.12) !important;
 }
 
-/* Lima de marca → âmbar. Verde semântico (Aprovado / Receita) permanece */
-.text-lime-300, .text-lime-400, .text-green-400:not(.status-ok):not(.kpi-ok) { color: #fbbf24 !important; }
-.text-emerald-400, .text-emerald-300 { color: #34d399; }
-.border-lime-400, .border-lime-500, .border-green-400 {
-  border-color: rgba(245, 158, 11, 0.45) !important;
+/* Lima de MARCA → âmbar. Verde de status/KPI/economia não entra aqui. */
+.text-lime-300:not(.status-ok):not(.kpi-ok):not(.pnl-ok),
+.text-lime-400:not(.status-ok):not(.kpi-ok):not(.pnl-ok) {
+  color: #fbbf24 !important;
 }
-.bg-lime-500, .bg-lime-400 { background-color: #f59e0b !important; }
-.hover\:bg-lime-400:hover, .hover\:bg-green-500:hover { background-color: #fbbf24 !important; }
+.text-green-400.status-ok,
+.text-green-400.kpi-ok,
+.text-emerald-400, .text-emerald-300 { color: #34d399 !important; }
 
 /* ============================================================
    EQUALIZADOR — linguagem index / comissões / contrato
@@ -1115,3 +1133,169 @@ input:focus, select:focus, textarea:focus {
 #edit-modal-overlay .bg-slate-900\/80 {
   background: rgba(255, 214, 140, 0.06) !important;
 }
+
+/* ============================================================
+   PNL — status de decisão + caixas internas de volta ao âmbar
+   Verde / vermelho / hold / enviado NÃO são marca.
+   Ciano só em comunicação (Enviada / Em contato).
+   ============================================================ */
+
+/* Pedido */
+.pnl-draft, .status-rascunho, .badge-rascunho,
+[data-status="rascunho"], [data-status="draft"] {
+  color: var(--pnl-draft) !important;
+  background: var(--pnl-draft-bg) !important;
+  border-color: rgba(148, 163, 184, 0.35) !important;
+}
+.pnl-hold, .status-hold, .badge-hold,
+[data-status="hold"], [data-status="hold_48"], [data-status="hold-48h"] {
+  color: var(--pnl-hold) !important;
+  background: var(--pnl-hold-bg) !important;
+  border-color: rgba(245, 158, 11, 0.45) !important;
+}
+.pnl-sent, .status-enviada, .badge-enviada,
+[data-status="enviada"], [data-status="enviado"], [data-status="sent"] {
+  color: var(--pnl-sent) !important;
+  background: var(--pnl-sent-bg) !important;
+  border-color: rgba(34, 211, 238, 0.40) !important;
+}
+.pnl-ok, .status-aprovada, .status-aprovado, .badge-aprovada,
+[data-status="aprovada"], [data-status="aprovado"], [data-status="ok"] {
+  color: var(--pnl-ok) !important;
+  background: var(--pnl-ok-bg) !important;
+  border-color: rgba(16, 185, 129, 0.40) !important;
+}
+.pnl-paused, .status-adiada, .badge-adiada,
+[data-status="adiada"], [data-status="adiado"] {
+  color: var(--pnl-paused) !important;
+  background: var(--pnl-paused-bg) !important;
+  border-color: rgba(167, 139, 250, 0.40) !important;
+}
+.pnl-stop, .status-cancelada, .status-cancelado, .badge-cancelada,
+[data-status="cancelada"], [data-status="cancelado"] {
+  color: var(--pnl-stop) !important;
+  background: var(--pnl-stop-bg) !important;
+  border-color: rgba(239, 68, 68, 0.40) !important;
+}
+
+/* Acesso (Pessoas) */
+.status-pendente, [data-status="pendente"] {
+  color: var(--pnl-hold) !important;
+  background: var(--pnl-hold-bg) !important;
+  border-color: rgba(245, 158, 11, 0.45) !important;
+}
+.status-bloqueado, [data-status="bloqueado"] {
+  color: var(--pnl-stop) !important;
+  background: var(--pnl-stop-bg) !important;
+  border-color: rgba(239, 68, 68, 0.40) !important;
+}
+
+/* Leads */
+.status-novo, .lead-novo, [data-status="novo"] {
+  color: var(--pnl-new) !important;
+  background: var(--pnl-new-bg) !important;
+  border-color: rgba(251, 191, 36, 0.45) !important;
+}
+.status-contato, .lead-contato, [data-status="em_contato"], [data-status="contato"] {
+  color: var(--pnl-talk) !important;
+  background: var(--pnl-talk-bg) !important;
+  border-color: rgba(34, 211, 238, 0.40) !important;
+}
+.status-fechado, .lead-fechado, [data-status="fechado"] {
+  color: var(--pnl-ok) !important;
+  background: var(--pnl-ok-bg) !important;
+  border-color: rgba(16, 185, 129, 0.40) !important;
+}
+.status-perdido, .lead-perdido, [data-status="perdido"] {
+  color: var(--pnl-stop) !important;
+  background: var(--pnl-stop-bg) !important;
+  border-color: rgba(239, 68, 68, 0.40) !important;
+}
+
+/* <option> do select fechado — pinta a linha no desktop; iOS nativo segue do SO */
+option[value="rascunho"], option[value="draft"] { color: var(--pnl-draft); }
+option[value="hold"], option[value="hold_48"], option[value="hold-48h"] { color: var(--pnl-hold); }
+option[value="enviada"], option[value="enviado"], option[value="sent"] { color: var(--pnl-sent); }
+option[value="aprovada"], option[value="aprovado"], option[value="ok"] { color: var(--pnl-ok); }
+option[value="adiada"], option[value="adiado"] { color: var(--pnl-paused); }
+option[value="cancelada"], option[value="cancelado"] { color: var(--pnl-stop); }
+option[value="pendente"] { color: var(--pnl-hold); }
+option[value="bloqueado"] { color: var(--pnl-stop); }
+option[value="novo"] { color: var(--pnl-new); }
+option[value="em_contato"], option[value="contato"] { color: var(--pnl-talk); }
+option[value="fechado"] { color: var(--pnl-ok); }
+option[value="perdido"] { color: var(--pnl-stop); }
+
+/* Select / chip de status fechado — vidro dark, não picker branco */
+select.lead-status-select,
+select[data-status],
+.status-select,
+select.status-pedido,
+select.status-acesso {
+  background: rgba(8, 12, 20, 0.72) !important;
+  color: var(--text-primary) !important;
+  border: 1px solid var(--accent-border) !important;
+  color-scheme: dark;
+}
+
+/* Economia / margem / receita — verde fica */
+.kpi-ok, .status-ok, [data-kpi="ok"],
+.economia, .badge-economia {
+  color: var(--pnl-ok) !important;
+}
+
+/* --- Caixas internas que ainda estavam ciano/teal/sky → âmbar --- */
+.text-teal-200, .text-teal-300, .text-teal-400,
+.text-sky-200, .text-sky-300, .text-sky-400,
+.text-indigo-300, .text-indigo-400 {
+  color: #fcd34d !important;
+}
+.text-teal-500, .text-sky-500, .text-indigo-500 {
+  color: #f59e0b !important;
+}
+.border-teal-400, .border-teal-500, .border-sky-400, .border-sky-500,
+.border-indigo-400, .border-indigo-500 {
+  border-color: rgba(245, 158, 11, 0.40) !important;
+}
+.bg-teal-500\/10, .bg-teal-500\/20, .bg-sky-500\/10, .bg-sky-500\/20,
+.bg-indigo-500\/10 {
+  background-color: rgba(245, 158, 11, 0.14) !important;
+}
+
+/* Modal Editar Pacote — bloco de preço */
+.modal-box [class*="preco"],
+.modal-box [class*="preço"],
+#modal-pacote .price-box,
+.pkg-price-box,
+.pacote-preco {
+  border-color: rgba(245, 158, 11, 0.38) !important;
+}
+.modal-box [class*="preco"] label,
+.pkg-price-box label,
+.pacote-preco label,
+.modal-box .form-group label {
+  color: var(--accent) !important;
+}
+
+/* Importar / Exportar — inputs pretos viram vidro âmbar */
+input[type="file"] + label,
+.btn-file-upload,
+#module-clientes input,
+#module-clientes select,
+[class*="import"] input,
+[class*="import"] select,
+[class*="export"] input {
+  background: rgba(255, 214, 140, 0.06) !important;
+  border-color: rgba(245, 158, 11, 0.28) !important;
+  color: #fff8eb !important;
+}
+
+/* Busca do simulador (caixa verde-escura do print) */
+[class*="item-search"],
+.sim-search,
+.pkg-add-search,
+.cronograma-search {
+  background: rgba(14, 22, 35, 0.92) !important;
+  border: 1px solid rgba(245, 158, 11, 0.38) !important;
+}
+
