@@ -6,26 +6,11 @@
   <title>432UP Admin | Gestão de Usuários, Vendedores & Vitrine Artística</title>
   
   <link rel="stylesheet" href="../../css/style.css">
-  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/cropperjs/1.5.13/cropper.min.css">
+  <link rel="stylesheet" href="css/admin.css">
   <script src="https://cdn.tailwindcss.com"></script>
   
   <style>
-    .glass-b2b {
-      background: linear-gradient(135deg, rgba(255, 255, 255, 0.08) 0%, rgba(14, 22, 35, 0.45) 100%);
-      backdrop-filter: blur(20px);
-      -webkit-backdrop-filter: blur(20px);
-      border: 1px solid rgba(0, 240, 255, 0.25);
-      box-shadow: 0 20px 50px rgba(0, 0, 0, 0.3), inset 0 0 15px rgba(255, 255, 255, 0.04);
-    }
-    .glass-amber {
-      background: linear-gradient(135deg, rgba(245, 158, 11, 0.12) 0%, rgba(10, 18, 28, 0.5) 100%);
-      backdrop-filter: blur(20px);
-      border: 1px solid rgba(245, 158, 11, 0.4);
-    }
-    table thead tr, table thead th {
-      background-color: transparent !important;
-      color: #94a3b8 !important;
-    }
+    /* .glass-b2b / .glass-amber / table thead — migrados para css/admin.css */
     .filter-box-glass {
       overflow: visible !important;
     }
@@ -81,45 +66,9 @@
       background: #dc2626;
       transform: scale(1.1);
     }
-
-    /* Crop + loading (mesmo padrão do Perfil Unificado) */
-    .modal-crop-overlay {
-      position: fixed; top: 0; left: 0; width: 100vw; height: 100vh;
-      background: rgba(8, 10, 16, 0.85); backdrop-filter: blur(16px);
-      z-index: 99999; display: none; align-items: center; justify-content: center; padding: 20px;
-    }
-    .modal-crop-overlay.active { display: flex; }
-
-    #loadingOverlayAdmin {
-      position: fixed;
-      top: 0; left: 0; width: 100vw; height: 100vh;
-      background: rgba(14, 10, 20, 0.88);
-      backdrop-filter: blur(18px);
-      -webkit-backdrop-filter: blur(18px);
-      z-index: 100000;
-      display: none;
-      flex-direction: column;
-      align-items: center;
-      justify-content: center;
-      padding: 20px;
-    }
-    #loadingOverlayAdmin.active { display: flex; }
   </style>
 </head>
 <body class="min-h-screen text-slate-200 font-sans antialiased bg-[#06080c]">
-
-  <div id="loadingOverlayAdmin">
-    <div class="glass-b2b p-8 rounded-2xl max-w-sm w-full text-center space-y-4 border border-cyan-500/40 shadow-[0_0_35px_rgba(0,240,255,0.25)]">
-      <div class="w-12 h-12 border-4 border-cyan-400 border-t-transparent rounded-full animate-spin mx-auto mb-2"></div>
-      <div>
-        <span id="loadingMessageAdmin" class="text-xs font-bold text-cyan-300 uppercase tracking-wider block">Otimizando e Enviando Mídias...</span>
-        <span id="loadingPercentageTextAdmin" class="text-2xl font-extrabold text-white mt-1 block">0%</span>
-      </div>
-      <div class="w-full bg-slate-950/80 rounded-full h-2.5 overflow-hidden border border-cyan-500/30">
-        <div id="loadingProgressBarAdmin" class="bg-gradient-to-r from-cyan-500 via-cyan-400 to-amber-400 h-2.5 rounded-full transition-all duration-150 shadow-[0_0_12px_rgba(0,240,255,0.8)]" style="width: 0%"></div>
-      </div>
-    </div>
-  </div>
 
   <canvas id="orbit-canvas"></canvas>
   <div id="plasmaLayer" class="plasma-top-layer"></div>
@@ -149,34 +98,34 @@
           <div id="kpiParceirosPendentes" class="text-2xl font-bold text-amber-400 mt-2">0 aguardando</div>
         </div>
         <div class="glass-b2b p-5 rounded-2xl">
-          <span class="text-xs font-semibold uppercase tracking-wider text-cyan-400">Comissão Padrão Geral</span>
-          <div id="kpiComissaoMedia" class="text-2xl font-bold text-cyan-300 mt-2">10,0%</div>
+          <span class="text-xs font-semibold uppercase tracking-wider text-amber-400">Comissão Padrão Geral</span>
+          <div id="kpiComissaoMedia" class="text-2xl font-bold text-amber-300 mt-2">10,0%</div>
         </div>
       </div>
 
-      <div class="glass-b2b filter-box-glass rounded-2xl p-4 sm:pr-6 border border-cyan-500/20 space-y-3 relative z-30">
+      <div class="glass-b2b filter-box-glass rounded-2xl p-4 sm:pr-6 border border-amber-500/20 space-y-3 relative z-30">
         <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-5 gap-3">
           
           <div>
             <label class="block text-[10px] uppercase text-slate-400 font-bold mb-1">Buscar Nome / E-mail</label>
-            <input type="text" id="filterBusca" placeholder="Ex: Roberto ou roberto@email.com" oninput="aplicarFiltros()" class="w-full bg-slate-900/80 border border-white/10 rounded-xl px-3 py-2 text-xs text-white focus:border-cyan-400 focus:outline-none transition">
+            <input type="text" id="filterBusca" placeholder="Ex: Roberto ou roberto@email.com" oninput="aplicarFiltros()" class="w-full bg-amber-500/10 border border-white/10 rounded-xl px-3 py-2 text-xs text-white focus:border-amber-400 focus:outline-none transition">
           </div>
 
           <div class="relative" id="boxDropdownParceiro">
             <label class="block text-[10px] uppercase text-slate-400 font-bold mb-1">Seleção Específica</label>
             <div class="relative">
               <span class="absolute inset-y-0 left-0 pl-2.5 flex items-center pointer-events-none text-slate-400 text-xs">🔍</span>
-              <input type="text" id="filterParceiroSearch" placeholder="Digite para buscar..." autocomplete="off" class="w-full bg-slate-900/80 border border-white/10 rounded-xl pl-7 pr-2 py-2 text-xs text-white focus:border-cyan-400 focus:outline-none transition">
+              <input type="text" id="filterParceiroSearch" placeholder="Digite para buscar..." autocomplete="off" class="w-full bg-amber-500/10 border border-white/10 rounded-xl pl-7 pr-2 py-2 text-xs text-white focus:border-amber-400 focus:outline-none transition">
             </div>
             <input type="hidden" id="filterParceiroVal" value="">
             
-            <div id="dropdownParceiroList" class="hidden absolute left-0 right-0 top-full mt-1 max-h-48 overflow-y-auto bg-[#0a121c] border border-cyan-500/50 rounded-xl shadow-[0_20px_40px_rgba(0,0,0,0.95)] z-[9999] divide-y divide-white/10 text-xs">
+            <div id="dropdownParceiroList" class="hidden absolute left-0 right-0 top-full mt-1 max-h-48 overflow-y-auto bg-[#0a121c] border border-amber-500/50 rounded-xl shadow-[0_20px_40px_rgba(0,0,0,0.95)] z-[9999] divide-y divide-white/10 text-xs">
             </div>
           </div>
 
           <div>
             <label class="block text-[10px] uppercase text-slate-400 font-bold mb-1">Status de Acesso</label>
-            <select id="filterStatus" onchange="aplicarFiltros()" class="w-full bg-slate-900 border border-white/10 rounded-xl px-3 py-2 text-xs text-white focus:border-cyan-400 focus:outline-none transition cursor-pointer">
+            <select id="filterStatus" onchange="aplicarFiltros()" class="w-full bg-slate-900 border border-white/10 rounded-xl px-3 py-2 text-xs text-white focus:border-amber-400 focus:outline-none transition cursor-pointer">
               <option value="">Todos os Status</option>
               <option value="aprovado">🟢 Aprovado / Ativo</option>
               <option value="pendente">🟡 Pendente</option>
@@ -186,7 +135,7 @@
 
           <div>
             <label class="block text-[10px] uppercase text-slate-400 font-bold mb-1">Perfil Base (Taxonomia)</label>
-            <select id="filterPerfilTaxonomia" onchange="aplicarFiltros()" class="w-full bg-slate-900 border border-white/10 rounded-xl px-3 py-2 text-xs text-white focus:border-cyan-400 focus:outline-none transition cursor-pointer">
+            <select id="filterPerfilTaxonomia" onchange="aplicarFiltros()" class="w-full bg-slate-900 border border-white/10 rounded-xl px-3 py-2 text-xs text-white focus:border-amber-400 focus:outline-none transition cursor-pointer">
               <option value="">Todos os Perfis</option>
             </select>
           </div>
@@ -212,16 +161,16 @@
           <button type="button" onclick="limparFiltros()" class="px-3.5 py-1.5 rounded-lg bg-slate-800/80 hover:bg-slate-700 text-slate-300 border border-white/10 text-xs font-semibold transition flex items-center gap-1.5 cursor-pointer">
             🔄 Resetar Filtros
           </button>
-          <button type="button" onclick="exportarCSV()" class="px-3.5 py-1.5 rounded-lg bg-cyan-500/10 hover:bg-cyan-500/20 text-cyan-300 border border-cyan-500/30 text-xs font-semibold transition flex items-center gap-1.5 cursor-pointer">
+          <button type="button" onclick="exportarCSV()" class="px-3.5 py-1.5 rounded-lg bg-amber-500/10 hover:bg-amber-500/20 text-amber-300 border border-amber-500/30 text-xs font-semibold transition flex items-center gap-1.5 cursor-pointer">
             📥 Exportar Usuários (CSV)
           </button>
-          <button type="button" onclick="window.print()" class="px-3.5 py-1.5 rounded-lg bg-purple-500/10 hover:bg-purple-500/20 text-purple-300 border border-purple-500/30 text-xs font-semibold transition flex items-center gap-1.5 cursor-pointer">
+          <button type="button" onclick="window.print()" class="px-3.5 py-1.5 rounded-lg bg-amber-500/10 hover:bg-amber-500/20 text-amber-300 border border-amber-500/30 text-xs font-semibold transition flex items-center gap-1.5 cursor-pointer">
             🖨️ Relatório (PDF)
           </button>
         </div>
       </div>
 
-      <div class="glass-b2b rounded-2xl p-6 border border-cyan-500/20">
+      <div class="glass-b2b rounded-2xl p-6 border border-amber-500/20">
         <div class="overflow-x-auto">
           <table class="w-full text-left text-xs min-w-[950px]">
             <thead>
@@ -286,7 +235,7 @@
 
       <div class="p-6 space-y-6 flex-1 text-xs">
         
-        <div class="bg-slate-900/80 p-4 rounded-xl border border-amber-500/30 space-y-3">
+        <div class="bg-amber-500/10 p-4 rounded-xl border border-amber-500/30 space-y-3">
           <h4 id="lblTituloFormTax" class="font-bold text-amber-400 uppercase tracking-wider text-[11px]">➕ Nova categoria</h4>
           <input type="hidden" id="taxEditId" value="">
           <input type="hidden" id="taxModo" value="especialidade">
@@ -313,7 +262,7 @@
           <div class="flex items-center justify-between gap-3 pt-2 flex-wrap">
             <label class="flex items-center gap-2 cursor-pointer select-none">
               <input type="checkbox" id="taxTemFicha" class="w-4 h-4 text-amber-500 bg-slate-950 border-white/20 rounded focus:ring-amber-400">
-              <span class="font-bold text-cyan-300">⭐ Requer Cadastro Complementar (Fotos, Vídeos, Bio, Rider)</span>
+              <span class="font-bold text-amber-300">⭐ Requer Cadastro Complementar (Fotos, Vídeos, Bio, Rider)</span>
             </label>
 
             <div class="flex items-center gap-2">
@@ -360,10 +309,10 @@
         <div>
           <label class="block text-slate-300 uppercase font-semibold mb-1">Escopo de Aplicação da Nova Regra</label>
           <div class="space-y-2">
-            <label class="flex items-start gap-2 p-2.5 rounded-xl border border-cyan-500/40 bg-cyan-500/10 cursor-pointer hover:bg-cyan-500/20 transition">
-              <input type="radio" name="escopoRegra" value="futuros" checked class="mt-0.5 text-cyan-400 focus:ring-cyan-400">
+            <label class="flex items-start gap-2 p-2.5 rounded-xl border border-amber-500/40 bg-amber-500/10 cursor-pointer hover:bg-amber-500/20 transition">
+              <input type="radio" name="escopoRegra" value="futuros" checked class="mt-0.5 text-amber-400 focus:ring-cyan-400">
               <div>
-                <strong class="text-cyan-300 block">Contratos Futuros (Recomendado)</strong>
+                <strong class="text-amber-300 block">Contratos Futuros (Recomendado)</strong>
                 <span class="text-[10px] text-slate-400 block">A nova % será aplicada apenas às propostas criadas a partir de agora. As anteriores mantêm a % pactuada na época.</span>
               </div>
             </label>
@@ -399,15 +348,15 @@
   </div>
 
   <div id="modalFicha" class="fixed inset-0 bg-black/80 backdrop-blur-md hidden items-center justify-center p-4 sm:p-6 z-[9999]">
-    <div class="glass-b2b w-full max-w-4xl max-h-[90vh] overflow-y-auto rounded-2xl border border-cyan-500/30 text-slate-200 shadow-[0_0_50px_rgba(0,240,255,0.15)] relative flex flex-col">
+    <div class="glass-b2b w-full max-w-4xl max-h-[90vh] overflow-y-auto rounded-2xl border border-amber-500/30 text-slate-200 shadow-[0_0_50px_rgba(0,240,255,0.15)] relative flex flex-col">
       
       <div class="flex items-center justify-between border-b border-white/10 px-6 py-4 sticky top-0 bg-[#0e1623]/95 backdrop-blur-md z-40 shrink-0">
         <div>
-          <span class="text-[10px] font-bold text-cyan-400 uppercase tracking-widest block">Credenciamento & Cadastro Unificado B2B</span>
+          <span class="text-[10px] font-bold text-amber-400 uppercase tracking-widest block">Credenciamento & Cadastro Unificado B2B</span>
           <h3 class="text-base font-bold text-white tracking-tight">Cadastro Completo do Parceiro</h3>
         </div>
         <div class="flex items-center gap-3">
-          <button id="btnSalvarFicha" class="px-4 py-2 rounded-xl bg-cyan-500 hover:bg-cyan-400 text-slate-950 font-bold text-xs uppercase tracking-wider transition shadow-[0_0_15px_rgba(0,240,255,0.3)] cursor-pointer">Salvar Cadastro Completo</button>
+          <button id="btnSalvarFicha" class="px-4 py-2 rounded-xl bg-amber-500 hover:bg-amber-400 text-slate-950 font-bold text-xs uppercase tracking-wider transition shadow-[0_0_15px_rgba(0,240,255,0.3)] cursor-pointer">Salvar Cadastro Completo</button>
           <button id="btnFecharFicha" class="text-slate-400 hover:text-white text-lg font-bold p-1 transition cursor-pointer">✕</button>
         </div>
       </div>
@@ -415,12 +364,12 @@
       <div class="p-6 space-y-6 flex-1">
 
         <div class="flex items-center gap-4 bg-white/5 p-4 rounded-xl border border-white/10">
-          <div id="mAvatarPreview" class="w-16 h-16 rounded-full bg-slate-900 border border-cyan-500/40 bg-cover bg-center flex items-center justify-center text-2xl text-slate-500 shrink-0 overflow-hidden shadow-[0_0_15px_rgba(0,240,255,0.2)]">
+          <div id="mAvatarPreview" class="w-16 h-16 rounded-full bg-slate-900 border border-amber-500/40 bg-cover bg-center flex items-center justify-center text-2xl text-slate-500 shrink-0 overflow-hidden shadow-[0_0_15px_rgba(0,240,255,0.2)]">
             <span id="mAvatarPlaceholder">📷</span>
           </div>
           <div class="flex-1">
             <span class="text-base font-bold text-white block" id="mAvatarNome">—</span>
-            <span class="text-xs text-cyan-400 font-mono block mt-0.5" id="mAvatarId">User ID: —</span>
+            <span class="text-xs text-amber-400 font-mono block mt-0.5" id="mAvatarId">User ID: —</span>
           </div>
           <div class="text-right hidden sm:block">
             <span class="text-[10px] uppercase font-bold text-slate-400 block">Termos & LGPD</span>
@@ -437,7 +386,7 @@
             </div>
             <div>
               <span class="text-slate-400 block text-[10px] uppercase font-semibold">Última Atividade:</span>
-              <strong id="mUltimaAtividade" class="text-cyan-300">—</strong>
+              <strong id="mUltimaAtividade" class="text-amber-300">—</strong>
             </div>
             <div>
               <span class="text-slate-400 block text-[10px] uppercase font-semibold">Última Página:</span>
@@ -451,31 +400,31 @@
         </div>
 
         <div class="space-y-3">
-          <h4 class="text-xs font-bold text-cyan-400 uppercase tracking-wider border-b border-white/10 pb-2">1. Dados de Identificação & Atuação Cadastral</h4>
+          <h4 class="text-xs font-bold text-amber-400 uppercase tracking-wider border-b border-white/10 pb-2">1. Dados de Identificação & Atuação Cadastral</h4>
           
           <div class="grid grid-cols-1 sm:grid-cols-2 gap-3 text-xs">
             <div>
               <label class="block text-slate-300 uppercase font-semibold mb-1">Nome Completo *</label>
-              <input type="text" id="mNome" class="w-full bg-slate-900 border border-white/20 rounded-xl px-3 py-2 text-white focus:outline-none focus:border-cyan-400">
+              <input type="text" id="mNome" class="w-full bg-slate-900 border border-white/20 rounded-xl px-3 py-2 text-white focus:outline-none focus:border-amber-400">
             </div>
             <div>
               <label class="block text-slate-300 uppercase font-semibold mb-1">Empresa / Agência *</label>
-              <input type="text" id="mEmpresa" class="w-full bg-slate-900 border border-white/20 rounded-xl px-3 py-2 text-white focus:outline-none focus:border-cyan-400">
+              <input type="text" id="mEmpresa" class="w-full bg-slate-900 border border-white/20 rounded-xl px-3 py-2 text-white focus:outline-none focus:border-amber-400">
             </div>
           </div>
 
           <div class="grid grid-cols-1 sm:grid-cols-3 gap-3 text-xs">
             <div>
               <label class="block text-slate-300 uppercase font-semibold mb-1">CPF ou CNPJ</label>
-              <input type="text" id="mCpfCnpj" maxlength="18" placeholder="000.000.000-00" class="w-full bg-slate-900 border border-white/20 rounded-xl px-3 py-2 text-white focus:outline-none focus:border-cyan-400">
+              <input type="text" id="mCpfCnpj" maxlength="18" placeholder="000.000.000-00" class="w-full bg-slate-900 border border-white/20 rounded-xl px-3 py-2 text-white focus:outline-none focus:border-amber-400">
             </div>
             <div>
               <label class="block text-slate-300 uppercase font-semibold mb-1">Data de Nascimento</label>
-              <input type="date" id="mNascimento" class="w-full bg-slate-900 border border-white/20 rounded-xl px-3 py-2 text-white focus:outline-none focus:border-cyan-400 [color-scheme:dark]">
+              <input type="date" id="mNascimento" class="w-full bg-slate-900 border border-white/20 rounded-xl px-3 py-2 text-white focus:outline-none focus:border-amber-400 [color-scheme:dark]">
             </div>
             <div>
               <label class="block text-slate-300 uppercase font-semibold mb-1">WhatsApp *</label>
-              <input type="tel" id="mWhatsapp" maxlength="15" placeholder="(11) 99999-9999" class="w-full bg-slate-900 border border-white/20 rounded-xl px-3 py-2 text-white font-sans text-xs focus:outline-none focus:border-cyan-400 leading-normal tracking-wide">
+              <input type="tel" id="mWhatsapp" maxlength="15" placeholder="(11) 99999-9999" class="w-full bg-slate-900 border border-white/20 rounded-xl px-3 py-2 text-white font-sans text-xs focus:outline-none focus:border-amber-400 leading-normal tracking-wide">
             </div>
           </div>
 
@@ -486,11 +435,11 @@
             </div>
             <div>
               <label class="block text-slate-300 uppercase font-semibold mb-1">Instagram / Site / Portfólio</label>
-              <input type="text" id="mInstagram" placeholder="@suaempresa ou https://..." class="w-full bg-slate-900 border border-white/20 rounded-xl px-3 py-2 text-white focus:outline-none focus:border-cyan-400">
+              <input type="text" id="mInstagram" placeholder="@suaempresa ou https://..." class="w-full bg-slate-900 border border-white/20 rounded-xl px-3 py-2 text-white focus:outline-none focus:border-amber-400">
             </div>
             <div>
               <label class="block text-slate-300 uppercase font-semibold mb-1">Perfil Base (Taxonomia)</label>
-              <select id="mPerfilBase" class="w-full bg-slate-900 border border-white/20 rounded-xl px-3 py-2 text-xs text-white focus:outline-none focus:border-cyan-400 truncate">
+              <select id="mPerfilBase" class="w-full bg-slate-900 border border-white/20 rounded-xl px-3 py-2 text-xs text-white focus:outline-none focus:border-amber-400 truncate">
                 <option value="">Carregando...</option>
               </select>
             </div>
@@ -499,7 +448,7 @@
           <div class="grid grid-cols-1 sm:grid-cols-1 gap-3 text-xs">
             <div>
               <label class="block text-slate-300 uppercase font-semibold mb-1">Especialidade (Taxonomia)</label>
-              <select id="mEspecialidade" disabled class="w-full bg-slate-900 border border-white/20 rounded-xl px-3 py-2 text-xs text-white focus:outline-none focus:border-cyan-400 truncate">
+              <select id="mEspecialidade" disabled class="w-full bg-slate-900 border border-white/20 rounded-xl px-3 py-2 text-xs text-white focus:outline-none focus:border-amber-400 truncate">
                 <option value="">Selecione um Perfil Base primeiro...</option>
               </select>
             </div>
@@ -507,34 +456,34 @@
         </div>
 
         <div class="space-y-3 pt-2">
-          <h4 class="text-xs font-bold text-cyan-400 uppercase tracking-wider border-b border-white/10 pb-2">2. Endereço Comercial</h4>
+          <h4 class="text-xs font-bold text-amber-400 uppercase tracking-wider border-b border-white/10 pb-2">2. Endereço Comercial</h4>
 
           <div class="grid grid-cols-1 sm:grid-cols-3 gap-3 text-xs">
             <div>
               <label class="block text-slate-300 uppercase font-semibold mb-1">CEP (Busca Automática)</label>
               <div class="relative">
-                <input type="text" id="mCep" maxlength="9" placeholder="00000-000" class="w-full bg-slate-900 border border-white/20 rounded-xl px-3 py-2 text-white focus:outline-none focus:border-cyan-400">
-                <span id="mCepSpinner" class="hidden absolute right-3 top-2.5 text-xs text-cyan-400 animate-spin">⌛</span>
+                <input type="text" id="mCep" maxlength="9" placeholder="00000-000" class="w-full bg-slate-900 border border-white/20 rounded-xl px-3 py-2 text-white focus:outline-none focus:border-amber-400">
+                <span id="mCepSpinner" class="hidden absolute right-3 top-2.5 text-xs text-amber-400 animate-spin">⌛</span>
               </div>
             </div>
             <div class="sm:col-span-2">
               <label class="block text-slate-300 uppercase font-semibold mb-1">Endereço (Rua, Nº, Complemento)</label>
-              <input type="text" id="mEndereco" placeholder="Ex: Av. Paulista, 1000 - Cj 42" class="w-full bg-slate-900 border border-white/20 rounded-xl px-3 py-2 text-white focus:outline-none focus:border-cyan-400">
+              <input type="text" id="mEndereco" placeholder="Ex: Av. Paulista, 1000 - Cj 42" class="w-full bg-slate-900 border border-white/20 rounded-xl px-3 py-2 text-white focus:outline-none focus:border-amber-400">
             </div>
           </div>
 
           <div class="grid grid-cols-1 sm:grid-cols-3 gap-3 text-xs">
             <div>
               <label class="block text-slate-300 uppercase font-semibold mb-1">Bairro</label>
-              <input type="text" id="mBairro" placeholder="Bairro" class="w-full bg-slate-900 border border-white/20 rounded-xl px-3 py-2 text-white focus:outline-none focus:border-cyan-400">
+              <input type="text" id="mBairro" placeholder="Bairro" class="w-full bg-slate-900 border border-white/20 rounded-xl px-3 py-2 text-white focus:outline-none focus:border-amber-400">
             </div>
             <div>
               <label class="block text-slate-300 uppercase font-semibold mb-1">Cidade</label>
-              <input type="text" id="mCidade" placeholder="Cidade" class="w-full bg-slate-900 border border-white/20 rounded-xl px-3 py-2 text-white focus:outline-none focus:border-cyan-400">
+              <input type="text" id="mCidade" placeholder="Cidade" class="w-full bg-slate-900 border border-white/20 rounded-xl px-3 py-2 text-white focus:outline-none focus:border-amber-400">
             </div>
             <div>
               <label class="block text-slate-300 uppercase font-semibold mb-1">Estado (UF)</label>
-              <input type="text" id="mEstado" maxlength="2" placeholder="SP" class="w-full bg-slate-900 border border-white/20 rounded-xl px-3 py-2 text-white uppercase focus:outline-none focus:border-cyan-400">
+              <input type="text" id="mEstado" maxlength="2" placeholder="SP" class="w-full bg-slate-900 border border-white/20 rounded-xl px-3 py-2 text-white uppercase focus:outline-none focus:border-amber-400">
             </div>
           </div>
         </div>
@@ -559,9 +508,9 @@
           </div>
         </div>
 
-        <div id="mBlocoArtisticoAdmin" class="space-y-5 pt-4 border-t border-cyan-500/30 hidden">
-          <div class="flex items-center justify-between border-b border-cyan-500/30 pb-2">
-            <h4 class="text-xs font-bold text-cyan-400 uppercase tracking-wider flex items-center gap-2">
+        <div id="mBlocoArtisticoAdmin" class="space-y-5 pt-4 border-t border-amber-500/30 hidden">
+          <div class="flex items-center justify-between border-b border-amber-500/30 pb-2">
+            <h4 class="text-xs font-bold text-amber-400 uppercase tracking-wider flex items-center gap-2">
               <span>🎭 4. Apresentação Comercial, Vitrine & Curadoria de Mídias</span>
             </h4>
             <span id="mMediaPendingBadge" class="hidden px-2.5 py-1 rounded-full text-[10px] font-extrabold bg-amber-500/20 text-amber-300 border border-amber-500/50 animate-pulse">
@@ -611,16 +560,16 @@
               <div class="flex items-center justify-between">
                 <label class="block text-[10px] uppercase font-bold text-slate-300">Foto de Capa Principal</label>
                 <div class="flex items-center gap-2">
-                  <label class="text-[10px] text-cyan-400 hover:text-cyan-300 font-bold cursor-pointer">
+                  <label class="text-[10px] text-amber-400 hover:text-amber-300 font-bold cursor-pointer">
                     📤 Enviar Capa
-                    <input type="file" id="inputUploadCapaAdmin" accept="image/png,image/jpeg,image/webp" class="hidden" onchange="openCropCapaAdmin(event)">
+                    <input type="file" id="inputUploadCapaAdmin" accept="image/*" class="hidden" onchange="uploadFotoAdmin(this, 'capa')">
                   </label>
                   <button type="button" id="btnRemoverCapaAdmin" onclick="removerCapaAdmin()" class="text-[10px] text-red-400 hover:text-red-300 font-bold hidden">
                     🗑️ Remover Capa
                   </button>
                 </div>
               </div>
-              <div id="mCapaBox" class="w-full h-36 rounded-xl bg-slate-900 border border-cyan-500/30 overflow-hidden relative bg-cover bg-center flex items-center justify-center">
+              <div id="mCapaBox" class="w-full h-36 rounded-xl bg-slate-900 border border-amber-500/30 overflow-hidden relative bg-cover bg-center flex items-center justify-center">
                 <span id="mCapaEmptyTxt" class="text-xs text-slate-500">Sem capa enviada</span>
               </div>
             </div>
@@ -629,11 +578,11 @@
               <div class="flex items-center justify-between">
                 <label class="block text-[10px] uppercase font-bold text-slate-300">Galeria de Imagens & Vídeos (Exclua os indesejados)</label>
                 <div class="flex items-center gap-2">
-                  <label class="text-[10px] text-cyan-400 hover:text-cyan-300 font-bold cursor-pointer">
+                  <label class="text-[10px] text-amber-400 hover:text-amber-300 font-bold cursor-pointer">
                     📤 Adicionar Foto
-                    <input type="file" id="inputUploadGaleriaAdmin" accept="image/png,image/jpeg,image/webp" class="hidden" multiple onchange="handleMultipleGaleriaAdmin(event)">
+                    <input type="file" id="inputUploadGaleriaAdmin" accept="image/*" class="hidden" onchange="uploadFotoAdmin(this, 'galeria')">
                   </label>
-                  <span id="mGaleriaContadorTxt" class="text-[10px] text-cyan-400 font-mono">0 fotos</span>
+                  <span id="mGaleriaContadorTxt" class="text-[10px] text-amber-400 font-mono">0 fotos</span>
                 </div>
               </div>
               <div id="mGaleriaGrid" class="portfolio-grid-admin bg-slate-950/60 p-2.5 rounded-xl border border-white/10 min-h-[144px]">
@@ -646,43 +595,43 @@
             <div class="grid grid-cols-1 sm:grid-cols-2 gap-3 text-xs">
               <div>
                 <label class="block text-slate-300 uppercase font-semibold mb-1">Nome Comercial / Nome Fantasia</label>
-                <input type="text" id="mArtNomeArtistico" class="w-full bg-slate-900 border border-cyan-500/30 rounded-xl px-3 py-2 text-white focus:outline-none focus:border-cyan-400">
+                <input type="text" id="mArtNomeArtistico" class="w-full bg-slate-900 border border-amber-500/30 rounded-xl px-3 py-2 text-white focus:outline-none focus:border-amber-400">
               </div>
               <div>
                 <label class="block text-slate-300 uppercase font-semibold mb-1">Tagline / Subtítulo</label>
-                <input type="text" id="mArtTagline" class="w-full bg-slate-900 border border-cyan-500/30 rounded-xl px-3 py-2 text-white focus:outline-none focus:border-cyan-400">
+                <input type="text" id="mArtTagline" class="w-full bg-slate-900 border border-amber-500/30 rounded-xl px-3 py-2 text-white focus:outline-none focus:border-amber-400">
               </div>
             </div>
 
             <div class="grid grid-cols-1 sm:grid-cols-2 gap-3 text-xs">
               <div>
                 <label class="block text-slate-300 uppercase font-semibold mb-1">Cachê / Valor Base Estimado (R$)</label>
-                <input type="number" id="mArtCacheBase" class="w-full bg-slate-900 border border-cyan-500/30 rounded-xl px-3 py-2 text-white focus:outline-none focus:border-cyan-400">
+                <input type="number" id="mArtCacheBase" class="w-full bg-slate-900 border border-amber-500/30 rounded-xl px-3 py-2 text-white focus:outline-none focus:border-amber-400">
               </div>
               <div>
                 <label class="block text-slate-300 uppercase font-semibold mb-1">Histórico & Experiência Comercial</label>
-                <input type="text" id="mArtExperiencia" class="w-full bg-slate-900 border border-cyan-500/30 rounded-xl px-3 py-2 text-white focus:outline-none focus:border-cyan-400">
+                <input type="text" id="mArtExperiencia" class="w-full bg-slate-900 border border-amber-500/30 rounded-xl px-3 py-2 text-white focus:outline-none focus:border-amber-400">
               </div>
             </div>
 
             <div class="text-xs">
               <label class="block text-slate-300 uppercase font-semibold mb-1">Bio / Proposta Comercial</label>
-              <textarea id="mArtBio" rows="3" class="w-full bg-slate-900 border border-cyan-500/30 rounded-xl p-3 text-white focus:outline-none focus:border-cyan-400"></textarea>
+              <textarea id="mArtBio" rows="3" class="w-full bg-slate-900 border border-amber-500/30 rounded-xl p-3 text-white focus:outline-none focus:border-amber-400"></textarea>
             </div>
 
             <div class="text-xs">
               <label class="block text-slate-300 uppercase font-semibold mb-1">Rider / Estrutura Técnica Exigida</label>
-              <textarea id="mArtRider" rows="2" class="w-full bg-slate-900 border border-cyan-500/30 rounded-xl p-3 text-white focus:outline-none focus:border-cyan-400"></textarea>
+              <textarea id="mArtRider" rows="2" class="w-full bg-slate-900 border border-amber-500/30 rounded-xl p-3 text-white focus:outline-none focus:border-amber-400"></textarea>
             </div>
 
             <div class="grid grid-cols-1 sm:grid-cols-2 gap-3 text-xs">
               <div>
                 <label class="block text-slate-300 uppercase font-semibold mb-1">YouTube / Vídeo Principal</label>
-                <input type="url" id="mArtYoutube1" class="w-full bg-slate-900 border border-cyan-500/30 rounded-xl px-3 py-2 text-white focus:outline-none focus:border-cyan-400">
+                <input type="url" id="mArtYoutube1" class="w-full bg-slate-900 border border-amber-500/30 rounded-xl px-3 py-2 text-white focus:outline-none focus:border-amber-400">
               </div>
               <div>
                 <label class="block text-slate-300 uppercase font-semibold mb-1">YouTube / Vídeo Secundário</label>
-                <input type="url" id="mArtYoutube2" class="w-full bg-slate-900 border border-cyan-500/30 rounded-xl px-3 py-2 text-white focus:outline-none focus:border-cyan-400">
+                <input type="url" id="mArtYoutube2" class="w-full bg-slate-900 border border-amber-500/30 rounded-xl px-3 py-2 text-white focus:outline-none focus:border-amber-400">
               </div>
             </div>
 
@@ -702,23 +651,6 @@
 
       </div>
 
-    </div>
-  </div>
-
-  <!-- Modal de recorte (Cropper.js — mesmo fluxo do Perfil Unificado) -->
-  <div id="modal-crop-admin" class="modal-crop-overlay">
-    <div class="glass-b2b w-full max-w-lg rounded-2xl border border-cyan-500/40 overflow-hidden flex flex-col max-h-[90vh]">
-      <div class="flex items-center justify-between border-b border-white/10 px-5 py-3.5 shrink-0">
-        <h3 id="modalCropTitleAdmin" class="text-sm font-bold text-white tracking-tight">Recortar Imagem</h3>
-        <button type="button" onclick="closeCropModalAdmin()" class="text-slate-400 hover:text-white text-lg font-bold p-1 cursor-pointer">✕</button>
-      </div>
-      <div class="p-4 bg-slate-950/80 overflow-hidden" style="max-height: 55vh;">
-        <img id="image-to-crop-admin" src="" alt="Recorte" style="max-width: 100%; display: block;">
-      </div>
-      <div class="flex items-center justify-end gap-2 px-5 py-3.5 border-t border-white/10 shrink-0">
-        <button type="button" onclick="closeCropModalAdmin()" class="px-4 py-2 rounded-xl bg-slate-800 hover:bg-slate-700 text-slate-300 text-xs font-bold uppercase cursor-pointer">Cancelar</button>
-        <button type="button" onclick="cropAndCompressAdmin()" class="px-4 py-2 rounded-xl bg-cyan-500 hover:bg-cyan-400 text-slate-950 text-xs font-bold uppercase cursor-pointer shadow-[0_0_12px_rgba(0,240,255,0.3)]">Confirmar Recorte</button>
-      </div>
     </div>
   </div>
 
@@ -754,7 +686,7 @@
               <span class="block text-[10px] text-slate-400 mt-0.5">Aprovado / Bem-vindo</span>
             </button>
             <button type="button" data-etapa="livre" class="btn-wa-etapa px-3 py-2.5 rounded-xl bg-slate-900 border border-white/15 hover:border-emerald-400/60 text-left transition cursor-pointer">
-              <span class="block font-bold text-cyan-300 text-[11px]">Mensagem livre</span>
+              <span class="block font-bold text-amber-300 text-[11px]">Mensagem livre</span>
               <span class="block text-[10px] text-slate-400 mt-0.5">Boas-vindas editável</span>
             </button>
           </div>
@@ -778,7 +710,6 @@
   </div>
 
   <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
-  <script src="https://cdnjs.cloudflare.com/ajax/libs/cropperjs/1.5.13/cropper.min.js"></script>
   <script src="../partner-config.js" onerror="this.src='../../partner-config.js'"></script>
   <script src="../partner-header.js"></script>
   <script src="../../script/script.js" onerror="this.src='../script/script.js'" defer></script>
@@ -803,9 +734,9 @@
       var parceiroWaAtivo = null;
 
       var MSGS_WHATSAPP = {
-        1: '✨ *Boas notícias!*\n\nVocê foi convidado para ter sua própria página na *Vitrine de Parceiros 432UP*.\n\nUma página online para mostrar seu trabalho, com fotos, portfólio, área de atuação e vídeos.\n\nQuer fazer parte?\n\nMe responde só: *SIM*. ❤️',
-        2: '🚀 *Para começar, é simples:*\n\n1. Acesse:\nhttps://www.432up.com/B2B/login\n\n2. Clique em *“Solicitar Acesso B2B”*\n\n3. Preencha e envie.\n\n*Pronto.*\n\nNós fazemos a curadoria e, sendo aprovado, eu mesma te aviso por aqui. 😉\n\n*Clique → solicite → aguarde.*',
-        3: '🎉 *Aprovado!* Bem-vindo à *Vitrine de Parceiros 432UP*!\n\nAgora é só entrar no Portal e montar sua apresentação.\n\nEscolha as fotos, textos, portfólio, área de atuação e vídeos que você quer colocar na sua página.\n\nVocê decide como quer ser apresentado.\n\n✨ Depois de concluir, sua página estará pronta na *Vitrine 432UP*!\n\n❤️ *Agora você faz oficialmente parte da nossa rede.*'
+        1: '✨ Boas notícias!\n\nVocê foi convidado para ter sua própria página na Vitrine de Parceiros 432UP.\n\nUma página online para mostrar seu trabalho, com fotos, portfólio, área de atuação e vídeos.\n\nQuer fazer parte?\n\nMe responde só: SIM. ❤️',
+        2: '🚀 Para começar, é simples:\n\n1. Acesse:\nhttps://www.432up.com/B2B/login\n\n2. Clique em “Solicitar Acesso B2B”\n\n3. Preencha e envie.\n\nPronto.\n\nNós fazemos a curadoria e, sendo aprovado, eu mesma te aviso por aqui. 😉\n\nClique → solicite → aguarde.',
+        3: '🎉 Aprovado! Bem-vindo à Vitrine de Parceiros 432UP!\n\nAgora é só entrar no Portal e montar sua apresentação.\n\nEscolha as fotos, textos, portfólio, área de atuação e vídeos que você quer colocar na sua página.\n\nVocê decide como quer ser apresentado.\n\n✨ Depois de concluir, sua página estará pronta na Vitrine 432UP!\n\n❤️ Agora você faz oficialmente parte da nossa rede.'
       };
 
       function esc(s) { return String(s == null ? '' : s).replace(/</g, '&lt;').replace(/>/g, '&gt;'); }
@@ -1071,7 +1002,7 @@
 
         perfisPais.forEach(function (pai) {
           var filhos = filhosDe(pai.id);
-          var badgeFicha = pai.tem_ficha_complementar ? '<span class="px-1.5 py-0.5 rounded text-[9px] font-bold bg-cyan-500/20 text-cyan-300 border border-cyan-500/40">Cadastro Ativo</span>' : '';
+          var badgeFicha = pai.tem_ficha_complementar ? '<span class="px-1.5 py-0.5 rounded text-[9px] font-bold bg-amber-500/20 text-amber-300 border border-amber-500/40">Cadastro Ativo</span>' : '';
 
           html += '<div class="bg-slate-900/90 p-3 rounded-xl border border-white/10 space-y-2">';
           html += '<div class="flex items-center justify-between gap-2">' +
@@ -1088,11 +1019,11 @@
           if (filhos.length) {
             html += '<div class="pl-3 space-y-1.5 border-l-2 border-amber-500/30 mt-2">';
             filhos.forEach(function (f) {
-              var badgeFichaFilho = f.tem_ficha_complementar ? '<span class="px-1.5 py-0.5 rounded text-[8px] font-bold bg-cyan-500/20 text-cyan-300 border border-cyan-500/40">Cadastro</span>' : '';
+              var badgeFichaFilho = f.tem_ficha_complementar ? '<span class="px-1.5 py-0.5 rounded text-[8px] font-bold bg-amber-500/20 text-amber-300 border border-amber-500/40">Cadastro</span>' : '';
               html += '<div class="flex items-center justify-between gap-2 text-[11px] bg-slate-950/60 p-1.5 rounded border border-white/5">' +
                 '<span class="text-slate-300 flex items-center gap-1.5 min-w-0 truncate">↳ ' + esc(f.nome) + ' ' + badgeFichaFilho + '</span>' +
                 '<div class="flex items-center gap-1 shrink-0">' +
-                  '<select data-move-id="' + f.id + '" class="js-move-pai bg-slate-900 border border-white/15 rounded px-1.5 py-0.5 text-[10px] text-cyan-300 max-w-[140px] cursor-pointer" title="Mover para outro perfil pai"></select>' +
+                  '<select data-move-id="' + f.id + '" class="js-move-pai bg-slate-900 border border-white/15 rounded px-1.5 py-0.5 text-[10px] text-amber-300 max-w-[140px] cursor-pointer" title="Mover para outro perfil pai"></select>' +
                   '<button type="button" onclick="editarTaxonomiaItem(\'' + f.id + '\')" class="px-1.5 py-0.5 bg-amber-500/20 text-amber-300 rounded text-[9px] font-semibold">Editar</button>' +
                   '<button type="button" onclick="alternarStatusTaxonomia(\'' + f.id + '\', ' + !f.ativo + ')" class="px-1.5 py-0.5 ' + (f.ativo ? 'text-emerald-400' : 'text-red-400') + ' rounded text-[9px] font-semibold">' + (f.ativo ? 'Ativo' : 'Inativo') + '</button>' +
                 '</div>' +
@@ -1111,7 +1042,7 @@
             html += '<div class="flex items-center justify-between gap-2 text-[11px] bg-slate-950/60 p-1.5 rounded">' +
               '<span class="text-red-200 truncate">' + esc(f.nome) + ' <span class="text-slate-500">(pai inválido)</span></span>' +
               '<div class="flex items-center gap-1 shrink-0">' +
-                '<select data-move-id="' + f.id + '" data-allow-root="1" class="js-move-pai bg-slate-900 border border-red-500/30 rounded px-1.5 py-0.5 text-[10px] text-cyan-300 max-w-[140px] cursor-pointer"></select>' +
+                '<select data-move-id="' + f.id + '" data-allow-root="1" class="js-move-pai bg-slate-900 border border-red-500/30 rounded px-1.5 py-0.5 text-[10px] text-amber-300 max-w-[140px] cursor-pointer"></select>' +
                 '<button type="button" onclick="editarTaxonomiaItem(\'' + f.id + '\')" class="px-1.5 py-0.5 bg-amber-500/20 text-amber-300 rounded text-[9px] font-semibold">Editar</button>' +
               '</div>' +
             '</div>';
@@ -1441,7 +1372,7 @@
             var label = esc(v.nome_completo || v.email);
             return '<div onclick="selecionarParceiro(\'' + v.id + '\', \'' + label.replace(/'/g, "\\'") + '\')" class="p-2.5 hover:bg-white/10 cursor-pointer text-white flex justify-between items-center transition">' +
               '<span>' + label + '</span>' +
-              '<span class="text-[10px] text-cyan-400 font-bold">' + (v.comissao_padrao_pct || 10) + '%</span>' +
+              '<span class="text-[10px] text-amber-400 font-bold">' + (v.comissao_padrao_pct || 10) + '%</span>' +
             '</div>';
           }).join('');
         } else {
@@ -1593,7 +1524,7 @@
               '<span class="text-slate-400 text-[11px] block truncate mt-0.5">' + esc(p.email) + ' • ' + esc(formatWhatsApp(p.whatsapp || p.telefone) || 'S/ Telefone') + '</span>' +
             '</td>' +
             '<td class="py-3 px-3 text-center whitespace-nowrap">' +
-              '<div class="text-[11px] font-semibold text-cyan-300">' + esc(taxInfo.perfilPaiNome) + '</div>' +
+              '<div class="text-[11px] font-semibold text-amber-300">' + esc(taxInfo.perfilPaiNome) + '</div>' +
               '<div class="text-[10px] text-slate-400">' + esc(taxInfo.especialidadeNome || '—') + '</div>' +
             '</td>' +
             '<td class="py-3 px-3 text-center whitespace-nowrap">' +
@@ -1624,7 +1555,7 @@
                   '</svg>' +
                 '</button>' +
                 '<button onclick="abrirFichaParceiro(\'' + p.id + '\')" class="px-2.5 py-1 rounded-lg bg-amber-500/20 hover:bg-amber-500/30 text-amber-300 border border-amber-500/30 text-[11px] font-semibold transition cursor-pointer">Cadastro</button>' +
-                '<button onclick="abrirModalAuditoria(\'' + p.id + '\')" class="px-2.5 py-1 rounded-lg bg-cyan-500/20 hover:bg-cyan-500/30 text-cyan-300 border border-cyan-500/30 text-[11px] font-semibold transition cursor-pointer">Ajustar %</button>' +
+                '<button onclick="abrirModalAuditoria(\'' + p.id + '\')" class="px-2.5 py-1 rounded-lg bg-amber-500/20 hover:bg-amber-500/30 text-amber-300 border border-amber-500/30 text-[11px] font-semibold transition cursor-pointer">Ajustar %</button>' +
                 '<button onclick="excluirUsuario(\'' + p.id + '\')" class="px-2.5 py-1 rounded-lg bg-red-500/20 hover:bg-red-500/30 text-red-300 border border-red-500/30 text-[11px] font-semibold transition cursor-pointer">Excluir</button>' +
               '</div>' +
             '</td>' +
@@ -1938,174 +1869,49 @@
         }
       });
 
-      /* ── Mídia admin: crop + compressão WebP + loading (igual Perfil Unificado) ── */
-      var MAX_FOTOS_GALERIA_ADMIN = 20;
-      var cropperAdmin = null;
-      var cropModeAdmin = 'capa';
-      var filaCropGaleriaAdmin = [];
-
-      function startLoadingProgressAdmin(pct, msg) {
-        var ov = document.getElementById('loadingOverlayAdmin');
-        if (!ov) return;
-        ov.classList.add('active');
-        updateLoadingProgressAdmin(pct || 0, msg || 'Processando...');
-      }
-      function updateLoadingProgressAdmin(pct, msg) {
-        var bar = document.getElementById('loadingProgressBarAdmin');
-        var txt = document.getElementById('loadingPercentageTextAdmin');
-        var m = document.getElementById('loadingMessageAdmin');
-        if (bar) bar.style.width = Math.max(0, Math.min(100, pct)) + '%';
-        if (txt) txt.textContent = Math.round(pct) + '%';
-        if (m && msg) m.textContent = msg;
-      }
-      function hideLoadingProgressAdmin() {
-        var ov = document.getElementById('loadingOverlayAdmin');
-        if (ov) ov.classList.remove('active');
-      }
-
-      function contarFotosGaleriaAdmin() {
-        return (mGaleriaFotosAtual ? mGaleriaFotosAtual.length : 0);
-      }
-
-      window.openCropCapaAdmin = function (e) {
+      /* Upload admin — mesmo bucket e padrão de path do Perfil Unificado (PARTNER_CFG.AVATAR_BUCKET) */
+      window.uploadFotoAdmin = async function (inputEl, tipo) {
+        if (!inputEl || !inputEl.files || !inputEl.files[0]) return;
         if (!parceiroSelecionadoId) {
           alert('Abra o cadastro de um parceiro antes de enviar fotos.');
-          e.target.value = '';
-          return;
-        }
-        var file = e.target.files && e.target.files[0];
-        if (!file) return;
-        cropModeAdmin = 'capa';
-        document.getElementById('modalCropTitleAdmin').textContent = 'Recortar Foto de Capa (WebP 80%)';
-        initCropImageAdmin(file, 1 / 1);
-      };
-
-      window.handleMultipleGaleriaAdmin = function (e) {
-        if (!parceiroSelecionadoId) {
-          alert('Abra o cadastro de um parceiro antes de enviar fotos.');
-          e.target.value = '';
-          return;
-        }
-        var files = e.target.files;
-        if (!files || files.length === 0) return;
-
-        var todos = Array.prototype.slice.call(files);
-        var vagas = MAX_FOTOS_GALERIA_ADMIN - contarFotosGaleriaAdmin();
-        if (vagas <= 0) {
-          alert('Limite de ' + MAX_FOTOS_GALERIA_ADMIN + ' fotos na galeria já atingido.');
-          e.target.value = '';
-          return;
-        }
-        if (todos.length > vagas) {
-          alert('Apenas ' + vagas + ' foto(s) serão adicionadas (limite: ' + MAX_FOTOS_GALERIA_ADMIN + ').');
-          todos = todos.slice(0, vagas);
-        }
-        filaCropGaleriaAdmin = todos;
-        processarProximoDaFilaGaleriaAdmin();
-      };
-
-      function processarProximoDaFilaGaleriaAdmin() {
-        if (filaCropGaleriaAdmin.length === 0) {
-          var inp = document.getElementById('inputUploadGaleriaAdmin');
-          if (inp) inp.value = '';
-          return;
-        }
-        var prox = filaCropGaleriaAdmin.shift();
-        cropModeAdmin = 'galeria';
-        var rest = filaCropGaleriaAdmin.length;
-        document.getElementById('modalCropTitleAdmin').textContent = rest > 0
-          ? 'Recortar Foto da Galeria (WebP 80%) — restam ' + (rest + 1) + ' foto(s)'
-          : 'Recortar Foto da Galeria (WebP 80%)';
-        initCropImageAdmin(prox, 4 / 3);
-      }
-
-      function initCropImageAdmin(file, ratio) {
-        if (!file) return;
-        if (typeof Cropper === 'undefined') {
-          alert('Cropper.js não carregou. Verifique a conexão com a CDN.');
-          return;
-        }
-        var reader = new FileReader();
-        reader.onload = function (evt) {
-          var img = document.getElementById('image-to-crop-admin');
-          img.src = evt.target.result;
-          document.getElementById('modal-crop-admin').classList.add('active');
-          if (cropperAdmin) {
-            try { cropperAdmin.destroy(); } catch (e) {}
-            cropperAdmin = null;
-          }
-          cropperAdmin = new Cropper(img, { aspectRatio: ratio, viewMode: 1 });
-        };
-        reader.readAsDataURL(file);
-      }
-
-      window.closeCropModalAdmin = function () {
-        document.getElementById('modal-crop-admin').classList.remove('active');
-        if (cropperAdmin) {
-          try { cropperAdmin.destroy(); } catch (e) {}
-          cropperAdmin = null;
-        }
-        if (cropModeAdmin === 'galeria') {
-          processarProximoDaFilaGaleriaAdmin();
-        } else {
-          var inp = document.getElementById('inputUploadCapaAdmin');
-          if (inp) inp.value = '';
-        }
-      };
-
-      window.cropAndCompressAdmin = function () {
-        if (!cropperAdmin) return;
-
-        if (cropModeAdmin === 'galeria' && contarFotosGaleriaAdmin() >= MAX_FOTOS_GALERIA_ADMIN) {
-          alert('Limite de ' + MAX_FOTOS_GALERIA_ADMIN + ' fotos atingido.');
-          document.getElementById('modal-crop-admin').classList.remove('active');
-          if (cropperAdmin) { try { cropperAdmin.destroy(); } catch (e) {} cropperAdmin = null; }
-          filaCropGaleriaAdmin = [];
-          var inp = document.getElementById('inputUploadGaleriaAdmin');
-          if (inp) inp.value = '';
+          inputEl.value = '';
           return;
         }
 
-        var targetWidth = cropModeAdmin === 'capa' ? 600 : 800;
-        var targetHeight = cropModeAdmin === 'capa' ? 600 : 600;
-        var canvas = cropperAdmin.getCroppedCanvas({ width: targetWidth, height: targetHeight });
-
-        canvas.toBlob(function (blob) {
-          document.getElementById('modal-crop-admin').classList.remove('active');
-          if (cropperAdmin) {
-            try { cropperAdmin.destroy(); } catch (e) {}
-            cropperAdmin = null;
-          }
-
-          var modo = cropModeAdmin;
-          enviarBlobAdmin(blob, modo).then(function () {
-            if (modo === 'galeria') {
-              processarProximoDaFilaGaleriaAdmin();
-            } else {
-              var inpC = document.getElementById('inputUploadCapaAdmin');
-              if (inpC) inpC.value = '';
-            }
-          });
-        }, 'image/webp', 0.8);
-      };
-
-      async function enviarBlobAdmin(blob, tipo) {
         var parceiro = listaParceiros.find(function (item) {
           return String(item.id) === String(parceiroSelecionadoId);
         });
         if (!parceiro || !parceiro.user_id) {
           alert('Parceiro sem user_id. Não é possível enviar a foto.');
+          inputEl.value = '';
           return;
         }
+
+        var file = inputEl.files[0];
+        if (!file.type || file.type.indexOf('image/') !== 0) {
+          alert('Selecione um arquivo de imagem válido.');
+          inputEl.value = '';
+          return;
+        }
+        if (file.size > 12 * 1024 * 1024) {
+          alert('A imagem ultrapassa 12 MB. Escolha um arquivo menor.');
+          inputEl.value = '';
+          return;
+        }
+
         if (typeof sbPartner === 'undefined' || !sbPartner.storage) {
-          alert('Cliente Supabase não disponível.');
+          alert('Cliente Supabase não disponível. Verifique se partner-config.js carregou.');
+          inputEl.value = '';
           return;
         }
+
         var bucket = (typeof PARTNER_CFG !== 'undefined' && PARTNER_CFG.AVATAR_BUCKET)
           ? PARTNER_CFG.AVATAR_BUCKET
           : null;
+
         if (!bucket) {
-          alert('PARTNER_CFG.AVATAR_BUCKET não encontrado.');
+          alert('PARTNER_CFG.AVATAR_BUCKET não encontrado. O mesmo config do Perfil Unificado precisa estar carregado.');
+          inputEl.value = '';
           return;
         }
 
@@ -2114,17 +1920,46 @@
           : (parceiro.user_id + '/galeria_' + Date.now() + '.webp');
 
         try {
-          startLoadingProgressAdmin(20, tipo === 'capa' ? 'Enviando foto de capa...' : 'Enviando foto da galeria...');
+          // Converte para WebP (mesmo fluxo do perfil) quando possível
+          var blobToUpload = file;
+          var contentType = file.type || 'image/jpeg';
+
+          try {
+            var dataUrl = await new Promise(function (resolve, reject) {
+              var reader = new FileReader();
+              reader.onload = function () { resolve(reader.result); };
+              reader.onerror = reject;
+              reader.readAsDataURL(file);
+            });
+            var img = await new Promise(function (resolve, reject) {
+              var i = new Image();
+              i.onload = function () { resolve(i); };
+              i.onerror = reject;
+              i.src = dataUrl;
+            });
+            var maxW = tipo === 'capa' ? 600 : 800;
+            var maxH = tipo === 'capa' ? 600 : 600;
+            var ratio = Math.min(maxW / img.width, maxH / img.height, 1);
+            var canvas = document.createElement('canvas');
+            canvas.width = Math.round(img.width * ratio) || maxW;
+            canvas.height = Math.round(img.height * ratio) || maxH;
+            canvas.getContext('2d').drawImage(img, 0, 0, canvas.width, canvas.height);
+            blobToUpload = await new Promise(function (resolve) {
+              canvas.toBlob(function (b) { resolve(b || file); }, 'image/webp', 0.8);
+            });
+            contentType = 'image/webp';
+          } catch (convErr) {
+            console.warn('Conversão WebP falhou, enviando arquivo original:', convErr);
+            path = path.replace(/\.webp$/, '.' + ((file.name.split('.').pop() || 'jpg').toLowerCase()));
+          }
 
           var upRes = await sbPartner.storage
             .from(bucket)
-            .upload(path, blob, { upsert: true, contentType: 'image/webp' });
+            .upload(path, blobToUpload, { upsert: true, contentType: contentType });
 
           if (upRes.error) {
             throw new Error('Falha no upload: ' + upRes.error.message);
           }
-
-          updateLoadingProgressAdmin(70, 'Gravando no cadastro...');
 
           var publicUrlData = sbPartner.storage.from(bucket).getPublicUrl(path);
           var uploadedUrl = publicUrlData && publicUrlData.data ? publicUrlData.data.publicUrl : null;
@@ -2153,20 +1988,18 @@
 
           var resSave = await sbPartner.from('parceiros').update(payloadFoto).eq('id', parceiroSelecionadoId);
           if (resSave.error) {
-            throw new Error('Foto no Storage, mas falhou ao gravar: ' + resSave.error.message);
+            alert('Foto enviada ao Storage, mas falhou ao gravar no cadastro: ' + resSave.error.message +
+              '\nClique em “Salvar Cadastro Completo” para tentar de novo.');
+          } else {
+            parceiro.galeria_fotos = mGaleriaFotosAtual.slice();
+            parceiro.foto_capa_url = mFotoCapaUrlAtual;
           }
-
-          parceiro.galeria_fotos = mGaleriaFotosAtual.slice();
-          parceiro.foto_capa_url = mFotoCapaUrlAtual;
-
-          updateLoadingProgressAdmin(100, 'Concluído!');
         } catch (err) {
           console.error(err);
           alert('Erro ao enviar a imagem: ' + (err && err.message ? err.message : 'falha desconhecida'));
-        } finally {
-          setTimeout(hideLoadingProgressAdmin, 500);
         }
-      }
+        inputEl.value = '';
+      };
 
       window.abrirFichaParceiro = function (id) {
         var parceiro = listaParceiros.find(function (item) { return String(item.id) === String(id); });
@@ -2336,7 +2169,7 @@
               '<span class="absolute top-1 left-1 px-1 py-0.5 rounded text-[8px] font-extrabold bg-amber-500/90 text-slate-950 z-10 shadow">🎬 Vídeo Pendente</span>' +
               '<button type="button" class="btn-remove-galeria-admin" onclick="removerFotoPendenteAdmin(' + idx + ')" title="Excluir vídeo pendente">×</button>' +
               '<span class="text-xl mb-0.5 mt-2">🎬</span>' +
-              '<a href="' + item.url + '" target="_blank" class="text-[9px] text-cyan-400 underline truncate max-w-full hover:text-cyan-300 font-mono">' + esc(item.url) + '</a>' +
+              '<a href="' + item.url + '" target="_blank" class="text-[9px] text-amber-400 underline truncate max-w-full hover:text-amber-300 font-mono">' + esc(item.url) + '</a>' +
             '</div>';
           } else {
             html += '<div class="portfolio-item-admin item-pendente">' +
