@@ -60,6 +60,7 @@
     }
 
     /* Botão Exportar PDF */
+    .pdf-mode #btn-exportar-pdf { display: none !important; }
     #btn-exportar-pdf {
       display: none;
       position: fixed;
@@ -670,6 +671,10 @@
        HELPERS GERAIS
        ========================================================= */
 
+    // ?pdf=1 -> página aberta pelo servidor para gerar o PDF oficial (sem botão, sem escala)
+    const MODO_PDF = new URLSearchParams(window.location.search).get('pdf') === '1';
+    if (MODO_PDF) document.documentElement.classList.add('pdf-mode');
+
     function formatarMoeda(val) {
       const num = parseFloat(val);
       if (isNaN(num)) return null;
@@ -1203,7 +1208,7 @@
     function ajustarEscala() {
       const c = document.getElementById('document-content');
       const w = document.getElementById('doc-scale');
-      if (!c || !w || c.style.display === 'none') return;
+      if (MODO_PDF || !c || !w || c.style.display === 'none') return;
       c.style.transform = 'none';
       w.style.height = 'auto';
       const larguraTela = document.documentElement.clientWidth || window.innerWidth;
@@ -1220,8 +1225,24 @@
        (fontes embutidas, layout A4 idêntico, links clicáveis)
        ========================================================= */
     async function exportarPDF() {
-      try { if (document.fonts && document.fonts.ready) await document.fonts.ready; } catch (e) {}
-      window.print();
+      const btn = document.getElementById('btn-exportar-pdf');
+      const id = new URLSearchParams(window.location.search).get('id');
+      if (!btn || !id) return;
+      btn.disabled = true;
+      btn.textContent = '⏳ Gerando PDF...';
+      try {
+        const { data, error } = await sbPartner.functions.invoke('gerar-proposta-pdf', { body: { id } });
+        if (error || !data || !data.url) throw new Error(error ? error.message : (data && data.erro) || 'Falha ao gerar');
+        // Novo toque do usuário abre o arquivo (evita bloqueio de pop-up no iOS)
+        btn.disabled = false;
+        btn.textContent = '📄 Abrir PDF';
+        btn.onclick = () => { window.open(data.url, '_blank') || (window.location.href = data.url); };
+      } catch (e) {
+        console.error('Erro ao gerar PDF:', e);
+        btn.disabled = false;
+        btn.textContent = '⚠️ Tentar novamente';
+        btn.onclick = exportarPDF;
+      }
     }
     window.addEventListener('afterprint', ajustarEscala);
     window.addEventListener('resize', ajustarEscala);
@@ -1690,6 +1711,7 @@
         if (document.fonts && document.fonts.ready) await document.fonts.ready;
         paginarProposta();
         ativarRepaginacaoPorFontes();
+        if (MODO_PDF) setTimeout(() => { document.body.setAttribute('data-pronto', '1'); }, 800);
 
       } catch (err) {
         console.error('Erro geral no carregamento:', err);
