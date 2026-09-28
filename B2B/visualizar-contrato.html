@@ -4,9 +4,12 @@
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>Contrato de Prestação de Serviços - 432UP!</title>
-  <style>
-    @import url('https://fonts.googleapis.com/css2?family=Montserrat:wght@400;600;700;800&family=Inter:wght@300;400;500;600;700&display=swap');
 
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Montserrat:wght@400;600;700;800&family=Inter:wght@300;400;500;600;700&display=swap">
+
+  <style>
     :root {
       --purple-primary: #8A10D8;
       --magenta-primary: #D800A6;
@@ -17,8 +20,14 @@
       --bg-card: #F9F9FC;
     }
 
+    /* Impede o iOS/Safari de redimensionar fontes por conta própria (quebrava a paginação) */
+    html {
+      -webkit-text-size-adjust: 100%;
+      text-size-adjust: 100%;
+    }
+
     * { box-sizing: border-box; margin: 0; padding: 0; }
-    body { font-family: 'Inter', sans-serif; color: var(--text-dark); background: #D6D6DC; line-height: 1.5; font-size: 12px; }
+    body { font-family: 'Inter', sans-serif; color: var(--text-dark); background: #D6D6DC; line-height: 1.5; font-size: 12px; overflow-x: hidden; }
 
     /* MENSAGEM DE STATUS / CARREGAMENTO */
     .status-message {
@@ -38,10 +47,57 @@
       border-left: 4px solid #D32F2F;
     }
 
+    /* Documento sempre no tamanho real A4 (210mm); no celular é reduzido por scale() via JS */
+    #doc-scale { width: 100%; overflow: hidden; }
+    #contractContent {
+      display: none;
+      width: 210mm;
+      margin: 0 auto;
+      transform-origin: top left;
+    }
+
+    /* Botão Exportar PDF */
+    .pdf-mode #btn-exportar-pdf { display: none !important; }
+    #btn-exportar-pdf {
+      display: none;
+      position: fixed;
+      top: 10px;
+      right: 10px;
+      z-index: 9999;
+      background: #8A10D8;
+      color: #FFF;
+      border: none;
+      border-radius: 20px;
+      padding: 10px 18px;
+      font-family: inherit;
+      font-size: 14px;
+      font-weight: 700;
+      box-shadow: 0 4px 14px rgba(0,0,0,0.3);
+      cursor: pointer;
+    }
+
+    /* PDF / impressão: A4 real, vetorial */
+    @page { size: A4; margin: 0; }
+    @media print {
+      html, body { background: #FFFFFF !important; }
+      body { -webkit-print-color-adjust: exact; print-color-adjust: exact; }
+      #doc-scale { height: auto !important; overflow: visible !important; }
+      #contractContent { transform: none !important; margin: 0 !important; width: 210mm !important; }
+      .page {
+        margin: 0 !important;
+        box-shadow: none !important;
+        height: 296.5mm !important;
+        break-after: page;
+        page-break-after: always;
+      }
+      .page:last-child { break-after: auto; page-break-after: auto; }
+      #btn-exportar-pdf { display: none !important; }
+    }
+
     /* LAYOUT A4 DE ALTA DENSIDADE JURÍDICA */
     .page {
       width: 210mm;
-      min-height: 297mm;
+      height: 297mm;
       padding: 18mm 18mm 20mm 18mm;
       margin: 10px auto;
       background: #FFFFFF;
@@ -50,6 +106,15 @@
       display: flex;
       flex-direction: column;
       justify-content: space-between;
+      overflow: hidden;
+    }
+
+    /* Corpo da página: é aqui que a paginação automática mede e corta o conteúdo */
+    .page-body {
+      flex: 1;
+      min-height: 0;
+      overflow: hidden;
+      padding-top: 1px;
     }
 
     .page-header-bar, .page-footer-bar {
@@ -69,7 +134,7 @@
       border-bottom: 2px solid var(--border-color);
       padding-bottom: 10px;
       margin-top: 3mm;
-      margin-bottom: 15px;
+      margin-bottom: 0;
     }
 
     /* LOGO 432UP! */
@@ -331,6 +396,9 @@
     Carregando contrato...
   </div>
 
+  <button type="button" id="btn-exportar-pdf" onclick="exportarPDF()">⬇ Exportar PDF</button>
+
+  <div id="doc-scale">
   <!-- CONTEÚDO DO CONTRATO -->
   <div id="contractContent" style="display: none;">
 
@@ -338,22 +406,22 @@
     <div class="page">
       <div class="page-header-bar"></div>
 
-      <div>
-        <header class="header-inner">
-          <div class="brand-lockup">
-            <img
-              class="brand-logo-img"
-              src="https://www.432up.com/imagens/logo.png"
-              alt="432UP! Produções"
-            >
-        
-          </div>
+      <header class="header-inner">
+        <div class="brand-lockup">
+          <img
+            class="brand-logo-img"
+            src="https://www.432up.com/imagens/logo.png"
+            alt="432UP! Produções"
+          >
+        </div>
 
-          <div class="doc-meta">
-            <strong>CONTRATO DE PRESTAÇÃO DE SERVIÇOS</strong><br>
-            Proposta Ref.: <strong class="proposta-numero-val">#—</strong>
-          </div>
-        </header>
+        <div class="doc-meta">
+          <strong>CONTRATO DE PRESTAÇÃO DE SERVIÇOS</strong><br>
+          Proposta Ref.: <strong class="proposta-numero-val">#—</strong>
+        </div>
+      </header>
+
+      <div class="page-body">
 
         <!-- 1. QUALIFICAÇÃO DAS PARTES -->
         <div class="section-title" data-sec-base="1" data-sec-fixed="1">1. Qualificação das Partes</div>
@@ -458,7 +526,7 @@
           </tbody>
         </table>
 
-        <!-- 4. VALOR E CONDIÇÕES FINANCEIRAS -->
+        <!-- 5. VALOR E CONDIÇÕES FINANCEIRAS -->
         <div class="section-title" data-sec-base="5" data-sec-label="Valor e Condições Financeiras">5. Valor e Condições Financeiras</div>
 
         <div class="grid-2">
@@ -503,7 +571,7 @@
           </div>
         </div>
 
-        <!-- RESUMO DO PAGAMENTO — MANTIDO NA PÁGINA 1 -->
+        <!-- RESUMO DO PAGAMENTO -->
         <table class="payment-table" id="pagamento_tabela" style="display: none;">
           <thead>
             <tr>
@@ -519,10 +587,10 @@
         </table>
       </div>
 
-      <div>
+      <div class="page-foot">
         <div class="page-footer">
           <span>Contrato de Prestação de Serviços — 432UP! Produções</span>
-          <span>Página 1 de 3</span>
+          <span>Página <span class="pg-n">1</span> de <span class="pg-total">3</span></span>
         </div>
 
         <div class="page-footer-bar"></div>
@@ -533,24 +601,24 @@
     <div class="page">
       <div class="page-header-bar"></div>
 
-      <div>
-        <header class="header-inner">
-          <div class="brand-lockup">
-            <img
-              class="brand-logo-img"
-              src="https://www.432up.com/imagens/logo.png"
-              alt="432UP! Produções"
-            >
-          
-          </div>
+      <header class="header-inner">
+        <div class="brand-lockup">
+          <img
+            class="brand-logo-img"
+            src="https://www.432up.com/imagens/logo.png"
+            alt="432UP! Produções"
+          >
+        </div>
 
-          <div class="doc-meta">
-            <strong>CONTRATO DE PRESTAÇÃO DE SERVIÇOS</strong><br>
-            Proposta Ref.: <strong class="proposta-numero-val">#—</strong>
-          </div>
-        </header>
+        <div class="doc-meta">
+          <strong>CONTRATO DE PRESTAÇÃO DE SERVIÇOS</strong><br>
+          Proposta Ref.: <strong class="proposta-numero-val">#—</strong>
+        </div>
+      </header>
 
-        <!-- 5. PAGAMENTO -->
+      <div class="page-body">
+
+        <!-- 6. PAGAMENTO -->
         <div class="section-title" data-sec-base="6" data-sec-label="Condições de Pagamento">6. Condições de Pagamento</div>
 
         <div class="clause">
@@ -562,7 +630,7 @@
           <p id="clausula_pagamento_condicoes" style="display: none; margin-top: 4px;"></p>
         </div>
 
-        <!-- 6. EXECUÇÃO DOS SERVIÇOS -->
+        <!-- 7. EXECUÇÃO DOS SERVIÇOS -->
         <div class="section-title" data-sec-base="7" data-sec-label="Execução dos Serviços">7. Execução dos Serviços</div>
 
         <div class="clause">
@@ -576,7 +644,7 @@
           </p>
         </div>
 
-        <!-- 7. HORAS E SERVIÇOS ADICIONAIS -->
+        <!-- 8. HORAS E SERVIÇOS ADICIONAIS -->
         <div class="section-title" data-sec-base="8" data-sec-label="Horas e Serviços Adicionais">8. Horas e Serviços Adicionais</div>
 
         <div class="clause">
@@ -589,7 +657,7 @@
           </p>
         </div>
 
-        <!-- 8. CANCELAMENTO, RESCISÃO E REMARCAÇÃO -->
+        <!-- 9. CANCELAMENTO, RESCISÃO E REMARCAÇÃO -->
         <div class="section-title" data-sec-base="9" data-sec-label="Cancelamento, Rescisão e Remarcação">9. Cancelamento, Rescisão e Remarcação</div>
 
         <div class="clause">
@@ -603,7 +671,7 @@
           <p id="clausula_cancelamento_remarcacao" style="display: none; margin-top: 4px;"></p>
         </div>
 
-        <!-- 9. ATRASO E INADIMPLEMENTO -->
+        <!-- 10. ATRASO E INADIMPLEMENTO -->
         <div class="section-title" data-sec-base="10" data-sec-label="Atraso e Inadimplemento">10. Atraso e Inadimplemento</div>
 
         <div class="clause">
@@ -615,7 +683,7 @@
           <p id="clausula_atraso_suspensao" style="display: none; margin-top: 4px;"></p>
         </div>
 
-        <!-- 10. RESPONSABILIDADES -->
+        <!-- 11. RESPONSABILIDADES -->
         <div class="section-title" data-sec-base="11" data-sec-label="Responsabilidades">11. Responsabilidades</div>
 
         <div class="clause">
@@ -628,7 +696,7 @@
           </p>
         </div>
 
-        <!-- 11. USO DE IMAGEM -->
+        <!-- 12. USO DE IMAGEM -->
         <div class="section-title" data-sec-base="12" data-sec-label="Uso de Imagem Institucional">12. Uso de Imagem Institucional</div>
 
         <div class="clause">
@@ -640,10 +708,10 @@
         </div>
       </div>
 
-      <div>
+      <div class="page-foot">
         <div class="page-footer">
           <span>Contrato de Prestação de Serviços — 432UP! Produções</span>
-          <span>Página 2 de 3</span>
+          <span>Página <span class="pg-n">2</span> de <span class="pg-total">3</span></span>
         </div>
 
         <div class="page-footer-bar"></div>
@@ -654,23 +722,24 @@
     <div class="page">
       <div class="page-header-bar"></div>
 
-      <div>
-        <header class="header-inner">
-          <div class="brand-lockup">
-            <img
-              class="brand-logo-img"
-              src="https://www.432up.com/imagens/logo.png"
-              alt="432UP! Produções"
-            >
-          </div>
+      <header class="header-inner">
+        <div class="brand-lockup">
+          <img
+            class="brand-logo-img"
+            src="https://www.432up.com/imagens/logo.png"
+            alt="432UP! Produções"
+          >
+        </div>
 
-          <div class="doc-meta">
-            <strong>CONTRATO DE PRESTAÇÃO DE SERVIÇOS</strong><br>
-            Proposta Ref.: <strong class="proposta-numero-val">#—</strong>
-          </div>
-        </header>
+        <div class="doc-meta">
+          <strong>CONTRATO DE PRESTAÇÃO DE SERVIÇOS</strong><br>
+          Proposta Ref.: <strong class="proposta-numero-val">#—</strong>
+        </div>
+      </header>
 
-        <!-- 12. CASO FORTUITO E FORÇA MAIOR -->
+      <div class="page-body">
+
+        <!-- 13. CASO FORTUITO E FORÇA MAIOR -->
         <div class="section-title" data-sec-base="13" data-sec-label="Caso Fortuito e Força Maior">13. Caso Fortuito e Força Maior</div>
 
         <div class="clause">
@@ -683,7 +752,7 @@
           </p>
         </div>
 
-        <!-- 13. FORO -->
+        <!-- 14. FORO -->
         <div class="section-title" data-sec-base="14" data-sec-label="Foro de Eleição">14. Foro de Eleição</div>
 
         <div class="clause">
@@ -703,7 +772,7 @@
           <span id="data_emissao_extenso">—</span>.
         </p>
 
-        <!-- 14. ACEITE E ASSINATURA -->
+        <!-- 15. ACEITE E ASSINATURA -->
         <div class="section-title" data-sec-base="15" data-sec-label="Aceite e Assinatura">15. Aceite e Assinatura</div>
 
         <div class="signatures-container">
@@ -737,16 +806,17 @@
         </div>
       </div>
 
-      <div>
+      <div class="page-foot">
         <div class="page-footer">
           <span>Contrato de Prestação de Serviços — 432UP! Produções</span>
-          <span>Página 3 de 3</span>
+          <span>Página <span class="pg-n">3</span> de <span class="pg-total">3</span></span>
         </div>
 
         <div class="page-footer-bar"></div>
       </div>
     </div>
 
+  </div>
   </div>
 
   <!-- DEPENDÊNCIAS FIXAS -->
@@ -758,13 +828,14 @@
     const urlParams = new URLSearchParams(window.location.search);
     const propostaId = urlParams.get('id');
 
+    // ?pdf=1 -> página aberta pelo servidor para gerar o PDF oficial (sem botão, sem escala)
+    const MODO_PDF = urlParams.get('pdf') === '1';
+    if (MODO_PDF) document.documentElement.classList.add('pdf-mode');
+
     // AUXILIARES DE FORMATAÇÃO
     function formatarMoeda(valor) {
       const num = Number(valor) || 0;
-      return num.toLocaleString('pt-BR', {
-        style: 'currency',
-        currency: 'BRL'
-      });
+      return num.toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' });
     }
 
     function formatarPercentual(valor) {
@@ -784,6 +855,7 @@
       return dataIsoStr;
     }
 
+    // Fuso fixo (São Paulo): o servidor do PDF roda em UTC e sem isso a data poderia sair um dia diferente.
     function formatarDataExtenso(dataIsoStr) {
       if (!dataIsoStr) return null;
       const data = new Date(dataIsoStr);
@@ -792,7 +864,8 @@
       return data.toLocaleDateString('pt-BR', {
         day: 'numeric',
         month: 'long',
-        year: 'numeric'
+        year: 'numeric',
+        timeZone: 'America/Sao_Paulo'
       });
     }
 
@@ -803,14 +876,10 @@
     }
 
     function setSafeText(idOrClass, text, isClass = false) {
-      const str =
-        (text !== null && text !== undefined)
-          ? String(text).trim()
-          : '';
+      const str = (text !== null && text !== undefined) ? String(text).trim() : '';
 
       if (isClass) {
-        document.querySelectorAll('.' + idOrClass)
-          .forEach(el => el.textContent = str);
+        document.querySelectorAll('.' + idOrClass).forEach(el => el.textContent = str);
       } else {
         const el = document.getElementById(idOrClass);
         if (el) el.textContent = str;
@@ -821,12 +890,8 @@
 
     function toggleRow(rowId, val) {
       const el = document.getElementById(rowId);
-
       if (el) {
-        el.style.display =
-          (val && String(val).trim() !== '')
-            ? ''
-            : 'none';
+        el.style.display = (val && String(val).trim() !== '') ? '' : 'none';
       }
     }
 
@@ -837,161 +902,82 @@
 
       try {
         if (!propostaId) {
-          statusEl.textContent =
-            'Proposta não especificada. Nenhum identificador foi fornecido na URL.';
+          statusEl.textContent = 'Proposta não especificada. Nenhum identificador foi fornecido na URL.';
           statusEl.classList.add('error');
           return;
         }
 
         if (typeof sbPartner === 'undefined') {
-          throw new Error(
-            'Cliente do Supabase não inicializado (sbPartner).'
-          );
+          throw new Error('Cliente do Supabase não inicializado (sbPartner).');
         }
 
         // 1. DADOS LEGAIS DA EMPRESA
-        const {
-          data: dadosEmpresa,
-          error: errorEmpresa
-        } = await sbPartner
+        const { data: dadosEmpresa, error: errorEmpresa } = await sbPartner
           .from('co_dados_legais_empresa')
           .select('*')
           .limit(1)
           .maybeSingle();
 
         if (errorEmpresa || !dadosEmpresa) {
-          statusEl.textContent =
-            'Erro ao carregar dados legais da contratada. Verifique as informações cadastrais.';
+          statusEl.textContent = 'Erro ao carregar dados legais da contratada. Verifique as informações cadastrais.';
           statusEl.classList.add('error');
           return;
         }
 
-        setSafeText(
-          'empresa_razao_social',
-          dadosEmpresa.razao_social
-        );
-
-        setSafeText(
-          'assinatura_empresa_razao',
-          dadosEmpresa.razao_social
-        );
-
-        setSafeText(
-          'empresa_cnpj',
-          dadosEmpresa.cnpj
-        );
-
-        setSafeText(
-          'assinatura_empresa_cnpj',
-          dadosEmpresa.cnpj
-            ? `CNPJ: ${dadosEmpresa.cnpj}`
-            : ''
-        );
+        setSafeText('empresa_razao_social', dadosEmpresa.razao_social);
+        setSafeText('assinatura_empresa_razao', dadosEmpresa.razao_social);
+        setSafeText('empresa_cnpj', dadosEmpresa.cnpj);
+        setSafeText('assinatura_empresa_cnpj', dadosEmpresa.cnpj ? `CNPJ: ${dadosEmpresa.cnpj}` : '');
 
         const empLogrComp = [
           dadosEmpresa.logradouro,
           dadosEmpresa.numero,
           dadosEmpresa.complemento
-        ]
-          .filter(Boolean)
-          .join(', ');
+        ].filter(Boolean).join(', ');
 
         const empBairroCep = [
           dadosEmpresa.bairro,
-          dadosEmpresa.cidade && dadosEmpresa.uf
-            ? `${dadosEmpresa.cidade}/${dadosEmpresa.uf}`
-            : '',
-          dadosEmpresa.cep
-            ? `CEP ${dadosEmpresa.cep}`
-            : ''
-        ]
-          .filter(Boolean)
-          .join(' - ');
+          dadosEmpresa.cidade && dadosEmpresa.uf ? `${dadosEmpresa.cidade}/${dadosEmpresa.uf}` : '',
+          dadosEmpresa.cep ? `CEP ${dadosEmpresa.cep}` : ''
+        ].filter(Boolean).join(' - ');
 
-        const empEndCompleto = [
-          empLogrComp,
-          empBairroCep
-        ]
-          .filter(Boolean)
-          .join(' - ');
+        const empEndCompleto = [empLogrComp, empBairroCep].filter(Boolean).join(' - ');
 
-        setSafeText(
-          'empresa_endereco',
-          empEndCompleto
-        );
-
-        toggleRow(
-          'empresa_endereco_row',
-          empEndCompleto
-        );
+        setSafeText('empresa_endereco', empEndCompleto);
+        toggleRow('empresa_endereco_row', empEndCompleto);
 
         const repEmp = [
           dadosEmpresa.representante_legal_nome,
           dadosEmpresa.representante_legal_cargo
-        ]
-          .filter(Boolean)
-          .join(' - ');
+        ].filter(Boolean).join(' - ');
 
-        setSafeText(
-          'empresa_representante_legal',
-          repEmp
-        );
-
-        setSafeText(
-          'assinatura_empresa_rep',
-          repEmp || 'Representante Legal'
-        );
-
-        toggleRow(
-          'empresa_rep_row',
-          repEmp
-        );
+        setSafeText('empresa_representante_legal', repEmp);
+        setSafeText('assinatura_empresa_rep', repEmp || 'Representante Legal');
+        toggleRow('empresa_rep_row', repEmp);
 
         if (dadosEmpresa.cidade && dadosEmpresa.uf) {
-          setSafeText(
-            'foro_cidade_uf',
-            `${dadosEmpresa.cidade}/${dadosEmpresa.uf}`
-          );
-
-          setSafeText(
-            'cidade_data_extenso',
-            `${dadosEmpresa.cidade} - ${dadosEmpresa.uf}`
-          );
+          setSafeText('foro_cidade_uf', `${dadosEmpresa.cidade}/${dadosEmpresa.uf}`);
+          setSafeText('cidade_data_extenso', `${dadosEmpresa.cidade} - ${dadosEmpresa.uf}`);
         }
 
         // 2. PROPOSTA
-        const {
-          data: proposta,
-          error: errorProposta
-        } = await sbPartner
+        const { data: proposta, error: errorProposta } = await sbPartner
           .from('propostas')
           .select('*')
           .eq('id', propostaId)
           .single();
 
         if (errorProposta || !proposta) {
-          statusEl.textContent =
-            'Proposta não encontrada para a geração do contrato.';
+          statusEl.textContent = 'Proposta não encontrada para a geração do contrato.';
           statusEl.classList.add('error');
           return;
         }
 
-        setSafeText(
-          'proposta-numero-val',
-          proposta.numero
-            ? `#${proposta.numero}`
-            : '',
-          true
-        );
+        setSafeText('proposta-numero-val', proposta.numero ? `#${proposta.numero}` : '', true);
 
         // Data de emissão derivada de criado_em
-        const dataEmissaoExt =
-          formatarDataExtenso(proposta.criado_em);
-
-        setSafeText(
-          'data_emissao_extenso',
-          dataEmissaoExt || '—'
-        );
+        const dataEmissaoExt = formatarDataExtenso(proposta.criado_em);
+        setSafeText('data_emissao_extenso', dataEmissaoExt || '—');
 
         // Parceiro / Vendedor (mesma fonte da Proposta)
         if (proposta.parceiro_id) {
@@ -1010,24 +996,20 @@
           }
         }
 
-        // 2b. CLÁUSULA 5 — CONDIÇÕES DE PAGAMENTO
+        // 2b. CLÁUSULA 6 — CONDIÇÕES DE PAGAMENTO
         // Usa os dados financeiros já salvos na proposta.
         // Não refaz o motor financeiro da Nova Proposta.
-        // Apenas produz a descrição contratual e o resumo de pagamento da página 1.
         renderClausulaPagamento(proposta);
 
-        // 2c. CLÁUSULAS 8 E 9
-        // Usa exclusivamente parâmetros configuráveis vindos
-        // de co_dados_legais_empresa.
+        // 2c. CLÁUSULAS 9 E 10
+        // Usa exclusivamente parâmetros configuráveis vindos de co_dados_legais_empresa.
         renderClausulasComerciais(dadosEmpresa);
 
         // 3. CLIENTE
         let cliente = null;
 
         if (proposta.cliente_id) {
-          const {
-            data: cliData
-          } = await sbPartner
+          const { data: cliData } = await sbPartner
             .from('co_clientes')
             .select('*')
             .eq('id', proposta.cliente_id)
@@ -1037,123 +1019,48 @@
         }
 
         if (cliente) {
-          setSafeText(
-            'cliente_nome_razao',
-            cliente.nome_razao || cliente.nome_fantasia
-          );
+          setSafeText('cliente_nome_razao', cliente.nome_razao || cliente.nome_fantasia);
+          setSafeText('assinatura_cliente_nome', cliente.nome_razao || cliente.nome_fantasia || 'CONTRATANTE');
+          setSafeText('cliente_cpf_cnpj', cliente.cpf_cnpj);
+          setSafeText('assinatura_cliente_doc', cliente.cpf_cnpj ? `CPF/CNPJ: ${cliente.cpf_cnpj}` : '');
 
-          setSafeText(
-            'assinatura_cliente_nome',
-            cliente.nome_razao ||
-            cliente.nome_fantasia ||
-            'CONTRATANTE'
-          );
-
-          setSafeText(
-            'cliente_cpf_cnpj',
-            cliente.cpf_cnpj
-          );
-
-          setSafeText(
-            'assinatura_cliente_doc',
-            cliente.cpf_cnpj
-              ? `CPF/CNPJ: ${cliente.cpf_cnpj}`
-              : ''
-          );
-
-          setSafeText(
-            'cliente_responsavel_legal',
-            cliente.responsavel_legal
-          );
-
-          toggleRow(
-            'cliente_resp_row',
-            cliente.responsavel_legal
-          );
+          setSafeText('cliente_responsavel_legal', cliente.responsavel_legal);
+          toggleRow('cliente_resp_row', cliente.responsavel_legal);
 
           const cliLogr = [
             cliente.logradouro,
             cliente.numero,
             cliente.complemento
-          ]
-            .filter(Boolean)
-            .join(', ');
+          ].filter(Boolean).join(', ');
 
           const cliCid = [
             cliente.bairro,
-            cliente.cidade && cliente.uf
-              ? `${cliente.cidade}/${cliente.uf}`
-              : '',
-            cliente.cep
-              ? `CEP ${cliente.cep}`
-              : ''
-          ]
-            .filter(Boolean)
-            .join(' - ');
+            cliente.cidade && cliente.uf ? `${cliente.cidade}/${cliente.uf}` : '',
+            cliente.cep ? `CEP ${cliente.cep}` : ''
+          ].filter(Boolean).join(' - ');
 
-          const cliEndCompleto = [
-            cliLogr,
-            cliCid
-          ]
-            .filter(Boolean)
-            .join(' - ');
+          const cliEndCompleto = [cliLogr, cliCid].filter(Boolean).join(' - ');
 
-          setSafeText(
-            'cliente_endereco',
-            cliEndCompleto
-          );
+          setSafeText('cliente_endereco', cliEndCompleto);
+          toggleRow('cliente_endereco_row', cliEndCompleto);
 
-          toggleRow(
-            'cliente_endereco_row',
-            cliEndCompleto
-          );
+          const contatos = [cliente.email, cliente.telefone].filter(Boolean).join(' | ');
 
-          const contatos = [
-            cliente.email,
-            cliente.telefone
-          ]
-            .filter(Boolean)
-            .join(' | ');
-
-          setSafeText(
-            'cliente_contato',
-            contatos
-          );
-
-          toggleRow(
-            'cliente_contato_row',
-            contatos
-          );
+          setSafeText('cliente_contato', contatos);
+          toggleRow('cliente_contato_row', contatos);
         } else {
-          statusEl.textContent =
-            'Dados do cliente inconsistentes ou incompletos na proposta.';
+          statusEl.textContent = 'Dados do cliente inconsistentes ou incompletos na proposta.';
           statusEl.classList.add('error');
           return;
         }
 
         // 4. EVENTO
-        setSafeText(
-          'evento_tipo',
-          proposta.tipo_evento
-        );
+        setSafeText('evento_tipo', proposta.tipo_evento);
+        toggleRow('evento_tipo_row', proposta.tipo_evento);
 
-        toggleRow(
-          'evento_tipo_row',
-          proposta.tipo_evento
-        );
-
-        const dataEvBR =
-          formatarDataBR(proposta.data_evento);
-
-        setSafeText(
-          'evento_data',
-          dataEvBR
-        );
-
-        toggleRow(
-          'evento_data_row',
-          dataEvBR
-        );
+        const dataEvBR = formatarDataBR(proposta.data_evento);
+        setSafeText('evento_data', dataEvBR);
+        toggleRow('evento_data_row', dataEvBR);
 
         const horarioInicio = formatarHorario(proposta.horario_inicio);
         const horarioFinal = formatarHorario(proposta.horario_final);
@@ -1166,35 +1073,14 @@
         setSafeText('evento_horario', horarioTexto);
         toggleRow('evento_horario_row', horarioTexto);
 
-        setSafeText(
-          'evento_duracao',
-          proposta.duracao_horas
-        );
+        setSafeText('evento_duracao', proposta.duracao_horas);
+        toggleRow('evento_duracao_row', proposta.duracao_horas);
 
-        toggleRow(
-          'evento_duracao_row',
-          proposta.duracao_horas
-        );
+        setSafeText('evento_convidados', proposta.convidados_estimados);
+        toggleRow('evento_convidados_row', proposta.convidados_estimados);
 
-        setSafeText(
-          'evento_convidados',
-          proposta.convidados_estimados
-        );
-
-        toggleRow(
-          'evento_convidados_row',
-          proposta.convidados_estimados
-        );
-
-        setSafeText(
-          'evento_local_nome',
-          proposta.local_evento
-        );
-
-        toggleRow(
-          'evento_local_row',
-          proposta.local_evento
-        );
+        setSafeText('evento_local_nome', proposta.local_evento);
+        toggleRow('evento_local_row', proposta.local_evento);
 
         // Endereço do evento
         let evLogr = '';
@@ -1205,10 +1091,7 @@
         let evUf = '';
         let evCep = '';
 
-        if (
-          proposta.evento_endereco_igual_cliente === true &&
-          cliente
-        ) {
+        if (proposta.evento_endereco_igual_cliente === true && cliente) {
           evLogr = cliente.logradouro || '';
           evNum = cliente.numero || '';
           evComp = cliente.complemento || '';
@@ -1226,50 +1109,22 @@
           evCep = proposta.evento_cep || '';
         }
 
-        const evLogrComp = [
-          evLogr,
-          evNum,
-          evComp
-        ]
-          .filter(Boolean)
-          .join(', ');
+        const evLogrComp = [evLogr, evNum, evComp].filter(Boolean).join(', ');
 
-        setSafeText(
-          'evento_endereco',
-          evLogrComp
-        );
-
-        toggleRow(
-          'evento_endereco_row',
-          evLogrComp
-        );
+        setSafeText('evento_endereco', evLogrComp);
+        toggleRow('evento_endereco_row', evLogrComp);
 
         const evCidUfCep = [
           evBairro,
-          evCid && evUf
-            ? `${evCid}/${evUf}`
-            : (evCid || evUf),
-          evCep
-            ? `CEP ${evCep}`
-            : ''
-        ]
-          .filter(Boolean)
-          .join(' - ');
+          evCid && evUf ? `${evCid}/${evUf}` : (evCid || evUf),
+          evCep ? `CEP ${evCep}` : ''
+        ].filter(Boolean).join(' - ');
 
-        setSafeText(
-          'evento_cidade_uf',
-          evCidUfCep
-        );
-
-        toggleRow(
-          'evento_cidade_uf_row',
-          evCidUfCep
-        );
+        setSafeText('evento_cidade_uf', evCidUfCep);
+        toggleRow('evento_cidade_uf_row', evCidUfCep);
 
         // 5. ITENS CONTRATADOS (ESCOPO)
-        const tbody =
-          document.getElementById('itens_tbody');
-
+        const tbody = document.getElementById('itens_tbody');
         tbody.innerHTML = '';
 
         let itensBrutos = proposta.itens;
@@ -1299,11 +1154,7 @@
             partesQtd.push(mItem + ' ' + uni);
           }
 
-          const hItem = parseFloat(
-            item.horas != null
-              ? item.horas
-              : item.horas_extras
-          );
+          const hItem = parseFloat(item.horas != null ? item.horas : item.horas_extras);
           if (!isNaN(hItem) && hItem > 0) {
             partesQtd.push(hItem + ' h');
           }
@@ -1313,11 +1164,7 @@
         }
 
         itens.forEach(item => {
-          if (
-            item.tipo === 'transporte' ||
-            item.id === 'transporte' ||
-            item.is_transporte === true
-          ) {
+          if (item.tipo === 'transporte' || item.id === 'transporte' || item.is_transporte === true) {
             return;
           }
 
@@ -1345,9 +1192,7 @@
               tdValorInc.style.textAlign = 'right';
               tdValorInc.style.color = 'var(--text-muted)';
               tdValorInc.style.textDecoration = 'line-through';
-              tdValorInc.textContent = formatarMoeda(
-                inc.valor_referencia || inc.valor || inc.preco || 0
-              );
+              tdValorInc.textContent = formatarMoeda(inc.valor_referencia || inc.valor || inc.preco || 0);
               trInc.appendChild(tdNomeInc);
               trInc.appendChild(tdBaseInc);
               trInc.appendChild(tdValorInc);
@@ -1357,38 +1202,17 @@
 
           const tr = document.createElement('tr');
 
-          const tdNome =
-            document.createElement('td');
-
-          const strong =
-            document.createElement('strong');
-
-          strong.textContent =
-            item.nome ||
-            item.item_nome ||
-            'Serviço Contratado';
-
+          const tdNome = document.createElement('td');
+          const strong = document.createElement('strong');
+          strong.textContent = item.nome || item.item_nome || 'Serviço Contratado';
           tdNome.appendChild(strong);
 
-          const tdBase =
-            document.createElement('td');
+          const tdBase = document.createElement('td');
+          tdBase.textContent = baseCalculoItem(item, ehPacote ? 'Pacote contratado' : 'Serviço contratado');
 
-          tdBase.textContent = baseCalculoItem(
-            item,
-            ehPacote ? 'Pacote contratado' : 'Serviço contratado'
-          );
-
-          const tdValor =
-            document.createElement('td');
-
+          const tdValor = document.createElement('td');
           tdValor.style.textAlign = 'right';
-
-          tdValor.textContent =
-            formatarMoeda(
-              item.valor ||
-              item.preco ||
-              0
-            );
+          tdValor.textContent = formatarMoeda(item.valor || item.preco || 0);
 
           tr.appendChild(tdNome);
           tr.appendChild(tdBase);
@@ -1398,12 +1222,8 @@
         });
 
         if (!temItemValido) {
-          const tr =
-            document.createElement('tr');
-
-          tr.innerHTML =
-            `<td colspan="3" style="text-align: center; color: var(--text-muted);">Nenhum item específico listado.</td>`;
-
+          const tr = document.createElement('tr');
+          tr.innerHTML = `<td colspan="3" style="text-align: center; color: var(--text-muted);">Nenhum item específico listado.</td>`;
           tbody.appendChild(tr);
         }
 
@@ -1413,9 +1233,7 @@
           const sec = document.getElementById('observacoes_section');
           const el = document.getElementById('evento_observacoes');
           const raw = proposta.observacoes;
-          const texto = (raw != null && String(raw).trim() !== '')
-            ? String(raw).trim()
-            : '';
+          const texto = (raw != null && String(raw).trim() !== '') ? String(raw).trim() : '';
           const temObs = !!texto;
           if (sec && el) {
             if (temObs) {
@@ -1430,7 +1248,6 @@
           document.querySelectorAll('.section-title[data-sec-base]').forEach(function (node) {
             if (node.getAttribute('data-sec-fixed') === '1') return;
             if (node.getAttribute('data-sec-optional') === '1') {
-              // título da seção 3: só visível com obs (pai já oculto)
               node.textContent = '3. Condições Específicas do Evento';
               return;
             }
@@ -1443,122 +1260,75 @@
         })();
 
         // 6. CONDICIONALIDADES FINANCEIRAS
-        setSafeText(
-          'valor_subtotal',
-          formatarMoeda(proposta.valor_subtotal)
-        );
+        setSafeText('valor_subtotal', formatarMoeda(proposta.valor_subtotal));
 
-        const descVal =
-          Number(proposta.desconto_valor) || 0;
+        const descVal = Number(proposta.desconto_valor) || 0;
 
         if (descVal > 0) {
-          setSafeText(
-            'desconto_percentual',
-            formatarPercentual(
-              proposta.desconto_percentual
-            )
-          );
-
-          setSafeText(
-            'desconto_valor',
-            `- ${formatarMoeda(descVal)}`
-          );
-
-          toggleRow(
-            'desconto_row',
-            true
-          );
+          setSafeText('desconto_percentual', formatarPercentual(proposta.desconto_percentual));
+          setSafeText('desconto_valor', `- ${formatarMoeda(descVal)}`);
+          toggleRow('desconto_row', true);
         } else {
-          toggleRow(
-            'desconto_row',
-            false
-          );
+          toggleRow('desconto_row', false);
         }
 
-        const transpVal =
-          Number(proposta.valor_transporte) || 0;
+        const transpVal = Number(proposta.valor_transporte) || 0;
 
         if (transpVal > 0) {
-          setSafeText(
-            'valor_transporte',
-            formatarMoeda(transpVal)
-          );
-
-          toggleRow(
-            'transporte_row',
-            true
-          );
+          setSafeText('valor_transporte', formatarMoeda(transpVal));
+          toggleRow('transporte_row', true);
         } else {
-          toggleRow(
-            'transporte_row',
-            false
-          );
+          toggleRow('transporte_row', false);
         }
 
-        const hospVal =
-          Number(proposta.valor_hospedagem) || 0;
+        const hospVal = Number(proposta.valor_hospedagem) || 0;
 
         if (hospVal > 0) {
-          setSafeText(
-            'valor_hospedagem',
-            formatarMoeda(hospVal)
-          );
-
-          toggleRow(
-            'hospedagem_row',
-            true
-          );
+          setSafeText('valor_hospedagem', formatarMoeda(hospVal));
+          toggleRow('hospedagem_row', true);
         } else {
-          toggleRow(
-            'hospedagem_row',
-            false
-          );
+          toggleRow('hospedagem_row', false);
         }
 
-        setSafeText(
-          'valor_total',
-          formatarMoeda(proposta.valor_total)
-        );
+        setSafeText('valor_total', formatarMoeda(proposta.valor_total));
 
         // EXIBIÇÃO FINAL
+        // Exibe o documento ANTES de paginar: o navegador só mede alturas com o conteúdo visível.
         statusEl.style.display = 'none';
         contentEl.style.display = 'block';
+        document.getElementById('btn-exportar-pdf').style.display = 'inline-block';
+        void document.body.offsetHeight;   // força o layout: é ele que dispara o carregamento das fontes
+        if (document.fonts && document.fonts.ready) await document.fonts.ready;
+        await aguardarImagens();
+        paginarContrato();
+        ativarRepaginacaoPorFontes();
+        if (MODO_PDF) setTimeout(() => { document.body.setAttribute('data-pronto', '1'); }, 800);
 
       } catch (err) {
-        console.error(
-          'Erro ao montar contrato:',
-          err
-        );
-
-        statusEl.textContent =
-          'Ocorreu um erro ao processar os dados do contrato.';
-
+        console.error('Erro ao montar contrato:', err);
+        statusEl.style.display = '';
+        contentEl.style.display = 'none';
+        const btnPdf = document.getElementById('btn-exportar-pdf');
+        if (btnPdf) btnPdf.style.display = 'none';
+        statusEl.textContent = 'Ocorreu um erro ao processar os dados do contrato.';
         statusEl.classList.add('error');
       }
     }
 
-    // Rótulo de status:
-    // aceita somente 'pago' ou 'pendente'.
+    // Rótulo de status: aceita somente 'pago' ou 'pendente'.
     function statusLabel(status) {
       if (status === 'pago') return 'PAGO';
       if (status === 'pendente') return 'PENDENTE';
       return '—';
     }
 
-    // Busca o primeiro valor numérico válido dentre
-    // vários nomes de campo candidatos.
+    // Busca o primeiro valor numérico válido dentre vários nomes de campo candidatos.
     function primeiroValorNumerico(obj, chaves) {
       if (!obj) return null;
 
       for (const chave of chaves) {
         const v = obj[chave];
-
-        if (
-          v !== undefined &&
-          v !== null &&
-          v !== '' &&
-          !isNaN(Number(v))
-        ) {
+        if (v !== undefined && v !== null && v !== '' && !isNaN(Number(v))) {
           return Number(v);
         }
       }
@@ -1568,53 +1338,27 @@
 
     // Arredondamento monetário consistente em centavos.
     function arredondarCentavos(valor) {
-      return Math.round(
-        (Number(valor) || 0) * 100
-      ) / 100;
+      return Math.round((Number(valor) || 0) * 100) / 100;
     }
 
-    // Verifica se uma composição reversa realmente
-    // fecha com o valor final salvo.
-    function composicaoConfere(
-      valorCalculado,
-      valorFinal
-    ) {
-      const calculado =
-        arredondarCentavos(valorCalculado);
-
-      const final =
-        arredondarCentavos(valorFinal);
-
-      return Math.abs(
-        calculado - final
-      ) <= 0.01;
+    // Verifica se uma composição reversa realmente fecha com o valor final salvo.
+    function composicaoConfere(valorCalculado, valorFinal) {
+      const calculado = arredondarCentavos(valorCalculado);
+      const final = arredondarCentavos(valorFinal);
+      return Math.abs(calculado - final) <= 0.01;
     }
 
-    // Renderiza a tabela objetiva do resumo financeiro/pagamento
-    // da página 1.
-    // Não cria linha de total:
-    // o valor total permanece na Cláusula 4.
+    // Renderiza a tabela objetiva do resumo financeiro/pagamento da página 1.
+    // Não cria linha de total: o valor total permanece na seção de valores.
     function renderTabelaPagamento(linhas) {
-      const tabela =
-        document.getElementById(
-          'pagamento_tabela'
-        );
-
-      const tbody =
-        document.getElementById(
-          'pagamento_tabela_body'
-        );
+      const tabela = document.getElementById('pagamento_tabela');
+      const tbody = document.getElementById('pagamento_tabela_body');
 
       if (!tabela || !tbody) return;
 
       tbody.innerHTML = '';
 
-      const linhasValidas =
-        linhas.filter(
-          l =>
-            l.valor !== null &&
-            l.valor !== undefined
-        );
+      const linhasValidas = linhas.filter(l => l.valor !== null && l.valor !== undefined);
 
       if (linhasValidas.length === 0) {
         tabela.style.display = 'none';
@@ -1622,57 +1366,27 @@
       }
 
       linhasValidas.forEach(l => {
-        const tr =
-          document.createElement('tr');
+        const tr = document.createElement('tr');
 
-        const tdLabel =
-          document.createElement('td');
+        const tdLabel = document.createElement('td');
+        tdLabel.textContent = l.label;
 
-        tdLabel.textContent =
-          l.label;
-
-        const tdValor =
-          document.createElement('td');
-
+        const tdValor = document.createElement('td');
         tdValor.className = 'value';
+        tdValor.textContent = formatarMoeda(l.valor);
 
-        tdValor.textContent =
-          formatarMoeda(l.valor);
-
-        const tdData =
-          document.createElement('td');
-
+        const tdData = document.createElement('td');
         tdData.className = 'date';
+        tdData.textContent = l.data || '—';
 
-        tdData.textContent =
-          l.data || '—';
+        const tdStatus = document.createElement('td');
+        tdStatus.style.textAlign = 'center';
 
-        const tdStatus =
-          document.createElement('td');
-
-        tdStatus.style.textAlign =
-          'center';
-
-        // Só cria o pill quando o status
-        // é realmente reconhecido pelo sistema.
-        if (
-          l.status === 'pago' ||
-          l.status === 'pendente'
-        ) {
-          const pill =
-            document.createElement('span');
-
-          pill.className =
-            'status-pill ' +
-            (
-              l.status === 'pago'
-                ? 'pago'
-                : 'pendente'
-            );
-
-          pill.textContent =
-            statusLabel(l.status);
-
+        // Só cria o pill quando o status é realmente reconhecido pelo sistema.
+        if (l.status === 'pago' || l.status === 'pendente') {
+          const pill = document.createElement('span');
+          pill.className = 'status-pill ' + (l.status === 'pago' ? 'pago' : 'pendente');
+          pill.textContent = statusLabel(l.status);
           tdStatus.appendChild(pill);
         } else {
           tdStatus.textContent = '—';
@@ -1689,151 +1403,72 @@
       tabela.style.display = '';
     }
 
-    // CLÁUSULA 5 — CONDIÇÕES DE PAGAMENTO
-    // O valor_total salvo na proposta continua sendo
-    // a fonte oficial.
-    //
+    // CLÁUSULA DE PAGAMENTO
+    // O valor_total salvo na proposta continua sendo a fonte oficial.
     // Não refaz o motor financeiro da Nova Proposta.
-    //
     // Faz apenas derivação visual mínima:
     // - PIX integral: composição reversa somente se os valores fecharem.
     // - Cartão: composição reversa somente se os valores fecharem.
     // - PIX 50/50: divisão do valor_total em duas parcelas com ajuste de centavos.
     // - Outro: valor_total + negociação registrada, sem inventar parcelas.
     function renderClausulaPagamento(proposta) {
-      const textoEl =
-        document.getElementById(
-          'clausula_pagamento_texto'
-        );
-
-      const condicoesEl =
-        document.getElementById(
-          'clausula_pagamento_condicoes'
-        );
+      const textoEl = document.getElementById('clausula_pagamento_texto');
+      const condicoesEl = document.getElementById('clausula_pagamento_condicoes');
 
       if (!textoEl) return;
 
-      const forma =
-        proposta.forma_pagamento;
+      const forma = proposta.forma_pagamento;
+      const condicao = proposta.condicao_pagamento;
 
-      const condicao =
-        proposta.condicao_pagamento;
+      const agenda = (proposta.pagamento_agenda && typeof proposta.pagamento_agenda === 'object')
+        ? proposta.pagamento_agenda
+        : {};
 
-      const agenda =
-        (
-          proposta.pagamento_agenda &&
-          typeof proposta.pagamento_agenda === 'object'
-        )
-          ? proposta.pagamento_agenda
-          : {};
-
-      const valorTotalProposta =
-        primeiroValorNumerico(
-          proposta,
-          ['valor_total']
-        );
+      const valorTotalProposta = primeiroValorNumerico(proposta, ['valor_total']);
 
       if (condicoesEl) {
-        condicoesEl.style.display =
-          'none';
-
-        condicoesEl.textContent =
-          '';
+        condicoesEl.style.display = 'none';
+        condicoesEl.textContent = '';
       }
 
       // PIX INTEGRAL
-      if (
-        forma === 'pix' &&
-        condicao === 'pix_integral'
-      ) {
-        const data =
-          formatarDataBR(
-            agenda.data_pagamento
-          );
-
-        const valorFinal =
-          arredondarCentavos(
-            valorTotalProposta
-          );
+      if (forma === 'pix' && condicao === 'pix_integral') {
+        const data = formatarDataBR(agenda.data_pagamento);
+        const valorFinal = arredondarCentavos(valorTotalProposta);
 
         textoEl.textContent =
           `Pagamento via PIX, em parcela única, correspondente a 100% do valor final da contratação, ` +
           `na data de ${data || '—'}. Status: ${statusLabel(agenda.status)}.`;
 
-        const descontoPix =
-          Math.max(
-            0,
-            arredondarCentavos(
-              proposta.desconto_pix_aplicado
-            )
-          );
-
-        const valorAnterior =
-          arredondarCentavos(
-            valorFinal + descontoPix
-          );
+        const descontoPix = Math.max(0, arredondarCentavos(proposta.desconto_pix_aplicado));
+        const valorAnterior = arredondarCentavos(valorFinal + descontoPix);
 
         // Só exibe a composição se o reverso for coerente.
-        if (
-          descontoPix > 0 &&
-          composicaoConfere(
-            valorAnterior - descontoPix,
-            valorFinal
-          )
-        ) {
+        if (descontoPix > 0 && composicaoConfere(valorAnterior - descontoPix, valorFinal)) {
           condicoesEl.textContent =
             `Composição do valor: valor anterior ao desconto ${formatarMoeda(valorAnterior)}; ` +
             `desconto PIX de ${formatarMoeda(descontoPix)}; ` +
             `valor final da contratação ${formatarMoeda(valorFinal)}.`;
 
-          condicoesEl.style.display =
-            '';
+          condicoesEl.style.display = '';
         }
 
         renderTabelaPagamento([
-          {
-            label: 'Pagamento (PIX Integral)',
-            valor: valorFinal,
-            data: data,
-            status: agenda.status
-          }
+          { label: 'Pagamento (PIX Integral)', valor: valorFinal, data: data, status: agenda.status }
         ]);
 
       // PIX 50/50
-      } else if (
-        forma === 'pix' &&
-        condicao === 'pix_50_50'
-      ) {
-        const dataEntrada =
-          formatarDataBR(
-            agenda.data_entrada
-          );
+      } else if (forma === 'pix' && condicao === 'pix_50_50') {
+        const dataEntrada = formatarDataBR(agenda.data_entrada);
+        const dataSaldo = formatarDataBR(agenda.data_saldo);
 
-        const dataSaldo =
-          formatarDataBR(
-            agenda.data_saldo
-          );
-
-        const valorTotal =
-          arredondarCentavos(
-            valorTotalProposta
-          );
+        const valorTotal = arredondarCentavos(valorTotalProposta);
 
         // Divisão exclusivamente para apresentação contratual.
         // O valor_total salvo continua sendo a fonte oficial.
-        const valorEntrada =
-          arredondarCentavos(
-            valorTotal / 2
-          );
+        const valorEntrada = arredondarCentavos(valorTotal / 2);
+        const valorSaldo = arredondarCentavos(valorTotal - valorEntrada);
 
-        const valorSaldo =
-          arredondarCentavos(
-            valorTotal - valorEntrada
-          );
-
-        // Texto da cláusula:
-        // acrescenta os valores monetários reais
-        // correspondentes aos 50%.
         textoEl.textContent =
           `Pagamento via PIX, sendo 50% (${formatarMoeda(valorEntrada)}) do valor total na entrada, ` +
           `com pagamento em ${dataEntrada || '—'}, e os 50% (${formatarMoeda(valorSaldo)}) restantes ` +
@@ -1841,101 +1476,42 @@
           `Entrada: ${statusLabel(agenda.status_entrada)}. ` +
           `Saldo: ${statusLabel(agenda.status_saldo)}.`;
 
-        // TABELA CONTINUA EXATAMENTE NA PÁGINA 1.
         renderTabelaPagamento([
-          {
-            label: 'Entrada',
-            valor: valorEntrada,
-            data: dataEntrada,
-            status: agenda.status_entrada
-          },
-          {
-            label: 'Saldo',
-            valor: valorSaldo,
-            data: dataSaldo,
-            status: agenda.status_saldo
-          }
+          { label: 'Entrada', valor: valorEntrada, data: dataEntrada, status: agenda.status_entrada },
+          { label: 'Saldo', valor: valorSaldo, data: dataSaldo, status: agenda.status_saldo }
         ]);
 
       // CARTÃO
-      } else if (
-        forma === 'cartao'
-      ) {
-        const parcelas =
-          agenda.parcelas_cartao;
-
-        const data =
-          formatarDataBR(
-            agenda.data_pagamento
-          );
-
-        const valorFinal =
-          arredondarCentavos(
-            valorTotalProposta
-          );
+      } else if (forma === 'cartao') {
+        const parcelas = agenda.parcelas_cartao;
+        const data = formatarDataBR(agenda.data_pagamento);
+        const valorFinal = arredondarCentavos(valorTotalProposta);
 
         textoEl.textContent =
           `Pagamento mediante cartão de crédito, em ${parcelas ? parcelas : '—'} parcela(s), ` +
           `transação realizada em ${data || '—'}. Status: ${statusLabel(agenda.status)}.`;
 
-        const valorSubtotal =
-          arredondarCentavos(
-            proposta.valor_subtotal
-          );
+        const valorSubtotal = arredondarCentavos(proposta.valor_subtotal);
+        const descontoComercial = Math.max(0, arredondarCentavos(proposta.desconto_valor));
+        const valorTransporte = Math.max(0, arredondarCentavos(proposta.valor_transporte));
 
-        const descontoComercial =
-          Math.max(
-            0,
-            arredondarCentavos(
-              proposta.desconto_valor
-            )
-          );
+        const valorBaseCartao = arredondarCentavos(valorSubtotal - descontoComercial + valorTransporte);
+        const acrescimoCartao = arredondarCentavos(valorFinal - valorBaseCartao);
 
-        const valorTransporte =
-          Math.max(
-            0,
-            arredondarCentavos(
-              proposta.valor_transporte
-            )
-          );
-
-        const valorBaseCartao =
-          arredondarCentavos(
-            valorSubtotal -
-            descontoComercial +
-            valorTransporte
-          );
-
-        const acrescimoCartao =
-          arredondarCentavos(
-            valorFinal -
-            valorBaseCartao
-          );
-
-        // Só exibe a composição quando houver
-        // acréscimo positivo e a reconstrução
+        // Só exibe a composição quando houver acréscimo positivo e a reconstrução
         // fechar exatamente com o valor final salvo.
-        if (
-          acrescimoCartao > 0 &&
-          composicaoConfere(
-            valorBaseCartao +
-            acrescimoCartao,
-            valorFinal
-          )
-        ) {
+        if (acrescimoCartao > 0 && composicaoConfere(valorBaseCartao + acrescimoCartao, valorFinal)) {
           condicoesEl.textContent =
             `Composição do valor: valor antes do acréscimo do cartão ${formatarMoeda(valorBaseCartao)}; ` +
             `acréscimo de ${formatarMoeda(acrescimoCartao)}; ` +
             `valor final da contratação ${formatarMoeda(valorFinal)}.`;
 
-          condicoesEl.style.display =
-            '';
+          condicoesEl.style.display = '';
         }
 
         renderTabelaPagamento([
           {
-            label:
-              `Pagamento (Cartão${parcelas ? ' - ' + parcelas + 'x' : ''})`,
+            label: `Pagamento (Cartão${parcelas ? ' - ' + parcelas + 'x' : ''})`,
             valor: valorFinal,
             data: data,
             status: agenda.status
@@ -1943,50 +1519,22 @@
         ]);
 
       // OUTRO
-      } else if (
-        forma === 'outro'
-      ) {
-        const formaOutro =
-          proposta.forma_pagamento_outro
-            ? String(
-                proposta.forma_pagamento_outro
-              ).trim()
-            : '';
-
-        const desc =
-          agenda.descricao_outro
-            ? String(
-                agenda.descricao_outro
-              ).trim()
-            : '';
-
-        const valorFinal =
-          arredondarCentavos(
-            valorTotalProposta
-          );
+      } else if (forma === 'outro') {
+        const formaOutro = proposta.forma_pagamento_outro ? String(proposta.forma_pagamento_outro).trim() : '';
+        const desc = agenda.descricao_outro ? String(agenda.descricao_outro).trim() : '';
+        const valorFinal = arredondarCentavos(valorTotalProposta);
 
         textoEl.textContent =
           `Forma de pagamento: ${formaOutro || '—'}. ` +
           `Valor final da contratação: ${formatarMoeda(valorFinal)}.`;
 
-        if (
-          condicoesEl &&
-          desc
-        ) {
-          condicoesEl.textContent =
-            `Condições: ${desc}`;
-
-          condicoesEl.style.display =
-            '';
+        if (condicoesEl && desc) {
+          condicoesEl.textContent = `Condições: ${desc}`;
+          condicoesEl.style.display = '';
         }
 
         renderTabelaPagamento([
-          {
-            label: 'Pagamento (Outro)',
-            valor: valorFinal,
-            data: null,
-            status: agenda.status
-          }
+          { label: 'Pagamento (Outro)', valor: valorFinal, data: null, status: agenda.status }
         ]);
 
       // PADRÃO
@@ -1998,20 +1546,11 @@
       }
     }
 
-    // CLÁUSULAS 8 E 9
+    // CLÁUSULAS DE CANCELAMENTO E ATRASO
     function baseMultaLabel(base) {
-      if (base === 'valor_total') {
-        return 'sobre o valor total da contratação';
-      }
-
-      if (base === 'valor_pago') {
-        return 'sobre os valores já efetivamente pagos';
-      }
-
-      if (base === 'valor_contratado') {
-        return 'sobre o valor contratado do(s) serviço(s) cancelado(s)/remarcado(s)';
-      }
-
+      if (base === 'valor_total') return 'sobre o valor total da contratação';
+      if (base === 'valor_pago') return 'sobre os valores já efetivamente pagos';
+      if (base === 'valor_contratado') return 'sobre o valor contratado do(s) serviço(s) cancelado(s)/remarcado(s)';
       return null;
     }
 
@@ -2027,14 +1566,8 @@
         typeof f.percentual === 'number' &&
         isFinite(f.percentual) &&
         (
-          (
-            typeof f.ate_dias === 'number' &&
-            isFinite(f.ate_dias)
-          ) ||
-          (
-            typeof f.mais_de_dias === 'number' &&
-            isFinite(f.mais_de_dias)
-          )
+          (typeof f.ate_dias === 'number' && isFinite(f.ate_dias)) ||
+          (typeof f.mais_de_dias === 'number' && isFinite(f.mais_de_dias))
         )
       );
 
@@ -2043,89 +1576,50 @@
       }
 
       return faixas.slice().sort((a, b) => {
-        const chaveA =
-          (typeof a.ate_dias === 'number')
-            ? a.ate_dias
-            : (1e9 + a.mais_de_dias);
-
-        const chaveB =
-          (typeof b.ate_dias === 'number')
-            ? b.ate_dias
-            : (1e9 + b.mais_de_dias);
-
+        const chaveA = (typeof a.ate_dias === 'number') ? a.ate_dias : (1e9 + a.mais_de_dias);
+        const chaveB = (typeof b.ate_dias === 'number') ? b.ate_dias : (1e9 + b.mais_de_dias);
         return chaveA - chaveB;
       });
     }
 
-    function montarTextoFaixasCancelamento(
-      faixasOrdenadas
-    ) {
+    function montarTextoFaixasCancelamento(faixasOrdenadas) {
       let limiteAnterior = null;
 
-      const segmentos =
-        faixasOrdenadas.map(f => {
-          const pct =
-            formatarPercentual(
-              f.percentual
-            );
+      const segmentos = faixasOrdenadas.map(f => {
+        const pct = formatarPercentual(f.percentual);
 
-          if (
-            typeof f.ate_dias === 'number'
-          ) {
-            const texto =
-              (limiteAnterior === null)
-                ? `até ${f.ate_dias} dias antes do evento, multa de ${pct}`
-                : `mais de ${limiteAnterior} até ${f.ate_dias} dias antes do evento, multa de ${pct}`;
+        if (typeof f.ate_dias === 'number') {
+          const texto = (limiteAnterior === null)
+            ? `até ${f.ate_dias} dias antes do evento, multa de ${pct}`
+            : `mais de ${limiteAnterior} até ${f.ate_dias} dias antes do evento, multa de ${pct}`;
 
-            limiteAnterior =
-              f.ate_dias;
+          limiteAnterior = f.ate_dias;
 
-            return texto;
-          }
+          return texto;
+        }
 
-          return `mais de ${f.mais_de_dias} dias antes do evento, multa de ${pct}`;
-        });
+        return `mais de ${f.mais_de_dias} dias antes do evento, multa de ${pct}`;
+      });
 
       if (segmentos.length === 1) {
         return segmentos[0];
       }
 
-      const todasMenosUltima =
-        segmentos
-          .slice(0, -1)
-          .join('; ');
+      const todasMenosUltima = segmentos.slice(0, -1).join('; ');
 
       return `${todasMenosUltima}; e ${segmentos[segmentos.length - 1]}`;
     }
 
-    function renderClausulasComerciais(
-      config
-    ) {
+    function renderClausulasComerciais(config) {
       config = config || {};
 
-      // --- Cláusula 8 ---
-      const multaCancelPerc =
-        config.multa_cancelamento_percentual;
+      // --- Cancelamento ---
+      const multaCancelPerc = config.multa_cancelamento_percentual;
+      const baseMulta = baseMultaLabel(config.base_multa_cancelamento);
+      const politicaRemarcacao = config.politica_remarcacao ? String(config.politica_remarcacao).trim() : '';
+      const faixasOrdenadas = parseFaixasCancelamento(config.politica_cancelamento_faixas);
 
-      const baseMulta =
-        baseMultaLabel(
-          config.base_multa_cancelamento
-        );
-
-      const politicaRemarcacao =
-        config.politica_remarcacao
-          ? String(
-              config.politica_remarcacao
-            ).trim()
-          : '';
-
-      const faixasOrdenadas =
-        parseFaixasCancelamento(
-          config.politica_cancelamento_faixas
-        );
-
-      let textoClausulaCancelamento =
-        null;
+      let textoClausulaCancelamento = null;
 
       if (faixasOrdenadas) {
         textoClausulaCancelamento =
@@ -2136,111 +1630,54 @@
             ` A multa será calculada ${baseMulta}. Os valores já pagos pelo CONTRATANTE serão utilizados para fins de dedução da multa aplicável, sendo eventual saldo remanescente restituído ou compensado conforme apuração entre as partes.`;
         }
 
-      } else if (
-        multaCancelPerc !== undefined &&
-        multaCancelPerc !== null &&
-        baseMulta
-      ) {
+      } else if (multaCancelPerc !== undefined && multaCancelPerc !== null && baseMulta) {
         textoClausulaCancelamento =
           `Em caso de cancelamento ou rescisão por iniciativa do CONTRATANTE, aplicar-se-á multa de ${formatarPercentual(multaCancelPerc)}, incidente ${baseMulta}. Os valores já pagos pelo CONTRATANTE serão utilizados para fins de dedução da multa aplicável, sendo eventual saldo remanescente restituído ou compensado conforme apuração entre as partes.`;
       }
 
       if (textoClausulaCancelamento) {
-        const textoEl =
-          document.getElementById(
-            'clausula_cancelamento_texto'
-          );
-
+        const textoEl = document.getElementById('clausula_cancelamento_texto');
         if (textoEl) {
-          textoEl.textContent =
-            textoClausulaCancelamento;
+          textoEl.textContent = textoClausulaCancelamento;
         }
       }
 
-      const remarcacaoEl =
-        document.getElementById(
-          'clausula_cancelamento_remarcacao'
-        );
+      const remarcacaoEl = document.getElementById('clausula_cancelamento_remarcacao');
 
-      if (
-        remarcacaoEl &&
-        politicaRemarcacao
-      ) {
-        remarcacaoEl.textContent =
-          `Remarcação: ${politicaRemarcacao}`;
-
-        remarcacaoEl.style.display =
-          '';
+      if (remarcacaoEl && politicaRemarcacao) {
+        remarcacaoEl.textContent = `Remarcação: ${politicaRemarcacao}`;
+        remarcacaoEl.style.display = '';
       }
 
-      // --- Cláusula 9 ---
-      const multaAtrasoPerc =
-        config.multa_atraso_percentual;
-
-      const jurosAtrasoPerc =
-        config.juros_atraso_percentual;
-
-      const correcaoMonetaria =
-        config.correcao_monetaria
-          ? String(
-              config.correcao_monetaria
-            ).trim()
-          : '';
-
-      const inicioContagem =
-        config.inicio_contagem_atraso
-          ? String(
-              config.inicio_contagem_atraso
-            ).trim()
-          : '';
+      // --- Atraso ---
+      const multaAtrasoPerc = config.multa_atraso_percentual;
+      const jurosAtrasoPerc = config.juros_atraso_percentual;
+      const correcaoMonetaria = config.correcao_monetaria ? String(config.correcao_monetaria).trim() : '';
+      const inicioContagem = config.inicio_contagem_atraso ? String(config.inicio_contagem_atraso).trim() : '';
 
       const temParametroAtraso =
-        (
-          multaAtrasoPerc !== undefined &&
-          multaAtrasoPerc !== null
-        ) ||
-        (
-          jurosAtrasoPerc !== undefined &&
-          jurosAtrasoPerc !== null
-        ) ||
+        (multaAtrasoPerc !== undefined && multaAtrasoPerc !== null) ||
+        (jurosAtrasoPerc !== undefined && jurosAtrasoPerc !== null) ||
         correcaoMonetaria;
 
       if (temParametroAtraso) {
         const partes = [];
 
-        if (
-          multaAtrasoPerc !== undefined &&
-          multaAtrasoPerc !== null
-        ) {
-          partes.push(
-            `multa de ${formatarPercentual(multaAtrasoPerc)}`
-          );
+        if (multaAtrasoPerc !== undefined && multaAtrasoPerc !== null) {
+          partes.push(`multa de ${formatarPercentual(multaAtrasoPerc)}`);
         }
 
-        if (
-          jurosAtrasoPerc !== undefined &&
-          jurosAtrasoPerc !== null
-        ) {
-          partes.push(
-            `juros de mora de ${formatarPercentual(jurosAtrasoPerc)} ao mês`
-          );
+        if (jurosAtrasoPerc !== undefined && jurosAtrasoPerc !== null) {
+          partes.push(`juros de mora de ${formatarPercentual(jurosAtrasoPerc)} ao mês`);
         }
 
         if (correcaoMonetaria) {
-          partes.push(
-            `correção monetária pelo índice ${correcaoMonetaria}`
-          );
+          partes.push(`correção monetária pelo índice ${correcaoMonetaria}`);
         }
 
-        const contagem =
-          inicioContagem
-            ? `, contados a partir ${inicioContagem}`
-            : '';
+        const contagem = inicioContagem ? `, contados a partir ${inicioContagem}` : '';
 
-        const textoEl =
-          document.getElementById(
-            'clausula_atraso_texto'
-          );
+        const textoEl = document.getElementById('clausula_atraso_texto');
 
         if (textoEl) {
           textoEl.textContent =
@@ -2249,27 +1686,308 @@
       }
 
       // Suspensão da execução
-      const suspensaoEl =
-        document.getElementById(
-          'clausula_atraso_suspensao'
-        );
+      const suspensaoEl = document.getElementById('clausula_atraso_suspensao');
 
-      if (
-        suspensaoEl &&
-        config.suspensao_por_inadimplencia === true
-      ) {
+      if (suspensaoEl && config.suspensao_por_inadimplencia === true) {
         suspensaoEl.textContent =
           'A CONTRATADA poderá suspender a execução dos serviços enquanto houver valores vencidos e não regularizados pelo CONTRATANTE.';
 
-        suspensaoEl.style.display =
-          '';
+        suspensaoEl.style.display = '';
       }
     }
 
-    document.addEventListener(
-      'DOMContentLoaded',
-      carregarContrato
-    );
+    /* =========================================================
+       ESCALA PARA TELAS PEQUENAS (iPhone etc.)
+       O documento é sempre montado e paginado no tamanho real
+       da folha A4 (794px). Só depois é reduzido com scale() para
+       caber na largura da tela.
+       ========================================================= */
+
+    const LARGURA_FOLHA = 794; // 210mm em px (96dpi)
+
+    function ajustarEscala() {
+      const c = document.getElementById('contractContent');
+      const w = document.getElementById('doc-scale');
+      if (MODO_PDF || !c || !w || c.style.display === 'none') return;
+      c.style.transform = 'none';
+      w.style.height = 'auto';
+      const larguraTela = document.documentElement.clientWidth || window.innerWidth;
+      const s = Math.min(1, larguraTela / LARGURA_FOLHA);
+      if (s < 1) {
+        const alturaReal = c.offsetHeight + 10; // + margem inferior da última folha
+        c.style.transform = `scale(${s})`;
+        w.style.height = `${Math.ceil(alturaReal * s)}px`;
+      }
+    }
+
+    /* =========================================================
+       EXPORTAR PDF — o servidor abre esta mesma página (?pdf=1)
+       num Chrome sem tela e devolve um A4 exato, sem cabeçalho
+       e rodapé do navegador.
+       ========================================================= */
+    async function exportarPDF() {
+      const btn = document.getElementById('btn-exportar-pdf');
+      if (!btn || !propostaId) return;
+      btn.disabled = true;
+      btn.textContent = '⏳ Gerando PDF...';
+      try {
+        const { data, error } = await sbPartner.functions.invoke('gerar-contrato-pdf', { body: { id: propostaId } });
+        if (error || !data || !data.url) throw new Error(error ? error.message : (data && data.erro) || 'Falha ao gerar');
+        // Novo toque do usuário abre o arquivo (evita bloqueio de pop-up no iOS)
+        btn.disabled = false;
+        btn.textContent = '📄 Abrir PDF';
+        btn.onclick = () => { window.open(data.url, '_blank') || (window.location.href = data.url); };
+      } catch (e) {
+        console.error('Erro ao gerar PDF:', e);
+        btn.disabled = false;
+        btn.textContent = '⚠️ Tentar novamente';
+        btn.onclick = exportarPDF;
+      }
+    }
+
+    window.addEventListener('afterprint', ajustarEscala);
+    window.addEventListener('resize', ajustarEscala);
+    window.addEventListener('orientationchange', () => setTimeout(ajustarEscala, 200));
+
+    /* =========================================================
+       PAGINAÇÃO AUTOMÁTICA
+       Cada uma das 3 páginas continua começando onde sempre começou.
+       Se o conteúdo de uma página estourar (muitos itens, observações
+       longas etc.), o excesso vai para uma página de continuação logo
+       depois dela, em cascata. Tabelas quebram por linha (repetindo o
+       cabeçalho) e as observações quebram por palavra.
+       Roda DEPOIS que o documento está visível e com fontes/imagens
+       carregadas, para medir as alturas corretamente.
+       ========================================================= */
+
+    const MARGEM_PAG = 20; // folga em px antes do rodapé
+
+    function aguardarImagens() {
+      const pend = Array.from(document.images).filter(img => !img.complete).map(img =>
+        new Promise(res => { img.addEventListener('load', res, { once: true }); img.addEventListener('error', res, { once: true }); })
+      );
+      if (!pend.length) return Promise.resolve();
+      return Promise.race([Promise.all(pend), new Promise(res => setTimeout(res, 5000))]);
+    }
+
+    function ehVisivel(el) {
+      return getComputedStyle(el).display !== 'none';
+    }
+
+    // Títulos de seção não podem ficar sozinhos no fim da página
+    function ehKeepNext(el) {
+      return el.classList.contains('section-title') || el.classList.contains('keep-next');
+    }
+
+    function limiteInferior(body) {
+      const cs = getComputedStyle(body);
+      return body.getBoundingClientRect().bottom - (parseFloat(cs.paddingBottom) || 0) - MARGEM_PAG;
+    }
+
+    function fimDoElemento(el) {
+      const cs = getComputedStyle(el);
+      return el.getBoundingClientRect().bottom + (parseFloat(cs.marginBottom) || 0);
+    }
+
+    function criarPaginaContinuacao(modelo) {
+      const nova = document.createElement('div');
+      nova.className = 'page page-cont';
+      const body = document.createElement('div');
+      body.className = 'page-body';
+      nova.append(
+        modelo.querySelector('.page-header-bar').cloneNode(true),
+        modelo.querySelector('.header-inner').cloneNode(true),
+        body,
+        modelo.querySelector('.page-foot').cloneNode(true)
+      );
+      modelo.after(nova);
+      return nova;
+    }
+
+    // Encaixa o máximo de palavras de `el` (já no DOM) até o limite; devolve um novo elemento com o restante.
+    // Se nem uma palavra cabe, devolve null sem alterar nada.
+    function dividirParagrafo(el, limite) {
+      const textoOriginal = el.textContent;
+      const palavras = textoOriginal.split(/\s+/).filter(Boolean);
+      if (palavras.length < 2) return null;
+
+      const cabe = n => {
+        el.textContent = palavras.slice(0, n).join(' ');
+        return fimDoElemento(el) <= limite;
+      };
+
+      if (!cabe(1)) { el.textContent = textoOriginal; return null; }
+
+      let lo = 1, hi = palavras.length - 1;
+      while (lo < hi) {
+        const mid = Math.ceil((lo + hi) / 2);
+        if (cabe(mid)) lo = mid; else hi = mid - 1;
+      }
+      cabe(lo);
+
+      const resto = el.cloneNode(false);
+      resto.textContent = palavras.slice(lo).join(' ');
+      return resto;
+    }
+
+    // Quebra uma tabela por linha: mantém as linhas que cabem e devolve uma tabela nova
+    // (com o mesmo cabeçalho) com as demais. Se nenhuma linha cabe, devolve null.
+    function dividirTabela(tabela, limite) {
+      const tbody = tabela.tBodies[0];
+      if (!tbody) return null;
+      const linhas = Array.from(tbody.rows);
+      const k = linhas.findIndex(tr => tr.getBoundingClientRect().bottom > limite);
+      if (k <= 0) return null;
+
+      const resto = tabela.cloneNode(false);
+      resto.removeAttribute('id');
+      if (tabela.tHead) resto.appendChild(tabela.tHead.cloneNode(true));
+      const nb = document.createElement('tbody');
+      linhas.slice(k).forEach(tr => nb.appendChild(tr));
+      resto.appendChild(nb);
+      return resto;
+    }
+
+    // Retorna os elementos que não cabem na página (a partir do primeiro que ultrapassa o limite).
+    function empurrarExcesso(page) {
+      const body = page.querySelector('.page-body');
+      const filhos = Array.from(body.children);
+      const limite = limiteInferior(body);
+
+      let corte = -1;
+      for (let i = 0; i < filhos.length; i++) {
+        if (!ehVisivel(filhos[i])) continue;
+        if (fimDoElemento(filhos[i]) > limite) { corte = i; break; }
+      }
+      if (corte === -1) return [];
+
+      const alvo = filhos[corte];
+
+      // 1) Observações: deixa aqui as palavras que cabem e leva o resto para a próxima página.
+      if (alvo.classList.contains('obs-linha')) {
+        const resto = dividirParagrafo(alvo, limite);
+        if (resto) {
+          const depois = filhos.slice(corte + 1);
+          depois.forEach(el => el.remove());
+          return [resto, ...depois];
+        }
+      }
+
+      // 2) Tabelas: deixa aqui as linhas que cabem e leva as demais para a próxima página.
+      if (alvo.tagName === 'TABLE') {
+        const resto = dividirTabela(alvo, limite);
+        if (resto) {
+          const depois = filhos.slice(corte + 1);
+          depois.forEach(el => el.remove());
+          return [resto, ...depois];
+        }
+      }
+
+      // 3) Corte entre elementos. Sempre mantém ao menos 1 elemento visível na página.
+      const primeiroVisivel = filhos.findIndex(ehVisivel);
+      const minimo = primeiroVisivel + 1;
+
+      // não deixa título de seção órfão no fim da página
+      while (corte > minimo && ehKeepNext(filhos[corte - 1])) corte--;
+      if (corte < minimo) corte = minimo;
+
+      const excesso = filhos.slice(corte);
+      excesso.forEach(el => el.remove());
+      return excesso;
+    }
+
+    // Transforma o bloco "Condições Específicas do Evento" em: título + um cartão por linha,
+    // como filhos diretos do .page-body, para que possam quebrar entre páginas.
+    function achatarObservacoes() {
+      const sec = document.getElementById('observacoes_section');
+      const el = document.getElementById('evento_observacoes');
+      if (!sec || !el || sec.style.display === 'none') return;
+
+      const linhas = el.textContent.split(/\n+/).map(t => t.trim()).filter(Boolean);
+      if (!linhas.length) return;
+
+      const titulo = sec.querySelector('.section-title');
+      const novos = [titulo];
+      linhas.forEach(t => {
+        const d = document.createElement('div');
+        d.className = 'card-legal obs-linha';
+        d.style.cssText = 'margin-bottom: 4px; font-size: 11px; line-height: 1.5; color: var(--text-dark);';
+        d.textContent = t;
+        novos.push(d);
+      });
+      novos[novos.length - 1].style.marginBottom = '12px';
+      sec.replaceWith(...novos);
+    }
+
+    // Empurra o excesso de `inicio` para páginas novas, em cascata, logo após ele.
+    function paginarEmCascata(inicio) {
+      let atual = inicio;
+      while (true) {
+        const ex = empurrarExcesso(atual);
+        if (!ex.length) break;
+        atual = criarPaginaContinuacao(atual);
+        atual.querySelector('.page-body').append(...ex);
+      }
+    }
+
+    // "Página X de N" em todas as folhas
+    function numerarPaginas() {
+      const pgs = document.querySelectorAll('#contractContent .page');
+      pgs.forEach((pg, i) => {
+        pg.querySelectorAll('.pg-n').forEach(e => { e.textContent = i + 1; });
+        pg.querySelectorAll('.pg-total').forEach(e => { e.textContent = pgs.length; });
+      });
+    }
+
+    // Estado original das 3 páginas, guardado na 1ª execução para poder repaginar
+    // (ex.: quando as fontes terminam de carregar e o texto muda de altura).
+    let snapPaginas = null;
+
+    function paginarContrato() {
+      const conteudo = document.getElementById('contractContent');
+      if (!conteudo || conteudo.style.display === 'none') return;
+
+      // Mede sempre sem escala (tamanho real da folha), para a paginação ser igual em qualquer aparelho.
+      conteudo.style.transform = 'none';
+      const wrapEsc = document.getElementById('doc-scale');
+      if (wrapEsc) wrapEsc.style.height = 'auto';
+
+      const paginas = Array.from(conteudo.querySelectorAll('.page:not(.page-cont)'));
+      if (paginas.length < 3) return;
+      const corpos = paginas.map(p => p.querySelector('.page-body'));
+
+      if (!snapPaginas) {
+        snapPaginas = corpos.map(b => b.innerHTML);
+      } else {
+        conteudo.querySelectorAll('.page-cont').forEach(el => el.remove());
+        corpos.forEach((b, i) => { b.innerHTML = snapPaginas[i]; });
+      }
+
+      achatarObservacoes();
+
+      // Cada página original quebra em cascata para páginas de continuação logo depois dela.
+      paginas.forEach(p => paginarEmCascata(p));
+
+      numerarPaginas();
+
+      // Só depois de paginar: reduz a folha inteira para caber na tela (celular).
+      ajustarEscala();
+    }
+
+    // Se as fontes (Inter / Montserrat) terminarem de carregar depois da paginação,
+    // o texto muda de altura: repagina para nada ficar cortado.
+    let repagTimer = null, repagCont = 0;
+    function ativarRepaginacaoPorFontes() {
+      if (!document.fonts || !document.fonts.addEventListener) return;
+      document.fonts.addEventListener('loadingdone', () => {
+        if (repagCont >= 5) return;
+        clearTimeout(repagTimer);
+        repagTimer = setTimeout(() => { repagCont++; paginarContrato(); }, 50);
+      });
+      window.addEventListener('load', () => paginarContrato());
+    }
+
+    document.addEventListener('DOMContentLoaded', carregarContrato);
   </script>
 </body>
 </html>
