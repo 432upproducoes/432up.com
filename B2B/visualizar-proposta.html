@@ -456,6 +456,11 @@
           </div>
         </div>
 
+        <div id="bloco-observacoes" style="display: none;">
+          <div class="section-header">OBSERVAÇÕES</div>
+          <p id="p2-observacoes" class="terms-text" style="white-space: pre-wrap; margin-bottom: 12px;"></p>
+        </div>
+
         <div class="section-header">A EXPERIÊNCIA</div>
         <p style="margin-bottom: 10px; text-align: justify; font-size: 13px; font-weight: 500;">
           Acreditamos que grandes eventos são feitos de sensações marcantes, encontros inesquecíveis e detalhes impecáveis. Na 432UP! Produções, nosso propósito é transformar ideias em atmosfera: criamos o ambiente perfeito para que a sua mensagem ecoe, a sua celebração emocione e a energia do momento contagie a todos.
@@ -539,8 +544,12 @@
               <span id="fin-valor-desconto"></span>
             </div>
             <div id="row-transporte" style="display: none; justify-content: space-between; margin-bottom: 4px;">
-              <span>Transporte / Logística:</span>
+              <span>Logística:</span>
               <span id="fin-valor-transporte"></span>
+            </div>
+            <div id="row-hospedagem" style="display: none; justify-content: space-between; margin-bottom: 4px;">
+              <span>Hospedagem:</span>
+              <span id="fin-valor-hospedagem"></span>
             </div>
             <div id="row-valor-total" style="display: flex; justify-content: space-between; font-size: 16px; font-weight: 800; color: #7B1FA2; margin-top: 6px; padding-top: 6px; border-top: 1px dashed #CBD5E1;">
               <span>Valor Total:</span>
@@ -999,33 +1008,52 @@
       );
     }
 
+    function rotuloUnidadeMetragemItem(raw) {
+      const u = String(raw || '').toLowerCase().trim();
+      if (u === 'm2' || u === 'm²' || u.indexOf('quad') >= 0) return 'm²';
+      if (u === 'm3' || u === 'm³' || u.indexOf('cub') >= 0) return 'm³';
+      return 'm';
+    }
+
     function calcularQtdStr(item) {
       const tipo = (item.tipo || '').toLowerCase();
       const partes = [];
 
+      const qRaw = item.quantidade != null ? item.quantidade : item.qtd;
+      const q = parseFloat(qRaw);
+      if (!isNaN(q) && q > 0) {
+        const qFmt = formatarNumeroBR(q, Number.isInteger(q) ? 0 : 2);
+        if (qFmt !== null) partes.push(`${qFmt} un.`);
+      }
+
       const m = parseFloat(item.metragem);
-      if (!isNaN(m) && m > 0) partes.push(`${formatarNumeroBR(m, 0)} m`);
+      if (!isNaN(m) && m > 0) {
+        const uni = rotuloUnidadeMetragemItem(item.unidade_metragem || item.unidade_metro || item.unidade);
+        const mFmt = formatarNumeroBR(m, Number.isInteger(m) ? 0 : 2);
+        if (mFmt !== null) partes.push(`${mFmt} ${uni}`);
+      } else if (item.area || item.area_m2 || item.m2) {
+        const a = parseFloat(item.area || item.area_m2 || item.m2);
+        if (!isNaN(a) && a > 0) {
+          const aFmt = formatarNumeroBR(a, Number.isInteger(a) ? 0 : 2);
+          if (aFmt !== null) partes.push(`${aFmt} m`);
+        }
+      }
 
       const h = parseFloat(item.horas != null ? item.horas : (item.horas_extras || item.qtd_horas));
-      if (!isNaN(h) && h > 0) partes.push(`${formatarNumeroBR(h, 0)} h`);
+      if (!isNaN(h) && h > 0) {
+        const hFmt = formatarNumeroBR(h, Number.isInteger(h) ? 0 : 2);
+        if (hFmt !== null) partes.push(`${hFmt} h`);
+      }
 
-      if (partes.length) return partes.join(' + ');
+      if (partes.length) return partes.join(' · ');
 
-      if (tipo === 'transporte' || (!tipo && item.distancia_km)) {
+      if (tipo === 'transporte' || tipo === 'logistica' || (!tipo && item.distancia_km)) {
         const km = parseFloat(item.distancia_km);
         if (!isNaN(km)) return `${formatarNumeroBR(km, 1)} km`;
       }
       if (tipo === 'horas_extras' || tipo === 'hora_extra') {
         const hx = parseFloat(item.horas_extras || item.horas || item.qtd);
         if (!isNaN(hx) && hx > 0) return `${formatarNumeroBR(hx, 0)} h`;
-      }
-      if (item.area || item.area_m2 || item.m2) {
-        const a = parseFloat(item.area || item.area_m2 || item.m2);
-        if (!isNaN(a) && a > 0) return `${formatarNumeroBR(a)} m`;
-      }
-      if (item.qtd || item.quantidade) {
-        const q = formatarNumeroBR(item.qtd || item.quantidade);
-        if (q !== null) return `${q} un.`;
       }
       return null;
     }
@@ -1283,6 +1311,22 @@
         }
         setTextOrHide('p2-endereco', enderecoEvento, 'p2-endereco-wrap');
 
+        // Observações da proposta (mesmo campo da nova proposta / contrato)
+        (function () {
+          const bloco = document.getElementById('bloco-observacoes');
+          const el = document.getElementById('p2-observacoes');
+          if (!bloco || !el) return;
+          const raw = proposta.observacoes;
+          const texto = (raw != null && String(raw).trim() !== '') ? String(raw).trim() : '';
+          if (texto) {
+            el.textContent = texto;
+            bloco.style.display = '';
+          } else {
+            el.textContent = '';
+            bloco.style.display = 'none';
+          }
+        })();
+
         const itens = parseItens(proposta);
         renderizarTabelaItens(itens);
         renderFormasPagamento(proposta);
@@ -1311,7 +1355,7 @@
           document.getElementById('row-desconto').style.display = 'none';
         }
 
-        // Transporte / Logística: só exibe se houver valor > 0 (mesma regra do Contrato).
+        // Logística: só exibe se houver valor > 0 (mesma regra do Contrato).
         const transpVal = parseFloat(proposta.valor_transporte);
         const rowTransporte = document.getElementById('row-transporte');
         if (!isNaN(transpVal) && transpVal > 0) {
@@ -1320,6 +1364,17 @@
           if (rowTransporte) rowTransporte.style.display = 'flex';
         } else {
           if (rowTransporte) rowTransporte.style.display = 'none';
+        }
+
+        // Hospedagem: só exibe se houver valor > 0
+        const hospVal = parseFloat(proposta.valor_hospedagem);
+        const rowHospedagem = document.getElementById('row-hospedagem');
+        if (!isNaN(hospVal) && hospVal > 0) {
+          const hospFormatado = formatarMoeda(hospVal);
+          setTextOrHide('fin-valor-hospedagem', hospFormatado, null);
+          if (rowHospedagem) rowHospedagem.style.display = 'flex';
+        } else {
+          if (rowHospedagem) rowHospedagem.style.display = 'none';
         }
 
         // Valor Total: bloco inteiro (rótulo + valor) só aparece se existir valor total válido.
