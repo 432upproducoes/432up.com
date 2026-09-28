@@ -60,6 +60,8 @@
     .page-body {
       padding: 0 18mm;
       flex: 1;
+      min-height: 0;
+      overflow: hidden;
       display: flex;
       flex-direction: column;
     }
@@ -1128,6 +1130,72 @@
     }
 
     /* =========================================================
+       PAGINAÇÃO AUTOMÁTICA (págs. 2 e 3 em diante)
+       Se o conteúdo de uma página estourar (ex.: Observações muito
+       extensas), o excesso vai para a página seguinte, criando
+       novas páginas em cascata quando necessário.
+       Deve rodar DEPOIS que #document-content estiver visível
+       e as fontes carregadas (para medir alturas corretamente).
+       ========================================================= */
+
+    const MARGEM_PAG = 24; // folga em px antes do rodapé
+
+    function estoura(body) {
+      return body.scrollHeight > body.clientHeight - MARGEM_PAG;
+    }
+
+    function criarPaginaContinuacao(modelo) {
+      const nova = document.createElement('div');
+      nova.className = 'page';
+      const body = document.createElement('div');
+      body.className = 'page-body';
+      body.style.paddingTop = '24px';
+      nova.append(
+        modelo.querySelector('.top-bar').cloneNode(true),
+        body,
+        modelo.querySelector('.bottom-bar').cloneNode(true)
+      );
+      modelo.after(nova);
+      return nova;
+    }
+
+    function empurrarExcesso(page) {
+      const body = page.querySelector('.page-body');
+      const excesso = [];
+      while (estoura(body) && body.children.length > 1) {
+        const el = body.lastElementChild;
+        excesso.unshift(el);
+        el.remove();
+      }
+      // não deixa título de seção órfão no fim da página
+      while (body.children.length > 1 && body.lastElementChild.classList.contains('section-header')) {
+        const el = body.lastElementChild;
+        excesso.unshift(el);
+        el.remove();
+      }
+      return excesso;
+    }
+
+    function paginarProposta() {
+      const paginas = Array.from(document.querySelectorAll('#document-content .page'));
+      const p2 = paginas[1], p3 = paginas[2];
+      if (!p2 || !p3) return;
+
+      // o que estourar da pág. 2 vai para o topo da pág. 3
+      const excessoP2 = empurrarExcesso(p2);
+      if (excessoP2.length) p3.querySelector('.page-body').prepend(...excessoP2);
+
+      // a pág. 3 (e as novas) quebram em cascata
+      let atual = p3;
+      while (true) {
+        const ex = empurrarExcesso(atual);
+        if (!ex.length) break;
+        atual = criarPaginaContinuacao(atual);
+        atual.querySelector('.page-body').append(...ex);
+      }
+    }
+
+    /* =========================================================
        INICIALIZAÇÃO
        ========================================================= */
 
@@ -1387,7 +1455,10 @@
           if (rowValorTotal) rowValorTotal.style.display = 'none';
         }
 
+        // Exibe o documento ANTES de paginar: o navegador só mede alturas com o conteúdo visível.
         document.getElementById('document-content').style.display = 'block';
+        if (document.fonts && document.fonts.ready) await document.fonts.ready;
+        paginarProposta();
 
       } catch (err) {
         console.error('Erro geral no carregamento:', err);
