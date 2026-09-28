@@ -1457,31 +1457,23 @@
           return;
         }
 
-        const { data: proposta, error: errorProposta } = await sbPartner
-          .from('propostas')
-          .select('*')
-          .eq('id', propostaId)
-          .single();
+        const { data: docPublico, error: errorProposta } =
+          await sbPartner.functions.invoke(
+            'dados-documento-publico',
+            {
+              body: { id: propostaId }
+            }
+          );
+
+        const proposta = docPublico ? docPublico.proposta : null;
 
         if (errorProposta || !proposta) {
           mostrarErro('Proposta não encontrada.', errorProposta ? errorProposta.message : '');
           return;
         }
 
-        // Dados legais da empresa (mesma fonte usada pelo Contrato) — usados aqui
-        // exclusivamente para tornar a Política de Cancelamento dinâmica.
-        // Se não existir/houver erro, a Proposta segue normalmente com o fallback neutro.
-        let dadosEmpresa = null;
-        try {
-          const { data: dadosEmpresaData } = await sbPartner
-            .from('co_dados_legais_empresa')
-            .select('base_multa_cancelamento, multa_cancelamento_percentual, politica_cancelamento_faixas, razao_social, cnpj')
-            .limit(1)
-            .maybeSingle();
-          dadosEmpresa = dadosEmpresaData;
-        } catch (e) {
-          dadosEmpresa = null;
-        }
+        // Dados legais da empresa obtidos via Edge Function
+        const dadosEmpresa = docPublico ? docPublico.dadosEmpresa : null;
         renderPoliticaCancelamento(dadosEmpresa);
 
         // Dados básicos da contratada (razão social / CNPJ)
@@ -1496,11 +1488,7 @@
         // Vendedor/Parceiro Dinâmico
         let nomeVendedor = null;
         if (proposta.parceiro_id) {
-          const { data: parceiro } = await sbPartner
-            .from('parceiros')
-            .select('nome_completo, avatar_url')
-            .eq('id', proposta.parceiro_id)
-            .single();
+          const parceiro = docPublico ? docPublico.parceiro : null;
 
           if (parceiro) {
             nomeVendedor = realValue(parceiro.nome_completo);
@@ -1528,11 +1516,7 @@
         let enderecoCompletoCliente = null; // endereço oficial vindo de co_clientes
 
         if (proposta.cliente_id) {
-          const { data: cliente } = await sbPartner
-            .from('co_clientes')
-            .select('id, tipo_pessoa, nome_razao, nome_fantasia, cpf_cnpj, contato_nome, contato_cargo, cep, logradouro, numero, complemento, bairro, cidade, uf')
-            .eq('id', proposta.cliente_id)
-            .single();
+          const cliente = docPublico ? docPublico.cliente : null;
 
           if (cliente) {
             tipoPessoa = realValue(cliente.tipo_pessoa) ? String(cliente.tipo_pessoa).trim().toLowerCase() : null;
