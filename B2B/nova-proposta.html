@@ -6,7 +6,11 @@
   <title>432UP Partner | Nova Proposta</title>
   <link rel="stylesheet" href="../css/style.css">
   <script src="https://cdn.tailwindcss.com"></script>
-  <style>
+  
+
+
+
+<style>
     /* FUNDO VIDRO B2B CIANO PADRÃO ORIGINAL */
     .glass-b2b {
       background: linear-gradient(135deg, rgba(10, 18, 28, 0.75) 0%, rgba(14, 22, 35, 0.5) 100%);
@@ -229,8 +233,36 @@
     #gridPacotes .glass-card-interactive {
       display: flex;
       flex-direction: column;
+      width: 100%; /* CORREÇÃO: garante largura total do card, mesmo se outra regra tentar encolher */
       height: 100%;
       min-height: 168px;
+      min-width: 0;
+      border-radius: 0.75rem;
+    }
+    /* Ativo no card OU já tem linha no carrinho: borda sólida acesa */
+    #gridServicos .glass-card-interactive.in-cart {
+      background: rgba(0, 240, 255, 0.08);
+      border: 1px solid #00F0FF;
+      box-shadow: 0 0 20px rgba(0, 240, 255, 0.25);
+    }
+    .ctrl-block {
+      width: 100%;
+      min-width: 0;
+      margin-top: 8px;
+      padding-top: 8px;
+      border-top: 1px solid rgba(0, 240, 255, 0.12);
+    }
+    .ctrl-block:first-child {
+      border-top: 0;
+      margin-top: 4px;
+      padding-top: 0;
+    }
+    .ctrl-label {
+      display: block;
+      font-size: 11px;
+      font-weight: 600;
+      color: #22d3ee;
+      margin-bottom: 6px;
     }
     .svc-qty-actions {
       margin-top: auto;
@@ -238,6 +270,8 @@
       display: flex;
       flex-direction: column;
       gap: 8px;
+      width: 100%;
+      min-width: 0;
     }
     .badge-metragem,
     .badge-horas {
@@ -261,26 +295,73 @@
       text-align: center;
       outline: none;
     }
-    /* Área clicável do toggle de metragem: garante que TODO o bloco visual
-       responda ao toque/clique em qualquer ponto (topo, centro, base,
-       laterais e bordas) — inclusive o espaço vazio que sobra quando o
-       card fica esticado por um vizinho mais alto no mesmo grid row.
-       Nenhuma mudança de tamanho visual, aparência, texto, ícone ou
-       comando executado: apenas a área que responde ao clique/toque. */
-    [data-svc][data-metro="1"],
-    [data-svc][data-hora="1"] {
+    /* BOTÃO "+" REDONDO (adicionar por hora / por m² / carrinho).
+       CORREÇÃO: a regra antes atingia qualquer elemento com data-svc +
+       data-metro="1" / data-hora="1" — inclusive o CARD inteiro — e o
+       encolhia para 28px em formato de pílula. Agora o card
+       (.glass-card-interactive) e o container do grid ficam de fora. */
+    [data-svc][data-metro="1"]:not(.glass-card-interactive),
+    [data-svc][data-hora="1"]:not(.glass-card-interactive),
+    .cart-add-btn {
+      flex-shrink: 0;
+      width: 28px;
+      height: 28px;
+      border-radius: 999px;
+      border: 1px solid rgba(34, 211, 238, 0.55);
+      background: rgba(34, 211, 238, 0.15);
+      color: #22d3ee;
+      font-size: 1.15rem;
+      font-weight: 700;
+      line-height: 1;
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      cursor: pointer;
+      transition: background .15s, transform .12s;
+    }
+    .cart-remove-btn {
+      flex-shrink: 0;
+      width: 20px;
+      height: 20px;
+      border-radius: 999px;
+      border: 1px solid rgba(248, 113, 113, 0.45);
+      background: rgba(248, 113, 113, 0.12);
+      color: #f87171;
+      font-size: 0.85rem;
+      font-weight: 700;
+      line-height: 1;
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      cursor: pointer;
+      margin-left: 2px;
+    }
+    .cart-remove-btn:hover {
+      background: rgba(248, 113, 113, 0.28);
+    }
+    .cart-add-btn:hover {
+      background: rgba(34, 211, 238, 0.3);
+      transform: scale(1.06);
+    }
+    [data-svc][data-qtd="1"] {
       display: flex;
       flex-direction: column;
     }
+    /* Área clicável do toggle (metragem / hora / quantidade): todo o bloco
+       responde ao toque/clique em qualquer ponto, inclusive o espaço vazio
+       que sobra quando o card fica esticado por um vizinho mais alto na
+       mesma linha do grid. */
     [data-metro-toggle],
-    [data-hora-toggle] {
+    [data-hora-toggle],
+    [data-qtd-toggle] {
       cursor: pointer;
       -webkit-tap-highlight-color: transparent;
       touch-action: manipulation;
       flex: 1 1 auto;
     }
     [data-metro-toggle] *,
-    [data-hora-toggle] * {
+    [data-hora-toggle] *,
+    [data-qtd-toggle] * {
       pointer-events: none;
     }
     input[type="date"], input[type="text"], input[type="time"], input[type="number"], textarea {
@@ -384,7 +465,7 @@
     .catalog-skeleton .cs-dot:nth-child(2) { animation-delay: .15s; }
     .catalog-skeleton .cs-dot:nth-child(3) { animation-delay: .3s; }
     @keyframes csBlink { 0%, 80%, 100% { opacity: .25; } 40% { opacity: 1; } }
-    /* TOGGLE TRANSPORTE */
+    /* TOGGLE LOGÍSTICA / HOSPEDAGEM */
     .toggle-switch {
       position: relative;
       width: 44px;
@@ -420,6 +501,8 @@
     #transporteStatus.loading { color: #00F0FF; }
     #transporteStatus.err { color: #f87171; }
     #transporteStatus.ok { color: #4ade80; }
+    #boxLogisticaValor.hidden,
+    #boxHospedagemValor.hidden { display: none; }
     /* ---- Desconto comercial: inputs alinhados (mesma altura / base) ---- */
     #boxDesconto .grid.grid-cols-2 {
       align-items: end;
@@ -447,7 +530,7 @@
       font-variant-numeric: tabular-nums;
       letter-spacing: -0.01em;
     }
-    /* Agenda PIX 50/50: chips não vazam/sobreõem na sidebar estreita */
+    /* Agenda PIX 50/50: chips não vazam/sobrepõem na sidebar estreita */
     #blocoAgendaPagamento .grid.grid-cols-2 {
       align-items: start;
     }
@@ -516,6 +599,11 @@
       z-index: 100 !important;
     }
   </style>
+
+
+
+
+
 </head>
 <body class="h-full text-slate-200 font-sans antialiased bg-[#06080c] overflow-x-hidden">
   <!-- Fundo Espacial Integrado ao CSS do Projeto -->
@@ -668,13 +756,33 @@
                 <label for="fLocal" class="block text-xs uppercase tracking-wider text-slate-300 font-semibold mb-1.5">Cidade / Local (referência)</label>
                 <input type="text" id="fLocal" placeholder="Ex: Alphaville - SP" class="w-full bg-slate-900/80 border border-white/20 rounded-xl px-4 py-2.5 text-sm text-white placeholder-slate-500 focus:border-cyan-400 focus:ring-1 focus:ring-cyan-400 focus:outline-none transition">
               </div>
-              <!-- TOGGLE TRANSPORTE -->
-              <div class="flex items-center justify-between p-3 rounded-xl bg-slate-900/60 border border-white/10">
-                <div>
-                  <span class="block text-xs font-semibold text-white">Incluir valor do transporte</span>
-                  <span class="block text-[10.5px] text-slate-400 mt-0.5">Calculado automaticamente pelo CEP informado</span>
+              <!-- TOGGLE LOGÍSTICA (ex-transporte) — automático por CEP + valor editável -->
+              <div class="p-3 rounded-xl bg-slate-900/60 border border-white/10 space-y-3">
+                <div class="flex items-center justify-between">
+                  <div>
+                    <span class="block text-xs font-semibold text-white">Incluir valor da logística</span>
+                    <span class="block text-[10.5px] text-slate-400 mt-0.5">Calculado automaticamente pelo CEP — você pode editar o valor</span>
+                  </div>
+                  <div id="toggleTransporte" class="toggle-switch on"><div class="knob"></div></div>
                 </div>
-                <div id="toggleTransporte" class="toggle-switch on"><div class="knob"></div></div>
+                <div id="boxLogisticaValor" class="pt-1">
+                  <label for="fValorLogistica" class="block text-[10px] uppercase tracking-wider text-slate-400 font-semibold mb-1">Valor da logística (R$)</label>
+                  <input type="text" id="fValorLogistica" inputmode="decimal" placeholder="R$ 0,00" class="w-full bg-slate-900/80 border border-white/20 rounded-xl px-4 py-2.5 text-sm text-white placeholder-slate-500 focus:border-cyan-400 focus:ring-1 focus:ring-cyan-400 focus:outline-none transition" title="Valor calculado pelo CEP; edite para sobrescrever">
+                </div>
+              </div>
+              <!-- TOGGLE HOSPEDAGEM — valor digitado manualmente -->
+              <div class="p-3 rounded-xl bg-slate-900/60 border border-white/10 space-y-3">
+                <div class="flex items-center justify-between">
+                  <div>
+                    <span class="block text-xs font-semibold text-white">Incluir valor da hospedagem</span>
+                    <span class="block text-[10.5px] text-slate-400 mt-0.5">Informe o valor manualmente quando necessário</span>
+                  </div>
+                  <div id="toggleHospedagem" class="toggle-switch"><div class="knob"></div></div>
+                </div>
+                <div id="boxHospedagemValor" class="hidden pt-1">
+                  <label for="fValorHospedagem" class="block text-[10px] uppercase tracking-wider text-slate-400 font-semibold mb-1">Valor da hospedagem (R$)</label>
+                  <input type="text" id="fValorHospedagem" inputmode="decimal" placeholder="R$ 0,00" class="w-full bg-slate-900/80 border border-white/20 rounded-xl px-4 py-2.5 text-sm text-white placeholder-slate-500 focus:border-cyan-400 focus:ring-1 focus:ring-cyan-400 focus:outline-none transition">
+                </div>
               </div>
               <div>
                 <label for="fObs" class="block text-xs uppercase tracking-wider text-slate-300 font-semibold mb-1.5">Observações / Detalhes</label>
@@ -697,7 +805,8 @@
             <div class="pt-4 border-t border-amber-500/20 space-y-3">
               <div class="space-y-1.5 text-xs text-slate-300">
                 <div class="flex justify-between"><span>Valor comercial:</span><strong id="sumValorSubtotal" class="text-white">R$ 0,00</strong></div>
-                <div class="flex justify-between"><span>Transporte:</span><strong id="sumValorTransporte" class="text-white">R$ 0,00</strong></div>
+                <div class="flex justify-between"><span>Logística:</span><strong id="sumValorTransporte" class="text-white">R$ 0,00</strong></div>
+                <div class="flex justify-between"><span>Hospedagem:</span><strong id="sumValorHospedagem" class="text-white">R$ 0,00</strong></div>
               </div>
               <div id="boxDesconto" class="p-3 rounded-xl bg-slate-900/50 border border-white/10 space-y-2.5">
                 <span class="text-[10px] uppercase font-bold tracking-wider text-slate-400 block">Desconto comercial</span>
@@ -960,15 +1069,23 @@
       var svcState = {};          // 'off' | 'manual' | 'included'
       var svcMetragem = {};       // servico_id -> metragem atual (0 = desligado)
       var svcHoras = {};          // servico_id -> horas tarifadas (0 = desligado)
+      var svcQuantidade = {};     // composer no card: servico_id -> qtd (0 = desligado no card)
+      /** Carrinho do orçamento: cada entrada vira uma linha em propostas.itens (PDF/contrato). */
+      var orcamentoItens = [];
+      var _cartSeq = 1;
       var evConvidados = 80;
       var evTipoVal = 'Corporativo';
       var tiposEventoCarregados = [];
-      // Estado do transporte
-      var transporteAtivo = true;      // toggle "incluir transporte"
+      // Estado da logística (ex-transporte): automático por CEP + valor editável
+      var transporteAtivo = true;      // toggle "incluir logística"
       var transporteDistanciaKm = null;
       var transporteValor = 0;
+      var transporteValorManual = false; // true quando o usuário sobrescreveu o valor automático
       var transporteCepValido = null;  // último CEP geocodificado com sucesso
       var transporteLatLng = null;
+      // Estado da hospedagem (toggle + valor digitado; fora do desconto comercial)
+      var hospedagemAtivo = false;
+      var hospedagemValor = 0;
       // Estado do desconto comercial (incide APENAS sobre valor comercial / subtotal)
       // modoDesconto: 'percentual' | 'total_desejado' — controla qual campo foi a referência
       var descontoPercentual = 0;
@@ -1129,6 +1246,12 @@
         s.horas_maximas = s.horas_maximas != null ? Number(s.horas_maximas) : null;
         s.passo_hora = Number(s.passo_hora) || 1;
         s.isPorHora = s.horas_minimas != null && s.horas_minimas > 0;
+        // Campos do tipo "por unidade" (pode coexistir com metro e/ou hora)
+        s.quantidade_minima = s.quantidade_minima != null ? Number(s.quantidade_minima) : null;
+        s.quantidade_maxima = s.quantidade_maxima != null ? Number(s.quantidade_maxima) : null;
+        s.passo_quantidade = Number(s.passo_quantidade) || 1;
+        s.valor_por_unidade = Number(s.valor_por_unidade) || 0;
+        s.isPorUnidade = s.quantidade_minima != null && s.quantidade_minima > 0;
         return s;
       }
       async function carregarCatalogo() {
@@ -1158,6 +1281,7 @@
           svcState[s.servico_id] = 'off';
           svcMetragem[s.servico_id] = 0;
           svcHoras[s.servico_id] = 0;
+          svcQuantidade[s.servico_id] = 0;
         });
       }
       async function carregarConfigTransporte() {
@@ -1171,7 +1295,7 @@
             origem_label: r.data.origem_label || 'Centro de São Paulo'
           };
         } catch (e) {
-          console.error('[432UP Partner] Falha ao carregar config de transporte:', e);
+          console.error('[432UP Partner] Falha ao carregar config de logística:', e);
           CONFIG_TRANSPORTE = null;
         }
       }
@@ -1382,6 +1506,18 @@
               transporteCepValido = p.cep_cliente || null;
               atualizarStatusTransporte('ok', 'Distância: ' + transporteDistanciaKm.toFixed(1) + ' km de ' + (CONFIG_TRANSPORTE ? CONFIG_TRANSPORTE.origem_label : 'origem'));
             }
+            if (p.valor_transporte != null && Number(p.valor_transporte) > 0) {
+              transporteValor = Number(p.valor_transporte) || 0;
+              transporteValorManual = true; // preserva valor salvo (pode ter sido editado)
+              var elLogLoad = document.getElementById('fValorLogistica');
+              if (elLogLoad) elLogLoad.value = fmtMoeda(transporteValor);
+            }
+            // Hospedagem
+            hospedagemAtivo = p.hospedagem_incluida === true;
+            hospedagemValor = Number(p.valor_hospedagem) || 0;
+            setToggleHospedagemVisual(hospedagemAtivo);
+            var elHospLoad = document.getElementById('fValorHospedagem');
+            if (elHospLoad && hospedagemValor > 0) elHospLoad.value = fmtMoeda(hospedagemValor);
             // Desconto comercial — propostas antigas sem os campos ficam em 0 (sem desconto)
             descontoPercentual = Number(p.desconto_percentual) || 0;
             descontoValor = Number(p.desconto_valor) || 0;
@@ -1483,12 +1619,25 @@
               });
             }
             if (Array.isArray(p.itens)) {
+              orcamentoItens = [];
               p.itens.forEach(function (it) {
                 if (it.tipo === 'pacote') activePkg = it.id;
                 if (it.tipo === 'servico') {
-                  svcState[it.id] = 'manual';
-                  if (it.metragem != null) svcMetragem[it.id] = Number(it.metragem);
-                  if (it.horas != null) svcHoras[it.id] = Number(it.horas);
+                  orcamentoItens.push({
+                    cart_id: it.cart_id || novoCartId(),
+                    tipo: 'servico',
+                    id: it.id,
+                    nome: it.nome || it.id,
+                    quantidade: (it.quantidade != null && Number(it.quantidade) > 0) ? Number(it.quantidade) : 1,
+                    valor: Number(it.valor) || 0,
+                    preco_unitario: it.preco_unitario != null ? Number(it.preco_unitario) : null,
+                    metragem: it.metragem != null ? Number(it.metragem) : null,
+                    horas: it.horas != null ? Number(it.horas) : null,
+                    unidade_metragem: it.unidade_metragem || null,
+                    valor_por_metro_aplicado: it.valor_por_metro_aplicado,
+                    valor_por_hora_aplicado: it.valor_por_hora_aplicado,
+                    faixa_aplicada: it.faixa_aplicada || null
+                  });
                 }
               });
             }
@@ -1532,7 +1681,8 @@
             var pid = card.dataset.pkg;
             if (activePkg === pid) {
               activePkg = null;
-              SVC.forEach(function (s) { svcState[s.servico_id] = 'off'; svcMetragem[s.servico_id] = 0; svcHoras[s.servico_id] = 0; });
+              orcamentoItens = [];
+              SVC.forEach(function (s) { svcState[s.servico_id] = 'off'; svcMetragem[s.servico_id] = 0; svcHoras[s.servico_id] = 0; svcQuantidade[s.servico_id] = 0; });
             } else {
               activePkg = pid;
               var pObj = PKG.find(function (x) { return x.pacote_id === pid; });
@@ -1549,6 +1699,11 @@
                   svcHoras[s.servico_id] = s.horas_minimas;
                 } else if (!incluido) {
                   svcHoras[s.servico_id] = 0;
+                }
+                if (incluido) {
+                  svcQuantidade[s.servico_id] = 1;
+                } else {
+                  svcQuantidade[s.servico_id] = 0;
                 }
               });
             }
@@ -1574,6 +1729,16 @@
         if (!horas || horas <= 0) return { valor: 0, valorPorHoraAplicado: 0 };
         var vph = Number(s.valor_por_hora || s.valor_hora) || 0;
         return { valor: horas * vph, valorPorHoraAplicado: vph };
+      }
+      function qtdServico(sid) {
+        var q = Number(svcQuantidade[sid]) || 0;
+        return q > 0 ? q : 0;
+      }
+      /** Multiplica o preço unitário já calculado pela quantidade (≥1 quando ligado). */
+      function aplicarQuantidade(precoUnitario, sid) {
+        var q = qtdServico(sid);
+        if (q <= 0) return 0;
+        return (Number(precoUnitario) || 0) * q;
       }
       // ========================================================================
       // FONTE ÚNICA DE VERDADE para o preço de um serviço "não-metro".
@@ -1640,28 +1805,32 @@
       function nomesServicosInclusosPacote(p) {
         return servicosInclusosPacote(p).map(function (s) { return s.nome; });
       }
-      function valorReferenciaAvulso(s, horasRef, metroRef) {
+      function valorReferenciaAvulso(s, horasRef, metroRef, qtdRef) {
         if (!s) return 0;
         var v = 0;
-        var temQty = false;
+        var temDim = false;
         if (s.isPorMetro) {
           var m = metroRef != null ? metroRef : (s.metragem_minima || 0);
           if (m > 0) {
             v += Number(calcularValorPorMetro(s, m).valor) || 0;
-            temQty = true;
+            temDim = true;
           }
         }
         if (s.isPorHora) {
           var h = horasRef != null ? horasRef : (s.horas_minimas || 0);
           if (h > 0) {
             v += Number(calcularValorPorHora(s, h).valor) || 0;
-            temQty = true;
+            temDim = true;
           }
         }
-        if (temQty) return v;
-        return Number(calcularPrecoServico(s, { temPacoteAtivo: false }).total) || 0;
+        if (!temDim) {
+          v = Number(calcularPrecoServico(s, { temPacoteAtivo: false }).total) || 0;
+        }
+        var q = qtdRef != null ? Number(qtdRef) : 1;
+        if (!isFinite(q) || q < 1) q = 1;
+        return v * q;
       }
-      function rotuloQtyIncluso(s, horasRef, metroRef) {
+      function rotuloQtyIncluso(s, horasRef, metroRef, qtdRef) {
         var partes = [];
         if (s.isPorHora) {
           var h = horasRef != null ? horasRef : (s.horas_minimas || 0);
@@ -1671,8 +1840,137 @@
           var m = metroRef != null ? metroRef : (s.metragem_minima || 0);
           if (m > 0) partes.push(m + ' ' + rotuloUnidadeMetragem(s.unidade_metragem));
         }
+        var q = qtdRef != null ? Number(qtdRef) : 1;
+        if (q > 1) partes.push(q + ' un');
         return partes.length ? ' (' + partes.join(' + ') + ')' : '';
       }
+
+      function novoCartId() {
+        return 'c' + (_cartSeq++);
+      }
+      function resetComposerServico(sid) {
+        svcQuantidade[sid] = 0;
+        svcMetragem[sid] = 0;
+        svcHoras[sid] = 0;
+        svcState[sid] = 'off';
+      }
+      function resetTodosComposers() {
+        SVC.forEach(function (s) { resetComposerServico(s.servico_id); });
+      }
+      /** Preço unitário atual do composer (1 un) para o serviço s. */
+      function precoUnitarioComposer(s) {
+        var metragemAtual = svcMetragem[s.servico_id] || 0;
+        var horasAtual = svcHoras[s.servico_id] || 0;
+        var precoUnit = 0;
+        if (s.isPorMetro && metragemAtual > 0) {
+          precoUnit += Number(calcularValorPorMetro(s, metragemAtual).valor) || 0;
+        } else if (s.isPorMetro && s.metragem_minima) {
+          precoUnit += Number(calcularValorPorMetro(s, s.metragem_minima).valor) || 0;
+        }
+        if (s.isPorHora && horasAtual > 0) {
+          precoUnit += Number(calcularValorPorHora(s, horasAtual).valor) || 0;
+        } else if (s.isPorHora && s.horas_minimas) {
+          precoUnit += Number(calcularValorPorHora(s, s.horas_minimas).valor) || 0;
+        }
+        if (precoUnit <= 0) {
+          precoUnit = Number(calcularPrecoServico(s, { temPacoteAtivo: !!activePkg }).total) || 0;
+        }
+        return precoUnit;
+      }
+      function montarLinhaCarrinho(s) {
+        var qtd = Number(svcQuantidade[s.servico_id]) || 0;
+        if (qtd <= 0) qtd = 1;
+        var metragem = Number(svcMetragem[s.servico_id]) || 0;
+        var horas = Number(svcHoras[s.servico_id]) || 0;
+        if (s.isPorMetro && metragem <= 0 && s.metragem_minima) metragem = s.metragem_minima;
+        if (s.isPorHora && horas <= 0 && s.horas_minimas) horas = s.horas_minimas;
+        // recalcula com valores efetivos
+        var precoUnit = 0;
+        var item = {
+          cart_id: novoCartId(),
+          tipo: 'servico',
+          id: s.servico_id,
+          nome: s.nome,
+          quantidade: qtd,
+          valor: 0,
+          preco_unitario: 0
+        };
+        if (s.isPorMetro && metragem > 0) {
+          var cm = calcularValorPorMetro(s, metragem);
+          precoUnit += Number(cm.valor) || 0;
+          item.metragem = metragem;
+          item.unidade_metragem = s.unidade_metragem || 'm';
+          item.valor_por_metro_aplicado = cm.valorPorMetroAplicado;
+          item.faixa_aplicada = cm.faixaAplicada;
+        }
+        if (s.isPorHora && horas > 0) {
+          var ch = calcularValorPorHora(s, horas);
+          precoUnit += Number(ch.valor) || 0;
+          item.horas = horas;
+          item.valor_por_hora_aplicado = ch.valorPorHoraAplicado;
+        }
+        if (precoUnit <= 0) {
+          var pc = calcularPrecoServico(s, { temPacoteAtivo: !!activePkg });
+          precoUnit = Number(pc.total) || 0;
+          item.valor_base = pc.base;
+          item.valor_por_hora_aplicado = pc.porHora;
+          item.valor_por_pessoa_aplicado = pc.porPessoa;
+          item.faixa_aplicada = pc.faixaAplicada;
+        }
+        item.preco_unitario = precoUnit;
+        item.valor = precoUnit * qtd;
+        return item;
+      }
+      function rotuloEspecificacaoItem(it) {
+        var partes = [];
+        if (it.quantidade != null && Number(it.quantidade) > 0) {
+          partes.push(Number(it.quantidade) + ' un.');
+        }
+        if (it.metragem != null && Number(it.metragem) > 0) {
+          var u = rotuloUnidadeMetragem(it.unidade_metragem || 'm');
+          partes.push(Number(it.metragem) + ' ' + u);
+        }
+        if (it.horas != null && Number(it.horas) > 0) {
+          partes.push(Number(it.horas) + ' h');
+        }
+        return partes.length ? partes.join(' · ') : '—';
+      }
+      function rotuloNomeResumo(it) {
+        var esp = rotuloEspecificacaoItem(it);
+        if (esp && esp !== '—') return it.nome + ' (' + esp + ')';
+        return it.nome;
+      }
+      function adicionarAoCarrinho(sid) {
+        if (formularioBloqueadoSomenteLeitura) return;
+        var s = SVC.find(function (x) { return x.servico_id === sid; });
+        if (!s) return;
+        var ligado = (svcQuantidade[sid] > 0) || (svcMetragem[sid] > 0) || (svcHoras[sid] > 0) || svcState[sid] === 'manual';
+        if (!ligado) {
+          // liga com mínimos e adiciona na hora
+          svcQuantidade[sid] = 1;
+          svcState[sid] = 'manual';
+          if (s.isPorMetro) svcMetragem[sid] = s.metragem_minima;
+          if (s.isPorHora) svcHoras[sid] = s.horas_minimas;
+        }
+        var linha = montarLinhaCarrinho(s);
+        if (!(linha.valor > 0) && !(linha.quantidade > 0)) {
+          toast('Configure o item antes de adicionar', 'err');
+          return;
+        }
+        orcamentoItens.push(linha);
+        resetComposerServico(sid);
+        if (typeof showToast === 'function') showToast('Item adicionado ao orçamento. Pode adicionar mais.', 'ok');
+        updateUI();
+        renderServicos();
+        recalc();
+      }
+      function removerDoCarrinho(cartId) {
+        if (formularioBloqueadoSomenteLeitura) return;
+        orcamentoItens = orcamentoItens.filter(function (it) { return it.cart_id !== cartId; });
+        renderServicos();
+        recalc();
+      }
+
       function renderServicos() {
         var grid = document.getElementById('gridServicos');
         if (!svcOk) {
@@ -1684,108 +1982,164 @@
           return;
         }
         grid.innerHTML = SVC.map(function (s) {
-          if (s.isPorMetro || s.isPorHora) {
-            var metragemAtual = svcMetragem[s.servico_id] || 0;
-            var horasAtual = svcHoras[s.servico_id] || 0;
-            var ligadoMetro = s.isPorMetro && metragemAtual > 0;
-            var ligadoHora = s.isPorHora && horasAtual > 0;
-            var calc = s.isPorMetro ? calcularValorPorMetro(s, metragemAtual) : null;
-            var calcH = s.isPorHora ? calcularValorPorHora(s, horasAtual) : null;
-            var attrs = 'data-svc="' + s.servico_id + '" id="card-svc-' + s.servico_id + '" class="glass-card-interactive p-4 rounded-xl"' +
-              (s.isPorMetro ? ' data-metro="1"' : '') +
-              (s.isPorHora ? ' data-hora="1"' : '');
-            var html = '<div ' + attrs + '>';
-            html += '<span class="block text-xs font-bold text-white">' + s.icone + ' ' + esc(s.nome) + '</span>';
-            if (s.descricao) html += '<span class="card-desc">' + esc(s.descricao) + '</span>';
-            html += '<div class="svc-qty-actions">';
+          var qtdAtual = svcQuantidade[s.servico_id] || 0;
+          var metragemAtual = svcMetragem[s.servico_id] || 0;
+          var horasAtual = svcHoras[s.servico_id] || 0;
+          var st = svcState[s.servico_id];
+          var ligado = qtdAtual > 0 || metragemAtual > 0 || horasAtual > 0 || st === 'manual';
+          if (ligado && qtdAtual <= 0) {
+            qtdAtual = 1;
+            svcQuantidade[s.servico_id] = 1;
+          }
+          if (ligado && s.isPorMetro && !(metragemAtual > 0) && s.metragem_minima) {
+            metragemAtual = s.metragem_minima;
+            svcMetragem[s.servico_id] = metragemAtual;
+          }
+          if (ligado && s.isPorHora && !(horasAtual > 0) && s.horas_minimas) {
+            horasAtual = s.horas_minimas;
+            svcHoras[s.servico_id] = horasAtual;
+          }
+
+          var noCarrinho = orcamentoItens.some(function (it) { return it.id === s.servico_id; });
+          var cls = 'glass-card-interactive p-4 rounded-xl';
+          if (ligado) cls += ' selected';
+          else if (noCarrinho) cls += ' in-cart';
+          if (!ligado) cls += ' cursor-pointer';
+          var attrs = 'data-svc="' + s.servico_id + '" id="card-svc-' + s.servico_id + '" class="' + cls + '" data-qtd="1"' +
+            (s.isPorMetro ? ' data-metro="1"' : '') +
+            (s.isPorHora ? ' data-hora="1"' : '');
+
+          var precoUnit = precoUnitarioComposer(s);
+          var precoLinha = ligado ? precoUnit * Math.max(1, qtdAtual) : precoUnit;
+          var resumoCobranca = composicaoPrecoTexto(s);
+
+          var html = '<div ' + attrs + '>';
+          html += '<div class="flex items-start justify-between gap-2">';
+          html += '<span class="block text-xs font-bold text-white">' + s.icone + ' ' + esc(s.nome) + '</span>';
+          if (ligado) {
+            html += '<button type="button" class="cart-add-btn" data-cart-add="' + s.servico_id + '" title="Adicionar ao orçamento" aria-label="Adicionar ao orçamento">+</button>';
+          }
+          html += '</div>';
+          if (s.descricao) html += '<span class="card-desc">' + esc(s.descricao) + '</span>';
+
+          html += '<div class="svc-qty-actions">';
+          if (ligado) {
+            // Quantidade (sempre)
+            html += '<div class="ctrl-block">' +
+              '<div class="qty-row">' +
+                '<div class="metro-btn" data-qtd-menos="' + s.servico_id + '">−</div>' +
+                '<div class="qty-mid"><input class="qty-input" type="number" inputmode="numeric" data-qty-un="' + s.servico_id + '" value="' + Math.max(1, qtdAtual) + '" min="1" step="1"><span class="qty-unit">un</span></div>' +
+                '<div class="metro-btn" data-qtd-mais="' + s.servico_id + '">+</div>' +
+              '</div>' +
+              '<div class="qty-total">' + fmtMoedaCurta(precoLinha) +
+                (Math.max(1, qtdAtual) > 1 ? ' <span style="opacity:.7;font-weight:500">(' + Math.max(1, qtdAtual) + ' × ' + fmtMoedaCurta(precoUnit) + ')</span>' : '') +
+              '</div>' +
+            '</div>';
+
             if (s.isPorMetro) {
               var uniM = rotuloUnidadeMetragem(s.unidade_metragem);
-              html += '<span class="block text-[11px] font-semibold text-cyan-400">' + fmtMoedaCurta(s.valor_por_metro) + ' / ' + uniM + (s.metragem_maxima ? ' (mín. ' + s.metragem_minima + ' ' + uniM + ', máx. ' + s.metragem_maxima + ' ' + uniM + ')' : ' (mín. ' + s.metragem_minima + ' ' + uniM + ')') + '</span>';
-              if (ligadoMetro) {
-                html += '<div class="metro-controls">' +
-                  '<div class="qty-row">' +
-                    '<div class="metro-btn" data-metro-menos="' + s.servico_id + '">−</div>' +
-                    '<div class="qty-mid"><input class="qty-input" type="number" inputmode="decimal" data-qty-metro="' + s.servico_id + '" value="' + metragemAtual + '" min="' + s.metragem_minima + '"' + (s.metragem_maxima != null ? ' max="' + s.metragem_maxima + '"' : '') + ' step="' + s.passo_metro + '"><span class="qty-unit">' + uniM + '</span></div>' +
-                    '<div class="metro-btn' + (s.metragem_maxima != null && metragemAtual >= s.metragem_maxima ? ' disabled' : '') + '" data-metro-mais="' + s.servico_id + '">+</div>' +
-                  '</div>' +
-                  '<div class="qty-total">' + fmtMoedaCurta(calc.valor) + '</div>' +
-                '</div>';
-              } else {
-                html += '<div class="btn-add-qty chip-item" data-metro-toggle="' + s.servico_id + '">Adicionar metro</div>';
-              }
+              var mVal = metragemAtual > 0 ? metragemAtual : s.metragem_minima;
+              html += '<div class="ctrl-block">' +
+                '<span class="ctrl-label">' + fmtMoedaCurta(s.valor_por_metro) + ' / ' + uniM +
+                  (s.metragem_maxima ? ' (mín. ' + s.metragem_minima + ', máx. ' + s.metragem_maxima + ')' : ' (mín. ' + s.metragem_minima + ')') + '</span>' +
+                '<div class="qty-row">' +
+                  '<div class="metro-btn" data-metro-menos="' + s.servico_id + '">−</div>' +
+                  '<div class="qty-mid"><input class="qty-input" type="number" inputmode="decimal" data-qty-metro="' + s.servico_id + '" value="' + mVal + '" min="' + s.metragem_minima + '"' +
+                    (s.metragem_maxima != null ? ' max="' + s.metragem_maxima + '"' : '') + ' step="' + s.passo_metro + '"><span class="qty-unit">' + uniM + '</span></div>' +
+                  '<div class="metro-btn' + (s.metragem_maxima != null && mVal >= s.metragem_maxima ? ' disabled' : '') + '" data-metro-mais="' + s.servico_id + '">+</div>' +
+                '</div>' +
+              '</div>';
             }
+
             if (s.isPorHora) {
               var vph = Number(s.valor_por_hora || s.valor_hora) || 0;
-              html += '<span class="block text-[11px] font-semibold text-cyan-400">' + fmtMoedaCurta(vph) + ' / h' + (s.horas_maximas ? ' (mín. ' + s.horas_minimas + 'h, máx. ' + s.horas_maximas + 'h)' : ' (mín. ' + s.horas_minimas + 'h)') + '</span>';
-              if (ligadoHora) {
-                html += '<div class="hora-controls metro-controls">' +
-                  '<div class="qty-row">' +
-                    '<div class="metro-btn" data-hora-menos="' + s.servico_id + '">−</div>' +
-                    '<div class="qty-mid"><input class="qty-input" type="number" inputmode="decimal" data-qty-hora="' + s.servico_id + '" value="' + horasAtual + '" min="' + s.horas_minimas + '"' + (s.horas_maximas != null ? ' max="' + s.horas_maximas + '"' : '') + ' step="' + s.passo_hora + '"><span class="qty-unit">h</span></div>' +
-                    '<div class="metro-btn' + (s.horas_maximas != null && horasAtual >= s.horas_maximas ? ' disabled' : '') + '" data-hora-mais="' + s.servico_id + '">+</div>' +
-                  '</div>' +
-                  '<div class="qty-total">' + fmtMoedaCurta(calcH.valor) + '</div>' +
-                '</div>';
-              } else {
-                html += '<div class="btn-add-qty chip-item" data-hora-toggle="' + s.servico_id + '">Adicionar hora</div>';
-              }
+              var hVal = horasAtual > 0 ? horasAtual : s.horas_minimas;
+              html += '<div class="ctrl-block">' +
+                '<span class="ctrl-label">' + fmtMoedaCurta(vph) + ' / h' +
+                  (s.horas_maximas ? ' (mín. ' + s.horas_minimas + 'h, máx. ' + s.horas_maximas + 'h)' : ' (mín. ' + s.horas_minimas + 'h)') + '</span>' +
+                '<div class="qty-row">' +
+                  '<div class="metro-btn" data-hora-menos="' + s.servico_id + '">−</div>' +
+                  '<div class="qty-mid"><input class="qty-input" type="number" inputmode="decimal" data-qty-hora="' + s.servico_id + '" value="' + hVal + '" min="' + s.horas_minimas + '"' +
+                    (s.horas_maximas != null ? ' max="' + s.horas_maximas + '"' : '') + ' step="' + s.passo_hora + '"><span class="qty-unit">h</span></div>' +
+                  '<div class="metro-btn' + (s.horas_maximas != null && hVal >= s.horas_maximas ? ' disabled' : '') + '" data-hora-mais="' + s.servico_id + '">+</div>' +
+                '</div>' +
+              '</div>';
             }
-            html += '</div>';
-            html += '</div>';
-            return html;
+          } else {
+            html += '<span class="block text-[11px] font-semibold text-cyan-400 mt-2">' + fmtMoeda(precoUnit) + '</span>';
+            if (resumoCobranca) html += '<span class="card-desc" style="margin-top:2px;">' + esc(resumoCobranca) + '</span>';
+            if (s.isPorMetro) html += '<span class="card-desc" style="margin-top:2px;">Com seletor de ' + esc(rotuloUnidadeMetragem(s.unidade_metragem)) + '</span>';
+            if (s.isPorHora) html += '<span class="card-desc" style="margin-top:2px;">Com seletor de horas</span>';
           }
-          var precoCalc = calcularPrecoServico(s, { temPacoteAtivo: !!activePkg });
-          var resumoCobranca = composicaoPrecoTexto(s);
-          return '<div data-svc="' + s.servico_id + '" id="card-svc-' + s.servico_id + '" class="glass-card-interactive p-4 rounded-xl cursor-pointer">' +
-            '<span class="block text-xs font-bold text-white">' + s.icone + ' ' + esc(s.nome) + '</span>' +
-            (s.descricao ? '<span class="card-desc">' + esc(s.descricao) + '</span>' : '') +
-            '<span class="block text-[11px] font-semibold text-cyan-400 mt-2">' + fmtMoeda(precoCalc.total) + '</span>' +
-            (resumoCobranca ? '<span class="card-desc" style="margin-top:2px;">' + esc(resumoCobranca) + '</span>' : '') +
-          '</div>';
+          html += '</div></div>';
+          return html;
         }).join('');
-        // Clique nos cards normais (não-metro)
-        grid.querySelectorAll('[data-svc]:not([data-metro]):not([data-hora])').forEach(function (card) {
-          card.addEventListener('click', function () {
+
+        // Clique no card desligado → abre composer
+        grid.querySelectorAll('[data-svc].cursor-pointer').forEach(function (card) {
+          card.addEventListener('click', function (e) {
             if (formularioBloqueadoSomenteLeitura) return;
+            if (e.target.closest && e.target.closest('[data-cart-add]')) return;
             var sid = card.dataset.svc;
-            var st = svcState[sid];
-            if (st === 'included') {
-              activePkg = null;
-              svcState[sid] = 'off';
-            } else if (st === 'manual') {
-              svcState[sid] = 'off';
-            } else {
-              svcState[sid] = 'manual';
-            }
-            updateUI();
-            recalc();
-          });
-        });
-        // Clique/toque em QUALQUER ponto do bloco "por metro" (topo, centro,
-        // base, laterais e bordas) — liga/desliga na metragem mínima.
-        // Correção 4: o CSS marca [data-metro-toggle] * { pointer-events: none }
-        // para que nenhum filho intercepte o evento; o listener continua
-        // único, no elemento pai, sem alterar o comando executado.
-        grid.querySelectorAll('[data-metro-toggle]').forEach(function (el) {
-          el.addEventListener('click', function () {
-            if (formularioBloqueadoSomenteLeitura) return;
-            var sid = el.dataset.metroToggle;
             var s = SVC.find(function (x) { return x.servico_id === sid; });
             if (!s) return;
-            if (svcMetragem[sid] > 0) {
-              // já ligado -> desliga
-              svcMetragem[sid] = 0;
-              if (!svcHoras[sid]) svcState[sid] = 'off';
-            } else {
-              svcMetragem[sid] = s.metragem_minima;
-              svcState[sid] = 'manual';
-            }
+            svcQuantidade[sid] = 1;
+            svcState[sid] = 'manual';
+            if (s.isPorMetro) svcMetragem[sid] = s.metragem_minima;
+            if (s.isPorHora) svcHoras[sid] = s.horas_minimas;
             updateUI();
             renderServicos();
             recalc();
           });
         });
-        // Botão "+"
+
+        // + no card → adiciona ao carrinho e zera composer
+        grid.querySelectorAll('[data-cart-add]').forEach(function (btn) {
+          btn.addEventListener('click', function (e) {
+            e.preventDefault();
+            e.stopPropagation();
+            adicionarAoCarrinho(btn.getAttribute('data-cart-add'));
+          });
+        });
+
+        grid.querySelectorAll('[data-qtd-mais]').forEach(function (btn) {
+          btn.addEventListener('click', function (e) {
+            e.stopPropagation();
+            if (formularioBloqueadoSomenteLeitura) return;
+            var sid = btn.dataset.qtdMais;
+            var atual = svcQuantidade[sid] > 0 ? svcQuantidade[sid] : 1;
+            svcQuantidade[sid] = atual + 1;
+            svcState[sid] = 'manual';
+            renderServicos();
+            recalc();
+          });
+        });
+        grid.querySelectorAll('[data-qtd-menos]').forEach(function (btn) {
+          btn.addEventListener('click', function (e) {
+            e.stopPropagation();
+            if (formularioBloqueadoSomenteLeitura) return;
+            var sid = btn.dataset.qtdMenos;
+            var atual = svcQuantidade[sid] > 0 ? svcQuantidade[sid] : 1;
+            var novo = atual - 1;
+            if (novo < 1) {
+              resetComposerServico(sid);
+            } else {
+              svcQuantidade[sid] = novo;
+            }
+            renderServicos();
+            recalc();
+          });
+        });
+        grid.querySelectorAll('[data-qty-un]').forEach(function (inp) {
+          inp.addEventListener('click', function (e) { e.stopPropagation(); });
+          inp.addEventListener('keydown', function (e) {
+            if (e.key === 'Enter') { e.preventDefault(); aplicarQtyUnDigitada(inp.dataset.qtyUn, inp.value); }
+          });
+          inp.addEventListener('change', function () {
+            aplicarQtyUnDigitada(inp.dataset.qtyUn, inp.value);
+          });
+        });
+
         grid.querySelectorAll('[data-metro-mais]').forEach(function (btn) {
           btn.addEventListener('click', function (e) {
             e.stopPropagation();
@@ -1797,11 +2151,12 @@
             var novo = atual + s.passo_metro;
             if (s.metragem_maxima != null && novo > s.metragem_maxima) novo = s.metragem_maxima;
             svcMetragem[sid] = novo;
+            if (!(svcQuantidade[sid] > 0)) svcQuantidade[sid] = 1;
+            svcState[sid] = 'manual';
             renderServicos();
             recalc();
           });
         });
-        // Botão "−"
         grid.querySelectorAll('[data-metro-menos]').forEach(function (btn) {
           btn.addEventListener('click', function (e) {
             e.stopPropagation();
@@ -1811,35 +2166,22 @@
             if (!s) return;
             var atual = svcMetragem[sid] || s.metragem_minima;
             var novo = atual - s.passo_metro;
-            if (novo <= s.metragem_minima - s.passo_metro || novo < s.metragem_minima) {
-              // desce abaixo do mínimo -> desliga completamente
-              svcMetragem[sid] = 0;
-              if (!svcHoras[sid]) svcState[sid] = 'off';
-            } else {
-              svcMetragem[sid] = novo;
-            }
+            if (novo < s.metragem_minima) svcMetragem[sid] = s.metragem_minima;
+            else svcMetragem[sid] = novo;
             renderServicos();
             recalc();
           });
         });
-        grid.querySelectorAll('[data-hora-toggle]').forEach(function (el) {
-          el.addEventListener('click', function () {
-            if (formularioBloqueadoSomenteLeitura) return;
-            var sid = el.dataset.horaToggle;
-            var s = SVC.find(function (x) { return x.servico_id === sid; });
-            if (!s) return;
-            if (svcHoras[sid] > 0) {
-              svcHoras[sid] = 0;
-              if (!svcMetragem[sid]) svcState[sid] = 'off';
-            } else {
-              svcHoras[sid] = s.horas_minimas;
-              svcState[sid] = 'manual';
-            }
-            updateUI();
-            renderServicos();
-            recalc();
+        grid.querySelectorAll('[data-qty-metro]').forEach(function (inp) {
+          inp.addEventListener('click', function (e) { e.stopPropagation(); });
+          inp.addEventListener('keydown', function (e) {
+            if (e.key === 'Enter') { e.preventDefault(); aplicarQtyMetroDigitada(inp.dataset.qtyMetro, inp.value); }
+          });
+          inp.addEventListener('change', function () {
+            aplicarQtyMetroDigitada(inp.dataset.qtyMetro, inp.value);
           });
         });
+
         grid.querySelectorAll('[data-hora-mais]').forEach(function (btn) {
           btn.addEventListener('click', function (e) {
             e.stopPropagation();
@@ -1851,6 +2193,8 @@
             var novo = atual + s.passo_hora;
             if (s.horas_maximas != null && novo > s.horas_maximas) novo = s.horas_maximas;
             svcHoras[sid] = novo;
+            if (!(svcQuantidade[sid] > 0)) svcQuantidade[sid] = 1;
+            svcState[sid] = 'manual';
             renderServicos();
             recalc();
           });
@@ -1864,53 +2208,10 @@
             if (!s) return;
             var atual = svcHoras[sid] || s.horas_minimas;
             var novo = atual - s.passo_hora;
-            if (novo <= s.horas_minimas - s.passo_hora || novo < s.horas_minimas) {
-              svcHoras[sid] = 0;
-              if (!svcMetragem[sid]) svcState[sid] = 'off';
-            } else {
-              svcHoras[sid] = novo;
-            }
+            if (novo < s.horas_minimas) svcHoras[sid] = s.horas_minimas;
+            else svcHoras[sid] = novo;
             renderServicos();
             recalc();
-          });
-        });
-        function aplicarQtyMetroDigitada(sid, raw) {
-          var s = SVC.find(function (x) { return x.servico_id === sid; });
-          if (!s) return;
-          var n = parseFloat(String(raw).replace(',', '.'));
-          if (!isFinite(n) || n < s.metragem_minima) {
-            svcMetragem[sid] = 0;
-            if (!svcHoras[sid]) svcState[sid] = 'off';
-          } else {
-            if (s.metragem_maxima != null && n > s.metragem_maxima) n = s.metragem_maxima;
-            svcMetragem[sid] = n;
-            svcState[sid] = 'manual';
-          }
-          renderServicos();
-          recalc();
-        }
-        function aplicarQtyHoraDigitada(sid, raw) {
-          var s = SVC.find(function (x) { return x.servico_id === sid; });
-          if (!s) return;
-          var n = parseFloat(String(raw).replace(',', '.'));
-          if (!isFinite(n) || n < s.horas_minimas) {
-            svcHoras[sid] = 0;
-            if (!svcMetragem[sid]) svcState[sid] = 'off';
-          } else {
-            if (s.horas_maximas != null && n > s.horas_maximas) n = s.horas_maximas;
-            svcHoras[sid] = n;
-            svcState[sid] = 'manual';
-          }
-          renderServicos();
-          recalc();
-        }
-        grid.querySelectorAll('[data-qty-metro]').forEach(function (inp) {
-          inp.addEventListener('click', function (e) { e.stopPropagation(); });
-          inp.addEventListener('keydown', function (e) {
-            if (e.key === 'Enter') { e.preventDefault(); aplicarQtyMetroDigitada(inp.dataset.qtyMetro, inp.value); }
-          });
-          inp.addEventListener('change', function () {
-            aplicarQtyMetroDigitada(inp.dataset.qtyMetro, inp.value);
           });
         });
         grid.querySelectorAll('[data-qty-hora]').forEach(function (inp) {
@@ -1922,7 +2223,22 @@
             aplicarQtyHoraDigitada(inp.dataset.qtyHora, inp.value);
           });
         });
+
         updateUI();
+      }
+      function aplicarQtyUnDigitada(sid, raw) {
+        var n = parseInt(String(raw).replace(/\D/g, ''), 10);
+        if (!isFinite(n) || n < 1) {
+          svcQuantidade[sid] = 0;
+          svcMetragem[sid] = 0;
+          svcHoras[sid] = 0;
+          svcState[sid] = 'off';
+        } else {
+          svcQuantidade[sid] = n;
+          if (svcState[sid] !== 'included') svcState[sid] = 'manual';
+        }
+        renderServicos();
+        recalc();
       }
       function updateUI() {
         document.querySelectorAll('[data-pkg]').forEach(function (c) {
@@ -1940,6 +2256,14 @@
       function setToggleVisual(ligado) {
         var el = document.getElementById('toggleTransporte');
         if (el) el.classList.toggle('on', ligado);
+        var box = document.getElementById('boxLogisticaValor');
+        if (box) box.classList.toggle('hidden', !ligado);
+      }
+      function setToggleHospedagemVisual(ligado) {
+        var el = document.getElementById('toggleHospedagem');
+        if (el) el.classList.toggle('on', ligado);
+        var box = document.getElementById('boxHospedagemValor');
+        if (box) box.classList.toggle('hidden', !ligado);
       }
       function atualizarStatusTransporte(tipo, msg) {
         var el = document.getElementById('transporteStatus');
@@ -2057,16 +2381,16 @@
         clearTimeout(cepDebounceTimer);
         if (cepLimpo.length < 8) {
           transporteDistanciaKm = null;
-          transporteValor = 0;
           transporteLatLng = null;
           ultimoCepConsultadoProposta = null;
+          if (!transporteValorManual) transporteValor = 0;
           atualizarStatusTransporte('', '');
           recalc();
           return;
         }
         cepDebounceTimer = setTimeout(async function () {
           if (!CONFIG_TRANSPORTE) {
-            atualizarStatusTransporte('err', 'Tarifa de transporte não configurada. Fale com a equipe.');
+            atualizarStatusTransporte('err', 'Tarifa de logística não configurada. Fale com a equipe.');
           } else {
             atualizarStatusTransporte('loading', 'Calculando distância…');
             try {
@@ -2227,7 +2551,7 @@
           }
           // Geocodificação para transporte (item 5) — reutiliza geocodificarCep já existente.
           if (!CONFIG_TRANSPORTE) {
-            atualizarStatusTransporte('err', 'Tarifa de transporte não configurada. Fale com a equipe.');
+            atualizarStatusTransporte('err', 'Tarifa de logística não configurada. Fale com a equipe.');
           } else {
             atualizarStatusTransporte('loading', 'Calculando distância…');
             try {
@@ -3103,8 +3427,69 @@
           if (formularioBloqueadoSomenteLeitura) return;
           transporteAtivo = !transporteAtivo;
           setToggleVisual(transporteAtivo);
+          if (!transporteAtivo) {
+            transporteValor = 0;
+            var elLog = document.getElementById('fValorLogistica');
+            if (elLog) elLog.value = '';
+          } else if (!transporteValorManual) {
+            if (typeof CONFIG_TRANSPORTE !== 'undefined' && CONFIG_TRANSPORTE && transporteDistanciaKm != null) {
+              transporteValor = Math.round(transporteDistanciaKm * CONFIG_TRANSPORTE.valor_por_km * 100) / 100;
+            }
+          }
           recalc();
         });
+        var elValorLog = document.getElementById('fValorLogistica');
+        if (elValorLog) {
+          elValorLog.addEventListener('input', function () {
+            if (formularioBloqueadoSomenteLeitura) return;
+            var n = parseMoedaInput(this.value);
+            if (isFinite(n) && n >= 0) {
+              transporteValorManual = true;
+              transporteValor = n;
+              recalc();
+            }
+          });
+          elValorLog.addEventListener('blur', function () {
+            if (formularioBloqueadoSomenteLeitura) return;
+            var n = parseMoedaInput(this.value);
+            if (isFinite(n) && n >= 0) {
+              transporteValorManual = true;
+              transporteValor = Math.round(n * 100) / 100;
+              this.value = transporteValor > 0 ? fmtMoeda(transporteValor) : '';
+              recalc();
+            }
+          });
+        }
+        var elToggleHosp = document.getElementById('toggleHospedagem');
+        if (elToggleHosp) {
+          elToggleHosp.addEventListener('click', function () {
+            if (formularioBloqueadoSomenteLeitura) return;
+            hospedagemAtivo = !hospedagemAtivo;
+            setToggleHospedagemVisual(hospedagemAtivo);
+            if (!hospedagemAtivo) hospedagemValor = 0;
+            recalc();
+          });
+        }
+        var elValorHosp = document.getElementById('fValorHospedagem');
+        if (elValorHosp) {
+          elValorHosp.addEventListener('input', function () {
+            if (formularioBloqueadoSomenteLeitura) return;
+            var n = parseMoedaInput(this.value);
+            if (isFinite(n) && n >= 0) {
+              hospedagemValor = n;
+              recalc();
+            }
+          });
+          elValorHosp.addEventListener('blur', function () {
+            if (formularioBloqueadoSomenteLeitura) return;
+            var n = parseMoedaInput(this.value);
+            if (isFinite(n) && n >= 0) {
+              hospedagemValor = Math.round(n * 100) / 100;
+              this.value = hospedagemValor > 0 ? fmtMoeda(hospedagemValor) : '';
+              recalc();
+            }
+          });
+        }
         // chipsTipo: binding feito em carregarTiposEvento()
         document.querySelectorAll('#chipsConvidados .chip-item').forEach(function (c) {
           c.addEventListener('click', function () {
@@ -3237,10 +3622,12 @@
         var alertEl = document.getElementById('descontoAlert');
         var subEl = document.getElementById('sumValorSubtotal');
         var transpEl = document.getElementById('sumValorTransporte');
+        var hospEl = document.getElementById('sumValorHospedagem');
         descontoUiUpdating = true;
         try {
           if (subEl) subEl.textContent = fmtMoeda(res.sub);
           if (transpEl) transpEl.textContent = fmtMoeda(res.transp);
+          if (hospEl) hospEl.textContent = fmtMoeda(hospedagemAtivo ? hospedagemValor : 0);
           if (dValEl) dValEl.textContent = fmtMoeda(res.dVal);
           if (pctEl && document.activeElement !== pctEl) {
             pctEl.value = (res.pct != null ? Number(res.pct) : 0).toFixed(2);
@@ -3526,10 +3913,10 @@
           inclusos.forEach(function (s) {
             var hRef = s.isPorHora ? (s.horas_minimas || 0) : null;
             var mRef = s.isPorMetro ? (s.metragem_minima || 0) : null;
-            var refVal = valorReferenciaAvulso(s, hRef, mRef);
+            var refVal = valorReferenciaAvulso(s, hRef, mRef, 1);
             somaAvulsa += refVal;
             listaLinhas.push({
-              nome: s.nome + rotuloQtyIncluso(s, hRef, mRef),
+              nome: s.nome + rotuloQtyIncluso(s, hRef, mRef, 1),
               val: refVal,
               kind: 'incluso'
             });
@@ -3554,9 +3941,10 @@
               var mRef = s.isPorMetro ? (s.metragem_minima || 0) : null;
               return {
                 nome: s.nome,
-                valor_referencia: valorReferenciaAvulso(s, hRef, mRef),
+                valor_referencia: valorReferenciaAvulso(s, hRef, mRef, 1),
                 horas: hRef || null,
                 metragem: mRef || null,
+                quantidade: 1,
                 unidade_metragem: s.unidade_metragem || null,
                 incluso_no_pacote: true
               };
@@ -3576,106 +3964,117 @@
             });
           }
         }
-        SVC.forEach(function (s) {
-          var stSvc = svcState[s.servico_id];
-          if (s.isPorMetro || s.isPorHora) {
-            var valorCombo = 0;
-            var valorInclusoQty = 0;
-            var itemCombo = { tipo: 'servico', id: s.servico_id, nome: s.nome, valor: 0 };
-            var partesNome = [];
-            if (s.isPorMetro) {
-              var metragemAtual = svcMetragem[s.servico_id] || 0;
-              var metroIncluso = (stSvc === 'included' && pObj) ? (s.metragem_minima || 0) : 0;
-              if (metragemAtual > 0) {
-                var calcMetro = calcularValorPorMetro(s, metragemAtual);
-                valorCombo += Number(calcMetro.valor) || 0;
-                partesNome.push(metragemAtual + ' ' + rotuloUnidadeMetragem(s.unidade_metragem));
-                itemCombo.metragem = metragemAtual;
-                itemCombo.unidade_metragem = s.unidade_metragem || 'm';
-                itemCombo.valor_por_metro_aplicado = calcMetro.valorPorMetroAplicado;
-                itemCombo.faixa_aplicada = calcMetro.faixaAplicada;
-              }
-              if (metroIncluso > 0) {
-                valorInclusoQty += Number(calcularValorPorMetro(s, metroIncluso).valor) || 0;
-              }
-            }
-            if (s.isPorHora) {
-              var horasAtual = svcHoras[s.servico_id] || 0;
-              var horaInclusa = (stSvc === 'included' && pObj) ? (s.horas_minimas || 0) : 0;
-              if (horasAtual > 0) {
-                var calcHora = calcularValorPorHora(s, horasAtual);
-                valorCombo += Number(calcHora.valor) || 0;
-                partesNome.push(horasAtual + 'h');
-                itemCombo.horas = horasAtual;
-                itemCombo.valor_por_hora_aplicado = calcHora.valorPorHoraAplicado;
-              }
-              if (horaInclusa > 0) {
-                valorInclusoQty += Number(calcularValorPorHora(s, horaInclusa).valor) || 0;
-              }
-            }
-            var valorCobrar = Math.max(0, valorCombo - valorInclusoQty);
-            if (valorCobrar > 0) {
-              itemCombo.valor = valorCobrar;
-              if (stSvc === 'included') itemCombo.incluso_no_pacote = true;
-              totalComercial += valorCobrar;
-              listaLinhas.push({
-                nome: s.nome + ' (' + partesNome.join(' + ') + (stSvc === 'included' ? ', excedente' : '') + ')',
-                val: valorCobrar
-              });
-              itensPayload.push(itemCombo);
-            }
-            return;
-          }
-          if (stSvc === 'manual') {
-            var precoCalc = calcularPrecoServico(s, { temPacoteAtivo: !!pObj });
-            var v = Number(precoCalc.total) || 0;
-            totalComercial += v;
-            listaLinhas.push({ nome: s.nome, val: v });
-            itensPayload.push({
-              tipo: 'servico', id: s.servico_id, nome: s.nome, valor: v,
-              valor_base: precoCalc.base,
-              valor_por_hora_aplicado: precoCalc.porHora,
-              valor_por_pessoa_aplicado: precoCalc.porPessoa,
-              faixa_aplicada: precoCalc.faixaAplicada
-            });
-          } else if (stSvc === 'included') {
-            // Serviço incluído no pacote ativo: o valor_base já está embutido no
-            // preço do pacote (pObj.preco). Aqui somamos apenas os componentes
-            // extras (por hora, por pessoa, faixa) que não estão cobertos pelo
-            // preço fechado do pacote.
-            var precoCalcInc = calcularPrecoServico(s, { temPacoteAtivo: true });
-            var extraInc = precoCalcInc.porHora + precoCalcInc.porPessoa + precoCalcInc.faixaAdicional;
-            if (extraInc) {
-              totalComercial += extraInc;
-              listaLinhas.push({ nome: s.nome + ' (ajuste por convidados)', val: extraInc });
-              itensPayload.push({
-                tipo: 'servico', id: s.servico_id, nome: s.nome, valor: extraInc,
-                valor_por_hora_aplicado: precoCalcInc.porHora,
-                valor_por_pessoa_aplicado: precoCalcInc.porPessoa,
-                faixa_aplicada: precoCalcInc.faixaAplicada, incluso_no_pacote: true
-              });
-            }
-          }
+        // Linhas do carrinho (serviços adicionados) — cada uma vira item no PDF/contrato
+        orcamentoItens.forEach(function (it) {
+          var val = Number(it.valor) || 0;
+          if (val <= 0) return;
+          totalComercial += val;
+          listaLinhas.push({
+            nome: rotuloNomeResumo(it),
+            val: val,
+            cart_id: it.cart_id,
+            removivel: true
+          });
+          itensPayload.push({
+            tipo: 'servico',
+            id: it.id,
+            nome: it.nome,
+            valor: val,
+            quantidade: it.quantidade != null ? Number(it.quantidade) : 1,
+            preco_unitario: it.preco_unitario != null ? Number(it.preco_unitario) : null,
+            metragem: it.metragem != null ? Number(it.metragem) : null,
+            horas: it.horas != null ? Number(it.horas) : null,
+            unidade_metragem: it.unidade_metragem || null,
+            valor_por_metro_aplicado: it.valor_por_metro_aplicado != null ? it.valor_por_metro_aplicado : null,
+            valor_por_hora_aplicado: it.valor_por_hora_aplicado != null ? it.valor_por_hora_aplicado : null,
+            faixa_aplicada: it.faixa_aplicada || null,
+            cart_id: it.cart_id
+          });
         });
-        // TRANSPORTE — linha fixa independente, cobrada se toggle ligado e distância calculada
-        // NUNCA recebe desconto.
+
+        // Composer ativo no card (ainda não enviado ao carrinho) — entra no total ao vivo
+        SVC.forEach(function (s) {
+          var qtd = Number(svcQuantidade[s.servico_id]) || 0;
+          var metragemAtual = svcMetragem[s.servico_id] || 0;
+          var horasAtual = svcHoras[s.servico_id] || 0;
+          var st = svcState[s.servico_id];
+          var ligado = qtd > 0 || metragemAtual > 0 || horasAtual > 0 || st === 'manual';
+          if (!ligado) return;
+          if (qtd <= 0) qtd = 1;
+          var linha = montarLinhaCarrinho(s);
+          // montarLinhaCarrinho gera cart_id novo — não usar no payload de cart; linha ao vivo
+          var val = Number(linha.valor) || 0;
+          if (val <= 0) return;
+          totalComercial += val;
+          listaLinhas.push({
+            nome: rotuloNomeResumo(linha) + '',
+            val: val,
+            composer: true
+          });
+          itensPayload.push({
+            tipo: 'servico',
+            id: s.servico_id,
+            nome: s.nome,
+            valor: val,
+            quantidade: qtd,
+            preco_unitario: linha.preco_unitario,
+            metragem: linha.metragem != null ? linha.metragem : null,
+            horas: linha.horas != null ? linha.horas : null,
+            unidade_metragem: linha.unidade_metragem || null,
+            valor_por_metro_aplicado: linha.valor_por_metro_aplicado,
+            valor_por_hora_aplicado: linha.valor_por_hora_aplicado,
+            faixa_aplicada: linha.faixa_aplicada || null
+          });
+        });
+        // LOGÍSTICA (ex-transporte) — automática por CEP e/ou valor editável manualmente.
+        // NUNCA recebe desconto comercial.
         var transporteItem = null;
-        if (transporteAtivo && CONFIG_TRANSPORTE && transporteDistanciaKm != null) {
-          transporteValor = Math.round(transporteDistanciaKm * CONFIG_TRANSPORTE.valor_por_km * 100) / 100;
-          listaLinhas.push({ nome: 'Transporte (' + transporteDistanciaKm.toFixed(1) + 'km)', val: transporteValor });
-          transporteItem = {
-            tipo: 'transporte', nome: 'Transporte', valor: transporteValor,
-            cep: transporteCepValido, distancia_km: transporteDistanciaKm,
-            valor_por_km_aplicado: CONFIG_TRANSPORTE.valor_por_km,
-            origem_label: CONFIG_TRANSPORTE.origem_label
-          };
-          itensPayload.push(transporteItem);
+        if (transporteAtivo) {
+          if (!transporteValorManual) {
+            if (CONFIG_TRANSPORTE && transporteDistanciaKm != null) {
+              transporteValor = Math.round(transporteDistanciaKm * CONFIG_TRANSPORTE.valor_por_km * 100) / 100;
+            } else {
+              transporteValor = 0;
+            }
+          }
+          // Sincroniza input (se não estiver focado)
+          var elLog = document.getElementById('fValorLogistica');
+          if (elLog && document.activeElement !== elLog) {
+            elLog.value = transporteValor > 0 ? fmtMoeda(transporteValor) : '';
+          }
+          if (transporteValor > 0) {
+            var nomeLog = 'Logística';
+            if (transporteDistanciaKm != null) nomeLog += ' (' + transporteDistanciaKm.toFixed(1) + 'km)';
+            listaLinhas.push({ nome: nomeLog, val: transporteValor });
+            transporteItem = {
+              tipo: 'transporte', nome: 'Logística', valor: transporteValor,
+              cep: transporteCepValido, distancia_km: transporteDistanciaKm,
+              valor_por_km_aplicado: CONFIG_TRANSPORTE ? CONFIG_TRANSPORTE.valor_por_km : null,
+              origem_label: CONFIG_TRANSPORTE ? CONFIG_TRANSPORTE.origem_label : null,
+              valor_manual: !!transporteValorManual
+            };
+            itensPayload.push(transporteItem);
+          }
         } else {
+          // Toggle desligado: logística não entra no total nem no resumo
           transporteValor = 0;
+          var elLogOff = document.getElementById('fValorLogistica');
+          if (elLogOff && document.activeElement !== elLogOff) elLogOff.value = '';
+        }
+        // HOSPEDAGEM — valor digitado; NUNCA recebe desconto comercial.
+        var hospedagemItem = null;
+        if (hospedagemAtivo && hospedagemValor > 0) {
+          listaLinhas.push({ nome: 'Hospedagem', val: hospedagemValor });
+          hospedagemItem = { tipo: 'hospedagem', nome: 'Hospedagem', valor: hospedagemValor };
+          itensPayload.push(hospedagemItem);
         }
         // DESCONTO — somente sobre o valor comercial (subtotal)
         var resDesc = aplicarDescontoSobreSubtotal(totalComercial, transporteValor);
         var total = resDesc.total;
+        // Hospedagem fica fora do desconto (somada após o cálculo comercial)
+        if (hospedagemAtivo && hospedagemValor > 0) {
+          total = Math.round((total + hospedagemValor) * 100) / 100;
+        }
         // Exibe linha de desconto na lista quando houver
         if (resDesc.dVal > 0) {
           listaLinhas.push({ nome: 'Desconto comercial (' + resDesc.pct.toFixed(2) + '%)', val: -resDesc.dVal });
@@ -3765,11 +4164,22 @@
               '</div>';
             }
             var valClass = l.val < 0 ? 'text-emerald-400' : 'text-white';
-            return '<div class="flex justify-between text-[11px] text-slate-300">' +
-              '<span class="truncate max-w-[130px]">' + esc(l.nome) + '</span>' +
-              '<strong class="' + valClass + '">' + fmtMoeda(l.val) + '</strong>' +
+            var removeBtn = (l.removivel && l.cart_id)
+              ? '<button type="button" class="cart-remove-btn" data-cart-remove="' + esc(l.cart_id) + '" title="Remover">−</button>'
+              : '';
+            return '<div class="flex justify-between items-center gap-1 text-[11px] text-slate-300">' +
+              '<span class="truncate max-w-[120px] flex-1">' + esc(l.nome) + '</span>' +
+              '<strong class="' + valClass + ' whitespace-nowrap">' + fmtMoeda(l.val) + '</strong>' +
+              removeBtn +
             '</div>';
           }).join('');
+          containerLista.querySelectorAll('[data-cart-remove]').forEach(function (btn) {
+            btn.addEventListener('click', function (e) {
+              e.preventDefault();
+              e.stopPropagation();
+              removerDoCarrinho(btn.getAttribute('data-cart-remove'));
+            });
+          });
         } else {
           containerLista.innerHTML = '<div class="text-[11px] text-slate-500 italic">Nenhum item selecionado</div>';
         }
@@ -3835,12 +4245,12 @@
           }
           if (eventoEnderecoIgualCliente) {
             if (!cepVal) {
-              showAlert('Preencha o CEP do local do evento para calcular o transporte.', 'error');
+              showAlert('Preencha o CEP do local do evento para calcular a logística.', 'error');
               return;
             }
           } else {
             if (!eventoEndereco.cep || String(eventoEndereco.cep).replace(/\D/g, '').length !== 8) {
-              showAlert('Preencha o CEP específico do local do evento para calcular o transporte.', 'error');
+              showAlert('Preencha o CEP específico do local do evento para calcular a logística.', 'error');
               return;
             }
           }
@@ -3925,6 +4335,8 @@
           distancia_km: transporteDistanciaKm,
           transporte_incluido: transporteAtivo,
           valor_transporte: transporteValor,
+          hospedagem_incluida: hospedagemAtivo,
+          valor_hospedagem: hospedagemAtivo ? hospedagemValor : 0,
           // Endereço do evento (distinto do cadastro do cliente) — regras 2, 3 e 6.
           evento_endereco_igual_cliente: eventoEnderecoIgualCliente,
           evento_cep: eventoEndereco.cep || null,
