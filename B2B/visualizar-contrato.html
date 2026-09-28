@@ -911,14 +911,25 @@
           throw new Error('Cliente do Supabase não inicializado (sbPartner).');
         }
 
-        // 1. DADOS LEGAIS DA EMPRESA
-        const { data: dadosEmpresa, error: errorEmpresa } = await sbPartner
-          .from('co_dados_legais_empresa')
-          .select('*')
-          .limit(1)
-          .maybeSingle();
+        // CHAMADA À EDGE FUNCTION PÚBLICA PARA DADOS PROTEGIDOS
+        const { data: docPublico, error: errorDocPublico } = await sbPartner.functions.invoke(
+          'dados-documento-publico',
+          {
+            body: { id: propostaId }
+          }
+        );
 
-        if (errorEmpresa || !dadosEmpresa) {
+        if (errorDocPublico) {
+          console.error('Erro na chamada da Edge Function:', errorDocPublico);
+        }
+
+        const proposta = docPublico ? docPublico.proposta : null;
+        const cliente = docPublico ? docPublico.cliente : null;
+        const parceiro = docPublico ? docPublico.parceiro : null;
+        const dadosEmpresa = docPublico ? docPublico.dadosEmpresa : null;
+
+        // 1. DADOS LEGAIS DA EMPRESA
+        if (!dadosEmpresa) {
           statusEl.textContent = 'Erro ao carregar dados legais da contratada. Verifique as informações cadastrais.';
           statusEl.classList.add('error');
           return;
@@ -961,13 +972,7 @@
         }
 
         // 2. PROPOSTA
-        const { data: proposta, error: errorProposta } = await sbPartner
-          .from('propostas')
-          .select('*')
-          .eq('id', propostaId)
-          .single();
-
-        if (errorProposta || !proposta) {
+        if (!proposta) {
           statusEl.textContent = 'Proposta não encontrada para a geração do contrato.';
           statusEl.classList.add('error');
           return;
@@ -979,20 +984,12 @@
         const dataEmissaoExt = formatarDataExtenso(proposta.criado_em);
         setSafeText('data_emissao_extenso', dataEmissaoExt || '—');
 
-        // Parceiro / Vendedor (mesma fonte da Proposta)
-        if (proposta.parceiro_id) {
-          const { data: parceiro } = await sbPartner
-            .from('parceiros')
-            .select('nome_completo')
-            .eq('id', proposta.parceiro_id)
-            .single();
-
-          if (parceiro && parceiro.nome_completo) {
-            const nomeParceiro = String(parceiro.nome_completo).trim();
-            if (nomeParceiro) {
-              setSafeText('parceiro_nome', nomeParceiro);
-              toggleRow('parceiro_row', nomeParceiro);
-            }
+        // Parceiro / Vendedor (obtido via Edge Function)
+        if (parceiro && parceiro.nome_completo) {
+          const nomeParceiro = String(parceiro.nome_completo).trim();
+          if (nomeParceiro) {
+            setSafeText('parceiro_nome', nomeParceiro);
+            toggleRow('parceiro_row', nomeParceiro);
           }
         }
 
@@ -1006,18 +1003,6 @@
         renderClausulasComerciais(dadosEmpresa);
 
         // 3. CLIENTE
-        let cliente = null;
-
-        if (proposta.cliente_id) {
-          const { data: cliData } = await sbPartner
-            .from('co_clientes')
-            .select('*')
-            .eq('id', proposta.cliente_id)
-            .single();
-
-          cliente = cliData;
-        }
-
         if (cliente) {
           setSafeText('cliente_nome_razao', cliente.nome_razao || cliente.nome_fantasia);
           setSafeText('assinatura_cliente_nome', cliente.nome_razao || cliente.nome_fantasia || 'CONTRATANTE');
