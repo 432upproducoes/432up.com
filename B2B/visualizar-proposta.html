@@ -65,6 +65,7 @@
       display: flex;
       flex-direction: column;
     }
+    .page-body > * { flex-shrink: 0; }
 
     /* BARRAS DE TOPO E RODAPÉ */
     .top-bar {
@@ -495,7 +496,7 @@
       <div class="page-body">
         <div class="section-header" style="margin-top: 28px;">⚠️ CONDIÇÕES GERAIS:</div>
         
-        <p class="terms-text"><strong>Política de Cancelamento:</strong></p>
+        <p class="terms-text keep-next"><strong>Política de Cancelamento:</strong></p>
         <div id="politica-cancelamento-container"></div>
         <p class="terms-text"><strong>Rider Técnico:</strong> A estrutura requer condições técnicas mínimas previamente especificadas em nosso rider técnico. O contratante deve garantir que o local atenda a essas especificações, especialmente em relação à energia elétrica, espaço e acessos.</p>
         <p class="terms-text"><strong>Energia Elétrica:</strong> A energia elétrica utilizada deverá ser estabilizada, aterrada e adequada à demanda especificada no rider. Não nos responsabilizamos por interrupções ou falhas decorrentes da infraestrutura do local.</p>
@@ -1140,8 +1141,23 @@
 
     const MARGEM_PAG = 24; // folga em px antes do rodapé
 
-    function estoura(body) {
-      return body.scrollHeight > body.clientHeight - MARGEM_PAG;
+    function ehVisivel(el) {
+      return getComputedStyle(el).display !== 'none';
+    }
+
+    // Títulos de seção (e itens marcados com .keep-next) não podem ficar sozinhos no fim da página
+    function ehKeepNext(el) {
+      return el.classList.contains('section-header') || el.classList.contains('keep-next');
+    }
+
+    function limiteInferior(body) {
+      const cs = getComputedStyle(body);
+      return body.getBoundingClientRect().bottom - (parseFloat(cs.paddingBottom) || 0) - MARGEM_PAG;
+    }
+
+    function fimDoElemento(el) {
+      const cs = getComputedStyle(el);
+      return el.getBoundingClientRect().bottom + (parseFloat(cs.marginBottom) || 0);
     }
 
     function criarPaginaContinuacao(modelo) {
@@ -1159,31 +1175,105 @@
       return nova;
     }
 
+    // Retorna os elementos que não cabem na página (a partir do primeiro que ultrapassa o limite).
     function empurrarExcesso(page) {
       const body = page.querySelector('.page-body');
-      const excesso = [];
-      while (estoura(body) && body.children.length > 1) {
-        const el = body.lastElementChild;
-        excesso.unshift(el);
-        el.remove();
+      const filhos = Array.from(body.children);
+      const limite = limiteInferior(body);
+
+      let corte = -1;
+      for (let i = 0; i < filhos.length; i++) {
+        if (!ehVisivel(filhos[i])) continue;
+        if (fimDoElemento(filhos[i]) > limite) { corte = i; break; }
       }
+      if (corte === -1) return [];
+
+      // 1) Parágrafo de Observações que começa nesta página: deixa aqui as palavras que cabem
+      //    e leva o resto para a próxima (vale também para parágrafo maior que uma página inteira).
+      const alvo = filhos[corte];
+      if (alvo.classList.contains('obs-linha')) {
+        const resto = dividirParagrafo(alvo, limite);
+        if (resto) {
+          const depois = filhos.slice(corte + 1);
+          depois.forEach(el => el.remove());
+          return [resto, ...depois];
+        }
+      }
+
+      // 2) Corte entre elementos. Sempre mantém ao menos 1 elemento visível na página.
+      const primeiroVisivel = filhos.findIndex(ehVisivel);
+      const minimo = primeiroVisivel + 1;
+
       // não deixa título de seção órfão no fim da página
-      while (body.children.length > 1 && body.lastElementChild.classList.contains('section-header')) {
-        const el = body.lastElementChild;
-        excesso.unshift(el);
-        el.remove();
-      }
+      while (corte > minimo && ehKeepNext(filhos[corte - 1])) corte--;
+      if (corte < minimo) corte = minimo;
+
+      const excesso = filhos.slice(corte);
+      excesso.forEach(el => el.remove());
       return excesso;
     }
 
+    // Encaixa o máximo de palavras de `el` (já no DOM) até o limite; devolve um novo <p> com o restante.
+    // Se nem uma palavra cabe (o parágrafo começa fora da página), devolve null sem alterar nada.
+    function dividirParagrafo(el, limite) {
+      const textoOriginal = el.textContent;
+      const palavras = textoOriginal.split(/\s+/).filter(Boolean);
+      if (palavras.length < 2) return null;
+
+      const cabe = n => {
+        el.textContent = palavras.slice(0, n).join(' ');
+        return fimDoElemento(el) <= limite;
+      };
+
+      if (!cabe(1)) { el.textContent = textoOriginal; return null; }
+
+      let lo = 1, hi = palavras.length - 1;       // maior n que cabe (o total já sabemos que não cabe)
+      while (lo < hi) {
+        const mid = Math.ceil((lo + hi) / 2);
+        if (cabe(mid)) lo = mid; else hi = mid - 1;
+      }
+      cabe(lo);
+
+      const resto = el.cloneNode(false);
+      resto.textContent = palavras.slice(lo).join(' ');
+      return resto;
+    }
+
+    // Transforma o bloco de Observações em: título + um <p> por linha,
+    // como filhos diretos do .page-body, para que possam quebrar entre páginas.
+    function achatarObservacoes() {
+      const bloco = document.getElementById('bloco-observacoes');
+      const el = document.getElementById('p2-observacoes');
+      if (!bloco || !el || bloco.style.display === 'none') return;
+
+      const linhas = el.textContent.split(/\n+/).map(t => t.trim()).filter(Boolean);
+      if (!linhas.length) return;
+
+      const titulo = bloco.querySelector('.section-header');
+      const novos = [titulo];
+      linhas.forEach(t => {
+        const p = document.createElement('p');
+        p.className = 'terms-text obs-linha';
+        p.style.marginBottom = '8px';
+        p.textContent = t;
+        novos.push(p);
+      });
+      bloco.replaceWith(...novos);
+    }
+
     function paginarProposta() {
+      achatarObservacoes();
       const paginas = Array.from(document.querySelectorAll('#document-content .page'));
       const p2 = paginas[1], p3 = paginas[2];
       if (!p2 || !p3) return;
 
       // o que estourar da pág. 2 vai para o topo da pág. 3
       const excessoP2 = empurrarExcesso(p2);
-      if (excessoP2.length) p3.querySelector('.page-body').prepend(...excessoP2);
+      if (excessoP2.length) {
+        const bodyP3 = p3.querySelector('.page-body');
+        bodyP3.style.paddingTop = '24px';   // mesmo respiro das páginas de continuação
+        bodyP3.prepend(...excessoP2);
+      }
 
       // a pág. 3 (e as novas) quebram em cascata
       let atual = p3;
