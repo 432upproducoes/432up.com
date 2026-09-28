@@ -1139,7 +1139,7 @@
        e as fontes carregadas (para medir alturas corretamente).
        ========================================================= */
 
-    const MARGEM_PAG = 24; // folga em px antes do rodapé
+    const MARGEM_PAG = 28; // folga em px antes do rodapé
 
     function ehVisivel(el) {
       return getComputedStyle(el).display !== 'none';
@@ -1162,7 +1162,7 @@
 
     function criarPaginaContinuacao(modelo) {
       const nova = document.createElement('div');
-      nova.className = 'page';
+      nova.className = 'page page-cont';
       const body = document.createElement('div');
       body.className = 'page-body';
       body.style.paddingTop = '24px';
@@ -1261,28 +1261,59 @@
       bloco.replaceWith(...novos);
     }
 
-    function paginarProposta() {
-      achatarObservacoes();
-      const paginas = Array.from(document.querySelectorAll('#document-content .page'));
-      const p2 = paginas[1], p3 = paginas[2];
-      if (!p2 || !p3) return;
-
-      // o que estourar da pág. 2 vai para o topo da pág. 3
-      const excessoP2 = empurrarExcesso(p2);
-      if (excessoP2.length) {
-        const bodyP3 = p3.querySelector('.page-body');
-        bodyP3.style.paddingTop = '24px';   // mesmo respiro das páginas de continuação
-        bodyP3.prepend(...excessoP2);
-      }
-
-      // a pág. 3 (e as novas) quebram em cascata
-      let atual = p3;
+    // Empurra o excesso de `inicio` para páginas novas, em cascata, logo após ele.
+    function paginarEmCascata(inicio) {
+      let atual = inicio;
       while (true) {
         const ex = empurrarExcesso(atual);
         if (!ex.length) break;
         atual = criarPaginaContinuacao(atual);
         atual.querySelector('.page-body').append(...ex);
       }
+    }
+
+    // Estado original das págs. 2 e 3, guardado na 1ª execução para poder repaginar
+    // (ex.: quando as fontes terminam de carregar e o texto muda de altura).
+    let snapPaginas = null;
+
+    function paginarProposta() {
+      const conteudo = document.getElementById('document-content');
+      if (!conteudo || conteudo.style.display === 'none') return;
+
+      const paginas = Array.from(conteudo.querySelectorAll('.page:not(.page-cont)'));
+      const p2 = paginas[1], p3 = paginas[2];
+      if (!p2 || !p3) return;
+      const b2 = p2.querySelector('.page-body');
+      const b3 = p3.querySelector('.page-body');
+
+      if (!snapPaginas) {
+        snapPaginas = { p2: b2.innerHTML, p3: b3.innerHTML };
+      } else {
+        conteudo.querySelectorAll('.page-cont').forEach(el => el.remove());
+        b2.innerHTML = snapPaginas.p2;
+        b3.innerHTML = snapPaginas.p3;
+      }
+
+      achatarObservacoes();
+
+      // Pág. 2 (Sobre o Evento, Observações, Experiência, Excelência): o excesso vira páginas
+      // de continuação ANTES das Condições Gerais, que sempre começam em página própria.
+      paginarEmCascata(p2);
+      // Condições Gerais: quebra em cascata para as páginas seguintes.
+      paginarEmCascata(p3);
+    }
+
+    // Se as fontes (Inter / Chakra Petch) terminarem de carregar depois da paginação,
+    // o texto muda de altura: repagina para nada ficar cortado.
+    let repagTimer = null, repagCont = 0;
+    function ativarRepaginacaoPorFontes() {
+      if (!document.fonts || !document.fonts.addEventListener) return;
+      document.fonts.addEventListener('loadingdone', () => {
+        if (repagCont >= 5) return;
+        clearTimeout(repagTimer);
+        repagTimer = setTimeout(() => { repagCont++; paginarProposta(); }, 50);
+      });
+      window.addEventListener('load', () => paginarProposta());
     }
 
     /* =========================================================
@@ -1547,8 +1578,10 @@
 
         // Exibe o documento ANTES de paginar: o navegador só mede alturas com o conteúdo visível.
         document.getElementById('document-content').style.display = 'block';
+        void document.body.offsetHeight;   // força o layout: é ele que dispara o carregamento das fontes
         if (document.fonts && document.fonts.ready) await document.fonts.ready;
         paginarProposta();
+        ativarRepaginacaoPorFontes();
 
       } catch (err) {
         console.error('Erro geral no carregamento:', err);
