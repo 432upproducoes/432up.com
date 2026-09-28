@@ -21,6 +21,12 @@
       --tech-font: 'Chakra Petch', sans-serif;
     }
 
+    /* Impede o iOS/Safari de redimensionar fontes por conta própria (quebrava a paginação) */
+    html {
+      -webkit-text-size-adjust: 100%;
+      text-size-adjust: 100%;
+    }
+
     * { box-sizing: border-box; margin: 0; padding: 0; }
     body { 
       font-family: 'Inter', sans-serif; 
@@ -28,10 +34,12 @@
       background: #D6D6DC; 
       line-height: 1.4; 
       font-size: 13.5px; 
+      overflow-x: hidden;
     }
 
     #status-container {
       width: 210mm;
+      max-width: calc(100% - 24px);
       margin: 40px auto;
       background: #FFFFFF;
       padding: 30px;
@@ -40,7 +48,13 @@
       display: none;
     }
 
-    #document-content { display: none; }
+    /* Documento sempre no tamanho real A4 (210mm); no celular é reduzido por scale() via JS */
+    #document-content {
+      display: none;
+      width: 210mm;
+      margin: 0 auto;
+      transform-origin: top left;
+    }
 
     /* CONTAINER A4 */
     .page {
@@ -1131,6 +1145,31 @@
     }
 
     /* =========================================================
+       ESCALA PARA TELAS PEQUENAS (iPhone etc.)
+       O documento é sempre montado e paginado no tamanho real
+       da folha A4 (794px). Só depois é reduzido com scale() para
+       caber na largura da tela. Assim a paginação é idêntica em
+       qualquer aparelho e a folha aparece inteira.
+       ========================================================= */
+
+    const LARGURA_FOLHA = 794; // 210mm em px (96dpi)
+
+    function ajustarEscala() {
+      const c = document.getElementById('document-content');
+      if (!c || c.style.display === 'none') return;
+      c.style.transform = 'none';
+      c.style.marginBottom = '0';
+      const larguraTela = document.documentElement.clientWidth || window.innerWidth;
+      const s = Math.min(1, larguraTela / LARGURA_FOLHA);
+      if (s < 1) {
+        c.style.transform = `scale(${s})`;
+        c.style.marginBottom = `${-c.offsetHeight * (1 - s)}px`;
+      }
+    }
+    window.addEventListener('resize', ajustarEscala);
+    window.addEventListener('orientationchange', () => setTimeout(ajustarEscala, 200));
+
+    /* =========================================================
        PAGINAÇÃO AUTOMÁTICA (págs. 2 e 3 em diante)
        Se o conteúdo de uma página estourar (ex.: Observações muito
        extensas), o excesso vai para a página seguinte, criando
@@ -1280,6 +1319,10 @@
       const conteudo = document.getElementById('document-content');
       if (!conteudo || conteudo.style.display === 'none') return;
 
+      // Mede sempre sem escala (tamanho real da folha), para a paginação ser igual em qualquer aparelho.
+      conteudo.style.transform = 'none';
+      conteudo.style.marginBottom = '0';
+
       const paginas = Array.from(conteudo.querySelectorAll('.page:not(.page-cont)'));
       const p2 = paginas[1], p3 = paginas[2];
       if (!p2 || !p3) return;
@@ -1301,6 +1344,9 @@
       paginarEmCascata(p2);
       // Condições Gerais: quebra em cascata para as páginas seguintes.
       paginarEmCascata(p3);
+
+      // Só depois de paginar: reduz a folha inteira para caber na tela (celular).
+      ajustarEscala();
     }
 
     // Se as fontes (Inter / Chakra Petch) terminarem de carregar depois da paginação,
