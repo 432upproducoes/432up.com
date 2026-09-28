@@ -8,9 +8,11 @@
   <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
   <script src="https://www.432up.com/B2B/partner-config.js"></script>
 
-  <style>
-    @import url('https://fonts.googleapis.com/css2?family=Chakra+Petch:ital,wght@0,500;0,600;0,700;1,700&family=Inter:wght@400;500;600;700;800&display=swap');
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Chakra+Petch:ital,wght@0,500;0,600;0,700;1,700&family=Inter:wght@400;500;600;700;800&display=swap">
 
+  <style>
     :root {
       --purple-primary: #8A2BE2;
       --purple-deep: #4B0082;
@@ -18,7 +20,7 @@
       --bar-gradient: linear-gradient(90deg, #FF6B4A 0%, #C829B6 50%, #7B1FA2 100%);
       --text-dark: #1A1A1A;
       --text-muted: #555560;
-      --tech-font: 'Chakra Petch', sans-serif;
+      --tech-font: 'Chakra Petch', 'Arial Narrow', Arial, sans-serif;
     }
 
     /* Impede o iOS/Safari de redimensionar fontes por conta própria (quebrava a paginação) */
@@ -29,7 +31,7 @@
 
     * { box-sizing: border-box; margin: 0; padding: 0; }
     body { 
-      font-family: 'Inter', sans-serif; 
+      font-family: 'Inter', -apple-system, 'Helvetica Neue', Arial, sans-serif; 
       color: var(--text-dark); 
       background: #D6D6DC; 
       line-height: 1.4; 
@@ -49,11 +51,49 @@
     }
 
     /* Documento sempre no tamanho real A4 (210mm); no celular é reduzido por scale() via JS */
+    #doc-scale { width: 100%; overflow: hidden; }
     #document-content {
       display: none;
       width: 210mm;
       margin: 0 auto;
       transform-origin: top left;
+    }
+
+    /* Botão Exportar PDF */
+    #btn-exportar-pdf {
+      display: none;
+      position: fixed;
+      top: 10px;
+      right: 10px;
+      z-index: 9999;
+      background: #7B1FA2;
+      color: #FFF;
+      border: none;
+      border-radius: 20px;
+      padding: 10px 18px;
+      font-family: inherit;
+      font-size: 14px;
+      font-weight: 700;
+      box-shadow: 0 4px 14px rgba(0,0,0,0.3);
+      cursor: pointer;
+    }
+
+    /* PDF / impressão: A4 real, vetorial, links preservados */
+    @page { size: A4; margin: 0; }
+    @media print {
+      html, body { background: #FFFFFF !important; }
+      body { -webkit-print-color-adjust: exact; print-color-adjust: exact; }
+      #doc-scale { height: auto !important; overflow: visible !important; }
+      #document-content { transform: none !important; margin: 0 !important; width: 210mm !important; }
+      .page {
+        margin: 0 !important;
+        box-shadow: none !important;
+        height: 296.5mm !important;
+        break-after: page;
+        page-break-after: always;
+      }
+      .page:last-child { break-after: auto; page-break-after: auto; }
+      #btn-exportar-pdf, #btn-copiar-pix { display: none !important; }
     }
 
     /* CONTAINER A4 */
@@ -406,6 +446,9 @@
     <div id="status-desc">Nenhum parâmetro “id” foi fornecido na URL.</div>
   </div>
 
+  <button type="button" id="btn-exportar-pdf" onclick="exportarPDF()">⬇ Exportar PDF</button>
+
+  <div id="doc-scale">
   <div id="document-content">
     
     <div class="page">
@@ -619,6 +662,7 @@
       </div>
     </div>
 
+  </div>
   </div>
 
   <script>
@@ -911,6 +955,8 @@
 
     function mostrarErro(titulo, mensagem = '') {
       document.getElementById('document-content').style.display = 'none';
+      const btnPdf = document.getElementById('btn-exportar-pdf');
+      if (btnPdf) btnPdf.style.display = 'none';
       
       const container = document.getElementById('status-container');
       document.getElementById('status-title').textContent = titulo;
@@ -1156,16 +1202,28 @@
 
     function ajustarEscala() {
       const c = document.getElementById('document-content');
-      if (!c || c.style.display === 'none') return;
+      const w = document.getElementById('doc-scale');
+      if (!c || !w || c.style.display === 'none') return;
       c.style.transform = 'none';
-      c.style.marginBottom = '0';
+      w.style.height = 'auto';
       const larguraTela = document.documentElement.clientWidth || window.innerWidth;
       const s = Math.min(1, larguraTela / LARGURA_FOLHA);
       if (s < 1) {
+        const alturaReal = c.offsetHeight + 10; // + margem inferior da última folha
         c.style.transform = `scale(${s})`;
-        c.style.marginBottom = `${-c.offsetHeight * (1 - s)}px`;
+        w.style.height = `${Math.ceil(alturaReal * s)}px`;
       }
     }
+
+    /* =========================================================
+       EXPORTAR PDF — impressão vetorial do próprio documento
+       (fontes embutidas, layout A4 idêntico, links clicáveis)
+       ========================================================= */
+    async function exportarPDF() {
+      try { if (document.fonts && document.fonts.ready) await document.fonts.ready; } catch (e) {}
+      window.print();
+    }
+    window.addEventListener('afterprint', ajustarEscala);
     window.addEventListener('resize', ajustarEscala);
     window.addEventListener('orientationchange', () => setTimeout(ajustarEscala, 200));
 
@@ -1321,7 +1379,8 @@
 
       // Mede sempre sem escala (tamanho real da folha), para a paginação ser igual em qualquer aparelho.
       conteudo.style.transform = 'none';
-      conteudo.style.marginBottom = '0';
+      const wrapEsc = document.getElementById('doc-scale');
+      if (wrapEsc) wrapEsc.style.height = 'auto';
 
       const paginas = Array.from(conteudo.querySelectorAll('.page:not(.page-cont)'));
       const p2 = paginas[1], p3 = paginas[2];
@@ -1484,6 +1543,8 @@
         }
         // tipo_pessoa não informado: sem fonte canônica definida para "para", bloco permanece oculto.
 
+        document.title = `Proposta${nomeCliente ? ' - ' + nomeCliente : ''} - 432UP! Produções`;
+
         setTextOrHide('cover-tipo-evento', proposta.tipo_evento, null);
         setTextOrHide('cover-cliente-nome', nomeParaCapa, 'cover-cliente-wrap');
         setTextOrHide('cover-cliente-cargo', cargoParaCapa, null);
@@ -1624,6 +1685,7 @@
 
         // Exibe o documento ANTES de paginar: o navegador só mede alturas com o conteúdo visível.
         document.getElementById('document-content').style.display = 'block';
+        document.getElementById('btn-exportar-pdf').style.display = 'inline-block';
         void document.body.offsetHeight;   // força o layout: é ele que dispara o carregamento das fontes
         if (document.fonts && document.fonts.ready) await document.fonts.ready;
         paginarProposta();
