@@ -364,7 +364,8 @@
       <div class="p-6 space-y-6 flex-1">
 
         <div class="flex items-center gap-4 bg-white/5 p-4 rounded-xl border border-white/10">
-          <div id="mAvatarPreview" class="w-16 h-16 rounded-full bg-slate-900 border border-amber-500/40 bg-cover bg-center flex items-center justify-center text-2xl text-slate-500 shrink-0 overflow-hidden shadow-[0_0_15px_rgba(0,240,255,0.2)]">
+          <div id="mAvatarPreview" class="w-16 h-16 rounded-full bg-slate-900 border border-amber-500/40 bg-cover bg-center flex items-center justify-center text-2xl text-slate-500 shrink-0 overflow-hidden shadow-[0_0_15px_rgba(0,240,255,0.2)] relative">
+            <img id="mAvatarImg" alt="" class="absolute inset-0 w-full h-full object-cover hidden">
             <span id="mAvatarPlaceholder">📷</span>
           </div>
           <div class="flex-1">
@@ -570,7 +571,8 @@
                 </div>
               </div>
               <div id="mCapaBox" class="w-full h-36 rounded-xl bg-slate-900 border border-amber-500/30 overflow-hidden relative bg-cover bg-center flex items-center justify-center">
-                <span id="mCapaEmptyTxt" class="text-xs text-slate-500">Sem capa enviada</span>
+                <img id="mCapaImg" alt="" class="absolute inset-0 w-full h-full object-cover hidden">
+                <span id="mCapaEmptyTxt" class="text-xs text-slate-500 relative z-10">Sem capa enviada</span>
               </div>
             </div>
 
@@ -626,12 +628,20 @@
 
             <div class="grid grid-cols-1 sm:grid-cols-2 gap-3 text-xs">
               <div>
-                <label class="block text-slate-300 uppercase font-semibold mb-1">YouTube / Vídeo Principal</label>
-                <input type="url" id="mArtYoutube1" class="w-full bg-slate-900 border border-amber-500/30 rounded-xl px-3 py-2 text-white focus:outline-none focus:border-amber-400">
+                <label class="block text-slate-300 uppercase font-semibold mb-1">Vídeo Principal (Selecione um arquivo de vídeo)</label>
+                <input type="file" id="mArtVideo1" accept="video/*" class="w-full text-xs text-slate-300 file:mr-3 file:py-2 file:px-3 file:rounded-lg file:border-0 file:text-xs file:font-semibold file:bg-amber-500/20 file:text-amber-300 hover:file:bg-amber-500/30 transition cursor-pointer bg-slate-900/80 border border-amber-500/30 rounded-xl px-2 py-2" onchange="uploadVideoAdmin(this, 'youtube_1')">
+                <input type="hidden" id="mArtYoutube1" value="">
+                <span id="video1AtualLabelAdmin" class="text-[11px] text-slate-400 block mt-1"></span>
+                <a id="video1LinkAdmin" href="#" target="_blank" rel="noopener" class="hidden text-[10px] text-amber-400 underline break-all mt-0.5 block hover:text-amber-300"></a>
+                <span id="badgeVideo1PendenteAdmin" class="hidden inline-block mt-1.5 px-2.5 py-1 rounded-lg text-[10px] font-extrabold bg-amber-500/20 text-amber-300 border border-amber-500/40">⏳ Vídeo em Análise pela Curadoria</span>
               </div>
               <div>
-                <label class="block text-slate-300 uppercase font-semibold mb-1">YouTube / Vídeo Secundário</label>
-                <input type="url" id="mArtYoutube2" class="w-full bg-slate-900 border border-amber-500/30 rounded-xl px-3 py-2 text-white focus:outline-none focus:border-amber-400">
+                <label class="block text-slate-300 uppercase font-semibold mb-1">Vídeo Secundário (Selecione um arquivo de vídeo)</label>
+                <input type="file" id="mArtVideo2" accept="video/*" class="w-full text-xs text-slate-300 file:mr-3 file:py-2 file:px-3 file:rounded-lg file:border-0 file:text-xs file:font-semibold file:bg-amber-500/20 file:text-amber-300 hover:file:bg-amber-500/30 transition cursor-pointer bg-slate-900/80 border border-amber-500/30 rounded-xl px-2 py-2" onchange="uploadVideoAdmin(this, 'youtube_2')">
+                <input type="hidden" id="mArtYoutube2" value="">
+                <span id="video2AtualLabelAdmin" class="text-[11px] text-slate-400 block mt-1"></span>
+                <a id="video2LinkAdmin" href="#" target="_blank" rel="noopener" class="hidden text-[10px] text-amber-400 underline break-all mt-0.5 block hover:text-amber-300"></a>
+                <span id="badgeVideo2PendenteAdmin" class="hidden inline-block mt-1.5 px-2.5 py-1 rounded-lg text-[10px] font-extrabold bg-amber-500/20 text-amber-300 border border-amber-500/40">⏳ Vídeo em Análise pela Curadoria</span>
               </div>
             </div>
 
@@ -1869,7 +1879,108 @@
         }
       });
 
-      /* Upload admin — mesmo bucket e padrão de path do Perfil Unificado (PARTNER_CFG.AVATAR_BUCKET) */
+      /* =========================================================================
+         Upload R2 — mesmo fluxo do Perfil Unificado (Worker Cloudflare)
+         ========================================================================= */
+      async function uploadParaR2(path, fileOrBlob) {
+        var sessionRes = await sbPartner.auth.getSession();
+        if (!sessionRes.data || !sessionRes.data.session || !sessionRes.data.session.access_token) {
+          throw new Error('Sessão inválida. Faça login novamente.');
+        }
+        var token = sessionRes.data.session.access_token;
+        var res = await fetch(
+          'https://432up-r2-upload.432up-producoes.workers.dev/?path=' + encodeURIComponent(path),
+          {
+            method: 'PUT',
+            headers: {
+              'Authorization': 'Bearer ' + token,
+              'Content-Type': fileOrBlob.type || 'application/octet-stream'
+            },
+            body: fileOrBlob
+          }
+        );
+        var result = await res.json();
+        if (!result || result.ok !== true) {
+          throw new Error((result && result.error) ? result.error : 'Falha no upload R2');
+        }
+        return result.url;
+      }
+
+      function atualizarLabelsVideoAdmin(campo, url, isPendente) {
+        var is2 = (campo === 'youtube_2');
+        var elLabel = document.getElementById(is2 ? 'video2AtualLabelAdmin' : 'video1AtualLabelAdmin');
+        var elLink = document.getElementById(is2 ? 'video2LinkAdmin' : 'video1LinkAdmin');
+        var elBadge = document.getElementById(is2 ? 'badgeVideo2PendenteAdmin' : 'badgeVideo1PendenteAdmin');
+        var elHidden = document.getElementById(is2 ? 'mArtYoutube2' : 'mArtYoutube1');
+        if (elHidden) elHidden.value = url || '';
+        if (url) {
+          if (elLabel) elLabel.textContent = isPendente ? 'Vídeo enviado, aguardando aprovação.' : 'Vídeo atual cadastrado.';
+          if (elLink) {
+            elLink.href = url;
+            elLink.textContent = url;
+            elLink.classList.remove('hidden');
+          }
+          if (elBadge) {
+            if (isPendente) elBadge.classList.remove('hidden');
+            else elBadge.classList.add('hidden');
+          }
+        } else {
+          if (elLabel) elLabel.textContent = '';
+          if (elLink) {
+            elLink.href = '#';
+            elLink.textContent = '';
+            elLink.classList.add('hidden');
+          }
+          if (elBadge) elBadge.classList.add('hidden');
+        }
+      }
+
+      /* Upload de vídeo pelo Admin — grava URL R2 direto em youtube_1 / youtube_2 */
+      window.uploadVideoAdmin = async function (inputEl, campoDestino) {
+        if (!inputEl || !inputEl.files || !inputEl.files[0]) return;
+        if (!parceiroSelecionadoId) {
+          alert('Abra o cadastro de um parceiro antes de enviar vídeos.');
+          inputEl.value = '';
+          return;
+        }
+        var parceiro = listaParceiros.find(function (item) {
+          return String(item.id) === String(parceiroSelecionadoId);
+        });
+        if (!parceiro || !parceiro.user_id) {
+          alert('Parceiro sem user_id. Não é possível enviar o vídeo.');
+          inputEl.value = '';
+          return;
+        }
+        var file = inputEl.files[0];
+        if (!file.type || file.type.indexOf('video/') !== 0) {
+          alert('Selecione um arquivo de vídeo válido.');
+          inputEl.value = '';
+          return;
+        }
+        try {
+          var prefix = (campoDestino === 'youtube_2') ? 'video_secundario_' : 'video_principal_';
+          var vPath = parceiro.user_id + '/' + prefix + Date.now() + '_' + file.name;
+          var videoUrl = await uploadParaR2(vPath, file);
+          atualizarLabelsVideoAdmin(campoDestino, videoUrl, false);
+          // Grava imediatamente no cadastro (admin tem privilégio de curadoria)
+          var payloadVid = {};
+          payloadVid[campoDestino] = videoUrl;
+          var resSave = await sbPartner.from('parceiros').update(payloadVid).eq('id', parceiroSelecionadoId);
+          if (resSave.error) {
+            alert('Vídeo enviado ao R2, mas falhou ao gravar no cadastro: ' + resSave.error.message +
+              '\nClique em “Salvar Cadastro Completo” para tentar de novo.');
+          } else {
+            parceiro[campoDestino] = videoUrl;
+            alert('Vídeo salvo com sucesso!');
+          }
+        } catch (err) {
+          console.error(err);
+          alert('Erro ao enviar o vídeo: ' + (err && err.message ? err.message : 'falha desconhecida'));
+        }
+        inputEl.value = '';
+      };
+
+      /* Upload admin fotos — R2 (sem Supabase Storage) */
       window.uploadFotoAdmin = async function (inputEl, tipo) {
         if (!inputEl || !inputEl.files || !inputEl.files[0]) return;
         if (!parceiroSelecionadoId) {
@@ -1895,22 +2006,6 @@
         }
         if (file.size > 12 * 1024 * 1024) {
           alert('A imagem ultrapassa 12 MB. Escolha um arquivo menor.');
-          inputEl.value = '';
-          return;
-        }
-
-        if (typeof sbPartner === 'undefined' || !sbPartner.storage) {
-          alert('Cliente Supabase não disponível. Verifique se partner-config.js carregou.');
-          inputEl.value = '';
-          return;
-        }
-
-        var bucket = (typeof PARTNER_CFG !== 'undefined' && PARTNER_CFG.AVATAR_BUCKET)
-          ? PARTNER_CFG.AVATAR_BUCKET
-          : null;
-
-        if (!bucket) {
-          alert('PARTNER_CFG.AVATAR_BUCKET não encontrado. O mesmo config do Perfil Unificado precisa estar carregado.');
           inputEl.value = '';
           return;
         }
@@ -1953,19 +2048,7 @@
             path = path.replace(/\.webp$/, '.' + ((file.name.split('.').pop() || 'jpg').toLowerCase()));
           }
 
-          var upRes = await sbPartner.storage
-            .from(bucket)
-            .upload(path, blobToUpload, { upsert: true, contentType: contentType });
-
-          if (upRes.error) {
-            throw new Error('Falha no upload: ' + upRes.error.message);
-          }
-
-          var publicUrlData = sbPartner.storage.from(bucket).getPublicUrl(path);
-          var uploadedUrl = publicUrlData && publicUrlData.data ? publicUrlData.data.publicUrl : null;
-          if (!uploadedUrl) {
-            throw new Error('Upload ok, mas não foi possível obter a URL pública.');
-          }
+          var uploadedUrl = await uploadParaR2(path, blobToUpload);
 
           if (tipo === 'capa') {
             mFotoCapaUrlAtual = uploadedUrl;
@@ -1988,7 +2071,7 @@
 
           var resSave = await sbPartner.from('parceiros').update(payloadFoto).eq('id', parceiroSelecionadoId);
           if (resSave.error) {
-            alert('Foto enviada ao Storage, mas falhou ao gravar no cadastro: ' + resSave.error.message +
+            alert('Foto enviada ao R2, mas falhou ao gravar no cadastro: ' + resSave.error.message +
               '\nClique em “Salvar Cadastro Completo” para tentar de novo.');
           } else {
             parceiro.galeria_fotos = mGaleriaFotosAtual.slice();
@@ -2065,8 +2148,27 @@
         document.getElementById('mArtExperiencia').value = parceiro.experiencia_comercial || '';
         document.getElementById('mArtBio').value = parceiro.bio_artistica || '';
         document.getElementById('mArtRider').value = parceiro.rider_tecnico || '';
-        document.getElementById('mArtYoutube1').value = parceiro.youtube_1 || '';
-        document.getElementById('mArtYoutube2').value = parceiro.youtube_2 || '';
+        // Vídeos: hidden fields + labels/links (sem YouTube)
+        var vid1Pendente = (Array.isArray(parceiro.midias_pendentes) ? parceiro.midias_pendentes : []).find(function(m) {
+          return m.tipo === 'video' && m.campo_destino === 'youtube_1';
+        });
+        var vid2Pendente = (Array.isArray(parceiro.midias_pendentes) ? parceiro.midias_pendentes : []).find(function(m) {
+          return m.tipo === 'video' && m.campo_destino === 'youtube_2';
+        });
+        if (vid1Pendente) {
+          atualizarLabelsVideoAdmin('youtube_1', vid1Pendente.url, true);
+        } else {
+          atualizarLabelsVideoAdmin('youtube_1', parceiro.youtube_1 || '', false);
+        }
+        if (vid2Pendente) {
+          atualizarLabelsVideoAdmin('youtube_2', vid2Pendente.url, true);
+        } else {
+          atualizarLabelsVideoAdmin('youtube_2', parceiro.youtube_2 || '', false);
+        }
+        var elV1 = document.getElementById('mArtVideo1');
+        var elV2 = document.getElementById('mArtVideo2');
+        if (elV1) elV1.value = '';
+        if (elV2) elV2.value = '';
 
         renderCapaAdmin();
         renderGaleriaAdmin();
@@ -2102,13 +2204,34 @@
 
         var avatarPreview = document.getElementById('mAvatarPreview');
         var avatarPlaceholder = document.getElementById('mAvatarPlaceholder');
+        var avatarImg = document.getElementById('mAvatarImg');
         var urlAvatar = parceiro.avatar_url || (typeof partnerAvatarUrl === 'function' ? partnerAvatarUrl(parceiro.user_id, true) : null);
 
         if (urlAvatar) {
-          avatarPlaceholder.style.display = 'none';
-          avatarPreview.style.backgroundImage = 'url(' + urlAvatar + ')';
+          var avSrc = urlAvatar + (urlAvatar.indexOf('?') > -1 ? '&' : '?') + 'v=' + Date.now();
+          if (avatarImg) {
+            avatarImg.onload = function() {
+              avatarImg.classList.remove('hidden');
+              if (avatarPlaceholder) avatarPlaceholder.style.display = 'none';
+              avatarPreview.style.backgroundImage = 'none';
+            };
+            avatarImg.onerror = function() {
+              avatarImg.classList.add('hidden');
+              if (avatarPlaceholder) avatarPlaceholder.style.display = 'inline';
+              // fallback background (caso img bloqueie e bg funcione)
+              avatarPreview.style.backgroundImage = 'url("' + urlAvatar + '")';
+            };
+            avatarImg.src = avSrc;
+          } else {
+            if (avatarPlaceholder) avatarPlaceholder.style.display = 'none';
+            avatarPreview.style.backgroundImage = 'url("' + urlAvatar + '")';
+          }
         } else {
-          avatarPlaceholder.style.display = 'inline';
+          if (avatarImg) {
+            avatarImg.removeAttribute('src');
+            avatarImg.classList.add('hidden');
+          }
+          if (avatarPlaceholder) avatarPlaceholder.style.display = 'inline';
           avatarPreview.style.backgroundImage = 'none';
         }
 
@@ -2121,18 +2244,36 @@
         var capaBox = document.getElementById('mCapaBox');
         var capaEmptyTxt = document.getElementById('mCapaEmptyTxt');
         var btnRemover = document.getElementById('btnRemoverCapaAdmin');
+        var capaImg = document.getElementById('mCapaImg');
 
         var capaPendente = mMidiasPendentesAtual.find(function(m) { return m.tipo === 'capa'; });
         var urlExibir = capaPendente ? capaPendente.url : mFotoCapaUrlAtual;
 
         if (urlExibir) {
-          capaEmptyTxt.classList.add('hidden');
-          capaBox.style.backgroundImage = 'url("' + urlExibir + '")';
-          btnRemover.classList.remove('hidden');
+          var capaSrc = urlExibir + (urlExibir.indexOf('?') > -1 ? '&' : '?') + 'v=' + Date.now();
+          if (capaEmptyTxt) capaEmptyTxt.classList.add('hidden');
+          if (btnRemover) btnRemover.classList.remove('hidden');
+          if (capaImg) {
+            capaImg.onload = function() {
+              capaImg.classList.remove('hidden');
+              capaBox.style.backgroundImage = 'none';
+            };
+            capaImg.onerror = function() {
+              capaImg.classList.add('hidden');
+              capaBox.style.backgroundImage = 'url("' + urlExibir + '")';
+            };
+            capaImg.src = capaSrc;
+          } else {
+            capaBox.style.backgroundImage = 'url("' + urlExibir + '")';
+          }
         } else {
-          capaEmptyTxt.classList.remove('hidden');
+          if (capaImg) {
+            capaImg.removeAttribute('src');
+            capaImg.classList.add('hidden');
+          }
+          if (capaEmptyTxt) capaEmptyTxt.classList.remove('hidden');
           capaBox.style.backgroundImage = 'none';
-          btnRemover.classList.add('hidden');
+          if (btnRemover) btnRemover.classList.add('hidden');
         }
       }
 
@@ -2215,11 +2356,12 @@
           mFotoCapaUrlAtual = capaPendente.url;
         }
 
+        // Preserva campo_destino exatamente — grava URL R2 em youtube_1 / youtube_2
         var videosPendentes = mMidiasPendentesAtual.filter(function(m) { return m.tipo === 'video'; });
         videosPendentes.forEach(function(vid) {
           var campoDestino = vid.campo_destino || 'youtube_1';
           payloadToUpdate[campoDestino] = vid.url;
-          document.getElementById('mArt' + (campoDestino === 'youtube_2' ? 'Youtube2' : 'Youtube1')).value = vid.url;
+          atualizarLabelsVideoAdmin(campoDestino, vid.url, false);
         });
 
         var pendentesGaleria = mMidiasPendentesAtual.filter(function(m) { return m.tipo === 'galeria' || !m.tipo; });
@@ -2238,18 +2380,27 @@
           payloadToUpdate.is_destaque = ehDestaque;
           payloadToUpdate.galeria_fotos = mGaleriaFotosAtual;
           payloadToUpdate.foto_capa_url = mFotoCapaUrlAtual;
-
-          var parceiro = listaParceiros.find(function(item) { return String(item.id) === String(parceiroSelecionadoId); });
-          if (parceiro && parceiro.midias_pendentes !== undefined) {
-            payloadToUpdate.midias_pendentes = [];
-          }
+          // midias_pendentes só é limpo DEPOIS do UPDATE bem-sucedido (abaixo)
+          payloadToUpdate.midias_pendentes = [];
 
           sbPartner.from('parceiros').update(payloadToUpdate).eq('id', parceiroSelecionadoId).then(function(res) {
             if (res.error) {
               alert('Erro ao aprovar mídias: ' + res.error.message);
+              // NÃO limpa midias_pendentes em memória se o UPDATE falhou
             } else {
               alert('✅ Mídias aprovadas com sucesso!');
+              // Só agora limpa o estado local
               mMidiasPendentesAtual = [];
+              // Sincroniza objeto em memória para o Salvar Cadastro não sobrescrever
+              var parceiro = listaParceiros.find(function(item) { return String(item.id) === String(parceiroSelecionadoId); });
+              if (parceiro) {
+                if (payloadToUpdate.youtube_1) parceiro.youtube_1 = payloadToUpdate.youtube_1;
+                if (payloadToUpdate.youtube_2) parceiro.youtube_2 = payloadToUpdate.youtube_2;
+                parceiro.galeria_fotos = mGaleriaFotosAtual.slice();
+                parceiro.foto_capa_url = mFotoCapaUrlAtual;
+                parceiro.midias_pendentes = [];
+                parceiro.status_artista = 'aprovado';
+              }
               document.getElementById('mMediaPendingBadge').classList.add('hidden');
               document.getElementById('mContainerAcaoMidias').classList.add('hidden');
               document.getElementById('mContainerAcaoMidias').classList.remove('flex');
@@ -2347,8 +2498,9 @@
           experiencia_comercial: document.getElementById('mArtExperiencia').value.trim() || null,
           bio_artistica: document.getElementById('mArtBio').value.trim() || null,
           rider_tecnico: document.getElementById('mArtRider').value.trim() || null,
-          youtube_1: document.getElementById('mArtYoutube1').value.trim() || null,
-          youtube_2: document.getElementById('mArtYoutube2').value.trim() || null,
+          // URLs R2 dos vídeos (campos técnicos youtube_1/2 por compatibilidade)
+          youtube_1: (document.getElementById('mArtYoutube1').value || '').trim() || null,
+          youtube_2: (document.getElementById('mArtYoutube2').value || '').trim() || null,
           galeria_fotos: mGaleriaFotosAtual,
           foto_capa_url: mFotoCapaUrlAtual
         };
