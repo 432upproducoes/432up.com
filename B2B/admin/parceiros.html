@@ -1967,13 +1967,13 @@
           return;
         }
 
-        // Overlay de carregamento (mesmo espírito do Perfil)
+        // Overlay de carregamento — acima do modal da ficha
         var loadingEl = document.getElementById('adminR2Loading');
         if (!loadingEl) {
           loadingEl = document.createElement('div');
           loadingEl.id = 'adminR2Loading';
-          loadingEl.style.cssText = 'position:fixed;inset:0;z-index:100000;background:rgba(14,10,20,0.88);display:flex;flex-direction:column;align-items:center;justify-content:center;gap:12px;';
-          loadingEl.innerHTML = '<div style="width:40px;height:40px;border:4px solid rgba(245,158,11,0.3);border-top-color:#f59e0b;border-radius:50%;animation:spin 0.8s linear infinite"></div><span style="color:#fbbf24;font-size:12px;font-weight:700;letter-spacing:0.05em;text-transform:uppercase">Enviando vídeo...</span>';
+          loadingEl.style.cssText = 'position:fixed;inset:0;z-index:200000;background:rgba(14,10,20,0.92);display:flex;flex-direction:column;align-items:center;justify-content:center;gap:12px;pointer-events:all;';
+          loadingEl.innerHTML = '<div style="width:44px;height:44px;border:4px solid rgba(245,158,11,0.3);border-top-color:#f59e0b;border-radius:50%;animation:spin 0.8s linear infinite"></div><span style="color:#fbbf24;font-size:12px;font-weight:700;letter-spacing:0.05em;text-transform:uppercase">Enviando vídeo...</span>';
           if (!document.getElementById('adminR2SpinStyle')) {
             var st = document.createElement('style');
             st.id = 'adminR2SpinStyle';
@@ -1983,6 +1983,7 @@
           document.body.appendChild(loadingEl);
         } else {
           loadingEl.style.display = 'flex';
+          loadingEl.style.zIndex = '200000';
         }
 
         try {
@@ -1999,6 +2000,7 @@
               '\nClique em “Salvar Cadastro Completo” para tentar de novo.');
           } else {
             parceiro[campoDestino] = videoUrl;
+            renderGaleriaAdmin();
             alert('Vídeo salvo com sucesso!');
           }
         } catch (err) {
@@ -2321,8 +2323,16 @@
         var contadorTxt = document.getElementById('mGaleriaContadorTxt');
 
         var midiasPendentesFila = mMidiasPendentesAtual.filter(function(m) { return m.tipo !== 'capa'; });
-        var totalExibido = mGaleriaFotosAtual.length + midiasPendentesFila.length;
 
+        // Vídeos ativos (aprovados) a partir dos hidden fields
+        var vid1Ativo = (document.getElementById('mArtYoutube1') && document.getElementById('mArtYoutube1').value || '').trim();
+        var vid2Ativo = (document.getElementById('mArtYoutube2') && document.getElementById('mArtYoutube2').value || '').trim();
+        // Não duplicar se já estiver na fila de pendentes com o mesmo campo
+        var pendVid1 = midiasPendentesFila.some(function(m) { return m.tipo === 'video' && m.campo_destino === 'youtube_1'; });
+        var pendVid2 = midiasPendentesFila.some(function(m) { return m.tipo === 'video' && m.campo_destino === 'youtube_2'; });
+        var videosAtivosCount = (!pendVid1 && vid1Ativo ? 1 : 0) + (!pendVid2 && vid2Ativo ? 1 : 0);
+
+        var totalExibido = mGaleriaFotosAtual.length + midiasPendentesFila.length + videosAtivosCount;
         contadorTxt.textContent = totalExibido + ' mídia' + (totalExibido !== 1 ? 's' : '');
 
         var html = '';
@@ -2335,14 +2345,28 @@
           '</div>';
         });
 
+        // Vídeos ativos (aprovados) — mesma grade, com × para excluir
+        if (!pendVid1 && vid1Ativo) {
+          html += '<div class="portfolio-item-admin bg-slate-950">' +
+            '<span class="absolute top-1 left-1 px-1 py-0.5 rounded text-[8px] font-extrabold bg-emerald-500/90 text-white z-10 shadow">🎬 Vídeo 1</span>' +
+            '<button type="button" class="btn-remove-galeria-admin" onclick="removerVideoAtivoAdmin(\'youtube_1\')" title="Excluir vídeo principal">×</button>' +
+            '<video src="' + vid1Ativo + '" muted playsinline preload="metadata" class="w-full h-full object-cover"></video>' +
+          '</div>';
+        }
+        if (!pendVid2 && vid2Ativo) {
+          html += '<div class="portfolio-item-admin bg-slate-950">' +
+            '<span class="absolute top-1 left-1 px-1 py-0.5 rounded text-[8px] font-extrabold bg-emerald-500/90 text-white z-10 shadow">🎬 Vídeo 2</span>' +
+            '<button type="button" class="btn-remove-galeria-admin" onclick="removerVideoAtivoAdmin(\'youtube_2\')" title="Excluir vídeo secundário">×</button>' +
+            '<video src="' + vid2Ativo + '" muted playsinline preload="metadata" class="w-full h-full object-cover"></video>' +
+          '</div>';
+        }
+
         midiasPendentesFila.forEach(function(item, idx) {
           if (item.tipo === 'video') {
-            html += '<div class="portfolio-item-admin item-pendente bg-slate-950 flex flex-col items-center justify-center p-2 text-center border-amber-500/80">' +
-              '<span class="absolute top-1 left-1 px-1 py-0.5 rounded text-[8px] font-extrabold bg-amber-500/90 text-slate-950 z-10 shadow">🎬 Vídeo Pendente</span>' +
+            html += '<div class="portfolio-item-admin item-pendente bg-slate-950">' +
+              '<span class="absolute top-1 left-1 px-1 py-0.5 rounded text-[8px] font-extrabold bg-amber-500/90 text-slate-950 z-10 shadow">🎬 Pendente</span>' +
               '<button type="button" class="btn-remove-galeria-admin" onclick="removerFotoPendenteAdmin(' + idx + ')" title="Excluir vídeo pendente">×</button>' +
-              '<video src="' + item.url + '" muted playsinline preload="metadata" class="w-full h-14 object-cover rounded mt-4 mb-0.5 bg-black pointer-events-none"></video>' +
-              '<span class="text-xl mb-0.5">🎬</span>' +
-              '<a href="' + item.url + '" target="_blank" class="text-[9px] text-amber-400 underline truncate max-w-full hover:text-amber-300 font-mono">' + esc(item.url) + '</a>' +
+              '<video src="' + item.url + '" muted playsinline preload="metadata" class="w-full h-full object-cover"></video>' +
             '</div>';
           } else {
             html += '<div class="portfolio-item-admin item-pendente">' +
@@ -2359,6 +2383,22 @@
           galeriaGrid.innerHTML = '<span class="text-xs text-slate-500 col-span-full text-center py-8">Nenhuma imagem na galeria</span>';
         }
       }
+
+      window.removerVideoAtivoAdmin = function(campo) {
+        if (!confirm('Deseja remover este vídeo do cadastro?')) return;
+        atualizarLabelsVideoAdmin(campo, '', false);
+        var parceiro = listaParceiros.find(function(item) { return String(item.id) === String(parceiroSelecionadoId); });
+        if (parceiro) parceiro[campo] = null;
+        renderGaleriaAdmin();
+        // Persiste a remoção
+        if (parceiroSelecionadoId) {
+          var payload = {};
+          payload[campo] = null;
+          sbPartner.from('parceiros').update(payload).eq('id', parceiroSelecionadoId).then(function(res) {
+            if (res.error) alert('Não foi possível gravar a exclusão: ' + res.error.message);
+          });
+        }
+      };
 
       window.removerFotoGaleriaAdmin = function(idx) {
         if (confirm('Deseja realmente remover esta imagem ativa da galeria?')) {
