@@ -1888,18 +1888,25 @@
           throw new Error('Sessão inválida. Faça login novamente.');
         }
         var token = sessionRes.data.session.access_token;
+        // Content-Type: só aceitar media-type válido (evita "string did not match the expected pattern")
+        var ct = (fileOrBlob && fileOrBlob.type) ? String(fileOrBlob.type).trim() : '';
+        if (!ct || ct.indexOf('/') < 1) ct = 'application/octet-stream';
         var res = await fetch(
           'https://432up-r2-upload.432up-producoes.workers.dev/?path=' + encodeURIComponent(path),
           {
             method: 'PUT',
             headers: {
               'Authorization': 'Bearer ' + token,
-              'Content-Type': fileOrBlob.type || 'application/octet-stream'
+              'Content-Type': ct
             },
             body: fileOrBlob
           }
         );
-        var result = await res.json();
+        var rawText = await res.text();
+        var result = null;
+        try { result = JSON.parse(rawText); } catch (e) {
+          throw new Error(res.ok ? 'Resposta inválida do Worker R2' : ('HTTP ' + res.status + ': ' + rawText.slice(0, 200)));
+        }
         if (!result || result.ok !== true) {
           throw new Error((result && result.error) ? result.error : 'Falha no upload R2');
         }
@@ -1959,7 +1966,13 @@
         }
         try {
           var prefix = (campoDestino === 'youtube_2') ? 'video_secundario_' : 'video_principal_';
-          var vPath = parceiro.user_id + '/' + prefix + Date.now() + '_' + file.name;
+          // Sanitiza nome do arquivo: path com espaços/acentos/símbolos quebra o padrão do Worker
+          var safeName = String(file.name || 'video.mp4')
+            .replace(/[^a-zA-Z0-9._-]+/g, '_')
+            .replace(/_+/g, '_')
+            .replace(/^_|_$/g, '')
+            .substring(0, 80) || 'video.mp4';
+          var vPath = String(parceiro.user_id).trim() + '/' + prefix + Date.now() + '_' + safeName;
           var videoUrl = await uploadParaR2(vPath, file);
           atualizarLabelsVideoAdmin(campoDestino, videoUrl, false);
           // Grava imediatamente no cadastro (admin tem privilégio de curadoria)
@@ -2309,7 +2322,8 @@
             html += '<div class="portfolio-item-admin item-pendente bg-slate-950 flex flex-col items-center justify-center p-2 text-center border-amber-500/80">' +
               '<span class="absolute top-1 left-1 px-1 py-0.5 rounded text-[8px] font-extrabold bg-amber-500/90 text-slate-950 z-10 shadow">🎬 Vídeo Pendente</span>' +
               '<button type="button" class="btn-remove-galeria-admin" onclick="removerFotoPendenteAdmin(' + idx + ')" title="Excluir vídeo pendente">×</button>' +
-              '<span class="text-xl mb-0.5 mt-2">🎬</span>' +
+              '<video src="' + item.url + '" muted playsinline preload="metadata" class="w-full h-14 object-cover rounded mt-4 mb-0.5 bg-black pointer-events-none"></video>' +
+              '<span class="text-xl mb-0.5">🎬</span>' +
               '<a href="' + item.url + '" target="_blank" class="text-[9px] text-amber-400 underline truncate max-w-full hover:text-amber-300 font-mono">' + esc(item.url) + '</a>' +
             '</div>';
           } else {
