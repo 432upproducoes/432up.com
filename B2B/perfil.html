@@ -348,21 +348,22 @@
             <span class="text-[10px] font-extrabold text-cyan-400 uppercase tracking-widest block mb-3">⭐ Pré-visualização do Perfil Comercial</span>
             
             <div class="flex flex-col md:flex-row items-center md:items-start gap-6">
-              <div class="w-full md:w-48 h-48 rounded-xl bg-black/60 border border-cyan-500/30 overflow-hidden relative group shrink-0 flex items-center justify-center">
+              <div class="w-full md:w-48 h-48 rounded-xl bg-black/60 border border-cyan-500/30 overflow-hidden relative group shrink-0 flex items-center justify-center cursor-pointer" onclick="document.getElementById('fCapaInput').click()">
                 
                 <span id="capaStatusBadge" class="hidden absolute top-2 left-2 px-2 py-0.5 rounded-full text-[10px] font-extrabold z-20 shadow-lg"></span>
 
                 <div id="capaPreview" class="w-full h-full bg-cover bg-center">
                   <span id="capaPlaceholder" class="flex flex-col items-center justify-center h-full text-slate-500 text-xs text-center p-2">
-                    🖼️<br>Foto de Capa Principal
+                    🖼<br>Clique aqui para enviar a foto de capa
                   </span>
                 </div>
                 
                 <div class="absolute inset-0 bg-black/80 opacity-0 group-hover:opacity-100 flex flex-col items-center justify-center gap-2 transition p-2 z-10">
-                  <button type="button" onclick="document.getElementById('fCapaInput').click()" class="px-3 py-1.5 bg-cyan-500 hover:bg-cyan-400 text-slate-950 text-[11px] font-bold rounded-lg transition">
+                  <span class="text-[11px] text-cyan-300 font-bold text-center px-2">📤 Clique aqui para enviar a foto de capa</span>
+                  <button type="button" onclick="event.stopPropagation(); document.getElementById('fCapaInput').click()" class="px-3 py-1.5 bg-cyan-500 hover:bg-cyan-400 text-slate-950 text-[11px] font-bold rounded-lg transition">
                     Alterar Foto
                   </button>
-                  <button type="button" id="btnExcluirCapa" onclick="excluirFotoCapa()" class="px-3 py-1.5 bg-red-500/80 hover:bg-red-500 text-white text-[11px] font-bold rounded-lg transition hidden">
+                  <button type="button" id="btnExcluirCapa" onclick="event.stopPropagation(); excluirFotoCapa()" class="px-3 py-1.5 bg-red-500/80 hover:bg-red-500 text-white text-[11px] font-bold rounded-lg transition hidden">
                     Excluir Foto
                   </button>
                 </div>
@@ -430,13 +431,15 @@
 
             <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
               <div>
-                <label for="artYoutube1" class="block text-xs uppercase tracking-wider text-slate-300 font-semibold mb-1.5">YouTube / Shorts / Vimeo (Vídeo Principal)</label>
-                <input type="url" id="artYoutube1" placeholder="https://www.youtube.com/watch?v=..." class="w-full bg-slate-900/80 border border-cyan-500/30 rounded-xl px-4 py-2.5 text-sm text-white focus:border-cyan-400 focus:outline-none transition">
+                <label for="artVideo1" class="block text-xs uppercase tracking-wider text-slate-300 font-semibold mb-1.5">Vídeo Principal (Selecione um arquivo de vídeo)</label>
+                <input type="file" id="artVideo1" accept="video/*" class="w-full text-xs text-slate-300 file:mr-3 file:py-2 file:px-3 file:rounded-lg file:border-0 file:text-xs file:font-semibold file:bg-cyan-500/20 file:text-cyan-300 hover:file:bg-cyan-500/30 transition cursor-pointer bg-slate-900/80 border border-cyan-500/30 rounded-xl px-2 py-2">
+                <span id="video1AtualLabel" class="text-[11px] text-slate-400 block mt-1"></span>
                 <span id="badgeVideo1Pendente" class="hidden inline-block mt-1.5 px-2.5 py-1 rounded-lg text-[10px] font-extrabold bg-amber-500/20 text-amber-300 border border-amber-500/40">⏳ Vídeo em Análise pela Curadoria</span>
               </div>
               <div>
-                <label for="artYoutube2" class="block text-xs uppercase tracking-wider text-slate-300 font-semibold mb-1.5">YouTube / Shorts / Vimeo (Vídeo Secundário)</label>
-                <input type="url" id="artYoutube2" placeholder="https://www.youtube.com/watch?v=..." class="w-full bg-slate-900/80 border border-cyan-500/30 rounded-xl px-4 py-2.5 text-sm text-white focus:border-cyan-400 focus:outline-none transition">
+                <label for="artVideo2" class="block text-xs uppercase tracking-wider text-slate-300 font-semibold mb-1.5">Vídeo Secundário (Selecione um arquivo de vídeo)</label>
+                <input type="file" id="artVideo2" accept="video/*" class="w-full text-xs text-slate-300 file:mr-3 file:py-2 file:px-3 file:rounded-lg file:border-0 file:text-xs file:font-semibold file:bg-cyan-500/20 file:text-cyan-300 hover:file:bg-cyan-500/30 transition cursor-pointer bg-slate-900/80 border border-cyan-500/30 rounded-xl px-2 py-2">
+                <span id="video2AtualLabel" class="text-[11px] text-slate-400 block mt-1"></span>
                 <span id="badgeVideo2Pendente" class="hidden inline-block mt-1.5 px-2.5 py-1 rounded-lg text-[10px] font-extrabold bg-amber-500/20 text-amber-300 border border-amber-500/40">⏳ Vídeo em Análise pela Curadoria</span>
               </div>
             </div>
@@ -549,6 +552,46 @@
 
       var currentProgressVal = 0;
       var progressInterval = null;
+
+      // ======================================================================
+      // INTEGRAÇÃO R2 (Worker já existente, mesmo utilizado no Admin da Galeria)
+      // Contrato preservado exatamente: PUT com Authorization Bearer + ?path=,
+      // resposta JSON { ok, url } ou { ok:false, error }. Nenhuma alteração no
+      // Worker; nenhuma compressão client-side de vídeo (o Worker compacta
+      // server-side). Fotos continuam sendo recortadas/comprimidas no
+      // navegador exatamente como já faziam (CropperJS + canvas WebP 80%) —
+      // só a origem do upload muda de Supabase Storage para este Worker.
+      // ======================================================================
+      var R2_UPLOAD_URL = 'https://432up-r2-upload.432up-producoes.workers.dev/';
+
+      async function uploadParaR2(path, file) {
+        var sessionRes = await sbPartner.auth.getSession();
+        var token = (sessionRes && sessionRes.data && sessionRes.data.session)
+          ? sessionRes.data.session.access_token
+          : null;
+        if (!token) throw new Error('Sessão expirada. Faça login novamente.');
+
+        var resp = await fetch(
+          R2_UPLOAD_URL + '?path=' + encodeURIComponent(path),
+          {
+            method: 'PUT',
+            headers: {
+              'Authorization': 'Bearer ' + token,
+              'Content-Type': file.type || 'application/octet-stream'
+            },
+            body: file
+          }
+        );
+
+        var result = await resp.json().catch(function () { return null; });
+
+        if (!resp.ok || !result || !result.ok) {
+          var msg = (result && result.error) ? result.error : ('Upload falhou (status ' + resp.status + ')');
+          throw new Error(msg);
+        }
+
+        return result.url;
+      }
 
       var STATUS_LABEL = {
         aprovado: { text: 'Aprovado', cls: 'bg-emerald-500/20 text-emerald-300 border border-emerald-500/40' },
@@ -977,23 +1020,34 @@
         var vid1Pendente = midiasPendentesExistentes.find(function(m) { return m.tipo === 'video' && m.campo_destino === 'youtube_1'; });
         var vid2Pendente = midiasPendentesExistentes.find(function(m) { return m.tipo === 'video' && m.campo_destino === 'youtube_2'; });
 
-        var elInputVid1 = document.getElementById('artYoutube1');
+        // ALTERAÇÃO (item 4/5/9): os campos deixaram de ser <input type="url">
+        // e viraram <input type="file">, que não podem ser preenchidos
+        // programaticamente com uma URL existente. Preservamos a indicação
+        // do vídeo atual/pendente através dos labels de texto abaixo, e o
+        // badge "Em Análise" continua exatamente como antes.
+        var elLabelVid1 = document.getElementById('video1AtualLabel');
         var elBadgeVid1 = document.getElementById('badgeVideo1Pendente');
         if (vid1Pendente) {
-          elInputVid1.value = vid1Pendente.url;
+          if (elLabelVid1) elLabelVid1.textContent = 'Vídeo enviado, aguardando aprovação.';
           elBadgeVid1.classList.remove('hidden');
+        } else if (parceiro.youtube_1) {
+          if (elLabelVid1) elLabelVid1.textContent = 'Vídeo principal atual já cadastrado.';
+          elBadgeVid1.classList.add('hidden');
         } else {
-          elInputVid1.value = parceiro.youtube_1 || '';
+          if (elLabelVid1) elLabelVid1.textContent = '';
           elBadgeVid1.classList.add('hidden');
         }
 
-        var elInputVid2 = document.getElementById('artYoutube2');
+        var elLabelVid2 = document.getElementById('video2AtualLabel');
         var elBadgeVid2 = document.getElementById('badgeVideo2Pendente');
         if (vid2Pendente) {
-          elInputVid2.value = vid2Pendente.url;
+          if (elLabelVid2) elLabelVid2.textContent = 'Vídeo enviado, aguardando aprovação.';
           elBadgeVid2.classList.remove('hidden');
+        } else if (parceiro.youtube_2) {
+          if (elLabelVid2) elLabelVid2.textContent = 'Vídeo secundário atual já cadastrado.';
+          elBadgeVid2.classList.add('hidden');
         } else {
-          elInputVid2.value = parceiro.youtube_2 || '';
+          if (elLabelVid2) elLabelVid2.textContent = '';
           elBadgeVid2.classList.add('hidden');
         }
 
@@ -1327,18 +1381,21 @@
         reader.readAsDataURL(file);
       });
 
+      /* =========================================================================
+         PONTO 2 — AVATAR: substituição do upload direto ao Supabase Storage por
+         uploadParaR2(). Preservado exatamente: startLoadingProgress/
+         updateLoadingProgress, showAlert, o .catch, o .finally com
+         hideLoadingProgress, o toggle do botão, e o .update(...).eq('id',
+         parceiroAtual.id) que já existia no código original.
+         ========================================================================= */
       document.getElementById('btnSalvarAvatar').addEventListener('click', function () {
         if (!novoAvatarFile || !parceiroAtual) return;
         
         startLoadingProgress(25, 'Atualizando foto de perfil oficial...');
 
-        sbPartner.storage
-          .from(PARTNER_CFG.AVATAR_BUCKET)
-          .upload(parceiroAtual.user_id + '/avatar.jpg', novoAvatarFile, { upsert: true, contentType: novoAvatarFile.type })
-          .then(function (upRes) {
-            if (upRes.error) throw upRes.error;
+        uploadParaR2(parceiroAtual.user_id + '/avatar.jpg', novoAvatarFile)
+          .then(function (novaUrl) {
             updateLoadingProgress(70, 'Sincronizando cadastro...');
-            var novaUrl = partnerAvatarUrl(parceiroAtual.user_id, true);
             return sbPartner.from('parceiros').update({ avatar_url: novaUrl }).eq('id', parceiroAtual.id);
           })
           .then(function () {
@@ -1439,15 +1496,32 @@
           var novasMidiasPendentes = midiasPendentesExistentes.filter(function(m) { return m.tipo !== 'video'; });
           var houveEnvioMidia = false;
 
-          // MODERAÇÃO DE VÍDEOS
-          var video1Input = document.getElementById('artYoutube1').value.trim();
-          var video2Input = document.getElementById('artYoutube2').value.trim();
+          /* ===================================================================
+             PONTOS 4/5 — VÍDEOS: os campos passaram de <input type="url"> para
+             <input type="file" accept="video/*">. O arquivo é enviado CRU
+             (sem qualquer processamento client-side) via uploadParaR2(); o
+             Worker é responsável pela compactação server-side. A URL R2
+             retornada substitui o antigo valor de YouTube/Vimeo, preservando
+             exatamente a mesma estrutura de midias_pendentes e o mesmo
+             campo_destino ('youtube_1' / 'youtube_2') usado hoje pelo fluxo
+             de aprovação, para não quebrar nada no lado administrativo.
+             =================================================================== */
+          var video1File = document.getElementById('artVideo1').files[0] || null;
+          var video2File = document.getElementById('artVideo2').files[0] || null;
 
-          if (video1Input && video1Input !== (parceiroAtual.youtube_1 || '')) {
+          if (video1File) {
+            updateLoadingProgress(45, 'Enviando vídeo principal...');
+            var video1Url;
+            try {
+              var path1 = parceiroAtual.user_id + '/video_principal_' + Date.now() + '_' + video1File.name;
+              video1Url = await uploadParaR2(path1, video1File);
+            } catch (uploadErrV1) {
+              throw new Error('Falha no upload do vídeo principal: ' + uploadErrV1.message);
+            }
             houveEnvioMidia = true;
             novasMidiasPendentes.push({
               id: 'video_1_' + Date.now(),
-              url: video1Input,
+              url: video1Url,
               tipo: 'video',
               campo_destino: 'youtube_1',
               criado_em: new Date().toISOString()
@@ -1455,11 +1529,19 @@
             document.getElementById('badgeVideo1Pendente').classList.remove('hidden');
           }
 
-          if (video2Input && video2Input !== (parceiroAtual.youtube_2 || '')) {
+          if (video2File) {
+            updateLoadingProgress(50, 'Enviando vídeo secundário...');
+            var video2Url;
+            try {
+              var path2 = parceiroAtual.user_id + '/video_secundario_' + Date.now() + '_' + video2File.name;
+              video2Url = await uploadParaR2(path2, video2File);
+            } catch (uploadErrV2) {
+              throw new Error('Falha no upload do vídeo secundário: ' + uploadErrV2.message);
+            }
             houveEnvioMidia = true;
             novasMidiasPendentes.push({
               id: 'video_2_' + Date.now(),
-              url: video2Input,
+              url: video2Url,
               tipo: 'video',
               campo_destino: 'youtube_2',
               criado_em: new Date().toISOString()
@@ -1467,32 +1549,38 @@
             document.getElementById('badgeVideo2Pendente').classList.remove('hidden');
           }
 
-          // MODERAÇÃO DA FOTO DE CAPA
+          /* ===================================================================
+             PONTO 3 — CAPA: substituição do upload direto ao Supabase Storage
+             (+ getPublicUrl) por uploadParaR2(), que já retorna a URL final
+             pronta para uso. Estrutura de midias_pendentes preservada.
+             =================================================================== */
           if (capaRemovida) {
             payload.foto_capa_url = null;
           } else if (novaCapaBlob) {
             houveEnvioMidia = true;
             var capaPath = parceiroAtual.user_id + '/capa_vitrine_' + Date.now() + '.webp';
-            var upRes = await sbPartner.storage.from(PARTNER_CFG.AVATAR_BUCKET).upload(capaPath, novaCapaBlob, { upsert: true, contentType: 'image/webp' });
-            
-            if (upRes.error) {
-              throw new Error('Falha no upload da foto de capa: ' + upRes.error.message);
+            var novaCapaUrl;
+            try {
+              novaCapaUrl = await uploadParaR2(capaPath, novaCapaBlob);
+            } catch (uploadErr) {
+              throw new Error('Falha no upload da foto de capa: ' + uploadErr.message);
             }
 
-            var publicUrlData = sbPartner.storage.from(PARTNER_CFG.AVATAR_BUCKET).getPublicUrl(capaPath);
-            if (publicUrlData && publicUrlData.data) {
-              novasMidiasPendentes.push({
-                id: 'capa_' + Date.now(),
-                url: publicUrlData.data.publicUrl,
-                tipo: 'capa',
-                criado_em: new Date().toISOString()
-              });
-            }
+            novasMidiasPendentes.push({
+              id: 'capa_' + Date.now(),
+              url: novaCapaUrl,
+              tipo: 'capa',
+              criado_em: new Date().toISOString()
+            });
           }
 
           updateLoadingProgress(60, 'Enviando galeria de mídias...');
 
-          // UPLOAD DE NOVAS FOTOS DA GALERIA
+          /* ===================================================================
+             PONTO 4 (galeria) — substituição do upload direto ao Supabase
+             Storage (+ getPublicUrl) por uploadParaR2(), que já retorna a URL
+             final. Mantida a lógica de progresso incremental por foto.
+             =================================================================== */
           if (galeriaBlobs.length > 0) {
             houveEnvioMidia = true;
             var totalG = galeriaBlobs.length;
@@ -1500,17 +1588,19 @@
 
             var uploadPromises = galeriaBlobs.map(function(item, idx) {
               var gPath = parceiroAtual.user_id + '/galeria_' + Date.now() + '_' + idx + '.webp';
-              return sbPartner.storage
-                .from(PARTNER_CFG.AVATAR_BUCKET)
-                .upload(gPath, item.blob, { upsert: true, contentType: 'image/webp' })
-                .then(function(res) {
+              return uploadParaR2(gPath, item.blob)
+                .then(function(url) {
                   concluidosG++;
                   var pVal = 60 + Math.round((concluidosG / totalG) * 30);
                   updateLoadingProgress(pVal, 'Enviada foto ' + concluidosG + ' de ' + totalG + '...');
-                  
-                  if (res.error) return null;
-                  var urlData = sbPartner.storage.from(PARTNER_CFG.AVATAR_BUCKET).getPublicUrl(gPath);
-                  return (urlData && urlData.data) ? urlData.data.publicUrl : null;
+                  return url;
+                })
+                .catch(function(err) {
+                  concluidosG++;
+                  var pVal = 60 + Math.round((concluidosG / totalG) * 30);
+                  updateLoadingProgress(pVal, 'Enviada foto ' + concluidosG + ' de ' + totalG + '...');
+                  console.warn('Falha no upload de foto da galeria:', err.message);
+                  return null;
                 });
             });
 
@@ -1557,6 +1647,9 @@
             galeriaBlobs = [];
             novaCapaBlob = null;
             capaRemovida = false;
+
+            document.getElementById('artVideo1').value = '';
+            document.getElementById('artVideo2').value = '';
 
             renderGaleriaCompleta();
 
