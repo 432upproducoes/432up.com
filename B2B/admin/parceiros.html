@@ -1882,34 +1882,36 @@
       /* =========================================================================
          Upload R2 — mesmo fluxo do Perfil Unificado (Worker Cloudflare)
          ========================================================================= */
-      async function uploadParaR2(path, fileOrBlob) {
+      async function uploadParaR2(path, file) {
         var sessionRes = await sbPartner.auth.getSession();
-        if (!sessionRes.data || !sessionRes.data.session || !sessionRes.data.session.access_token) {
-          throw new Error('Sessão inválida. Faça login novamente.');
-        }
-        var token = sessionRes.data.session.access_token;
-        // Content-Type: só aceitar media-type válido (evita "string did not match the expected pattern")
-        var ct = (fileOrBlob && fileOrBlob.type) ? String(fileOrBlob.type).trim() : '';
-        if (!ct || ct.indexOf('/') < 1) ct = 'application/octet-stream';
-        var res = await fetch(
-          'https://432up-r2-upload.432up-producoes.workers.dev/?path=' + encodeURIComponent(path),
+        var token = (sessionRes && sessionRes.data && sessionRes.data.session)
+          ? sessionRes.data.session.access_token
+          : null;
+        if (!token) throw new Error('Sessão expirada. Faça login novamente.');
+
+        var r2Base = (typeof R2_UPLOAD_URL !== 'undefined' && R2_UPLOAD_URL)
+          ? R2_UPLOAD_URL
+          : 'https://432up-r2-upload.432up-producoes.workers.dev/';
+
+        var resp = await fetch(
+          r2Base + '?path=' + encodeURIComponent(path),
           {
             method: 'PUT',
             headers: {
               'Authorization': 'Bearer ' + token,
-              'Content-Type': ct
+              'Content-Type': file.type || 'application/octet-stream'
             },
-            body: fileOrBlob
+            body: file
           }
         );
-        var rawText = await res.text();
-        var result = null;
-        try { result = JSON.parse(rawText); } catch (e) {
-          throw new Error(res.ok ? 'Resposta inválida do Worker R2' : ('HTTP ' + res.status + ': ' + rawText.slice(0, 200)));
+
+        var result = await resp.json().catch(function () { return null; });
+
+        if (!resp.ok || !result || !result.ok) {
+          var msg = (result && result.error) ? result.error : ('Upload falhou (status ' + resp.status + ')');
+          throw new Error(msg);
         }
-        if (!result || result.ok !== true) {
-          throw new Error((result && result.error) ? result.error : 'Falha no upload R2');
-        }
+
         return result.url;
       }
 
@@ -1964,18 +1966,31 @@
           inputEl.value = '';
           return;
         }
+
+        // Overlay de carregamento (mesmo espírito do Perfil)
+        var loadingEl = document.getElementById('adminR2Loading');
+        if (!loadingEl) {
+          loadingEl = document.createElement('div');
+          loadingEl.id = 'adminR2Loading';
+          loadingEl.style.cssText = 'position:fixed;inset:0;z-index:100000;background:rgba(14,10,20,0.88);display:flex;flex-direction:column;align-items:center;justify-content:center;gap:12px;';
+          loadingEl.innerHTML = '<div style="width:40px;height:40px;border:4px solid rgba(245,158,11,0.3);border-top-color:#f59e0b;border-radius:50%;animation:spin 0.8s linear infinite"></div><span style="color:#fbbf24;font-size:12px;font-weight:700;letter-spacing:0.05em;text-transform:uppercase">Enviando vídeo...</span>';
+          if (!document.getElementById('adminR2SpinStyle')) {
+            var st = document.createElement('style');
+            st.id = 'adminR2SpinStyle';
+            st.textContent = '@keyframes spin{to{transform:rotate(360deg)}}';
+            document.head.appendChild(st);
+          }
+          document.body.appendChild(loadingEl);
+        } else {
+          loadingEl.style.display = 'flex';
+        }
+
         try {
           var prefix = (campoDestino === 'youtube_2') ? 'video_secundario_' : 'video_principal_';
-          // Sanitiza nome do arquivo: path com espaços/acentos/símbolos quebra o padrão do Worker
-          var safeName = String(file.name || 'video.mp4')
-            .replace(/[^a-zA-Z0-9._-]+/g, '_')
-            .replace(/_+/g, '_')
-            .replace(/^_|_$/g, '')
-            .substring(0, 80) || 'video.mp4';
-          var vPath = String(parceiro.user_id).trim() + '/' + prefix + Date.now() + '_' + safeName;
+          // Path idêntico ao Perfil (sem sanitização extra)
+          var vPath = parceiro.user_id + '/' + prefix + Date.now() + '_' + file.name;
           var videoUrl = await uploadParaR2(vPath, file);
           atualizarLabelsVideoAdmin(campoDestino, videoUrl, false);
-          // Grava imediatamente no cadastro (admin tem privilégio de curadoria)
           var payloadVid = {};
           payloadVid[campoDestino] = videoUrl;
           var resSave = await sbPartner.from('parceiros').update(payloadVid).eq('id', parceiroSelecionadoId);
@@ -1989,8 +2004,11 @@
         } catch (err) {
           console.error(err);
           alert('Erro ao enviar o vídeo: ' + (err && err.message ? err.message : 'falha desconhecida'));
+        } finally {
+          var el = document.getElementById('adminR2Loading');
+          if (el) el.style.display = 'none';
+          inputEl.value = '';
         }
-        inputEl.value = '';
       };
 
       /* Upload admin fotos — R2 (sem Supabase Storage) */
