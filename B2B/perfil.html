@@ -1124,8 +1124,39 @@
           container.appendChild(div);
         });
 
+        // Vídeos aprovados (youtube_1 / youtube_2) — miniatura com frame #t=0.001
+        var pendVid1 = midiasPendentesExistentes.some(function(m) { return m.tipo === 'video' && m.campo_destino === 'youtube_1'; });
+        var pendVid2 = midiasPendentesExistentes.some(function(m) { return m.tipo === 'video' && m.campo_destino === 'youtube_2'; });
+        var urlVid1 = (parceiroAtual && parceiroAtual.youtube_1) ? String(parceiroAtual.youtube_1) : '';
+        var urlVid2 = (parceiroAtual && parceiroAtual.youtube_2) ? String(parceiroAtual.youtube_2) : '';
+        if (urlVid1 && !pendVid1) {
+          var src1 = urlVid1 + (urlVid1.indexOf('#') > -1 ? '' : '#t=0.001');
+          var divV1 = document.createElement('div');
+          divV1.className = 'portfolio-item aprovado';
+          divV1.innerHTML = '<span class="absolute top-1 left-1 px-1.5 py-0.5 rounded text-[9px] font-extrabold bg-emerald-500/90 text-white z-10 shadow">🎬 Vídeo 1</span>' +
+                            '<video src="' + src1 + '" muted playsinline preload="metadata" style="width:100%;height:100%;object-fit:cover;background:#000"></video>';
+          container.appendChild(divV1);
+        }
+        if (urlVid2 && !pendVid2) {
+          var src2 = urlVid2 + (urlVid2.indexOf('#') > -1 ? '' : '#t=0.001');
+          var divV2 = document.createElement('div');
+          divV2.className = 'portfolio-item aprovado';
+          divV2.innerHTML = '<span class="absolute top-1 left-1 px-1.5 py-0.5 rounded text-[9px] font-extrabold bg-emerald-500/90 text-white z-10 shadow">🎬 Vídeo 2</span>' +
+                            '<video src="' + src2 + '" muted playsinline preload="metadata" style="width:100%;height:100%;object-fit:cover;background:#000"></video>';
+          container.appendChild(divV2);
+        }
+
         midiasPendentesExistentes.forEach(function(item, idx) {
-          if (item.tipo === 'galeria' || !item.tipo) {
+          if (item.tipo === 'video') {
+            var vSrc = String(item.url || '');
+            if (vSrc && vSrc.indexOf('#') < 0) vSrc = vSrc + '#t=0.001';
+            var div = document.createElement('div');
+            div.className = 'portfolio-item pendente';
+            div.innerHTML = '<span class="absolute top-1 left-1 px-1.5 py-0.5 rounded text-[9px] font-extrabold bg-amber-500/90 text-slate-950 z-10 shadow">🎬 Em Análise</span>' +
+                            '<video src="' + vSrc + '" muted playsinline preload="metadata" style="width:100%;height:100%;object-fit:cover;background:#000"></video>' +
+                            '<button type="button" class="btn-remove-img" onclick="removerFotoPendenteSalva(' + idx + ')">×</button>';
+            container.appendChild(div);
+          } else if (item.tipo === 'galeria' || !item.tipo) {
             var div = document.createElement('div');
             div.className = 'portfolio-item pendente';
             div.innerHTML = '<span class="absolute top-1 left-1 px-1.5 py-0.5 rounded text-[9px] font-extrabold bg-amber-500/90 text-slate-950 z-10 shadow">⏳ Em Análise</span>' +
