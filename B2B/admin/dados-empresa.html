@@ -1,0 +1,420 @@
+<!DOCTYPE html>
+<html lang="pt-BR" class="h-full">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
+  <meta name="robots" content="noindex, nofollow">
+  <title>432UP Partner | Dados da Empresa</title>
+
+  <script async src="https://www.googletagmanager.com/gtag/js?id=G-7SWNCP1NV6"></script>
+
+  <link class="js-site-favicon" rel="icon" type="image/png" href="https://www.432up.com/imagens/favicon.png">
+
+  <link rel="stylesheet" href="https://www.432up.com/css/style.css">
+  <script src="https://cdn.tailwindcss.com"></script>
+  <link rel="stylesheet" href="css/admin.css">
+  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+</head>
+<body class="h-full text-slate-200 font-sans antialiased bg-[#06080c] overflow-x-hidden">
+
+  <canvas id="orbit-canvas"></canvas>
+  <div id="plasmaLayer" class="plasma-top-layer"></div>
+
+  <!-- HOOKS ONDE O JS INJETA O HEADER -->
+  <header id="calc-header"></header>
+  <div id="mobile-menu"></div>
+
+  <!-- CONTEÚDO DA PÁGINA -->
+  <div class="flex flex-col min-h-screen relative z-10 pb-16">
+    <main class="flex-1 p-4 lg:p-8 space-y-6 pt-20 lg:pt-24 w-full max-w-7xl mx-auto">
+
+      <span class="admin-busy-spin" id="admin-busy" hidden></span>
+      <span id="db-dot" hidden></span>
+      <span id="db-status-text" hidden></span>
+      <span id="last-save-text" hidden></span>
+
+      <div class="module-page active" id="module-empresa">
+        <div class="admin-content-area">
+          <div class="mod-header">
+            <div>
+              <h2>Dados da Empresa</h2>
+              <p>Cadastro central dos dados cadastrais da 432UP.</p>
+            </div>
+            <div class="mod-actions">
+              <button class="btn" onclick="carregarDadosEmpresa()">🔄 Recarregar</button>
+              <button class="btn" id="btnSalvar" onclick="salvarDadosEmpresa()">💾 Salvar alterações</button>
+            </div>
+          </div>
+
+          <!-- IDENTIFICAÇÃO -->
+          <h3 style="margin:8px 0 12px;font-size:1rem;font-weight:600">Identificação</h3>
+          <div class="leads-filters">
+            <div class="field" style="flex:1 1 100%">
+              <label for="razao_social">Razão social</label>
+              <input id="razao_social" type="text">
+            </div>
+            <div class="field" style="flex:1 1 100%">
+              <label for="nome_fantasia">Nome fantasia</label>
+              <input id="nome_fantasia" type="text">
+            </div>
+            <div class="field" style="flex:1 1 100%">
+              <label for="cnpj">CNPJ</label>
+              <input id="cnpj" type="text">
+            </div>
+          </div>
+
+          <!-- ENDEREÇO -->
+          <h3 style="margin:20px 0 12px;font-size:1rem;font-weight:600">Endereço</h3>
+          <div class="leads-filters">
+            <div class="field">
+              <label for="cep">CEP</label>
+              <input id="cep" type="text">
+            </div>
+            <div class="field">
+              <label for="uf">UF</label>
+              <input id="uf" type="text" maxlength="2">
+            </div>
+            <div class="field" style="flex:1 1 100%">
+              <label for="logradouro">Logradouro</label>
+              <input id="logradouro" type="text">
+            </div>
+            <div class="field">
+              <label for="numero">Número</label>
+              <input id="numero" type="text">
+            </div>
+            <div class="field">
+              <label for="complemento">Complemento</label>
+              <input id="complemento" type="text">
+            </div>
+            <div class="field">
+              <label for="bairro">Bairro</label>
+              <input id="bairro" type="text">
+            </div>
+            <div class="field">
+              <label for="cidade">Cidade</label>
+              <input id="cidade" type="text">
+            </div>
+          </div>
+
+          <!-- REPRESENTANTE LEGAL -->
+          <h3 style="margin:20px 0 12px;font-size:1rem;font-weight:600">Representante legal</h3>
+          <div class="leads-filters">
+            <div class="field">
+              <label for="representante_legal_nome">Nome</label>
+              <input id="representante_legal_nome" type="text">
+            </div>
+            <div class="field">
+              <label for="representante_legal_cargo">Cargo</label>
+              <input id="representante_legal_cargo" type="text">
+            </div>
+          </div>
+
+          <!-- CONTATO INSTITUCIONAL -->
+          <h3 style="margin:20px 0 12px;font-size:1rem;font-weight:600">Contato institucional</h3>
+          <div class="leads-filters">
+            <div class="field">
+              <label for="contato_whatsapp">WhatsApp</label>
+              <input id="contato_whatsapp" type="text">
+            </div>
+            <div class="field">
+              <label for="contato_email">E-mail</label>
+              <input id="contato_email" type="text">
+            </div>
+          </div>
+
+          <!-- DADOS BANCÁRIOS -->
+          <h3 style="margin:20px 0 12px;font-size:1rem;font-weight:600">Dados bancários</h3>
+          <div class="leads-filters">
+            <div class="field">
+              <label for="banco">Banco</label>
+              <input id="banco" type="text">
+            </div>
+            <div class="field">
+              <label for="codigo_banco">Código do banco</label>
+              <input id="codigo_banco" type="text">
+            </div>
+            <div class="field">
+              <label for="agencia">Agência</label>
+              <input id="agencia" type="text">
+            </div>
+            <div class="field">
+              <label for="conta">Conta</label>
+              <input id="conta" type="text">
+            </div>
+            <div class="field">
+              <label for="tipo_conta">Tipo de conta</label>
+              <input id="tipo_conta" type="text">
+            </div>
+            <div class="field">
+              <label for="titular">Titular</label>
+              <input id="titular" type="text">
+            </div>
+            <div class="field">
+              <label for="documento_titular">Documento do titular</label>
+              <input id="documento_titular" type="text">
+            </div>
+            <div class="field">
+              <label for="tipo_chave_pix">Tipo de chave Pix</label>
+              <input id="tipo_chave_pix" type="text">
+            </div>
+            <div class="field">
+              <label for="chave_pix">Chave Pix</label>
+              <input id="chave_pix" type="text">
+            </div>
+            <div class="field">
+              <label for="recebedor_nome">Recebedor</label>
+              <input id="recebedor_nome" type="text">
+            </div>
+            <div class="field">
+              <label for="recebedor_documento">Documento do recebedor</label>
+              <input id="recebedor_documento" type="text">
+            </div>
+            <div class="field">
+              <label for="recebedor_tipo">Tipo do recebedor</label>
+              <input id="recebedor_tipo" type="text">
+            </div>
+            <div class="field">
+              <label for="ativo">Conta ativa</label>
+              <select id="ativo">
+                <option value="true">Sim</option>
+                <option value="false">Não</option>
+              </select>
+            </div>
+          </div>
+
+          <div class="leads-stats" style="margin-top:20px">
+            Fonte de dados: <b>co_dados_legais_empresa, co_dados_contato_empresa e co_dados_bancarios_empresa</b>. Os IDs dos registros não são alterados.
+          </div>
+        </div>
+      </div>
+
+    </main>
+  </div>
+
+  <div id="toastBox"></div>
+  <div class="confirm-overlay" id="confirmDlg">
+    <div class="confirm-box">
+      <p id="confirmMsg"></p>
+      <div class="confirm-actions">
+        <button class="btn btn-danger" onclick="confirmClose(true)">Sim</button>
+        <button class="btn" onclick="confirmClose(false)">Cancelar</button>
+      </div>
+    </div>
+  </div>
+
+  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+  <script src="https://www.432up.com/B2B/partner-config.js"></script>
+  <script src="https://www.432up.com/script/script.js" defer></script>
+  <script src="https://www.432up.com/script/tracker.js" defer></script>
+  <script src="https://www.432up.com/B2B/partner-header.js"></script>
+
+  <script>
+  const SUPABASE_URL_ADM = 'https://paetkspbfejtjjkngqej.supabase.co';
+  const SUPABASE_KEY_ADM = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InBhZXRrc3BiZmVqdGpqa25ncWVqIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzA5MDU2OTgsImV4cCI6MjA4NjQ4MTY5OH0.IiYweZ2g3bP7b0o7VvBW5LLb6d1oHtSNFUZlVkIsdsA';
+  const _supabaseAdmin = supabase.createClient(SUPABASE_URL_ADM, SUPABASE_KEY_ADM);
+  window._supabase = _supabaseAdmin;
+  const SB = SUPABASE_URL_ADM;
+  const SK = SUPABASE_KEY_ADM;
+
+  var _confirmCb = null;
+  function $(s) { return document.querySelector(s); }
+  function campo(id) { return document.getElementById(id); }
+
+  function clearToasts() {
+    var c = document.getElementById('toastBox');
+    if (c) c.innerHTML = '';
+  }
+  function toast(msg, type) {
+    var c = document.getElementById('toastBox');
+    if (!c) return;
+    clearToasts();
+    var t = document.createElement('div');
+    t.className = 'toast ' + (type === 'err' || type === 'error' ? 'err' : 'ok');
+    t.textContent = msg;
+    c.appendChild(t);
+    setTimeout(function () { if (t.parentNode) t.remove(); }, 3800);
+  }
+  window.showToast = toast;
+
+  function setDbStatus(ok) {
+    var dot = $('#db-dot');
+    if (dot) dot.classList.toggle('err', !ok);
+  }
+  function confirmClose(yes) {
+    $('#confirmDlg').classList.remove('open');
+    if (_confirmCb) _confirmCb(yes);
+    _confirmCb = null;
+  }
+  window.confirmClose = confirmClose;
+
+  function sbH(m) {
+    var h = { 'apikey': SK, 'Authorization': 'Bearer ' + SK, 'Content-Type': 'application/json' };
+    if (m === 'PATCH' || m === 'POST') h['Prefer'] = 'return=representation';
+    return h;
+  }
+  async function sbGet(table, q) {
+    try {
+      var r = await fetch(SB + '/rest/v1/' + table + '?' + q, { headers: { 'apikey': SK, 'Authorization': 'Bearer ' + SK } });
+      if (!r.ok) throw r;
+      return await r.json();
+    } catch (e) { console.error('sbGet', table, e); return null; }
+  }
+  async function sbPatch(table, id, body) {
+    try {
+      var r = await fetch(SB + '/rest/v1/' + table + '?id=eq.' + id, { method: 'PATCH', headers: sbH('PATCH'), body: JSON.stringify(body) });
+      if (!r.ok) { console.error('sbPatch', await r.text()); return false; }
+      return true;
+    } catch (e) { return false; }
+  }
+
+  // ============================================================
+  // DADOS DA EMPRESA
+  // ============================================================
+  var empresaId = null;
+  var contatoId = null;
+  var bancarioId = null;
+
+  var CAMPOS = [
+    'razao_social', 'nome_fantasia', 'cnpj',
+    'cep', 'logradouro', 'numero', 'complemento', 'bairro', 'cidade', 'uf',
+    'representante_legal_nome', 'representante_legal_cargo'
+  ];
+
+  /* Contato: id da tela -> coluna da tabela co_dados_contato_empresa */
+  var CAMPOS_CONTATO = {
+    contato_whatsapp: 'whatsapp',
+    contato_email: 'email'
+  };
+
+  /* Bancários: id da tela = coluna da tabela co_dados_bancarios_empresa */
+  var CAMPOS_BANCARIOS = [
+    'banco', 'codigo_banco', 'agencia', 'conta', 'tipo_conta',
+    'titular', 'documento_titular', 'tipo_chave_pix', 'chave_pix',
+    'recebedor_nome', 'recebedor_documento', 'recebedor_tipo'
+  ];
+
+  async function carregarDadosEmpresa() {
+    // A) Dados legais
+    var res = await sbPartner
+      .from('co_dados_legais_empresa')
+      .select('id, ' + CAMPOS.join(', '))
+      .limit(1)
+      .maybeSingle();
+    var ok = !res.error;
+    setDbStatus(ok);
+    if (!ok) { console.error(res.error); toast('Erro ao carregar', 'err'); return; }
+    if (!res.data) { toast('Dados legais não encontrados', 'err'); return; }
+    var data = res.data;
+    empresaId = data.id;
+    CAMPOS.forEach(function (n) {
+      var el = campo(n);
+      if (el) el.value = data[n] == null ? '' : data[n];
+    });
+
+    // B) Contato institucional
+    var resC = await sbPartner
+      .from('co_dados_contato_empresa')
+      .select('*')
+      .limit(1)
+      .maybeSingle();
+    if (resC.error) { console.error(resC.error); toast('Erro ao carregar', 'err'); return; }
+    if (!resC.data) { toast('Dados de contato não encontrados', 'err'); return; }
+    contatoId = resC.data.id;
+    Object.keys(CAMPOS_CONTATO).forEach(function (idCampo) {
+      var v = resC.data[CAMPOS_CONTATO[idCampo]];
+      campo(idCampo).value = v == null ? '' : v;
+    });
+
+    // C) Dados bancários
+    var resB = await sbPartner
+      .from('co_dados_bancarios_empresa')
+      .select('*')
+      .limit(1)
+      .maybeSingle();
+    if (resB.error) { console.error(resB.error); toast('Erro ao carregar', 'err'); return; }
+    if (!resB.data) { toast('Dados bancários não encontrados', 'err'); return; }
+    bancarioId = resB.data.id;
+    CAMPOS_BANCARIOS.forEach(function (n) {
+      var v = resB.data[n];
+      campo(n).value = v == null ? '' : v;
+    });
+    campo('ativo').value = resB.data.ativo === false ? 'false' : 'true';
+
+    toast('Dados carregados', 'ok');
+  }
+
+  function obterDados() {
+    var dados = {};
+    CAMPOS.forEach(function (n) {
+      dados[n] = campo(n).value.trim() || null;
+    });
+    return dados;
+  }
+
+  function obterDadosContato() {
+    var dados = {};
+    Object.keys(CAMPOS_CONTATO).forEach(function (idCampo) {
+      dados[CAMPOS_CONTATO[idCampo]] = campo(idCampo).value.trim() || null;
+    });
+    return dados;
+  }
+
+  function obterDadosBancarios() {
+    var dados = {};
+    CAMPOS_BANCARIOS.forEach(function (n) {
+      dados[n] = campo(n).value.trim() || null;
+    });
+    dados.ativo = campo('ativo').value === 'true';
+    return dados;
+  }
+
+  async function atualizarLinha(tabela, id, dados) {
+    var r = await sbPartner.from(tabela).update(dados).eq('id', id).select('id');
+    if (r.error) { console.error(tabela, r.error); return false; }
+    if (!r.data || !r.data.length) { console.error(tabela, 'nenhuma linha atualizada'); return false; }
+    return true;
+  }
+
+  async function salvarDadosEmpresa() {
+    if (!empresaId || !contatoId || !bancarioId) {
+      toast('Registros não carregados', 'err');
+      return;
+    }
+    var botao = campo('btnSalvar');
+    botao.disabled = true;
+    var ok1 = await atualizarLinha('co_dados_legais_empresa', empresaId, obterDados());
+    var ok2 = await atualizarLinha('co_dados_contato_empresa', contatoId, obterDadosContato());
+    var ok3 = await atualizarLinha('co_dados_bancarios_empresa', bancarioId, obterDadosBancarios());
+    botao.disabled = false;
+    if (ok1 && ok2 && ok3) {
+      var s = $('#last-save-text');
+      if (s) s.textContent = 'Salvo ' + new Date().toLocaleTimeString('pt-BR');
+      toast('Alterações salvas', 'ok');
+    } else {
+      toast('Erro ao salvar os dados', 'err');
+    }
+  }
+
+  window.carregarDadosEmpresa = carregarDadosEmpresa;
+  window.salvarDadosEmpresa = salvarDadosEmpresa;
+  window.__adminPageInit = function () { carregarDadosEmpresa(); };
+
+  // ============================================================
+  // AUTENTICAÇÃO (mesmo padrão do Leads)
+  // ============================================================
+  partnerRequireAuth().then(function (parceiro) {
+    partnerFillSidebar(parceiro);
+
+    var roleNorm = String(parceiro.role || parceiro.nivel || '').toLowerCase().trim();
+    var isAdmin = roleNorm === 'admin' || roleNorm === 'master';
+    window.updateAdminState(isAdmin);
+
+    if (typeof window.__adminPageInit === 'function') {
+      window.__adminPageInit(parceiro, isAdmin);
+    }
+  }).catch(function (err) {
+    console.error('Erro na autenticação:', err);
+  });
+  </script>
+</body>
+</html>
