@@ -627,8 +627,8 @@
             <div class="contact-box">
               <h3>VAMOS CRIAR ALGO INCRÍVEL JUNTOS?</h3>
               <p>Entre em contato agora!</p>
-              <p style="font-weight: 700; margin-top: 4px;">Ligue (11) 94856-4577 ou acesse:</p>
-              <a class="btn-whatsapp-pill" href="https://wa.me/5511948564577" target="_blank" rel="noopener noreferrer">
+              <p id="contato-ligue-linha" style="font-weight: 700; margin-top: 4px;">Ligue <span id="contato-whatsapp-numero"></span> ou acesse:</p>
+              <a class="btn-whatsapp-pill" id="contato-whatsapp-link" href="#" target="_blank" rel="noopener noreferrer">
                 <span>🔗</span> Link Whats App
               </a>
             </div>
@@ -637,15 +637,8 @@
             </div>
           </div>
 
-          <div class="section-header">DADOS BANCÁRIOS</div>
-          <div class="bank-info">
-            Banco: 336 – Banco C6 S.A.<br>
-            Agência: 0001<br>
-            Conta corrente: 22166669-9<br>
-            CNPJ: 23.118.247/0001-02<br>
-            Nome: 432UP! PRODUCOES<br>
-            Chave Pix: <span id="chave-pix-valor">23.118.247/0001-02</span>
-          </div>
+          <div class="section-header" id="bancarios-header">DADOS BANCÁRIOS</div>
+          <div class="bank-info" id="bank-info"></div>
           <button type="button" id="btn-copiar-pix" onclick="copiarChavePix()" style="margin-top: 8px; display: inline-flex; align-items: center; gap: 6px; background: #F3F4F6; color: var(--purple-deep); border: 1px solid #E5E7EB; padding: 6px 14px; border-radius: 6px; font-size: 12.5px; font-weight: 700; font-family: inherit; cursor: pointer;">📋 Copiar Chave PIX</button>
         </div>
       </div>
@@ -1009,6 +1002,139 @@
       if (linhas.length === 0) return null;
 
       return linhas.join(' — ');
+    }
+
+    /* =========================================================
+       CONTATO (WHATSAPP) E DADOS BANCÁRIOS DA EMPRESA
+       Fonte: co_dados_contato_empresa.whatsapp
+              co_dados_bancarios_empresa (preferência: ativo = true)
+       Sem nenhum valor fixo no HTML e sem fallback para valores antigos.
+       Falha na consulta ou campo vazio => o bloco correspondente é ocultado.
+       ========================================================= */
+
+    async function carregarContatoEmpresa() {
+      try {
+        const { data, error } = await sbPartner
+          .from('co_dados_contato_empresa')
+          .select('*')
+          .limit(1);
+        if (error || !Array.isArray(data) || data.length === 0) {
+          if (error) console.error('Erro ao consultar co_dados_contato_empresa:', error);
+          return null;
+        }
+        return data[0] || null;
+      } catch (e) {
+        console.error('Erro ao consultar co_dados_contato_empresa:', e);
+        return null;
+      }
+    }
+
+    async function carregarDadosBancariosEmpresa() {
+      try {
+        const { data, error } = await sbPartner
+          .from('co_dados_bancarios_empresa')
+          .select('*');
+        if (error || !Array.isArray(data) || data.length === 0) {
+          if (error) console.error('Erro ao consultar co_dados_bancarios_empresa:', error);
+          return null;
+        }
+        // Prefere o registro ativo; se nenhum estiver marcado, usa o primeiro retornado.
+        return data.find(r => r && r.ativo === true) || data[0] || null;
+      } catch (e) {
+        console.error('Erro ao consultar co_dados_bancarios_empresa:', e);
+        return null;
+      }
+    }
+
+    function renderContatoWhatsApp(contato) {
+      const linhaLigue = document.getElementById('contato-ligue-linha');
+      const numeroEl = document.getElementById('contato-whatsapp-numero');
+      const linkEl = document.getElementById('contato-whatsapp-link');
+
+      const numeroExibido = contato ? realValue(contato.whatsapp) : null;
+      const digitos = numeroExibido ? numeroExibido.replace(/\D/g, '') : '';
+
+      if (!numeroExibido || !digitos) {
+        if (linhaLigue) linhaLigue.style.display = 'none';
+        if (linkEl) linkEl.style.display = 'none';
+        return;
+      }
+
+      if (numeroEl) numeroEl.textContent = numeroExibido;
+      if (linkEl) linkEl.href = `https://wa.me/${digitos}`;
+    }
+
+    function renderDadosBancarios(banco) {
+      const header = document.getElementById('bancarios-header');
+      const box = document.getElementById('bank-info');
+      const btnPix = document.getElementById('btn-copiar-pix');
+      if (!box) return;
+
+      const ocultarSecao = () => {
+        if (header) header.style.display = 'none';
+        box.style.display = 'none';
+        if (btnPix) btnPix.style.display = 'none';
+      };
+
+      if (!banco) { ocultarSecao(); return; }
+
+      const codigoBanco = realValue(banco.codigo_banco);
+      const nomeBanco = realValue(banco.banco);
+      const agencia = realValue(banco.agencia);
+      const conta = realValue(banco.conta);
+      const tipoConta = realValue(banco.tipo_conta);
+      const documentoTitular = realValue(banco.documento_titular);
+      const titular = realValue(banco.titular);
+      const tipoChavePix = realValue(banco.tipo_chave_pix);
+      const chavePix = realValue(banco.chave_pix);
+      // recebedor_nome / recebedor_documento / recebedor_tipo: campos independentes do titular;
+      // esta seção não possui estrutura própria para eles, portanto não são exibidos aqui.
+
+      box.innerHTML = '';
+      let temLinha = false;
+
+      const novaLinha = (rotulo, valor, idSpan) => {
+        if (temLinha) box.appendChild(document.createElement('br'));
+        box.appendChild(document.createTextNode(rotulo));
+        if (idSpan) {
+          const span = document.createElement('span');
+          span.id = idSpan;
+          span.textContent = valor;
+          box.appendChild(span);
+        } else {
+          box.appendChild(document.createTextNode(valor));
+        }
+        temLinha = true;
+      };
+
+      // Banco: [codigo_banco] – [banco]
+      const bancoTxt = (codigoBanco && nomeBanco) ? `${codigoBanco} – ${nomeBanco}` : (codigoBanco || nomeBanco);
+      if (bancoTxt) novaLinha('Banco: ', bancoTxt);
+
+      // Agência: [agencia]
+      if (agencia) novaLinha('Agência: ', agencia);
+
+      // [tipo_conta]: [conta]
+      if (conta) {
+        let rotuloConta = 'Conta';
+        if (tipoConta) rotuloConta = /^conta/i.test(tipoConta) ? tipoConta : `Conta ${tipoConta}`;
+        novaLinha(`${rotuloConta}: `, conta);
+      }
+
+      // Documento: [documento_titular]
+      if (documentoTitular) novaLinha('Documento: ', documentoTitular);
+
+      // Nome: [titular]
+      if (titular) novaLinha('Nome: ', titular);
+
+      // Chave [tipo_chave_pix]: [chave_pix]  (#chave-pix-valor é lido por copiarChavePix())
+      if (chavePix) {
+        novaLinha(tipoChavePix ? `Chave ${tipoChavePix}: ` : 'Chave Pix: ', chavePix, 'chave-pix-valor');
+      } else if (btnPix) {
+        btnPix.style.display = 'none';
+      }
+
+      if (!temLinha) ocultarSecao();
     }
 
     /* =========================================================
@@ -1484,6 +1610,14 @@
           setTextOrHide('p2-contratada-nome', null, 'p2-contratada-wrap');
           setTextOrHide('p2-contratada-cnpj', null, 'p2-contratada-cnpj-wrap');
         }
+
+        // Contato (WhatsApp) e dados bancários da empresa — tabelas próprias (registros guardados em variáveis próprias)
+        const [dadosContatoEmpresa, dadosBancariosEmpresa] = await Promise.all([
+          carregarContatoEmpresa(),
+          carregarDadosBancariosEmpresa()
+        ]);
+        renderContatoWhatsApp(dadosContatoEmpresa);
+        renderDadosBancarios(dadosBancariosEmpresa);
 
         // Vendedor/Parceiro Dinâmico
         let nomeVendedor = null;
