@@ -685,7 +685,7 @@
       border-color: #00FF66;
     }
 
-    /* Botão compartilhar perfil (substitui o antigo "copiar link") */
+    /* Botão copiar link */
     .btn-copy-link {
       width: 100%;
       justify-content: center;
@@ -706,14 +706,9 @@
       transition: all 0.2s;
       font-family: 'Inter', sans-serif;
     }
-    .btn-copy-link svg { flex: 0 0 auto; }
     .btn-copy-link:hover {
       background: rgba(0, 240, 255, 0.1);
       border-color: var(--b2b-cyan);
-    }
-    .btn-copy-link:focus-visible {
-      outline: 2px solid var(--b2b-cyan);
-      outline-offset: 3px;
     }
     .btn-copy-link.copied {
       border-color: var(--primary-lime);
@@ -1367,16 +1362,8 @@
             SOLICITAR ORÇAMENTO PARA ESTE ARTISTA
           </a>
 
-          <!-- COMPARTILHAR: abre a folha nativa (WhatsApp, Mensagens...) ou copia o link -->
-          <button type="button" class="btn-copy-link" id="btn-share-perfil" onclick="compartilharPerfil()">
-            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
-              <circle cx="18" cy="5" r="3"/>
-              <circle cx="6" cy="12" r="3"/>
-              <circle cx="18" cy="19" r="3"/>
-              <line x1="8.6" y1="13.5" x2="15.4" y2="17.5"/>
-              <line x1="15.4" y1="6.5" x2="8.6" y2="10.5"/>
-            </svg>
-            Compartilhar perfil
+          <button type="button" class="btn-copy-link" id="btn-copy-perfil" onclick="copiarLinkPerfil()">
+            📋 Copiar link deste perfil
           </button>
         </div>
 
@@ -1404,22 +1391,8 @@
     currentActiveItem = null;
   }
 
-  // Feedback visual de "link copiado" no botão (troca o texto por ~2s)
-  function mostrarLinkCopiado(btn) {
-    if (!btn || btn.classList.contains('copied')) return;
-    const original = btn.innerHTML;
-    btn.innerHTML = '✓ Link copiado!';
-    btn.classList.add('copied');
-    setTimeout(() => {
-      btn.innerHTML = original;
-      btn.classList.remove('copied');
-    }, 2200);
-  }
-
-  // Compartilha o deep link do perfil atual:
-  // - celular/iPad: abre a folha de compartilhar do sistema (WhatsApp, Mensagens, Copiar...)
-  // - desktop (sem Web Share): copia o link e avisa "Link copiado!"
-  async function compartilharPerfil() {
+  // Copia o deep link do perfil atual para a área de transferência
+  function copiarLinkPerfil() {
     if (!currentActiveItem) return;
 
     const paramValue = slugify(currentActiveItem.nomeArtistico) || String(currentActiveItem.id);
@@ -1428,28 +1401,23 @@
     // Mantém outros params se existirem (ex: categoria_id)
     const linkFinal = url.toString();
 
-    const btn = document.getElementById('btn-share-perfil');
-    const nome = currentActiveItem.nomeArtistico;
+    const btn = document.getElementById('btn-copy-perfil');
 
-    try {
-      if (navigator.share) {
-        await navigator.share({
-          title: nome + ' | 432UP! Partner',
-          text: 'Confira ' + nome + ' na vitrine de artistas da 432UP!',
-          url: linkFinal
-        });
-        return;
-      }
-
-      if (navigator.clipboard && navigator.clipboard.writeText) {
-        await navigator.clipboard.writeText(linkFinal);
-        mostrarLinkCopiado(btn);
-      } else {
+    if (navigator.clipboard && navigator.clipboard.writeText) {
+      navigator.clipboard.writeText(linkFinal).then(() => {
+        if (btn) {
+          const original = btn.innerHTML;
+          btn.innerHTML = '✓ Link copiado!';
+          btn.classList.add('copied');
+          setTimeout(() => {
+            btn.innerHTML = original;
+            btn.classList.remove('copied');
+          }, 2200);
+        }
+      }).catch(() => {
         fallbackCopy(linkFinal, btn);
-      }
-    } catch (err) {
-      // AbortError = a pessoa fechou a folha de compartilhar (não é erro)
-      if (err && err.name === 'AbortError') return;
+      });
+    } else {
       fallbackCopy(linkFinal, btn);
     }
   }
@@ -1457,17 +1425,20 @@
   function fallbackCopy(text, btn) {
     const ta = document.createElement('textarea');
     ta.value = text;
-    ta.setAttribute('readonly', '');
     ta.style.position = 'fixed';
     ta.style.left = '-9999px';
     document.body.appendChild(ta);
     ta.select();
     try {
-      const ok = document.execCommand('copy');
-      if (ok) {
-        mostrarLinkCopiado(btn);
-      } else {
-        alert('Não foi possível copiar automaticamente. Link:\n' + text);
+      document.execCommand('copy');
+      if (btn) {
+        const original = btn.innerHTML;
+        btn.innerHTML = '✓ Link copiado!';
+        btn.classList.add('copied');
+        setTimeout(() => {
+          btn.innerHTML = original;
+          btn.classList.remove('copied');
+        }, 2200);
       }
     } catch (e) {
       alert('Não foi possível copiar automaticamente. Link:\n' + text);
