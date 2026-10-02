@@ -14,7 +14,7 @@
 
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
-  <meta name="version" content="Enterprise-3.4.2-B2B-TaxonomiaDinamica-DeepLink">
+  <meta name="version" content="Enterprise-3.4.4-B2B-TaxonomiaDinamica-DeepLink-MenuFix-Contraste">
 
   <meta name="theme-color" content="#08080A">
   <meta name="apple-mobile-web-app-capable" content="yes">
@@ -297,12 +297,21 @@
       text-transform: uppercase; padding: 4px 10px; border-radius: 14px;
     }
 
+    /* BADGE DESTAQUE — vidro escuro com borda e brilho dourados:
+       legível mesmo sobre fotos douradas/claras */
     .destaque-badge {
       position: absolute; left: 12px; top: 12px;
-      background: rgba(250, 204, 21, 0.2); border: 1px solid rgba(250, 204, 21, 0.8);
-      color: var(--gold-destaque); font-size: 0.62rem; font-weight: 800;
-      text-transform: uppercase; padding: 4px 10px; border-radius: 14px;
-      box-shadow: 0 0 12px rgba(250, 204, 21, 0.4);
+      background: linear-gradient(135deg, rgba(8, 6, 14, 0.86), rgba(48, 34, 4, 0.82));
+      border: 1px solid rgba(250, 204, 21, 0.95);
+      color: #FFE066;
+      font-size: 0.62rem; font-weight: 800;
+      text-transform: uppercase; padding: 5px 11px; border-radius: 14px;
+      letter-spacing: 0.4px;
+      text-shadow: 0 1px 3px rgba(0, 0, 0, 0.95), 0 0 8px rgba(0, 0, 0, 0.7);
+      backdrop-filter: blur(10px);
+      -webkit-backdrop-filter: blur(10px);
+      box-shadow: 0 3px 14px rgba(0, 0, 0, 0.75), 0 0 14px rgba(250, 204, 21, 0.45), inset 0 0 0 1px rgba(255, 224, 102, 0.12);
+      z-index: 2;
     }
 
     .card-body { padding: 20px; display: flex; flex-direction: column; flex: 1; }
@@ -685,15 +694,16 @@
       border-color: #00FF66;
     }
 
-    /* Botão copiar link */
+    /* Botão compartilhar perfil — contraste reforçado (fundo vidro escuro,
+       borda e texto ciano mais vivos), mantendo o visual translúcido */
     .btn-copy-link {
       width: 100%;
       justify-content: center;
-      background: transparent;
-      color: var(--b2b-cyan);
-      font-weight: 700;
-      border: 1px solid rgba(0, 240, 255, 0.4);
-      padding: 12px;
+      background: rgba(6, 10, 20, 0.55);
+      color: #8FEFF5;
+      font-weight: 800;
+      border: 2px solid rgba(0, 240, 255, 0.35);
+      padding: 14px;
       border-radius: 12px;
       cursor: pointer;
       margin-top: 10px;
@@ -702,17 +712,32 @@
       align-items: center;
       gap: 8px;
       box-sizing: border-box;
-      font-size: 0.9rem;
+      backdrop-filter: blur(10px);
+      -webkit-backdrop-filter: blur(10px);
+      box-shadow: none;
       transition: all 0.2s;
-      font-family: 'Inter', sans-serif;
     }
+
+    /* Botão principal do funil: mesmo padrão do Compartilhar, só a borda verde limão */
+    .btn-copy-link.btn-orcamento-destaque,
+    .btn-copy-link.btn-orcamento-destaque:hover {
+      border-color: var(--primary-lime);
+    }
+    .btn-copy-link svg { flex: 0 0 auto; }
     .btn-copy-link:hover {
-      background: rgba(0, 240, 255, 0.1);
+      background: linear-gradient(135deg, rgba(6, 10, 20, 0.78), rgba(0, 240, 255, 0.22));
       border-color: var(--b2b-cyan);
+      color: #FFFFFF;
+      box-shadow: 0 2px 14px rgba(0, 0, 0, 0.55), 0 0 18px rgba(0, 240, 255, 0.4);
+    }
+    .btn-copy-link:focus-visible {
+      outline: 2px solid var(--b2b-cyan);
+      outline-offset: 3px;
     }
     .btn-copy-link.copied {
       border-color: var(--primary-lime);
       color: var(--primary-lime);
+      box-shadow: 0 2px 12px rgba(0, 0, 0, 0.5), 0 0 14px rgba(0, 255, 102, 0.3);
     }
 
     @media (max-width: 860px) {
@@ -885,7 +910,8 @@
     </div>
   </div>
 
-<script src="partner-config.js"></script>
+<!-- MENU FIX: removido o <script src="partner-config.js"> duplicado (carrega só em B2B/ no rodapé)
+     e removida a injectGlobalHeader, que sobrescrevia o menu do partner-header.js em #calc-header. -->
 <script>
   let dbArtistas = [];
   let mapPerfis = {};
@@ -1358,12 +1384,20 @@
             </div>
           </div> -->
 
-          <a href="${linkWaDireto}" target="_blank" class="btn-header-cta" style="width: 100%; justify-content: center; background: #00FF66; color: #000; font-weight: 800; border: none; padding: 14px; border-radius: 12px; cursor: pointer; margin-top: 10px; text-decoration: none; display: flex; align-items: center; box-sizing: border-box;">
+          <a href="${linkWaDireto}" target="_blank" class="btn-header-cta btn-copy-link btn-orcamento-destaque">
             SOLICITAR ORÇAMENTO PARA ESTE ARTISTA
           </a>
 
-          <button type="button" class="btn-copy-link" id="btn-copy-perfil" onclick="copiarLinkPerfil()">
-            📋 Copiar link deste perfil
+          <!-- COMPARTILHAR: abre a folha nativa (WhatsApp, Mensagens...) ou copia o link -->
+          <button type="button" class="btn-header-cta btn-copy-link" id="btn-share-perfil" onclick="compartilharPerfil()">
+            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+              <circle cx="18" cy="5" r="3"/>
+              <circle cx="6" cy="12" r="3"/>
+              <circle cx="18" cy="19" r="3"/>
+              <line x1="8.6" y1="13.5" x2="15.4" y2="17.5"/>
+              <line x1="15.4" y1="6.5" x2="8.6" y2="10.5"/>
+            </svg>
+            Compartilhar perfil
           </button>
         </div>
 
@@ -1391,8 +1425,22 @@
     currentActiveItem = null;
   }
 
-  // Copia o deep link do perfil atual para a área de transferência
-  function copiarLinkPerfil() {
+  // Feedback visual de "link copiado" no botão (troca o texto por ~2s)
+  function mostrarLinkCopiado(btn) {
+    if (!btn || btn.classList.contains('copied')) return;
+    const original = btn.innerHTML;
+    btn.innerHTML = '✓ Link copiado!';
+    btn.classList.add('copied');
+    setTimeout(() => {
+      btn.innerHTML = original;
+      btn.classList.remove('copied');
+    }, 2200);
+  }
+
+  // Compartilha o deep link do perfil atual:
+  // - celular/iPad: abre a folha de compartilhar do sistema (WhatsApp, Mensagens, Copiar...)
+  // - desktop (sem Web Share): copia o link e avisa "Link copiado!"
+  async function compartilharPerfil() {
     if (!currentActiveItem) return;
 
     const paramValue = slugify(currentActiveItem.nomeArtistico) || String(currentActiveItem.id);
@@ -1401,23 +1449,28 @@
     // Mantém outros params se existirem (ex: categoria_id)
     const linkFinal = url.toString();
 
-    const btn = document.getElementById('btn-copy-perfil');
+    const btn = document.getElementById('btn-share-perfil');
+    const nome = currentActiveItem.nomeArtistico;
 
-    if (navigator.clipboard && navigator.clipboard.writeText) {
-      navigator.clipboard.writeText(linkFinal).then(() => {
-        if (btn) {
-          const original = btn.innerHTML;
-          btn.innerHTML = '✓ Link copiado!';
-          btn.classList.add('copied');
-          setTimeout(() => {
-            btn.innerHTML = original;
-            btn.classList.remove('copied');
-          }, 2200);
-        }
-      }).catch(() => {
+    try {
+      if (navigator.share) {
+        await navigator.share({
+          title: nome + ' | 432UP! Partner',
+          text: 'Confira ' + nome + ' na vitrine de artistas da 432UP!',
+          url: linkFinal
+        });
+        return;
+      }
+
+      if (navigator.clipboard && navigator.clipboard.writeText) {
+        await navigator.clipboard.writeText(linkFinal);
+        mostrarLinkCopiado(btn);
+      } else {
         fallbackCopy(linkFinal, btn);
-      });
-    } else {
+      }
+    } catch (err) {
+      // AbortError = a pessoa fechou a folha de compartilhar (não é erro)
+      if (err && err.name === 'AbortError') return;
       fallbackCopy(linkFinal, btn);
     }
   }
@@ -1425,20 +1478,17 @@
   function fallbackCopy(text, btn) {
     const ta = document.createElement('textarea');
     ta.value = text;
+    ta.setAttribute('readonly', '');
     ta.style.position = 'fixed';
     ta.style.left = '-9999px';
     document.body.appendChild(ta);
     ta.select();
     try {
-      document.execCommand('copy');
-      if (btn) {
-        const original = btn.innerHTML;
-        btn.innerHTML = '✓ Link copiado!';
-        btn.classList.add('copied');
-        setTimeout(() => {
-          btn.innerHTML = original;
-          btn.classList.remove('copied');
-        }, 2200);
+      const ok = document.execCommand('copy');
+      if (ok) {
+        mostrarLinkCopiado(btn);
+      } else {
+        alert('Não foi possível copiar automaticamente. Link:\n' + text);
       }
     } catch (e) {
       alert('Não foi possível copiar automaticamente. Link:\n' + text);
@@ -1527,23 +1577,6 @@
     }
   });
 
-  async function injectGlobalHeader() {
-    try {
-      const response = await fetch('header.html');
-      if (response.ok) {
-        const headerHTML = await response.text();
-        const parser = new DOMParser();
-        const doc = parser.parseFromString(headerHTML, 'text/html');
-        const container = document.getElementById('global-header-container') || document.getElementById('calc-header');
-        if (container) {
-          container.innerHTML = doc.body ? doc.body.innerHTML : headerHTML;
-        }
-      }
-    } catch (e) {
-      console.error('Erro ao carregar header:', e);
-    }
-  }
-
   // Abre o modal automaticamente se a URL tiver ?usuario=slug-ou-id
   function tentarAbrirDeepLink() {
     const param = getUrlParam('usuario') || getUrlParam('artista') || getUrlParam('id');
@@ -1570,7 +1603,6 @@
   }
 
   document.addEventListener('DOMContentLoaded', async () => {
-    injectGlobalHeader();
     // Ordem crítica: os artistas precisam estar carregados ANTES de montar
     // o filtro de categorias, pois a contagem por categoria (e o filtro de
     // categorias vazias) depende dos dados de dbArtistas já populados.
