@@ -803,6 +803,26 @@
         texto += '.';
         itensLi.push(texto);
 
+        // Composição do acréscimo do cartão (mesma lógica do Contrato): só exibe se houver
+        // acréscimo positivo e a reconstrução fechar com o valor_total salvo.
+        if (temValorTotal) {
+          const valorSubtotal = arredondarCentavos(proposta.valor_subtotal);
+          const descontoComercial = Math.max(0, arredondarCentavos(proposta.desconto_valor));
+          const valorTransporte = Math.max(0, arredondarCentavos(proposta.valor_transporte));
+          const valorHospedagem = Math.max(0, arredondarCentavos(proposta.valor_hospedagem));
+
+          const valorBaseCartao = arredondarCentavos(valorSubtotal - descontoComercial + valorTransporte + valorHospedagem);
+          const acrescimoCartao = arredondarCentavos(valorFinal - valorBaseCartao);
+
+          if (acrescimoCartao > 0 && composicaoConfere(valorBaseCartao + acrescimoCartao, valorFinal)) {
+            itensLi.push(
+              `Composição do valor: valor antes do acréscimo do cartão ${formatarMoeda(valorBaseCartao)}; ` +
+              `acréscimo de ${formatarMoeda(acrescimoCartao)}; ` +
+              `valor final ${formatarMoeda(valorFinal)}.`
+            );
+          }
+        }
+
       // OUTRO
       } else if (forma === 'outro') {
         const formaOutro = realValue(proposta.forma_pagamento_outro);
