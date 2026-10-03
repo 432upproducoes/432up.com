@@ -348,22 +348,20 @@
             <span class="text-[10px] font-extrabold text-cyan-400 uppercase tracking-widest block mb-3">⭐ Pré-visualização do Perfil Comercial</span>
             
             <div class="flex flex-col md:flex-row items-center md:items-start gap-6">
-              <div class="w-full md:w-48 h-48 rounded-xl bg-black/60 border border-cyan-500/30 overflow-hidden relative group shrink-0 flex items-center justify-center cursor-pointer" onclick="document.getElementById('fCapaInput').click()">
-                
-                <span id="capaStatusBadge" class="hidden absolute top-2 left-2 px-2 py-0.5 rounded-full text-[10px] font-extrabold z-20 shadow-lg"></span>
-
-                <div id="capaPreview" class="w-full h-full bg-cover bg-center">
-                  <span id="capaPlaceholder" class="flex flex-col items-center justify-center h-full text-slate-500 text-xs text-center p-2">
-                    🖼<br>Clique aqui para enviar a foto de capa
-                  </span>
+              <div class="w-full md:w-48 shrink-0 space-y-2">
+                <div class="w-full h-48 rounded-xl bg-black/60 border border-cyan-500/30 overflow-hidden relative flex items-center justify-center">
+                  <span id="capaStatusBadge" class="hidden absolute top-2 left-2 px-2 py-0.5 rounded-full text-[10px] font-extrabold z-20 shadow-lg"></span>
+                  <div id="capaPreview" class="w-full h-full bg-cover bg-center">
+                    <span id="capaPlaceholder" class="flex flex-col items-center justify-center h-full text-slate-500 text-xs text-center p-2">
+                      🖼<br>Sem foto de capa
+                    </span>
+                  </div>
                 </div>
-                
-                <div class="absolute inset-0 bg-black/80 opacity-0 group-hover:opacity-100 flex flex-col items-center justify-center gap-2 transition p-2 z-10">
-                  <span class="text-[11px] text-cyan-300 font-bold text-center px-2">📤 Clique aqui para enviar a foto de capa</span>
-                  <button type="button" onclick="event.stopPropagation(); document.getElementById('fCapaInput').click()" class="px-3 py-1.5 bg-cyan-500 hover:bg-cyan-400 text-slate-950 text-[11px] font-bold rounded-lg transition">
-                    Alterar Foto
+                <div class="flex flex-wrap gap-2">
+                  <button type="button" onclick="document.getElementById('fCapaInput').click()" class="px-3 py-1.5 bg-cyan-500 hover:bg-cyan-400 text-slate-950 text-[11px] font-bold rounded-lg transition">
+                    Enviar / Alterar Foto
                   </button>
-                  <button type="button" id="btnExcluirCapa" onclick="event.stopPropagation(); excluirFotoCapa()" class="px-3 py-1.5 bg-red-500/80 hover:bg-red-500 text-white text-[11px] font-bold rounded-lg transition hidden">
+                  <button type="button" id="btnExcluirCapa" onclick="excluirFotoCapa()" class="px-3 py-1.5 bg-red-500/80 hover:bg-red-500 text-white text-[11px] font-bold rounded-lg transition hidden">
                     Excluir Foto
                   </button>
                 </div>
@@ -1124,8 +1122,39 @@
           container.appendChild(div);
         });
 
+        // Vídeos aprovados (youtube_1 / youtube_2) — miniatura com frame #t=0.001
+        var pendVid1 = midiasPendentesExistentes.some(function(m) { return m.tipo === 'video' && m.campo_destino === 'youtube_1'; });
+        var pendVid2 = midiasPendentesExistentes.some(function(m) { return m.tipo === 'video' && m.campo_destino === 'youtube_2'; });
+        var urlVid1 = (parceiroAtual && parceiroAtual.youtube_1) ? String(parceiroAtual.youtube_1) : '';
+        var urlVid2 = (parceiroAtual && parceiroAtual.youtube_2) ? String(parceiroAtual.youtube_2) : '';
+        if (urlVid1 && !pendVid1) {
+          var src1 = urlVid1 + (urlVid1.indexOf('#') > -1 ? '' : '#t=0.001');
+          var divV1 = document.createElement('div');
+          divV1.className = 'portfolio-item aprovado';
+          divV1.innerHTML = '<span class="absolute top-1 left-1 px-1.5 py-0.5 rounded text-[9px] font-extrabold bg-emerald-500/90 text-white z-10 shadow">🎬 Vídeo 1</span>' +
+                            '<video src="' + src1 + '" muted playsinline preload="metadata" style="width:100%;height:100%;object-fit:cover;background:#000"></video>';
+          container.appendChild(divV1);
+        }
+        if (urlVid2 && !pendVid2) {
+          var src2 = urlVid2 + (urlVid2.indexOf('#') > -1 ? '' : '#t=0.001');
+          var divV2 = document.createElement('div');
+          divV2.className = 'portfolio-item aprovado';
+          divV2.innerHTML = '<span class="absolute top-1 left-1 px-1.5 py-0.5 rounded text-[9px] font-extrabold bg-emerald-500/90 text-white z-10 shadow">🎬 Vídeo 2</span>' +
+                            '<video src="' + src2 + '" muted playsinline preload="metadata" style="width:100%;height:100%;object-fit:cover;background:#000"></video>';
+          container.appendChild(divV2);
+        }
+
         midiasPendentesExistentes.forEach(function(item, idx) {
-          if (item.tipo === 'galeria' || !item.tipo) {
+          if (item.tipo === 'video') {
+            var vSrc = String(item.url || '');
+            if (vSrc && vSrc.indexOf('#') < 0) vSrc = vSrc + '#t=0.001';
+            var div = document.createElement('div');
+            div.className = 'portfolio-item pendente';
+            div.innerHTML = '<span class="absolute top-1 left-1 px-1.5 py-0.5 rounded text-[9px] font-extrabold bg-amber-500/90 text-slate-950 z-10 shadow">🎬 Em Análise</span>' +
+                            '<video src="' + vSrc + '" muted playsinline preload="metadata" style="width:100%;height:100%;object-fit:cover;background:#000"></video>' +
+                            '<button type="button" class="btn-remove-img" onclick="removerFotoPendenteSalva(' + idx + ')">×</button>';
+            container.appendChild(div);
+          } else if (item.tipo === 'galeria' || !item.tipo) {
             var div = document.createElement('div');
             div.className = 'portfolio-item pendente';
             div.innerHTML = '<span class="absolute top-1 left-1 px-1.5 py-0.5 rounded text-[9px] font-extrabold bg-amber-500/90 text-slate-950 z-10 shadow">⏳ Em Análise</span>' +
@@ -1493,7 +1522,8 @@
         try {
           updateLoadingProgress(35, 'Processando mídias...');
 
-          var novasMidiasPendentes = midiasPendentesExistentes.filter(function(m) { return m.tipo !== 'video'; });
+          // Mantém pendentes (incl. vídeos). Só substitui vídeo se houver arquivo novo no input.
+          var novasMidiasPendentes = midiasPendentesExistentes.slice();
           var houveEnvioMidia = false;
 
           /* ===================================================================
@@ -1519,6 +1549,10 @@
               throw new Error('Falha no upload do vídeo principal: ' + uploadErrV1.message);
             }
             houveEnvioMidia = true;
+            // Substitui pendente anterior do mesmo campo (não acumula)
+            novasMidiasPendentes = novasMidiasPendentes.filter(function(m) {
+              return !(m.tipo === 'video' && m.campo_destino === 'youtube_1');
+            });
             novasMidiasPendentes.push({
               id: 'video_1_' + Date.now(),
               url: video1Url,
@@ -1539,6 +1573,9 @@
               throw new Error('Falha no upload do vídeo secundário: ' + uploadErrV2.message);
             }
             houveEnvioMidia = true;
+            novasMidiasPendentes = novasMidiasPendentes.filter(function(m) {
+              return !(m.tipo === 'video' && m.campo_destino === 'youtube_2');
+            });
             novasMidiasPendentes.push({
               id: 'video_2_' + Date.now(),
               url: video2Url,
