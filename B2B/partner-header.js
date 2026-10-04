@@ -1,24 +1,3 @@
-/* ============================================================
-   432UP — MENU UNIFICADO DO PORTAL (partner-header.js)
-
-   - Toggle à esquerda: Site / Parceiro / Admin, liberado por nível
-       visitante         -> só Site (toggle some)
-       parceiro logado   -> Site + Parceiro
-       admin             -> Site + Parceiro + Admin
-   - Home (fora de /B2B/): tema lilás (#c5a059 no toggle)
-   - B2B / Admin: tema ciano (aba Admin continua âmbar)
-   - Menu à direita: muda conforme a área escolhida no toggle
-   - Submenus abrem num painel fixo no <body>
-   - Para mudar nome de página ou link: edite só o bloco MENUS
-
-   NOVO:
-   - Pílula do toggle desliza entre os segmentos (toque, clique,
-     arraste com dedo/mouse, gesto rápido e setas do teclado)
-   - Cor do header troca com fade (camadas de cor empilhadas)
-   - Menus e submenus entram com fade; toggle entra deslizando
-   - Mobile (<=1024px) logado: hambúrguer some, o toggle abre o menu
-   - Desktop: layout e comportamento intactos, só ganha as transições
-   ============================================================ */
 (function () {
   'use strict';
 
@@ -78,10 +57,12 @@
         { label: 'Contato Cliente', href: ADM + 'admin-clientes.html', file: 'admin-clientes.html' },
         { label: 'Converter Contatos', href: ADM + 'contatos-converter.html', file: 'contatos-converter.html' }
       ]},
-      { label: 'Dados Legais', sub: [
+      { label: 'Configurações', sub: [
         { label: 'Configurar Contrato', href: ADM + 'configure-contrato.html', file: 'configure-contrato.html' },
-        { label: 'Dados da Empresa', href: ADM + 'dados-empresa.html', file: 'dados-empresa.html' }
+        { label: 'Dados da Empresa', href: ADM + 'dados-empresa.html', file: 'dados-empresa.html' },
+        { label: 'Configurações Financeiras', href: ADM + 'config-financeiro.html', file: 'config-financeiro.html' }
       ]},
+
       { label: 'Painel do Site', sub: [
         { label: 'Simulador', href: ADM + 'admin-simulador.html', file: 'admin-simulador.html' },
         { label: 'Serviços', href: ADM + 'admin-servicos.html', file: 'admin-servicos.html' },
