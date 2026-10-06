@@ -889,14 +889,30 @@ custoHoras = horasExcedentes * vExtraHora;
     console.warn('Não foi possível salvar a seleção local:', e);
   }
 
+  
+
+
+  const pkgNames = (pkg && itemIdsInPkg.length > 0)
+    ? dbItems
+        .filter(i => itemIdsInPkg.includes(i.id) || itemIdsInPkg.includes(String(i.id)))
+        .map(i => String(i.nome || i.nome_exibicao || '').replace(/\s*\(R\$\s*[\d.,]+\)\s*/g, '').trim())
+    : [];
+  const extraNames = globalSpecsList.filter(n => !pkgNames.includes(n));
+
   const msg = encodeURIComponent(
-    'Olá! Gostaria de validar meu Projeto de Atmosfera 432UP!:\n' +
-    (currentVipCode ? 'Código de Reserva VIP: *' + currentVipCode + '*\n\n' : '') +
-    (pkg ? '- Rider: ' + pkg.toUpperCase() + '\n' : '') +
-    (selection.guestsText ? '- Escala: ' + selection.guestsText + '\n' : '') +
-    (hours !== null ? '- Duração: ' + hours + 'h\n' : '') +
-    '- Investimento Estimado: ' + (globalFormattedPrice || 'Sob consulta')
+    '👋 Olá! Gostaria de validar meu *Projeto de Atmosfera 432UP!*\n' +
+    (currentVipCode ? '🎟️ Código de Reserva VIP: *' + currentVipCode + '*\n' : '') +
+    '\n' +
+    (selection.guestsText ? '👥 *Escala:* ' + selection.guestsText + '\n' : '') +
+    (hours !== null ? '⏱️ *Duração:* ' + hours + 'h\n' : '') +
+    (pkg ? '\n🏆 *Rider: ' + pkg.toUpperCase() + '*\n' + pkgNames.map(n => '   • ' + n + '\n').join('') : '') +
+    (extraNames.length > 0 ? '\n➕ *Adicionais:*\n' + extraNames.map(n => '      ◦ ' + n + '\n').join('') : '') +
+    '\n💰 *Investimento Estimado:* ' + (globalFormattedPrice || 'Sob consulta')
   );
+
+
+
+
 
   const targetWhatsappUrl = 'https://wa.me/' + calcFallbackWhatsapp + '?text=' + msg;
   const btnWhatsapp = document.getElementById('btn-whatsapp');
