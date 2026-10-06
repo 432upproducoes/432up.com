@@ -889,44 +889,22 @@ custoHoras = horasExcedentes * vExtraHora;
     console.warn('Não foi possível salvar a seleção local:', e);
   }
 
+  const msg = encodeURIComponent(
+    'Olá! Gostaria de validar meu Projeto de Atmosfera 432UP!:\n' +
+    (currentVipCode ? 'Código de Reserva VIP: *' + currentVipCode + '*\n\n' : '') +
+    (pkg ? '- Rider: ' + pkg.toUpperCase() + '\n' : '') +
+    (selection.guestsText ? '- Escala: ' + selection.guestsText + '\n' : '') +
+    (hours !== null ? '- Duração: ' + hours + 'h\n' : '') +
+    '- Investimento Estimado: ' + (globalFormattedPrice || 'Sob consulta')
+  );
 
-
-
-
-
-
-
-
-const itensSelecionadosWhatsApp = globalSpecsList.length
-  ? globalSpecsList.map(item => '- ' + item).join('\n')
-  : '- Nenhum item adicional informado';
-
-const msg = encodeURIComponent(
-  'Olá! Gostaria de validar meu Projeto de Atmosfera 432UP!:\n' +
-  (currentVipCode ? 'Código de Reserva VIP: *' + currentVipCode + '*\n\n' : '') +
-  (pkg ? '- Rider: ' + pkg.toUpperCase() + '\n' : '') +
-  (selection.guestsText ? '- Escala: ' + selection.guestsText + '\n' : '') +
-  (hours !== null ? '- Duração: ' + hours + 'h\n' : '') +
-  '\n- Itens selecionados:\n' +
-  itensSelecionadosWhatsApp + '\n' +
-  '\n- Investimento Estimado: ' + (globalFormattedPrice || 'Sob consulta')
-);
-
-const targetWhatsappUrl = 'https://wa.me/' + calcFallbackWhatsapp + '?text=' + msg;
-
-const btnWhatsapp = document.getElementById('btn-whatsapp');
-if (btnWhatsapp) btnWhatsapp.href = targetWhatsappUrl;
-
-if (missingSteps.length === 0 && stickyBtnWhatsapp) {
-  stickyBtnWhatsapp.href = targetWhatsappUrl;
+  const targetWhatsappUrl = 'https://wa.me/' + calcFallbackWhatsapp + '?text=' + msg;
+  const btnWhatsapp = document.getElementById('btn-whatsapp');
+  if (btnWhatsapp) btnWhatsapp.href = targetWhatsappUrl;
+  if (missingSteps.length === 0 && stickyBtnWhatsapp) {
+    stickyBtnWhatsapp.href = targetWhatsappUrl;
+  }
 }
-
-
-
-
-
-
-
 
 /* ---------- POPOVERS & MODAIS ---------- */
 function openPricePopover(event, id) {
