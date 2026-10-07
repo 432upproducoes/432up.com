@@ -126,14 +126,22 @@
       }
     }
 
-    // --- Faixas de convidados / adicional ---
+    // --- Faixas de convidados / adicional (ACUMULATIVAS) ---
     if (s.faixas && s.faixas.length) {
-      var fx = s.faixas.find(function (f) {
-        return convidados >= f.min && convidados <= (f.max != null ? f.max : Infinity);
-      }) || s.faixas[0];
-      detalhe.faixaAdicional = Number(fx.adicional) || 0;
-      if (!detalhe.faixaAplicada) detalhe.faixaAplicada = fx;
-      v += detalhe.faixaAdicional;
+      var faixasAplicadas = [];
+      s.faixas.forEach(function (f) {
+        var min = Number(f.min);
+        if (isFinite(min) && convidados >= min) {
+          faixasAplicadas.push(f);
+        }
+      });
+      if (faixasAplicadas.length) {
+        faixasAplicadas.forEach(function (f) {
+          detalhe.faixaAdicional += Number(f.adicional) || 0;
+        });
+        detalhe.faixaAplicada = faixasAplicadas[faixasAplicadas.length - 1];
+        v += detalhe.faixaAdicional;
+      }
     }
 
     detalhe.total = v;
