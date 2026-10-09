@@ -287,7 +287,12 @@ function toggleMobileMenu() {
 }
 
 /* MODAL & VALIDAÇÃO INTELIGENTE DE CONTATO (E-MAIL OU TELEFONE) */
-let fallbackWhatsapp = "5511948564577";
+/* WhatsApp: somente número da tabela co_dados_contato_empresa (contato.js → CONTATO_WHATSAPP). Sem fallback hardcoded. */
+function getWhatsappEmpresa() {
+  var dig = String(window.CONTATO_WHATSAPP || '').replace(/\D/g, '');
+  if (dig && dig.indexOf('55') !== 0 && dig.length <= 11) dig = '55' + dig;
+  return dig;
+}
 
 function openLeadModal() {
   // Suporta os dois IDs usados no site (index/aessencia/mesa + calculadora/galeria)
@@ -379,7 +384,12 @@ async function handleProgressFormSubmit(e) {
   const encoded = encodeURIComponent(
     `Olá! Meu nome é ${name}.\nContato: ${contact}\nGostaria de iniciar um alinhamento técnico.\n\nDetalhes: ${msg || 'Nenhum'}`
   );
-  window.open(`https://wa.me/${fallbackWhatsapp}?text=${encoded}`, '_blank');
+  const waNum = getWhatsappEmpresa();
+  if (waNum) {
+    window.open(`https://wa.me/${waNum}?text=${encoded}`, '_blank');
+  } else {
+    showSiteToast('Número de WhatsApp ainda carregando. Tente novamente em instantes.', 'error');
+  }
 
   if (btn) {
     btn.innerText = "Enviar Solicitação";
