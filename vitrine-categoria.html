@@ -14,7 +14,7 @@
 
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
-  <meta name="version" content="Enterprise-3.4.4-B2B-TaxonomiaDinamica-DeepLink-MenuFix-Contraste">
+  <meta name="version" content="Enterprise-3.4.3-B2B-TaxonomiaDinamica-DeepLink-MenuFix">
 
   <meta name="theme-color" content="#08080A">
   <meta name="apple-mobile-web-app-capable" content="yes">
@@ -297,21 +297,12 @@
       text-transform: uppercase; padding: 4px 10px; border-radius: 14px;
     }
 
-    /* BADGE DESTAQUE — vidro escuro com borda e brilho dourados:
-       legível mesmo sobre fotos douradas/claras */
     .destaque-badge {
       position: absolute; left: 12px; top: 12px;
-      background: linear-gradient(135deg, rgba(8, 6, 14, 0.86), rgba(48, 34, 4, 0.82));
-      border: 1px solid rgba(250, 204, 21, 0.95);
-      color: #FFE066;
-      font-size: 0.62rem; font-weight: 800;
-      text-transform: uppercase; padding: 5px 11px; border-radius: 14px;
-      letter-spacing: 0.4px;
-      text-shadow: 0 1px 3px rgba(0, 0, 0, 0.95), 0 0 8px rgba(0, 0, 0, 0.7);
-      backdrop-filter: blur(10px);
-      -webkit-backdrop-filter: blur(10px);
-      box-shadow: 0 3px 14px rgba(0, 0, 0, 0.75), 0 0 14px rgba(250, 204, 21, 0.45), inset 0 0 0 1px rgba(255, 224, 102, 0.12);
-      z-index: 2;
+      background: rgba(250, 204, 21, 0.2); border: 1px solid rgba(250, 204, 21, 0.8);
+      color: var(--gold-destaque); font-size: 0.62rem; font-weight: 800;
+      text-transform: uppercase; padding: 4px 10px; border-radius: 14px;
+      box-shadow: 0 0 12px rgba(250, 204, 21, 0.4);
     }
 
     .card-body { padding: 20px; display: flex; flex-direction: column; flex: 1; }
@@ -694,16 +685,15 @@
       border-color: #00FF66;
     }
 
-    /* Botão compartilhar perfil — contraste reforçado (fundo vidro escuro,
-       borda e texto ciano mais vivos), mantendo o visual translúcido */
+    /* Botão copiar link */
     .btn-copy-link {
       width: 100%;
       justify-content: center;
-      background: rgba(6, 10, 20, 0.55);
-      color: #8FEFF5;
-      font-weight: 800;
-      border: 2px solid rgba(0, 240, 255, 0.35);
-      padding: 14px;
+      background: transparent;
+      color: var(--b2b-cyan);
+      font-weight: 700;
+      border: 1px solid rgba(0, 240, 255, 0.4);
+      padding: 12px;
       border-radius: 12px;
       cursor: pointer;
       margin-top: 10px;
@@ -712,32 +702,17 @@
       align-items: center;
       gap: 8px;
       box-sizing: border-box;
-      backdrop-filter: blur(10px);
-      -webkit-backdrop-filter: blur(10px);
-      box-shadow: none;
+      font-size: 0.9rem;
       transition: all 0.2s;
+      font-family: 'Inter', sans-serif;
     }
-
-    /* Botão principal do funil: mesmo padrão do Compartilhar, só a borda verde limão */
-    .btn-copy-link.btn-orcamento-destaque,
-    .btn-copy-link.btn-orcamento-destaque:hover {
-      border-color: var(--primary-lime);
-    }
-    .btn-copy-link svg { flex: 0 0 auto; }
     .btn-copy-link:hover {
-      background: linear-gradient(135deg, rgba(6, 10, 20, 0.78), rgba(0, 240, 255, 0.22));
+      background: rgba(0, 240, 255, 0.1);
       border-color: var(--b2b-cyan);
-      color: #FFFFFF;
-      box-shadow: 0 2px 14px rgba(0, 0, 0, 0.55), 0 0 18px rgba(0, 240, 255, 0.4);
-    }
-    .btn-copy-link:focus-visible {
-      outline: 2px solid var(--b2b-cyan);
-      outline-offset: 3px;
     }
     .btn-copy-link.copied {
       border-color: var(--primary-lime);
       color: var(--primary-lime);
-      box-shadow: 0 2px 12px rgba(0, 0, 0, 0.5), 0 0 14px rgba(0, 255, 102, 0.3);
     }
 
     @media (max-width: 860px) {
@@ -910,8 +885,9 @@
     </div>
   </div>
 
-<!-- MENU FIX: removido o <script src="partner-config.js"> duplicado (carrega só em B2B/ no rodapé)
-     e removida a injectGlobalHeader, que sobrescrevia o menu do partner-header.js em #calc-header. -->
+<!-- CORREÇÃO: removido <script src="partner-config.js"></script> duplicado.
+     O partner-config.js é carregado uma única vez, no rodapé, via B2B/partner-config.js
+     (igual à galeria). Scripts síncronos rodam antes do DOMContentLoaded. -->
 <script>
   let dbArtistas = [];
   let mapPerfis = {};
@@ -1339,7 +1315,7 @@
     }
 
     const mensagemWa = encodeURIComponent(`Olá! Gostaria de solicitar um orçamento para contratação artística da atração: ${a.nomeArtistico}`);
-    const linkWaDireto = `https://wa.me/5511948564577?text=${mensagemWa}`;
+    const linkWaDireto = `https://wa.me/?text=${mensagemWa}`;
 
     document.getElementById('modal-case-content').innerHTML = `
       <div class="b2b-hero-card">
@@ -1384,20 +1360,12 @@
             </div>
           </div> -->
 
-          <a href="${linkWaDireto}" target="_blank" class="btn-header-cta btn-copy-link btn-orcamento-destaque">
+          <a href="${linkWaDireto}" target="_blank" class="btn-header-cta" style="width: 100%; justify-content: center; background: #00FF66; color: #000; font-weight: 800; border: none; padding: 14px; border-radius: 12px; cursor: pointer; margin-top: 10px; text-decoration: none; display: flex; align-items: center; box-sizing: border-box;">
             SOLICITAR ORÇAMENTO PARA ESTE ARTISTA
           </a>
 
-          <!-- COMPARTILHAR: abre a folha nativa (WhatsApp, Mensagens...) ou copia o link -->
-          <button type="button" class="btn-header-cta btn-copy-link" id="btn-share-perfil" onclick="compartilharPerfil()">
-            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
-              <circle cx="18" cy="5" r="3"/>
-              <circle cx="6" cy="12" r="3"/>
-              <circle cx="18" cy="19" r="3"/>
-              <line x1="8.6" y1="13.5" x2="15.4" y2="17.5"/>
-              <line x1="15.4" y1="6.5" x2="8.6" y2="10.5"/>
-            </svg>
-            Compartilhar perfil
+          <button type="button" class="btn-copy-link" id="btn-copy-perfil" onclick="copiarLinkPerfil()">
+            📋 Copiar link deste perfil
           </button>
         </div>
 
@@ -1425,22 +1393,8 @@
     currentActiveItem = null;
   }
 
-  // Feedback visual de "link copiado" no botão (troca o texto por ~2s)
-  function mostrarLinkCopiado(btn) {
-    if (!btn || btn.classList.contains('copied')) return;
-    const original = btn.innerHTML;
-    btn.innerHTML = '✓ Link copiado!';
-    btn.classList.add('copied');
-    setTimeout(() => {
-      btn.innerHTML = original;
-      btn.classList.remove('copied');
-    }, 2200);
-  }
-
-  // Compartilha o deep link do perfil atual:
-  // - celular/iPad: abre a folha de compartilhar do sistema (WhatsApp, Mensagens, Copiar...)
-  // - desktop (sem Web Share): copia o link e avisa "Link copiado!"
-  async function compartilharPerfil() {
+  // Copia o deep link do perfil atual para a área de transferência
+  function copiarLinkPerfil() {
     if (!currentActiveItem) return;
 
     const paramValue = slugify(currentActiveItem.nomeArtistico) || String(currentActiveItem.id);
@@ -1449,28 +1403,23 @@
     // Mantém outros params se existirem (ex: categoria_id)
     const linkFinal = url.toString();
 
-    const btn = document.getElementById('btn-share-perfil');
-    const nome = currentActiveItem.nomeArtistico;
+    const btn = document.getElementById('btn-copy-perfil');
 
-    try {
-      if (navigator.share) {
-        await navigator.share({
-          title: nome + ' | 432UP! Partner',
-          text: 'Confira ' + nome + ' na vitrine de artistas da 432UP!',
-          url: linkFinal
-        });
-        return;
-      }
-
-      if (navigator.clipboard && navigator.clipboard.writeText) {
-        await navigator.clipboard.writeText(linkFinal);
-        mostrarLinkCopiado(btn);
-      } else {
+    if (navigator.clipboard && navigator.clipboard.writeText) {
+      navigator.clipboard.writeText(linkFinal).then(() => {
+        if (btn) {
+          const original = btn.innerHTML;
+          btn.innerHTML = '✓ Link copiado!';
+          btn.classList.add('copied');
+          setTimeout(() => {
+            btn.innerHTML = original;
+            btn.classList.remove('copied');
+          }, 2200);
+        }
+      }).catch(() => {
         fallbackCopy(linkFinal, btn);
-      }
-    } catch (err) {
-      // AbortError = a pessoa fechou a folha de compartilhar (não é erro)
-      if (err && err.name === 'AbortError') return;
+      });
+    } else {
       fallbackCopy(linkFinal, btn);
     }
   }
@@ -1478,17 +1427,20 @@
   function fallbackCopy(text, btn) {
     const ta = document.createElement('textarea');
     ta.value = text;
-    ta.setAttribute('readonly', '');
     ta.style.position = 'fixed';
     ta.style.left = '-9999px';
     document.body.appendChild(ta);
     ta.select();
     try {
-      const ok = document.execCommand('copy');
-      if (ok) {
-        mostrarLinkCopiado(btn);
-      } else {
-        alert('Não foi possível copiar automaticamente. Link:\n' + text);
+      document.execCommand('copy');
+      if (btn) {
+        const original = btn.innerHTML;
+        btn.innerHTML = '✓ Link copiado!';
+        btn.classList.add('copied');
+        setTimeout(() => {
+          btn.innerHTML = original;
+          btn.classList.remove('copied');
+        }, 2200);
       }
     } catch (e) {
       alert('Não foi possível copiar automaticamente. Link:\n' + text);
@@ -1577,6 +1529,10 @@
     }
   });
 
+  // CORREÇÃO: a função injectGlobalHeader foi REMOVIDA desta página.
+  // Ela injetava o header.html dentro de #calc-header e sobrescrevia o menu
+  // montado pelo B2B/partner-header.js (logado, administrador, usuário).
+
   // Abre o modal automaticamente se a URL tiver ?usuario=slug-ou-id
   function tentarAbrirDeepLink() {
     const param = getUrlParam('usuario') || getUrlParam('artista') || getUrlParam('id');
@@ -1615,12 +1571,130 @@
 </script>
 
 
+
+  <!-- MODAL DE CAPTURA DE LEAD (padrão index) -->
+  <div class="modal-overlay" id="lead-modal">
+    <div class="modal-box plasma-glow-overlay aurora-border-glow">
+      <button class="modal-close" onclick="closeLeadModal()" type="button" aria-label="Fechar">✕</button>
+      <div>
+        <h3>Conectar com a 432UP!</h3>
+        <p>Receba um atendimento exclusivo via WhatsApp ou e-mail.</p>
+      </div>
+
+      <a href="https://wa.me/?text=Ol%C3%A1%21%20Vim%20pela%20Vitrine%20de%20Categorias%20da%20432UP%21%20e%20gostaria%20de%20alinhar%20um%20projeto." target="_blank" rel="noopener noreferrer" class="btn-modal-wa-direct">
+        <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+          <path d="M21 11.5a8.38 8.38 0 0 1-.9 3.8 8.5 8.5 0 0 1-7.6 4.7 8.38 8.38 0 0 1-3.8-.9L3 21l1.9-5.7a8.38 8.38 0 0 1-.9-3.8 8.5 8.5 0 0 1 4.7-7.6 8.38 8.38 0 0 1 3.8-.9h.5a8.48 8.48 0 0 1 8 8v.5z"/>
+        </svg>
+        Conversar Direto via WhatsApp
+      </a>
+
+      <div class="modal-form-divider">ou envie suas informações</div>
+
+      <form onsubmit="handleProgressFormSubmit(event)">
+        <input type="text" id="modal-lead-name" required placeholder="Seu nome ou empresa">
+        <input type="text" id="modal-lead-contact" required placeholder="WhatsApp (com DDD) ou E-mail">
+        <span id="contact-error-msg" style="display: none; color: #FF007F; font-size: 0.72rem; margin-top: 4px; margin-bottom: 8px;">Por favor, insira um e-mail válido ou um telefone/WhatsApp com DDD.</span>
+        <textarea id="modal-lead-msg" placeholder="Observações sobre o evento (data, local ou perfil)..." style="height: 65px; resize: none;"></textarea>
+        <button type="submit" id="btn-submit-modal" class="btn-header-cta" style="width:100%; margin-left:0; padding:12px; margin-top:4px;">Enviar Solicitação</button>
+      </form>
+    </div>
+  </div>
+
 <header id="calc-header"></header>
 <div id="mobile-menu"></div>
-<script src="https://unpkg.com/@supabase/supabase-js@2"></script>
+
 <script src="B2B/partner-config.js"></script>
 <script src="B2B/partner-header.js"></script>
 
+
+<script src="script/contato.js" defer></script>
+
+<script>
+/* Lead com origem da página + WA só do banco (sem fallback) — vitrine-categoria */
+(function () {
+  var ORIGEM = 'vitrine-categoria';
+  var MSG_DEFAULT = 'Contato pela página Vitrine Categorias';
+  var LABEL_PAGINA = 'vitrine-categoria';
+
+  window.handleProgressFormSubmit = async function (e) {
+    e.preventDefault();
+    var nameEl = document.getElementById('modal-lead-name');
+    var contactEl = document.getElementById('modal-lead-contact');
+    var msgEl = document.getElementById('modal-lead-msg');
+    var errorMsg = document.getElementById('contact-error-msg');
+    var btn = document.getElementById('btn-submit-modal');
+    if (!nameEl || !contactEl) return;
+
+    var name = nameEl.value.trim();
+    var contact = contactEl.value.trim();
+    var msg = msgEl ? msgEl.value.trim() : '';
+
+    if (typeof validateContact === 'function' && !validateContact(contact)) {
+      if (errorMsg) errorMsg.style.display = 'block';
+      contactEl.focus();
+      return;
+    }
+    if (errorMsg) errorMsg.style.display = 'none';
+
+    /* Mensagem para Telegram e banco: sempre identifica a página */
+    var msgFinal = msg
+      ? ('Origem: ' + LABEL_PAGINA + ' | ' + msg)
+      : ('Origem: ' + LABEL_PAGINA + ' | ' + MSG_DEFAULT);
+
+    if (typeof dispararLeadTelegram === 'function') {
+      await dispararLeadTelegram(name, contact, msgFinal);
+    }
+
+    if (btn) { btn.innerText = 'Registrando...'; btn.disabled = true; }
+
+    var leadSaved = true;
+    if (typeof supabaseClient !== 'undefined' && supabaseClient) {
+      try {
+        var res = await supabaseClient.from('co_leads').insert([{
+          nome: name,
+          whatsapp: contact,
+          mensagem: msgFinal,
+          origem: ORIGEM,
+          created_at: new Date().toISOString()
+        }]);
+        if (res.error) {
+          console.error('Erro Supabase:', res.error);
+          leadSaved = false;
+        }
+      } catch (err) {
+        console.error('Erro ao salvar lead:', err);
+        leadSaved = false;
+      }
+    }
+
+    /* WhatsApp: SOMENTE número do banco (contato.js). Sem fallback hardcoded. */
+    var wa = (window.CONTATO_WHATSAPP || '').replace(/\D/g, '');
+    if (wa) {
+      var encoded = encodeURIComponent(
+        'Olá! Meu nome é ' + name + '.\nContato: ' + contact +
+        '\nGostaria de iniciar um alinhamento técnico.\n\nDetalhes: ' + (msg || 'Nenhum') +
+        '\n\nOrigem: ' + LABEL_PAGINA
+      );
+      window.open('https://wa.me/' + wa + '?text=' + encoded, '_blank');
+    } else {
+      if (typeof showSiteToast === 'function') {
+        showSiteToast('Número de WhatsApp ainda carregando. Tente novamente em instantes ou use o formulário.', 'error');
+      }
+    }
+
+    if (btn) { btn.innerText = 'Enviar Solicitação'; btn.disabled = false; }
+    if (typeof closeLeadModal === 'function') closeLeadModal();
+
+    if (typeof showSiteToast === 'function') {
+      if (leadSaved) {
+        showSiteToast('Solicitação enviada com sucesso! Em breve entraremos em contato.', 'success');
+      } else {
+        showSiteToast('Não conseguimos registrar no sistema, mas o alerta foi disparado.', 'error');
+      }
+    }
+  };
+})();
+</script>
 
 </body>
 </html>

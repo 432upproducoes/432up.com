@@ -758,7 +758,13 @@
   </main>
 
   <!-- RODAPÉ -->
-  <footer>
+  
+  <section style="text-align:center; margin: 40px auto 20px; max-width: 640px; padding: 0 16px;">
+    <button type="button" onclick="openLeadModal()" class="btn-curtain-trigger" style="cursor:pointer; border:none;">
+      Iniciar Projeto →
+    </button>
+  </section>
+<footer>
     <div class="footer-bar">
       <div class="footer-copy-text" style="opacity: 0.6; font-size: 0.72rem;">© 2026 QUANDO A CORTINA SE ABRE — CORINGA MAIA</div>
       <div style="opacity: 0.8; font-size: 0.72rem; color: var(--curtain-cyan);">SÉRIE A QUARTA VIA — O FECHAMENTO ABSOLUTO</div>
@@ -853,10 +859,128 @@
       window.triggerCurtainTransition = triggerCurtainTransition;
     })();
   </script>
+
+  <!-- MODAL DE CAPTURA DE LEAD (padrão index) -->
+  <div class="modal-overlay" id="lead-modal">
+    <div class="modal-box plasma-glow-overlay aurora-border-glow">
+      <button class="modal-close" onclick="closeLeadModal()" type="button" aria-label="Fechar">✕</button>
+      <div>
+        <h3>Conectar com a 432UP!</h3>
+        <p>Receba um atendimento exclusivo via WhatsApp ou e-mail.</p>
+      </div>
+
+      <a href="https://wa.me/?text=Ol%C3%A1%21%20Vim%20pela%20p%C3%A1gina%20O%20Palco%20da%20432UP%21%20e%20gostaria%20de%20alinhar%20um%20projeto." target="_blank" rel="noopener noreferrer" class="btn-modal-wa-direct">
+        <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+          <path d="M21 11.5a8.38 8.38 0 0 1-.9 3.8 8.5 8.5 0 0 1-7.6 4.7 8.38 8.38 0 0 1-3.8-.9L3 21l1.9-5.7a8.38 8.38 0 0 1-.9-3.8 8.5 8.5 0 0 1 4.7-7.6 8.38 8.38 0 0 1 3.8-.9h.5a8.48 8.48 0 0 1 8 8v.5z"/>
+        </svg>
+        Conversar Direto via WhatsApp
+      </a>
+
+      <div class="modal-form-divider">ou envie suas informações</div>
+
+      <form onsubmit="handleProgressFormSubmit(event)">
+        <input type="text" id="modal-lead-name" required placeholder="Seu nome ou empresa">
+        <input type="text" id="modal-lead-contact" required placeholder="WhatsApp (com DDD) ou E-mail">
+        <span id="contact-error-msg" style="display: none; color: #FF007F; font-size: 0.72rem; margin-top: 4px; margin-bottom: 8px;">Por favor, insira um e-mail válido ou um telefone/WhatsApp com DDD.</span>
+        <textarea id="modal-lead-msg" placeholder="Observações sobre o evento (data, local ou perfil)..." style="height: 65px; resize: none;"></textarea>
+        <button type="submit" id="btn-submit-modal" class="btn-header-cta" style="width:100%; margin-left:0; padding:12px; margin-top:4px;">Enviar Solicitação</button>
+      </form>
+    </div>
+  </div>
+
 <header id="calc-header"></header>
 <div id="mobile-menu"></div>
-<script src="https://unpkg.com/@supabase/supabase-js@2"></script>
+
 <script src="B2B/partner-config.js"></script>
 <script src="B2B/partner-header.js"></script>
+<script src="script/contato.js" defer></script>
+
+<script>
+/* Lead com origem da página + WA só do banco (sem fallback) — o-palco2 */
+(function () {
+  var ORIGEM = 'o-palco2';
+  var MSG_DEFAULT = 'Contato pela página O Palco';
+  var LABEL_PAGINA = 'o-palco2';
+
+  window.handleProgressFormSubmit = async function (e) {
+    e.preventDefault();
+    var nameEl = document.getElementById('modal-lead-name');
+    var contactEl = document.getElementById('modal-lead-contact');
+    var msgEl = document.getElementById('modal-lead-msg');
+    var errorMsg = document.getElementById('contact-error-msg');
+    var btn = document.getElementById('btn-submit-modal');
+    if (!nameEl || !contactEl) return;
+
+    var name = nameEl.value.trim();
+    var contact = contactEl.value.trim();
+    var msg = msgEl ? msgEl.value.trim() : '';
+
+    if (typeof validateContact === 'function' && !validateContact(contact)) {
+      if (errorMsg) errorMsg.style.display = 'block';
+      contactEl.focus();
+      return;
+    }
+    if (errorMsg) errorMsg.style.display = 'none';
+
+    /* Mensagem para Telegram e banco: sempre identifica a página */
+    var msgFinal = msg
+      ? ('Origem: ' + LABEL_PAGINA + ' | ' + msg)
+      : ('Origem: ' + LABEL_PAGINA + ' | ' + MSG_DEFAULT);
+
+    if (typeof dispararLeadTelegram === 'function') {
+      await dispararLeadTelegram(name, contact, msgFinal);
+    }
+
+    if (btn) { btn.innerText = 'Registrando...'; btn.disabled = true; }
+
+    var leadSaved = true;
+    if (typeof supabaseClient !== 'undefined' && supabaseClient) {
+      try {
+        var res = await supabaseClient.from('co_leads').insert([{
+          nome: name,
+          whatsapp: contact,
+          mensagem: msgFinal,
+          origem: ORIGEM,
+          created_at: new Date().toISOString()
+        }]);
+        if (res.error) {
+          console.error('Erro Supabase:', res.error);
+          leadSaved = false;
+        }
+      } catch (err) {
+        console.error('Erro ao salvar lead:', err);
+        leadSaved = false;
+      }
+    }
+
+    /* WhatsApp: SOMENTE número do banco (contato.js). Sem fallback hardcoded. */
+    var wa = (window.CONTATO_WHATSAPP || '').replace(/\D/g, '');
+    if (wa) {
+      var encoded = encodeURIComponent(
+        'Olá! Meu nome é ' + name + '.\nContato: ' + contact +
+        '\nGostaria de iniciar um alinhamento técnico.\n\nDetalhes: ' + (msg || 'Nenhum') +
+        '\n\nOrigem: ' + LABEL_PAGINA
+      );
+      window.open('https://wa.me/' + wa + '?text=' + encoded, '_blank');
+    } else {
+      if (typeof showSiteToast === 'function') {
+        showSiteToast('Número de WhatsApp ainda carregando. Tente novamente em instantes ou use o formulário.', 'error');
+      }
+    }
+
+    if (btn) { btn.innerText = 'Enviar Solicitação'; btn.disabled = false; }
+    if (typeof closeLeadModal === 'function') closeLeadModal();
+
+    if (typeof showSiteToast === 'function') {
+      if (leadSaved) {
+        showSiteToast('Solicitação enviada com sucesso! Em breve entraremos em contato.', 'success');
+      } else {
+        showSiteToast('Não conseguimos registrar no sistema, mas o alerta foi disparado.', 'error');
+      }
+    }
+  };
+})();
+</script>
+
 </body>
 </html>
