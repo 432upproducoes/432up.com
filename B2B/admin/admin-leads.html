@@ -34,60 +34,69 @@
       <span id="db-dot" hidden></span>
       <span id="db-status-text" hidden></span>
       <span id="last-save-text" hidden></span>
-    <div class="module-page active" id="module-leads">
-      <div class="admin-content-area">
-        <div class="mod-header">
-          <div>
-            <h2>Leads</h2>
-            <p>Contatos captados pelo site e calculadora.</p>
+
+      <div class="module-page active" id="module-leads">
+        <div class="admin-content-area">
+          <div class="mod-header">
+            <div>
+              <h2>Leads</h2>
+              <p>Contatos captados pelo site e calculadora.</p>
+            </div>
+            <div class="mod-actions">
+              <button class="btn" onclick="exportCSV()">📥 Exportar CSV</button>
+              <button class="btn btn-danger" id="btnDeleteLeads" style="display:none" onclick="deleteSelectedLeads()">🗑 Excluir selecionados</button>
+              <button class="btn" onclick="loadCalc1Data()">🔄 Recarregar</button>
+            </div>
           </div>
-          <div class="mod-actions">
-            <button class="btn" onclick="exportCSV()">📥 Exportar CSV</button>
-            <button class="btn btn-danger" id="btnDeleteLeads" style="display:none" onclick="deleteSelectedLeads()">🗑 Excluir selecionados</button>
-            <button class="btn" onclick="loadCalc1Data()">🔄 Recarregar</button>
+
+          <div class="leads-filters">
+            <div class="field">
+              <label>Busca</label>
+              <input id="leadSearch" placeholder="Nome, WhatsApp ou código #UP..." oninput="filterLeads()">
+            </div>
+
+            <div class="field">
+              <label>Status</label>
+              <select id="leadStatusFilter" onchange="filterLeads()">
+                <option value="">Todos</option>
+                <option value="novo">Novo</option>
+                <option value="em_contato">Em contato</option>
+                <option value="fechado">Fechado</option>
+                <option value="perdido">Perdido</option>
+              </select>
+            </div>
+
+            <div class="field">
+              <label>Origem</label>
+              <select id="leadOrigemFilter" onchange="filterLeads()">
+                <option value="">Todas</option>
+                <option value="landing_contato">Landing</option>
+                <option value="email_calculadora_overlay">Calculadora email</option>
+                <option value="calculadora">Calculadora WA</option>
+                <option value="simulador">Simulador</option>
+              </select>
+            </div>
+
+            <div class="field" style="flex:0; min-width:auto; align-self:flex-end;">
+              <button class="btn btn-sm" onclick="toggleSelectAll()">☑ Todos</button>
+            </div>
           </div>
+
+          <div class="leads-stats">
+            Total: <b id="leadsTotal">0</b> leads
+            <span id="leadsSelectedCount" style="display:none"> | <b id="leadsSelCount">0</b> selecionados</span>
+          </div>
+
+          <div id="leadsContainer"></div>
         </div>
-        <div class="leads-filters">
-          <div class="field">
-            <label>Busca</label>
-            <input id="leadSearch" placeholder="Nome ou WhatsApp..." oninput="filterLeads()">
-          </div>
-          <div class="field">
-            <label>Status</label>
-            <select id="leadStatusFilter" onchange="filterLeads()">
-              <option value="">Todos</option>
-              <option value="novo">Novo</option>
-              <option value="em_contato">Em contato</option>
-              <option value="fechado">Fechado</option>
-              <option value="perdido">Perdido</option>
-            </select>
-          </div>
-          <div class="field">
-            <label>Origem</label>
-            <select id="leadOrigemFilter" onchange="filterLeads()">
-              <option value="">Todas</option>
-              <option value="landing_contato">Landing</option>
-              <option value="email_calculadora_overlay">Calculadora email</option>
-              <option value="calculadora">Calculadora WA</option>
-            </select>
-          </div>
-          <div class="field" style="flex:0; min-width:auto; align-self:flex-end;">
-            <button class="btn btn-sm" onclick="toggleSelectAll()">☑ Todos</button>
-          </div>
-        </div>
-        <div class="leads-stats">
-          Total: <b id="leadsTotal">0</b> leads
-          <span id="leadsSelectedCount" style="display:none"> | <b id="leadsSelCount">0</b> selecionados</span>
-        </div>
-        <div id="leadsContainer"></div>
       </div>
-    </div>
 
     </main>
   </div>
 
 
   <div id="toastBox"></div>
+
   <div class="confirm-overlay" id="confirmDlg">
     <div class="confirm-box">
       <p id="confirmMsg"></p>
@@ -97,6 +106,7 @@
       </div>
     </div>
   </div>
+
   <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
   <script src="https://www.432up.com/B2B/partner-config.js"></script>
   <script src="https://www.432up.com/script/script.js" defer></script>
@@ -117,20 +127,28 @@
   var DATA = { servicos: [], pacotes: [], leads: [], configTransporte: null };
   var selectedLeads = {};
   var _confirmCb = null;
+
   function qs(s) { return document.querySelector(s); }
   function qsa(s) { return document.querySelectorAll(s); }
   function $(s) { return document.querySelector(s); }
   function $$(s) { return document.querySelectorAll(s); }
+
   function esc(s) {
     if (s == null) return '';
-    return String(s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');
+    return String(s)
+      .replace(/&/g,'&amp;')
+      .replace(/</g,'&lt;')
+      .replace(/>/g,'&gt;')
+      .replace(/"/g,'&quot;');
   }
+
   function el(id) { return document.getElementById(id); }
 
   function clearToasts() {
     var c = document.getElementById('toastBox');
     if (c) c.innerHTML = '';
   }
+
   function toast(msg, type) {
     var c = document.getElementById('toastBox');
     if (!c) return;
@@ -139,9 +157,13 @@
     t.className = 'toast ' + (type === 'err' || type === 'error' ? 'err' : 'ok');
     t.textContent = msg;
     c.appendChild(t);
-    setTimeout(function () { if (t.parentNode) t.remove(); }, 3800);
+    setTimeout(function () {
+      if (t.parentNode) t.remove();
+    }, 3800);
   }
+
   window.showToast = toast;
+
   function setAdminBusy(on) {
     var sp = document.getElementById('admin-busy');
     if (sp) {
@@ -154,17 +176,20 @@
     var el = $('#last-save-text');
     if (el) el.textContent = 'Salvo ' + new Date().toLocaleTimeString('pt-BR');
   }
+
   function setDbStatus(ok) {
     var dot = $('#db-dot');
     var txt = $('#db-status-text');
     if (dot) dot.classList.toggle('err', !ok);
     if (txt) if (txt) txt.textContent = '';
   }
+
   function confirmShow(msg, cb) {
     $('#confirmMsg').textContent = msg;
     _confirmCb = cb;
     $('#confirmDlg').classList.add('open');
   }
+
   function confirmClose(yes) {
     $('#confirmDlg').classList.remove('open');
     if (_confirmCb) _confirmCb(yes);
@@ -172,36 +197,104 @@
   }
 
   function sbH(m) {
-    var h = { 'apikey': SK, 'Authorization': 'Bearer ' + SK, 'Content-Type': 'application/json' };
-    if (m === 'PATCH' || m === 'POST') h['Prefer'] = 'return=representation';
+    var h = {
+      'apikey': SK,
+      'Authorization': 'Bearer ' + SK,
+      'Content-Type': 'application/json'
+    };
+
+    if (m === 'PATCH' || m === 'POST') {
+      h['Prefer'] = 'return=representation';
+    }
+
     return h;
   }
+
   async function sbGet(table, qs) {
     try {
-      var r = await fetch(SB + '/rest/v1/' + table + '?' + qs, { headers: { 'apikey': SK, 'Authorization': 'Bearer ' + SK } });
+      var r = await fetch(
+        SB + '/rest/v1/' + table + '?' + qs,
+        {
+          headers: {
+            'apikey': SK,
+            'Authorization': 'Bearer ' + SK
+          }
+        }
+      );
+
       if (!r.ok) throw r;
       return await r.json();
-    } catch (e) { console.error('sbGet', table, e); return null; }
+
+    } catch (e) {
+      console.error('sbGet', table, e);
+      return null;
+    }
   }
+
   async function sbPatch(table, id, body) {
     try {
-      var r = await fetch(SB + '/rest/v1/' + table + '?id=eq.' + id, { method: 'PATCH', headers: sbH('PATCH'), body: JSON.stringify(body) });
-      if (!r.ok) { console.error('sbPatch', await r.text()); return false; }
+      var r = await fetch(
+        SB + '/rest/v1/' + table + '?id=eq.' + id,
+        {
+          method: 'PATCH',
+          headers: sbH('PATCH'),
+          body: JSON.stringify(body)
+        }
+      );
+
+      if (!r.ok) {
+        console.error('sbPatch', await r.text());
+        return false;
+      }
+
       return true;
-    } catch (e) { return false; }
+
+    } catch (e) {
+      return false;
+    }
   }
+
   async function sbPost(table, body) {
     try {
-      var r = await fetch(SB + '/rest/v1/' + table, { method: 'POST', headers: sbH('POST'), body: JSON.stringify(body) });
-      if (!r.ok) { console.error('sbPost', await r.text()); return null; }
+      var r = await fetch(
+        SB + '/rest/v1/' + table,
+        {
+          method: 'POST',
+          headers: sbH('POST'),
+          body: JSON.stringify(body)
+        }
+      );
+
+      if (!r.ok) {
+        console.error('sbPost', await r.text());
+        return null;
+      }
+
       return await r.json();
-    } catch (e) { return null; }
+
+    } catch (e) {
+      return null;
+    }
   }
+
   async function sbDel(table, id) {
     try {
-      var r = await fetch(SB + '/rest/v1/' + table + '?id=eq.' + id, { method: 'DELETE', headers: { 'apikey': SK, 'Authorization': 'Bearer ' + SK } });
+      var r = await fetch(
+        SB + '/rest/v1/' + table + '?id=eq.' + id,
+        {
+          method: 'DELETE',
+          headers: {
+            'apikey': SK,
+            'Authorization': 'Bearer ' + SK
+          }
+        }
+      );
+
       return r.ok;
-    } catch (e) { return false; }
+
+    } catch (e) {
+      return false;
+    }
   }
 
   // ============================================================
@@ -213,96 +306,292 @@
     var search = ($('#leadSearch').value || '').toLowerCase();
     var status = $('#leadStatusFilter').value;
     var origem = $('#leadOrigemFilter').value;
+
     return DATA.leads.filter(function (l) {
+
       if (search) {
-        var nm = (l.nome || '').toLowerCase(), wa = (l.whatsapp || '').toLowerCase(), te = (l.tipo_evento || '').toLowerCase();
-        if (nm.indexOf(search) < 0 && wa.indexOf(search) < 0 && te.indexOf(search) < 0) return false;
+        var nm = (l.nome || '').toLowerCase();
+        var wa = (l.whatsapp || '').toLowerCase();
+        var te = (l.tipo_evento || '').toLowerCase();
+        var msg = (l.mensagem || '').toLowerCase();
+        var obs = (l.observacoes || '').toLowerCase();
+
+        if (
+          nm.indexOf(search) < 0 &&
+          wa.indexOf(search) < 0 &&
+          te.indexOf(search) < 0 &&
+          msg.indexOf(search) < 0 &&
+          obs.indexOf(search) < 0
+        ) return false;
       }
+
       if (status && (l.status || 'novo') !== status) return false;
       if (origem && (l.origem || '') !== origem) return false;
+
       return true;
     });
   }
+
   function renderLeads() {
-    var c = $('#leadsContainer'); if (!c) return;
+    var c = $('#leadsContainer');
+    if (!c) return;
+
     var leads = getFilteredLeads();
+
     $('#leadsTotal').textContent = DATA.leads.length;
-    if (!leads.length) { c.innerHTML = '<div class="empty-state"><div class="icon">📊</div>Nenhum lead.</div>'; return; }
+
+    if (!leads.length) {
+      c.innerHTML = '<div class="empty-state"><div class="icon">📊</div>Nenhum lead.</div>';
+      return;
+    }
+
     var h = '';
+
     leads.forEach(function (l) {
       var status = l.status || 'novo';
-      var waLink = l.whatsapp ? 'https://wa.me/' + l.whatsapp.replace(/\D/g, '') : '';
-      h += '<div class="lead-card"><div class="lead-top"><div><input type="checkbox" ' + (selectedLeads[l.id] ? 'checked' : '') + ' onchange="toggleLeadSelect(\'' + l.id + '\',this.checked)" style="width:auto;margin-right:8px;accent-color:var(--accent)"><span class="lead-name">' + esc(l.nome || 'Sem nome') + '</span></div><span class="lead-date">' + (l.criado_em ? new Date(l.criado_em).toLocaleDateString('pt-BR', { day: '2-digit', month: '2-digit', year: '2-digit', hour: '2-digit', minute: '2-digit' }) : '—') + '</span></div><div class="lead-tags">';
-      if (l.whatsapp) h += '<span class="lead-tag clickable" onclick="window.open(\'' + waLink + '\',\'_blank\')">📱 ' + esc(l.whatsapp) + '</span>';
-      if (l.email) h += '<span class="lead-tag">✉ ' + esc(l.email) + '</span>';
-      if (l.tipo_evento) h += '<span class="lead-tag">' + esc(l.tipo_evento) + '</span>';
-      if (l.total) h += '<span class="lead-tag">💰 ' + esc(l.total) + '</span>';
-      if (l.origem) h += '<span class="lead-tag">📍 ' + esc(l.origem) + '</span>';
-      h += '</div><div style="margin:8px 0"><select class="lead-status-select" onchange="updateLeadField(\'' + l.id + '\',\'status\',this.value)"><option value="novo"' + (status === 'novo' ? ' selected' : '') + '>🟡 Novo</option><option value="em_contato"' + (status === 'em_contato' ? ' selected' : '') + '>🔵 Em contato</option><option value="fechado"' + (status === 'fechado' ? ' selected' : '') + '>🟢 Fechado</option><option value="perdido"' + (status === 'perdido' ? ' selected' : '') + '>🔴 Perdido</option></select></div>';
-      if (l.mensagem) h += '<div class="lead-msg">' + esc(l.mensagem).substring(0, 300) + '</div>';
-      h += '<div class="form-group" style="margin:0"><label style="font-size:0.65rem">Notas</label><textarea onchange="updateLeadField(\'' + l.id + '\',\'observacoes\',this.value)" rows="2" placeholder="Anotações..." style="font-size:0.82rem">' + (l.observacoes || '') + '</textarea></div></div>';
+      var waLink = l.whatsapp
+        ? 'https://wa.me/' + l.whatsapp.replace(/\D/g, '')
+        : '';
+
+      h += '<div class="lead-card"><div class="lead-top"><div><input type="checkbox" ' +
+        (selectedLeads[l.id] ? 'checked' : '') +
+        ' onchange="toggleLeadSelect(\'' + l.id + '\',this.checked)" style="width:auto;margin-right:8px;accent-color:var(--accent)">' +
+        '<span class="lead-name">' +
+        esc(l.nome || 'Sem nome') +
+        '</span></div><span class="lead-date">' +
+        (l.criado_em
+          ? new Date(l.criado_em).toLocaleDateString('pt-BR', {
+              day: '2-digit',
+              month: '2-digit',
+              year: '2-digit',
+              hour: '2-digit',
+              minute: '2-digit'
+            })
+          : '—') +
+        '</span></div><div class="lead-tags">';
+
+      if (l.whatsapp) {
+        h += '<span class="lead-tag clickable" onclick="window.open(\'' +
+          waLink +
+          '\',\'_blank\')">📱 ' +
+          esc(l.whatsapp) +
+          '</span>';
+      }
+
+      if (l.email) {
+        h += '<span class="lead-tag">✉ ' + esc(l.email) + '</span>';
+      }
+
+      if (l.tipo_evento) {
+        h += '<span class="lead-tag">' + esc(l.tipo_evento) + '</span>';
+      }
+
+      if (l.total) {
+        h += '<span class="lead-tag">💰 ' + esc(l.total) + '</span>';
+      }
+
+      if (l.origem) {
+        h += '<span class="lead-tag">📍 ' + esc(l.origem) + '</span>';
+      }
+
+      h += '</div><div style="margin:8px 0"><select class="lead-status-select" onchange="updateLeadField(\'' +
+        l.id +
+        '\',\'status\',this.value)">' +
+        '<option value="novo"' +
+        (status === 'novo' ? ' selected' : '') +
+        '>🟡 Novo</option>' +
+        '<option value="em_contato"' +
+        (status === 'em_contato' ? ' selected' : '') +
+        '>🔵 Em contato</option>' +
+        '<option value="fechado"' +
+        (status === 'fechado' ? ' selected' : '') +
+        '>🟢 Fechado</option>' +
+        '<option value="perdido"' +
+        (status === 'perdido' ? ' selected' : '') +
+        '>🔴 Perdido</option>' +
+        '</select></div>';
+
+      if (l.mensagem) {
+        h += '<div class="lead-msg">' + esc(l.mensagem) + '</div>';
+      }
+
+      h += '<div class="form-group" style="margin:0">' +
+        '<label style="font-size:0.65rem">Notas</label>' +
+        '<textarea onchange="updateLeadField(\'' +
+        l.id +
+        '\',\'observacoes\',this.value)" rows="2" placeholder="Anotações..." style="font-size:0.82rem">' +
+        esc(l.observacoes || '') +
+        '</textarea></div></div>';
     });
+
     c.innerHTML = h;
   }
-  function filterLeads() { renderLeads(); updateLeadSelectUI(); }
-  function toggleLeadSelect(id, checked) { if (checked) selectedLeads[id] = true; else delete selectedLeads[id]; updateLeadSelectUI(); }
+
+  function filterLeads() {
+    renderLeads();
+    updateLeadSelectUI();
+  }
+
+  function toggleLeadSelect(id, checked) {
+    if (checked) selectedLeads[id] = true;
+    else delete selectedLeads[id];
+
+    updateLeadSelectUI();
+  }
+
   function toggleSelectAll() {
     var leads = getFilteredLeads();
-    var all = leads.every(function (l) { return selectedLeads[l.id]; });
-    if (all) leads.forEach(function (l) { delete selectedLeads[l.id]; });
-    else leads.forEach(function (l) { selectedLeads[l.id] = true; });
-    renderLeads(); updateLeadSelectUI();
+
+    var all = leads.every(function (l) {
+      return selectedLeads[l.id];
+    });
+
+    if (all) {
+      leads.forEach(function (l) {
+        delete selectedLeads[l.id];
+      });
+    } else {
+      leads.forEach(function (l) {
+        selectedLeads[l.id] = true;
+      });
+    }
+
+    renderLeads();
+    updateLeadSelectUI();
   }
+
   function updateLeadSelectUI() {
     var count = Object.keys(selectedLeads).length;
+
     $('#btnDeleteLeads').style.display = count > 0 ? '' : 'none';
     $('#leadsSelectedCount').style.display = count > 0 ? '' : 'none';
     $('#leadsSelCount').textContent = count;
   }
+
   async function updateLeadField(id, field, value) {
-    var body = {}; body[field] = value;
+    var body = {};
+    body[field] = value;
+
     if (await sbPatch('co_leads', id, body)) {
-      DATA.leads.forEach(function (l) { if (String(l.id) === String(id)) l[field] = value; });
+      DATA.leads.forEach(function (l) {
+        if (String(l.id) === String(id)) l[field] = value;
+      });
+
       toast('Lead atualizado', 'ok');
-    } else toast('Erro', 'err');
+
+    } else {
+      toast('Erro', 'err');
+    }
   }
+
   function deleteSelectedLeads() {
     var ids = Object.keys(selectedLeads);
+
     if (!ids.length) return;
-    confirmShow('Excluir ' + ids.length + ' lead(s)?', async function (yes) {
-      if (!yes) return;
-      for (var i = 0; i < ids.length; i++) await sbDel('co_leads', ids[i]);
-      selectedLeads = {};
-      toast(ids.length + ' excluído(s)', 'ok');
-      await loadPageData();
-    });
+
+    confirmShow(
+      'Excluir ' + ids.length + ' lead(s)?',
+      async function (yes) {
+        if (!yes) return;
+
+        for (var i = 0; i < ids.length; i++) {
+          await sbDel('co_leads', ids[i]);
+        }
+
+        selectedLeads = {};
+        toast(ids.length + ' excluído(s)', 'ok');
+        await loadPageData();
+      }
+    );
   }
+
   function exportCSV() {
     var leads = getFilteredLeads();
-    if (!leads.length) { toast('Nenhum lead', 'err'); return; }
-    var headers = ['Nome','WhatsApp','Email','Tipo Evento','Data Evento','Local','Convidados','Horas','Total','Pacote','Origem','Status','Notas','Data Criação','Mensagem'];
+
+    if (!leads.length) {
+      toast('Nenhum lead', 'err');
+      return;
+    }
+
+    var headers = [
+      'Nome',
+      'WhatsApp',
+      'Email',
+      'Tipo Evento',
+      'Data Evento',
+      'Local',
+      'Convidados',
+      'Horas',
+      'Total',
+      'Pacote',
+      'Origem',
+      'Status',
+      'Notas',
+      'Data Criação',
+      'Mensagem'
+    ];
+
     var rows = [headers.join(';')];
+
     leads.forEach(function (l) {
-      rows.push([l.nome||'',l.whatsapp||'',l.email||'',l.tipo_evento||'',l.data_evento||'',l.local||'',l.convidados||'',l.horas||'',l.total||'',l.pacote||'',l.origem||'',l.status||'novo',l.observacoes||'',l.criado_em||'', '"'+(l.mensagem||'').replace(/"/g,'""').substring(0,200)+'"'].join(';'));
+      rows.push([
+        l.nome || '',
+        l.whatsapp || '',
+        l.email || '',
+        l.tipo_evento || '',
+        l.data_evento || '',
+        l.local || '',
+        l.convidados || '',
+        l.horas || '',
+        l.total || '',
+        l.pacote || '',
+        l.origem || '',
+        l.status || 'novo',
+        l.observacoes || '',
+        l.criado_em || '',
+        '"' + (l.mensagem || '').replace(/"/g,'""') + '"'
+      ].join(';'));
     });
-    var blob = new Blob(['\uFEFF' + rows.join('\n')], { type: 'text/csv;charset=utf-8' });
-    var a = document.createElement('a'); a.href = URL.createObjectURL(blob);
-    a.download = '432up_leads_' + new Date().toISOString().slice(0, 10) + '.csv'; a.click();
+
+    var blob = new Blob(
+      ['\uFEFF' + rows.join('\n')],
+      { type: 'text/csv;charset=utf-8' }
+    );
+
+    var a = document.createElement('a');
+    a.href = URL.createObjectURL(blob);
+    a.download = '432up_leads_' +
+      new Date().toISOString().slice(0, 10) +
+      '.csv';
+    a.click();
+
     toast('CSV exportado', 'ok');
   }
 
   // ============================================================
 
   async function loadPageData() {
-    var data = await sbGet('co_leads', 'select=*&order=criado_em.desc&limit=200');
+    var data = await sbGet(
+      'co_leads',
+      'select=*&order=criado_em.desc&limit=200'
+    );
+
     var ok = data !== null;
+
     setDbStatus(ok);
+
     DATA.leads = data || [];
+
     renderLeads();
+
     if (ok) toast('Leads carregados', 'ok');
     else toast('Erro ao carregar', 'err');
   }
-  window.__adminPageInit = function () { loadPageData(); };
+
+  window.__adminPageInit = function () {
+    loadPageData();
+  };
+
   window.filterLeads = filterLeads;
   window.toggleLeadSelect = toggleLeadSelect;
   window.toggleSelectAll = toggleSelectAll;
@@ -313,20 +602,28 @@
   window.confirmClose = confirmClose;
 
 
-    partnerRequireAuth().then(function (parceiro) {
-      partnerFillSidebar(parceiro);
+  partnerRequireAuth().then(function (parceiro) {
+    partnerFillSidebar(parceiro);
       
-      // Atualiza a flag de admin e valida o cache sem piscar o menu
-      var roleNorm = String(parceiro.role || parceiro.nivel || '').toLowerCase().trim();
-      var isAdmin = roleNorm === 'admin' || roleNorm === 'master';
-      window.updateAdminState(isAdmin);
+    // Atualiza a flag de admin e valida o cache sem piscar o menu
+    var roleNorm = String(
+      parceiro.role || parceiro.nivel || ''
+    ).toLowerCase().trim();
 
-      if (typeof window.__adminPageInit === 'function') {
-        window.__adminPageInit(parceiro, isAdmin);
-      }
-    }).catch(function (err) {
-      console.error('Erro na autenticação:', err);
-    });
+    var isAdmin =
+      roleNorm === 'admin' ||
+      roleNorm === 'master';
+
+    window.updateAdminState(isAdmin);
+
+    if (typeof window.__adminPageInit === 'function') {
+      window.__adminPageInit(parceiro, isAdmin);
+    }
+
+  }).catch(function (err) {
+    console.error('Erro na autenticação:', err);
+  });
+
   </script>
 </body>
 </html>
