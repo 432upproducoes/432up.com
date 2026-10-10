@@ -295,6 +295,13 @@ function getWhatsappEmpresa() {
 }
 
 function openLeadModal() {
+  // Fecha o menu hambúrguer ANTES de abrir o modal (ele tem z-index maior que o modal)
+  const mob = document.getElementById('mobile-menu');
+  if (mob) {
+    mob.classList.remove('active');
+    mob.classList.remove('open');
+  }
+
   // Suporta os dois IDs usados no site (index/aessencia/mesa + calculadora/galeria)
   const modal = document.getElementById('lead-modal') || document.getElementById('contact-overlay');
   if (!modal) return;
@@ -303,6 +310,9 @@ function openLeadModal() {
   if (modal.id === 'contact-overlay') {
     modal.style.display = 'flex';
   }
+
+  // Garante que o modal fique ACIMA do menu mobile (z-index 10000 no CSS)
+  modal.style.zIndex = '10050';
 
   modal.classList.add('active');
   modal.classList.add('open');
