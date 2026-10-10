@@ -1,0 +1,129 @@
+<!doctype html>
+<html lang="pt-BR">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>432UP — Exportador de Backup Supabase</title>
+<style>
+:root{color-scheme:dark;--bg:#090d18;--panel:#111827;--line:#273449;--text:#edf2f7;--muted:#9caec4;--accent:#06b6d4;--good:#34d399;--bad:#fb7185;--warn:#fbbf24}
+*{box-sizing:border-box}body{margin:0;background:var(--bg);color:var(--text);font:16px/1.45 system-ui,-apple-system,BlinkMacSystemFont,"Segoe UI",sans-serif;padding:18px;max-width:900px;margin:auto}
+h1{font-size:1.35rem;margin:0 0 6px}p{margin:6px 0 12px}.muted{color:var(--muted);font-size:.92rem}.panel{background:var(--panel);border:1px solid var(--line);border-radius:14px;padding:16px;margin:14px 0}
+label{display:block;font-weight:650;margin:12px 0 5px}input,select,button{font:inherit;border-radius:9px;padding:11px;border:1px solid var(--line);width:100%;background:#0b1220;color:var(--text)}button{cursor:pointer;font-weight:700;background:#164e63;border-color:#0e7490;margin-top:10px}button.secondary{background:#202c40;border-color:var(--line)}button:disabled{opacity:.5;cursor:wait}.grid{display:grid;grid-template-columns:1fr 1fr;gap:10px}.status{padding:10px 12px;border-radius:9px;background:#0b1220;border:1px solid var(--line);white-space:pre-wrap;overflow-wrap:anywhere}.good{color:var(--good)}.bad{color:var(--bad)}.warn{color:var(--warn)}progress{width:100%;height:14px;margin-top:10px}code{overflow-wrap:anywhere;color:#a5f3fc}.small{font-size:.85rem}.hidden{display:none}@media(max-width:560px){body{padding:12px}.grid{grid-template-columns:1fr}}
+</style>
+<!-- Keep these scripts on the same origin as the existing 432UP B2B page. -->
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+<script src="https://www.432up.com/B2B/partner-config.js"></script>
+<script src="https://www.432up.com/B2B/partner-header.js"></script>
+<script src="https://www.432up.com/script/script.js" defer></script>
+</head>
+<body>
+<h1>432UP — Exportador de Backup Supabase</h1>
+<p class="muted">Ferramenta somente de leitura. Exporta os registros que a sessão atual tem permissão para consultar. Não altera tabelas e não acessa nem copia arquivos do R2.</p>
+<div class="panel">
+  <strong>1. Verificar conexão e sessão</strong>
+  <p class="muted">Abra esta página publicada em <code>https://www.432up.com/B2B/</code>, não como arquivo local, para aproveitar a sessão do site.</p>
+  <button id="checkBtn" class="secondary">Verificar conexão</button>
+  <div id="connection" class="status" style="margin-top:10px">Aguardando verificação…</div>
+</div>
+<div class="panel">
+  <strong>2. Selecionar uma tabela</strong>
+  <label for="tableName">Nome exato da tabela (schema public)</label>
+  <input id="tableName" placeholder="Ex.: co_tipos_evento" autocomplete="off" autocapitalize="off" spellcheck="false">
+  <div class="grid">
+    <div><label for="batchSize">Registros por lote</label><select id="batchSize"><option value="100">100</option><option value="500" selected>500</option><option value="1000">1000</option></select></div>
+    <div><label for="format">Formato de saída</label><select id="format"><option value="json" selected>JSON (recomendado)</option><option value="csv">CSV</option></select></div>
+  </div>
+  <button id="testBtn" class="secondary">Testar acesso (até 5 registros)</button>
+  <button id="exportBtn">Exportar tabela completa</button>
+  <progress id="progress" class="hidden" value="0" max="100"></progress>
+  <div id="result" class="status" style="margin-top:10px">Informe uma tabela e teste o acesso primeiro.</div>
+  <button id="downloadBtn" class="hidden">Baixar arquivo exportado</button>
+</div>
+<div class="panel">
+  <strong>Como interpretar o resultado</strong>
+  <p class="small">• <span class="good">Sucesso com registros</span>: a sessão pode ler a tabela e retornou dados visíveis a ela.</p>
+  <p class="small">• <span class="warn">Sucesso com zero registros</span>: pode estar vazia ou a política RLS pode limitar os registros visíveis; não conclua que a tabela está vazia sem conferir.</p>
+  <p class="small">• <span class="bad">Erro de permissão/RLS</span>: esta sessão não tem acesso suficiente. Não tente contornar políticas nem coloque a chave <code>service_role</code> nesta página.</p>
+  <p class="small">O exportador trabalha uma tabela por vez. Guarde os arquivos JSON/CSV no app Arquivos do iPad e confira o total indicado antes de passar à próxima tabela.</p>
+</div>
+<script>
+(function(){
+  'use strict';
+  const $ = id => document.getElementById(id);
+  let client = null, exportedBlob = null, exportedName = '';
+  function setStatus(id, text, cls=''){ const el=$(id); el.textContent=text; el.className='status '+cls; }
+  function getClient(){
+    try {
+      if (typeof sbPartner !== 'undefined' && sbPartner && typeof sbPartner.from === 'function') return sbPartner;
+    } catch(e) {}
+    if (window.sbPartner && typeof window.sbPartner.from === 'function') return window.sbPartner;
+    return null;
+  }
+  function safeName(s){ return String(s).replace(/[^a-zA-Z0-9_-]/g,'_').slice(0,100) || 'tabela'; }
+  function toCSV(rows){
+    if(!rows.length) return '';
+    const cols=[...new Set(rows.flatMap(r=>Object.keys(r)))];
+    const cell=v=>{ let s=(v===null||v===undefined)?'':(typeof v==='object'?JSON.stringify(v):String(v)); return '"'+s.replace(/"/g,'""')+'"'; };
+    return '\ufeff'+[cols.map(cell).join(','),...rows.map(r=>cols.map(k=>cell(r[k])).join(','))].join('\r\n');
+  }
+  async function checkConnection(){
+    $('checkBtn').disabled=true;
+    try {
+      client=getClient();
+      if(!client){setStatus('connection','Não encontrei o cliente sbPartner. Confirme se partner-config.js carregou e se esta página está publicada no mesmo domínio do B2B.','bad');return;}
+      const {data,error}=await client.auth.getSession();
+      if(error) throw error;
+      const user=data && data.session && data.session.user;
+      if(!user){setStatus('connection','Cliente Supabase carregado, mas não encontrei sessão autenticada nesta origem. Entre no B2B e abra novamente esta página.','warn');return;}
+      setStatus('connection','Conexão Supabase encontrada. Sessão autenticada: '+(user.email||user.id)+'\nO acesso a cada tabela ainda será verificado separadamente pelas permissões/RLS.','good');
+    } catch(e){setStatus('connection','Falha na verificação: '+(e.message||String(e)),'bad');}
+    finally{$('checkBtn').disabled=false;}
+  }
+  function table(){const t=$('tableName').value.trim(); if(!/^[a-zA-Z_][a-zA-Z0-9_]*$/.test(t)) throw new Error('Digite somente o nome exato da tabela, sem schema nem caracteres especiais.'); return t;}
+  async function testTable(){
+    try{
+      client=getClient(); if(!client) await checkConnection(); client=getClient(); if(!client) throw new Error('Cliente sbPartner indisponível.');
+      const t=table(); $('testBtn').disabled=true;
+      setStatus('result','Testando leitura de '+t+'…');
+      const {data,error}=await client.from(t).select('*').limit(5);
+      if(error) throw error;
+      setStatus('result','Teste concluído: leitura permitida. Registros retornados no teste: '+data.length+'.\nColunas detectadas: '+(data.length?Object.keys(data[0]).join(', '):'(nenhuma coluna detectável porque o resultado veio vazio)')+'\nAtenção: este teste não confirma que todos os registros estão visíveis via RLS.','good');
+    }catch(e){setStatus('result','Não foi possível ler a tabela: '+(e.message||String(e))+'\nCódigo: '+(e.code||'não informado'),'bad');}
+    finally{$('testBtn').disabled=false;}
+  }
+  async function exportTable(){
+    let t, rows=[];
+    try{
+      client=getClient(); if(!client) throw new Error('Cliente sbPartner indisponível. Verifique a conexão primeiro.');
+      t=table(); const batch=Number($('batchSize').value)||500; const format=$('format').value;
+      $('exportBtn').disabled=true; $('testBtn').disabled=true; $('downloadBtn').classList.add('hidden'); $('progress').classList.remove('hidden'); $('progress').value=0;
+      setStatus('result','Iniciando exportação de '+t+' em lotes de '+batch+'…');
+      let from=0, done=false;
+      while(!done){
+        const to=from+batch-1;
+        const {data,error}=await client.from(t).select('*').range(from,to);
+        if(error) throw error;
+        const chunk=data||[]; rows.push(...chunk); from+=chunk.length;
+        $('progress').value=chunk.length<batch?100:Math.min(95,Math.floor(rows.length/(rows.length+batch)*100));
+        setStatus('result','Exportando '+t+'…\nRegistros coletados até agora: '+rows.length+'\nÚltimo lote: '+chunk.length+' registros.');
+        if(chunk.length<batch) done=true;
+        if(rows.length>250000) throw new Error('Limite de segurança de 250.000 registros atingido. Use lotes/estratégia específicos antes de continuar.');
+      }
+      let content, mime, ext;
+      if(format==='csv'){content=toCSV(rows);mime='text/csv;charset=utf-8';ext='csv';}
+      else{content=JSON.stringify({schema:'public',table:t,exported_at:new Date().toISOString(),row_count:rows.length,rows},null,2);mime='application/json;charset=utf-8';ext='json';}
+      exportedBlob=new Blob([content],{type:mime}); exportedName='432up_backup_'+safeName(t)+'_'+new Date().toISOString().slice(0,10)+'.'+ext;
+      $('downloadBtn').classList.remove('hidden'); $('progress').value=100;
+      setStatus('result','Exportação concluída.\nTabela: '+t+'\nRegistros exportados: '+rows.length+'\nArquivo: '+exportedName+'\n\nAntes de considerar o backup completo, confirme que o total corresponde ao esperado. Políticas RLS podem ocultar linhas sem gerar erro.','good');
+    }catch(e){setStatus('result','Exportação interrompida: '+(e.message||String(e))+'\nCódigo: '+(e.code||'não informado')+'\nNenhuma alteração foi feita no banco.','bad');}
+    finally{$('exportBtn').disabled=false;$('testBtn').disabled=false;}
+  }
+  $('checkBtn').addEventListener('click',checkConnection);
+  $('testBtn').addEventListener('click',testTable);
+  $('exportBtn').addEventListener('click',exportTable);
+  $('downloadBtn').addEventListener('click',()=>{if(!exportedBlob)return;const url=URL.createObjectURL(exportedBlob);const a=document.createElement('a');a.href=url;a.download=exportedName;document.body.appendChild(a);a.click();a.remove();setTimeout(()=>URL.revokeObjectURL(url),2000);});
+  window.addEventListener('load',()=>{checkConnection();});
+})();
+</script>
+</body>
+</html>
