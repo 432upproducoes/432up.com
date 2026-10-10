@@ -78,7 +78,14 @@
       /* ── se já tem sessão válida, pula direto pro painel ── */
       sbPartner.auth.getSession().then(function (res) {
         if (res.data && res.data.session) {
-          window.location.href = 'index.html';
+          sbPartner.from('parceiros').select('id').eq('user_id', res.data.session.user.id).maybeSingle().then(function (r) {
+            if (r.error || !r.data) {
+              sbPartner.auth.signOut();
+              showAlert('Seu cadastro de parceiro não foi encontrado. Fale com o suporte se acredita que isso é um engano.', 'error');
+              return;
+            }
+            window.location.href = 'index.html';
+          });
         }
       });
 
@@ -86,6 +93,9 @@
       var params = new URLSearchParams(window.location.search);
       if (params.get('erro') === 'acesso_negado') {
         showAlert('Seu acesso foi bloqueado ou recusado. Fale com o suporte se acredita que isso é um engano.', 'error');
+      }
+      if (params.get('erro') === 'sem_cadastro') {
+        showAlert('Seu cadastro de parceiro não foi encontrado. Fale com o suporte se acredita que isso é um engano.', 'error');
       }
       if (params.get('confirmado') === '1') {
         showAlert('E-mail confirmado! Você já pode entrar com sua senha.', 'success');
