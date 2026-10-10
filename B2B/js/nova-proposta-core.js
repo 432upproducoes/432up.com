@@ -1,6 +1,6 @@
     (function () {
       'use strict';
-      var WHATSAPP_SUPORTE = '5511948564577';
+      var WHATSAPP_SUPORTE = '';
       var CATALOG_SB_URL = 'https://paetkspbfejtjjkngqej.supabase.co';
       var CATALOG_SB_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InBhZXRrc3BiZmVqdGpqa25ncWVqIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzA5MDU2OTgsImV4cCI6MjA4NjQ4MTY5OH0.IiYweZ2g3bP7b0o7VvBW5LLb6d1oHtSNFUZlVkIsdsA';
       var sbCatalog = supabase.createClient(CATALOG_SB_URL, CATALOG_SB_KEY);
