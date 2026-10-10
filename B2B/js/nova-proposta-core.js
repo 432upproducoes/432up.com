@@ -1,4 +1,4 @@
-    (function () {
+ (function () {
       'use strict';
       var WHATSAPP_SUPORTE = '';
       var CATALOG_SB_URL = 'https://paetkspbfejtjjkngqej.supabase.co';
@@ -147,7 +147,7 @@
       }
       function waLink() {
         var msg = encodeURIComponent('Olá! Estou montando uma proposta no Portal Partner e os valores não carregaram. Podem me ajudar?');
-        return 'https://wa.me/' + WHATSAPP_SUPORTE + '?text=' + msg;
+        return 'https://wa.me/' + (window.CONTATO_WHATSAPP || WHATSAPP_SUPORTE) + '?text=' + msg;
       }
       function catalogUnavailableHTML(label) {
         return '<div class="catalog-unavailable">' +
@@ -972,8 +972,25 @@
             recalc();
           });
         });
+
+        // ----------------------------------------------------------------
+        // [data-qty-un] — quantidade manual
+        // O listener 'input' atualiza estado + recalc() SEM renderServicos(),
+        // preservando o foco e permitindo digitação de múltiplos dígitos.
+        // 'change' e Enter fazem a validação final e recriam o card.
+        // ----------------------------------------------------------------
         grid.querySelectorAll('[data-qty-un]').forEach(function (inp) {
           inp.addEventListener('click', function (e) { e.stopPropagation(); });
+          inp.addEventListener('input', function () {
+            if (formularioBloqueadoSomenteLeitura) return;
+            var sid = inp.dataset.qtyUn;
+            var n = parseInt(String(inp.value).replace(/\D/g, ''), 10);
+            if (isFinite(n) && n >= 1) {
+              svcQuantidade[sid] = n;
+              if (svcState[sid] !== 'included') svcState[sid] = 'manual';
+              recalc();
+            }
+          });
           inp.addEventListener('keydown', function (e) {
             if (e.key === 'Enter') { e.preventDefault(); aplicarQtyUnDigitada(inp.dataset.qtyUn, inp.value); }
           });
@@ -1014,8 +1031,24 @@
             recalc();
           });
         });
+
+        // ----------------------------------------------------------------
+        // [data-qty-metro] — metragem manual
+        // ----------------------------------------------------------------
         grid.querySelectorAll('[data-qty-metro]').forEach(function (inp) {
           inp.addEventListener('click', function (e) { e.stopPropagation(); });
+          inp.addEventListener('input', function () {
+            if (formularioBloqueadoSomenteLeitura) return;
+            var sid = inp.dataset.qtyMetro;
+            var s = SVC.find(function (x) { return x.servico_id === sid; });
+            var n = parseFloat(String(inp.value).replace(',', '.'));
+            if (s && isFinite(n) && n > 0) {
+              svcMetragem[sid] = n;
+              if (!(svcQuantidade[sid] > 0)) svcQuantidade[sid] = 1;
+              if (svcState[sid] !== 'included') svcState[sid] = 'manual';
+              recalc();
+            }
+          });
           inp.addEventListener('keydown', function (e) {
             if (e.key === 'Enter') { e.preventDefault(); aplicarQtyMetroDigitada(inp.dataset.qtyMetro, inp.value); }
           });
@@ -1056,8 +1089,24 @@
             recalc();
           });
         });
+
+        // ----------------------------------------------------------------
+        // [data-qty-hora] — horas manual
+        // ----------------------------------------------------------------
         grid.querySelectorAll('[data-qty-hora]').forEach(function (inp) {
           inp.addEventListener('click', function (e) { e.stopPropagation(); });
+          inp.addEventListener('input', function () {
+            if (formularioBloqueadoSomenteLeitura) return;
+            var sid = inp.dataset.qtyHora;
+            var s = SVC.find(function (x) { return x.servico_id === sid; });
+            var n = parseFloat(String(inp.value).replace(',', '.'));
+            if (s && isFinite(n) && n > 0) {
+              svcHoras[sid] = n;
+              if (!(svcQuantidade[sid] > 0)) svcQuantidade[sid] = 1;
+              if (svcState[sid] !== 'included') svcState[sid] = 'manual';
+              recalc();
+            }
+          });
           inp.addEventListener('keydown', function (e) {
             if (e.key === 'Enter') { e.preventDefault(); aplicarQtyHoraDigitada(inp.dataset.qtyHora, inp.value); }
           });
@@ -1068,6 +1117,7 @@
 
         updateUI();
       }
+
       function aplicarQtyUnDigitada(sid, raw) {
         var n = parseInt(String(raw).replace(/\D/g, ''), 10);
         if (!isFinite(n) || n < 1) {
@@ -1082,6 +1132,47 @@
         renderServicos();
         recalc();
       }
+
+      // ----------------------------------------------------------------
+      // aplicarQtyMetroDigitada — validação/normalização no change/Enter
+      // ----------------------------------------------------------------
+      function aplicarQtyMetroDigitada(sid, raw) {
+        var s = SVC.find(function (x) { return x.servico_id === sid; });
+        if (!s) return;
+        var n = parseFloat(String(raw).replace(',', '.'));
+        if (!isFinite(n) || n < s.metragem_minima) {
+          svcMetragem[sid] = s.metragem_minima;
+        } else if (s.metragem_maxima != null && n > s.metragem_maxima) {
+          svcMetragem[sid] = s.metragem_maxima;
+        } else {
+          svcMetragem[sid] = n;
+        }
+        if (!(svcQuantidade[sid] > 0)) svcQuantidade[sid] = 1;
+        if (svcState[sid] !== 'included') svcState[sid] = 'manual';
+        renderServicos();
+        recalc();
+      }
+
+      // ----------------------------------------------------------------
+      // aplicarQtyHoraDigitada — validação/normalização no change/Enter
+      // ----------------------------------------------------------------
+      function aplicarQtyHoraDigitada(sid, raw) {
+        var s = SVC.find(function (x) { return x.servico_id === sid; });
+        if (!s) return;
+        var n = parseFloat(String(raw).replace(',', '.'));
+        if (!isFinite(n) || n < s.horas_minimas) {
+          svcHoras[sid] = s.horas_minimas;
+        } else if (s.horas_maximas != null && n > s.horas_maximas) {
+          svcHoras[sid] = s.horas_maximas;
+        } else {
+          svcHoras[sid] = n;
+        }
+        if (!(svcQuantidade[sid] > 0)) svcQuantidade[sid] = 1;
+        if (svcState[sid] !== 'included') svcState[sid] = 'manual';
+        renderServicos();
+        recalc();
+      }
+
       function updateUI() {
         document.querySelectorAll('[data-pkg]').forEach(function (c) {
           c.classList.toggle('selected', c.dataset.pkg === activePkg);
@@ -2005,7 +2096,7 @@
           if (em) resultado.email = em[0];
         }
         if (obsRot) resultado.observacoes = obsRot;
-        // Heurística de nome: se não achou por rótulo, pega a primeira linha “humana”
+        // Heurística de nome: se não achou por rótulo, pega a primeira linha "humana"
         // (sem muitos dígitos, sem @, com pelo menos 2 palavras ou 6 letras)
         if (!resultado.nome_razao) {
           var linhas = texto.split(/\r?\n/);
