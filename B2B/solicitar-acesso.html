@@ -842,16 +842,35 @@
           container.appendChild(div);
         });
 
-        // Vídeos selecionados: primeiro frame via #t=0.001, pausado, sem autoplay
+        // Vídeos selecionados: miniatura gerada via canvas
+        function gerarThumbVideo(n, url) {
+          var v = document.createElement('video');
+          v.muted = true;
+          v.playsInline = true;
+          v.preload = 'auto';
+          v.src = url;
+          v.onloadeddata = function () { v.currentTime = 0.1; };
+          v.onseeked = function () {
+            var c = document.createElement('canvas');
+            c.width = v.videoWidth;
+            c.height = v.videoHeight;
+            c.getContext('2d').drawImage(v, 0, 0, c.width, c.height);
+            var img = document.querySelector('[data-thumb-video="' + n + '"]');
+            if (img) img.src = c.toDataURL('image/jpeg', 0.8);
+          };
+          v.load();
+        }
+
         [1, 2].forEach(function (n) {
           var urlVideo = videoPreviewUrls[n];
           if (!urlVideo) return;
           var divV = document.createElement('div');
           divV.className = 'portfolio-item pendente';
           divV.innerHTML = '<span class="absolute top-1 left-1 px-1.5 py-0.5 rounded text-[9px] font-extrabold bg-amber-500/90 text-slate-950 z-10 shadow">⏳ ' + (n === 1 ? 'Vídeo Principal' : 'Vídeo Secundário') + '</span>' +
-                           '<video src="' + urlVideo + '#t=0.1" preload="auto" muted playsinline onloadeddata="this.currentTime=0.1; this.pause();"></video>' +
+                           '<img data-thumb-video="' + n + '" style="width:100%;height:100%;object-fit:cover;background:#000">' +
                            '<button type="button" class="btn-remove-img" onclick="removerVideoNovo(' + n + ')">×</button>';
           container.appendChild(divV);
+          gerarThumbVideo(n, urlVideo);
         });
 
         // Feedback visual de vagas restantes no bloco de upload da galeria
