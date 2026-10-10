@@ -37,7 +37,9 @@ function partnerRequireAuth(opts) {
       .then(function (r) {
         if (r.error || !r.data) {
           console.error('[432UP Partner] Parceiro não encontrado:', r.error);
-          window.location.href = 'login.html';
+          sbPartner.auth.signOut().then(function () {
+            window.location.href = 'login.html?erro=sem_cadastro';
+          });
           return Promise.reject('parceiro não encontrado');
         }
         var parceiro = r.data;
@@ -65,7 +67,7 @@ function partnerRequireAuth(opts) {
       });
   }).catch(function (err) {
     console.error('[432UP Partner] Erro na verificação de auth:', err);
-    if (err !== 'sem sessão' && err !== 'pendente de aprovação' && err !== 'acesso negado' && err !== 'requer admin') {
+    if (err !== 'sem sessão' && err !== 'pendente de aprovação' && err !== 'acesso negado' && err !== 'requer admin' && err !== 'parceiro não encontrado') {
       window.location.href = 'login.html';
     }
     return Promise.reject(err);
