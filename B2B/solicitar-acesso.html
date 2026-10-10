@@ -1543,14 +1543,36 @@
 
             updateLoadingProgress(80, 'Sincronizando cadastro...');
 
+            
+
+
             try {
-              await sbPartner
+              var parceiroUpd = await sbPartner
                 .from('parceiros')
                 .update(payloadExtra)
-                .eq('user_id', userId);
+                .eq('user_id', userId)
+                .select('id');
+
+              if (parceiroUpd.error) {
+                throw parceiroUpd.error;
+              }
+
+              if (!parceiroUpd.data || parceiroUpd.data.length !== 1) {
+                throw new Error(
+                  'Esperado atualizar 1 cadastro de parceiro, mas foram atualizados ' +
+                  (parceiroUpd.data ? parceiroUpd.data.length : 0) +
+                  '. user_id: ' + userId
+                );
+              }
             } catch (errParceiro) {
-              console.warn('[432UP Partner] Falha ao atualizar dados de parceiro:', errParceiro);
+              console.error(
+                '[432UP Partner] Falha ao atualizar dados de parceiro:',
+                errParceiro
+              );
+              throw errParceiro;
             }
+
+
           }
 
           // AVATAR → R2
