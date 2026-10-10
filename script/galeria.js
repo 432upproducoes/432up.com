@@ -1029,7 +1029,7 @@ document.addEventListener('DOMContentLoaded', function () {
       var encoded = encodeURIComponent(
         'Olá! Meu nome é ' + name + '.\nContato: ' + contact + '\nVi a galeria da 432UP e gostaria de conversar sobre um evento.\n\nDetalhes: ' + (msg || 'Nenhum')
       );
-      window.open('https://wa.me/5511948564577?text=' + encoded, '_blank');
+      window.open('https://wa.me/' + (window.CONTATO_WHATSAPP || '') + '?text=' + encoded, '_blank');
       btnSubmitContact.innerText = 'Enviar Solicitação';
       btnSubmitContact.disabled = false;
       if (contactOverlay) contactOverlay.classList.remove('active', 'open');

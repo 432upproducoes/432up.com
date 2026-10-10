@@ -292,7 +292,7 @@ function getFilteredLeads(){
 function renderConfig(){
   var v=DATA.config;
   if($('#cfgNome'))$('#cfgNome').value=v.nome_site||'432UP Produções';
-  if($('#cfgWa'))$('#cfgWa').value=v.whatsapp||'5511948564577';
+  if($('#cfgWa'))$('#cfgWa').value=v.whatsapp||'';
   if($('#cfgInsta'))$('#cfgInsta').value=v.instagram||'@432up.producoes';
   if($('#cfgEmail'))$('#cfgEmail').value=v.email||'contato@432up.com';
   if($('#cfgDesc'))$('#cfgDesc').value=v.descricao||'';

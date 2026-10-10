@@ -7,7 +7,7 @@ let selectedAddons = {};
 let packageComponents = { bronze: [], prata: [], ouro: [] };
 
 let selection = { scale: null, hours: null, package: null, guestsText: "", guestsCount: 0 };
-let calcFallbackWhatsapp = "5511948564577";
+let calcFallbackWhatsapp = "";
 let globalFormattedPrice = "";
 let globalSpecsList = [];
 let activeIdForPrice = null;
@@ -913,14 +913,61 @@ custoHoras = horasExcedentes * vExtraHora;
 
 
 
-
-  const targetWhatsappUrl = 'https://wa.me/' + calcFallbackWhatsapp + '?text=' + msg;
+  const targetWhatsappUrl = 'https://wa.me/' + (window.CONTATO_WHATSAPP || calcFallbackWhatsapp) + '?text=' + msg;
   const btnWhatsapp = document.getElementById('btn-whatsapp');
   if (btnWhatsapp) btnWhatsapp.href = targetWhatsappUrl;
+
+  // Snapshot do projeto em co_leads (não bloqueia nem altera o WhatsApp)
+  const registrarLeadSimulador = function () {
+    try {
+      if (typeof supabaseClient === 'undefined' || !supabaseClient) return;
+
+      const snapshot =
+        'Projeto de Atmosfera 432UP\n' +
+        (currentVipCode ? '🎟️ Código de Reserva VIP: ' + currentVipCode + '\n' : '') +
+        (selection.guestsText ? '👥 Escala: ' + selection.guestsText + '\n' : '') +
+        (hours !== null ? '⏱️ Duração: ' + hours + 'h\n' : '') +
+        (pkg ? '🏆 Rider: ' + pkg.toUpperCase() + '\n' + pkgNames.map(n => '   • ' + n + '\n').join('') : '') +
+        (extraNames.length > 0 ? '➕ Adicionais:\n' + extraNames.map(n => '   ◦ ' + n + '\n').join('') : '') +
+        '💰 Investimento Estimado: ' + (globalFormattedPrice || 'Sob consulta') + '\n' +
+        '📅 Registrado em: ' + new Date().toLocaleString('pt-BR').replace(', ', ' ');
+
+      supabaseClient.from('co_leads').insert([{
+        nome: null,
+        whatsapp: null,
+        email: null,
+        tipo_evento: null,
+        data_evento: null,
+        local: null,
+        convidados: selection.guestsCount || null,
+        horas: hours !== null ? hours : null,
+        total: globalFormattedPrice || null,
+        pacote: pkg ? pkg.toUpperCase() : null,
+        origem: 'simulador',
+        mensagem: snapshot
+      }]).then(function (res) {
+        if (res && res.error) console.error('432UP! Erro ao registrar lead do simulador:', res.error);
+        else console.info('432UP! Lead do simulador registrado:', currentVipCode);
+      }, function (err) {
+        console.error('432UP! Falha de rede ao registrar lead do simulador:', err);
+      });
+    } catch (err) {
+      console.error('432UP! Erro inesperado no registro do lead do simulador:', err);
+    }
+  };
+
+  if (btnWhatsapp) btnWhatsapp.onclick = registrarLeadSimulador;
   if (missingSteps.length === 0 && stickyBtnWhatsapp) {
     stickyBtnWhatsapp.href = targetWhatsappUrl;
+    stickyBtnWhatsapp.onclick = registrarLeadSimulador;
   }
 }
+
+
+
+
+
+
 
 /* ---------- POPOVERS & MODAIS ---------- */
 function openPricePopover(event, id) {
@@ -1211,7 +1258,7 @@ function setupContactFormCalc() {
     const encoded = encodeURIComponent(
       `Olá! Meu nome é ${name}.\nContato: ${contact}\nGostaria de iniciar um alinhamento técnico.\n\nDetalhes: ${msg || 'Nenhum'}`
     );
-    window.open(`https://wa.me/${calcFallbackWhatsapp}?text=${encoded}`, '_blank');
+    window.open(`https://wa.me/${window.CONTATO_WHATSAPP || calcFallbackWhatsapp}?text=${encoded}`, '_blank');
 
     btn.innerText = 'Enviar Solicitação';
     btn.disabled = false;
