@@ -83,13 +83,27 @@ export async function onRequest(context) {
   }
 
   // ==========================================================
-  // TOKEN 2 — O TOKEN QUE FUNCIONOU NO TESTE 200
+  // CREDENCIAIS: lidas de variáveis de ambiente do Cloudflare.
+  // Nenhum token fica escrito no código.
   // ==========================================================
 
-  const BOT_TOKEN =
-    "8835958314:AAFGe18Mxm7Z_P_GlRPPRzv8cUWbi7mHX00";
+  const BOT_TOKEN = context.env.TELEGRAM_BOT_TOKEN;
 
   const CHAT_ID = "8996965457";
+
+  if (!BOT_TOKEN) {
+
+    return new Response(
+      JSON.stringify({
+        ok: false,
+        error: "Configuração ausente: TELEGRAM_BOT_TOKEN não definido"
+      }),
+      {
+        status: 500,
+        headers
+      }
+    );
+  }
 
   // ==========================================================
   // FUNÇÕES AUXILIARES DE FORMATAÇÃO
