@@ -513,6 +513,7 @@
 
       // Pré-visualização local dos vídeos selecionados (blob URLs)
       var videoPreviewUrls = { 1: null, 2: null };
+      var videoThumbs = { 1: null, 2: null };
 
       // LIMITE MÁXIMO DE FOTOS NA GALERIA (não conta a foto de capa, que é separada)
       var MAX_FOTOS_GALERIA = 6;
@@ -865,10 +866,13 @@
         [1, 2].forEach(function (n) {
           var urlVideo = videoPreviewUrls[n];
           if (!urlVideo) return;
+          var thumb = videoThumbs[n];
           var divV = document.createElement('div');
           divV.className = 'portfolio-item pendente';
           divV.innerHTML = '<span class="absolute top-1 left-1 px-1.5 py-0.5 rounded text-[9px] font-extrabold bg-amber-500/90 text-slate-950 z-10 shadow">⏳ ' + (n === 1 ? 'Vídeo Principal' : 'Vídeo Secundário') + '</span>' +
-                           '<video src="' + urlVideo + '#t=0.001" preload="auto" muted playsinline onloadedmetadata="this.currentTime=0.001" onloadeddata="this.currentTime=0.001"></video>' +
+                           (thumb
+                             ? '<img src="' + thumb + '" style="width:100%;height:100%;object-fit:cover">'
+                             : '<div style="width:100%;height:100%;background:#1a1a22"></div>') +
                            '<button type="button" class="btn-remove-img" onclick="removerVideoNovo(' + n + ')">×</button>';
           container.appendChild(divV);
         });
@@ -901,16 +905,59 @@
         renderGaleriaCompleta();
       };
 
+      // MINIATURA DO VÍDEO: desenha o primeiro frame num canvas, direto do arquivo
+      // escolhido no aparelho. Não depende de #t= no endereço temporário (o Safari
+      // do iPad costuma ignorar isso e mostra quadro preto).
+      function gerarMiniaturaVideo(file, cb) {
+        var v = document.createElement('video');
+        var url = URL.createObjectURL(file);
+        var feito = false;
+        function terminar(dataUrl) {
+          if (feito) return;
+          feito = true;
+          URL.revokeObjectURL(url);
+          cb(dataUrl);
+        }
+        v.muted = true;
+        v.playsInline = true;
+        v.setAttribute('playsinline', '');
+        v.setAttribute('muted', '');
+        v.preload = 'auto';
+        v.onloadeddata = function () {
+          v.currentTime = 0.1;
+        };
+        v.onseeked = function () {
+          try {
+            var c = document.createElement('canvas');
+            c.width = v.videoWidth || 320;
+            c.height = v.videoHeight || 180;
+            c.getContext('2d').drawImage(v, 0, 0, c.width, c.height);
+            terminar(c.toDataURL('image/jpeg', 0.8));
+          } catch (e) {
+            terminar(null);
+          }
+        };
+        v.onerror = function () { terminar(null); };
+        setTimeout(function () { terminar(null); }, 5000);
+        v.src = url;
+        v.load();
+      }
+
       // ---- VÍDEOS: seleção local e pré-visualização na grade ----
       function atualizarPreviewVideo(n) {
         if (videoPreviewUrls[n]) {
           URL.revokeObjectURL(videoPreviewUrls[n]);
           videoPreviewUrls[n] = null;
         }
+        videoThumbs[n] = null;
         var input = document.getElementById('artVideo' + n);
         var arquivo = input && input.files ? input.files[0] : null;
         if (arquivo) {
           videoPreviewUrls[n] = URL.createObjectURL(arquivo);
+          gerarMiniaturaVideo(arquivo, function (dataUrl) {
+            videoThumbs[n] = dataUrl;
+            renderGaleriaCompleta();
+          });
         }
         renderGaleriaCompleta();
       }
@@ -1454,7 +1501,15 @@
 
           if (userId) {
             if (podeEnviarR2) {
-              updateLoadingProgress(45, 'Enviando portfólio...');
+              // PROGRESSO REAL: cada arquivo concluído (enviado ou falho após as
+              // tentativas) avança a barra. O percentual nunca volta para trás.
+              var totalItensCad = (video1File ? 1 : 0) + (video2File ? 1 : 0) + (novaCapaBlob && !capaRemovida ? 1 : 0) + galeriaBlobs.length;
+              var concluidosCad = 0;
+              var avancarCad = function (rotulo) {
+                concluidosCad++;
+                updateLoadingProgress(10 + Math.round((concluidosCad / Math.max(totalItensCad, 1)) * 65), rotulo + ' (' + concluidosCad + ' de ' + totalItensCad + ')');
+              };
+              updateLoadingProgress(10, 'Enviando portfólio...');
 
               // VÍDEO PRINCIPAL → R2 (campo_destino legado: youtube_1)
               if (video1File) {
@@ -1468,10 +1523,12 @@
                     campo_destino: 'youtube_1',
                     criado_em: new Date().toISOString()
                   });
+                  avancarCad('Vídeo principal enviado');
                 } catch (errV1) {
                   console.warn('[432UP Partner] Upload do vídeo principal falhou:', errV1);
                   detalheErroUpload = detalheErroUpload || (errV1 && errV1.message ? errV1.message : '');
                   falhasUpload.push('vídeo principal');
+                  avancarCad('Vídeo principal não enviado');
                 }
               }
 
@@ -1487,10 +1544,12 @@
                     campo_destino: 'youtube_2',
                     criado_em: new Date().toISOString()
                   });
+                  avancarCad('Vídeo secundário enviado');
                 } catch (errV2) {
                   console.warn('[432UP Partner] Upload do vídeo secundário falhou:', errV2);
                   detalheErroUpload = detalheErroUpload || (errV2 && errV2.message ? errV2.message : '');
                   falhasUpload.push('vídeo secundário');
+                  avancarCad('Vídeo secundário não enviado');
                 }
               }
 
@@ -1505,31 +1564,26 @@
                     tipo: 'capa',
                     criado_em: new Date().toISOString()
                   });
+                  avancarCad('Foto de capa enviada');
                 } catch (errCapa) {
                   console.warn('[432UP Partner] Upload de capa falhou:', errCapa);
                   detalheErroUpload = detalheErroUpload || (errCapa && errCapa.message ? errCapa.message : '');
                   falhasUpload.push('foto de capa');
+                  avancarCad('Foto de capa não enviada');
                 }
               }
 
-              // GALERIA → R2
+              // GALERIA → R2 (até 3 tentativas por foto)
               if (galeriaBlobs.length > 0) {
-                var totalG = galeriaBlobs.length;
-                var concluidosG = 0;
-
                 var uploadPromises = galeriaBlobs.map(function (item, idx) {
                   var gPath = userId + '/galeria_' + Date.now() + '_' + idx + '.webp';
                   return uploadComTentativas(gPath, item.blob)
                     .then(function (url) {
-                      concluidosG++;
-                      var pVal = 45 + Math.round((concluidosG / totalG) * 30);
-                      updateLoadingProgress(pVal, 'Enviada foto ' + concluidosG + ' de ' + totalG + '...');
+                      avancarCad('Foto da galeria enviada');
                       return url;
                     })
                     .catch(function (errG) {
-                      concluidosG++;
-                      var pVal = 45 + Math.round((concluidosG / totalG) * 30);
-                      updateLoadingProgress(pVal, 'Enviada foto ' + concluidosG + ' de ' + totalG + '...');
+                      avancarCad('Foto da galeria não enviada');
                       console.warn('[432UP Partner] Falha no upload de foto da galeria:', errG);
                       detalheErroUpload = detalheErroUpload || (errG && errG.message ? errG.message : '');
                       return null;
@@ -1562,13 +1616,18 @@
 
             updateLoadingProgress(80, 'Sincronizando cadastro...');
 
+            // Erro retornado pelo Supabase NÃO era tratado antes (ficava silencioso).
+            // Agora é registrado como falha e aparece no aviso final.
             try {
-              await sbPartner
+              var resParceiro = await sbPartner
                 .from('parceiros')
                 .update(payloadExtra)
                 .eq('user_id', userId);
+              if (resParceiro && resParceiro.error) throw resParceiro.error;
             } catch (errParceiro) {
               console.warn('[432UP Partner] Falha ao atualizar dados de parceiro:', errParceiro);
+              detalheErroUpload = detalheErroUpload || (errParceiro && errParceiro.message ? errParceiro.message : '');
+              falhasUpload.push('dados do portfólio');
             }
           }
 
