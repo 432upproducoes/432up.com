@@ -562,6 +562,25 @@
       // ======================================================================
       var R2_UPLOAD_URL = 'https://432up-r2-upload.432up-producoes.workers.dev/';
 
+      // TENTATIVAS AUTOMÁTICAS: até 3 envios, com pausa crescente entre eles.
+      // O caminho (path) é definido uma única vez por arquivo, então uma nova
+      // tentativa não cria cópias com outro nome.
+      async function uploadComTentativas(path, file) {
+        var ultimoErro = null;
+        for (var tentativa = 1; tentativa <= 3; tentativa++) {
+          try {
+            return await uploadParaR2(path, file);
+          } catch (err) {
+            ultimoErro = err;
+            console.warn('[432UP Partner] Tentativa ' + tentativa + ' falhou:', err && err.message);
+            if (tentativa < 3) {
+              await new Promise(function (r) { setTimeout(r, tentativa * 1500); });
+            }
+          }
+        }
+        throw ultimoErro;
+      }
+
       async function uploadParaR2(path, file) {
         var sessionRes = await sbPartner.auth.getSession();
         var token = (sessionRes && sessionRes.data && sessionRes.data.session)
@@ -1422,7 +1441,7 @@
         
         startLoadingProgress(25, 'Atualizando foto de perfil oficial...');
 
-        uploadParaR2(parceiroAtual.user_id + '/avatar.jpg', novoAvatarFile)
+        uploadComTentativas(parceiroAtual.user_id + '/avatar.jpg', novoAvatarFile)
           .then(function (novaUrl) {
             updateLoadingProgress(70, 'Sincronizando cadastro...');
             return sbPartner.from('parceiros').update({ avatar_url: novaUrl }).eq('id', parceiroAtual.id);
@@ -1520,156 +1539,148 @@
         payload.galeria_fotos = galeriaUrlsExistentes;
 
         try {
-          updateLoadingProgress(35, 'Processando mídias...');
-
-          // Mantém pendentes (incl. vídeos). Só substitui vídeo se houver arquivo novo no input.
           var novasMidiasPendentes = midiasPendentesExistentes.slice();
           var houveEnvioMidia = false;
+          var falhasEnvio = [];
+          var videoOk1 = true;
+          var videoOk2 = true;
+          var capaOk = true;
 
-          /* ===================================================================
-             PONTOS 4/5 — VÍDEOS: os campos passaram de <input type="url"> para
-             <input type="file" accept="video/*">. O arquivo é enviado CRU
-             (sem qualquer processamento client-side) via uploadParaR2(); o
-             Worker é responsável pela compactação server-side. A URL R2
-             retornada substitui o antigo valor de YouTube/Vimeo, preservando
-             exatamente a mesma estrutura de midias_pendentes e o mesmo
-             campo_destino ('youtube_1' / 'youtube_2') usado hoje pelo fluxo
-             de aprovação, para não quebrar nada no lado administrativo.
-             =================================================================== */
           var video1File = document.getElementById('artVideo1').files[0] || null;
           var video2File = document.getElementById('artVideo2').files[0] || null;
 
+          // PROGRESSO REAL: cada arquivo concluído (enviado ou falho após as
+          // tentativas) avança a barra. O percentual nunca volta para trás.
+          var totalItens = (video1File ? 1 : 0) + (video2File ? 1 : 0) + (!capaRemovida && novaCapaBlob ? 1 : 0) + galeriaBlobs.length;
+          var concluidosItens = 0;
+          var avancarProgresso = function (rotulo) {
+            concluidosItens++;
+            updateLoadingProgress(10 + Math.round((concluidosItens / totalItens) * 80), rotulo + ' (' + concluidosItens + ' de ' + totalItens + ')');
+          };
+          updateLoadingProgress(10, 'Enviando mídias...');
+
           if (video1File) {
-            updateLoadingProgress(45, 'Enviando vídeo principal...');
-            var video1Url;
             try {
               var path1 = parceiroAtual.user_id + '/video_principal_' + Date.now() + '_' + video1File.name;
-              video1Url = await uploadParaR2(path1, video1File);
-            } catch (uploadErrV1) {
-              throw new Error('Falha no upload do vídeo principal: ' + uploadErrV1.message);
+              var video1Url = await uploadComTentativas(path1, video1File);
+              houveEnvioMidia = true;
+              novasMidiasPendentes = novasMidiasPendentes.filter(function(m) {
+                return !(m.tipo === 'video' && m.campo_destino === 'youtube_1');
+              });
+              novasMidiasPendentes.push({
+                id: 'video_1_' + Date.now(),
+                url: video1Url,
+                tipo: 'video',
+                campo_destino: 'youtube_1',
+                criado_em: new Date().toISOString()
+              });
+              document.getElementById('badgeVideo1Pendente').classList.remove('hidden');
+              avancarProgresso('Vídeo principal enviado');
+            } catch (errV1) {
+              videoOk1 = false;
+              falhasEnvio.push('vídeo principal');
+              avancarProgresso('Vídeo principal não enviado');
             }
-            houveEnvioMidia = true;
-            // Substitui pendente anterior do mesmo campo (não acumula)
-            novasMidiasPendentes = novasMidiasPendentes.filter(function(m) {
-              return !(m.tipo === 'video' && m.campo_destino === 'youtube_1');
-            });
-            novasMidiasPendentes.push({
-              id: 'video_1_' + Date.now(),
-              url: video1Url,
-              tipo: 'video',
-              campo_destino: 'youtube_1',
-              criado_em: new Date().toISOString()
-            });
-            document.getElementById('badgeVideo1Pendente').classList.remove('hidden');
           }
 
           if (video2File) {
-            updateLoadingProgress(50, 'Enviando vídeo secundário...');
-            var video2Url;
             try {
               var path2 = parceiroAtual.user_id + '/video_secundario_' + Date.now() + '_' + video2File.name;
-              video2Url = await uploadParaR2(path2, video2File);
-            } catch (uploadErrV2) {
-              throw new Error('Falha no upload do vídeo secundário: ' + uploadErrV2.message);
+              var video2Url = await uploadComTentativas(path2, video2File);
+              houveEnvioMidia = true;
+              novasMidiasPendentes = novasMidiasPendentes.filter(function(m) {
+                return !(m.tipo === 'video' && m.campo_destino === 'youtube_2');
+              });
+              novasMidiasPendentes.push({
+                id: 'video_2_' + Date.now(),
+                url: video2Url,
+                tipo: 'video',
+                campo_destino: 'youtube_2',
+                criado_em: new Date().toISOString()
+              });
+              document.getElementById('badgeVideo2Pendente').classList.remove('hidden');
+              avancarProgresso('Vídeo secundário enviado');
+            } catch (errV2) {
+              videoOk2 = false;
+              falhasEnvio.push('vídeo secundário');
+              avancarProgresso('Vídeo secundário não enviado');
             }
-            houveEnvioMidia = true;
-            novasMidiasPendentes = novasMidiasPendentes.filter(function(m) {
-              return !(m.tipo === 'video' && m.campo_destino === 'youtube_2');
-            });
-            novasMidiasPendentes.push({
-              id: 'video_2_' + Date.now(),
-              url: video2Url,
-              tipo: 'video',
-              campo_destino: 'youtube_2',
-              criado_em: new Date().toISOString()
-            });
-            document.getElementById('badgeVideo2Pendente').classList.remove('hidden');
           }
 
-          /* ===================================================================
-             PONTO 3 — CAPA: substituição do upload direto ao Supabase Storage
-             (+ getPublicUrl) por uploadParaR2(), que já retorna a URL final
-             pronta para uso. Estrutura de midias_pendentes preservada.
-             =================================================================== */
           if (capaRemovida) {
             payload.foto_capa_url = null;
           } else if (novaCapaBlob) {
-            houveEnvioMidia = true;
-            var capaPath = parceiroAtual.user_id + '/capa_vitrine_' + Date.now() + '.webp';
-            var novaCapaUrl;
             try {
-              novaCapaUrl = await uploadParaR2(capaPath, novaCapaBlob);
-            } catch (uploadErr) {
-              throw new Error('Falha no upload da foto de capa: ' + uploadErr.message);
+              var capaPath = parceiroAtual.user_id + '/capa_vitrine_' + Date.now() + '.webp';
+              var novaCapaUrl = await uploadComTentativas(capaPath, novaCapaBlob);
+              houveEnvioMidia = true;
+              novasMidiasPendentes.push({
+                id: 'capa_' + Date.now(),
+                url: novaCapaUrl,
+                tipo: 'capa',
+                criado_em: new Date().toISOString()
+              });
+              avancarProgresso('Capa enviada');
+            } catch (errCapa) {
+              capaOk = false;
+              falhasEnvio.push('foto de capa');
+              avancarProgresso('Capa não enviada');
             }
-
-            novasMidiasPendentes.push({
-              id: 'capa_' + Date.now(),
-              url: novaCapaUrl,
-              tipo: 'capa',
-              criado_em: new Date().toISOString()
-            });
           }
 
-          updateLoadingProgress(60, 'Enviando galeria de mídias...');
-
-          /* ===================================================================
-             PONTO 4 (galeria) — substituição do upload direto ao Supabase
-             Storage (+ getPublicUrl) por uploadParaR2(), que já retorna a URL
-             final. Mantida a lógica de progresso incremental por foto.
-             =================================================================== */
+          // GALERIA: cada foto tem até 3 tentativas. As que falharem voltam
+          // para a fila local, para serem reenviadas ao clicar em Salvar.
+          var galeriaFalhas = [];
           if (galeriaBlobs.length > 0) {
             houveEnvioMidia = true;
-            var totalG = galeriaBlobs.length;
-            var concluidosG = 0;
-
-            var uploadPromises = galeriaBlobs.map(function(item, idx) {
+            var uploadsG = galeriaBlobs.map(function(item, idx) {
               var gPath = parceiroAtual.user_id + '/galeria_' + Date.now() + '_' + idx + '.webp';
-              return uploadParaR2(gPath, item.blob)
+              return uploadComTentativas(gPath, item.blob)
                 .then(function(url) {
-                  concluidosG++;
-                  var pVal = 60 + Math.round((concluidosG / totalG) * 30);
-                  updateLoadingProgress(pVal, 'Enviada foto ' + concluidosG + ' de ' + totalG + '...');
-                  return url;
+                  avancarProgresso('Foto da galeria enviada');
+                  return { ok: true, url: url, item: item };
                 })
-                .catch(function(err) {
-                  concluidosG++;
-                  var pVal = 60 + Math.round((concluidosG / totalG) * 30);
-                  updateLoadingProgress(pVal, 'Enviada foto ' + concluidosG + ' de ' + totalG + '...');
-                  console.warn('Falha no upload de foto da galeria:', err.message);
-                  return null;
+                .catch(function() {
+                  avancarProgresso('Foto da galeria não enviada');
+                  return { ok: false, item: item };
                 });
             });
-
-            var resultados = await Promise.all(uploadPromises);
-            resultados.forEach(function(url) {
-              if (url) {
+            var resGaleria = await Promise.all(uploadsG);
+            resGaleria.forEach(function(r) {
+              if (r.ok) {
                 novasMidiasPendentes.push({
                   id: 'galeria_' + Date.now() + '_' + Math.random().toString(36).substr(2, 5),
-                  url: url,
+                  url: r.url,
                   tipo: 'galeria',
                   criado_em: new Date().toISOString()
                 });
+              } else {
+                galeriaFalhas.push(r.item);
               }
             });
+            if (galeriaFalhas.length > 0) {
+              falhasEnvio.push(galeriaFalhas.length + ' foto(s) da galeria');
+            }
           }
 
           payload.midias_pendentes = novasMidiasPendentes;
 
-          updateLoadingProgress(92, 'Finalizando cadastro no Supabase...');
+          updateLoadingProgress(92, 'Finalizando cadastro...');
 
           var resUpdate = await sbPartner.from('parceiros').update(payload).eq('id', parceiroAtual.id);
 
           if (resUpdate.error) {
             showAlert('Erro ao salvar: ' + resUpdate.error.message, 'error');
           } else {
-            updateLoadingProgress(100, 'Salvo com sucesso!');
+            updateLoadingProgress(100, 'Salvo!');
 
-            var msgSucesso = houveEnvioMidia 
-              ? 'Perfil salvo! Os novos arquivos foram enviados para análise sem alterar seu perfil ativo.' 
-              : 'Perfil Unificado atualizado com sucesso!';
-
-            showAlert(msgSucesso, 'success');
+            if (falhasEnvio.length > 0) {
+              showAlert('Perfil salvo. Não enviados: ' + falhasEnvio.join(', ') + '. Clique em Salvar para tentar novamente.', 'error');
+            } else {
+              showAlert(houveEnvioMidia
+                ? 'Perfil salvo! Os novos arquivos foram enviados para análise sem alterar seu perfil ativo.'
+                : 'Perfil Unificado atualizado com sucesso!', 'success');
+            }
 
             if (houveEnvioMidia) {
               avisarTelegramMidiaPendente({
@@ -1679,14 +1690,15 @@
                 totalPendentes: novasMidiasPendentes.length
               });
             }
-            
+
             midiasPendentesExistentes = payload.midias_pendentes || [];
-            galeriaBlobs = [];
-            novaCapaBlob = null;
+            // Mantém só o que falhou, para o próximo Salvar reenviar
+            galeriaBlobs = galeriaFalhas;
+            if (capaOk) novaCapaBlob = null;
             capaRemovida = false;
 
-            document.getElementById('artVideo1').value = '';
-            document.getElementById('artVideo2').value = '';
+            if (videoOk1) document.getElementById('artVideo1').value = '';
+            if (videoOk2) document.getElementById('artVideo2').value = '';
 
             renderGaleriaCompleta();
 
