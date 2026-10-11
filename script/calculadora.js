@@ -932,6 +932,9 @@ custoHoras = horasExcedentes * vExtraHora;
         '💰 Investimento Estimado: ' + (globalFormattedPrice || 'Sob consulta') + '\n' +
         '📅 Registrado em: ' + new Date().toLocaleString('pt-BR').replace(', ', ' ');
 
+      dispararLeadTelegram('Simulador de Atmosfera', 'Não informado', snapshot);
+
+
       supabaseClient.from('co_leads').insert([{
         nome: null,
         whatsapp: null,
