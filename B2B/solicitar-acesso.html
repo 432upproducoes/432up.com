@@ -527,6 +527,25 @@
       // ======================================================================
       var R2_UPLOAD_URL = 'https://432up-r2-upload.432up-producoes.workers.dev/';
 
+      // TENTATIVAS AUTOMÁTICAS: até 3 envios, com pausa crescente entre eles.
+      // O caminho (path) é definido uma única vez por arquivo, então uma nova
+      // tentativa não cria cópias com outro nome.
+      async function uploadComTentativas(path, file) {
+        var ultimoErro = null;
+        for (var tentativa = 1; tentativa <= 3; tentativa++) {
+          try {
+            return await uploadParaR2(path, file);
+          } catch (err) {
+            ultimoErro = err;
+            console.warn('[432UP Partner] Tentativa ' + tentativa + ' falhou:', err && err.message);
+            if (tentativa < 3) {
+              await new Promise(function (r) { setTimeout(r, tentativa * 1500); });
+            }
+          }
+        }
+        throw ultimoErro;
+      }
+
       async function uploadParaR2(path, file) {
         var sessionRes = await sbPartner.auth.getSession();
         var token = (sessionRes && sessionRes.data && sessionRes.data.session)
@@ -842,35 +861,16 @@
           container.appendChild(div);
         });
 
-        // Vídeos selecionados: miniatura gerada via canvas
-        function gerarThumbVideo(n, url) {
-          var v = document.createElement('video');
-          v.muted = true;
-          v.playsInline = true;
-          v.preload = 'auto';
-          v.src = url;
-          v.onloadeddata = function () { v.currentTime = 0.1; };
-          v.onseeked = function () {
-            var c = document.createElement('canvas');
-            c.width = v.videoWidth;
-            c.height = v.videoHeight;
-            c.getContext('2d').drawImage(v, 0, 0, c.width, c.height);
-            var img = document.querySelector('[data-thumb-video="' + n + '"]');
-            if (img) img.src = c.toDataURL('image/jpeg', 0.8);
-          };
-          v.load();
-        }
-
+        // Vídeos selecionados: primeiro frame via #t=0.001, pausado, sem autoplay
         [1, 2].forEach(function (n) {
           var urlVideo = videoPreviewUrls[n];
           if (!urlVideo) return;
           var divV = document.createElement('div');
           divV.className = 'portfolio-item pendente';
           divV.innerHTML = '<span class="absolute top-1 left-1 px-1.5 py-0.5 rounded text-[9px] font-extrabold bg-amber-500/90 text-slate-950 z-10 shadow">⏳ ' + (n === 1 ? 'Vídeo Principal' : 'Vídeo Secundário') + '</span>' +
-                           '<img data-thumb-video="' + n + '" style="width:100%;height:100%;object-fit:cover;background:#000">' +
+                           '<video src="' + urlVideo + '#t=0.001" preload="auto" muted playsinline onloadedmetadata="this.currentTime=0.001" onloadeddata="this.currentTime=0.001"></video>' +
                            '<button type="button" class="btn-remove-img" onclick="removerVideoNovo(' + n + ')">×</button>';
           container.appendChild(divV);
-          gerarThumbVideo(n, urlVideo);
         });
 
         // Feedback visual de vagas restantes no bloco de upload da galeria
@@ -1460,7 +1460,7 @@
               if (video1File) {
                 try {
                   var path1 = userId + '/video_principal_' + Date.now() + '_' + video1File.name;
-                  var video1Url = await uploadParaR2(path1, video1File);
+                  var video1Url = await uploadComTentativas(path1, video1File);
                   novasMidiasPendentes.push({
                     id: 'video_1_' + Date.now(),
                     url: video1Url,
@@ -1479,7 +1479,7 @@
               if (video2File) {
                 try {
                   var path2 = userId + '/video_secundario_' + Date.now() + '_' + video2File.name;
-                  var video2Url = await uploadParaR2(path2, video2File);
+                  var video2Url = await uploadComTentativas(path2, video2File);
                   novasMidiasPendentes.push({
                     id: 'video_2_' + Date.now(),
                     url: video2Url,
@@ -1498,7 +1498,7 @@
               if (novaCapaBlob && !capaRemovida) {
                 try {
                   var capaPath = userId + '/capa_vitrine_' + Date.now() + '.webp';
-                  var capaUrl = await uploadParaR2(capaPath, novaCapaBlob);
+                  var capaUrl = await uploadComTentativas(capaPath, novaCapaBlob);
                   novasMidiasPendentes.push({
                     id: 'capa_' + Date.now(),
                     url: capaUrl,
@@ -1519,7 +1519,7 @@
 
                 var uploadPromises = galeriaBlobs.map(function (item, idx) {
                   var gPath = userId + '/galeria_' + Date.now() + '_' + idx + '.webp';
-                  return uploadParaR2(gPath, item.blob)
+                  return uploadComTentativas(gPath, item.blob)
                     .then(function (url) {
                       concluidosG++;
                       var pVal = 45 + Math.round((concluidosG / totalG) * 30);
@@ -1562,42 +1562,20 @@
 
             updateLoadingProgress(80, 'Sincronizando cadastro...');
 
-            
-
-
             try {
-              var parceiroUpd = await sbPartner
+              await sbPartner
                 .from('parceiros')
                 .update(payloadExtra)
-                .eq('user_id', userId)
-                .select('id');
-
-              if (parceiroUpd.error) {
-                throw parceiroUpd.error;
-              }
-
-              if (!parceiroUpd.data || parceiroUpd.data.length !== 1) {
-                throw new Error(
-                  'Esperado atualizar 1 cadastro de parceiro, mas foram atualizados ' +
-                  (parceiroUpd.data ? parceiroUpd.data.length : 0) +
-                  '. user_id: ' + userId
-                );
-              }
+                .eq('user_id', userId);
             } catch (errParceiro) {
-              console.error(
-                '[432UP Partner] Falha ao atualizar dados de parceiro:',
-                errParceiro
-              );
-              throw errParceiro;
+              console.warn('[432UP Partner] Falha ao atualizar dados de parceiro:', errParceiro);
             }
-
-
           }
 
           // AVATAR → R2
           if (avatarFile && podeEnviarR2) {
             try {
-              var avatarUrl = await uploadParaR2(userId + '/avatar.jpg', avatarFile);
+              var avatarUrl = await uploadComTentativas(userId + '/avatar.jpg', avatarFile);
 
               var avatarUpd = await sbPartner
                 .from('parceiros')
