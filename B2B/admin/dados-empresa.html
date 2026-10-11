@@ -215,6 +215,18 @@
   window._supabase = _supabaseAdmin;
   const SB = SUPABASE_URL_ADM;
   const SK = SUPABASE_KEY_ADM;
+  /* token do usuário logado (lido do login do Supabase); sem sessão, cai na chave pública */
+  function tokUser() {
+    try {
+      var raw = localStorage.getItem('sb-paetkspbfejtjjkngqej-auth-token');
+      if (raw) {
+        var s = JSON.parse(raw);
+        if (s && s.access_token) return s.access_token;
+      }
+    } catch (e) {}
+    return SK;
+  }
+
 
   var _confirmCb = null;
   function $(s) { return document.querySelector(s); }
@@ -248,13 +260,13 @@
   window.confirmClose = confirmClose;
 
   function sbH(m) {
-    var h = { 'apikey': SK, 'Authorization': 'Bearer ' + SK, 'Content-Type': 'application/json' };
+    var h = { 'apikey': SK, 'Authorization': 'Bearer ' + tokUser(), 'Content-Type': 'application/json' };
     if (m === 'PATCH' || m === 'POST') h['Prefer'] = 'return=representation';
     return h;
   }
   async function sbGet(table, q) {
     try {
-      var r = await fetch(SB + '/rest/v1/' + table + '?' + q, { headers: { 'apikey': SK, 'Authorization': 'Bearer ' + SK } });
+      var r = await fetch(SB + '/rest/v1/' + table + '?' + q, { headers: { 'apikey': SK, 'Authorization': 'Bearer ' + tokUser() } });
       if (!r.ok) throw r;
       return await r.json();
     } catch (e) { console.error('sbGet', table, e); return null; }
@@ -402,11 +414,11 @@
   // ============================================================
   // AUTENTICAÇÃO (mesmo padrão do Leads)
   // ============================================================
-  partnerRequireAuth().then(function (parceiro) {
+  partnerRequireAuth({ requireAdmin: true }).then(function (parceiro) {
     partnerFillSidebar(parceiro);
 
     var roleNorm = String(parceiro.role || parceiro.nivel || '').toLowerCase().trim();
-    var isAdmin = roleNorm === 'admin' || roleNorm === 'master';
+    var isAdmin = roleNorm === 'admin' || roleNorm === 'master' || parceiro.is_admin === true;
     window.updateAdminState(isAdmin);
 
     if (typeof window.__adminPageInit === 'function') {

@@ -199,6 +199,18 @@
   window._supabase = _supabaseAdmin;
   const SB = SUPABASE_URL_ADM;
   const SK = SUPABASE_KEY_ADM;
+  /* token do usuário logado (lido do login do Supabase); sem sessão, cai na chave pública */
+  function tokUser() {
+    try {
+      var raw = localStorage.getItem('sb-paetkspbfejtjjkngqej-auth-token');
+      if (raw) {
+        var s = JSON.parse(raw);
+        if (s && s.access_token) return s.access_token;
+      }
+    } catch (e) {}
+    return SK;
+  }
+
 
   var DATA = { servicos: [], pacotes: [], leads: [], configTransporte: null };
   var selectedLeads = {};
@@ -258,13 +270,13 @@
   }
 
   function sbH(m) {
-    var h = { 'apikey': SK, 'Authorization': 'Bearer ' + SK, 'Content-Type': 'application/json' };
+    var h = { 'apikey': SK, 'Authorization': 'Bearer ' + tokUser(), 'Content-Type': 'application/json' };
     if (m === 'PATCH' || m === 'POST') h['Prefer'] = 'return=representation';
     return h;
   }
   async function sbGet(table, qs) {
     try {
-      var r = await fetch(SB + '/rest/v1/' + table + '?' + qs, { headers: { 'apikey': SK, 'Authorization': 'Bearer ' + SK } });
+      var r = await fetch(SB + '/rest/v1/' + table + '?' + qs, { headers: { 'apikey': SK, 'Authorization': 'Bearer ' + tokUser() } });
       if (!r.ok) throw r;
       return await r.json();
     } catch (e) { console.error('sbGet', table, e); return null; }
@@ -285,7 +297,7 @@
   }
   async function sbDel(table, id) {
     try {
-      var r = await fetch(SB + '/rest/v1/' + table + '?id=eq.' + id, { method: 'DELETE', headers: { 'apikey': SK, 'Authorization': 'Bearer ' + SK } });
+      var r = await fetch(SB + '/rest/v1/' + table + '?id=eq.' + id, { method: 'DELETE', headers: { 'apikey': SK, 'Authorization': 'Bearer ' + tokUser() } });
       return r.ok;
     } catch (e) { return false; }
   }
@@ -555,12 +567,11 @@
   window.confirmClose = confirmClose;
 
 
-    partnerRequireAuth().then(function (parceiro) {
+    partnerRequireAuth({ requireAdmin: true }).then(function (parceiro) {
       partnerFillSidebar(parceiro);
       
-      // Atualiza a flag de admin e valida o cache sem piscar o menu
       var roleNorm = String(parceiro.role || parceiro.nivel || '').toLowerCase().trim();
-      var isAdmin = roleNorm === 'admin' || roleNorm === 'master';
+      var isAdmin = roleNorm === 'admin' || roleNorm === 'master' || parceiro.is_admin === true;
       window.updateAdminState(isAdmin);
 
       if (typeof window.__adminPageInit === 'function') {

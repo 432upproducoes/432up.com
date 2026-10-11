@@ -290,7 +290,7 @@
   // Supabase (ordem drag + eventual gravação admin)
   const SUPABASE_URL_ADM = 'https://paetkspbfejtjjkngqej.supabase.co';
   const SUPABASE_KEY_ADM = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InBhZXRrc3BiZmVqdGpqa25ncWVqIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzA5MDU2OTgsImV4cCI6MjA4NjQ4MTY5OH0.IiYweZ2g3bP7b0o7VvBW5LLb6d1oHtSNFUZlVkIsdsA';
-  const _supabaseAdmin = supabase.createClient(SUPABASE_URL_ADM, SUPABASE_KEY_ADM);
+  const _supabaseAdmin = sbPartner;
   const _supabase = _supabaseAdmin;
   window._supabase = _supabaseAdmin;
 
@@ -566,10 +566,10 @@
     setTimeout(forcarDragDesativado, 2500);
   });
 
-  partnerRequireAuth().then(function (parceiro) {
+  partnerRequireAuth({ requireAdmin: true }).then(function (parceiro) {
     partnerFillSidebar(parceiro);
     var roleNorm = String(parceiro.role || parceiro.nivel || '').toLowerCase().trim();
-    var isAdmin = roleNorm === 'admin' || roleNorm === 'master';
+    var isAdmin = roleNorm === 'admin' || roleNorm === 'master' || parceiro.is_admin === true;
     if (typeof window.updateAdminState === 'function') window.updateAdminState(isAdmin);
     var dot = document.getElementById('db-dot');
     var txt = document.getElementById('db-status-text');

@@ -123,6 +123,18 @@
   window._supabase = _supabaseAdmin;
   const SB = SUPABASE_URL_ADM;
   const SK = SUPABASE_KEY_ADM;
+  /* token do usuário logado (lido do login do Supabase); sem sessão, cai na chave pública */
+  function tokUser() {
+    try {
+      var raw = localStorage.getItem('sb-paetkspbfejtjjkngqej-auth-token');
+      if (raw) {
+        var s = JSON.parse(raw);
+        if (s && s.access_token) return s.access_token;
+      }
+    } catch (e) {}
+    return SK;
+  }
+
 
   var DATA = { servicos: [], pacotes: [], leads: [], configTransporte: null };
   var selectedLeads = {};
@@ -199,7 +211,7 @@
   function sbH(m) {
     var h = {
       'apikey': SK,
-      'Authorization': 'Bearer ' + SK,
+      'Authorization': 'Bearer ' + tokUser(),
       'Content-Type': 'application/json'
     };
 
@@ -217,7 +229,7 @@
         {
           headers: {
             'apikey': SK,
-            'Authorization': 'Bearer ' + SK
+            'Authorization': 'Bearer ' + tokUser()
           }
         }
       );
@@ -285,7 +297,7 @@
           method: 'DELETE',
           headers: {
             'apikey': SK,
-            'Authorization': 'Bearer ' + SK
+            'Authorization': 'Bearer ' + tokUser()
           }
         }
       );
@@ -602,17 +614,17 @@
   window.confirmClose = confirmClose;
 
 
-  partnerRequireAuth().then(function (parceiro) {
+  partnerRequireAuth({ requireAdmin: true }).then(function (parceiro) {
     partnerFillSidebar(parceiro);
       
-    // Atualiza a flag de admin e valida o cache sem piscar o menu
     var roleNorm = String(
       parceiro.role || parceiro.nivel || ''
     ).toLowerCase().trim();
 
     var isAdmin =
       roleNorm === 'admin' ||
-      roleNorm === 'master';
+      roleNorm === 'master' ||
+      parceiro.is_admin === true;
 
     window.updateAdminState(isAdmin);
 
