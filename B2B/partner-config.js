@@ -55,7 +55,8 @@ function partnerRequireAuth(opts) {
 
         /* TRAVA DE SEGURANÇA: Se a página exigir nível 'admin', bloqueia se for apenas 'partner' */
         if (opts.requireAdmin) {
-          var isAdmin = parceiro.role === 'admin' || parceiro.is_admin === true;
+          var roleNorm = String(parceiro.role || parceiro.nivel || '').toLowerCase().trim();
+          var isAdmin = roleNorm === 'admin' || roleNorm === 'master' || parceiro.is_admin === true;
           if (!isAdmin) {
             console.warn('[432UP Partner] Acesso negado: Requer perfil Master Admin.');
             window.location.href = '../index.html';
@@ -121,7 +122,8 @@ function partnerFillSidebar(parceiro) {
 
 
   /* 3. Controle Centralizado de Exibição do Master Admin no Menu */
-  var isAdmin = parceiro.role === 'admin' || parceiro.is_admin === true;
+  var roleNormFill = String(parceiro.role || parceiro.nivel || '').toLowerCase().trim();
+  var isAdmin = roleNormFill === 'admin' || roleNormFill === 'master' || parceiro.is_admin === true;
   
   var elAdminDesk = document.getElementById('navAdminLinkContainer') || document.querySelector('[data-admin-menu-desk]');
   var elAdminMob = document.getElementById('navAdminLinkContainerMobile') || document.querySelector('[data-admin-menu-mob]');
