@@ -5,11 +5,13 @@
 
 var PARTNER_CFG = {
   SB_URL: 'https://paetkspbfejtjjkngqej.supabase.co',
-  SB_KEY: 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InBhZXRrc3BiZmVqdGpqa25ncWVqIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzA5MDU2OTgsImV4cCI6MjA4NjQ4MTY5OH0.IiYweZ2g3bP7b0o7VvBW5LLb6d1oHtSNFUZlVkIsdsA',
+  SB_KEY: 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InBhZXRrc3BiZmVqdGpqa25ncWVqIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzA5MDU2OTgsImV4cCI6MjA4NjQ4MTY5OH0.IiYweZ2g3bP7b0o7VvBW5[... ]',
   AVATAR_BUCKET: 'avatares-parceiros',
   MATERIAIS_BUCKET: 'materiais-parceiros',
   WHATSAPP_SUPORTE: ''
 };
+
+var LOGIN_TEMPORARIAMENTE_DESABILITADO = true;
 
 var sbPartner = supabase.createClient(PARTNER_CFG.SB_URL, PARTNER_CFG.SB_KEY);
 
@@ -23,10 +25,25 @@ function partnerAvatarUrl(userId, cacheBust) {
 /* ── Helper: checa sessão e dados do parceiro. Redireciona se não autorizado ── */
 function partnerRequireAuth(opts) {
   opts = opts || {};
+
+  // TEMPORÁRIO: login desabilitado para não travar o painel em desenvolvimento.
+  if (LOGIN_TEMPORARIAMENTE_DESABILITADO) {
+    console.warn('[432UP Partner] Login temporariamente desabilitado — permitindo acesso de desenvolvimento.');
+    return Promise.resolve({
+      id: 'dev-partner',
+      nome_completo: 'Parceiro',
+      role: 'admin',
+      nivel: 'admin',
+      is_admin: true,
+      status: 'ativo',
+      avatar_url: ''
+    });
+  }
+
   return sbPartner.auth.getSession().then(function (res) {
     var session = res.data && res.data.session;
     if (!session) {
-      window.location.href = 'login.html';
+      window.location.replace('/login.html');
       return Promise.reject('sem sessão');
     }
     return sbPartner
@@ -38,18 +55,18 @@ function partnerRequireAuth(opts) {
         if (r.error || !r.data) {
           console.error('[432UP Partner] Parceiro não encontrado:', r.error);
           sbPartner.auth.signOut().then(function () {
-            window.location.href = 'login.html?erro=sem_cadastro';
+            window.location.replace('/login.html?erro=sem_cadastro');
           });
           return Promise.reject('parceiro não encontrado');
         }
         var parceiro = r.data;
         if (parceiro.status === 'pendente' && !opts.allowPendente) {
-          window.location.href = 'pendente.html';
+          window.location.replace('/B2B/pendente.html');
           return Promise.reject('pendente de aprovação');
         }
         if (parceiro.status === 'bloqueado' || parceiro.status === 'recusado') {
           sbPartner.auth.signOut();
-          window.location.href = 'login.html?erro=acesso_negado';
+          window.location.replace('/login.html?erro=acesso_negado');
           return Promise.reject('acesso negado');
         }
 
@@ -59,7 +76,7 @@ function partnerRequireAuth(opts) {
           var isAdmin = roleNorm === 'admin' || roleNorm === 'master' || parceiro.is_admin === true;
           if (!isAdmin) {
             console.warn('[432UP Partner] Acesso negado: Requer perfil Master Admin.');
-            window.location.href = '../index.html';
+            window.location.replace('/');
             return Promise.reject('requer admin');
           }
         }
@@ -69,7 +86,7 @@ function partnerRequireAuth(opts) {
   }).catch(function (err) {
     console.error('[432UP Partner] Erro na verificação de auth:', err);
     if (err !== 'sem sessão' && err !== 'pendente de aprovação' && err !== 'acesso negado' && err !== 'requer admin' && err !== 'parceiro não encontrado') {
-      window.location.href = 'login.html';
+      window.location.replace('/login.html');
     }
     return Promise.reject(err);
   });
@@ -78,7 +95,7 @@ function partnerRequireAuth(opts) {
 /* ── Helper: logout padrão ── */
 function partnerLogout() {
   sbPartner.auth.signOut().then(function () {
-    window.location.href = 'login.html';
+    window.location.replace('/B2B/');
   });
 }
 
@@ -92,7 +109,7 @@ function partnerFillSidebar(parceiro) {
     nomeEl.textContent = parceiro.nome_completo.split(' ')[0];
   }
 
-   /* 2. Avatar com Fallback de Bonequinho Instigador */
+  /* 2. Avatar com Fallback de Bonequinho Instigador */
   var avatarEls = document.querySelectorAll('[data-partner-avatar]');
   var temFoto = parceiro.avatar_url && parceiro.avatar_url.trim() !== '';
   var urlAvatar = temFoto ? parceiro.avatar_url : null;
@@ -109,22 +126,19 @@ function partnerFillSidebar(parceiro) {
       el.innerHTML = '';
       el.title = 'Meu Perfil';
     } else {
-      // Se não tem foto, exibe o bonequinho chamando atenção para o clique
       el.style.backgroundImage = 'none';
       el.innerHTML = '👤';
       el.title = 'Clique para adicionar sua foto de perfil!';
-      // Garante alinhamento e visual amigável (se já não tiver nas classes do HTML)
       if (!el.classList.contains('flex')) {
         el.className += ' flex items-center justify-center text-cyan-400 bg-cyan-500/10 border border-cyan-500/40 animate-pulse';
       }
     }
   });
 
-
   /* 3. Controle Centralizado de Exibição do Master Admin no Menu */
   var roleNormFill = String(parceiro.role || parceiro.nivel || '').toLowerCase().trim();
   var isAdmin = roleNormFill === 'admin' || roleNormFill === 'master' || parceiro.is_admin === true;
-  
+
   var elAdminDesk = document.getElementById('navAdminLinkContainer') || document.querySelector('[data-admin-menu-desk]');
   var elAdminMob = document.getElementById('navAdminLinkContainerMobile') || document.querySelector('[data-admin-menu-mob]');
 
@@ -140,14 +154,10 @@ function partnerFillSidebar(parceiro) {
   });
 }
 
-
-
-
 // Rastreamento Automático de Atividade B2B
 (function registrarAtividade() {
   if (typeof sbPartner === 'undefined') return;
 
-  // Obtém a sessão atual
   sbPartner.auth.getSession().then(function(res) {
     var session = res.data ? res.data.session : null;
     if (!session || !session.user) return;
@@ -156,7 +166,6 @@ function partnerFillSidebar(parceiro) {
     var paginaAtual = window.location.pathname;
     var navegador = navigator.userAgent;
 
-    // Atualiza a atividade no perfil do parceiro
     sbPartner
       .from('parceiros')
       .update({
