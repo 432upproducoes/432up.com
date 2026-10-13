@@ -750,7 +750,7 @@
         if (MODO_MODAL) {
           diagCad('salvar', 'ok, enviando ao pai'); /* DIAG-TEMP */
           // Aberto dentro da Nova Proposta: devolve o cliente salvo e não reseta o formulário
-          window.parent.postMessage({ tipo: 'cliente-salvo', cliente: saveResult.data }, window.location.origin);
+          window.parent.postMessage({ tipo: 'cliente-salvo', cliente: saveResult.data }, '*');
           return;
         }
         if (!editandoId) {
@@ -805,13 +805,12 @@
     if (MODO_MODAL) {
       $('btnCancelarModal').addEventListener('click', function () {
         diagCad('cancelar', 'tocado'); /* DIAG-TEMP */
-        window.parent.postMessage({ tipo: 'cliente-cancelado' }, window.location.origin);
+        window.parent.postMessage({ tipo: 'cliente-cancelado' }, '*');
         diagCad('cancelar', 'enviado ao pai'); /* DIAG-TEMP */
       });
       $('btnSalvarModal').addEventListener('click', function () { $('mcBtnSalvar').click(); });
       // Nome digitado fora do modal chega também por mensagem (reforço do parâmetro da URL)
       window.addEventListener('message', function (ev) {
-        if (ev.origin !== window.location.origin) return;
         var d = ev.data || {};
         if (d.tipo === 'prefill' && d.nome && !$('mcNomeRazao').value) $('mcNomeRazao').value = d.nome;
       });
@@ -847,7 +846,10 @@
     if (nomeParam) $('mcNomeRazao').value = nomeParam;
     carregarOpcoesClientes().then(function () {
       if (idEdicao) carregarClienteParaEdicao(idEdicao);
-      window.parent.postMessage({ tipo: 'cliente-pronto' }, window.location.origin);
+      window.parent.postMessage({ tipo: 'cliente-pronto' }, '*');
+    }).catch(function (err) {
+      diagCad('opcoes erro', err && err.message ? err.message : String(err)); /* DIAG-TEMP */
+      window.parent.postMessage({ tipo: 'cliente-pronto' }, '*');
     });
   } else {
     partnerRequireAuth().then(function (parceiro) {

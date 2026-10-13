@@ -65,11 +65,8 @@
       // legacy === true => proposta antiga com cliente_nome mas sem cliente_id vinculado
       var clienteSelecionado = null;
       var clienteBuscaTimer = null;
-      // id do cliente em edição via modal (null = modal em modo "cadastrar novo")
-      var mcClienteEditandoId = null;
       // Guarda o último CEP (8 dígitos) já consultado com sucesso em cada contexto,
       // para permitir nova consulta somente quando o CEP realmente mudar.
-      var ultimoCepConsultadoModal = null;
       var ultimoCepConsultadoProposta = null;
       var ultimoCepConsultadoEvento = null;
       // Endereço do evento (independente do cadastro do cliente) — campos evento_*.
@@ -1582,15 +1579,15 @@
       }
       function renderClienteResultados(lista, termoOriginal) {
         var el = document.getElementById('clienteResultados');
+        var termoTxt = esc(termoOriginal || '');
+        var termoAttr = String(termoOriginal || '').replace(/&/g, '&amp;').replace(/"/g, '&quot;').replace(/</g, '&lt;');
         if (!lista.length) {
           el.innerHTML =
             '<div class="p-3">' +
-              '<span class="block text-xs text-slate-400 mb-2">Nenhum cliente encontrado para "' + esc(termoOriginal) + '".</span>' +
-              '<button type="button" id="btnCadastrarClienteNovo" class="w-full py-2 rounded-lg bg-cyan-500/15 text-cyan-300 border border-cyan-500/30 text-xs font-semibold cursor-pointer">+ Cadastrar cliente</button>' +
+              '<span class="block text-xs text-slate-400 mb-2">Nenhum cliente encontrado para "' + termoTxt + '".</span>' +
+              '<button type="button" data-acao="cadastrar-cliente" data-termo="' + termoAttr + '" class="w-full py-2 rounded-lg bg-cyan-500/15 text-cyan-300 border border-cyan-500/30 text-xs font-semibold cursor-pointer">+ Cadastrar cliente</button>' +
             '</div>';
           el.classList.remove('hidden');
-          var btnNovo = document.getElementById('btnCadastrarClienteNovo');
-          if (btnNovo) btnNovo.addEventListener('click', function () { abrirModalCliente(termoOriginal); });
           return;
         }
         el.innerHTML = lista.map(function (c, i) {
@@ -1601,16 +1598,10 @@
           '</div>';
         }).join('') +
           '<div class="px-4 py-2 border-t border-white/10">' +
-            '<button type="button" id="btnCadastrarClienteNovo" class="text-[11px] font-semibold text-cyan-300 hover:text-cyan-200 cursor-pointer">+ Não encontrou? Cadastrar cliente</button>' +
+            '<button type="button" data-acao="cadastrar-cliente" data-termo="' + termoAttr + '" class="text-[11px] font-semibold text-cyan-300 hover:text-cyan-200 cursor-pointer">+ Não encontrou? Cadastrar cliente</button>' +
           '</div>';
         el.classList.remove('hidden');
-        el.querySelectorAll('[data-cliente-idx]').forEach(function (row) {
-          row.addEventListener('click', function () {
-            selecionarCliente(lista[parseInt(row.dataset.clienteIdx, 10)]);
-          });
-        });
-        var btnNovo2 = document.getElementById('btnCadastrarClienteNovo');
-        if (btnNovo2) btnNovo2.addEventListener('click', function () { abrirModalCliente(termoOriginal); });
+        el._listaClientesCache = lista;
       }
       async function buscarClientes(termo) {
         var termoTrim = termo.trim();
@@ -1660,41 +1651,69 @@
       /* DIAG-TEMP:FIM */
       var pendingNomeCliente = '';
       function abrirIframeCliente(clienteId, nomePreenchido) {
-        if (formularioBloqueadoSomenteLeitura) return;
+        diagProp('clique modal', (clienteId ? 'editar ' + clienteId : 'novo') + ' | nome: ' + (nomePreenchido || '-') + ' | ro=' + !!formularioBloqueadoSomenteLeitura); /* DIAG-TEMP */
+        if (formularioBloqueadoSomenteLeitura) {
+          diagProp('abrir modal', 'bloqueado (somente leitura)'); /* DIAG-TEMP */
+          return;
+        }
         pendingNomeCliente = nomePreenchido || '';
-        diagProp('abrir modal', (clienteId ? 'editar ' + clienteId : 'novo') + ' | nome: ' + (nomePreenchido || '-')); /* DIAG-TEMP */
         var params = 'modo=modal';
         if (clienteId) params += '&id=' + encodeURIComponent(clienteId);
         if (nomePreenchido) params += '&nome=' + encodeURIComponent(nomePreenchido);
-        document.getElementById('frameCliente').src = 'cadastro-cliente.html?' + params;
+        // Caminho relativo ao HTML da proposta (mesmo diretório B2B/)
+        var url = 'cadastro-cliente.html?' + params;
+        diagProp('abrir modal', url); /* DIAG-TEMP */
+        var frame = document.getElementById('frameCliente');
         var modal = document.getElementById('modalCliente');
-        modal.classList.remove('hidden');
-        modal.classList.add('flex');
+        if (!frame || !modal) {
+          diagProp('erro modal', 'elementos #frameCliente ou #modalCliente ausentes'); /* DIAG-TEMP */
+          return;
+        }
+        // Força recarga mesmo se a URL for parecida (importante no iPad/Safari)
+        frame.src = 'about:blank';
+        setTimeout(function () {
+          frame.src = url;
+          modal.classList.remove('hidden');
+          modal.classList.add('flex');
+          diagProp('modal visivel', modal.className); /* DIAG-TEMP */
+        }, 30);
       }
       function abrirModalCliente(termoPreenchido) {
-        document.getElementById('clienteResultados').classList.add('hidden');
+        var res = document.getElementById('clienteResultados');
+        if (res) res.classList.add('hidden');
         abrirIframeCliente(null, termoPreenchido || '');
       }
       function abrirModalClienteParaEdicao(clienteId) {
         if (!clienteId) return;
-        document.getElementById('clienteResultados').classList.add('hidden');
+        var res = document.getElementById('clienteResultados');
+        if (res) res.classList.add('hidden');
         abrirIframeCliente(clienteId, '');
       }
       function fecharModalCliente() {
         var modal = document.getElementById('modalCliente');
         var frame = document.getElementById('frameCliente');
-        modal.classList.add('hidden');
-        modal.classList.remove('flex');
+        if (modal) {
+          modal.classList.add('hidden');
+          modal.classList.remove('flex');
+        }
         if (frame) frame.src = 'about:blank';
+        pendingNomeCliente = '';
+        diagProp('modal', 'fechado'); /* DIAG-TEMP */
       }
       window.addEventListener('message', function (ev) {
-        if (ev.origin !== window.location.origin) return;
+        // Aceita same-origin; no iPad às vezes origin vem vazio em file/blob — tolera se data for nossa
         var d = ev.data || {};
-        diagProp('mensagem recebida', (d.tipo || '?')); /* DIAG-TEMP */
+        if (!d || typeof d.tipo !== 'string') return;
+        if (ev.origin && ev.origin !== window.location.origin && ev.origin !== 'null') return;
+        diagProp('mensagem recebida', d.tipo); /* DIAG-TEMP */
         if (d.tipo === 'cliente-pronto') {
           var fr = document.getElementById('frameCliente');
           if (fr && fr.contentWindow && pendingNomeCliente) {
-            fr.contentWindow.postMessage({ tipo: 'prefill', nome: pendingNomeCliente }, window.location.origin);
+            try {
+              fr.contentWindow.postMessage({ tipo: 'prefill', nome: pendingNomeCliente }, '*');
+            } catch (e) {
+              diagProp('prefill erro', e.message); /* DIAG-TEMP */
+            }
           }
           return;
         }
@@ -1759,6 +1778,26 @@
       function bindClienteEvents() {
         document.getElementById('fClienteBusca').addEventListener('input', onClienteBuscaInput);
         document.getElementById('fClienteBusca').addEventListener('focus', onClienteBuscaInput);
+        // Delegação: cobre clique e toque (iPad) em botões/linhas recriados a cada busca
+        var elResultados = document.getElementById('clienteResultados');
+        if (elResultados) {
+          elResultados.addEventListener('click', function (e) {
+            var btnCad = e.target.closest('[data-acao="cadastrar-cliente"]');
+            if (btnCad) {
+              e.preventDefault();
+              e.stopPropagation();
+              diagProp('btn cadastrar', 'clicado'); /* DIAG-TEMP */
+              abrirModalCliente(btnCad.getAttribute('data-termo') || '');
+              return;
+            }
+            var row = e.target.closest('[data-cliente-idx]');
+            if (row) {
+              var lista = elResultados._listaClientesCache || [];
+              var idx = parseInt(row.getAttribute('data-cliente-idx'), 10);
+              if (!isNaN(idx) && lista[idx]) selecionarCliente(lista[idx]);
+            }
+          });
+        }
         document.addEventListener('click', function (e) {
           var wrap = document.getElementById('clienteBuscaWrap');
           if (wrap && !wrap.contains(e.target)) {
