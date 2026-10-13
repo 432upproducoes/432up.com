@@ -109,7 +109,27 @@
             </div>
           </div>
 
-          <!-- CONTATO INSTITUCIONAL -->
+          <!-- ASSINATURA DO CONTRATO -->
+          <h3 style="margin:20px 0 12px;font-size:1rem;font-weight:600">Assinatura do contrato</h3>
+          <div class="leads-filters">
+            <div class="field" style="flex:1 1 100%">
+              <div style="display:flex;align-items:center;gap:16px;flex-wrap:wrap;">
+                <div style="position:relative;width:240px;height:100px;border:1px dashed rgba(255,255,255,.25);border-radius:12px;display:flex;align-items:center;justify-content:center;background:rgba(255,255,255,.04);">
+                  <img id="assinatura_preview" alt="Assinatura" style="display:none;max-width:210px;max-height:88px;">
+                  <span id="assinatura_vazia" style="font-size:12px;color:#94a3b8;">Nenhuma assinatura</span>
+                  <button type="button" id="btnRemoverAssinatura" class="btn btn-danger" onclick="removerAssinatura()" title="Remover assinatura" style="display:none;position:absolute;top:-10px;right:-10px;width:26px;height:26px;padding:0;border-radius:50%;line-height:1;">✕</button>
+                </div>
+                <div style="display:flex;flex-direction:column;gap:6px;">
+                  <label class="btn" style="cursor:pointer;text-align:center;">📤 Enviar PNG
+                    <input id="assinatura_input" type="file" accept="image/png" hidden onchange="enviarAssinatura(event)">
+                  </label>
+                  <small style="color:#94a3b8;">PNG com fundo transparente, até 2 MB.</small>
+                </div>
+              </div>
+            </div>
+          </div>
+
+          <!-- DADOS BANCÁRIOS -->
           <h3 style="margin:20px 0 12px;font-size:1rem;font-weight:600">Contato institucional</h3>
           <div class="leads-filters">
             <div class="field">
@@ -280,6 +300,129 @@
   }
 
   // ============================================================
+  // ASSINATURA (PNG) — envio e exclusão pelo Worker do R2
+  // ============================================================
+  var R2_UPLOAD_URL = 'https://432up-r2-upload.432up-producoes.workers.dev/';
+  var R2_PUBLIC_BASE = 'https://media.432up.com/';
+  var assinaturaUrlAtual = null;
+
+  async function tokenSessaoAtual() {
+    var r = await sbPartner.auth.getSession();
+    return (r && r.data && r.data.session) ? r.data.session.access_token : null;
+  }
+
+  function mostrarAssinatura(url) {
+    assinaturaUrlAtual = url || null;
+    var img = document.getElementById('assinatura_preview');
+    var vazia = document.getElementById('assinatura_vazia');
+    var btnX = document.getElementById('btnRemoverAssinatura');
+    if (assinaturaUrlAtual) {
+      img.src = assinaturaUrlAtual;
+      img.style.display = 'block';
+      vazia.style.display = 'none';
+      btnX.style.display = 'block';
+    } else {
+      img.removeAttribute('src');
+      img.style.display = 'none';
+      vazia.style.display = '';
+      btnX.style.display = 'none';
+    }
+  }
+
+  // Apaga o arquivo do R2 a partir da URL pública salva no banco
+  async function apagarArquivoR2(url) {
+    if (!url) return true;
+    var path = url.replace(R2_PUBLIC_BASE, '');
+    var token = await tokenSessaoAtual();
+    if (!token) return false;
+    var resp = await fetch(R2_UPLOAD_URL + '?path=' + encodeURIComponent(path), {
+      method: 'DELETE',
+      headers: { 'Authorization': 'Bearer ' + token }
+    });
+    return resp.ok;
+  }
+
+  async function enviarAssinatura(ev) {
+    var file = ev.target.files[0];
+    ev.target.value = '';
+    if (!file) return;
+
+    if (file.type !== 'image/png') { toast('Envie um arquivo PNG', 'err'); return; }
+    if (file.size > 2 * 1024 * 1024) { toast('O arquivo passa de 2 MB', 'err'); return; }
+    if (!empresaId) { toast('Dados da empresa não carregados', 'err'); return; }
+
+    try {
+      var token = await tokenSessaoAtual();
+      if (!token) { toast('Sessão expirada. Faça login novamente.', 'err'); return; }
+
+      // Nome novo a cada envio: evita que o cache mostre a assinatura antiga
+      var path = 'empresa/assinatura-' + Date.now() + '.png';
+      var resp = await fetch(R2_UPLOAD_URL + '?path=' + encodeURIComponent(path), {
+        method: 'PUT',
+        headers: { 'Authorization': 'Bearer ' + token, 'Content-Type': 'image/png' },
+        body: file
+      });
+      var result = await resp.json().catch(function () { return null; });
+      if (!resp.ok || !result || !result.ok) {
+        toast('Falha ao enviar a assinatura', 'err');
+        return;
+      }
+
+      var novaUrl = result.url;
+      var antiga = assinaturaUrlAtual;
+
+      var upd = await sbPartner
+        .from('co_dados_legais_empresa')
+        .update({ assinatura_url: novaUrl })
+        .eq('id', empresaId)
+        .select('id');
+      if (upd.error || !upd.data || !upd.data.length) {
+        toast('Enviou, mas não salvou no cadastro', 'err');
+        return;
+      }
+
+      // Remove a assinatura anterior do R2, se havia uma
+      if (antiga) await apagarArquivoR2(antiga);
+
+      mostrarAssinatura(novaUrl);
+      toast('Assinatura salva', 'ok');
+    } catch (e) {
+      console.error('enviarAssinatura', e);
+      toast('Erro ao enviar a assinatura', 'err');
+    }
+  }
+
+  async function removerAssinatura() {
+    if (!assinaturaUrlAtual) return;
+    if (!confirm('Remover a assinatura do contrato?')) return;
+
+    try {
+      var atual = assinaturaUrlAtual;
+      var ok = await apagarArquivoR2(atual);
+      if (!ok) { toast('Não foi possível apagar o arquivo', 'err'); return; }
+
+      var upd = await sbPartner
+        .from('co_dados_legais_empresa')
+        .update({ assinatura_url: null })
+        .eq('id', empresaId)
+        .select('id');
+      if (upd.error || !upd.data || !upd.data.length) {
+        toast('Erro ao atualizar o cadastro', 'err');
+        return;
+      }
+
+      mostrarAssinatura(null);
+      toast('Assinatura removida', 'ok');
+    } catch (e) {
+      console.error('removerAssinatura', e);
+      toast('Erro ao remover a assinatura', 'err');
+    }
+  }
+
+  window.enviarAssinatura = enviarAssinatura;
+  window.removerAssinatura = removerAssinatura;
+
+  // ============================================================
   // DADOS DA EMPRESA
   // ============================================================
   var empresaId = null;
@@ -306,10 +449,10 @@
   ];
 
   async function carregarDadosEmpresa() {
-    // A) Dados legais
+    // A) Dados legais (inclui a assinatura)
     var res = await sbPartner
       .from('co_dados_legais_empresa')
-      .select('id, ' + CAMPOS.join(', '))
+      .select('id, ' + CAMPOS.join(', ') + ', assinatura_url')
       .limit(1)
       .maybeSingle();
     var ok = !res.error;
@@ -322,6 +465,7 @@
       var el = campo(n);
       if (el) el.value = data[n] == null ? '' : data[n];
     });
+    mostrarAssinatura(data.assinatura_url);
 
     // B) Contato institucional
     var resC = await sbPartner
