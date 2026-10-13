@@ -7,6 +7,8 @@
   'use strict';
 
   var parceiroAtual = null;
+  var MODO_MODAL = new URLSearchParams(window.location.search).get('modo') === 'modal';
+  var COLS_RETORNO = 'id, nome_razao, nome_fantasia, cidade, bairro, cep, cpf_cnpj, telefone, responsavel_legal, responsavel_legal_cargo, contato_nome, contato_cargo, contato_eh_responsavel';
   var mcClienteEditandoId = null;
   var ultimoCepConsultadoModal = null;
 
@@ -719,10 +721,10 @@
 
       var saveResult;
       if (editandoId) {
-        saveResult = await sbPartner.from('co_clientes').update(payload).eq('id', editandoId).select('id, nome_razao').single();
+        saveResult = await sbPartner.from('co_clientes').update(payload).eq('id', editandoId).select(COLS_RETORNO).single();
       } else {
         payload.parceiro_responsavel_id = parceiroAtual.id;
-        saveResult = await sbPartner.from('co_clientes').insert([payload]).select('id, nome_razao').single();
+        saveResult = await sbPartner.from('co_clientes').insert([payload]).select(COLS_RETORNO).single();
       }
 
       if (saveResult.error) {
@@ -730,6 +732,11 @@
         mcShowAlert('Não foi possível salvar os dados do cliente. Tente novamente ou contate o suporte.');
       } else {
         showAlert(editandoId ? 'Cliente atualizado com sucesso.' : 'Cliente cadastrado com sucesso.', 'success');
+        if (MODO_MODAL) {
+          // Aberto dentro da Nova Proposta: devolve o cliente salvo e não reseta o formulário
+          window.parent.postMessage({ tipo: 'cliente-salvo', cliente: saveResult.data }, window.location.origin);
+          return;
+        }
         if (!editandoId) {
           setTimeout(function () {
             $('formCadastroCliente').reset();
@@ -783,8 +790,18 @@
     });
 
     var idEdicao = new URLSearchParams(window.location.search).get('id');
+    var nomeParam = new URLSearchParams(window.location.search).get('nome');
+    if (MODO_MODAL) {
+      document.body.classList.add('modo-modal');
+      var lc = $('linkCancelar');
+      if (lc) lc.addEventListener('click', function (e) {
+        e.preventDefault();
+        window.parent.postMessage({ tipo: 'cliente-cancelado' }, window.location.origin);
+      });
+    }
     carregarOpcoesClientes().then(function () {
       if (idEdicao) carregarClienteParaEdicao(idEdicao);
+      else if (nomeParam) $('mcNomeRazao').value = nomeParam;
     });
 
     var btnDesk = $('btnLogoutDesk');
