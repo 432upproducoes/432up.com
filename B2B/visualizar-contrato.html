@@ -56,6 +56,9 @@
       transform-origin: top left;
     }
 
+    .pdf-mode .no-print, .no-print-pdf { display: none !important; }
+    @media print { .no-print { display: none !important; } }
+
     /* Botão Exportar PDF */
     .pdf-mode #btn-exportar-pdf { display: none !important; }
     #btn-exportar-pdf {
@@ -782,6 +785,15 @@
         <!-- 15. ACEITE E ASSINATURA -->
         <div class="section-title" data-sec-base="15" data-sec-label="Aceite e Assinatura">15. Aceite e Assinatura</div>
 
+        <div id="area-assinar-cliente" class="no-print" style="display:none;margin-top:14px;text-align:center;">
+          <p style="font-size:11px;color:#4A4A58;margin-bottom:6px;">Assine no campo abaixo para aceitar este contrato.</p>
+          <canvas id="canvas-assinatura" width="800" height="300" style="width:100%;max-width:420px;height:auto;aspect-ratio:2.6/1;background:#fff;border:1px dashed #8A10D8;border-radius:8px;touch-action:none;cursor:crosshair;"></canvas>
+          <div style="margin-top:8px;display:flex;gap:8px;justify-content:center;">
+            <button type="button" id="btn-limpar-assinatura" style="padding:8px 14px;border-radius:8px;border:1px solid #E2E2EC;background:#fff;cursor:pointer;font-size:12px;">Limpar</button>
+            <button type="button" id="btn-assinar-contrato" style="padding:8px 18px;border-radius:8px;border:none;background:#8A10D8;color:#fff;font-weight:700;cursor:pointer;font-size:12px;">Assinar contrato</button>
+          </div>
+        </div>
+
         <div class="signatures-container">
           <div class="signature-box">
             <div class="signature-slot"><img id="assinatura_empresa_img" alt="" style="display:none;max-height:60px;max-width:200px;"></div><div class="signature-line"></div>
@@ -800,7 +812,7 @@
           </div>
 
           <div class="signature-box">
-            <div class="signature-slot"></div><div class="signature-line"></div>
+            <div class="signature-slot"><img id="assinatura_cliente_img" alt="" style="display:none;max-height:60px;max-width:200px;"></div><div class="signature-line"></div>
 
             <div style="font-weight: 700; font-size: 11px;" id="assinatura_cliente_nome">
               CONTRATANTE
@@ -933,10 +945,20 @@
           console.error('Erro na chamada da Edge Function:', errorDocPublico);
         }
 
-        const proposta = docPublico ? docPublico.proposta : null;
-        const cliente = docPublico ? docPublico.cliente : null;
-        const parceiro = docPublico ? docPublico.parceiro : null;
-        const dadosEmpresa = docPublico ? docPublico.dadosEmpresa : null;
+        let proposta = docPublico ? docPublico.proposta : null;
+        let cliente = docPublico ? docPublico.cliente : null;
+        let parceiro = docPublico ? docPublico.parceiro : null;
+        let dadosEmpresa = docPublico ? docPublico.dadosEmpresa : null;
+
+        // Contrato assinado: mostra a foto congelada no momento da assinatura
+        const assinadoEm = proposta ? proposta.assinado_em : null;
+        if (assinadoEm && proposta.contrato_snapshot) {
+          const snap = proposta.contrato_snapshot;
+          proposta = snap.proposta || proposta;
+          cliente = snap.cliente || cliente;
+          parceiro = snap.parceiro || parceiro;
+          dadosEmpresa = snap.dadosEmpresa || dadosEmpresa;
+        }
 
         // 1. DADOS LEGAIS DA EMPRESA
         if (!dadosEmpresa) {
@@ -1313,6 +1335,14 @@
         await aguardarImagens();
         paginarContrato();
         ativarRepaginacaoPorFontes();
+        // Assinatura do cliente: se já assinado, mostra; se não, libera a área de assinatura
+        const docProposta = docPublico && docPublico.proposta ? docPublico.proposta : {};
+        assinadoEmAtual = docProposta.assinado_em || null;
+        if (assinadoEmAtual) {
+          mostrarAssinaturaCliente(docProposta.assinatura_cliente_url, assinadoEmAtual);
+        } else {
+          ativarAreaAssinatura();
+        }
         ativarEdicaoAdmin();
         if (MODO_PDF) setTimeout(() => { document.body.setAttribute('data-pronto', '1'); }, 800);
 
@@ -2005,6 +2035,7 @@
     // A gravação é feita pela função salvar-data-contrato, que confere o admin no servidor.
     async function ativarEdicaoAdmin() {
       if (MODO_PDF) return;
+      if (dataAssinadoEm()) return;
       try {
         const { data: sess } = await sbPartner.auth.getSession();
         const user = sess && sess.session && sess.session.user;
@@ -2076,6 +2107,94 @@
 
       btn.addEventListener('click', salvar);
       input.addEventListener('keydown', (e) => { if (e.key === 'Enter') salvar(); });
+    }
+
+    // ASSINATURA DO CLIENTE
+    let assinadoEmAtual = null;
+
+    function dataAssinadoEm() {
+      return assinadoEmAtual;
+    }
+
+    function mostrarAssinaturaCliente(url, quando) {
+      const img = document.getElementById('assinatura_cliente_img');
+      if (img && url) {
+        img.src = url;
+        img.style.display = 'block';
+      }
+      const doc = document.getElementById('assinatura_cliente_doc');
+      if (doc && quando) {
+        const d = new Date(quando);
+        const txt = d.toLocaleString('pt-BR', { timeZone: 'America/Sao_Paulo', day: '2-digit', month: '2-digit', year: 'numeric', hour: '2-digit', minute: '2-digit' });
+        doc.textContent = 'Assinado digitalmente em ' + txt;
+      }
+    }
+
+    function ativarAreaAssinatura() {
+      if (MODO_PDF) return;
+      const area = document.getElementById('area-assinar-cliente');
+      const canvas = document.getElementById('canvas-assinatura');
+      if (!area || !canvas) return;
+      area.style.display = '';
+
+      const ctx = canvas.getContext('2d');
+      ctx.lineWidth = 6;
+      ctx.lineCap = 'round';
+      ctx.lineJoin = 'round';
+      ctx.strokeStyle = '#111111';
+      let desenhando = false;
+      let ultimo = null;
+
+      function pos(e) {
+        const r = canvas.getBoundingClientRect();
+        return {
+          x: (e.clientX - r.left) * (canvas.width / r.width),
+          y: (e.clientY - r.top) * (canvas.height / r.height)
+        };
+      }
+
+      canvas.onpointerdown = (e) => { desenhando = true; ultimo = pos(e); canvas.setPointerCapture(e.pointerId); };
+      canvas.onpointermove = (e) => {
+        if (!desenhando) return;
+        const p = pos(e);
+        ctx.beginPath(); ctx.moveTo(ultimo.x, ultimo.y); ctx.lineTo(p.x, p.y); ctx.stroke();
+        ultimo = p;
+      };
+      const parar = () => { desenhando = false; ultimo = null; };
+      canvas.onpointerup = parar;
+      canvas.onpointercancel = parar;
+
+      document.getElementById('btn-limpar-assinatura').onclick = () => {
+        ctx.clearRect(0, 0, canvas.width, canvas.height);
+      };
+
+      document.getElementById('btn-assinar-contrato').onclick = async () => {
+        const dados = ctx.getImageData(0, 0, canvas.width, canvas.height).data;
+        let temTraco = false;
+        for (let i = 3; i < dados.length; i += 4) { if (dados[i] > 0) { temTraco = true; break; } }
+        if (!temTraco) { alert('Desenhe sua assinatura antes de confirmar.'); return; }
+
+        if (!confirm('Confirmar a assinatura deste contrato? Depois de assinado, ele não poderá mais ser alterado.')) return;
+
+        const btn = document.getElementById('btn-assinar-contrato');
+        btn.disabled = true;
+        btn.textContent = 'Assinando...';
+
+        const assinaturaPng = canvas.toDataURL('image/png');
+        const { data, error } = await sbPartner.functions.invoke('assinar-contrato', {
+          body: { id: propostaId, assinatura: assinaturaPng }
+        });
+
+        if (error || !data || !data.ok) {
+          alert((data && data.erro) || 'Não foi possível assinar. Tente novamente.');
+          btn.disabled = false;
+          btn.textContent = 'Assinar contrato';
+          return;
+        }
+
+        // Recarrega para mostrar o contrato já assinado
+        location.reload();
+      };
     }
 
     document.addEventListener('DOMContentLoaded', carregarContrato);
