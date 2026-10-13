@@ -358,7 +358,7 @@
       display: grid;
       grid-template-columns: 1fr 1fr;
       gap: 30px;
-      margin-top: 130px;
+      margin-top: 24px;
       margin-bottom: 15px;
     }
 
@@ -803,6 +803,10 @@
         <!-- 15. ACEITE E ASSINATURA -->
         <div class="section-title" data-sec-base="15" data-sec-label="Aceite e Assinatura">15. Aceite e Assinatura</div>
 
+        <div id="botao-abrir-assinatura" class="no-print" style="display:none;text-align:center;margin-top:110px;">
+          <button type="button" id="btn-abrir-assinatura" style="padding:10px 22px;border-radius:10px;border:none;background:#8A10D8;color:#fff;font-weight:700;cursor:pointer;font-size:13px;">✍️ Clique aqui para assinar o contrato</button>
+        </div>
+
         <div class="signatures-container">
           <div class="signature-box">
             <div class="signature-slot"><img id="assinatura_empresa_img" alt="" style="display:none;max-height:60px;max-width:200px;"></div><div class="signature-line"></div>
@@ -827,6 +831,7 @@
               CONTRATANTE
             </div>
 
+            <div style="font-size: 10px; color: var(--text-muted);" id="assinatura_cliente_resp"></div>
             <div style="font-size: 10px; color: var(--text-muted);" id="assinatura_cliente_doc">
               CPF/CNPJ: —
             </div>
@@ -849,7 +854,10 @@
 
   <!-- ÁREA DE ASSINATURA DO CLIENTE (fora do contrato, para não sofrer a redução de escala) -->
   <div id="area-assinar-cliente" class="no-print" style="display:none;">
-    <p style="font-size:12px;color:#1F1F24;margin-bottom:6px;font-weight:700;text-align:center;">Assine no campo abaixo para aceitar este contrato.</p>
+    <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:6px;">
+      <p style="font-size:12px;color:#1F1F24;font-weight:700;">Assine no campo abaixo para aceitar este contrato.</p>
+      <button type="button" id="btn-fechar-assinatura" style="padding:4px 10px;border-radius:8px;border:1px solid #E2E2EC;background:#fff;cursor:pointer;font-size:12px;">Fechar ✕</button>
+    </div>
     <p style="font-size:11px;color:#4A4A58;margin-bottom:8px;text-align:center;">No celular, se preferir mais espaço, vire o aparelho para o lado.</p>
     <canvas id="canvas-assinatura" width="800" height="300" style="width:100%;height:auto;background:#fff;border:1px dashed #8A10D8;border-radius:8px;touch-action:none;cursor:crosshair;"></canvas>
     <div style="margin-top:8px;display:flex;gap:8px;justify-content:center;">
@@ -1015,7 +1023,7 @@
         ].filter(Boolean).join(' - ');
 
         setSafeText('empresa_representante_legal', repEmp);
-        setSafeText('assinatura_empresa_rep', repEmp || 'Representante Legal');
+        setSafeText('assinatura_empresa_rep', repEmp ? 'Representante legal: ' + repEmp : 'Representante legal');
         // Assinatura (PNG) cadastrada nos dados da empresa
         if (dadosEmpresa.assinatura_url) {
           const imgAss = document.getElementById('assinatura_empresa_img');
@@ -1071,6 +1079,7 @@
           setSafeText('assinatura_cliente_nome', cliente.nome_razao || cliente.nome_fantasia || 'CONTRATANTE');
           setSafeText('cliente_cpf_cnpj', cliente.cpf_cnpj);
           setSafeText('assinatura_cliente_doc', cliente.cpf_cnpj ? `CPF/CNPJ: ${cliente.cpf_cnpj}` : '');
+          setSafeText('assinatura_cliente_resp', cliente.responsavel_legal ? `Responsável legal: ${cliente.responsavel_legal}` : '');
 
           setSafeText('cliente_responsavel_legal', cliente.responsavel_legal);
           toggleRow('cliente_resp_row', cliente.responsavel_legal);
@@ -2189,9 +2198,25 @@
       const area = document.getElementById('area-assinar-cliente');
       const canvas = document.getElementById('canvas-assinatura');
       if (!area || !canvas) return;
-      area.style.display = 'block';
-      area.classList.add('area-assinar-fixed');
-      document.body.style.paddingBottom = '50vh';
+      const botaoAbrir = document.getElementById('botao-abrir-assinatura');
+      const btnAbrir = document.getElementById('btn-abrir-assinatura');
+      const btnFechar = document.getElementById('btn-fechar-assinatura');
+      if (botaoAbrir) botaoAbrir.style.display = 'block';
+
+      function abrirPainel() {
+        area.style.display = 'block';
+        area.classList.add('area-assinar-fixed');
+        document.body.style.paddingBottom = '50vh';
+        if (botaoAbrir) botaoAbrir.style.display = 'none';
+      }
+      function fecharPainel() {
+        area.style.display = 'none';
+        area.classList.remove('area-assinar-fixed');
+        document.body.style.paddingBottom = '';
+        if (botaoAbrir) botaoAbrir.style.display = 'block';
+      }
+      if (btnAbrir) btnAbrir.onclick = abrirPainel;
+      if (btnFechar) btnFechar.onclick = fecharPainel;
 
       const ctx = canvas.getContext('2d');
       ctx.lineWidth = 6;
