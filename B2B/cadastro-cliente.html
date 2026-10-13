@@ -5,6 +5,7 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
   <title>432UP Partner | Cadastro de Cliente</title>
 
+  <script>if (new URLSearchParams(location.search).get('modo') === 'modal') document.documentElement.classList.add('modo-modal');</script>
   <link rel="stylesheet" href="../css/style.css">
   <script src="https://cdn.tailwindcss.com"></script>
 
@@ -132,17 +133,29 @@
       z-index: 100 !important;
     }
 
-    /* Modo modal (aberto dentro da Nova Proposta): sem cabeçalho, sem fundo espacial */
-    body.modo-modal #calc-header,
-    body.modo-modal #mobile-menu,
-    body.modo-modal #orbit-canvas,
-    body.modo-modal #plasmaLayer,
-    body.modo-modal #topoPagina { display: none !important; }
-    body.modo-modal { background: transparent !important; }
-    body.modo-modal main { padding-top: 1rem !important; padding-bottom: 1rem !important; }
+    /* Modo modal (aberto dentro da Nova Proposta): só o formulário, com barra fixa Cancelar/Salvar */
+    .modo-modal header,
+    .modo-modal #calc-header,
+    .modo-modal #mobile-menu,
+    .modo-modal #orbit-canvas,
+    .modo-modal #plasmaLayer,
+    .modo-modal #topoPagina,
+    .modo-modal #acoesRodape { display: none !important; }
+    .modo-modal, .modo-modal body { background: transparent !important; }
+    #barraModal { display: none; }
+    .modo-modal #barraModal {
+      display: flex; position: fixed; top: 0; left: 0; right: 0; z-index: 200;
+      align-items: center; justify-content: space-between; gap: 8px;
+      padding: 10px 14px; background: #0a0f16; border-bottom: 1px solid rgba(0, 240, 255, 0.25);
+    }
+    .modo-modal main { padding-top: 72px !important; padding-bottom: 1.5rem !important; }
   </style>
 </head>
 <body class="h-full text-slate-200 font-sans antialiased bg-[#06080c] overflow-x-hidden">
+  <div id="barraModal">
+    <button type="button" id="btnCancelarModal" class="px-4 py-2 rounded-xl bg-slate-800/80 text-cyan-300 border border-cyan-500/30 text-xs font-semibold cursor-pointer">Cancelar</button>
+    <button type="button" id="btnSalvarModal" class="px-5 py-2 rounded-xl bg-amber-500 hover:bg-amber-400 text-slate-950 font-bold text-xs uppercase tracking-wider cursor-pointer">Salvar</button>
+  </div>
 
   <canvas id="orbit-canvas"></canvas>
   <div id="plasmaLayer" class="plasma-top-layer"></div>
@@ -341,7 +354,7 @@
 
           <div id="mcAlert" class="hidden p-3 rounded-xl text-xs font-semibold bg-red-500/15 text-red-300 border border-red-500/30"></div>
 
-          <div class="flex flex-col sm:flex-row gap-2 pt-2">
+          <div id="acoesRodape" class="flex flex-col sm:flex-row gap-2 pt-2">
             <button type="submit" id="mcBtnSalvar" class="flex-1 py-3 rounded-xl bg-amber-500 hover:bg-amber-400 text-slate-950 font-bold text-xs uppercase tracking-wider transition shadow-[0_0_20px_rgba(245,158,11,0.3)] cursor-pointer">
               Salvar Cliente
             </button>
@@ -359,6 +372,6 @@
   <script src="partner-config.js"></script>
   <script src="partner-header.js"></script>
   <script src="../script/script.js" defer></script>
-  <script src="js/cadastro-cliente.js"></script>
+  <script src="cadastro-cliente.js"></script>
 </body>
 </html>
