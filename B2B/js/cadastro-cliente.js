@@ -8,6 +8,16 @@
 
   var parceiroAtual = null;
   var MODO_MODAL = new URLSearchParams(window.location.search).get('modo') === 'modal';
+  /* DIAG-TEMP:INICIO */
+  function diagCad(chave, valor) {
+    var box = document.getElementById('diagCadLinhas');
+    if (!box) return;
+    var linha = document.getElementById('diag-' + chave);
+    if (!linha) { linha = document.createElement('div'); linha.id = 'diag-' + chave; box.appendChild(linha); }
+    linha.textContent = chave + ': ' + valor;
+  }
+  window.addEventListener('error', function (e) { diagCad('erro JS', e.message); });
+  /* DIAG-TEMP:FIM */
   var COLS_RETORNO = 'id, nome_razao, nome_fantasia, cidade, bairro, cep, cpf_cnpj, telefone, responsavel_legal, responsavel_legal_cargo, contato_nome, contato_cargo, contato_eh_responsavel';
   var mcClienteEditandoId = null;
   var ultimoCepConsultadoModal = null;
@@ -576,6 +586,7 @@
         .eq('id', clienteId)
         .maybeSingle();
 
+      diagCad('busca cliente', res.error ? 'erro: ' + res.error.message : (res.data ? 'ok' : 'vazio')); /* DIAG-TEMP */
       if (res.error || !res.data) {
         console.error('[432UP Partner] Falha ao carregar cliente:', res.error);
         showAlert('Não foi possível carregar os dados deste cliente para edição.', 'error');
@@ -629,6 +640,7 @@
     e.preventDefault();
     var btn = $('mcBtnSalvar');
     var original = btn.textContent;
+    diagCad('salvar', 'tocado'); /* DIAG-TEMP */
     $('mcAlert').classList.add('hidden');
 
     var tipoPessoa = $('mcTipoPessoa').value;
@@ -730,11 +742,13 @@
       }
 
       if (saveResult.error) {
+        diagCad('salvar', 'erro: ' + saveResult.error.message); /* DIAG-TEMP */
         console.error('[432UP Partner] Erro no salvamento do cliente:', saveResult.error);
         mcShowAlert('Não foi possível salvar os dados do cliente. Tente novamente ou contate o suporte.');
       } else {
         showAlert(editandoId ? 'Cliente atualizado com sucesso.' : 'Cliente cadastrado com sucesso.', 'success');
         if (MODO_MODAL) {
+          diagCad('salvar', 'ok, enviando ao pai'); /* DIAG-TEMP */
           // Aberto dentro da Nova Proposta: devolve o cliente salvo e não reseta o formulário
           window.parent.postMessage({ tipo: 'cliente-salvo', cliente: saveResult.data }, window.location.origin);
           return;
@@ -790,7 +804,9 @@
     });
     if (MODO_MODAL) {
       $('btnCancelarModal').addEventListener('click', function () {
+        diagCad('cancelar', 'tocado'); /* DIAG-TEMP */
         window.parent.postMessage({ tipo: 'cliente-cancelado' }, window.location.origin);
+        diagCad('cancelar', 'enviado ao pai'); /* DIAG-TEMP */
       });
       $('btnSalvarModal').addEventListener('click', function () { $('mcBtnSalvar').click(); });
       // Nome digitado fora do modal chega também por mensagem (reforço do parâmetro da URL)
@@ -818,6 +834,12 @@
 
   var idEdicao = new URLSearchParams(window.location.search).get('id');
   var nomeParam = new URLSearchParams(window.location.search).get('nome');
+  diagCad('modo', MODO_MODAL ? 'modal' : 'normal'); /* DIAG-TEMP */
+  diagCad('id', idEdicao || '-'); /* DIAG-TEMP */
+  diagCad('nome', nomeParam || '-'); /* DIAG-TEMP */
+  sbPartner.auth.getSession().then(function (s) { /* DIAG-TEMP */
+    diagCad('sessao', (s && s.data && s.data.session) ? 'sim' : 'NAO'); /* DIAG-TEMP */
+  }); /* DIAG-TEMP */
 
   if (MODO_MODAL) {
     // Dentro da Nova Proposta: carrega direto (sem esperar a verificação completa de login)
