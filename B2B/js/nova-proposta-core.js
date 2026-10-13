@@ -1639,34 +1639,18 @@
       }
       /* ---------- MODAL DO CADASTRO DE CLIENTE (abre cadastro-cliente.html em iframe) ---------- */
       var MC_FAMILIAS_SERVICO = ['DJ', 'Música ao vivo', 'Equipamentos'];
-      /* DIAG-TEMP:INICIO */
-      function diagProp(chave, valor) {
-        var box = document.getElementById('diagPropLinhas');
-        if (!box) return;
-        var linha = document.getElementById('dprop-' + chave);
-        if (!linha) { linha = document.createElement('div'); linha.id = 'dprop-' + chave; box.appendChild(linha); }
-        linha.textContent = chave + ': ' + valor;
-      }
-      window.addEventListener('error', function (e) { diagProp('erro JS', e.message); });
-      /* DIAG-TEMP:FIM */
       var pendingNomeCliente = '';
       function abrirIframeCliente(clienteId, nomePreenchido) {
-        diagProp('clique modal', (clienteId ? 'editar ' + clienteId : 'novo') + ' | nome: ' + (nomePreenchido || '-') + ' | ro=' + !!formularioBloqueadoSomenteLeitura); /* DIAG-TEMP */
-        if (formularioBloqueadoSomenteLeitura) {
-          diagProp('abrir modal', 'bloqueado (somente leitura)'); /* DIAG-TEMP */
-          return;
-        }
+        if (formularioBloqueadoSomenteLeitura) return;
         pendingNomeCliente = nomePreenchido || '';
         var params = 'modo=modal';
         if (clienteId) params += '&id=' + encodeURIComponent(clienteId);
         if (nomePreenchido) params += '&nome=' + encodeURIComponent(nomePreenchido);
         // Caminho relativo ao HTML da proposta (mesmo diretório B2B/)
         var url = 'cadastro-cliente.html?' + params;
-        diagProp('abrir modal', url); /* DIAG-TEMP */
         var frame = document.getElementById('frameCliente');
         var modal = document.getElementById('modalCliente');
         if (!frame || !modal) {
-          diagProp('erro modal', 'elementos #frameCliente ou #modalCliente ausentes'); /* DIAG-TEMP */
           return;
         }
         // Força recarga mesmo se a URL for parecida (importante no iPad/Safari)
@@ -1675,7 +1659,6 @@
           frame.src = url;
           modal.classList.remove('hidden');
           modal.classList.add('flex');
-          diagProp('modal visivel', modal.className); /* DIAG-TEMP */
         }, 30);
       }
       function abrirModalCliente(termoPreenchido) {
@@ -1698,21 +1681,18 @@
         }
         if (frame) frame.src = 'about:blank';
         pendingNomeCliente = '';
-        diagProp('modal', 'fechado'); /* DIAG-TEMP */
       }
       window.addEventListener('message', function (ev) {
         // Aceita same-origin; no iPad às vezes origin vem vazio em file/blob — tolera se data for nossa
         var d = ev.data || {};
         if (!d || typeof d.tipo !== 'string') return;
         if (ev.origin && ev.origin !== window.location.origin && ev.origin !== 'null') return;
-        diagProp('mensagem recebida', d.tipo); /* DIAG-TEMP */
         if (d.tipo === 'cliente-pronto') {
           var fr = document.getElementById('frameCliente');
           if (fr && fr.contentWindow && pendingNomeCliente) {
             try {
               fr.contentWindow.postMessage({ tipo: 'prefill', nome: pendingNomeCliente }, '*');
             } catch (e) {
-              diagProp('prefill erro', e.message); /* DIAG-TEMP */
             }
           }
           return;
@@ -1786,7 +1766,6 @@
             if (btnCad) {
               e.preventDefault();
               e.stopPropagation();
-              diagProp('btn cadastrar', 'clicado'); /* DIAG-TEMP */
               abrirModalCliente(btnCad.getAttribute('data-termo') || '');
               return;
             }
@@ -1810,8 +1789,6 @@
             abrirModalClienteParaEdicao(clienteSelecionado.id);
           }
         });
-        var btnFechar = document.getElementById('btnFecharModalCliente');
-        if (btnFechar) btnFechar.addEventListener('click', fecharModalCliente);
       }
       /* =================================================================== */
       function bindEvents() {
