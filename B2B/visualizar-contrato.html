@@ -803,6 +803,8 @@
         <!-- 15. ACEITE E ASSINATURA -->
         <div class="section-title" data-sec-base="15" data-sec-label="Aceite e Assinatura">15. Aceite e Assinatura</div>
 
+        <div id="aviso-resp-legal" class="no-print" style="display:none;text-align:center;margin-top:110px;font-size:12px;color:#D32F2F;font-weight:700;">Responsável legal não informado no cadastro do cliente. O contrato só poderá ser assinado depois que ele for preenchido.</div>
+
         <div id="botao-abrir-assinatura" class="no-print" style="display:none;text-align:center;margin-top:110px;">
           <button type="button" id="btn-abrir-assinatura" style="padding:10px 22px;border-radius:10px;border:none;background:#8A10D8;color:#fff;font-weight:700;cursor:pointer;font-size:13px;">✍️ Clique aqui para assinar o contrato</button>
         </div>
@@ -1079,9 +1081,13 @@
           setSafeText('assinatura_cliente_nome', cliente.nome_razao || cliente.nome_fantasia || 'CONTRATANTE');
           setSafeText('cliente_cpf_cnpj', cliente.cpf_cnpj);
           setSafeText('assinatura_cliente_doc', cliente.cpf_cnpj ? `CPF/CNPJ: ${cliente.cpf_cnpj}` : '');
-          setSafeText('assinatura_cliente_resp', cliente.responsavel_legal ? `Responsável legal: ${cliente.responsavel_legal}` : '');
+          const respTxt = cliente.responsavel_legal
+            ? 'Responsável legal: ' + cliente.responsavel_legal + (cliente.responsavel_legal_cargo ? ' – ' + cliente.responsavel_legal_cargo : '')
+            : '';
+          setSafeText('assinatura_cliente_resp', respTxt);
+          window.__semRespLegal = !!(cliente.tipo_pessoa === 'PJ' && !cliente.responsavel_legal);
 
-          setSafeText('cliente_responsavel_legal', cliente.responsavel_legal);
+          setSafeText('cliente_responsavel_legal', [cliente.responsavel_legal, cliente.responsavel_legal_cargo ? '(' + cliente.responsavel_legal_cargo + ')' : ''].filter(Boolean).join(' '));
           toggleRow('cliente_resp_row', cliente.responsavel_legal);
 
           const cliLogr = [
@@ -1374,6 +1380,9 @@
         assinadoEmAtual = docProposta.assinado_em || null;
         if (assinadoEmAtual) {
           mostrarAssinaturaCliente(docProposta.assinatura_cliente_url, assinadoEmAtual);
+        } else if (window.__semRespLegal) {
+          const av = document.getElementById('aviso-resp-legal');
+          if (av) av.style.display = 'block';
         } else {
           ativarAreaAssinatura();
         }
