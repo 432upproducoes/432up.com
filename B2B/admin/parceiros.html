@@ -2061,21 +2061,30 @@
       var admSnapshotUrls = [];
       var admAvisoTimer = null;
 
+      /* Selo âmbar ao lado do botão Salvar. Fica dentro do cabeçalho do modal,
+         então some junto quando o modal é fechado. */
       function mostrarBannerPendente() {
-        var b = document.getElementById('bannerPendenteAmbar');
-        if (!b) {
-          b = document.createElement('div');
-          b.id = 'bannerPendenteAmbar';
-          b.style.cssText = 'position:fixed;bottom:20px;top:auto;left:50%;transform:translateX(-50%);z-index:99998;width:90%;max-width:520px;text-align:center;padding:14px 20px;border-radius:14px;font-weight:700;font-size:0.88rem;line-height:1.5;background:rgba(245,158,11,0.18);color:#fcd34d;border:1px solid rgba(245,158,11,0.5);backdrop-filter:blur(20px);-webkit-backdrop-filter:blur(20px);box-shadow:0 10px 30px rgba(0,0,0,0.35);';
-          b.textContent = 'Alterações pendentes: inclusões e exclusões só terão efeito após clicar em Salvar.';
-          document.body.appendChild(b);
+        var selo = document.getElementById('bannerPendenteAmbar');
+        if (!selo) {
+          var botao = document.getElementById('btnSalvarFicha');
+          if (!botao || !botao.parentNode) return;
+          selo = document.createElement('button');
+          selo.type = 'button';
+          selo.id = 'bannerPendenteAmbar';
+          selo.textContent = '⚠ Alterações não salvas';
+          selo.title = 'Alterações só terão efeito após clicar em Salvar';
+          selo.style.cssText = 'display:inline-block;margin-left:8px;padding:6px 10px;border-radius:999px;font-size:10px;font-weight:800;letter-spacing:0.05em;text-transform:uppercase;background:rgba(245,158,11,0.18);color:#fcd34d;border:1px solid rgba(245,158,11,0.6);white-space:nowrap;cursor:pointer;';
+          selo.onclick = function () {
+            mostrarAvisoTemporario('Alterações pendentes: inclusões e exclusões só terão efeito após clicar em Salvar.');
+          };
+          botao.parentNode.insertBefore(selo, botao.nextSibling);
         }
-        b.style.display = 'block';
+        selo.style.display = 'inline-block';
       }
 
       function esconderBannerPendente() {
-        var b = document.getElementById('bannerPendenteAmbar');
-        if (b) b.style.display = 'none';
+        var selo = document.getElementById('bannerPendenteAmbar');
+        if (selo) selo.style.display = 'none';
       }
 
       /* Aviso de 6 segundos. Substitui o alert() nativo (que não some sozinho). */
