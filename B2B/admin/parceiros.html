@@ -67,6 +67,11 @@
       transform: scale(1.1);
     }
   </style>
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/cropperjs/1.5.13/cropper.min.css">
+  <style>
+    .modal-crop-overlay{position:fixed;inset:0;background:rgba(0,0,0,.85);display:none;align-items:center;justify-content:center;z-index:200000;padding:16px}
+    .modal-crop-overlay.active{display:flex}
+  </style>
 </head>
 <body class="min-h-screen text-slate-200 font-sans antialiased bg-[#06080c]">
 
@@ -563,7 +568,7 @@
                 <div class="flex items-center gap-2">
                   <label class="text-[10px] text-amber-400 hover:text-amber-300 font-bold cursor-pointer">
                     📤 Enviar Capa
-                    <input type="file" id="inputUploadCapaAdmin" accept="image/*" class="hidden" onchange="uploadFotoAdmin(this, 'capa')">
+                    <input type="file" id="inputUploadCapaAdmin" accept="image/*" class="hidden" onchange="abrirCropCapaAdmin(this)">
                   </label>
                   <button type="button" id="btnRemoverCapaAdmin" onclick="removerCapaAdmin()" class="text-[10px] text-red-400 hover:text-red-300 font-bold hidden">
                     🗑️ Remover Capa
@@ -582,7 +587,7 @@
                 <div class="flex items-center gap-2">
                   <label class="text-[10px] text-amber-400 hover:text-amber-300 font-bold cursor-pointer">
                     📤 Adicionar Foto
-                    <input type="file" id="inputUploadGaleriaAdmin" accept="image/*" class="hidden" onchange="uploadFotoAdmin(this, 'galeria')">
+                    <input type="file" id="inputUploadGaleriaAdmin" accept="image/*" multiple class="hidden" onchange="abrirFilaGaleriaAdmin(this)">
                   </label>
                   <span id="mGaleriaContadorTxt" class="text-[10px] text-amber-400 font-mono">0 fotos</span>
                 </div>
@@ -629,7 +634,7 @@
             <div class="grid grid-cols-1 sm:grid-cols-2 gap-3 text-xs">
               <div>
                 <label class="block text-slate-300 uppercase font-semibold mb-1">Vídeo Principal (Selecione um arquivo de vídeo)</label>
-                <input type="file" id="mArtVideo1" accept="video/*" class="w-full text-xs text-slate-300 file:mr-3 file:py-2 file:px-3 file:rounded-lg file:border-0 file:text-xs file:font-semibold file:bg-amber-500/20 file:text-amber-300 hover:file:bg-amber-500/30 transition cursor-pointer bg-slate-900/80 border border-amber-500/30 rounded-xl px-2 py-2" onchange="uploadVideoAdmin(this, 'youtube_1')">
+                <input type="file" id="mArtVideo1" accept="video/*" class="w-full text-xs text-slate-300 file:mr-3 file:py-2 file:px-3 file:rounded-lg file:border-0 file:text-xs file:font-semibold file:bg-amber-500/20 file:text-amber-300 hover:file:bg-amber-500/30 transition cursor-pointer bg-slate-900/80 border border-amber-500/30 rounded-xl px-2 py-2" onchange="selecionarVideoAdmin(this, 'youtube_1')">
                 <input type="hidden" id="mArtYoutube1" value="">
                 <span id="video1AtualLabelAdmin" class="text-[11px] text-slate-400 block mt-1"></span>
                 <a id="video1LinkAdmin" href="#" target="_blank" rel="noopener" class="hidden text-[10px] text-amber-400 underline break-all mt-0.5 block hover:text-amber-300"></a>
@@ -637,7 +642,7 @@
               </div>
               <div>
                 <label class="block text-slate-300 uppercase font-semibold mb-1">Vídeo Secundário (Selecione um arquivo de vídeo)</label>
-                <input type="file" id="mArtVideo2" accept="video/*" class="w-full text-xs text-slate-300 file:mr-3 file:py-2 file:px-3 file:rounded-lg file:border-0 file:text-xs file:font-semibold file:bg-amber-500/20 file:text-amber-300 hover:file:bg-amber-500/30 transition cursor-pointer bg-slate-900/80 border border-amber-500/30 rounded-xl px-2 py-2" onchange="uploadVideoAdmin(this, 'youtube_2')">
+                <input type="file" id="mArtVideo2" accept="video/*" class="w-full text-xs text-slate-300 file:mr-3 file:py-2 file:px-3 file:rounded-lg file:border-0 file:text-xs file:font-semibold file:bg-amber-500/20 file:text-amber-300 hover:file:bg-amber-500/30 transition cursor-pointer bg-slate-900/80 border border-amber-500/30 rounded-xl px-2 py-2" onchange="selecionarVideoAdmin(this, 'youtube_2')">
                 <input type="hidden" id="mArtYoutube2" value="">
                 <span id="video2AtualLabelAdmin" class="text-[11px] text-slate-400 block mt-1"></span>
                 <a id="video2LinkAdmin" href="#" target="_blank" rel="noopener" class="hidden text-[10px] text-amber-400 underline break-all mt-0.5 block hover:text-amber-300"></a>
@@ -2045,177 +2050,285 @@
         throw ultimoErro;
       }
 
-      /* Upload de vídeo pelo Admin — grava URL R2 direto em youtube_1 / youtube_2 */
-      window.uploadVideoAdmin = async function (inputEl, campoDestino) {
-        if (!inputEl || !inputEl.files || !inputEl.files[0]) return;
-        if (!parceiroSelecionadoId) {
-          alert('Abra o cadastro de um parceiro antes de enviar vídeos.');
-          inputEl.value = '';
-          return;
-        }
-        var parceiro = listaParceiros.find(function (item) {
-          return String(item.id) === String(parceiroSelecionadoId);
-        });
-        if (!parceiro || !parceiro.user_id) {
-          alert('Parceiro sem user_id. Não é possível enviar o vídeo.');
-          inputEl.value = '';
-          return;
-        }
-        var file = inputEl.files[0];
-        if (!file.type || file.type.indexOf('video/') !== 0) {
-          alert('Selecione um arquivo de vídeo válido.');
-          inputEl.value = '';
-          return;
-        }
+      /* ===== Estado local: nada é gravado até clicar em Salvar ===== */
+      var admCapaBlob = null;
+      var admCapaPreview = null;
+      var admGaleriaNovas = [];
+      var admVideoNovo = { youtube_1: null, youtube_2: null };
+      var admFilaCrop = [];
+      var admCropModo = null;
+      var admCropper = null;
+      var admSnapshotUrls = [];
+      var admAvisoTimer = null;
 
-        startLoadingProgress(5, 'Preparando vídeo...');
+      function mostrarBannerPendente() {
+        var b = document.getElementById('bannerPendenteAmbar');
+        if (!b) {
+          b = document.createElement('div');
+          b.id = 'bannerPendenteAmbar';
+          b.style.cssText = 'margin-bottom:12px;padding:12px 14px;border-radius:12px;font-size:12px;font-weight:700;line-height:1.5;background:rgba(245,158,11,0.15);color:#fcd34d;border:1px solid rgba(245,158,11,0.45);';
+          b.textContent = 'Alterações pendentes: inclusões e exclusões só terão efeito após clicar em Salvar.';
+          var alvo = document.getElementById('mGaleriaGrid');
+          if (alvo && alvo.parentNode) alvo.parentNode.insertBefore(b, alvo);
+        }
+        b.style.display = 'block';
+      }
 
+      function esconderBannerPendente() {
+        var b = document.getElementById('bannerPendenteAmbar');
+        if (b) b.style.display = 'none';
+      }
+
+      /* Aviso de 6 segundos. Substitui o alert() nativo (que não some sozinho). */
+      function mostrarAvisoTemporario(msg) {
+        var el = document.getElementById('avisoTemporario');
+        if (!el) return;
+        el.textContent = msg;
+        el.style.display = 'block';
+        if (admAvisoTimer) clearTimeout(admAvisoTimer);
+        admAvisoTimer = setTimeout(function () { el.style.display = 'none'; }, 6000);
+      }
+      window.alert = function (msg) { mostrarAvisoTemporario(String(msg)); };
+
+      /* Lista as URLs de mídia do cadastro. base = valores finais (opcional). */
+      function admListarUrls(p, base) {
+        function pick(k) {
+          if (base && base[k] !== undefined) return base[k];
+          return p ? p[k] : null;
+        }
+        var lista = [];
+        (pick('galeria_fotos') || []).forEach(function (u) { if (u) lista.push(u); });
+        (pick('midias_pendentes') || []).forEach(function (m) { if (m && m.url) lista.push(m.url); });
+        [pick('foto_capa_url'), pick('youtube_1'), pick('youtube_2')].forEach(function (u) { if (u) lista.push(u); });
+        return lista;
+      }
+
+      /* Apaga do R2 um arquivo que saiu do cadastro. */
+      async function deleteR2(url) {
+        var prefixo = 'https://media.432up.com/';
+        if (!url || String(url).indexOf(prefixo) !== 0) return;
+        var path = String(url).slice(prefixo.length);
         try {
-          var prefix = (campoDestino === 'youtube_2') ? 'video_secundario_' : 'video_principal_';
-          // Path idêntico ao Perfil (sem sanitização extra)
-          var vPath = parceiro.user_id + '/' + prefix + Date.now() + '_' + file.name;
-          updateLoadingProgress(15, 'Enviando vídeo...');
-          var videoUrl = await uploadComTentativas(vPath, file);
-          updateLoadingProgress(85, 'Salvando no cadastro...');
-          atualizarLabelsVideoAdmin(campoDestino, videoUrl, false);
-          var payloadVid = {};
-          payloadVid[campoDestino] = videoUrl;
-          var resSave = await sbPartner.from('parceiros').update(payloadVid).eq('id', parceiroSelecionadoId);
-          if (resSave.error) {
-            hideLoadingProgress();
-            alert('Vídeo enviado ao R2, mas falhou ao gravar no cadastro: ' + resSave.error.message +
-              '\nClique em “Salvar Cadastro Completo” para tentar de novo.');
-          } else {
-            parceiro[campoDestino] = videoUrl;
-            renderGaleriaAdmin();
-            updateLoadingProgress(100, 'Concluído!');
-            await new Promise(function (r) { setTimeout(r, 400); });
-            hideLoadingProgress();
-            alert('Vídeo salvo com sucesso!');
-          }
+          var sessionRes = await sbPartner.auth.getSession();
+          var token = (sessionRes && sessionRes.data && sessionRes.data.session)
+            ? sessionRes.data.session.access_token : null;
+          if (!token) return;
+          await fetch(R2_UPLOAD_URL + '?path=' + encodeURIComponent(path), {
+            method: 'DELETE',
+            headers: { 'Authorization': 'Bearer ' + token }
+          });
         } catch (err) {
-          hideLoadingProgress();
-          console.error(err);
-          alert('Erro ao enviar o vídeo: ' + (err && err.message ? err.message : 'falha desconhecida'));
-        } finally {
-          hideLoadingProgress();
-          inputEl.value = '';
+          console.warn('[432UP Admin] Falha ao apagar do R2:', path, err);
+        }
+      }
+
+      /* Chamado após o banco confirmar o salvamento */
+      function admConcluirSalvamento(payload, parceiro) {
+        var urlsDepois = admListarUrls(parceiro, payload);
+        var removidas = admSnapshotUrls.filter(function (u) { return urlsDepois.indexOf(u) === -1; });
+        removidas.forEach(function (u) { deleteR2(u); });
+        admSnapshotUrls = urlsDepois;
+        esconderBannerPendente();
+      }
+
+      /* Publica as mídias novas no R2 (chamado ao clicar em Salvar, antes de montar o payload) */
+      async function admPublicarMidiasNovas(parceiro) {
+        var uid = parceiro.user_id;
+        var ts = Date.now();
+        var temAlgo = admCapaBlob || admGaleriaNovas.length || admVideoNovo.youtube_1 || admVideoNovo.youtube_2;
+        if (!temAlgo) return;
+
+        startLoadingProgress(5, 'Preparando envio...');
+
+        if (admCapaBlob) {
+          updateLoadingProgress(15, 'Enviando capa...');
+          var urlCapa = await uploadComTentativas(uid + '/capa_vitrine_' + ts + '.webp', admCapaBlob);
+          mFotoCapaUrlAtual = urlCapa;
+          mMidiasPendentesAtual = mMidiasPendentesAtual.filter(function (m) { return m.tipo !== 'capa'; });
+          admCapaBlob = null;
+          admCapaPreview = null;
+        }
+
+        for (var i = 0; i < admGaleriaNovas.length; i++) {
+          updateLoadingProgress(25 + Math.round((i / Math.max(admGaleriaNovas.length, 1)) * 30), 'Enviando foto ' + (i + 1) + ' de ' + admGaleriaNovas.length + '...');
+          var urlFoto = await uploadComTentativas(uid + '/galeria_' + ts + '_' + i + '.webp', admGaleriaNovas[i].blob);
+          mGaleriaFotosAtual.push(urlFoto);
+        }
+        admGaleriaNovas = [];
+
+        var campos = ['youtube_1', 'youtube_2'];
+        for (var c = 0; c < campos.length; c++) {
+          var campo = campos[c];
+          var novo = admVideoNovo[campo];
+          if (!novo) continue;
+          updateLoadingProgress(65 + c * 15, 'Enviando vídeo ' + (c + 1) + '...');
+          var prefix = campo === 'youtube_2' ? 'video_secundario_' : 'video_principal_';
+          var urlVid = await uploadComTentativas(uid + '/' + prefix + ts + '_' + novo.file.name, novo.file);
+          atualizarLabelsVideoAdmin(campo, urlVid, false);
+          var parceiroRef = listaParceiros.find(function (item) { return String(item.id) === String(parceiro.id); });
+          if (parceiroRef) parceiroRef[campo] = urlVid;
+          mMidiasPendentesAtual = mMidiasPendentesAtual.filter(function (m) { return !(m.tipo === 'video' && m.campo_destino === campo); });
+          admVideoNovo[campo] = null;
+          var el = document.getElementById(campo === 'youtube_1' ? 'mArtVideo1' : 'mArtVideo2');
+          if (el) el.value = '';
+        }
+
+        updateLoadingProgress(95, 'Salvando no cadastro...');
+      }
+
+      /* ===== CAPA: recorte 600×600, limite 10 MB ===== */
+      window.abrirCropCapaAdmin = function (input) {
+        var arq = input.files && input.files[0];
+        if (!arq) return;
+        if (arq.size > 10 * 1024 * 1024) {
+          alert('A foto de capa precisa ter no máximo 10MB.');
+          input.value = '';
+          return;
+        }
+        admCropModo = 'capa';
+        document.getElementById('modalCropTitle').textContent = 'Recortar Foto Principal (WebP 80%)';
+        initCropAdmin(arq, 1);
+        input.value = '';
+      };
+
+      /* ===== GALERIA: seleção múltipla, fila de recorte, limite 10 MB por foto ===== */
+      window.abrirFilaGaleriaAdmin = function (input) {
+        var arquivos = Array.from(input.files || []);
+        if (arquivos.length === 0) return;
+        var grandes = arquivos.filter(function (f) { return f.size > 10 * 1024 * 1024; });
+        if (grandes.length > 0) {
+          alert(grandes.length + ' foto(s) passam de 10MB e não foram adicionadas.');
+        }
+        admFilaCrop = arquivos.filter(function (f) { return f.size <= 10 * 1024 * 1024; });
+        input.value = '';
+        if (admFilaCrop.length > 0 && admCropModo !== 'galeria') processarProximoCropAdmin();
+      };
+
+      function processarProximoCropAdmin() {
+        if (admFilaCrop.length === 0) {
+          admCropModo = null;
+          return;
+        }
+        var proximo = admFilaCrop.shift();
+        admCropModo = 'galeria';
+        document.getElementById('modalCropTitle').textContent = 'Recortar Foto da Galeria (WebP 80%)'
+          + (admFilaCrop.length > 0 ? ' — restam ' + (admFilaCrop.length + 1) + ' foto(s)' : '');
+        initCropAdmin(proximo, 4 / 3);
+      }
+
+      function initCropAdmin(file, ratio) {
+        var reader = new FileReader();
+        reader.onload = function (evt) {
+          var img = document.getElementById('image-to-crop');
+          img.src = evt.target.result;
+          document.getElementById('modal-crop').classList.add('active');
+          if (admCropper) admCropper.destroy();
+          admCropper = new Cropper(img, { aspectRatio: ratio, viewMode: 1 });
+        };
+        reader.readAsDataURL(file);
+      }
+
+      window.fecharCropAdmin = function () {
+        document.getElementById('modal-crop').classList.remove('active');
+        if (admCropper) { admCropper.destroy(); admCropper = null; }
+        if (admCropModo === 'galeria') {
+          processarProximoCropAdmin();
+        } else {
+          admCropModo = null;
         }
       };
 
-      /* Upload admin fotos — R2 (sem Supabase Storage) */
-      window.uploadFotoAdmin = async function (inputEl, tipo) {
-        if (!inputEl || !inputEl.files || !inputEl.files[0]) return;
-        if (!parceiroSelecionadoId) {
-          alert('Abra o cadastro de um parceiro antes de enviar fotos.');
-          inputEl.value = '';
-          return;
-        }
+      window.aplicarCropAdmin = function () {
+        if (!admCropper) return;
+        var modo = admCropModo;
+        var largura = modo === 'capa' ? 600 : 800;
+        var altura = 600;
+        var canvas = admCropper.getCroppedCanvas({ width: largura, height: altura });
+        var webpPreview = canvas.toDataURL('image/webp', 0.8);
 
-        var parceiro = listaParceiros.find(function (item) {
-          return String(item.id) === String(parceiroSelecionadoId);
-        });
-        if (!parceiro || !parceiro.user_id) {
-          alert('Parceiro sem user_id. Não é possível enviar a foto.');
-          inputEl.value = '';
-          return;
-        }
-
-        var file = inputEl.files[0];
-        if (!file.type || file.type.indexOf('image/') !== 0) {
-          alert('Selecione um arquivo de imagem válido.');
-          inputEl.value = '';
-          return;
-        }
-        if (file.size > 12 * 1024 * 1024) {
-          alert('A imagem ultrapassa 12 MB. Escolha um arquivo menor.');
-          inputEl.value = '';
-          return;
-        }
-
-        var path = tipo === 'capa'
-          ? (parceiro.user_id + '/capa_vitrine_' + Date.now() + '.webp')
-          : (parceiro.user_id + '/galeria_' + Date.now() + '.webp');
-
-        startLoadingProgress(5, 'Preparando imagem...');
-
-        try {
-          // Converte para WebP (mesmo fluxo do perfil) quando possível
-          var blobToUpload = file;
-          var contentType = file.type || 'image/jpeg';
-
-          try {
-            var dataUrl = await new Promise(function (resolve, reject) {
-              var reader = new FileReader();
-              reader.onload = function () { resolve(reader.result); };
-              reader.onerror = reject;
-              reader.readAsDataURL(file);
-            });
-            var img = await new Promise(function (resolve, reject) {
-              var i = new Image();
-              i.onload = function () { resolve(i); };
-              i.onerror = reject;
-              i.src = dataUrl;
-            });
-            var maxW = tipo === 'capa' ? 600 : 800;
-            var maxH = tipo === 'capa' ? 600 : 600;
-            var ratio = Math.min(maxW / img.width, maxH / img.height, 1);
-            var canvas = document.createElement('canvas');
-            canvas.width = Math.round(img.width * ratio) || maxW;
-            canvas.height = Math.round(img.height * ratio) || maxH;
-            canvas.getContext('2d').drawImage(img, 0, 0, canvas.width, canvas.height);
-            blobToUpload = await new Promise(function (resolve) {
-              canvas.toBlob(function (b) { resolve(b || file); }, 'image/webp', 0.8);
-            });
-            contentType = 'image/webp';
-          } catch (convErr) {
-            console.warn('Conversão WebP falhou, enviando arquivo original:', convErr);
-            path = path.replace(/\.webp$/, '.' + ((file.name.split('.').pop() || 'jpg').toLowerCase()));
-          }
-
-          updateLoadingProgress(25, 'Enviando imagem...');
-          var uploadedUrl = await uploadComTentativas(path, blobToUpload);
-
-          updateLoadingProgress(80, 'Salvando no cadastro...');
-          if (tipo === 'capa') {
-            mFotoCapaUrlAtual = uploadedUrl;
-            mMidiasPendentesAtual = mMidiasPendentesAtual.filter(function (m) { return m.tipo !== 'capa'; });
+        if (modo === 'capa') {
+          canvas.toBlob(function (blob) {
+            admCapaBlob = blob;
+            admCapaPreview = webpPreview;
+            document.getElementById('modal-crop').classList.remove('active');
+            if (admCropper) { admCropper.destroy(); admCropper = null; }
+            admCropModo = null;
             renderCapaAdmin();
-          } else {
-            if (mGaleriaFotosAtual.indexOf(uploadedUrl) === -1) {
-              mGaleriaFotosAtual.push(uploadedUrl);
-            }
+            mostrarBannerPendente();
+          }, 'image/webp', 0.8);
+        } else {
+          canvas.toBlob(function (blob) {
+            admGaleriaNovas.push({ blob: blob, previewUrl: webpPreview });
+            document.getElementById('modal-crop').classList.remove('active');
+            if (admCropper) { admCropper.destroy(); admCropper = null; }
+            renderGaleriaAdmin();
+            mostrarBannerPendente();
+            processarProximoCropAdmin();
+          }, 'image/webp', 0.8);
+        }
+      };
+
+      /* ===== VÍDEOS: seleção local com miniatura; gravação só ao salvar ===== */
+      function gerarMiniaturaVideo(file, cb) {
+        var v = document.createElement('video');
+        var url = URL.createObjectURL(file);
+        var feito = false;
+        function terminar(dataUrl) {
+          if (feito) return;
+          feito = true;
+          URL.revokeObjectURL(url);
+          cb(dataUrl);
+        }
+        v.muted = true;
+        v.playsInline = true;
+        v.setAttribute('playsinline', '');
+        v.setAttribute('muted', '');
+        v.preload = 'auto';
+        v.onloadeddata = function () {
+          v.currentTime = 0.1;
+        };
+        v.onseeked = function () {
+          try {
+            var c = document.createElement('canvas');
+            c.width = v.videoWidth || 320;
+            c.height = v.videoHeight || 180;
+            c.getContext('2d').drawImage(v, 0, 0, c.width, c.height);
+            terminar(c.toDataURL('image/jpeg', 0.8));
+          } catch (e) {
+            terminar(null);
+          }
+        };
+        v.onerror = function () { terminar(null); };
+        setTimeout(function () { terminar(null); }, 5000);
+        v.src = url;
+        v.load();
+      }
+
+      window.selecionarVideoAdmin = function (input, campo) {
+        var arq = input.files && input.files[0];
+        if (!arq) return;
+        if (!arq.type || arq.type.indexOf('video/') !== 0) {
+          alert('Selecione um arquivo de vídeo válido.');
+          input.value = '';
+          return;
+        }
+        admVideoNovo[campo] = { file: arq, previewUrl: URL.createObjectURL(arq), thumb: null };
+        mostrarBannerPendente();
+        renderGaleriaAdmin();
+        gerarMiniaturaVideo(arq, function (dataUrl) {
+          if (admVideoNovo[campo]) {
+            admVideoNovo[campo].thumb = dataUrl;
             renderGaleriaAdmin();
           }
+        });
+      };
 
-          var payloadFoto = {
-            galeria_fotos: mGaleriaFotosAtual,
-            foto_capa_url: mFotoCapaUrlAtual
-          };
-          if (parceiro.midias_pendentes !== undefined) {
-            payloadFoto.midias_pendentes = mMidiasPendentesAtual;
-          }
-
-          var resSave = await sbPartner.from('parceiros').update(payloadFoto).eq('id', parceiroSelecionadoId);
-          if (resSave.error) {
-            hideLoadingProgress();
-            alert('Foto enviada ao R2, mas falhou ao gravar no cadastro: ' + resSave.error.message +
-              '\n' + 'Clique em “Salvar Cadastro Completo” para tentar de novo.');
-          } else {
-            parceiro.galeria_fotos = mGaleriaFotosAtual.slice();
-            parceiro.foto_capa_url = mFotoCapaUrlAtual;
-            updateLoadingProgress(100, 'Concluído!');
-            await new Promise(function (r) { setTimeout(r, 400); });
-            hideLoadingProgress();
-          }
-        } catch (err) {
-          hideLoadingProgress();
-          console.error(err);
-          alert('Erro ao enviar a imagem: ' + (err && err.message ? err.message : 'falha desconhecida'));
-        } finally {
-          hideLoadingProgress();
-        }
-        inputEl.value = '';
+      window.removerVideoNovoAdmin = function (campo) {
+        admVideoNovo[campo] = null;
+        var el = document.getElementById(campo === 'youtube_1' ? 'mArtVideo1' : 'mArtVideo2');
+        if (el) el.value = '';
+        mostrarBannerPendente();
+        renderGaleriaAdmin();
       };
 
       window.abrirFichaParceiro = function (id) {
@@ -2223,6 +2336,15 @@
         if (!parceiro) return;
 
         parceiroSelecionadoId = parceiro.id;
+
+        admSnapshotUrls = admListarUrls(parceiro, null);
+        admCapaBlob = null;
+        admCapaPreview = null;
+        admGaleriaNovas = [];
+        admVideoNovo = { youtube_1: null, youtube_2: null };
+        admFilaCrop = [];
+        admCropModo = null;
+        esconderBannerPendente();
 
         mGaleriaFotosAtual = Array.isArray(parceiro.galeria_fotos) ? parceiro.galeria_fotos.slice() : [];
         mMidiasPendentesAtual = Array.isArray(parceiro.midias_pendentes) ? parceiro.midias_pendentes.slice() : [];
@@ -2381,7 +2503,7 @@
         var capaImg = document.getElementById('mCapaImg');
 
         var capaPendente = mMidiasPendentesAtual.find(function(m) { return m.tipo === 'capa'; });
-        var urlExibir = capaPendente ? capaPendente.url : mFotoCapaUrlAtual;
+        var urlExibir = admCapaPreview || (capaPendente ? capaPendente.url : mFotoCapaUrlAtual);
 
         if (urlExibir) {
           var capaSrc = urlExibir + (urlExibir.indexOf('?') > -1 ? '&' : '?') + 'v=' + Date.now();
@@ -2412,11 +2534,12 @@
       }
 
       window.removerCapaAdmin = function() {
-        if (confirm('Deseja realmente remover a foto de capa deste parceiro?')) {
-          mFotoCapaUrlAtual = null;
-          mMidiasPendentesAtual = mMidiasPendentesAtual.filter(function(m) { return m.tipo !== 'capa'; });
-          renderCapaAdmin();
-        }
+        mFotoCapaUrlAtual = null;
+        mMidiasPendentesAtual = mMidiasPendentesAtual.filter(function(m) { return m.tipo !== 'capa'; });
+        admCapaBlob = null;
+        admCapaPreview = null;
+        mostrarBannerPendente();
+        renderCapaAdmin();
       };
 
       function renderGaleriaAdmin() {
@@ -2425,15 +2548,17 @@
 
         var midiasPendentesFila = mMidiasPendentesAtual.filter(function(m) { return m.tipo !== 'capa'; });
 
-        // Vídeos ativos (aprovados) a partir dos hidden fields
         var vid1Ativo = (document.getElementById('mArtYoutube1') && document.getElementById('mArtYoutube1').value || '').trim();
         var vid2Ativo = (document.getElementById('mArtYoutube2') && document.getElementById('mArtYoutube2').value || '').trim();
-        // Não duplicar se já estiver na fila de pendentes com o mesmo campo
         var pendVid1 = midiasPendentesFila.some(function(m) { return m.tipo === 'video' && m.campo_destino === 'youtube_1'; });
         var pendVid2 = midiasPendentesFila.some(function(m) { return m.tipo === 'video' && m.campo_destino === 'youtube_2'; });
-        var videosAtivosCount = (!pendVid1 && vid1Ativo ? 1 : 0) + (!pendVid2 && vid2Ativo ? 1 : 0);
+        // Vídeo novo substitui o ativo na grade até o Salvar
+        var mostrarAtivo1 = !pendVid1 && vid1Ativo && !admVideoNovo.youtube_1;
+        var mostrarAtivo2 = !pendVid2 && vid2Ativo && !admVideoNovo.youtube_2;
 
-        var totalExibido = mGaleriaFotosAtual.length + midiasPendentesFila.length + videosAtivosCount;
+        var totalExibido = mGaleriaFotosAtual.length + admGaleriaNovas.length + midiasPendentesFila.length
+          + (mostrarAtivo1 ? 1 : 0) + (mostrarAtivo2 ? 1 : 0)
+          + (admVideoNovo.youtube_1 ? 1 : 0) + (admVideoNovo.youtube_2 ? 1 : 0);
         contadorTxt.textContent = totalExibido + ' mídia' + (totalExibido !== 1 ? 's' : '');
 
         var html = '';
@@ -2446,21 +2571,41 @@
           '</div>';
         });
 
-        // Vídeos ativos (aprovados) — mesma grade, com × para excluir
-        if (!pendVid1 && vid1Ativo) {
+        admGaleriaNovas.forEach(function(item, idx) {
+          html += '<div class="portfolio-item-admin item-pendente">' +
+            '<span class="absolute top-1 left-1 px-1 py-0.5 rounded text-[8px] font-extrabold bg-amber-500/90 text-slate-950 z-10 shadow">⏳ Nova Foto</span>' +
+            '<button type="button" class="btn-remove-galeria-admin" onclick="removerFotoNovaAdmin(' + idx + ')" title="Remover esta foto">×</button>' +
+            '<img src="' + item.previewUrl + '">' +
+          '</div>';
+        });
+
+        if (mostrarAtivo1) {
           html += '<div class="portfolio-item-admin bg-slate-950">' +
             '<span class="absolute top-1 left-1 px-1 py-0.5 rounded text-[8px] font-extrabold bg-emerald-500/90 text-white z-10 shadow">🎬 Vídeo 1</span>' +
             '<button type="button" class="btn-remove-galeria-admin" onclick="removerVideoAtivoAdmin(\'youtube_1\')" title="Excluir vídeo principal">×</button>' +
             '<video src="' + vid1Ativo + (vid1Ativo.indexOf('#') > -1 ? '' : '#t=0.001') + '" muted playsinline preload="metadata" class="w-full h-full object-cover"></video>' +
           '</div>';
         }
-        if (!pendVid2 && vid2Ativo) {
+        if (mostrarAtivo2) {
           html += '<div class="portfolio-item-admin bg-slate-950">' +
             '<span class="absolute top-1 left-1 px-1 py-0.5 rounded text-[8px] font-extrabold bg-emerald-500/90 text-white z-10 shadow">🎬 Vídeo 2</span>' +
             '<button type="button" class="btn-remove-galeria-admin" onclick="removerVideoAtivoAdmin(\'youtube_2\')" title="Excluir vídeo secundário">×</button>' +
             '<video src="' + vid2Ativo + (vid2Ativo.indexOf('#') > -1 ? '' : '#t=0.001') + '" muted playsinline preload="metadata" class="w-full h-full object-cover"></video>' +
           '</div>';
         }
+
+        [['youtube_1', 'Vídeo 1 (novo)'], ['youtube_2', 'Vídeo 2 (novo)']].forEach(function(par) {
+          var campo = par[0];
+          var novo = admVideoNovo[campo];
+          if (!novo) return;
+          html += '<div class="portfolio-item-admin item-pendente bg-slate-950">' +
+            '<span class="absolute top-1 left-1 px-1 py-0.5 rounded text-[8px] font-extrabold bg-amber-500/90 text-slate-950 z-10 shadow">⏳ ' + par[1] + '</span>' +
+            '<button type="button" class="btn-remove-galeria-admin" onclick="removerVideoNovoAdmin(\'' + campo + '\')" title="Remover este vídeo">×</button>' +
+            (novo.thumb
+              ? '<img src="' + novo.thumb + '" class="w-full h-full object-cover">'
+              : '<div style="width:100%;height:100%;background:#1a1a22"></div>') +
+          '</div>';
+        });
 
         midiasPendentesFila.forEach(function(item, idx) {
           if (item.tipo === 'video') {
@@ -2486,37 +2631,33 @@
       }
 
       window.removerVideoAtivoAdmin = function(campo) {
-        if (!confirm('Deseja remover este vídeo do cadastro?')) return;
         atualizarLabelsVideoAdmin(campo, '', false);
         var parceiro = listaParceiros.find(function(item) { return String(item.id) === String(parceiroSelecionadoId); });
         if (parceiro) parceiro[campo] = null;
+        mostrarBannerPendente();
         renderGaleriaAdmin();
-        // Persiste a remoção
-        if (parceiroSelecionadoId) {
-          var payload = {};
-          payload[campo] = null;
-          sbPartner.from('parceiros').update(payload).eq('id', parceiroSelecionadoId).then(function(res) {
-            if (res.error) alert('Não foi possível gravar a exclusão: ' + res.error.message);
-          });
-        }
       };
 
       window.removerFotoGaleriaAdmin = function(idx) {
-        if (confirm('Deseja realmente remover esta imagem ativa da galeria?')) {
-          mGaleriaFotosAtual.splice(idx, 1);
-          renderGaleriaAdmin();
-        }
+        mGaleriaFotosAtual.splice(idx, 1);
+        mostrarBannerPendente();
+        renderGaleriaAdmin();
+      };
+
+      window.removerFotoNovaAdmin = function(idx) {
+        admGaleriaNovas.splice(idx, 1);
+        mostrarBannerPendente();
+        renderGaleriaAdmin();
       };
 
       window.removerFotoPendenteAdmin = function(idx) {
-        if (confirm('Deseja recusar e remover esta mídia da fila de pendentes?')) {
-          var pendentesFila = mMidiasPendentesAtual.filter(function(m) { return m.tipo !== 'capa'; });
-          var itemRemover = pendentesFila[idx];
-          if (itemRemover) {
-            mMidiasPendentesAtual = mMidiasPendentesAtual.filter(function(m) { return m !== itemRemover; });
-          }
-          renderGaleriaAdmin();
+        var pendentesFila = mMidiasPendentesAtual.filter(function(m) { return m.tipo !== 'capa'; });
+        var itemRemover = pendentesFila[idx];
+        if (itemRemover) {
+          mMidiasPendentesAtual = mMidiasPendentesAtual.filter(function(m) { return m !== itemRemover; });
         }
+        mostrarBannerPendente();
+        renderGaleriaAdmin();
       };
 
       window.aprovarMidiasArtista = function() {
@@ -2626,12 +2767,26 @@
         modal.classList.remove('flex');
       });
 
-      document.getElementById('btnSalvarFicha').addEventListener('click', function () {
+      document.getElementById('btnSalvarFicha').addEventListener('click', async function () {
         if (!parceiroSelecionadoId) return;
 
         var btn = this;
         btn.disabled = true;
         btn.textContent = 'Salvando...';
+
+        // 1) Envia para o R2 o que foi escolhido (capa, fotos, vídeos) — só agora
+        var parceiroParaEnvio = listaParceiros.find(function(item) { return String(item.id) === String(parceiroSelecionadoId); });
+        if (parceiroParaEnvio) {
+          try {
+            await admPublicarMidiasNovas(parceiroParaEnvio);
+          } catch (errEnvio) {
+            hideLoadingProgress();
+            btn.disabled = false;
+            btn.textContent = 'Salvar Cadastro Completo';
+            alert('Não foi possível enviar as mídias: ' + (errEnvio && errEnvio.message ? errEnvio.message : 'falha desconhecida') + '. Nada foi gravado. Tente de novo.');
+            return;
+          }
+        }
 
         var baseId = document.getElementById('mPerfilBase').value;
         var espId = document.getElementById('mEspecialidade').value;
@@ -2696,8 +2851,13 @@ youtube_2: (document.getElementById('mArtYoutube2').value || '').trim() || (list
           .update(payload)
           .eq('id', parceiroSelecionadoId)
           .then(function (res) {
+            hideLoadingProgress();
             btn.disabled = false;
             btn.textContent = 'Salvar Cadastro Completo';
+            // 2) Só após o banco confirmar: apaga do R2 o que saiu do cadastro
+            if (!res.error) {
+              admConcluirSalvamento(payload, parceiroParaEnvio);
+            }
 
             if (res.error) {
               alert('Erro ao salvar cadastro: ' + res.error.message);
@@ -2715,5 +2875,19 @@ youtube_2: (document.getElementById('mArtYoutube2').value || '').trim() || (list
       });
     })();
   </script>
+  <div id="modal-crop" class="modal-crop-overlay">
+    <div style="width:100%;max-width:520px;background:rgba(15,23,42,0.97);border:1px solid rgba(34,211,238,0.3);border-radius:16px;padding:20px">
+      <h3 id="modalCropTitle" style="font-size:13px;font-weight:700;color:#fff;margin-bottom:10px">Recortar Foto</h3>
+      <div style="width:100%;height:320px;background:#000;border-radius:12px;overflow:hidden;margin-bottom:14px">
+        <img id="image-to-crop" src="" style="max-width:100%">
+      </div>
+      <div style="display:flex;gap:10px;justify-content:flex-end">
+        <button type="button" onclick="fecharCropAdmin()" style="padding:8px 14px;background:rgba(255,255,255,0.1);color:#fff;font-size:12px;font-weight:600;border-radius:8px">Cancelar</button>
+        <button type="button" onclick="aplicarCropAdmin()" style="padding:8px 14px;background:#06b6d4;color:#020617;font-size:12px;font-weight:700;border-radius:8px">Aplicar e Otimizar</button>
+      </div>
+    </div>
+  </div>
+  <div id="avisoTemporario" style="display:none;position:fixed;top:16px;left:50%;transform:translateX(-50%);z-index:210000;max-width:90%;padding:12px 16px;border-radius:12px;font-size:12px;font-weight:600;background:rgba(15,23,42,0.97);color:#fff;border:1px solid rgba(34,211,238,0.4);box-shadow:0 10px 30px rgba(0,0,0,0.4)"></div>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/cropperjs/1.5.13/cropper.min.js"></script>
 </body>
 </html>
