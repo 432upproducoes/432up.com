@@ -390,7 +390,25 @@
       color: var(--text-muted);
     }
 
-      .signature-slot {
+    #area-assinar-cliente.area-assinar-fixed {
+      position: fixed;
+      left: 0;
+      right: 0;
+      bottom: 0;
+      z-index: 9998;
+      background: #fff;
+      border-top: 2px solid #8A10D8;
+      box-shadow: 0 -6px 20px rgba(0,0,0,.25);
+      padding: 12px 14px calc(16px + env(safe-area-inset-bottom, 0px));
+    }
+    #area-assinar-cliente.area-assinar-fixed canvas {
+      width: 100% !important;
+      max-width: none !important;
+      height: 36vh !important;
+      aspect-ratio: auto !important;
+    }
+
+    .signature-slot {
       height: 64px;
       display: flex;
       align-items: flex-end;
@@ -785,15 +803,6 @@
         <!-- 15. ACEITE E ASSINATURA -->
         <div class="section-title" data-sec-base="15" data-sec-label="Aceite e Assinatura">15. Aceite e Assinatura</div>
 
-        <div id="area-assinar-cliente" class="no-print" style="display:none;margin-top:14px;text-align:center;">
-          <p style="font-size:11px;color:#4A4A58;margin-bottom:6px;">Assine no campo abaixo para aceitar este contrato.</p>
-          <canvas id="canvas-assinatura" width="800" height="300" style="width:100%;max-width:420px;height:auto;aspect-ratio:2.6/1;background:#fff;border:1px dashed #8A10D8;border-radius:8px;touch-action:none;cursor:crosshair;"></canvas>
-          <div style="margin-top:8px;display:flex;gap:8px;justify-content:center;">
-            <button type="button" id="btn-limpar-assinatura" style="padding:8px 14px;border-radius:8px;border:1px solid #E2E2EC;background:#fff;cursor:pointer;font-size:12px;">Limpar</button>
-            <button type="button" id="btn-assinar-contrato" style="padding:8px 18px;border-radius:8px;border:none;background:#8A10D8;color:#fff;font-weight:700;cursor:pointer;font-size:12px;">Assinar contrato</button>
-          </div>
-        </div>
-
         <div class="signatures-container">
           <div class="signature-box">
             <div class="signature-slot"><img id="assinatura_empresa_img" alt="" style="display:none;max-height:60px;max-width:200px;"></div><div class="signature-line"></div>
@@ -836,6 +845,17 @@
     </div>
 
   </div>
+  </div>
+
+  <!-- ÁREA DE ASSINATURA DO CLIENTE (fora do contrato, para não sofrer a redução de escala) -->
+  <div id="area-assinar-cliente" class="no-print" style="display:none;">
+    <p style="font-size:12px;color:#1F1F24;margin-bottom:6px;font-weight:700;text-align:center;">Assine no campo abaixo para aceitar este contrato.</p>
+    <p style="font-size:11px;color:#4A4A58;margin-bottom:8px;text-align:center;">No celular, se preferir mais espaço, vire o aparelho para o lado.</p>
+    <canvas id="canvas-assinatura" width="800" height="300" style="width:100%;height:auto;background:#fff;border:1px dashed #8A10D8;border-radius:8px;touch-action:none;cursor:crosshair;"></canvas>
+    <div style="margin-top:8px;display:flex;gap:8px;justify-content:center;">
+      <button type="button" id="btn-limpar-assinatura" style="padding:8px 14px;border-radius:8px;border:1px solid #E2E2EC;background:#fff;cursor:pointer;font-size:12px;">Limpar</button>
+      <button type="button" id="btn-assinar-contrato" style="padding:8px 18px;border-radius:8px;border:none;background:#8A10D8;color:#fff;font-weight:700;cursor:pointer;font-size:12px;">Assinar contrato</button>
+    </div>
   </div>
 
   <!-- DEPENDÊNCIAS FIXAS -->
@@ -2169,7 +2189,9 @@
       const area = document.getElementById('area-assinar-cliente');
       const canvas = document.getElementById('canvas-assinatura');
       if (!area || !canvas) return;
-      area.style.display = '';
+      area.style.display = 'block';
+      area.classList.add('area-assinar-fixed');
+      document.body.style.paddingBottom = '50vh';
 
       const ctx = canvas.getContext('2d');
       ctx.lineWidth = 6;
