@@ -895,6 +895,9 @@
       }
     }
 
+    // Data do contrato atual (AAAA-MM-DD), usada pela edição do admin
+    let dataEditavel = null;
+
     // CARREGAMENTO DO CONTRATO
     async function carregarContrato() {
       const statusEl = document.getElementById('statusMessage');
@@ -980,8 +983,11 @@
 
         setSafeText('proposta-numero-val', proposta.numero ? `#${proposta.numero}` : '', true);
 
-        // Data de emissão derivada de criado_em
-        const dataEmissaoExt = formatarDataExtenso(proposta.criado_em);
+        // Data do contrato: a gravada na 1ª geração do PDF ou a digitada pelo admin.
+        // Antes de qualquer geração, mostra a data de hoje (São Paulo).
+        const hojeSP = new Date().toLocaleDateString('en-CA', { timeZone: 'America/Sao_Paulo' });
+        dataEditavel = proposta.data_contrato ? String(proposta.data_contrato).split('T')[0] : hojeSP;
+        const dataEmissaoExt = formatarDataExtenso(dataEditavel + 'T12:00:00');
         setSafeText('data_emissao_extenso', dataEmissaoExt || '—');
 
         // Parceiro / Vendedor (obtido via Edge Function)
@@ -1292,6 +1298,7 @@
         await aguardarImagens();
         paginarContrato();
         ativarRepaginacaoPorFontes();
+        ativarEdicaoAdmin();
         if (MODO_PDF) setTimeout(() => { document.body.setAttribute('data-pronto', '1'); }, 800);
 
       } catch (err) {
@@ -1976,6 +1983,84 @@
         repagTimer = setTimeout(() => { repagCont++; paginarContrato(); }, 50);
       });
       window.addEventListener('load', () => paginarContrato());
+    }
+
+    // EDIÇÃO DA DATA PELO ADMIN
+    // Só aparece para admin logado. Clique na data, digite, Enter ou "Salvar".
+    // A gravação é feita pela função salvar-data-contrato, que confere o admin no servidor.
+    async function ativarEdicaoAdmin() {
+      if (MODO_PDF) return;
+      try {
+        const { data: sess } = await sbPartner.auth.getSession();
+        const user = sess && sess.session && sess.session.user;
+        if (!user) return;
+        const { data: p } = await sbPartner
+          .from('parceiros')
+          .select('role, nivel, is_admin')
+          .eq('user_id', user.id)
+          .single();
+        if (!p) return;
+        const roleNorm = String(p.role || p.nivel || '').toLowerCase().trim();
+        const isAdmin = roleNorm === 'admin' || roleNorm === 'master' || p.is_admin === true;
+        if (!isAdmin) return;
+      } catch (e) {
+        return;
+      }
+      vincularEdicaoData();
+    }
+
+    const MESES_PT = ['janeiro','fevereiro','março','abril','maio','junho','julho','agosto','setembro','outubro','novembro','dezembro'];
+
+    function vincularEdicaoData() {
+      const el = document.getElementById('data_emissao_extenso');
+      if (!el) return;
+      el.style.cursor = 'pointer';
+      el.style.textDecoration = 'underline dotted';
+      el.title = 'Clique para editar a data do contrato';
+      el.onclick = abrirEditorData;
+    }
+
+    function abrirEditorData() {
+      const el = document.getElementById('data_emissao_extenso');
+      el.onclick = null;
+      el.style.textDecoration = 'none';
+      el.textContent = '';
+
+      const input = document.createElement('input');
+      input.type = 'date';
+      input.value = dataEditavel || '';
+      input.style.cssText = 'font-size:11px;padding:1px 4px;';
+
+      const btn = document.createElement('button');
+      btn.type = 'button';
+      btn.textContent = 'Salvar';
+      btn.style.cssText = 'font-size:11px;margin-left:6px;padding:2px 8px;cursor:pointer;';
+
+      el.append(input, btn);
+      input.focus();
+
+      const salvar = async () => {
+        const valor = input.value;
+        if (!valor) return;
+        btn.disabled = true;
+        btn.textContent = 'Salvando...';
+        const { data, error } = await sbPartner.functions.invoke('salvar-data-contrato', {
+          body: { id: propostaId, data_contrato: valor }
+        });
+        if (error || !data || !data.ok) {
+          alert('Não foi possível salvar a data. Tente novamente.');
+          btn.disabled = false;
+          btn.textContent = 'Salvar';
+          return;
+        }
+        dataEditavel = valor;
+        const [ano, mes, dia] = valor.split('-');
+        el.textContent = parseInt(dia, 10) + ' de ' + MESES_PT[parseInt(mes, 10) - 1] + ' de ' + ano;
+        vincularEdicaoData();
+      };
+
+      btn.addEventListener('click', salvar);
+      input.addEventListener('keydown', (e) => { if (e.key === 'Enter') salvar(); });
     }
 
     document.addEventListener('DOMContentLoaded', carregarContrato);
