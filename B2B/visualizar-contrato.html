@@ -2130,6 +2130,35 @@
       }
     }
 
+    // Recorta o PNG ao redor do traço, para a assinatura ocupar o campo do contrato
+    function recortarAssinatura(canvas, ctx) {
+      const w = canvas.width;
+      const h = canvas.height;
+      const d = ctx.getImageData(0, 0, w, h).data;
+      let minX = w, minY = h, maxX = -1, maxY = -1;
+      for (let y = 0; y < h; y++) {
+        for (let x = 0; x < w; x++) {
+          if (d[(y * w + x) * 4 + 3] > 0) {
+            if (x < minX) minX = x;
+            if (x > maxX) maxX = x;
+            if (y < minY) minY = y;
+            if (y > maxY) maxY = y;
+          }
+        }
+      }
+      if (maxX < 0) return null;
+      const pad = 16;
+      minX = Math.max(0, minX - pad);
+      minY = Math.max(0, minY - pad);
+      maxX = Math.min(w - 1, maxX + pad);
+      maxY = Math.min(h - 1, maxY + pad);
+      const out = document.createElement('canvas');
+      out.width = maxX - minX + 1;
+      out.height = maxY - minY + 1;
+      out.getContext('2d').drawImage(canvas, minX, minY, out.width, out.height, 0, 0, out.width, out.height);
+      return out.toDataURL('image/png');
+    }
+
     function ativarAreaAssinatura() {
       if (MODO_PDF) return;
       const area = document.getElementById('area-assinar-cliente');
@@ -2180,13 +2209,19 @@
         btn.disabled = true;
         btn.textContent = 'Assinando...';
 
-        const assinaturaPng = canvas.toDataURL('image/png');
+        const assinaturaPng = recortarAssinatura(canvas, ctx);
         const { data, error } = await sbPartner.functions.invoke('assinar-contrato', {
           body: { id: propostaId, assinatura: assinaturaPng }
         });
 
         if (error || !data || !data.ok) {
-          alert((data && data.erro) || 'Não foi possível assinar. Tente novamente.');
+          // Mostra a mensagem real devolvida pela função (quando houver)
+          let motivo = (data && data.erro) || null;
+          if (!motivo && error && error.context && typeof error.context.json === 'function') {
+            try { const corpo = await error.context.json(); motivo = corpo.erro || null; } catch (e) {}
+          }
+          console.error('assinar-contrato falhou:', error, data);
+          alert(motivo || 'Não foi possível assinar. Tente novamente.');
           btn.disabled = false;
           btn.textContent = 'Assinar contrato';
           return;
