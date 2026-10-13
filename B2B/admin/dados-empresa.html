@@ -114,16 +114,17 @@
           <div class="leads-filters">
             <div class="field" style="flex:1 1 100%">
               <div style="display:flex;align-items:center;gap:16px;flex-wrap:wrap;">
-                <div style="position:relative;width:240px;height:100px;border:1px dashed rgba(255,255,255,.25);border-radius:12px;display:flex;align-items:center;justify-content:center;background:rgba(255,255,255,.04);">
+                <div style="position:relative;width:240px;height:100px;border:1px dashed rgba(255,255,255,.25);border-radius:12px;display:flex;align-items:center;justify-content:center;background:#fff;">
                   <img id="assinatura_preview" alt="Assinatura" style="display:none;max-width:210px;max-height:88px;">
-                  <span id="assinatura_vazia" style="font-size:12px;color:#94a3b8;">Nenhuma assinatura</span>
+                  <span id="assinatura_vazia" style="font-size:12px;color:#64748b;">Nenhuma assinatura</span>
                   <button type="button" id="btnRemoverAssinatura" class="btn btn-danger" onclick="removerAssinatura()" title="Remover assinatura" style="display:none;position:absolute;top:-10px;right:-10px;width:26px;height:26px;padding:0;border-radius:50%;line-height:1;">✕</button>
                 </div>
                 <div style="display:flex;flex-direction:column;gap:6px;">
-                  <label class="btn" style="cursor:pointer;text-align:center;">📤 Enviar PNG
-                    <input id="assinatura_input" type="file" accept="image/png" hidden onchange="enviarAssinatura(event)">
+                  <label class="btn" style="cursor:pointer;text-align:center;">📤 Enviar arquivo
+                    <input id="assinatura_input" type="file" accept="image/png,image/jpeg" hidden onchange="enviarAssinatura(event)">
                   </label>
-                  <small style="color:#94a3b8;">PNG com fundo transparente, até 2 MB.</small>
+                  <button type="button" class="btn" onclick="abrirDesenhoAssinatura()" style="text-align:center;">✍️ Desenhar assinatura</button>
+                  <small style="color:#94a3b8;">PNG ou JPG, até 2 MB. PNG com fundo transparente fica melhor.</small>
                 </div>
               </div>
             </div>
@@ -209,6 +210,19 @@
       </div>
 
     </main>
+  </div>
+
+  <div id="modalDesenho" style="display:none;position:fixed;inset:0;z-index:99998;background:rgba(0,0,0,.75);align-items:center;justify-content:center;padding:16px;">
+    <div style="background:#0a0f16;border:1px solid rgba(255,255,255,.15);border-radius:16px;padding:20px;max-width:560px;width:100%;">
+      <h3 style="font-size:14px;font-weight:700;color:#fff;margin-bottom:4px;">Desenhe sua assinatura</h3>
+      <p style="font-size:11px;color:#94a3b8;margin-bottom:12px;">Assine com o dedo ou com o Apple Pencil.</p>
+      <canvas id="canvasDesenho" width="1000" height="400" style="width:100%;height:auto;aspect-ratio:2.5/1;background:#fff;border-radius:12px;touch-action:none;cursor:crosshair;"></canvas>
+      <div style="display:flex;gap:8px;justify-content:flex-end;margin-top:14px;flex-wrap:wrap;">
+        <button type="button" class="btn" onclick="limparDesenho()">Limpar</button>
+        <button type="button" class="btn" onclick="fecharDesenhoAssinatura()">Cancelar</button>
+        <button type="button" class="btn" onclick="salvarDesenhoAssinatura()">Salvar assinatura</button>
+      </div>
+    </div>
   </div>
 
   <div id="toastBox"></div>
@@ -342,25 +356,18 @@
     return resp.ok;
   }
 
-  async function enviarAssinatura(ev) {
-    var file = ev.target.files[0];
-    ev.target.value = '';
-    if (!file) return;
-
-    if (file.type !== 'image/png') { toast('Envie um arquivo PNG', 'err'); return; }
-    if (file.size > 2 * 1024 * 1024) { toast('O arquivo passa de 2 MB', 'err'); return; }
+  async function enviarArquivoAssinatura(blob, ext, mime) {
     if (!empresaId) { toast('Dados da empresa não carregados', 'err'); return; }
-
     try {
       var token = await tokenSessaoAtual();
       if (!token) { toast('Sessão expirada. Faça login novamente.', 'err'); return; }
 
       // Nome novo a cada envio: evita que o cache mostre a assinatura antiga
-      var path = 'empresa/assinatura-' + Date.now() + '.png';
+      var path = 'empresa/assinatura-' + Date.now() + '.' + ext;
       var resp = await fetch(R2_UPLOAD_URL + '?path=' + encodeURIComponent(path), {
         method: 'PUT',
-        headers: { 'Authorization': 'Bearer ' + token, 'Content-Type': 'image/png' },
-        body: file
+        headers: { 'Authorization': 'Bearer ' + token, 'Content-Type': mime },
+        body: blob
       });
       var result = await resp.json().catch(function () { return null; });
       if (!resp.ok || !result || !result.ok) {
@@ -387,10 +394,97 @@
       mostrarAssinatura(novaUrl);
       toast('Assinatura salva', 'ok');
     } catch (e) {
-      console.error('enviarAssinatura', e);
+      console.error('enviarArquivoAssinatura', e);
       toast('Erro ao enviar a assinatura', 'err');
     }
   }
+
+  async function enviarAssinatura(ev) {
+    var file = ev.target.files[0];
+    ev.target.value = '';
+    if (!file) return;
+
+    var extensoes = { 'image/png': 'png', 'image/jpeg': 'jpg' };
+    if (!extensoes[file.type]) { toast('Envie um arquivo PNG ou JPG', 'err'); return; }
+    if (file.size > 2 * 1024 * 1024) { toast('O arquivo passa de 2 MB', 'err'); return; }
+
+    await enviarArquivoAssinatura(file, extensoes[file.type], file.type);
+  }
+
+  // ---- DESENHO DA ASSINATURA (dedo ou Apple Pencil) ----
+  var canvasDesenho = null;
+  var ctxDesenho = null;
+  var desenhando = false;
+  var ultimoPonto = null;
+
+  function prepararCanvasDesenho() {
+    canvasDesenho = document.getElementById('canvasDesenho');
+    ctxDesenho = canvasDesenho.getContext('2d');
+    ctxDesenho.lineWidth = 6;
+    ctxDesenho.lineCap = 'round';
+    ctxDesenho.lineJoin = 'round';
+    ctxDesenho.strokeStyle = '#111111';
+
+    canvasDesenho.onpointerdown = function (e) {
+      desenhando = true;
+      ultimoPonto = posicaoCanvas(e);
+      canvasDesenho.setPointerCapture(e.pointerId);
+    };
+    canvasDesenho.onpointermove = function (e) {
+      if (!desenhando) return;
+      var p = posicaoCanvas(e);
+      ctxDesenho.beginPath();
+      ctxDesenho.moveTo(ultimoPonto.x, ultimoPonto.y);
+      ctxDesenho.lineTo(p.x, p.y);
+      ctxDesenho.stroke();
+      ultimoPonto = p;
+    };
+    var parar = function () { desenhando = false; ultimoPonto = null; };
+    canvasDesenho.onpointerup = parar;
+    canvasDesenho.onpointercancel = parar;
+  }
+
+  function posicaoCanvas(e) {
+    var r = canvasDesenho.getBoundingClientRect();
+    return {
+      x: (e.clientX - r.left) * (canvasDesenho.width / r.width),
+      y: (e.clientY - r.top) * (canvasDesenho.height / r.height)
+    };
+  }
+
+  window.abrirDesenhoAssinatura = function () {
+    if (!canvasDesenho) prepararCanvasDesenho();
+    limparDesenho();
+    document.getElementById('modalDesenho').style.display = 'flex';
+  };
+
+  window.fecharDesenhoAssinatura = function () {
+    document.getElementById('modalDesenho').style.display = 'none';
+  };
+
+  window.limparDesenho = function () {
+    if (!canvasDesenho) prepararCanvasDesenho();
+    ctxDesenho.clearRect(0, 0, canvasDesenho.width, canvasDesenho.height);
+  };
+
+  window.salvarDesenhoAssinatura = function () {
+    if (!canvasDesenho) return;
+
+    // Confere se há algum traço antes de salvar
+    var dados = ctxDesenho.getImageData(0, 0, canvasDesenho.width, canvasDesenho.height).data;
+    var temTraco = false;
+    for (var i = 3; i < dados.length; i += 4) {
+      if (dados[i] > 0) { temTraco = true; break; }
+    }
+    if (!temTraco) { toast('Desenhe a assinatura antes de salvar', 'err'); return; }
+
+    // toBlob exporta com fundo transparente: só o traço fica na imagem
+    canvasDesenho.toBlob(function (blob) {
+      if (!blob) { toast('Não foi possível gerar a imagem', 'err'); return; }
+      fecharDesenhoAssinatura();
+      enviarArquivoAssinatura(blob, 'png', 'image/png');
+    }, 'image/png');
+  };
 
   async function removerAssinatura() {
     if (!assinaturaUrlAtual) return;
