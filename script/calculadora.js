@@ -7,7 +7,7 @@ let selectedAddons = {};
 let packageComponents = { bronze: [], prata: [], ouro: [] };
 
 let selection = { scale: null, hours: null, package: null, guestsText: "", guestsCount: 0 };
-let calcFallbackWhatsapp = "";
+let calcFallbackWhatsapp = "5511948564577";
 let globalFormattedPrice = "";
 let globalSpecsList = [];
 let activeIdForPrice = null;
