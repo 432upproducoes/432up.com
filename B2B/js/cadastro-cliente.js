@@ -723,7 +723,9 @@
       if (editandoId) {
         saveResult = await sbPartner.from('co_clientes').update(payload).eq('id', editandoId).select(COLS_RETORNO).single();
       } else {
-        payload.parceiro_responsavel_id = parceiroAtual.id;
+        var pid = await obterParceiroId();
+        if (!pid) { mcShowAlert('Sessão expirada. Faça login novamente.'); return; }
+        payload.parceiro_responsavel_id = pid;
         saveResult = await sbPartner.from('co_clientes').insert([payload]).select(COLS_RETORNO).single();
       }
 
@@ -773,10 +775,8 @@
     }
   });
 
-  partnerRequireAuth().then(function (parceiro) {
-    parceiroAtual = parceiro;
-    if (typeof partnerFillSidebar === 'function') partnerFillSidebar(parceiro);
-
+  /* ===== LIGAÇÕES DO FORMULÁRIO (funcionam logo na abertura, sem esperar o login) ===== */
+  function ligarFormulario() {
     $('mcBtnPF').addEventListener('click', function () { setMcTipo('PF'); });
     $('mcBtnPJ').addEventListener('click', function () { setMcTipo('PJ'); });
     $('mcContatoEhResp').addEventListener('change', atualizarBlocoResponsavel);
@@ -788,30 +788,57 @@
     $('btnAddDataImportante').addEventListener('click', function () {
       adicionarLinhaData({ tipo: '', data: '', descricao: '', recorrencia: 'anual' });
     });
-
-    var idEdicao = new URLSearchParams(window.location.search).get('id');
-    var nomeParam = new URLSearchParams(window.location.search).get('nome');
     if (MODO_MODAL) {
-      document.body.classList.add('modo-modal');
       $('btnCancelarModal').addEventListener('click', function () {
         window.parent.postMessage({ tipo: 'cliente-cancelado' }, window.location.origin);
       });
       $('btnSalvarModal').addEventListener('click', function () { $('mcBtnSalvar').click(); });
-      // Recebe o nome digitado fora do modal (enviado pela Nova Proposta após o aviso 'cliente-pronto')
+      // Nome digitado fora do modal chega também por mensagem (reforço do parâmetro da URL)
       window.addEventListener('message', function (ev) {
         if (ev.origin !== window.location.origin) return;
         var d = ev.data || {};
         if (d.tipo === 'prefill' && d.nome && !$('mcNomeRazao').value) $('mcNomeRazao').value = d.nome;
       });
     }
+  }
+
+  /* Id do parceiro logado, sem redirecionar (usado para gravar um cliente novo) */
+  async function obterParceiroId() {
+    if (parceiroAtual && parceiroAtual.id) return parceiroAtual.id;
+    var s = await sbPartner.auth.getSession();
+    var user = (s && s.data && s.data.session) ? s.data.session.user : null;
+    if (!user) return null;
+    var r = await sbPartner.from('parceiros').select('id').eq('user_id', user.id).single();
+    if (r.error || !r.data) return null;
+    parceiroAtual = { id: r.data.id };
+    return r.data.id;
+  }
+
+  ligarFormulario();
+
+  var idEdicao = new URLSearchParams(window.location.search).get('id');
+  var nomeParam = new URLSearchParams(window.location.search).get('nome');
+
+  if (MODO_MODAL) {
+    // Dentro da Nova Proposta: carrega direto (sem esperar a verificação completa de login)
+    document.body.classList.add('modo-modal');
+    if (nomeParam) $('mcNomeRazao').value = nomeParam;
     carregarOpcoesClientes().then(function () {
       if (idEdicao) carregarClienteParaEdicao(idEdicao);
-      if (MODO_MODAL) window.parent.postMessage({ tipo: 'cliente-pronto' }, window.location.origin);
+      window.parent.postMessage({ tipo: 'cliente-pronto' }, window.location.origin);
     });
-
-    var btnDesk = $('btnLogoutDesk');
-    var btnMob = $('btnLogoutMob');
-    if (btnDesk) btnDesk.addEventListener('click', partnerLogout);
-    if (btnMob) btnMob.addEventListener('click', partnerLogout);
-  });
+  } else {
+    partnerRequireAuth().then(function (parceiro) {
+      parceiroAtual = parceiro;
+      if (typeof partnerFillSidebar === 'function') partnerFillSidebar(parceiro);
+      carregarOpcoesClientes().then(function () {
+        if (idEdicao) carregarClienteParaEdicao(idEdicao);
+        else if (nomeParam) $('mcNomeRazao').value = nomeParam;
+      });
+      var btnDesk = $('btnLogoutDesk');
+      var btnMob = $('btnLogoutMob');
+      if (btnDesk) btnDesk.addEventListener('click', partnerLogout);
+      if (btnMob) btnMob.addEventListener('click', partnerLogout);
+    });
+  }
 })();
