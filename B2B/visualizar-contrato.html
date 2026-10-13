@@ -475,7 +475,7 @@
             <p><strong>Nome/Razão Social:</strong> <span id="cliente_nome_razao">—</span></p>
             <p><strong>CPF/CNPJ:</strong> <span id="cliente_cpf_cnpj">—</span></p>
             <p id="cliente_resp_row" style="display: none;">
-              <strong>Responsável Legal:</strong> <span id="cliente_responsavel_legal">—</span>
+              <strong id="cliente_resp_label">Responsável Legal:</strong> <span id="cliente_responsavel_legal">—</span>
             </p>
             <p id="cliente_endereco_row" style="display: none;">
               <strong>Endereço:</strong> <span id="cliente_endereco">—</span>
@@ -1108,7 +1108,14 @@
           toggleRow('cliente_endereco_row', cliEndCompleto);
 
           // Contato: nome do contato (com cargo), e-mail e telefone
-          const contatoNomeCargo = [
+          const nomeIgual = !!(cliente.contato_nome && cliente.responsavel_legal &&
+            String(cliente.contato_nome).trim().toLowerCase() === String(cliente.responsavel_legal).trim().toLowerCase());
+          const mesmaPessoa = cliente.contato_eh_responsavel === true || nomeIgual;
+
+          const labelResp = document.getElementById('cliente_resp_label');
+          if (labelResp) labelResp.textContent = mesmaPessoa ? 'Responsável legal / Contato:' : 'Responsável Legal:';
+
+          const contatoNomeCargo = mesmaPessoa ? '' : [
             cliente.contato_nome,
             cliente.contato_cargo ? `(${cliente.contato_cargo})` : ''
           ].filter(Boolean).join(' ');
