@@ -1119,7 +1119,16 @@
             cliente.contato_nome,
             cliente.contato_cargo ? `(${cliente.contato_cargo})` : ''
           ].filter(Boolean).join(' ');
-          const contatos = [contatoNomeCargo, cliente.email, cliente.telefone].filter(Boolean).join(' | ');
+          let contatos = [contatoNomeCargo, cliente.email, cliente.telefone].filter(Boolean).join(' | ');
+          if (mesmaPessoa) {
+            // Mesma pessoa: e-mail e telefone entram na linha do responsável; a linha "Contato" some
+            const spanResp = document.getElementById('cliente_responsavel_legal');
+            const contatoEmTelefone = [cliente.email, cliente.telefone].filter(Boolean).join(' | ');
+            if (spanResp && contatoEmTelefone) {
+              spanResp.textContent = [spanResp.textContent, contatoEmTelefone].filter(Boolean).join(' | ');
+            }
+            contatos = '';
+          }
 
           setSafeText('cliente_contato', contatos);
           toggleRow('cliente_contato_row', contatos);
