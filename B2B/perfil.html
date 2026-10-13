@@ -1151,19 +1151,21 @@
         var pendVid2 = midiasPendentesExistentes.some(function(m) { return m.tipo === 'video' && m.campo_destino === 'youtube_2'; });
         var urlVid1 = (parceiroAtual && parceiroAtual.youtube_1) ? String(parceiroAtual.youtube_1) : '';
         var urlVid2 = (parceiroAtual && parceiroAtual.youtube_2) ? String(parceiroAtual.youtube_2) : '';
-        if (urlVid1 && !pendVid1) {
+        if (urlVid1 && !pendVid1 && !videoAtivoRemovido.youtube_1) {
           var src1 = urlVid1 + (urlVid1.indexOf('#') > -1 ? '' : '#t=0.001');
           var divV1 = document.createElement('div');
           divV1.className = 'portfolio-item aprovado';
           divV1.innerHTML = '<span class="absolute top-1 left-1 px-1.5 py-0.5 rounded text-[9px] font-extrabold bg-emerald-500/90 text-white z-10 shadow">🎬 Vídeo 1</span>' +
+                            '<button type="button" class="btn-remove-img" onclick="removerVideoAtivoPerfil(\'youtube_1\')">×</button>' +
                             '<video src="' + src1 + '" muted playsinline preload="metadata" style="width:100%;height:100%;object-fit:cover;background:#000"></video>';
           container.appendChild(divV1);
         }
-        if (urlVid2 && !pendVid2) {
+        if (urlVid2 && !pendVid2 && !videoAtivoRemovido.youtube_2) {
           var src2 = urlVid2 + (urlVid2.indexOf('#') > -1 ? '' : '#t=0.001');
           var divV2 = document.createElement('div');
           divV2.className = 'portfolio-item aprovado';
           divV2.innerHTML = '<span class="absolute top-1 left-1 px-1.5 py-0.5 rounded text-[9px] font-extrabold bg-emerald-500/90 text-white z-10 shadow">🎬 Vídeo 2</span>' +
+                            '<button type="button" class="btn-remove-img" onclick="removerVideoAtivoPerfil(\'youtube_2\')">×</button>' +
                             '<video src="' + src2 + '" muted playsinline preload="metadata" style="width:100%;height:100%;object-fit:cover;background:#000"></video>';
           container.appendChild(divV2);
         }
@@ -1235,6 +1237,14 @@
 
       /* ===== Banner âmbar (alterações pendentes até Salvar) ===== */
       var urlsNoBanco = null;
+
+      var videoAtivoRemovido = { youtube_1: false, youtube_2: false };
+
+      window.removerVideoAtivoPerfil = function (campo) {
+        videoAtivoRemovido[campo] = true;
+        mostrarBannerPendente();
+        renderGaleriaCompleta();
+      };
 
       function mostrarBannerPendente() {
         var b = document.getElementById('bannerPendenteAmbar');
@@ -1759,8 +1769,8 @@
         payload.bio_artistica = document.getElementById('artBio').value.trim() || null;
         payload.rider_tecnico = document.getElementById('artRider').value.trim() || null;
         
-        payload.youtube_1 = parceiroAtual ? (parceiroAtual.youtube_1 || null) : null;
-        payload.youtube_2 = parceiroAtual ? (parceiroAtual.youtube_2 || null) : null;
+        payload.youtube_1 = (parceiroAtual && !videoAtivoRemovido.youtube_1) ? (parceiroAtual.youtube_1 || null) : null;
+        payload.youtube_2 = (parceiroAtual && !videoAtivoRemovido.youtube_2) ? (parceiroAtual.youtube_2 || null) : null;
         
         payload.periodos_bloqueados = periodosBloqueadosArray;
         payload.galeria_fotos = galeriaUrlsExistentes;
@@ -1906,6 +1916,12 @@
             var removidasR2 = (urlsNoBanco || []).filter(function (u) { return urlsDepois.indexOf(u) === -1; });
             removidasR2.forEach(function (u) { deleteR2(u); });
             urlsNoBanco = urlsDepois;
+            if (parceiroAtual) {
+              parceiroAtual.youtube_1 = payload.youtube_1;
+              parceiroAtual.youtube_2 = payload.youtube_2;
+            }
+            videoAtivoRemovido = { youtube_1: false, youtube_2: false };
+            renderGaleriaCompleta();
             if (falhasEnvio.length === 0) esconderBannerPendente();
 
             if (falhasEnvio.length > 0) {
