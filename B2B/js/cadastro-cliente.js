@@ -793,15 +793,20 @@
     var nomeParam = new URLSearchParams(window.location.search).get('nome');
     if (MODO_MODAL) {
       document.body.classList.add('modo-modal');
-      var lc = $('linkCancelar');
-      if (lc) lc.addEventListener('click', function (e) {
-        e.preventDefault();
+      $('btnCancelarModal').addEventListener('click', function () {
         window.parent.postMessage({ tipo: 'cliente-cancelado' }, window.location.origin);
+      });
+      $('btnSalvarModal').addEventListener('click', function () { $('mcBtnSalvar').click(); });
+      // Recebe o nome digitado fora do modal (enviado pela Nova Proposta após o aviso 'cliente-pronto')
+      window.addEventListener('message', function (ev) {
+        if (ev.origin !== window.location.origin) return;
+        var d = ev.data || {};
+        if (d.tipo === 'prefill' && d.nome && !$('mcNomeRazao').value) $('mcNomeRazao').value = d.nome;
       });
     }
     carregarOpcoesClientes().then(function () {
       if (idEdicao) carregarClienteParaEdicao(idEdicao);
-      else if (nomeParam) $('mcNomeRazao').value = nomeParam;
+      if (MODO_MODAL) window.parent.postMessage({ tipo: 'cliente-pronto' }, window.location.origin);
     });
 
     var btnDesk = $('btnLogoutDesk');
