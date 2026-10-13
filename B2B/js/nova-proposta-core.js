@@ -1,4 +1,4 @@
- (function () {
+  (function () {
       'use strict';
       var WHATSAPP_SUPORTE = '';
       var CATALOG_SB_URL = 'https://paetkspbfejtjjkngqej.supabase.co';
@@ -1648,10 +1648,21 @@
       }
       /* ---------- MODAL DO CADASTRO DE CLIENTE (abre cadastro-cliente.html em iframe) ---------- */
       var MC_FAMILIAS_SERVICO = ['DJ', 'Música ao vivo', 'Equipamentos'];
+      /* DIAG-TEMP:INICIO */
+      function diagProp(chave, valor) {
+        var box = document.getElementById('diagPropLinhas');
+        if (!box) return;
+        var linha = document.getElementById('dprop-' + chave);
+        if (!linha) { linha = document.createElement('div'); linha.id = 'dprop-' + chave; box.appendChild(linha); }
+        linha.textContent = chave + ': ' + valor;
+      }
+      window.addEventListener('error', function (e) { diagProp('erro JS', e.message); });
+      /* DIAG-TEMP:FIM */
       var pendingNomeCliente = '';
       function abrirIframeCliente(clienteId, nomePreenchido) {
         if (formularioBloqueadoSomenteLeitura) return;
         pendingNomeCliente = nomePreenchido || '';
+        diagProp('abrir modal', (clienteId ? 'editar ' + clienteId : 'novo') + ' | nome: ' + (nomePreenchido || '-')); /* DIAG-TEMP */
         var params = 'modo=modal';
         if (clienteId) params += '&id=' + encodeURIComponent(clienteId);
         if (nomePreenchido) params += '&nome=' + encodeURIComponent(nomePreenchido);
@@ -1679,6 +1690,7 @@
       window.addEventListener('message', function (ev) {
         if (ev.origin !== window.location.origin) return;
         var d = ev.data || {};
+        diagProp('mensagem recebida', (d.tipo || '?')); /* DIAG-TEMP */
         if (d.tipo === 'cliente-pronto') {
           var fr = document.getElementById('frameCliente');
           if (fr && fr.contentWindow && pendingNomeCliente) {
