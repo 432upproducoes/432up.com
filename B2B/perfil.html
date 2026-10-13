@@ -442,6 +442,10 @@
               </div>
             </div>
           </div>
+          <div class="mt-2 space-y-1 text-[11px] text-slate-400 leading-relaxed">
+            <p>Envie um vídeo comercial de até 60 segundos.</p>
+            <p>Evite vídeos com propagandas, nomes ou contatos. Envie apenas vídeos de performance, sem marca, nome, contato, telefone ou e-mail. Vídeos com logotipo ou logomarca não serão aprovados.</p>
+          </div>
 
           <div class="space-y-4">
             <h2 class="text-sm font-bold text-amber-400 border-b border-amber-500/20 pb-2">📅 6. Estrutura Técnica & Bloqueio de Agenda</h2>
@@ -913,7 +917,7 @@
         alertTimer = setTimeout(function() {
           el.className = '';
           el.textContent = '';
-        }, 3500);
+        }, 6000);
       }
 
       // Aviso ao Telegram (mesmo endpoint usado no cadastro de novo parceiro)
@@ -1120,6 +1124,7 @@
       }
 
       window.excluirFotoCapa = function() {
+        mostrarBannerPendente();
         novaCapaBlob = null;
         capaRemovida = true;
         document.getElementById('capaPreview').style.backgroundImage = 'none';
@@ -1190,6 +1195,21 @@
           container.appendChild(div);
         });
 
+        // Vídeos selecionados (ainda não salvos): miniatura + X para remover
+        [1, 2].forEach(function (n) {
+          var urlVideo = videoPreviewUrls[n];
+          if (!urlVideo) return;
+          var thumb = videoThumbs[n];
+          var divV = document.createElement('div');
+          divV.className = 'portfolio-item pendente';
+          divV.innerHTML = '<span class="absolute top-1 left-1 px-1.5 py-0.5 rounded text-[9px] font-extrabold bg-amber-500/90 text-slate-950 z-10 shadow">⏳ ' + (n === 1 ? 'Vídeo Principal' : 'Vídeo Secundário') + '</span>' +
+                           (thumb
+                             ? '<img src="' + thumb + '" style="width:100%;height:100%;object-fit:cover">'
+                             : '<div style="width:100%;height:100%;background:#1a1a22"></div>') +
+                           '<button type="button" class="btn-remove-img" onclick="removerVideoNovo(' + n + ')">×</button>';
+          container.appendChild(divV);
+        });
+
         // Feedback visual de vagas restantes no bloco de upload da galeria
         var totalAtual = contarFotosGaleriaAtuais();
         var restantes = Math.max(MAX_FOTOS_GALERIA - totalAtual, 0);
@@ -1213,17 +1233,140 @@
         }
       }
 
+      /* ===== Banner âmbar (alterações pendentes até Salvar) ===== */
+      var urlsNoBanco = null;
+
+      function mostrarBannerPendente() {
+        var b = document.getElementById('bannerPendenteAmbar');
+        if (!b) {
+          b = document.createElement('div');
+          b.id = 'bannerPendenteAmbar';
+          b.style.cssText = 'margin-bottom:12px;padding:12px 14px;border-radius:12px;font-size:12px;font-weight:700;line-height:1.5;background:rgba(245,158,11,0.15);color:#fcd34d;border:1px solid rgba(245,158,11,0.45);';
+          b.textContent = 'Alterações pendentes: inclusões e exclusões só terão efeito após clicar em Salvar.';
+          var alvo = document.getElementById('portfolioPreviewContainer');
+          if (alvo && alvo.parentNode) alvo.parentNode.insertBefore(b, alvo);
+        }
+        b.style.display = 'block';
+      }
+
+      function esconderBannerPendente() {
+        var b = document.getElementById('bannerPendenteAmbar');
+        if (b) b.style.display = 'none';
+      }
+
+      /* Lista todas as URLs de mídia do cadastro (valores finais ou, se ausentes, os atuais) */
+      function coletarUrlsFinais(payload, atual) {
+        function pick(k) {
+          if (payload && payload[k] !== undefined) return payload[k];
+          return atual ? atual[k] : null;
+        }
+        var lista = [];
+        (pick('galeria_fotos') || []).forEach(function (u) { if (u) lista.push(u); });
+        (pick('midias_pendentes') || []).forEach(function (m) { if (m && m.url) lista.push(m.url); });
+        [pick('foto_capa_url'), pick('youtube_1'), pick('youtube_2')].forEach(function (u) { if (u) lista.push(u); });
+        return lista;
+      }
+
+      /* Apaga do R2 um arquivo que saiu do cadastro. Só age em URLs do R2. */
+      async function deleteR2(url) {
+        var prefixo = 'https://media.432up.com/';
+        if (!url || String(url).indexOf(prefixo) !== 0) return;
+        var path = String(url).slice(prefixo.length);
+        try {
+          var sessionRes = await sbPartner.auth.getSession();
+          var token = (sessionRes && sessionRes.data && sessionRes.data.session)
+            ? sessionRes.data.session.access_token : null;
+          if (!token) return;
+          await fetch(R2_UPLOAD_URL + '?path=' + encodeURIComponent(path), {
+            method: 'DELETE',
+            headers: { 'Authorization': 'Bearer ' + token }
+          });
+        } catch (err) {
+          console.warn('[432UP] Falha ao apagar do R2:', path, err);
+        }
+      }
+
+      /* ===== Vídeos novos: seleção local, miniatura e remoção antes de salvar ===== */
+      var videoPreviewUrls = { 1: null, 2: null };
+      var videoThumbs = { 1: null, 2: null };
+
+      function gerarMiniaturaVideo(file, cb) {
+        var v = document.createElement('video');
+        var url = URL.createObjectURL(file);
+        var feito = false;
+        function terminar(dataUrl) {
+          if (feito) return;
+          feito = true;
+          URL.revokeObjectURL(url);
+          cb(dataUrl);
+        }
+        v.muted = true;
+        v.playsInline = true;
+        v.setAttribute('playsinline', '');
+        v.setAttribute('muted', '');
+        v.preload = 'auto';
+        v.onloadeddata = function () {
+          v.currentTime = 0.1;
+        };
+        v.onseeked = function () {
+          try {
+            var c = document.createElement('canvas');
+            c.width = v.videoWidth || 320;
+            c.height = v.videoHeight || 180;
+            c.getContext('2d').drawImage(v, 0, 0, c.width, c.height);
+            terminar(c.toDataURL('image/jpeg', 0.8));
+          } catch (e) {
+            terminar(null);
+          }
+        };
+        v.onerror = function () { terminar(null); };
+        setTimeout(function () { terminar(null); }, 5000);
+        v.src = url;
+        v.load();
+      }
+
+      function atualizarPreviewVideo(n) {
+        if (videoPreviewUrls[n]) {
+          URL.revokeObjectURL(videoPreviewUrls[n]);
+          videoPreviewUrls[n] = null;
+        }
+        videoThumbs[n] = null;
+        var input = document.getElementById('artVideo' + n);
+        var arquivo = input && input.files ? input.files[0] : null;
+        if (arquivo) {
+          mostrarBannerPendente();
+          videoPreviewUrls[n] = URL.createObjectURL(arquivo);
+          gerarMiniaturaVideo(arquivo, function (dataUrl) {
+            videoThumbs[n] = dataUrl;
+            renderGaleriaCompleta();
+          });
+        }
+        renderGaleriaCompleta();
+      }
+
+      window.removerVideoNovo = function (n) {
+        mostrarBannerPendente();
+        document.getElementById('artVideo' + n).value = '';
+        atualizarPreviewVideo(n);
+      };
+
+      document.getElementById('artVideo1').addEventListener('change', function () { atualizarPreviewVideo(1); });
+      document.getElementById('artVideo2').addEventListener('change', function () { atualizarPreviewVideo(2); });
+
       window.removerFotoSalva = function(idx) {
+        mostrarBannerPendente();
         galeriaUrlsExistentes.splice(idx, 1);
         renderGaleriaCompleta();
       };
 
       window.removerFotoPendenteSalva = function(idx) {
+        mostrarBannerPendente();
         midiasPendentesExistentes.splice(idx, 1);
         renderGaleriaCompleta();
       };
 
       window.removerFotoNova = function(idx) {
+        mostrarBannerPendente();
         galeriaBlobs.splice(idx, 1);
         renderGaleriaCompleta();
       };
@@ -1274,6 +1417,15 @@
          ====================================================================== */
       window.handleMultipleGaleriaFiles = function(e) {
         var files = e.target.files;
+        if (files && files.length > 0) {
+          var muitoGrandes = Array.from(files).filter(function (f) { return f.size > 10 * 1024 * 1024; });
+          if (muitoGrandes.length > 0) {
+            showAlert(muitoGrandes.length + ' foto(s) passam de 10MB e não foram adicionadas.', 'error');
+            e.target.value = '';
+            return;
+          }
+        }
+        mostrarBannerPendente();
         if (!files || files.length === 0) return;
 
         var todosArquivos = Array.from(files);
@@ -1321,6 +1473,13 @@
       }
 
       window.openCropCapaModal = function(e) {
+        var arqCapa = e.target.files[0];
+        if (arqCapa && arqCapa.size > 10 * 1024 * 1024) {
+          showAlert('A foto de capa precisa ter no máximo 10MB.', 'error');
+          e.target.value = '';
+          return;
+        }
+        mostrarBannerPendente();
         cropMode = 'capa';
         document.getElementById('modalCropTitle').textContent = 'Recortar Foto Principal (WebP 80%)';
         initCropImage(e.target.files[0], 1/1);
@@ -1403,30 +1562,99 @@
         }
       };
 
-      document.getElementById('fAvatar').addEventListener('change', function (e) {
+      async function compactarAvatar(file) {
+        return new Promise(function (resolve, reject) {
+          var reader = new FileReader();
+          reader.onload = function (event) {
+            var img = new Image();
+            img.onload = function () {
+              var MAX_SIZE = 256;
+              var largura = img.width;
+              var altura = img.height;
+
+              if (largura > altura) {
+                if (largura > MAX_SIZE) {
+                  altura = Math.round(altura * MAX_SIZE / largura);
+                  largura = MAX_SIZE;
+                }
+              } else {
+                if (altura > MAX_SIZE) {
+                  largura = Math.round(largura * MAX_SIZE / altura);
+                  altura = MAX_SIZE;
+                }
+              }
+
+              var canvas = document.createElement('canvas');
+              canvas.width = largura;
+              canvas.height = altura;
+              var ctx = canvas.getContext('2d');
+
+              ctx.fillStyle = '#ffffff';
+              ctx.fillRect(0, 0, largura, altura);
+              ctx.drawImage(img, 0, 0, largura, altura);
+
+              var qualidades = [0.78, 0.68, 0.58, 0.48, 0.40, 0.32];
+              var tentativa = 0;
+
+              function gerar() {
+                canvas.toBlob(
+                  function (blob) {
+                    if (!blob) {
+                      reject(new Error('Não foi possível compactar a imagem.'));
+                      return;
+                    }
+
+                    if (blob.size <= 40 * 1024 || tentativa >= qualidades.length - 1) {
+                      var nome = 'avatar-' + Date.now() + '.jpg';
+                      var compactado = new File([blob], nome, {
+                        type: 'image/jpeg',
+                        lastModified: Date.now()
+                      });
+                      resolve(compactado);
+                      return;
+                    }
+                    tentativa++;
+                    gerar();
+                  },
+                  'image/jpeg',
+                  qualidades[tentativa]
+                );
+              }
+              gerar();
+            };
+            img.onerror = function () {
+              reject(new Error('Não foi possível ler a imagem.'));
+            };
+            img.src = event.target.result;
+          };
+          reader.onerror = function () {
+            reject(new Error('Não foi possível carregar a imagem.'));
+          };
+          reader.readAsDataURL(file);
+        });
+      }
+
+      document.getElementById('fAvatar').addEventListener('change', async function (e) {
         var file = e.target.files[0];
         if (!file) return;
 
-        var reader = new FileReader();
-        reader.onload = function (ev) {
-          var img = new Image();
-          img.onload = function() {
-            var canvas = document.createElement('canvas');
-            canvas.width = 400;
-            canvas.height = 400;
-            var ctx = canvas.getContext('2d');
-            ctx.drawImage(img, 0, 0, 400, 400);
+        if (file.size > 5 * 1024 * 1024) {
+          showAlert('A foto precisa ter no máximo 5MB.', 'error');
+          e.target.value = '';
+          novoAvatarFile = null;
+          return;
+        }
 
-            canvas.toBlob(function(blob) {
-              novoAvatarFile = new File([blob], "avatar.jpg", { type: "image/jpeg", lastModified: Date.now() });
-              document.getElementById('avatarPlaceholder').style.display = 'none';
-              document.getElementById('avatarPreview').style.backgroundImage = 'url(' + URL.createObjectURL(blob) + ')';
-              document.getElementById('btnSalvarAvatar').classList.remove('hidden');
-            }, 'image/jpeg', 0.8); 
-          };
-          img.src = ev.target.result;
-        };
-        reader.readAsDataURL(file);
+        try {
+          novoAvatarFile = await compactarAvatar(file);
+          document.getElementById('avatarPlaceholder').style.display = 'none';
+          document.getElementById('avatarPreview').style.backgroundImage = 'url(' + URL.createObjectURL(novoAvatarFile) + ')';
+          document.getElementById('btnSalvarAvatar').classList.remove('hidden');
+        } catch (erro) {
+          showAlert('Não foi possível processar a foto. Tente outra imagem.', 'error');
+          e.target.value = '';
+          novoAvatarFile = null;
+        }
       });
 
       /* =========================================================================
@@ -1667,12 +1895,19 @@
 
           updateLoadingProgress(92, 'Finalizando cadastro...');
 
+          if (urlsNoBanco === null) urlsNoBanco = coletarUrlsFinais({}, parceiroAtual);
           var resUpdate = await sbPartner.from('parceiros').update(payload).eq('id', parceiroAtual.id);
 
           if (resUpdate.error) {
             showAlert('Erro ao salvar: ' + resUpdate.error.message, 'error');
           } else {
             updateLoadingProgress(100, 'Salvo!');
+
+            var urlsDepois = coletarUrlsFinais(payload, parceiroAtual);
+            var removidasR2 = (urlsNoBanco || []).filter(function (u) { return urlsDepois.indexOf(u) === -1; });
+            removidasR2.forEach(function (u) { deleteR2(u); });
+            urlsNoBanco = urlsDepois;
+            if (falhasEnvio.length === 0) esconderBannerPendente();
 
             if (falhasEnvio.length > 0) {
               showAlert('Perfil salvo. Não enviados: ' + falhasEnvio.join(', ') + '. Clique em Salvar para tentar novamente.', 'error');
@@ -1699,6 +1934,8 @@
 
             if (videoOk1) document.getElementById('artVideo1').value = '';
             if (videoOk2) document.getElementById('artVideo2').value = '';
+            atualizarPreviewVideo(1);
+            atualizarPreviewVideo(2);
 
             renderGaleriaCompleta();
 
