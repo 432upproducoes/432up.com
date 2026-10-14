@@ -9,10 +9,9 @@
   <script src="https://cdn.tailwindcss.com"></script>
   <style>
     /*
-      Sticky do resumo:
-      - a coluna (#sidebarTargetAnchor) precisa ESTICAR na altura do grid (self-stretch)
-      - o card interno é que fica position:sticky
-      - items-start no grid sem stretch na coluna faz o sticky “morrer” (pai da mesma altura do card)
+      Desktop sticky:
+      - coluna estica na altura do grid; card interno gruda ao rolar
+      (items-start sem stretch na coluna mata o sticky)
     */
     @media (min-width: 1024px) {
       #sidebarTargetAnchor {
@@ -25,6 +24,46 @@
         position: sticky !important;
         top: 5.5rem !important;
         z-index: 20;
+      }
+    }
+    /* Mobile: resumo fora do fluxo; abre como sheet (~2/3 da tela) */
+    @media (max-width: 1023px) {
+      #sidebarTargetAnchor {
+        display: none;
+      }
+      body.resumo-sheet-open #resumoSheetBackdrop {
+        display: block;
+      }
+      body.resumo-sheet-open #sidebarTargetAnchor {
+        display: block;
+        position: fixed;
+        left: 0;
+        right: 0;
+        bottom: 0;
+        top: auto;
+        height: 66vh;
+        max-height: 66vh;
+        z-index: 48;
+        overflow-y: auto;
+        -webkit-overflow-scrolling: touch;
+        padding: 0;
+        margin: 0;
+        border-radius: 1rem 1rem 0 0;
+        box-shadow: 0 -12px 40px rgba(0,0,0,0.55);
+      }
+      body.resumo-sheet-open #sidebarTargetAnchor > .glass-amber-summary {
+        border-radius: 1rem 1rem 0 0;
+        min-height: 100%;
+        padding-bottom: 5.5rem; /* espaço da barra de total/ações */
+      }
+      body.resumo-sheet-open #mobileBarraResumo {
+        z-index: 49;
+      }
+      #resumoSheetHandle {
+        display: none;
+      }
+      body.resumo-sheet-open #resumoSheetHandle {
+        display: flex;
       }
     }
   </style>
@@ -214,9 +253,12 @@
             </div>
           </div>
         </div>
-        <!-- SIDEBAR RESUMO COMERCIAL (DESKTOP STICKY): coluna estica; card interno gruda ao rolar -->
+        <!-- SIDEBAR RESUMO COMERCIAL (desktop sticky / mobile sheet) -->
         <div id="sidebarTargetAnchor" class="space-y-6 lg:self-stretch">
           <div class="glass-amber-summary sticky-card p-6 rounded-2xl space-y-5">
+            <div id="resumoSheetHandle" class="justify-center pt-0 pb-2 -mt-1 cursor-grab active:cursor-grabbing">
+              <span class="block w-10 h-1 rounded-full bg-white/25 mx-auto" aria-hidden="true"></span>
+            </div>
             <h3 class="text-sm font-bold uppercase tracking-wider text-amber-400 border-b border-amber-500/20 pb-2 shrink-0">Resumo do Orçamento</h3>
             <div class="resumo-scroll space-y-5">
             <div class="space-y-2 text-xs text-slate-300">
@@ -296,13 +338,16 @@
       </div>
     </main>
   </div>
+  <!-- Backdrop do sheet mobile do resumo (toque fora fecha) -->
+  <div id="resumoSheetBackdrop" class="lg:hidden fixed inset-0 z-[47] hidden bg-black/55 backdrop-blur-[2px]" aria-hidden="true"></div>
   <!-- BARRA FIXA MOBILE (BANDEIRA INFERIOR) -->
   <div id="mobileBarraResumo" class="lg:hidden fixed bottom-0 left-0 right-0 z-50 glass-amber-summary p-4 border-t border-amber-500/30 flex items-center justify-between shadow-[0_-10px_30px_rgba(0,0,0,0.8)]">
-    <div class="pr-2">
+    <!-- Área clicável: só o total — abre o resumo em sheet (~2/3 da tela) -->
+    <button type="button" id="mobileResumoHit" class="pr-2 text-left min-w-0 flex-1 cursor-pointer bg-transparent border-0 p-0">
       <span class="text-[10px] uppercase font-bold text-slate-400 block">Total Estimado</span>
       <div id="mobileValorTotal" class="text-sm font-bold text-amber-400 leading-tight">Selecione as opções acima</div>
       <span id="mobileComissaoBox" class="text-[10px] text-amber-400 font-semibold block hidden">Comissão: <span id="mobileComissaoValor">R$ 0,00</span></span>
-    </div>
+    </button>
     <div id="containerAcoesMobile" class="flex gap-2 shrink-0">
       <button id="mobileBtnSalvarRascunho" class="px-3 py-2 rounded-xl bg-slate-800 text-cyan-300 font-bold text-xs border border-cyan-500/30 cursor-pointer">
         Rascunho
