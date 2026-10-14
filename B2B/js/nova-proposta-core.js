@@ -1,4 +1,4 @@
-    (function () {
+  (function () {
       'use strict';
       var WHATSAPP_SUPORTE = '';
       var CATALOG_SB_URL = 'https://paetkspbfejtjjkngqej.supabase.co';
@@ -378,6 +378,11 @@
             h.parent.appendChild(anchor);
           }
         }
+        if (anchor) {
+          anchor.style.cssText = '';
+          var card = anchor.querySelector('.glass-amber-summary, .sticky-card');
+          if (card) card.style.cssText = '';
+        }
         document.body.classList.remove('resumo-sheet-open');
         var bd = document.getElementById('resumoSheetBackdrop');
         if (bd) bd.setAttribute('aria-hidden', 'true');
@@ -392,6 +397,26 @@
           portal._home = { parent: anchor.parentElement, next: anchor.nextSibling };
         }
         if (anchor.parentElement !== portal) portal.appendChild(anchor);
+        // Força visibilidade (ganha de qualquer CSS com display:none)
+        anchor.style.setProperty('display', 'block', 'important');
+        anchor.style.setProperty('visibility', 'visible', 'important');
+        anchor.style.setProperty('opacity', '1', 'important');
+        anchor.style.setProperty('height', 'auto', 'important');
+        anchor.style.setProperty('min-height', '100%', 'important');
+        var card = anchor.querySelector('.glass-amber-summary') || anchor.querySelector('.sticky-card');
+        if (card) {
+          card.style.setProperty('display', 'flex', 'important');
+          card.style.setProperty('flex-direction', 'column', 'important');
+          card.style.setProperty('visibility', 'visible', 'important');
+          card.style.setProperty('opacity', '1', 'important');
+          card.style.setProperty('position', 'relative', 'important');
+          card.style.setProperty('top', 'auto', 'important');
+          card.style.setProperty('max-height', 'none', 'important');
+          card.style.setProperty('overflow', 'visible', 'important');
+          card.style.setProperty('color', '#e2e8f0', 'important');
+          card.style.setProperty('min-height', '100%', 'important');
+          card.style.setProperty('padding', '1.25rem 1.25rem 5.5rem', 'important');
+        }
         document.body.classList.add('resumo-sheet-open');
         var bd = document.getElementById('resumoSheetBackdrop');
         if (bd) bd.setAttribute('aria-hidden', 'false');
@@ -434,9 +459,80 @@
           if (window.innerWidth >= 1024) fecharResumoSheet();
         });
       }
-      /** Sticky desktop: css/nova-proposta.css já resolve (.sticky-card + stretch no grid). */
+      /**
+       * VIA LATERAL: não usa position:sticky (quebrado pelo overflow-x do style.css da raiz).
+       * No desktop, o card fica position:fixed enquanto a coluna da esquerda está na tela.
+       */
       function setupDesktopStickyResumo() {
-        /* no-op: não forçar position/minHeight — brigava com o CSS do projeto */
+        var col = document.getElementById('sidebarTargetAnchor');
+        if (!col) return;
+        var topGap = 88;
+        var pinned = false;
+
+        function clearPin(card) {
+          if (!card) return;
+          card.style.position = '';
+          card.style.top = '';
+          card.style.left = '';
+          card.style.width = '';
+          card.style.zIndex = '';
+          card.style.maxHeight = '';
+          card.style.overflowY = '';
+          pinned = false;
+        }
+
+        function onScroll() {
+          var card = col.querySelector('.glass-amber-summary') || col.querySelector('.sticky-card');
+          if (!card) return;
+
+          if (window.innerWidth < 1024) {
+            clearPin(card);
+            return;
+          }
+
+          var left = document.querySelector('main .lg\:col-span-2') || document.querySelector('main .min-w-0');
+          var colRect = col.getBoundingClientRect();
+          var leftRect = left ? left.getBoundingClientRect() : colRect;
+          var cardH = card.offsetHeight || 0;
+          var maxH = window.innerHeight - topGap - 16;
+
+          // Ainda não chegou no ponto de grudar
+          if (colRect.top > topGap) {
+            clearPin(card);
+            return;
+          }
+
+          // Acabou o conteúdo da esquerda — solta
+          if (leftRect.bottom <= topGap + 40) {
+            clearPin(card);
+            return;
+          }
+
+          var top = topGap;
+          // Se o fim da coluna esquerda está perto, não deixa o card “vazar” abaixo
+          if (leftRect.bottom < topGap + Math.min(cardH, maxH)) {
+            top = Math.max(8, leftRect.bottom - Math.min(cardH, maxH));
+          }
+
+          card.style.position = 'fixed';
+          card.style.top = top + 'px';
+          card.style.left = colRect.left + 'px';
+          card.style.width = colRect.width + 'px';
+          card.style.zIndex = '30';
+          card.style.maxHeight = maxH + 'px';
+          card.style.overflowY = 'auto';
+          pinned = true;
+        }
+
+        window.addEventListener('scroll', onScroll, { passive: true });
+        window.addEventListener('resize', function () {
+          var card = col.querySelector('.glass-amber-summary') || col.querySelector('.sticky-card');
+          clearPin(card);
+          onScroll();
+        });
+        setTimeout(onScroll, 200);
+        setTimeout(onScroll, 800);
+        setTimeout(onScroll, 2000);
       }
       function aplicarTravaSomenteLeitura(statusTexto) {
         formularioBloqueadoSomenteLeitura = true;
