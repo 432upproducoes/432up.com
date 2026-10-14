@@ -9,42 +9,9 @@
   <script src="https://cdn.tailwindcss.com"></script>
   <style>
     /*
-      Desktop sticky:
-      - coluna estica na altura do grid; card interno gruda ao rolar
-      (items-start sem stretch na coluna mata o sticky)
+      Desktop sticky: deixa o css/nova-proposta.css mandar
+      (.grid { align-items: stretch } + .sticky-card { position: sticky; top: 6rem }).
     */
-    @media (min-width: 1024px) {
-      #sidebarTargetAnchor {
-        align-self: stretch !important;
-        height: 100%;
-      }
-      #sidebarTargetAnchor > .sticky-card,
-      #sidebarTargetAnchor > .glass-amber-summary {
-        position: -webkit-sticky !important;
-        position: sticky !important;
-        top: 5.5rem !important;
-        z-index: 20;
-      }
-    }
-    /* Ao abrir o resumo no mobile, o header e o menu não cobrem o sheet */
-    body.resumo-sheet-open #calc-header,
-    body.resumo-sheet-open #mobile-menu { z-index: 0 !important; }
-    /* Desktop: a coluna do resumo é que gruda ao rolar (não o card interno) */
-    @media (min-width: 1024px) {
-      #sidebarTargetAnchor {
-        position: -webkit-sticky !important;
-        position: sticky !important;
-        top: 6rem !important;
-        align-self: start !important;
-        height: auto !important;
-        overflow: visible !important;
-      }
-      #sidebarTargetAnchor > .sticky-card {
-        position: relative !important;
-        top: auto !important;
-      }
-    }
-    /* Mobile: resumo escondido no fluxo; ao abrir, a coluna inteira vai pro portal no body */
     @media (max-width: 1023px) {
       #sidebarTargetAnchor { display: none !important; }
       #resumoSheetBackdrop {
@@ -71,7 +38,6 @@
         background: #0a1220;
       }
       body.resumo-sheet-open #resumoSheetPortal { display: block; }
-      /* Dentro do portal o resumo VOLTA a aparecer (específico o bastante p/ ganhar do display:none) */
       body.resumo-sheet-open #resumoSheetPortal #sidebarTargetAnchor {
         display: block !important;
         height: auto !important;
@@ -79,8 +45,14 @@
         padding: 0;
         margin: 0;
       }
-      body.resumo-sheet-open #resumoSheetPortal .glass-amber-summary {
-        display: block !important;
+      body.resumo-sheet-open #resumoSheetPortal .glass-amber-summary,
+      body.resumo-sheet-open #resumoSheetPortal .sticky-card {
+        display: flex !important;
+        flex-direction: column !important;
+        position: relative !important;
+        top: auto !important;
+        max-height: none !important;
+        overflow: visible !important;
         border-radius: 1rem 1rem 0 0;
         min-height: 100%;
         padding: 1.25rem 1.25rem 5.5rem;
@@ -103,7 +75,8 @@
     <!-- CONTEÚDO PRINCIPAL -->
     <main class="flex-1 p-4 lg:p-8 space-y-6 pt-12 lg:pt-14 pb-28 lg:pb-16 w-full max-w-5xl mx-auto">
       <div id="formAlert" class="p-3 rounded-xl text-xs font-semibold"></div>
-      <div class="grid grid-cols-1 lg:grid-cols-3 gap-8 items-start">
+      <!-- items-stretch no desktop vem do nova-proposta.css (.grid { align-items: stretch }) -->
+      <div class="grid grid-cols-1 lg:grid-cols-3 gap-8">
         <!-- ETAPAS DO SIMULADOR -->
         <div class="lg:col-span-2 space-y-6 min-w-0">
           <div>
@@ -277,8 +250,8 @@
             </div>
           </div>
         </div>
-        <!-- SIDEBAR RESUMO COMERCIAL (desktop sticky / mobile sheet) -->
-        <div id="sidebarTargetAnchor" class="space-y-6 lg:self-stretch">
+        <!-- SIDEBAR: sticky via css/nova-proposta.css (.sticky-card); mobile sheet via JS portal -->
+        <div id="sidebarTargetAnchor" class="space-y-6">
           <div class="glass-amber-summary sticky-card p-6 rounded-2xl space-y-5">
             <div id="resumoSheetHandle" class="justify-center pt-0 pb-2 -mt-1 cursor-grab active:cursor-grabbing">
               <span class="block w-10 h-1 rounded-full bg-white/25 mx-auto" aria-hidden="true"></span>
