@@ -731,14 +731,17 @@ var COLS_RETORNO = 'id, nome_razao, nome_fantasia, cidade, bairro, cep, cpf_cnpj
 
       if (saveResult.error) {
         console.error('[432UP Partner] Erro no salvamento do cliente:', saveResult.error);
-        mcShowAlert('Não foi possível salvar os dados do cliente. Tente novamente ou contate o suporte.');
+        mcShowAlert('Não foi possível salvar: ' + (saveResult.error.message || 'tente novamente.'));
+      } else if (MODO_MODAL) {
+        // Primeiro avisa o pai (fechar modal + selecionar cliente); depois feedback local
+        try {
+          window.parent.postMessage({ tipo: 'cliente-salvo', cliente: saveResult.data }, '*');
+        } catch (postErr) {
+          console.error('[432UP Partner] Falha ao enviar cliente ao pai:', postErr);
+          mcShowAlert('Cliente salvo, mas não foi possível devolver à proposta. Feche e selecione na busca.');
+        }
       } else {
         showAlert(editandoId ? 'Cliente atualizado com sucesso.' : 'Cliente cadastrado com sucesso.', 'success');
-        if (MODO_MODAL) {
-          // Aberto dentro da Nova Proposta: devolve o cliente salvo e não reseta o formulário
-          window.parent.postMessage({ tipo: 'cliente-salvo', cliente: saveResult.data }, '*');
-          return;
-        }
         if (!editandoId) {
           setTimeout(function () {
             $('formCadastroCliente').reset();
@@ -819,13 +822,16 @@ var COLS_RETORNO = 'id, nome_razao, nome_fantasia, cidade, bairro, cep, cpf_cnpj
   var nomeParam = new URLSearchParams(window.location.search).get('nome');
 
   if (MODO_MODAL) {
-    // Dentro da Nova Proposta: carrega direto (sem esperar a verificação completa de login)
+    // Dentro da Nova Proposta: carrega direto; pré-aquece sessão do parceiro para o Salvar
     document.body.classList.add('modo-modal');
     if (nomeParam) $('mcNomeRazao').value = nomeParam;
-    carregarOpcoesClientes().then(function () {
-      if (idEdicao) carregarClienteParaEdicao(idEdicao);
+    obterParceiroId().then(function () {
+      return carregarOpcoesClientes();
+    }).then(function () {
+      if (idEdicao) return carregarClienteParaEdicao(idEdicao);
+    }).then(function () {
       window.parent.postMessage({ tipo: 'cliente-pronto' }, '*');
-    }).catch(function (err) {
+    }).catch(function () {
       window.parent.postMessage({ tipo: 'cliente-pronto' }, '*');
     });
   } else {

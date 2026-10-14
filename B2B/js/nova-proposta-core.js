@@ -1657,8 +1657,9 @@
         frame.src = 'about:blank';
         setTimeout(function () {
           frame.src = url;
+          // display:flex via style evita conflito Tailwind hidden vs flex
           modal.classList.remove('hidden');
-          modal.classList.add('flex');
+          modal.style.display = 'flex';
         }, 30);
       }
       function abrirModalCliente(termoPreenchido) {
@@ -1677,13 +1678,12 @@
         var frame = document.getElementById('frameCliente');
         if (modal) {
           modal.classList.add('hidden');
-          modal.classList.remove('flex');
+          modal.style.display = 'none';
         }
         if (frame) frame.src = 'about:blank';
         pendingNomeCliente = '';
       }
       window.addEventListener('message', function (ev) {
-        // Aceita same-origin; no iPad às vezes origin vem vazio em file/blob — tolera se data for nossa
         var d = ev.data || {};
         if (!d || typeof d.tipo !== 'string') return;
         if (ev.origin && ev.origin !== window.location.origin && ev.origin !== 'null') return;
@@ -1692,8 +1692,7 @@
           if (fr && fr.contentWindow && pendingNomeCliente) {
             try {
               fr.contentWindow.postMessage({ tipo: 'prefill', nome: pendingNomeCliente }, '*');
-            } catch (e) {
-            }
+            } catch (e) { /* ignore */ }
           }
           return;
         }
