@@ -795,8 +795,13 @@ var COLS_RETORNO = 'id, nome_razao, nome_fantasia, cidade, bairro, cep, cpf_cnpj
       $('btnCancelarModal').addEventListener('click', function () {
         window.parent.postMessage({ tipo: 'cliente-cancelado' }, '*');
       });
-      $('btnSalvarModal').addEventListener('click', function () { $('mcBtnSalvar').click(); });
-      // Nome digitado fora do modal chega também por mensagem (reforço do parâmetro da URL)
+      // Não usar click no mcBtnSalvar escondido (#acoesRodape): no Safari/iPad o submit some vezes não dispara.
+      $('btnSalvarModal').addEventListener('click', function () {
+        var form = $('formCadastroCliente');
+        if (!form) return;
+        if (typeof form.reportValidity === 'function' && !form.reportValidity()) return;
+        submitCadastroCliente({ preventDefault: function () {} });
+      });
       window.addEventListener('message', function (ev) {
         var d = ev.data || {};
         if (d.tipo === 'prefill' && d.nome && !$('mcNomeRazao').value) $('mcNomeRazao').value = d.nome;
@@ -825,6 +830,8 @@ var COLS_RETORNO = 'id, nome_razao, nome_fantasia, cidade, bairro, cep, cpf_cnpj
     // Dentro da Nova Proposta: carrega direto; pré-aquece sessão do parceiro para o Salvar
     document.body.classList.add('modo-modal');
     if (nomeParam) $('mcNomeRazao').value = nomeParam;
+    // Garante id de edição antes do async (evita salvar como "novo" se o usuário for rápido)
+    if (idEdicao) mcClienteEditandoId = idEdicao;
     obterParceiroId().then(function () {
       return carregarOpcoesClientes();
     }).then(function () {
