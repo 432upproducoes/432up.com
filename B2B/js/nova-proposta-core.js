@@ -337,6 +337,7 @@
         atualizarLabelFCep();
         setupMobileBarAutoFade();
         setupResumoSheetMobile();
+        setupDesktopStickyResumo();
         aplicarPermissaoDesconto();
         var params = new URLSearchParams(window.location.search);
         propostaEdicaoId = params.get('id');
@@ -367,21 +368,35 @@
         /* No mobile o resumo vira sheet sob demanda; a barra inferior permanece sempre visível. */
       }
       function fecharResumoSheet() {
+        var portal = document.getElementById('resumoSheetPortal');
+        var anchor = document.getElementById('sidebarTargetAnchor');
+        var card = portal ? portal.querySelector('.glass-amber-summary') : null;
+        if (!card && anchor) card = anchor.querySelector('.glass-amber-summary');
+        if (portal && card && anchor && card.parentElement === portal) {
+          anchor.appendChild(card);
+        }
         document.body.classList.remove('resumo-sheet-open');
         var bd = document.getElementById('resumoSheetBackdrop');
         if (bd) bd.setAttribute('aria-hidden', 'true');
+        if (portal) portal.setAttribute('aria-hidden', 'true');
       }
       function abrirResumoSheet() {
         if (window.innerWidth >= 1024) return;
+        var portal = document.getElementById('resumoSheetPortal');
+        var anchor = document.getElementById('sidebarTargetAnchor');
+        var card = anchor ? anchor.querySelector('.glass-amber-summary') : null;
+        if (!portal || !card) return;
+        if (card.parentElement !== portal) portal.appendChild(card);
         document.body.classList.add('resumo-sheet-open');
         var bd = document.getElementById('resumoSheetBackdrop');
         if (bd) bd.setAttribute('aria-hidden', 'false');
+        portal.setAttribute('aria-hidden', 'false');
+        try { portal.scrollTop = 0; } catch (e) { /* ignore */ }
       }
       function setupResumoSheetMobile() {
         var hit = document.getElementById('mobileResumoHit');
         var bd = document.getElementById('resumoSheetBackdrop');
-        var sheet = document.getElementById('sidebarTargetAnchor');
-        var handle = document.getElementById('resumoSheetHandle');
+        var portal = document.getElementById('resumoSheetPortal');
         if (hit) {
           hit.addEventListener('click', function (e) {
             e.preventDefault();
@@ -390,10 +405,7 @@
             abrirResumoSheet();
           });
         }
-        if (bd) {
-          bd.addEventListener('click', function () { fecharResumoSheet(); });
-        }
-        // Deslize para baixo no sheet (ou no puxador) fecha — não fecha por toque nos botões da barra
+        if (bd) bd.addEventListener('click', function () { fecharResumoSheet(); });
         var startY = null;
         function onTouchStart(e) {
           if (!document.body.classList.contains('resumo-sheet-open')) return;
@@ -409,17 +421,57 @@
           startY = null;
           if (dy > 64) fecharResumoSheet();
         }
-        if (sheet) {
-          sheet.addEventListener('touchstart', onTouchStart, { passive: true });
-          sheet.addEventListener('touchend', onTouchEnd, { passive: true });
-        }
-        if (handle) {
-          handle.addEventListener('touchstart', onTouchStart, { passive: true });
-          handle.addEventListener('touchend', onTouchEnd, { passive: true });
+        if (portal) {
+          portal.addEventListener('touchstart', onTouchStart, { passive: true });
+          portal.addEventListener('touchend', onTouchEnd, { passive: true });
         }
         window.addEventListener('resize', function () {
           if (window.innerWidth >= 1024) fecharResumoSheet();
         });
+      }
+      /** Sticky desktop via JS — não depende de overflow/z-index do CSS global do site */
+      function setupDesktopStickyResumo() {
+        var col = document.getElementById('sidebarTargetAnchor');
+        if (!col) return;
+        var card = null;
+        var pinned = false;
+        var cardWidth = 0;
+        var topGap = 88;
+        function clearPin() {
+          if (!card) return;
+          card.style.position = '';
+          card.style.top = '';
+          card.style.left = '';
+          card.style.width = '';
+          card.style.zIndex = '';
+          pinned = false;
+        }
+        function applyPin(left) {
+          if (!card) return;
+          card.style.position = 'fixed';
+          card.style.top = topGap + 'px';
+          card.style.left = left + 'px';
+          card.style.width = cardWidth + 'px';
+          card.style.zIndex = '20';
+          pinned = true;
+        }
+        function onScroll() {
+          if (window.innerWidth < 1024) { clearPin(); return; }
+          card = col.querySelector('.glass-amber-summary');
+          if (!card) return;
+          var colR = col.getBoundingClientRect();
+          var cardH = card.offsetHeight || 0;
+          if (colR.top <= topGap && colR.bottom > topGap + cardH + 8) {
+            if (!pinned) cardWidth = card.getBoundingClientRect().width;
+            applyPin(colR.left);
+          } else {
+            clearPin();
+          }
+        }
+        window.addEventListener('scroll', onScroll, { passive: true });
+        window.addEventListener('resize', function () { clearPin(); onScroll(); });
+        setTimeout(onScroll, 400);
+        setTimeout(onScroll, 1200);
       }
       function aplicarTravaSomenteLeitura(statusTexto) {
         formularioBloqueadoSomenteLeitura = true;
