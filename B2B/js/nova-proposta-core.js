@@ -376,32 +376,76 @@
         if (bd) bd.setAttribute('aria-hidden', 'true');
         if (portal) {
           portal.setAttribute('aria-hidden', 'true');
-          portal.innerHTML = '';
+          // anima para baixo antes de limpar
+          portal.style.transform = 'translateY(100%)';
+          setTimeout(function () {
+            if (!document.body.classList.contains('resumo-sheet-open')) {
+              portal.innerHTML = '';
+              portal.style.transform = '';
+            }
+          }, 320);
         }
       }
       function abrirResumoSheet() {
         if (window.innerWidth >= 1024) return;
         var portal = document.getElementById('resumoSheetPortal');
-        var card = document.querySelector('#sidebarTargetAnchor .np-resumo-card')
-          || document.querySelector('#sidebarTargetAnchor .glass-amber-summary');
-        if (!portal || !card) {
-          console.warn('[NP] abrirResumoSheet: portal ou card ausente');
-          return;
-        }
-        // CLONE (não move o original) — evita display:none / stacking context
-        portal.innerHTML = '';
-        var clone = card.cloneNode(true);
-        clone.classList.add('np-resumo-card');
-        // Remove ids duplicados problemáticos no clone (mantém texto legível)
-        clone.querySelectorAll('[id]').forEach(function (el) {
-          el.removeAttribute('id');
-        });
-        portal.appendChild(clone);
+        var anchor = document.getElementById('sidebarTargetAnchor');
+        if (!portal || !anchor) return;
+
+        var prev = {
+          display: anchor.style.display,
+          position: anchor.style.position,
+          left: anchor.style.left,
+          top: anchor.style.top,
+          width: anchor.style.width,
+          opacity: anchor.style.opacity,
+          pointerEvents: anchor.style.pointerEvents
+        };
+        anchor.style.setProperty('display', 'block', 'important');
+        anchor.style.setProperty('position', 'fixed', 'important');
+        anchor.style.setProperty('left', '-10000px', 'important');
+        anchor.style.setProperty('top', '0', 'important');
+        anchor.style.setProperty('width', '360px', 'important');
+        anchor.style.setProperty('opacity', '0', 'important');
+        anchor.style.setProperty('pointer-events', 'none', 'important');
+
+        var card = anchor.querySelector('.np-resumo-card') || anchor.querySelector('.glass-amber-summary');
+        var html = card ? card.innerHTML : '';
+
+        anchor.style.display = prev.display;
+        anchor.style.position = prev.position;
+        anchor.style.left = prev.left;
+        anchor.style.top = prev.top;
+        anchor.style.width = prev.width;
+        anchor.style.opacity = prev.opacity;
+        anchor.style.pointerEvents = prev.pointerEvents;
+        anchor.style.removeProperty('display');
+
+        if (!html) html = '<p style="color:#fbbf24;padding:12px">Resumo indisponível.</p>';
+
+        portal.innerHTML =
+          '<div class="np-resumo-card glass-amber-summary" style="display:block!important;color:#e2e8f0!important;' +
+          'padding:1.25rem 1.25rem 5.5rem!important;min-height:100%;' +
+          'background:linear-gradient(135deg,rgba(245,158,11,0.12),rgba(10,18,28,0.96));' +
+          'border-radius:1rem 1rem 0 0;">' +
+          '<div style="text-align:center;padding:8px 0 12px;touch-action:none;" data-np-sheet-handle="1">' +
+          '<span style="display:inline-block;width:40px;height:4px;border-radius:99px;background:rgba(255,255,255,0.28)"></span></div>' +
+          html + '</div>';
+        portal.querySelectorAll('[id]').forEach(function (el) { el.removeAttribute('id'); });
+
+        portal.style.transition = 'transform 0.35s cubic-bezier(0.32, 0.72, 0, 1)';
+        portal.style.transform = 'translateY(100%)';
         document.body.classList.add('resumo-sheet-open');
         var bd = document.getElementById('resumoSheetBackdrop');
         if (bd) bd.setAttribute('aria-hidden', 'false');
         portal.setAttribute('aria-hidden', 'false');
-        try { portal.scrollTop = 0; } catch (e) {}
+        // próximo frame: sobe
+        requestAnimationFrame(function () {
+          requestAnimationFrame(function () {
+            portal.style.transform = 'translateY(0)';
+            try { portal.scrollTop = 0; } catch (e) {}
+          });
+        });
       }
       function setupResumoSheetMobile() {
         var hit = document.getElementById('mobileResumoHit');
@@ -416,105 +460,134 @@
           });
         }
         if (bd) bd.addEventListener('click', function () { fecharResumoSheet(); });
-        var startY = null;
-        function onTouchStart(e) {
-          if (!document.body.classList.contains('resumo-sheet-open')) return;
-          var t = e.touches && e.touches[0];
-          if (!t) return;
-          startY = t.clientY;
-        }
-        function onTouchEnd(e) {
-          if (startY == null) return;
-          var t = e.changedTouches && e.changedTouches[0];
-          if (!t) { startY = null; return; }
-          var dy = t.clientY - startY;
-          startY = null;
-          if (dy > 64) fecharResumoSheet();
-        }
+
+        // Fecha só com puxão para baixo NO TOPO do sheet (scrollTop === 0).
+        // Rolagem normal do conteúdo NÃO fecha.
+        var startY = 0;
+        var startScroll = 0;
+        var tracking = false;
         if (portal) {
-          portal.addEventListener('touchstart', onTouchStart, { passive: true });
-          portal.addEventListener('touchend', onTouchEnd, { passive: true });
+          portal.addEventListener('touchstart', function (e) {
+            if (!document.body.classList.contains('resumo-sheet-open')) return;
+            if (!e.touches || !e.touches[0]) return;
+            startY = e.touches[0].clientY;
+            startScroll = portal.scrollTop;
+            tracking = true;
+          }, { passive: true });
+
+          portal.addEventListener('touchmove', function (e) {
+            if (!tracking || !e.touches || !e.touches[0]) return;
+            var y = e.touches[0].clientY;
+            var dy = y - startY;
+            // Arrastar para baixo só “cola” o sheet se já estamos no topo
+            if (startScroll <= 0 && portal.scrollTop <= 0 && dy > 0) {
+              portal.style.transition = 'none';
+              portal.style.transform = 'translateY(' + Math.min(dy, 240) + 'px)';
+            }
+          }, { passive: true });
+
+          portal.addEventListener('touchend', function (e) {
+            if (!tracking) return;
+            tracking = false;
+            var t = e.changedTouches && e.changedTouches[0];
+            if (!t) return;
+            var dy = t.clientY - startY;
+            portal.style.transition = 'transform 0.35s cubic-bezier(0.32, 0.72, 0, 1)';
+            // Fecha só se estava no topo e puxou > 100px
+            if (startScroll <= 0 && dy > 100) {
+              fecharResumoSheet();
+            } else {
+              portal.style.transform = 'translateY(0)';
+            }
+          }, { passive: true });
         }
         window.addEventListener('resize', function () {
           if (window.innerWidth >= 1024) fecharResumoSheet();
         });
       }
       /**
-       * Desktop: position:fixed via rAF (não depende de scroll event nem de sticky CSS).
-       * Mede a coluna #sidebarTargetAnchor e a coluna esquerda a cada frame.
+       * Desktop: clone fixo no document.body (nunca colapsa coluna).
+       * Original fica visibility:hidden para reservar espaço no grid.
        */
       function setupDesktopStickyResumo() {
         var col = document.getElementById('sidebarTargetAnchor');
         if (!col) return;
         var topGap = 88;
-        var running = true;
-        var lastLeft = null;
-        var lastWidth = null;
+        var floatEl = null;
+        var pinned = false;
 
         function cardEl() {
           return col.querySelector('.np-resumo-card') || col.querySelector('.glass-amber-summary');
         }
 
-        function clearPin(card) {
-          if (!card) return;
-          card.style.position = '';
-          card.style.top = '';
-          card.style.left = '';
-          card.style.width = '';
-          card.style.zIndex = '';
-          card.style.maxHeight = '';
-          card.style.overflowY = '';
+        function destroyFloat() {
+          if (floatEl && floatEl.parentNode) floatEl.parentNode.removeChild(floatEl);
+          floatEl = null;
+          pinned = false;
+          var card = cardEl();
+          if (card) card.style.visibility = '';
+        }
+
+        function ensureFloat(card) {
+          if (floatEl) return floatEl;
+          floatEl = card.cloneNode(true);
+          floatEl.removeAttribute('id');
+          floatEl.querySelectorAll('[id]').forEach(function (el) { el.removeAttribute('id'); });
+          floatEl.setAttribute('data-np-float', '1');
+          floatEl.style.margin = '0';
+          floatEl.style.boxSizing = 'border-box';
+          document.body.appendChild(floatEl);
+          card.style.visibility = 'hidden';
+          pinned = true;
+          return floatEl;
         }
 
         function tick() {
-          if (!running) return;
           try {
             var card = cardEl();
             if (!card || window.innerWidth < 1024) {
-              clearPin(card);
+              destroyFloat();
             } else {
               var leftCol = document.querySelector('main .lg\:col-span-2') || document.querySelector('main .min-w-0');
               var colRect = col.getBoundingClientRect();
               var leftRect = leftCol ? leftCol.getBoundingClientRect() : colRect;
-              var maxH = Math.max(200, window.innerHeight - topGap - 12);
-              var cardH = Math.min(card.offsetHeight || 400, maxH);
+              var maxH = Math.max(220, window.innerHeight - topGap - 12);
 
-              // Coluna ainda abaixo do ponto de grude
               if (colRect.top > topGap) {
-                clearPin(card);
-              } else if (leftRect.bottom <= topGap + 24) {
-                // Conteúdo da esquerda já saiu da tela
-                clearPin(card);
+                destroyFloat();
+              } else if (leftRect.bottom <= topGap + 20) {
+                destroyFloat();
               } else {
+                var fl = ensureFloat(card);
+                // sincroniza conteúdo de vez em quando (totais mudam)
+                if (!fl._sync || Date.now() - fl._sync > 400) {
+                  var html = card.innerHTML;
+                  fl.innerHTML = html;
+                  fl.querySelectorAll('[id]').forEach(function (el) { el.removeAttribute('id'); });
+                  fl._sync = Date.now();
+                }
                 var top = topGap;
-                if (leftRect.bottom < topGap + cardH) {
-                  top = Math.max(8, leftRect.bottom - cardH);
+                var h = Math.min(fl.offsetHeight || 400, maxH);
+                if (leftRect.bottom < topGap + h) {
+                  top = Math.max(8, leftRect.bottom - h);
                 }
-                // left/width: preferir medida estável da coluna
-                var leftPx = colRect.left;
-                var widthPx = colRect.width;
-                if (widthPx < 40 && lastWidth) {
-                  leftPx = lastLeft;
-                  widthPx = lastWidth;
-                } else {
-                  lastLeft = leftPx;
-                  lastWidth = widthPx;
-                }
-                card.style.position = 'fixed';
-                card.style.top = top + 'px';
-                card.style.left = leftPx + 'px';
-                card.style.width = widthPx + 'px';
-                card.style.zIndex = '40';
-                card.style.maxHeight = maxH + 'px';
-                card.style.overflowY = 'auto';
+                fl.style.position = 'fixed';
+                fl.style.top = top + 'px';
+                fl.style.left = colRect.left + 'px';
+                fl.style.width = Math.max(colRect.width, 200) + 'px';
+                fl.style.zIndex = '45';
+                fl.style.maxHeight = maxH + 'px';
+                fl.style.overflowY = 'auto';
+                fl.style.pointerEvents = 'auto';
               }
             }
           } catch (err) {
-            console.warn('[NP] sticky tick', err);
+            console.warn('[NP] desktop float', err);
           }
           requestAnimationFrame(tick);
         }
         requestAnimationFrame(tick);
+        console.log('[NP] desktop float-follow ativo');
       }
       function aplicarTravaSomenteLeitura(statusTexto) {
         formularioBloqueadoSomenteLeitura = true;
