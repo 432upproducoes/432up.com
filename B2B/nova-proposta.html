@@ -8,14 +8,22 @@
   <link rel="stylesheet" href="css/nova-proposta.css">
   <script src="https://cdn.tailwindcss.com"></script>
   <style>
-    /* Sticky do resumo — overflow ≠ visible em ancestral quebra sticky no Safari/Chrome */
+    /*
+      Sticky do resumo:
+      - a coluna (#sidebarTargetAnchor) precisa ESTICAR na altura do grid (self-stretch)
+      - o card interno é que fica position:sticky
+      - items-start no grid sem stretch na coluna faz o sticky “morrer” (pai da mesma altura do card)
+    */
     @media (min-width: 1024px) {
       #sidebarTargetAnchor {
+        align-self: stretch !important;
+        height: 100%;
+      }
+      #sidebarTargetAnchor > .sticky-card,
+      #sidebarTargetAnchor > .glass-amber-summary {
+        position: -webkit-sticky !important;
         position: sticky !important;
         top: 5.5rem !important;
-        align-self: flex-start !important;
-        max-height: calc(100vh - 6.5rem);
-        overflow-y: auto;
         z-index: 20;
       }
     }
@@ -206,8 +214,8 @@
             </div>
           </div>
         </div>
-        <!-- SIDEBAR RESUMO COMERCIAL (DESKTOP STICKY) -->
-        <div id="sidebarTargetAnchor" class="space-y-6 lg:sticky lg:top-24 self-start">
+        <!-- SIDEBAR RESUMO COMERCIAL (DESKTOP STICKY): coluna estica; card interno gruda ao rolar -->
+        <div id="sidebarTargetAnchor" class="space-y-6 lg:self-stretch">
           <div class="glass-amber-summary sticky-card p-6 rounded-2xl space-y-5">
             <h3 class="text-sm font-bold uppercase tracking-wider text-amber-400 border-b border-amber-500/20 pb-2 shrink-0">Resumo do Orçamento</h3>
             <div class="resumo-scroll space-y-5">
