@@ -131,6 +131,14 @@ export async function onRequest(context) {
     return dataHoraStr;
   }
 
+  // Escapa caracteres que o Telegram (modo HTML) não aceita em texto livre
+  function esc(val) {
+    return String(val == null ? "" : val)
+      .replace(/&/g, "&amp;")
+      .replace(/</g, "&lt;")
+      .replace(/>/g, "&gt;");
+  }
+
   // ==========================================================
   // MONTA MENSAGEM
   // ==========================================================
@@ -182,6 +190,30 @@ export async function onRequest(context) {
       `📧 <b>E-mail:</b> ${email}\n` +
       `📱 <b>WhatsApp:</b> ${telefone}\n\n` +
       `🟡 <b>Status:</b> Aguardando aprovação no Admin`;
+
+  } else if (data.event === "contrato_assinado") {
+
+    // ========================================================
+    // CONTRATO ASSINADO (vem de assinar-contrato)
+    // ========================================================
+
+    const enviouCliente = String(data.envio_cliente || "").startsWith("enviado");
+    const enviouEmpresa = String(data.envio_empresa || "").startsWith("enviado");
+    const tudoCerto = enviouCliente && enviouEmpresa && !data.erro_pdf;
+
+    texto =
+      `✍️ <b>CONTRATO ASSINADO</b>\n\n` +
+      `🆔 <b>Proposta:</b> #${esc(data.proposta_id || "—")}\n` +
+      `🏢 <b>Cliente:</b> ${esc(data.cliente_nome || "—")}\n` +
+      `🕒 <b>Assinado em:</b> ${fmtDataHora(data.assinado_em)}\n` +
+      `📧 <b>E-mail do cliente:</b> ${esc(data.email_cliente || "(sem e-mail)")}\n\n` +
+      `📨 <b>Cópia ao cliente:</b> ${esc(data.envio_cliente || "não tentado")}\n` +
+      `📨 <b>Cópia à empresa:</b> ${esc(data.envio_empresa || "não tentado")}` +
+      (data.erro_pdf ? `\n\n⚠️ <b>Erro no PDF:</b> ${esc(data.erro_pdf)}` : "") +
+      `\n\n` +
+      (tudoCerto
+        ? `🟢 <b>Tudo certo:</b> assinatura registrada e cópias enviadas.`
+        : `🔴 <b>Atenção:</b> a assinatura está registrada, mas algum envio falhou. Veja os detalhes acima.`);
 
   } else if (data.event === "proposta_enviada") {
 
@@ -303,8 +335,6 @@ export async function onRequest(context) {
   }
 }
 
-
-
-  // ==========================================================
-  // END
-  // ==========================================================
+// ==========================================================
+// END
+// ==========================================================
