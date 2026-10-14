@@ -455,23 +455,100 @@
         }
         if (bd) bd.addEventListener('click', function () { fecharResumoSheet(); });
 
-        // (−) no sheet: delegação → remove no carrinho real e atualiza o sheet
-        if (portal && !portal._npRemoveBound) {
-          portal._npRemoveBound = true;
+        // Delegação de cliques no sheet mobile (clone sem listeners)
+        if (portal && !portal._npClickBound) {
+          portal._npClickBound = true;
           portal.addEventListener('click', function (e) {
-            var btn = e.target.closest ? e.target.closest('[data-cart-remove]') : null;
-            if (!btn) return;
-            e.preventDefault();
-            e.stopPropagation();
-            var id = btn.getAttribute('data-cart-remove');
-            if (id) {
-              removerDoCarrinho(id);
-              // Atualiza conteúdo do sheet aberto
-              if (document.body.classList.contains('resumo-sheet-open')) {
-                var keepScroll = portal.scrollTop;
-                preencherPortalResumo(portal);
-                try { portal.scrollTop = keepScroll; } catch (err) {}
+            if (!document.body.classList.contains('resumo-sheet-open')) return;
+            var t = e.target;
+            if (!t || !t.closest) return;
+
+            function refreshSheet() {
+              var keepScroll = portal.scrollTop;
+              preencherPortalResumo(portal);
+              try { portal.scrollTop = keepScroll; } catch (err) {}
+            }
+
+            // 1) Remover item do carrinho
+            var rem = t.closest('[data-cart-remove]');
+            if (rem) {
+              e.preventDefault();
+              e.stopPropagation();
+              var id = rem.getAttribute('data-cart-remove');
+              if (id) { removerDoCarrinho(id); refreshSheet(); }
+              return;
+            }
+
+            // 2) Botões de ação (Finalizar / Rascunho / Hold) — ids foram removidos no clone
+            var btn = t.closest('button');
+            if (btn) {
+              var txt = (btn.textContent || '').toLowerCase();
+              if (txt.indexOf('finalizar') >= 0 || txt.indexOf('enviar proposta') >= 0) {
+                e.preventDefault();
+                e.stopPropagation();
+                fecharResumoSheet();
+                salvarProposta('enviada');
+                return;
               }
+              if (txt.indexOf('rascunho') >= 0) {
+                e.preventDefault();
+                e.stopPropagation();
+                fecharResumoSheet();
+                salvarProposta('rascunho');
+                return;
+              }
+              if (txt.indexOf('hold') >= 0 || txt.indexOf('disponibilidade') >= 0) {
+                e.preventDefault();
+                e.stopPropagation();
+                fecharResumoSheet();
+                salvarProposta('hold');
+                return;
+              }
+            }
+
+            // 3) Chips de forma de pagamento (pix / cartao / outro)
+            var chip = t.closest('.chip-item[data-val]');
+            if (chip) {
+              var val = chip.getAttribute('data-val');
+              if (!val) return;
+              // Formas conhecidas
+              if (val === 'pix' || val === 'cartao' || val === 'outro') {
+                e.preventDefault();
+                e.stopPropagation();
+                if (typeof selecionarFormaPagamento === 'function') {
+                  selecionarFormaPagamento(val);
+                  refreshSheet();
+                }
+                return;
+              }
+              // Condição de pagamento (pix_integral, pix_50_50, etc.)
+              if (val.indexOf('pix_') === 0 || val.indexOf('cartao') === 0 || val.indexOf('outro') === 0 ||
+                  val === 'integral' || val.indexOf('50') >= 0) {
+                e.preventDefault();
+                e.stopPropagation();
+                condicaoPagamentoVal = val;
+                if (typeof renderCondicoesPagamento === 'function') renderCondicoesPagamento();
+                if (typeof renderAgendaPagamento === 'function') renderAgendaPagamento();
+                if (typeof recalc === 'function') recalc();
+                refreshSheet();
+                return;
+              }
+            }
+
+            // 4) Status pendente/pago na agenda
+            var st = t.closest('[data-status-val]');
+            if (st) {
+              e.preventDefault();
+              e.stopPropagation();
+              var fieldWrap = st.closest('[data-status-field]');
+              var campo = fieldWrap ? fieldWrap.getAttribute('data-status-field') : null;
+              var stVal = st.getAttribute('data-status-val');
+              if (campo && stVal && typeof pagamentoAgendaState === 'object') {
+                pagamentoAgendaState[campo] = stVal;
+                if (typeof renderAgendaPagamento === 'function') renderAgendaPagamento();
+                refreshSheet();
+              }
+              return;
             }
           });
         }
@@ -514,8 +591,7 @@
         });
       }
       /**
-       * Desktop: clone fixo no body. Original visibility:hidden reserva espaço.
-       * Scroll + rAF + intervalo de segurança.
+       * Desktop: clone fixo no body com base em scrollY (mais confiável no Safari/iPad).
        */
       function setupDesktopStickyResumo() {
         var col = document.getElementById('sidebarTargetAnchor');
@@ -525,6 +601,7 @@
         }
         var topGap = 88;
         var floatEl = null;
+        var colTopDoc = null;
 
         function cardEl() {
           return col.querySelector('.np-resumo-card') || col.querySelector('.glass-amber-summary');
@@ -537,22 +614,40 @@
           if (c) c.style.visibility = '';
         }
 
+        function measureColTop() {
+          var c = cardEl();
+          if (!c) return;
+          // só mede quando não está pinned (visibility visible)
+          if (floatEl) return;
+          var r = col.getBoundingClientRect();
+          colTopDoc = r.top + (window.pageYOffset || document.documentElement.scrollTop || 0);
+        }
+
         function update() {
           try {
             if (window.innerWidth < 1024) {
               destroyFloat();
+              colTopDoc = null;
               return;
             }
             var card = cardEl();
             if (!card) return;
 
-            var colRect = col.getBoundingClientRect();
-            var leftCol = document.querySelector('main .lg\:col-span-2') || document.querySelector('main .min-w-0');
+            if (colTopDoc == null) measureColTop();
+
+            var scrollY = window.pageYOffset || document.documentElement.scrollTop || 0;
+            var leftCol = document.querySelector('main .lg\\:col-span-2') || document.querySelector('main .min-w-0');
             var leftRect = leftCol ? leftCol.getBoundingClientRect() : null;
-            var shouldPin = colRect.top <= topGap && (!leftRect || leftRect.bottom > topGap + 40);
+            var colRect = col.getBoundingClientRect();
+
+            // Gruda quando o scroll passou do topo natural da coluna
+            var shouldPin = (colTopDoc != null && scrollY + topGap >= colTopDoc) || colRect.top <= topGap;
+            if (leftRect && leftRect.bottom <= topGap + 30) shouldPin = false;
 
             if (!shouldPin) {
               destroyFloat();
+              // re-mede topo quando solto
+              measureColTop();
               return;
             }
 
@@ -563,6 +658,7 @@
               document.body.appendChild(floatEl);
               card.style.visibility = 'hidden';
               floatEl._sync = 0;
+              console.log('[NP] desktop PIN on');
             } else if (!floatEl._sync || Date.now() - floatEl._sync > 350) {
               floatEl.innerHTML = card.innerHTML;
               floatEl.querySelectorAll('[id]').forEach(function (el) { el.removeAttribute('id'); });
@@ -570,25 +666,27 @@
             }
 
             var maxH = Math.max(220, window.innerHeight - topGap - 12);
-            var flH = Math.min(floatEl.scrollHeight || floatEl.offsetHeight || 400, maxH);
+            var flH = Math.min(floatEl.scrollHeight || 400, maxH);
             var top = topGap;
             if (leftRect && leftRect.bottom < topGap + flH) {
               top = Math.max(8, leftRect.bottom - flH);
             }
             var w = colRect.width;
-            if (w < 120) {
-              // fallback: 1/3 do grid
-              var grid = col.parentElement;
-              if (grid) {
-                var gr = grid.getBoundingClientRect();
-                w = Math.max(180, (gr.width - 32) / 3);
+            var left = colRect.left;
+            if (w < 120 && leftCol) {
+              var gr = leftCol.parentElement ? leftCol.parentElement.getBoundingClientRect() : null;
+              if (gr) {
+                w = Math.max(200, (gr.width - 32) / 3);
+                left = gr.right - w;
               }
             }
             floatEl.style.cssText =
-              'position:fixed!important;top:' + top + 'px!important;left:' + colRect.left + 'px!important;' +
+              'position:fixed!important;top:' + top + 'px!important;left:' + left + 'px!important;' +
               'width:' + w + 'px!important;z-index:45!important;max-height:' + maxH + 'px!important;' +
               'overflow-y:auto!important;margin:0!important;box-sizing:border-box!important;' +
-              'visibility:visible!important;opacity:1!important;pointer-events:auto!important;';
+              'visibility:visible!important;opacity:1!important;pointer-events:auto!important;' +
+              'background:linear-gradient(135deg,rgba(245,158,11,0.10),rgba(10,18,28,0.95))!important;' +
+              'border:1px solid rgba(245,158,11,0.35)!important;border-radius:1rem!important;';
           } catch (err) {
             console.warn('[NP] desktop float', err);
           }
@@ -596,10 +694,12 @@
 
         window.addEventListener('scroll', update, { passive: true, capture: true });
         document.addEventListener('scroll', update, { passive: true, capture: true });
-        window.addEventListener('resize', update);
-        setInterval(update, 600);
+        window.addEventListener('resize', function () { colTopDoc = null; destroyFloat(); update(); });
+        setInterval(update, 500);
         function loop() { update(); requestAnimationFrame(loop); }
         requestAnimationFrame(loop);
+        setTimeout(measureColTop, 300);
+        setTimeout(measureColTop, 1200);
         console.log('[NP] desktop float-follow ativo');
       }
       function aplicarTravaSomenteLeitura(statusTexto) {
