@@ -8,10 +8,18 @@
   <link rel="stylesheet" href="css/nova-proposta.css">
   <script src="https://cdn.tailwindcss.com"></script>
   <style>
-    /*
-      Desktop sticky: deixa o css/nova-proposta.css mandar
-      (.grid { align-items: stretch } + .sticky-card { position: sticky; top: 6rem }).
-    */
+    /* BUILD 2026-10-14-vfix — se esta borda limão NÃO aparecer no card do resumo, o HTML novo NÃO está no ar */
+    .np-resumo-card {
+      outline: 3px solid #00FF66 !important;
+      outline-offset: 2px !important;
+    }
+    /* Desktop: sticky CSS desligado de propósito; JS usa .np-resumo-card fixed */
+    @media (min-width: 1024px) {
+      .np-resumo-card {
+        position: relative !important;
+        top: auto !important;
+      }
+    }
     @media (max-width: 1023px) {
       #sidebarTargetAnchor { display: none !important; }
       #resumoSheetBackdrop {
@@ -20,10 +28,8 @@
         inset: 0;
         z-index: 10040;
         background: rgba(0,0,0,0.55);
-        -webkit-backdrop-filter: blur(2px);
-        backdrop-filter: blur(2px);
       }
-      body.resumo-sheet-open #resumoSheetBackdrop { display: block; }
+      body.resumo-sheet-open #resumoSheetBackdrop { display: block !important; }
       #resumoSheetPortal {
         display: none;
         position: fixed;
@@ -37,7 +43,7 @@
         box-shadow: 0 -12px 40px rgba(0,0,0,0.55);
         background: #0a1220;
       }
-      body.resumo-sheet-open #resumoSheetPortal { display: block; }
+      body.resumo-sheet-open #resumoSheetPortal { display: block !important; }
       body.resumo-sheet-open #resumoSheetPortal #sidebarTargetAnchor {
         display: block !important;
         height: auto !important;
@@ -45,8 +51,7 @@
         padding: 0;
         margin: 0;
       }
-      body.resumo-sheet-open #resumoSheetPortal .glass-amber-summary,
-      body.resumo-sheet-open #resumoSheetPortal .sticky-card {
+      body.resumo-sheet-open #resumoSheetPortal .np-resumo-card {
         display: flex !important;
         flex-direction: column !important;
         position: relative !important;
@@ -55,16 +60,17 @@
         overflow: visible !important;
         border-radius: 1rem 1rem 0 0;
         min-height: 100%;
-        padding: 1.25rem 1.25rem 5.5rem;
-        color: #e2e8f0;
+        padding: 1.25rem 1.25rem 5.5rem !important;
+        color: #e2e8f0 !important;
+        outline: 3px solid #00FF66 !important;
       }
-      body.resumo-sheet-open #mobileBarraResumo { z-index: 10060; }
+      body.resumo-sheet-open #mobileBarraResumo { z-index: 10060 !important; }
       #resumoSheetHandle { display: none; }
       body.resumo-sheet-open #resumoSheetHandle { display: flex; }
     }
   </style>
 </head>
-<body class="min-h-full text-slate-200 font-sans antialiased bg-[#06080c]">
+<body class="min-h-full text-slate-200 font-sans antialiased bg-[#06080c]" data-np-build="2026-10-14-vfix">
   <!-- Fundo Espacial Integrado ao CSS do Projeto -->
   <canvas id="orbit-canvas"></canvas>
   <div id="plasmaLayer" class="plasma-top-layer"></div>
@@ -251,8 +257,8 @@
           </div>
         </div>
         <!-- SIDEBAR: sticky via css/nova-proposta.css (.sticky-card); mobile sheet via JS portal -->
-        <div id="sidebarTargetAnchor" class="space-y-6">
-          <div class="glass-amber-summary sticky-card p-6 rounded-2xl space-y-5">
+        <div id="sidebarTargetAnchor" class="space-y-6 np-resumo-col">
+          <div class="glass-amber-summary np-resumo-card p-6 rounded-2xl space-y-5">
             <div id="resumoSheetHandle" class="justify-center pt-0 pb-2 -mt-1 cursor-grab active:cursor-grabbing">
               <span class="block w-10 h-1 rounded-full bg-white/25 mx-auto" aria-hidden="true"></span>
             </div>
