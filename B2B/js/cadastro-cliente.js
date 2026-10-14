@@ -66,9 +66,31 @@ var COLS_RETORNO = 'id, nome_razao, nome_fantasia, cidade, bairro, cep, cpf_cnpj
     window.scrollTo({ top: 0, behavior: 'smooth' });
   }
 
-  function mcShowAlert(msg) {
+  function ehAdmin() {
+    if (!parceiroAtual) return false;
+    var r = String(parceiroAtual.role || parceiroAtual.nivel || '').toLowerCase().trim();
+    return r === 'admin' || r === 'master';
+  }
+
+  /** Alerta no formulário; no modo modal vai para a barra entre Cancelar e Salvar */
+  function mcShowAlert(msg, type) {
+    var isOk = type === 'success';
+    var clsOk = 'bg-emerald-500/15 text-emerald-300 border border-emerald-500/30';
+    var clsErr = 'bg-red-500/15 text-red-300 border border-red-500/30';
+    if (MODO_MODAL) {
+      var bar = $('mcAlertBarra');
+      if (bar) {
+        bar.textContent = msg || '';
+        bar.className = (msg ? '' : 'hidden ') + 'flex-1 mx-2 px-3 py-1.5 rounded-lg text-[11px] font-semibold text-center leading-snug border ' + (isOk ? clsOk : clsErr);
+        if (!msg) bar.classList.add('hidden');
+        return;
+      }
+    }
     var el = $('mcAlert');
+    if (!el) return;
+    if (!msg) { el.classList.add('hidden'); el.textContent = ''; return; }
     el.textContent = msg;
+    el.className = 'p-3 rounded-xl text-xs font-semibold border ' + (isOk ? clsOk : clsErr);
     el.classList.remove('hidden');
   }
 
@@ -629,7 +651,7 @@ var COLS_RETORNO = 'id, nome_razao, nome_fantasia, cidade, bairro, cep, cpf_cnpj
     e.preventDefault();
     var btn = $('mcBtnSalvar');
     var original = btn.textContent;
-    $('mcAlert').classList.add('hidden');
+    mcShowAlert('');
 
     var tipoPessoa = $('mcTipoPessoa').value;
     var nomeRazao = $('mcNomeRazao').value.trim();
@@ -681,7 +703,8 @@ var COLS_RETORNO = 'id, nome_razao, nome_fantasia, cidade, bairro, cep, cpf_cnpj
     btn.textContent = 'Salvando...';
 
     try {
-      if (docNormalizado.length > 0) {
+      // Vendedor: bloqueia CPF/CNPJ já usado por outro cadastro. Admin/master: pode seguir.
+      if (docNormalizado.length > 0 && !ehAdmin()) {
         var dupQuery = sbPartner.from('co_clientes').select('id').eq('cpf_cnpj', docNormalizado);
         if (editandoId) dupQuery = dupQuery.neq('id', editandoId);
         var dup = await dupQuery.maybeSingle();
@@ -731,7 +754,14 @@ var COLS_RETORNO = 'id, nome_razao, nome_fantasia, cidade, bairro, cep, cpf_cnpj
 
       if (saveResult.error) {
         console.error('[432UP Partner] Erro no salvamento do cliente:', saveResult.error);
-        mcShowAlert('Não foi possível salvar: ' + (saveResult.error.message || 'tente novamente.'));
+        var em = String(saveResult.error.message || saveResult.error.code || '');
+        if (/row-level security|rls|42501|permission|policy/i.test(em)) {
+          mcShowAlert(ehAdmin()
+            ? 'Bloqueio de permissão no banco (RLS). É preciso liberar UPDATE de co_clientes para role admin.'
+            : 'Sem permissão para alterar este cliente (pertence a outro parceiro).');
+        } else {
+          mcShowAlert('Não foi possível salvar: ' + (saveResult.error.message || 'tente novamente.'));
+        }
       } else if (MODO_MODAL) {
         // Primeiro avisa o pai (fechar modal + selecionar cliente); depois feedback local
         try {
@@ -815,9 +845,9 @@ var COLS_RETORNO = 'id, nome_razao, nome_fantasia, cidade, bairro, cep, cpf_cnpj
     var s = await sbPartner.auth.getSession();
     var user = (s && s.data && s.data.session) ? s.data.session.user : null;
     if (!user) return null;
-    var r = await sbPartner.from('parceiros').select('id').eq('user_id', user.id).single();
+    var r = await sbPartner.from('parceiros').select('id, role').eq('user_id', user.id).single();
     if (r.error || !r.data) return null;
-    parceiroAtual = { id: r.data.id };
+    parceiroAtual = { id: r.data.id, role: r.data.role || '' };
     return r.data.id;
   }
 
