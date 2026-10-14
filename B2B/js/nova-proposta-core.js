@@ -317,6 +317,7 @@
           }
         }
       }
+      console.log("%c[NP] BUILD 2026-10-14-vfix carregado","background:#00FF66;color:#000;font-weight:bold;padding:2px 6px");
       partnerRequireAuth().then(async function (parceiro) {
         parceiroAtual = parceiro;
         partnerFillSidebar(parceiro);
@@ -380,7 +381,7 @@
         }
         if (anchor) {
           anchor.style.cssText = '';
-          var card = anchor.querySelector('.glass-amber-summary, .sticky-card');
+          var card = anchor.querySelector('.np-resumo-card') || anchor.querySelector('.glass-amber-summary');
           if (card) card.style.cssText = '';
         }
         document.body.classList.remove('resumo-sheet-open');
@@ -403,7 +404,7 @@
         anchor.style.setProperty('opacity', '1', 'important');
         anchor.style.setProperty('height', 'auto', 'important');
         anchor.style.setProperty('min-height', '100%', 'important');
-        var card = anchor.querySelector('.glass-amber-summary') || anchor.querySelector('.sticky-card');
+        var card = anchor.querySelector('.np-resumo-card') || anchor.querySelector('.glass-amber-summary');
         if (card) {
           card.style.setProperty('display', 'flex', 'important');
           card.style.setProperty('flex-direction', 'column', 'important');
@@ -482,7 +483,7 @@
         }
 
         function onScroll() {
-          var card = col.querySelector('.glass-amber-summary') || col.querySelector('.sticky-card');
+          var card = col.querySelector('.np-resumo-card') || col.querySelector('.glass-amber-summary');
           if (!card) return;
 
           if (window.innerWidth < 1024) {
@@ -526,7 +527,7 @@
 
         window.addEventListener('scroll', onScroll, { passive: true });
         window.addEventListener('resize', function () {
-          var card = col.querySelector('.glass-amber-summary') || col.querySelector('.sticky-card');
+          var card = col.querySelector('.np-resumo-card') || col.querySelector('.glass-amber-summary');
           clearPin(card);
           onScroll();
         });
