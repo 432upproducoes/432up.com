@@ -420,18 +420,98 @@
           '<div style="text-align:center;padding:6px 0 10px;touch-action:none;" data-np-sheet-handle="1">' +
           '<span style="display:inline-block;width:40px;height:4px;border-radius:99px;background:rgba(255,255,255,0.28)"></span></div>' +
           html + '</div>';
-        // Antes de remover ids, copia classes de layout (flex dos chips)
-        var idClass = {
-          chipsFormaPagamento: 'np-chipsFormaPagamento',
-          chipsCondicaoPagamento: 'np-chipsCondicaoPagamento',
-          containerAcoesBotoes: 'np-containerAcoesBotoes',
-          boxPagamento: 'np-boxPagamento'
-        };
-        Object.keys(idClass).forEach(function (id) {
+
+        // Layout dos chips FORÇADO inline (não depende de CSS externo / ids)
+        ['chipsFormaPagamento', 'chipsCondicaoPagamento'].forEach(function (id) {
           var el = portal.querySelector('#' + id);
-          if (el) el.classList.add(idClass[id]);
+          if (!el) return;
+          el.style.display = 'grid';
+          el.style.gridTemplateColumns = '1fr 1fr';
+          el.style.gap = '8px';
+          el.style.width = '100%';
+          el.style.boxSizing = 'border-box';
         });
+        portal.querySelectorAll('.chip-item').forEach(function (chip) {
+          chip.style.display = 'inline-flex';
+          chip.style.alignItems = 'center';
+          chip.style.justifyContent = 'center';
+          chip.style.padding = '10px 12px';
+          chip.style.minHeight = '40px';
+          chip.style.boxSizing = 'border-box';
+          chip.style.borderRadius = '20px';
+          chip.style.fontSize = '12px';
+          chip.style.fontWeight = '600';
+          chip.style.textAlign = 'center';
+          chip.style.whiteSpace = 'normal';
+          chip.style.cursor = 'pointer';
+          chip.style.width = '100%';
+          chip.style.border = '1px solid rgba(255,255,255,0.2)';
+          chip.style.background = 'rgba(255,255,255,0.06)';
+          chip.style.color = '#cbd5e1';
+          if (chip.classList.contains('active')) {
+            chip.style.background = 'rgba(0,240,255,0.18)';
+            chip.style.borderColor = '#00F0FF';
+            chip.style.color = '#00F0FF';
+          }
+        });
+
         portal.querySelectorAll('[id]').forEach(function (el) { el.removeAttribute('id'); });
+        bindPortalActions(portal);
+      }
+      function bindPortalActions(portal) {
+        if (!portal) return;
+        function refresh() {
+          var keep = portal.scrollTop;
+          preencherPortalResumo(portal);
+          try { portal.scrollTop = keep; } catch (e) {}
+        }
+        // Chips pagamento / condição
+        portal.querySelectorAll('.chip-item[data-val]').forEach(function (chip) {
+          chip.addEventListener('click', function (e) {
+            e.preventDefault();
+            e.stopPropagation();
+            var val = chip.getAttribute('data-val');
+            if (!val) return;
+            if (val === 'pix' || val === 'cartao' || val === 'outro') {
+              selecionarFormaPagamento(val);
+              refresh();
+              return;
+            }
+            // condição de pagamento
+            condicaoPagamentoVal = val;
+            if (typeof renderCondicoesPagamento === 'function') renderCondicoesPagamento();
+            if (typeof renderAgendaPagamento === 'function') renderAgendaPagamento();
+            if (typeof recalc === 'function') recalc();
+            refresh();
+          });
+        });
+        // Remover item
+        portal.querySelectorAll('[data-cart-remove]').forEach(function (btn) {
+          btn.addEventListener('click', function (e) {
+            e.preventDefault();
+            e.stopPropagation();
+            var id = btn.getAttribute('data-cart-remove');
+            if (id) { removerDoCarrinho(id); refresh(); }
+          });
+        });
+        // Ações principais
+        portal.querySelectorAll('button').forEach(function (btn) {
+          var txt = (btn.textContent || '').toLowerCase();
+          var action = null;
+          if (txt.indexOf('finalizar') >= 0 || txt.indexOf('enviar proposta') >= 0) action = 'enviada';
+          else if (txt.indexOf('rascunho') >= 0) action = 'rascunho';
+          else if (txt.indexOf('hold') >= 0 || txt.indexOf('disponibilidade') >= 0) action = 'hold';
+          if (!action) return;
+          btn.style.pointerEvents = 'auto';
+          btn.style.position = 'relative';
+          btn.style.zIndex = '2';
+          btn.addEventListener('click', function (e) {
+            e.preventDefault();
+            e.stopPropagation();
+            fecharResumoSheet();
+            salvarProposta(action);
+          });
+        });
       }
       function abrirResumoSheet() {
         if (window.innerWidth >= 1024) return;
@@ -464,105 +544,6 @@
           });
         }
         if (bd) bd.addEventListener('click', function () { fecharResumoSheet(); });
-
-        // Delegação de cliques no sheet mobile (clone sem listeners)
-        if (portal && !portal._npClickBound) {
-          portal._npClickBound = true;
-          portal.addEventListener('click', function (e) {
-            if (!document.body.classList.contains('resumo-sheet-open')) return;
-            var t = e.target;
-            if (t && t.nodeType !== 1) t = t.parentElement;
-            if (!t || !t.closest) return;
-
-            function refreshSheet() {
-              var keepScroll = portal.scrollTop;
-              preencherPortalResumo(portal);
-              try { portal.scrollTop = keepScroll; } catch (err) {}
-            }
-
-            // 1) Remover item do carrinho
-            var rem = t.closest('[data-cart-remove]');
-            if (rem) {
-              e.preventDefault();
-              e.stopPropagation();
-              var id = rem.getAttribute('data-cart-remove');
-              if (id) { removerDoCarrinho(id); refreshSheet(); }
-              return;
-            }
-
-            // 2) Botões de ação (Finalizar / Rascunho / Hold) — ids foram removidos no clone
-            var btn = t.closest('button');
-            if (btn) {
-              var txt = (btn.textContent || '').toLowerCase();
-              if (txt.indexOf('finalizar') >= 0 || txt.indexOf('enviar proposta') >= 0) {
-                e.preventDefault();
-                e.stopPropagation();
-                fecharResumoSheet();
-                salvarProposta('enviada');
-                return;
-              }
-              if (txt.indexOf('rascunho') >= 0) {
-                e.preventDefault();
-                e.stopPropagation();
-                fecharResumoSheet();
-                salvarProposta('rascunho');
-                return;
-              }
-              if (txt.indexOf('hold') >= 0 || txt.indexOf('disponibilidade') >= 0) {
-                e.preventDefault();
-                e.stopPropagation();
-                fecharResumoSheet();
-                salvarProposta('hold');
-                return;
-              }
-            }
-
-            // 3) Chips de forma de pagamento (pix / cartao / outro)
-            var chip = t.closest('.chip-item[data-val]');
-            if (chip) {
-              var val = chip.getAttribute('data-val');
-              if (!val) return;
-              // Formas conhecidas
-              if (val === 'pix' || val === 'cartao' || val === 'outro') {
-                e.preventDefault();
-                e.stopPropagation();
-                if (typeof selecionarFormaPagamento === 'function') {
-                  selecionarFormaPagamento(val);
-                  refreshSheet();
-                }
-                return;
-              }
-              // Condição de pagamento (pix_integral, pix_50_50, etc.)
-              if (val.indexOf('pix_') === 0 || val.indexOf('cartao') === 0 || val.indexOf('outro') === 0 ||
-                  val === 'integral' || val.indexOf('50') >= 0) {
-                e.preventDefault();
-                e.stopPropagation();
-                condicaoPagamentoVal = val;
-                if (typeof renderCondicoesPagamento === 'function') renderCondicoesPagamento();
-                if (typeof renderAgendaPagamento === 'function') renderAgendaPagamento();
-                if (typeof recalc === 'function') recalc();
-                refreshSheet();
-                return;
-              }
-            }
-
-            // 4) Status pendente/pago na agenda
-            var st = t.closest('[data-status-val]');
-            if (st) {
-              e.preventDefault();
-              e.stopPropagation();
-              var fieldWrap = st.closest('[data-status-field]');
-              var campo = fieldWrap ? fieldWrap.getAttribute('data-status-field') : null;
-              var stVal = st.getAttribute('data-status-val');
-              if (campo && stVal && typeof pagamentoAgendaState === 'object') {
-                pagamentoAgendaState[campo] = stVal;
-                if (typeof renderAgendaPagamento === 'function') renderAgendaPagamento();
-                refreshSheet();
-              }
-              return;
-            }
-          });
-        }
 
         var startY = 0;
         var startScroll = 0;
