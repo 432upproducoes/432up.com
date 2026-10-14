@@ -434,31 +434,9 @@
           if (window.innerWidth >= 1024) fecharResumoSheet();
         });
       }
-      /**
-       * Sticky desktop: equaliza a altura da coluna do resumo com a coluna da esquerda
-       * e deixa o CSS sticky trabalhar. Sem altura de coluna = sticky “preso” no topo.
-       */
+      /** Sticky desktop: css/nova-proposta.css já resolve (.sticky-card + stretch no grid). */
       function setupDesktopStickyResumo() {
-        var col = document.getElementById('sidebarTargetAnchor');
-        var left = document.querySelector('main .lg\\:col-span-2') || document.querySelector('main .min-w-0');
-        if (!col) return;
-        function syncAltura() {
-          if (window.innerWidth < 1024) {
-            col.style.minHeight = '';
-            return;
-          }
-          if (left) col.style.minHeight = left.offsetHeight + 'px';
-        }
-        window.addEventListener('resize', syncAltura);
-        window.addEventListener('load', syncAltura);
-        // Catálogo / serviços mudam a altura depois do 1º paint
-        setTimeout(syncAltura, 300);
-        setTimeout(syncAltura, 1000);
-        setTimeout(syncAltura, 2500);
-        if (typeof MutationObserver !== 'undefined' && left) {
-          var mo = new MutationObserver(function () { syncAltura(); });
-          mo.observe(left, { childList: true, subtree: true, attributes: true });
-        }
+        /* no-op: não forçar position/minHeight — brigava com o CSS do projeto */
       }
       function aplicarTravaSomenteLeitura(statusTexto) {
         formularioBloqueadoSomenteLeitura = true;
