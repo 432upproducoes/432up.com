@@ -14,6 +14,10 @@
   <script src="https://cdn.tailwindcss.com"></script>
   <link rel="stylesheet" href="css/admin.css">
   <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+
+  <style>
+    input:disabled { opacity: .4; cursor: not-allowed; }
+  </style>
 </head>
 <body class="h-full text-slate-200 font-sans antialiased bg-[#06080c] overflow-x-hidden">
 
@@ -201,10 +205,38 @@
                 <option value="false">Não</option>
               </select>
             </div>
-            <div class="field" style="flex:1 1 100%">
-              <label style="display:flex;align-items:center;gap:8px;">
-                <input id="aplicar_recebedor" type="checkbox"> Aplicar cláusula de recebedor nos contratos
-              </label>
+          </div>
+
+          <div style="margin-top:16px;">
+            <label style="display:flex;align-items:center;gap:8px;cursor:pointer;">
+              <input id="aplicar_recebedor" type="checkbox" onchange="aplicarEstadoRecebedor()">
+              Usar outro recebedor no contrato
+            </label>
+          </div>
+
+          <div id="bloco-recebedor-alt" style="display:none;">
+            <h3 style="margin:20px 0 12px;font-size:1rem;font-weight:600">Outro recebedor</h3>
+            <div class="leads-filters">
+              <div class="field">
+                <label for="recebedor_alt_nome">Nome</label>
+                <input id="recebedor_alt_nome" type="text">
+              </div>
+              <div class="field">
+                <label for="recebedor_alt_documento">CPF/CNPJ</label>
+                <input id="recebedor_alt_documento" type="text">
+              </div>
+              <div class="field">
+                <label for="recebedor_alt_tipo">Tipo do recebedor</label>
+                <input id="recebedor_alt_tipo" type="text">
+              </div>
+              <div class="field">
+                <label for="recebedor_alt_tipo_chave_pix">Tipo de chave Pix</label>
+                <input id="recebedor_alt_tipo_chave_pix" type="text">
+              </div>
+              <div class="field">
+                <label for="recebedor_alt_chave_pix">Chave Pix</label>
+                <input id="recebedor_alt_chave_pix" type="text">
+              </div>
             </div>
           </div>
 
@@ -544,8 +576,24 @@
   var CAMPOS_BANCARIOS = [
     'banco', 'codigo_banco', 'agencia', 'conta', 'tipo_conta',
     'titular', 'documento_titular', 'tipo_chave_pix', 'chave_pix',
-    'recebedor_nome', 'recebedor_documento', 'recebedor_tipo'
+    'recebedor_nome', 'recebedor_documento', 'recebedor_tipo',
+    'recebedor_alt_nome', 'recebedor_alt_documento', 'recebedor_alt_tipo',
+    'recebedor_alt_tipo_chave_pix', 'recebedor_alt_chave_pix'
   ];
+
+  // Com "Usar outro recebedor" marcado: o recebedor atual fica bloqueado (guardado, sem apagar)
+  // e o bloco "Outro recebedor" é habilitado. Desmarcado: é o inverso.
+  function aplicarEstadoRecebedor() {
+    var outro = campo('aplicar_recebedor').checked;
+    ['recebedor_nome', 'recebedor_documento', 'recebedor_tipo'].forEach(function (id) {
+      campo(id).disabled = outro;
+    });
+    ['recebedor_alt_nome', 'recebedor_alt_documento', 'recebedor_alt_tipo',
+     'recebedor_alt_tipo_chave_pix', 'recebedor_alt_chave_pix'].forEach(function (id) {
+      campo(id).disabled = !outro;
+    });
+    document.getElementById('bloco-recebedor-alt').style.display = outro ? '' : 'none';
+  }
 
   async function carregarDadosEmpresa() {
     // A) Dados legais (inclui a assinatura)
@@ -595,6 +643,7 @@
     });
     campo('ativo').value = resB.data.ativo === false ? 'false' : 'true';
     campo('aplicar_recebedor').checked = resB.data.aplicar_recebedor_contrato === true;
+    aplicarEstadoRecebedor();
 
     toast('Dados carregados', 'ok');
   }
@@ -654,6 +703,7 @@
 
   window.carregarDadosEmpresa = carregarDadosEmpresa;
   window.salvarDadosEmpresa = salvarDadosEmpresa;
+  window.aplicarEstadoRecebedor = aplicarEstadoRecebedor;
   window.__adminPageInit = function () { carregarDadosEmpresa(); };
 
   // ============================================================
