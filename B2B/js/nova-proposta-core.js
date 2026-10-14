@@ -376,7 +376,6 @@
         if (bd) bd.setAttribute('aria-hidden', 'true');
         if (portal) {
           portal.setAttribute('aria-hidden', 'true');
-          // anima para baixo antes de limpar
           portal.style.transform = 'translateY(100%)';
           setTimeout(function () {
             if (!document.body.classList.contains('resumo-sheet-open')) {
@@ -386,60 +385,55 @@
           }, 320);
         }
       }
-      function abrirResumoSheet() {
-        if (window.innerWidth >= 1024) return;
-        var portal = document.getElementById('resumoSheetPortal');
+      function montarHtmlResumoSheet() {
         var anchor = document.getElementById('sidebarTargetAnchor');
-        if (!portal || !anchor) return;
-
-        var prev = {
-          display: anchor.style.display,
-          position: anchor.style.position,
-          left: anchor.style.left,
-          top: anchor.style.top,
-          width: anchor.style.width,
-          opacity: anchor.style.opacity,
-          pointerEvents: anchor.style.pointerEvents
-        };
+        if (!anchor) return '';
+        var prevDisp = anchor.style.display;
         anchor.style.setProperty('display', 'block', 'important');
         anchor.style.setProperty('position', 'fixed', 'important');
         anchor.style.setProperty('left', '-10000px', 'important');
-        anchor.style.setProperty('top', '0', 'important');
-        anchor.style.setProperty('width', '360px', 'important');
         anchor.style.setProperty('opacity', '0', 'important');
         anchor.style.setProperty('pointer-events', 'none', 'important');
-
         var card = anchor.querySelector('.np-resumo-card') || anchor.querySelector('.glass-amber-summary');
-        var html = card ? card.innerHTML : '';
-
-        anchor.style.display = prev.display;
-        anchor.style.position = prev.position;
-        anchor.style.left = prev.left;
-        anchor.style.top = prev.top;
-        anchor.style.width = prev.width;
-        anchor.style.opacity = prev.opacity;
-        anchor.style.pointerEvents = prev.pointerEvents;
+        var wrap = document.createElement('div');
+        if (card) wrap.innerHTML = card.innerHTML;
+        // Remove handles duplicados do original
+        wrap.querySelectorAll('#resumoSheetHandle, [data-np-sheet-handle]').forEach(function (el) {
+          if (el.parentNode) el.parentNode.removeChild(el);
+        });
+        var html = wrap.innerHTML;
+        anchor.style.display = prevDisp;
+        anchor.style.position = '';
+        anchor.style.left = '';
+        anchor.style.opacity = '';
+        anchor.style.pointerEvents = '';
         anchor.style.removeProperty('display');
-
-        if (!html) html = '<p style="color:#fbbf24;padding:12px">Resumo indisponível.</p>';
-
+        return html || '<p style="color:#fbbf24;padding:12px">Resumo indisponível.</p>';
+      }
+      function preencherPortalResumo(portal) {
+        var html = montarHtmlResumoSheet();
+        // Um único handle + padding generoso embaixo (barra Total/Enviar ~72px)
         portal.innerHTML =
           '<div class="np-resumo-card glass-amber-summary" style="display:block!important;color:#e2e8f0!important;' +
-          'padding:1.25rem 1.25rem 5.5rem!important;min-height:100%;' +
+          'padding:1rem 1.25rem 9rem!important;min-height:100%;' +
           'background:linear-gradient(135deg,rgba(245,158,11,0.12),rgba(10,18,28,0.96));' +
           'border-radius:1rem 1rem 0 0;">' +
-          '<div style="text-align:center;padding:8px 0 12px;touch-action:none;" data-np-sheet-handle="1">' +
+          '<div style="text-align:center;padding:6px 0 10px;touch-action:none;" data-np-sheet-handle="1">' +
           '<span style="display:inline-block;width:40px;height:4px;border-radius:99px;background:rgba(255,255,255,0.28)"></span></div>' +
           html + '</div>';
         portal.querySelectorAll('[id]').forEach(function (el) { el.removeAttribute('id'); });
-
+      }
+      function abrirResumoSheet() {
+        if (window.innerWidth >= 1024) return;
+        var portal = document.getElementById('resumoSheetPortal');
+        if (!portal) return;
+        preencherPortalResumo(portal);
         portal.style.transition = 'transform 0.35s cubic-bezier(0.32, 0.72, 0, 1)';
         portal.style.transform = 'translateY(100%)';
         document.body.classList.add('resumo-sheet-open');
         var bd = document.getElementById('resumoSheetBackdrop');
         if (bd) bd.setAttribute('aria-hidden', 'false');
         portal.setAttribute('aria-hidden', 'false');
-        // próximo frame: sobe
         requestAnimationFrame(function () {
           requestAnimationFrame(function () {
             portal.style.transform = 'translateY(0)';
@@ -461,8 +455,27 @@
         }
         if (bd) bd.addEventListener('click', function () { fecharResumoSheet(); });
 
-        // Fecha só com puxão para baixo NO TOPO do sheet (scrollTop === 0).
-        // Rolagem normal do conteúdo NÃO fecha.
+        // (−) no sheet: delegação → remove no carrinho real e atualiza o sheet
+        if (portal && !portal._npRemoveBound) {
+          portal._npRemoveBound = true;
+          portal.addEventListener('click', function (e) {
+            var btn = e.target.closest ? e.target.closest('[data-cart-remove]') : null;
+            if (!btn) return;
+            e.preventDefault();
+            e.stopPropagation();
+            var id = btn.getAttribute('data-cart-remove');
+            if (id) {
+              removerDoCarrinho(id);
+              // Atualiza conteúdo do sheet aberto
+              if (document.body.classList.contains('resumo-sheet-open')) {
+                var keepScroll = portal.scrollTop;
+                preencherPortalResumo(portal);
+                try { portal.scrollTop = keepScroll; } catch (err) {}
+              }
+            }
+          });
+        }
+
         var startY = 0;
         var startScroll = 0;
         var tracking = false;
@@ -474,18 +487,14 @@
             startScroll = portal.scrollTop;
             tracking = true;
           }, { passive: true });
-
           portal.addEventListener('touchmove', function (e) {
             if (!tracking || !e.touches || !e.touches[0]) return;
-            var y = e.touches[0].clientY;
-            var dy = y - startY;
-            // Arrastar para baixo só “cola” o sheet se já estamos no topo
+            var dy = e.touches[0].clientY - startY;
             if (startScroll <= 0 && portal.scrollTop <= 0 && dy > 0) {
               portal.style.transition = 'none';
               portal.style.transform = 'translateY(' + Math.min(dy, 240) + 'px)';
             }
           }, { passive: true });
-
           portal.addEventListener('touchend', function (e) {
             if (!tracking) return;
             tracking = false;
@@ -493,7 +502,6 @@
             if (!t) return;
             var dy = t.clientY - startY;
             portal.style.transition = 'transform 0.35s cubic-bezier(0.32, 0.72, 0, 1)';
-            // Fecha só se estava no topo e puxou > 100px
             if (startScroll <= 0 && dy > 100) {
               fecharResumoSheet();
             } else {
@@ -506,15 +514,17 @@
         });
       }
       /**
-       * Desktop: clone fixo no document.body (nunca colapsa coluna).
-       * Original fica visibility:hidden para reservar espaço no grid.
+       * Desktop: clone fixo no body. Original visibility:hidden reserva espaço.
+       * Scroll + rAF + intervalo de segurança.
        */
       function setupDesktopStickyResumo() {
         var col = document.getElementById('sidebarTargetAnchor');
-        if (!col) return;
+        if (!col) {
+          console.warn('[NP] desktop: #sidebarTargetAnchor ausente');
+          return;
+        }
         var topGap = 88;
         var floatEl = null;
-        var pinned = false;
 
         function cardEl() {
           return col.querySelector('.np-resumo-card') || col.querySelector('.glass-amber-summary');
@@ -523,70 +533,73 @@
         function destroyFloat() {
           if (floatEl && floatEl.parentNode) floatEl.parentNode.removeChild(floatEl);
           floatEl = null;
-          pinned = false;
-          var card = cardEl();
-          if (card) card.style.visibility = '';
+          var c = cardEl();
+          if (c) c.style.visibility = '';
         }
 
-        function ensureFloat(card) {
-          if (floatEl) return floatEl;
-          floatEl = card.cloneNode(true);
-          floatEl.removeAttribute('id');
-          floatEl.querySelectorAll('[id]').forEach(function (el) { el.removeAttribute('id'); });
-          floatEl.setAttribute('data-np-float', '1');
-          floatEl.style.margin = '0';
-          floatEl.style.boxSizing = 'border-box';
-          document.body.appendChild(floatEl);
-          card.style.visibility = 'hidden';
-          pinned = true;
-          return floatEl;
-        }
-
-        function tick() {
+        function update() {
           try {
-            var card = cardEl();
-            if (!card || window.innerWidth < 1024) {
+            if (window.innerWidth < 1024) {
               destroyFloat();
-            } else {
-              var leftCol = document.querySelector('main .lg\:col-span-2') || document.querySelector('main .min-w-0');
-              var colRect = col.getBoundingClientRect();
-              var leftRect = leftCol ? leftCol.getBoundingClientRect() : colRect;
-              var maxH = Math.max(220, window.innerHeight - topGap - 12);
+              return;
+            }
+            var card = cardEl();
+            if (!card) return;
 
-              if (colRect.top > topGap) {
-                destroyFloat();
-              } else if (leftRect.bottom <= topGap + 20) {
-                destroyFloat();
-              } else {
-                var fl = ensureFloat(card);
-                // sincroniza conteúdo de vez em quando (totais mudam)
-                if (!fl._sync || Date.now() - fl._sync > 400) {
-                  var html = card.innerHTML;
-                  fl.innerHTML = html;
-                  fl.querySelectorAll('[id]').forEach(function (el) { el.removeAttribute('id'); });
-                  fl._sync = Date.now();
-                }
-                var top = topGap;
-                var h = Math.min(fl.offsetHeight || 400, maxH);
-                if (leftRect.bottom < topGap + h) {
-                  top = Math.max(8, leftRect.bottom - h);
-                }
-                fl.style.position = 'fixed';
-                fl.style.top = top + 'px';
-                fl.style.left = colRect.left + 'px';
-                fl.style.width = Math.max(colRect.width, 200) + 'px';
-                fl.style.zIndex = '45';
-                fl.style.maxHeight = maxH + 'px';
-                fl.style.overflowY = 'auto';
-                fl.style.pointerEvents = 'auto';
+            var colRect = col.getBoundingClientRect();
+            var leftCol = document.querySelector('main .lg\:col-span-2') || document.querySelector('main .min-w-0');
+            var leftRect = leftCol ? leftCol.getBoundingClientRect() : null;
+            var shouldPin = colRect.top <= topGap && (!leftRect || leftRect.bottom > topGap + 40);
+
+            if (!shouldPin) {
+              destroyFloat();
+              return;
+            }
+
+            if (!floatEl) {
+              floatEl = card.cloneNode(true);
+              floatEl.querySelectorAll('[id]').forEach(function (el) { el.removeAttribute('id'); });
+              floatEl.setAttribute('data-np-float', '1');
+              document.body.appendChild(floatEl);
+              card.style.visibility = 'hidden';
+              floatEl._sync = 0;
+            } else if (!floatEl._sync || Date.now() - floatEl._sync > 350) {
+              floatEl.innerHTML = card.innerHTML;
+              floatEl.querySelectorAll('[id]').forEach(function (el) { el.removeAttribute('id'); });
+              floatEl._sync = Date.now();
+            }
+
+            var maxH = Math.max(220, window.innerHeight - topGap - 12);
+            var flH = Math.min(floatEl.scrollHeight || floatEl.offsetHeight || 400, maxH);
+            var top = topGap;
+            if (leftRect && leftRect.bottom < topGap + flH) {
+              top = Math.max(8, leftRect.bottom - flH);
+            }
+            var w = colRect.width;
+            if (w < 120) {
+              // fallback: 1/3 do grid
+              var grid = col.parentElement;
+              if (grid) {
+                var gr = grid.getBoundingClientRect();
+                w = Math.max(180, (gr.width - 32) / 3);
               }
             }
+            floatEl.style.cssText =
+              'position:fixed!important;top:' + top + 'px!important;left:' + colRect.left + 'px!important;' +
+              'width:' + w + 'px!important;z-index:45!important;max-height:' + maxH + 'px!important;' +
+              'overflow-y:auto!important;margin:0!important;box-sizing:border-box!important;' +
+              'visibility:visible!important;opacity:1!important;pointer-events:auto!important;';
           } catch (err) {
             console.warn('[NP] desktop float', err);
           }
-          requestAnimationFrame(tick);
         }
-        requestAnimationFrame(tick);
+
+        window.addEventListener('scroll', update, { passive: true, capture: true });
+        document.addEventListener('scroll', update, { passive: true, capture: true });
+        window.addEventListener('resize', update);
+        setInterval(update, 600);
+        function loop() { update(); requestAnimationFrame(loop); }
+        requestAnimationFrame(loop);
         console.log('[NP] desktop float-follow ativo');
       }
       function aplicarTravaSomenteLeitura(statusTexto) {
