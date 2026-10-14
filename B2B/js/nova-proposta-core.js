@@ -370,10 +370,13 @@
       function fecharResumoSheet() {
         var portal = document.getElementById('resumoSheetPortal');
         var anchor = document.getElementById('sidebarTargetAnchor');
-        var card = portal ? portal.querySelector('.glass-amber-summary') : null;
-        if (!card && anchor) card = anchor.querySelector('.glass-amber-summary');
-        if (portal && card && anchor && card.parentElement === portal) {
-          anchor.appendChild(card);
+        if (portal && anchor && portal._home && anchor.parentElement === portal) {
+          var h = portal._home;
+          if (h.next && h.next.parentElement === h.parent) {
+            h.parent.insertBefore(anchor, h.next);
+          } else if (h.parent) {
+            h.parent.appendChild(anchor);
+          }
         }
         document.body.classList.remove('resumo-sheet-open');
         var bd = document.getElementById('resumoSheetBackdrop');
@@ -384,9 +387,11 @@
         if (window.innerWidth >= 1024) return;
         var portal = document.getElementById('resumoSheetPortal');
         var anchor = document.getElementById('sidebarTargetAnchor');
-        var card = anchor ? anchor.querySelector('.glass-amber-summary') : null;
-        if (!portal || !card) return;
-        if (card.parentElement !== portal) portal.appendChild(card);
+        if (!portal || !anchor) return;
+        if (!portal._home) {
+          portal._home = { parent: anchor.parentElement, next: anchor.nextSibling };
+        }
+        if (anchor.parentElement !== portal) portal.appendChild(anchor);
         document.body.classList.add('resumo-sheet-open');
         var bd = document.getElementById('resumoSheetBackdrop');
         if (bd) bd.setAttribute('aria-hidden', 'false');
@@ -429,49 +434,31 @@
           if (window.innerWidth >= 1024) fecharResumoSheet();
         });
       }
-      /** Sticky desktop via JS — não depende de overflow/z-index do CSS global do site */
+      /**
+       * Sticky desktop: equaliza a altura da coluna do resumo com a coluna da esquerda
+       * e deixa o CSS sticky trabalhar. Sem altura de coluna = sticky “preso” no topo.
+       */
       function setupDesktopStickyResumo() {
         var col = document.getElementById('sidebarTargetAnchor');
+        var left = document.querySelector('main .lg\\:col-span-2') || document.querySelector('main .min-w-0');
         if (!col) return;
-        var card = null;
-        var pinned = false;
-        var cardWidth = 0;
-        var topGap = 88;
-        function clearPin() {
-          if (!card) return;
-          card.style.position = '';
-          card.style.top = '';
-          card.style.left = '';
-          card.style.width = '';
-          card.style.zIndex = '';
-          pinned = false;
-        }
-        function applyPin(left) {
-          if (!card) return;
-          card.style.position = 'fixed';
-          card.style.top = topGap + 'px';
-          card.style.left = left + 'px';
-          card.style.width = cardWidth + 'px';
-          card.style.zIndex = '20';
-          pinned = true;
-        }
-        function onScroll() {
-          if (window.innerWidth < 1024) { clearPin(); return; }
-          card = col.querySelector('.glass-amber-summary');
-          if (!card) return;
-          var colR = col.getBoundingClientRect();
-          var cardH = card.offsetHeight || 0;
-          if (colR.top <= topGap && colR.bottom > topGap + cardH + 8) {
-            if (!pinned) cardWidth = card.getBoundingClientRect().width;
-            applyPin(colR.left);
-          } else {
-            clearPin();
+        function syncAltura() {
+          if (window.innerWidth < 1024) {
+            col.style.minHeight = '';
+            return;
           }
+          if (left) col.style.minHeight = left.offsetHeight + 'px';
         }
-        window.addEventListener('scroll', onScroll, { passive: true });
-        window.addEventListener('resize', function () { clearPin(); onScroll(); });
-        setTimeout(onScroll, 400);
-        setTimeout(onScroll, 1200);
+        window.addEventListener('resize', syncAltura);
+        window.addEventListener('load', syncAltura);
+        // Catálogo / serviços mudam a altura depois do 1º paint
+        setTimeout(syncAltura, 300);
+        setTimeout(syncAltura, 1000);
+        setTimeout(syncAltura, 2500);
+        if (typeof MutationObserver !== 'undefined' && left) {
+          var mo = new MutationObserver(function () { syncAltura(); });
+          mo.observe(left, { childList: true, subtree: true, attributes: true });
+        }
       }
       function aplicarTravaSomenteLeitura(statusTexto) {
         formularioBloqueadoSomenteLeitura = true;
