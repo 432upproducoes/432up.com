@@ -336,6 +336,7 @@
         bindPagamentoEvents();
         atualizarLabelFCep();
         setupMobileBarAutoFade();
+        setupResumoSheetMobile();
         aplicarPermissaoDesconto();
         var params = new URLSearchParams(window.location.search);
         propostaEdicaoId = params.get('id');
@@ -363,19 +364,62 @@
         atualizarLblDuracao();
       }
       function setupMobileBarAutoFade() {
-        var target = document.getElementById('sidebarTargetAnchor');
-        var mobileBar = document.getElementById('mobileBarraResumo');
-        if (!target || !mobileBar) return;
-        var observer = new IntersectionObserver(function (entries) {
-          entries.forEach(function (entry) {
-            if (entry.isIntersecting) {
-              mobileBar.classList.add('hide-bar');
-            } else {
-              mobileBar.classList.remove('hide-bar');
-            }
+        /* No mobile o resumo vira sheet sob demanda; a barra inferior permanece sempre visível. */
+      }
+      function fecharResumoSheet() {
+        document.body.classList.remove('resumo-sheet-open');
+        var bd = document.getElementById('resumoSheetBackdrop');
+        if (bd) bd.setAttribute('aria-hidden', 'true');
+      }
+      function abrirResumoSheet() {
+        if (window.innerWidth >= 1024) return;
+        document.body.classList.add('resumo-sheet-open');
+        var bd = document.getElementById('resumoSheetBackdrop');
+        if (bd) bd.setAttribute('aria-hidden', 'false');
+      }
+      function setupResumoSheetMobile() {
+        var hit = document.getElementById('mobileResumoHit');
+        var bd = document.getElementById('resumoSheetBackdrop');
+        var sheet = document.getElementById('sidebarTargetAnchor');
+        var handle = document.getElementById('resumoSheetHandle');
+        if (hit) {
+          hit.addEventListener('click', function (e) {
+            e.preventDefault();
+            e.stopPropagation();
+            if (document.body.classList.contains('resumo-sheet-open')) return;
+            abrirResumoSheet();
           });
-        }, { threshold: 0.15 });
-        observer.observe(target);
+        }
+        if (bd) {
+          bd.addEventListener('click', function () { fecharResumoSheet(); });
+        }
+        // Deslize para baixo no sheet (ou no puxador) fecha — não fecha por toque nos botões da barra
+        var startY = null;
+        function onTouchStart(e) {
+          if (!document.body.classList.contains('resumo-sheet-open')) return;
+          var t = e.touches && e.touches[0];
+          if (!t) return;
+          startY = t.clientY;
+        }
+        function onTouchEnd(e) {
+          if (startY == null) return;
+          var t = e.changedTouches && e.changedTouches[0];
+          if (!t) { startY = null; return; }
+          var dy = t.clientY - startY;
+          startY = null;
+          if (dy > 64) fecharResumoSheet();
+        }
+        if (sheet) {
+          sheet.addEventListener('touchstart', onTouchStart, { passive: true });
+          sheet.addEventListener('touchend', onTouchEnd, { passive: true });
+        }
+        if (handle) {
+          handle.addEventListener('touchstart', onTouchStart, { passive: true });
+          handle.addEventListener('touchend', onTouchEnd, { passive: true });
+        }
+        window.addEventListener('resize', function () {
+          if (window.innerWidth >= 1024) fecharResumoSheet();
+        });
       }
       function aplicarTravaSomenteLeitura(statusTexto) {
         formularioBloqueadoSomenteLeitura = true;
