@@ -1,4 +1,4 @@
-  (function () {
+    (function () {
       'use strict';
       var WHATSAPP_SUPORTE = '';
       var CATALOG_SB_URL = 'https://paetkspbfejtjjkngqej.supabase.co';
