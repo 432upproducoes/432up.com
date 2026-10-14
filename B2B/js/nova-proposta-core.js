@@ -412,15 +412,25 @@
       }
       function preencherPortalResumo(portal) {
         var html = montarHtmlResumoSheet();
-        // Um único handle + padding generoso embaixo (barra Total/Enviar ~72px)
         portal.innerHTML =
           '<div class="np-resumo-card glass-amber-summary" style="display:block!important;color:#e2e8f0!important;' +
           'padding:1rem 1.25rem 9rem!important;min-height:100%;' +
           'background:linear-gradient(135deg,rgba(245,158,11,0.12),rgba(10,18,28,0.96));' +
-          'border-radius:1rem 1rem 0 0;">' +
+          'border-radius:1rem 1rem 0 0;position:relative!important;top:auto!important;max-height:none!important;">' +
           '<div style="text-align:center;padding:6px 0 10px;touch-action:none;" data-np-sheet-handle="1">' +
           '<span style="display:inline-block;width:40px;height:4px;border-radius:99px;background:rgba(255,255,255,0.28)"></span></div>' +
           html + '</div>';
+        // Antes de remover ids, copia classes de layout (flex dos chips)
+        var idClass = {
+          chipsFormaPagamento: 'np-chipsFormaPagamento',
+          chipsCondicaoPagamento: 'np-chipsCondicaoPagamento',
+          containerAcoesBotoes: 'np-containerAcoesBotoes',
+          boxPagamento: 'np-boxPagamento'
+        };
+        Object.keys(idClass).forEach(function (id) {
+          var el = portal.querySelector('#' + id);
+          if (el) el.classList.add(idClass[id]);
+        });
         portal.querySelectorAll('[id]').forEach(function (el) { el.removeAttribute('id'); });
       }
       function abrirResumoSheet() {
@@ -461,6 +471,7 @@
           portal.addEventListener('click', function (e) {
             if (!document.body.classList.contains('resumo-sheet-open')) return;
             var t = e.target;
+            if (t && t.nodeType !== 1) t = t.parentElement;
             if (!t || !t.closest) return;
 
             function refreshSheet() {
@@ -591,116 +602,24 @@
         });
       }
       /**
-       * Desktop: clone fixo no body com base em scrollY (mais confiável no Safari/iPad).
+       * Desktop: volta ao sticky CSS original (.sticky-card no nova-proposta.css).
+       * A classe sticky-card tinha sido removida sem querer — por isso parou de grudar.
+       * JS float desligado de propósito.
        */
       function setupDesktopStickyResumo() {
-        var col = document.getElementById('sidebarTargetAnchor');
-        if (!col) {
-          console.warn('[NP] desktop: #sidebarTargetAnchor ausente');
-          return;
+        console.log('[NP] desktop: sticky CSS (.sticky-card) — JS float off');
+        // Garante que nenhum float residual fique no body
+        document.querySelectorAll('[data-np-float]').forEach(function (el) {
+          if (el.parentNode) el.parentNode.removeChild(el);
+        });
+        var card = document.querySelector('#sidebarTargetAnchor .sticky-card, #sidebarTargetAnchor .np-resumo-card');
+        if (card) {
+          card.style.visibility = '';
+          card.style.position = '';
+          card.style.top = '';
+          card.style.left = '';
+          card.style.width = '';
         }
-        var topGap = 88;
-        var floatEl = null;
-        var colTopDoc = null;
-
-        function cardEl() {
-          return col.querySelector('.np-resumo-card') || col.querySelector('.glass-amber-summary');
-        }
-
-        function destroyFloat() {
-          if (floatEl && floatEl.parentNode) floatEl.parentNode.removeChild(floatEl);
-          floatEl = null;
-          var c = cardEl();
-          if (c) c.style.visibility = '';
-        }
-
-        function measureColTop() {
-          var c = cardEl();
-          if (!c) return;
-          // só mede quando não está pinned (visibility visible)
-          if (floatEl) return;
-          var r = col.getBoundingClientRect();
-          colTopDoc = r.top + (window.pageYOffset || document.documentElement.scrollTop || 0);
-        }
-
-        function update() {
-          try {
-            if (window.innerWidth < 1024) {
-              destroyFloat();
-              colTopDoc = null;
-              return;
-            }
-            var card = cardEl();
-            if (!card) return;
-
-            if (colTopDoc == null) measureColTop();
-
-            var scrollY = window.pageYOffset || document.documentElement.scrollTop || 0;
-            var leftCol = document.querySelector('main .lg\\:col-span-2') || document.querySelector('main .min-w-0');
-            var leftRect = leftCol ? leftCol.getBoundingClientRect() : null;
-            var colRect = col.getBoundingClientRect();
-
-            // Gruda quando o scroll passou do topo natural da coluna
-            var shouldPin = (colTopDoc != null && scrollY + topGap >= colTopDoc) || colRect.top <= topGap;
-            if (leftRect && leftRect.bottom <= topGap + 30) shouldPin = false;
-
-            if (!shouldPin) {
-              destroyFloat();
-              // re-mede topo quando solto
-              measureColTop();
-              return;
-            }
-
-            if (!floatEl) {
-              floatEl = card.cloneNode(true);
-              floatEl.querySelectorAll('[id]').forEach(function (el) { el.removeAttribute('id'); });
-              floatEl.setAttribute('data-np-float', '1');
-              document.body.appendChild(floatEl);
-              card.style.visibility = 'hidden';
-              floatEl._sync = 0;
-              console.log('[NP] desktop PIN on');
-            } else if (!floatEl._sync || Date.now() - floatEl._sync > 350) {
-              floatEl.innerHTML = card.innerHTML;
-              floatEl.querySelectorAll('[id]').forEach(function (el) { el.removeAttribute('id'); });
-              floatEl._sync = Date.now();
-            }
-
-            var maxH = Math.max(220, window.innerHeight - topGap - 12);
-            var flH = Math.min(floatEl.scrollHeight || 400, maxH);
-            var top = topGap;
-            if (leftRect && leftRect.bottom < topGap + flH) {
-              top = Math.max(8, leftRect.bottom - flH);
-            }
-            var w = colRect.width;
-            var left = colRect.left;
-            if (w < 120 && leftCol) {
-              var gr = leftCol.parentElement ? leftCol.parentElement.getBoundingClientRect() : null;
-              if (gr) {
-                w = Math.max(200, (gr.width - 32) / 3);
-                left = gr.right - w;
-              }
-            }
-            floatEl.style.cssText =
-              'position:fixed!important;top:' + top + 'px!important;left:' + left + 'px!important;' +
-              'width:' + w + 'px!important;z-index:45!important;max-height:' + maxH + 'px!important;' +
-              'overflow-y:auto!important;margin:0!important;box-sizing:border-box!important;' +
-              'visibility:visible!important;opacity:1!important;pointer-events:auto!important;' +
-              'background:linear-gradient(135deg,rgba(245,158,11,0.10),rgba(10,18,28,0.95))!important;' +
-              'border:1px solid rgba(245,158,11,0.35)!important;border-radius:1rem!important;';
-          } catch (err) {
-            console.warn('[NP] desktop float', err);
-          }
-        }
-
-        window.addEventListener('scroll', update, { passive: true, capture: true });
-        document.addEventListener('scroll', update, { passive: true, capture: true });
-        window.addEventListener('resize', function () { colTopDoc = null; destroyFloat(); update(); });
-        setInterval(update, 500);
-        function loop() { update(); requestAnimationFrame(loop); }
-        requestAnimationFrame(loop);
-        setTimeout(measureColTop, 300);
-        setTimeout(measureColTop, 1200);
-        console.log('[NP] desktop float-follow ativo');
       }
       function aplicarTravaSomenteLeitura(statusTexto) {
         formularioBloqueadoSomenteLeitura = true;
