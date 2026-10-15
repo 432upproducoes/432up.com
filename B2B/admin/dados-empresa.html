@@ -17,6 +17,7 @@
 
   <style>
     input:disabled, select:disabled { opacity: .4; cursor: not-allowed; }
+    .bloco-inativo { opacity: .5; }
   </style>
 </head>
 <body class="h-full text-slate-200 font-sans antialiased bg-[#06080c] overflow-x-hidden">
@@ -147,63 +148,66 @@
             </div>
           </div>
 
-          <!-- DADOS BANCÁRIOS (conta da 432UP) -->
-          <h3 style="margin:20px 0 12px;font-size:1rem;font-weight:600">Dados bancários</h3>
-          <div class="leads-filters">
-            <div class="field">
-              <label for="banco">Banco</label>
-              <input id="banco" type="text">
-            </div>
-            <div class="field">
-              <label for="codigo_banco">Código do banco</label>
-              <input id="codigo_banco" type="text">
-            </div>
-            <div class="field">
-              <label for="agencia">Agência</label>
-              <input id="agencia" type="text">
-            </div>
-            <div class="field">
-              <label for="conta">Conta</label>
-              <input id="conta" type="text">
-            </div>
-            <div class="field">
-              <label for="tipo_conta">Tipo de conta</label>
-              <input id="tipo_conta" type="text">
-            </div>
-            <div class="field">
-              <label for="titular">Titular</label>
-              <input id="titular" type="text">
-            </div>
-            <div class="field">
-              <label for="documento_titular">Documento do titular</label>
-              <input id="documento_titular" type="text">
-            </div>
-            <div class="field">
-              <label for="tipo_chave_pix">Tipo de chave Pix</label>
-              <input id="tipo_chave_pix" type="text">
-            </div>
-            <div class="field">
-              <label for="chave_pix">Chave Pix</label>
-              <input id="chave_pix" type="text">
-            </div>
-            <div class="field">
-              <label for="ativo">Conta ativa</label>
-              <select id="ativo">
-                <option value="true">Sim</option>
-                <option value="false">Não</option>
-              </select>
+          <!-- CONTA DA 432UP (vermelho): ativa quando o checkbox está desmarcado -->
+          <div id="bloco-conta-empresa">
+            <h3 style="margin:20px 0 12px;font-size:1rem;font-weight:600">Conta da 432UP (recebedor padrão)</h3>
+            <div class="leads-filters">
+              <div class="field">
+                <label for="banco">Banco</label>
+                <input id="banco" type="text">
+              </div>
+              <div class="field">
+                <label for="codigo_banco">Código do banco</label>
+                <input id="codigo_banco" type="text">
+              </div>
+              <div class="field">
+                <label for="agencia">Agência</label>
+                <input id="agencia" type="text">
+              </div>
+              <div class="field">
+                <label for="conta">Conta</label>
+                <input id="conta" type="text">
+              </div>
+              <div class="field">
+                <label for="tipo_conta">Tipo de conta</label>
+                <input id="tipo_conta" type="text">
+              </div>
+              <div class="field">
+                <label for="titular">Titular</label>
+                <input id="titular" type="text">
+              </div>
+              <div class="field">
+                <label for="documento_titular">Documento do titular</label>
+                <input id="documento_titular" type="text">
+              </div>
+              <div class="field">
+                <label for="tipo_chave_pix">Tipo de chave Pix</label>
+                <input id="tipo_chave_pix" type="text">
+              </div>
+              <div class="field">
+                <label for="chave_pix">Chave Pix</label>
+                <input id="chave_pix" type="text">
+              </div>
+              <div class="field">
+                <label for="ativo">Conta ativa</label>
+                <select id="ativo">
+                  <option value="true">Sim</option>
+                  <option value="false">Não</option>
+                </select>
+              </div>
             </div>
           </div>
 
-          <!-- RECEBEDOR SECUNDÁRIO (só vai para o contrato se marcado) -->
-          <div style="margin-top:16px;">
+          <!-- CHECKBOX: alterna entre a conta da 432UP e o outro recebedor -->
+          <div style="margin-top:20px;">
             <label style="display:flex;align-items:center;gap:8px;cursor:pointer;">
               <input id="aplicar_recebedor" type="checkbox" onchange="aplicarEstadoRecebedor()">
-              Usar outro recebedor no contrato
+              Usar outro recebedor no contrato (desmarcado = usa a conta da 432UP)
             </label>
           </div>
 
-          <div id="bloco-recebedor-alt" style="display:none;">
+          <!-- OUTRO RECEBEDOR (amarelo): ativo quando o checkbox está marcado -->
+          <div id="bloco-recebedor-alt">
             <h3 style="margin:20px 0 12px;font-size:1rem;font-weight:600">Outro recebedor</h3>
             <div class="leads-filters">
               <div class="field">
@@ -565,10 +569,14 @@
     contato_email: 'email'
   };
 
-  /* Bancários: id da tela = coluna da tabela co_dados_bancarios_empresa */
-  var CAMPOS_BANCARIOS = [
+  /* Conta da 432UP (vermelho): id da tela = coluna da tabela co_dados_bancarios_empresa */
+  var CAMPOS_CONTA_EMPRESA = [
     'banco', 'codigo_banco', 'agencia', 'conta', 'tipo_conta',
-    'titular', 'documento_titular', 'tipo_chave_pix', 'chave_pix',
+    'titular', 'documento_titular', 'tipo_chave_pix', 'chave_pix'
+  ];
+
+  /* Outro recebedor (amarelo): colunas recebedor_alt_* */
+  var CAMPOS_RECEBEDOR_ALT = [
     'recebedor_alt_nome', 'recebedor_alt_documento', 'recebedor_alt_tipo',
     'recebedor_alt_tipo_chave_pix', 'recebedor_alt_chave_pix'
   ];
@@ -602,14 +610,20 @@
     inp.addEventListener('input', aplicar);
   }
 
-  // Checkbox marcado: habilita o outro recebedor. Desmarcado: esconde e bloqueia.
+  // Checkbox marcado: bloqueia a conta da 432UP e libera o outro recebedor.
+  // Desmarcado: o inverso. Os dois blocos continuam visíveis; o inativo fica cinza.
   function aplicarEstadoRecebedor() {
     var outro = campo('aplicar_recebedor').checked;
-    ['recebedor_alt_nome', 'recebedor_alt_documento', 'recebedor_alt_tipo',
-     'recebedor_alt_tipo_chave_pix', 'recebedor_alt_chave_pix'].forEach(function (id) {
+
+    CAMPOS_CONTA_EMPRESA.forEach(function (id) {
+      campo(id).disabled = outro;
+    });
+    CAMPOS_RECEBEDOR_ALT.forEach(function (id) {
       campo(id).disabled = !outro;
     });
-    document.getElementById('bloco-recebedor-alt').style.display = outro ? '' : 'none';
+
+    document.getElementById('bloco-conta-empresa').classList.toggle('bloco-inativo', outro);
+    document.getElementById('bloco-recebedor-alt').classList.toggle('bloco-inativo', !outro);
   }
 
   async function carregarDadosEmpresa() {
@@ -645,7 +659,7 @@
       campo(idCampo).value = v == null ? '' : v;
     });
 
-    // C) Dados bancários
+    // C) Dados bancários (conta da 432UP + outro recebedor)
     var resB = await sbPartner
       .from('co_dados_bancarios_empresa')
       .select('*')
@@ -654,7 +668,11 @@
     if (resB.error) { console.error(resB.error); toast('Erro ao carregar', 'err'); return; }
     if (!resB.data) { toast('Dados bancários não encontrados', 'err'); return; }
     bancarioId = resB.data.id;
-    CAMPOS_BANCARIOS.forEach(function (n) {
+    CAMPOS_CONTA_EMPRESA.forEach(function (n) {
+      var v = resB.data[n];
+      campo(n).value = v == null ? '' : v;
+    });
+    CAMPOS_RECEBEDOR_ALT.forEach(function (n) {
       var v = resB.data[n];
       campo(n).value = v == null ? '' : v;
     });
@@ -683,7 +701,8 @@
 
   function obterDadosBancarios() {
     var dados = {};
-    CAMPOS_BANCARIOS.forEach(function (n) {
+    // .value é lido mesmo com o campo bloqueado, então o registro inativo não é apagado ao salvar
+    CAMPOS_CONTA_EMPRESA.concat(CAMPOS_RECEBEDOR_ALT).forEach(function (n) {
       dados[n] = campo(n).value.trim() || null;
     });
     dados.ativo = campo('ativo').value === 'true';
