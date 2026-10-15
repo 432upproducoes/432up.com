@@ -76,6 +76,7 @@
     }
 
     .badge { background: rgba(0, 255, 102, 0.22); color: #B9FFD3; }
+    .badge-nao-lida { background: rgba(0, 229, 255, 0.35); color: #fff; }
 
     .chip {
       padding: 5px 14px;
@@ -113,6 +114,18 @@
       box-shadow: 0 0 8px var(--ciano);
     }
     .cartao-email.nao-lida { border-left: 3px solid var(--ciano); }
+
+    .aba {
+      padding: 6px 12px;
+      font-size: 13px;
+      color: var(--texto-muted);
+      border-bottom: 2px solid transparent;
+      cursor: pointer;
+      background: none;
+      border-top: none; border-left: none; border-right: none;
+    }
+    .aba:hover { color: #fff; }
+    .aba.ativa { color: #fff; font-weight: 700; border-bottom-color: var(--ciano); background: rgba(0, 229, 255, 0.12); border-radius: 8px 8px 0 0; }
 
     .barra-ferramentas { background: var(--vidro-bg-2); border: 1px solid var(--borda); }
     .barra-ferramentas button {
@@ -215,6 +228,9 @@
     .status-rascunho { background: rgba(168,85,247,0.3); color: #E9D5FF; }
     .status-recebido { background: rgba(0,229,255,0.15); color: #BDF6FF; }
 
+
+    /* Responsivo: em telas pequenas a interface vira uma navegação por telas,
+       em vez de empilhar lista, leitura e editor numa página interminável. */
     .mobile-only { display: none; }
     @media (max-width: 1023px) {
       html, body { min-height: 100%; height: auto; }
@@ -271,6 +287,7 @@
       border: 1px solid var(--borda);
     }
 
+    /* ===== CORREÇÕES (menu do topo, filtros, mover para pasta, gaveta mobile) ===== */
     :root{--menu-topo:72px;--h-ctl:36px;--conteudo-topo:100px}
     html{scroll-padding-top:calc(var(--menu-topo) + 8px)}
     select option{background:#1a1030;color:#fff}
@@ -316,8 +333,10 @@
   <div id="toast-container" class="fixed bottom-5 right-5 z-[60] flex flex-col gap-2 pointer-events-none"></div>
 
   <div id="conteudo-email" class="relative z-10 flex flex-col min-h-screen pt-4 lg:pt-6 pb-6 px-3 lg:px-8 max-w-[1650px] mx-auto w-full">
+    <!-- Overlay mobile (dentro do container, no mesmo contexto de empilhamento da gaveta) -->
     <div id="overlay-mobile" class="overlay-mobile" onclick="fecharSidebarMobile()"></div>
 
+    <!-- Botão hamburger mobile -->
     <button onclick="abrirSidebarMobile()" class="lg:hidden mb-3 btn-vidro px-4 py-2 rounded-full text-sm flex items-center gap-2 w-fit">
       <svg class="w-5 h-5" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path stroke-linecap="round" d="M4 6h16M4 12h16M4 18h16"/></svg>
       Pastas
@@ -335,7 +354,9 @@
             Escrever E-mail
           </button>
 
-          <ul class="space-y-1 text-sm" id="lista-pastas"></ul>
+          <ul class="space-y-1 text-sm" id="lista-pastas">
+            <!-- preenchido por JS -->
+          </ul>
 
           <div class="pt-2 border-t border-white/10 space-y-2">
             <button onclick="criarPasta()" class="btn-vidro w-full py-2 px-3 rounded-xl text-xs flex items-center justify-center gap-1.5">
@@ -345,11 +366,12 @@
           </div>
         </div>
 
+        <!-- Lixeira rápida -->
         <div class="vidro p-3 flex-1 min-h-0 flex flex-col">
           <div class="flex items-center justify-between mb-2">
             <span class="text-xs font-bold text-white/80">Lixeira</span>
             <div class="flex gap-1">
-              <button onclick="restaurarLixeira()" class="text-[10px] text-cyan-300 hover:underline" title="Restaurar">Restaurar</button>
+              <button onclick="restaurarSelecionadosLixeira()" class="text-[10px] text-cyan-300 hover:underline" title="Restaurar">Restaurar</button>
               <button onclick="esvaziarLixeira()" class="text-[10px] text-red-300 hover:underline">Esvaziar</button>
             </div>
           </div>
@@ -389,6 +411,7 @@
       <!-- COLUNA 3: LEITURA / COMPOSER -->
       <section class="email-detail-pane col-span-12 lg:col-span-5 flex flex-col h-full min-h-0">
         <div class="vidro flex flex-col h-full min-h-0 overflow-hidden">
+          <!-- Abas -->
           <div class="flex items-center gap-1 px-3 pt-2 border-b border-white/10 shrink-0 flex-wrap">
             <button type="button" class="mobile-only btn-vidro text-xs px-3 py-1.5 rounded-full" onclick="voltarListaMobile()">← Lista</button>
             <button class="aba ativa" data-modo="leitura" onclick="trocarModo('leitura')">Leitura</button>
@@ -397,8 +420,10 @@
             <button onclick="abrirTelaCheia()" class="text-xs text-cyan-300 hover:underline px-2" title="Tela cheia">⛶</button>
           </div>
 
+          <!-- Painel leitura -->
           <div id="painel-leitura" class="flex-1 overflow-y-auto p-4 min-h-0"></div>
 
+          <!-- Painel composer (oculto por padrão) -->
           <div id="painel-composer" class="flex-1 overflow-y-auto p-4 min-h-0 hidden flex-col gap-3">
             <div class="space-y-2">
               <div class="flex items-center gap-2 border-b border-white/10 pb-2">
@@ -415,6 +440,7 @@
               </div>
             </div>
 
+            <!-- Modelos e assinatura -->
             <div class="flex flex-wrap gap-3 items-center">
               <select id="seletor-modelo" onchange="aplicarModelo(this.value)" class="ctl-composer bg-black/30 border border-white/20 rounded-lg text-xs text-white">
                 <option value="">Modelos de resposta…</option>
@@ -426,6 +452,7 @@
               <button onclick="inserirAssinatura()" class="btn-vidro text-xs ctl-composer rounded-lg">Inserir assinatura</button>
             </div>
 
+            <!-- Toolbar editor -->
             <div class="barra-ferramentas flex flex-wrap gap-1 p-1.5 rounded-xl">
               <button data-cmd="bold" title="Negrito" aria-label="Negrito"><b>N</b></button>
               <button data-cmd="italic" title="Itálico"><i>I</i></button>
@@ -436,6 +463,7 @@
 
             <div id="editor-corpo" class="editor flex-1" contenteditable="true" data-placeholder="Escreva sua mensagem..."></div>
 
+            <!-- Anexos -->
             <div class="space-y-2">
               <div class="flex items-center justify-between">
                 <span class="text-xs font-semibold text-white/70">Anexos <span class="text-white/40">(máx. 10 MB · PDF, imagens)</span></span>
@@ -448,7 +476,7 @@
             </div>
 
             <div class="flex flex-wrap gap-2 pt-2">
-              <button id="btn-enviar" onclick="enviarEmail()" class="btn-amarelo px-5 py-2.5 rounded-full text-sm">Enviar</button>
+              <button onclick="enviarEmail()" class="btn-amarelo px-5 py-2.5 rounded-full text-sm">Enviar</button>
               <button onclick="salvarRascunho(true)" class="btn-vidro px-4 py-2.5 rounded-full text-sm">Salvar rascunho</button>
               <button onclick="descartarComposer()" class="botao-lixeira px-4 py-2.5 rounded-full text-sm">Descartar</button>
               <span id="status-rascunho" class="text-[11px] text-white/50 self-center ml-auto"></span>
@@ -459,6 +487,7 @@
     </main>
   </div>
 
+  <!-- MODAL TELA CHEIA / CONFIRMAÇÃO -->
   <div id="modal-fundo" class="modal-fundo" onclick="if(event.target===this) fecharModal()">
     <div class="modal-cartao" id="modal-cartao">
       <div class="flex items-center justify-between mb-3 shrink-0">
@@ -472,6 +501,7 @@
     </div>
   </div>
 
+  <!-- MODAL CONFIRMAÇÃO -->
   <div id="modal-confirm" class="modal-fundo" onclick="if(event.target===this) fecharConfirm()">
     <div class="modal-cartao" style="max-width:420px">
       <h2 id="confirm-titulo" class="text-lg font-bold text-white mb-2"></h2>
@@ -496,6 +526,7 @@
 
   const LIMITE_ANEXO_MB = 10;
   const LIMITE_TOTAL_ANEXOS_MB = 25;
+  // Endpoint seguro (Edge Function) que chama a API Resend. Nunca coloque a chave secreta aqui.
   const EMAIL_API_ENDPOINT = 'https://paetkspbfejtjjkngqej.supabase.co/functions/v1/gerenciador-de-email/enviar';
   const INTERVALO_ATUALIZACAO_MS = 60000;
   const TIPOS_ANEXO = ['application/pdf', 'image/png', 'image/jpeg', 'image/webp', 'image/gif'];
@@ -534,15 +565,20 @@
     rascunhoTimer: null,
     ultimaAcao: null,
     carregando: false,
-    enviando: false
+    enviando: false,
+    salvandoRascunho: false
   };
 
   // ---------- INICIALIZAÇÃO ----------
   document.addEventListener('DOMContentLoaded', async () => {
+    // Remove restos do armazenamento local das versões antigas (agora tudo vem do Supabase)
+    try { localStorage.removeItem('432up_email_admin_v2'); localStorage.removeItem('432up_email_admin_v3'); } catch (e) {}
+
     ligarFerramentas();
     document.body.classList.add('mobile-view-list');
     trocarModo('leitura');
 
+    // Auto-save rascunho a cada 8s se estiver no composer
     document.getElementById('editor-corpo').addEventListener('input', agendarRascunho);
     document.getElementById('campo-assunto').addEventListener('input', agendarRascunho);
     document.getElementById('campo-para').addEventListener('input', agendarRascunho);
@@ -575,7 +611,7 @@
     document.addEventListener('visibilitychange', () => { if (!document.hidden) carregarTudo(true); });
   });
 
-  // ---------- CARGA DO BANCO ----------
+  // ---------- CARGA DO BANCO (recebimento) ----------
   async function carregarTudo(silencioso) {
     if (estado.carregando) return;
     estado.carregando = true;
@@ -739,18 +775,16 @@
     return r;
   }
 
+  // ---------- FILTRO DE DATAS (cápsulas) ----------
   function atualizarChipData(input) {
     const chip = input.closest('.chip-data');
     chip.classList.toggle('ativo', !!input.value);
     chip.querySelector('.val').textContent = input.value ? input.value.split('-').reverse().join('/') : 'dd/mm/aaaa';
   }
-
   function limparData(ev, id) {
     ev.preventDefault(); ev.stopPropagation();
     const i = document.getElementById(id);
-    i.value = '';
-    atualizarChipData(i);
-    buscar();
+    i.value = ''; atualizarChipData(i); buscar();
   }
 
   // ---------- LISTA ----------
@@ -808,7 +842,7 @@
     estado.ativoId = id;
     const m = encontrarEmail(id);
     if (m && m.direcao === 'recebida' && !m.lida) {
-      await atualizarCampos(id, { lida: true });
+      await atualizarCampos(id, { lida: true }, true);
     }
     renderizarLista();
     trocarModo('leitura');
@@ -877,16 +911,19 @@
   }
 
   // ---------- AÇÕES DE MENSAGEM ----------
-  async function atualizarCampos(id, campos) {
+  async function atualizarCampos(id, campos, silencioso) {
     const antes = encontrarEmail(id);
-    if (!antes) return;
+    if (!antes) return false;
     const snapshot = {};
     Object.keys(campos).forEach(k => snapshot[k] = antes[k]);
-    const { error } = await sb.from('email_mensagens')
+    const { data, error } = await sb.from('email_mensagens')
       .update({ ...campos, atualizado_em: new Date().toISOString() })
-      .eq('id', id);
-    if (error) {
-      mostrarAviso('Não foi possível salvar: ' + error.message, true);
+      .eq('id', id)
+      .select('id');
+    if (error || !data || !data.length) {
+      const msg = error ? error.message : 'sem permissão para alterar esta mensagem';
+      console.error('[E-mail] Falha ao atualizar:', msg);
+      if (!silencioso) mostrarAviso('Não foi possível salvar: ' + msg, true);
       return false;
     }
     Object.assign(antes, campos);
@@ -898,7 +935,7 @@
     const m = encontrarEmail(estado.ativoId);
     if (!m) return;
     await atualizarCampos(m.id, { lida: !m.lida });
-    mostrarAviso(m.lida ? 'Marcada como não lida' : 'Marcada como lida');
+    mostrarAviso(m.lida ? 'Marcada como lida' : 'Marcada como não lida');
   }
 
   function preencherComposer({ para = '', cc = '', assunto = '', corpoHtml = '', anexos = [] }) {
@@ -988,6 +1025,7 @@
     }
   }
 
+  // ---------- MOVER PARA PASTA ----------
   function seletorMoverHtml(m) {
     const atual = pastaDoEmail(m);
     const dest = [
@@ -1024,6 +1062,7 @@
     if (estado.pastasCustom.some(p => p.id === destinoId)) return moverPara(m, { tipo: 'custom', id: destinoId });
     if (destinoId === 'enviados' && m.direcao !== 'enviada') return mostrarAviso('Só mensagens enviadas podem ir para Enviados.', true);
     if (destinoId === 'lixeira') return moverParaLixeiraPorId(id);
+    if (destinoId === 'rascunhos' || m.direcao === 'rascunho') return;
     return moverPara(m, { tipo: 'sistema', id: destinoId });
   }
 
@@ -1069,7 +1108,7 @@
     fecharSidebarMobile();
   }
 
-  async function restaurarLixeira() {
+  async function restaurarSelecionadosLixeira() {
     const itens = mensagensDaPasta('lixeira');
     if (!itens.length) return;
     const antes = [];
@@ -1094,11 +1133,13 @@
     const itens = mensagensDaPasta('lixeira');
     if (!itens.length) return mostrarAviso('Lixeira já está vazia.', true);
     confirmar('Esvaziar lixeira?', 'Esta ação é irreversível. Todas as mensagens da lixeira serão apagadas.', async () => {
-      const { error } = await sb.from('email_mensagens')
+      const { data, error } = await sb.from('email_mensagens')
         .delete()
         .eq('dono_user_id', estado.me.user_id)
-        .not('excluida_em', 'is', null);
+        .not('excluida_em', 'is', null)
+        .select('id');
       if (error) return mostrarAviso('Não foi possível esvaziar: ' + error.message, true);
+      if (!data || !data.length) return mostrarAviso('Nada foi apagado: sem permissão para excluir.', true);
       estado.ultimaAcao = null;
       mostrarAviso('Lixeira esvaziada.');
       carregarTudo(true);
@@ -1110,12 +1151,15 @@
     const a = estado.ultimaAcao;
     if (!a) return mostrarAviso('Nada para desfazer.', true);
     if (a.tipo === 'movimento') {
+      let falhou = false;
       for (const item of a.itens) {
-        await sb.from('email_mensagens')
+        const { data, error } = await sb.from('email_mensagens')
           .update({ ...item.antes, atualizado_em: new Date().toISOString() })
-          .eq('id', item.id);
+          .eq('id', item.id)
+          .select('id');
+        if (error || !data || !data.length) falhou = true;
       }
-      mostrarAviso('Ação desfeita.');
+      mostrarAviso(falhou ? 'Não foi possível desfazer tudo.' : 'Ação desfeita.', falhou);
       carregarTudo(true);
     }
     estado.ultimaAcao = null;
@@ -1132,7 +1176,9 @@
 
   // ---------- COMPOSER ----------
   function abrirNovaMensagem() {
-    preencherComposer({});
+    limparComposer();
+    trocarModo('composer');
+    definirTelaMobile('reader');
   }
 
   function trocarModo(modo) {
@@ -1168,65 +1214,70 @@
   async function enviarEmail() {
     if (estado.enviando) return;
     const d = dadosComposer();
-    if (!d.para.length) return mostrarAviso('Informe ao menos um destinatário.', true);
-    const erroPara = validarEmails(d.para) || (d.cc.length ? validarEmails(d.cc) : null);
-    if (erroPara) return mostrarAviso(erroPara, true);
-    if (!d.corpo_texto) return mostrarAviso('Escreva o conteúdo do e-mail antes de enviar.', true);
+    if (!d.para.length) { mostrarAviso('Informe ao menos um destinatário.', true); return; }
+    const erroEmail = validarEmails(d.para) || (d.cc.length ? validarEmails(d.cc) : null);
+    if (erroEmail) { mostrarAviso(erroEmail, true); return; }
+    if (!d.corpo_texto) { mostrarAviso('Escreva o conteúdo do e-mail antes de enviar.', true); return; }
     if (estado.anexosComposer.some(a => !a.file)) {
-      return mostrarAviso('Anexos encaminhados precisam ser anexados de novo para enviar.', true);
+      mostrarAviso('Um ou mais anexos encaminhados não estão disponíveis nesta sessão. Anexe os arquivos novamente.', true);
+      return;
+    }
+    if (!EMAIL_API_ENDPOINT) {
+      mostrarAviso('Envio indisponível: o endpoint de envio não está configurado. Nada foi enviado.', true);
+      return;
     }
 
-    const btn = document.getElementById('btn-enviar');
+    const btn = document.querySelector('button[onclick="enviarEmail()"]');
     estado.enviando = true;
-    btn.disabled = true;
-    btn.textContent = 'Enviando…';
+    clearTimeout(estado.rascunhoTimer);
+    if (btn) { btn.disabled = true; btn.textContent = 'Enviando…'; }
     try {
       const anexos = await Promise.all(estado.anexosComposer.map(async a => ({
         filename: a.nome,
         content: await arquivoBase64(a.file),
         contentType: a.tipo || 'application/octet-stream'
       })));
-
-      const { data: sessao } = await sb.auth.getSession();
-      const token = sessao?.session?.access_token;
-      if (!token) throw new Error('sessão expirada. Entre de novo.');
-
-      const resposta = await fetch(EMAIL_API_ENDPOINT, {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-          'Authorization': 'Bearer ' + token,
-          'apikey': PARTNER_CFG.SB_KEY
-        },
-        body: JSON.stringify({
-          to: d.para,
-          cc: d.cc,
-          subject: d.assunto,
-          html: d.corpo_html,
-          text: d.corpo_texto,
-          attachments: anexos
-        })
+      const payload = {
+        to: d.para,
+        cc: d.cc,
+        subject: d.assunto,
+        html: sanitizarHtml(d.corpo_html, true),
+        text: d.corpo_texto,
+        attachments: anexos
+      };
+      const headers = { 'Content-Type': 'application/json' };
+      // Se a configuração do portal expuser o cliente Supabase, encaminha o JWT da sessão.
+      // O endpoint deve validar esse token no servidor; CORS não é controle de acesso.
+      try {
+        if (typeof sbPartner !== 'undefined' && sbPartner?.auth?.getSession) {
+          const sessionResult = await sbPartner.auth.getSession();
+          const token = sessionResult?.data?.session?.access_token;
+          if (token) headers.Authorization = 'Bearer ' + token;
+        }
+      } catch (authErr) { console.warn('[432UP E-mail] Não foi possível obter sessão para o endpoint.', authErr); }
+      const response = await fetch(EMAIL_API_ENDPOINT, {
+        method: 'POST', headers, credentials: 'same-origin', body: JSON.stringify(payload)
       });
-      const resultado = await resposta.json().catch(() => ({}));
-      if (!resposta.ok || resultado.ok === false) {
-        throw new Error(resultado.message || 'falha (' + resposta.status + ').');
+      let result = {};
+      try { result = await response.json(); } catch (_) {}
+      if (!response.ok || result.ok === false) {
+        throw new Error(result.message || result.error || `Falha no endpoint (${response.status}).`);
       }
 
       if (estado.rascunhoEditandoId) await descartarRascunho(estado.rascunhoEditandoId);
       limparComposer();
       estado.pasta = 'enviados';
-      estado.ativoId = resultado.id ? null : null;
+      estado.ativoId = null;
       await carregarTudo(true);
       trocarModo('leitura');
       definirTelaMobile('list');
-      mostrarAviso('Enviado. Entrega e leitura aparecem aqui conforme o provedor informa.');
+      mostrarAviso('Solicitação aceita pelo endpoint. Isso confirma o envio ao provedor, não entrega nem leitura.');
     } catch (err) {
-      console.error('[E-mail] Falha no envio:', err);
-      mostrarAviso('Não foi possível enviar: ' + (err.message || 'erro de rede') + '. O conteúdo foi mantido.', true);
+      console.error('[432UP E-mail] Falha no envio:', err);
+      mostrarAviso('Não foi possível enviar: ' + (err.message || 'erro de rede') + '. O conteúdo foi mantido para nova tentativa.', true);
     } finally {
       estado.enviando = false;
-      btn.disabled = false;
-      btn.textContent = 'Enviar';
+      if (btn) { btn.disabled = false; btn.textContent = 'Enviar'; }
     }
   }
 
@@ -1242,12 +1293,14 @@
   // ---------- RASCUNHOS (no servidor) ----------
   async function salvarRascunho(manual) {
     if (estado.enviando) return;
+    if (estado.salvandoRascunho) { agendarRascunho(); return; }
     const d = dadosComposer();
     const vazio = !d.para.length && !document.getElementById('campo-assunto').value.trim() && !d.corpo_texto;
     if (vazio) {
       if (manual) mostrarAviso('Nada para salvar.', true);
       return;
     }
+    estado.salvandoRascunho = true;
     const status = document.getElementById('status-rascunho');
     const campos = {
       para: d.para,
@@ -1278,6 +1331,7 @@
       if (data) estado.rascunhoEditandoId = data.id;
     }
 
+    estado.salvandoRascunho = false;
     if (erro) {
       status.textContent = 'Não salvou: ' + erro.message;
       if (manual) mostrarAviso('Não foi possível salvar o rascunho.', true);
@@ -1295,8 +1349,11 @@
 
   async function descartarRascunho(id) {
     // Só dá para apagar depois de marcar como excluído (regra de segurança do banco)
-    await sb.from('email_mensagens').update({ excluida_em: new Date().toISOString() }).eq('id', id);
-    await sb.from('email_mensagens').delete().eq('id', id);
+    const up = await sb.from('email_mensagens').update({ excluida_em: new Date().toISOString() }).eq('id', id);
+    if (up.error) { console.error('[E-mail] Rascunho não descartado:', up.error.message); return false; }
+    const del = await sb.from('email_mensagens').delete().eq('id', id);
+    if (del.error) { console.error('[E-mail] Rascunho não apagado:', del.error.message); return false; }
+    return true;
   }
 
   function abrirRascunho(id) {
@@ -1314,20 +1371,19 @@
   }
 
   function descartarComposer() {
-    confirmar('Descartar mensagem?', 'O conteúdo do compositor será apagado. Rascunhos já salvos permanecem.', () => {
+    confirmar('Descartar mensagem?', 'O conteúdo do compositor será perdido (rascunhos salvos permanecem).', () => {
       limparComposer();
-      estado.rascunhoEditandoId = null;
       trocarModo('leitura');
     });
   }
 
   function limparComposer() {
-    ['campo-para', 'campo-cc', 'campo-assunto'].forEach(id => { document.getElementById(id).value = ''; });
+    ['campo-para', 'campo-cc', 'campo-assunto'].forEach(id => { const el = document.getElementById(id); if (el) el.value = ''; });
     document.getElementById('editor-corpo').innerHTML = '';
     estado.anexosComposer = [];
     estado.rascunhoEditandoId = null;
-    document.getElementById('campo-arquivos').value = '';
-    document.getElementById('status-rascunho').textContent = '';
+    const fileInput = document.getElementById('campo-arquivos'); if (fileInput) fileInput.value = '';
+    const status = document.getElementById('status-rascunho'); if (status) status.textContent = '';
     renderizarAnexos();
   }
 
@@ -1360,16 +1416,16 @@
       }
       const ext = (f.name.split('.').pop() || '').toLowerCase();
       const okTipo = TIPOS_ANEXO.includes(f.type) || (ext === 'pdf' && (!f.type || f.type === 'application/octet-stream'));
+      if (estado.anexosComposer.reduce((n, a) => n + (a.tamanho || 0), 0) + f.size > LIMITE_TOTAL_ANEXOS_MB * 1024 * 1024) {
+        mostrarAviso(`O total dos anexos não pode ultrapassar ${LIMITE_TOTAL_ANEXOS_MB} MB.`, true);
+        continue;
+      }
       if (!okTipo) {
         mostrarAviso(`Tipo não permitido: ${f.name}. Use PDF ou imagem.`, true);
         continue;
       }
-      const atual = estado.anexosComposer.reduce((n, a) => n + (a.tamanho || 0), 0);
-      if (atual + f.size > LIMITE_TOTAL_ANEXOS_MB * 1024 * 1024) {
-        mostrarAviso(`O total dos anexos não pode ultrapassar ${LIMITE_TOTAL_ANEXOS_MB} MB.`, true);
-        continue;
-      }
-      const item = { id: Date.now() + Math.random(), nome: f.name, tamanho: f.size, tipo: f.type || (ext === 'pdf' ? 'application/pdf' : 'application/octet-stream'), file: f };
+      const item = { id: Date.now() + Math.random(), nome: f.name, tamanho: f.size, tipo: f.type, file: f };
+      // preview para imagens
       if (f.type.startsWith('image/')) {
         const reader = new FileReader();
         reader.onload = (ev) => { item.previewUrl = ev.target.result; renderizarAnexos(); };
@@ -1415,7 +1471,6 @@
     document.getElementById('confirm-ok').onclick = () => { fecharConfirm(); cb(); };
     document.getElementById('modal-confirm').classList.add('aberto');
   }
-
   function fecharConfirm() {
     document.getElementById('modal-confirm').classList.remove('aberto');
   }
@@ -1431,7 +1486,7 @@
         titulo: document.getElementById('campo-assunto').value || 'Nova mensagem',
         remetente: estado.me?.nome || '',
         data: 'Agora',
-        corpo: document.getElementById('editor-corpo').innerHTML || '<em>Sem conteúdo ainda.</em>'
+        corpo: sanitizarHtml(document.getElementById('editor-corpo').innerHTML || '<em>Sem conteúdo ainda.</em>', true)
       };
     }
     document.getElementById('modal-titulo').textContent = dados.titulo;
@@ -1470,45 +1525,28 @@
       document.body.classList.remove('mobile-view-list', 'mobile-view-reader');
     }
   }
-
   function voltarListaMobile() { definirTelaMobile('list'); fecharSidebarMobile(); }
-
   function abrirSidebarMobile() {
     medirMenuTopo();
     document.getElementById('sidebar-pastas').classList.add('aberto');
     document.getElementById('overlay-mobile').classList.add('aberto');
     document.body.classList.add('drawer-aberto');
   }
-
   function fecharSidebarMobile() {
     document.getElementById('sidebar-pastas').classList.remove('aberto');
     document.getElementById('overlay-mobile').classList.remove('aberto');
     document.body.classList.remove('drawer-aberto');
   }
-
   window.addEventListener('resize', () => {
-    if (!window.matchMedia('(max-width: 1023px)').matches) {
-      document.body.classList.remove('mobile-view-list', 'mobile-view-reader');
-      fecharSidebarMobile();
-    } else if (!document.body.classList.contains('mobile-view-reader')) {
-      document.body.classList.add('mobile-view-list');
-    }
+    if (!window.matchMedia('(max-width: 1023px)').matches) { document.body.classList.remove('mobile-view-list', 'mobile-view-reader'); fecharSidebarMobile(); }
+    else if (!document.body.classList.contains('mobile-view-reader')) document.body.classList.add('mobile-view-list');
   });
 
   // ---------- ARRASTAR ENTRE PASTAS ----------
-  function iniciarArraste(e, id) {
-    e.dataTransfer.setData('text/plain', String(id));
-    e.dataTransfer.effectAllowed = 'move';
-  }
-
-  function arrastarSobre(e) {
-    e.preventDefault();
-    e.currentTarget.classList.add('arrasto-sobre');
-  }
-
+  function iniciarArraste(e, id) { e.dataTransfer.setData('text/plain', String(id)); e.dataTransfer.effectAllowed = 'move'; }
+  function arrastarSobre(e) { e.preventDefault(); e.currentTarget.classList.add('arrasto-sobre'); }
   function soltarNaPasta(e, pasta) {
-    e.preventDefault();
-    e.currentTarget.classList.remove('arrasto-sobre');
+    e.preventDefault(); e.currentTarget.classList.remove('arrasto-sobre');
     const id = e.dataTransfer.getData('text/plain');
     if (id) moverNaArrastada(id, pasta);
   }
@@ -1524,7 +1562,7 @@
     });
   }
 
-  // ---------- MEDIÇÃO DO MENU ----------
+  // ---------- MENU DO TOPO ----------
   function ajustarRespiroTopo() {
     const c = document.getElementById('conteudo-email');
     if (!c) return;
@@ -1536,7 +1574,6 @@
     if (topoConteudo < alvo) c.style.paddingTop = (padBase + alvo - topoConteudo) + 'px';
     document.documentElement.style.setProperty('--conteudo-topo', Math.round(Math.max(topoConteudo, alvo)) + 'px');
   }
-
   function medirMenuTopo() {
     let topo = 0;
     document.querySelectorAll('#calc-header, #calc-header *').forEach(el => {
@@ -1548,7 +1585,6 @@
     if (topo > 0) document.documentElement.style.setProperty('--menu-topo', topo + 'px');
     ajustarRespiroTopo();
   }
-
   document.addEventListener('DOMContentLoaded', () => {
     medirMenuTopo();
     [400, 1200, 2500].forEach(t => setTimeout(medirMenuTopo, t));
@@ -1558,17 +1594,19 @@
   window.addEventListener('load', medirMenuTopo);
   window.addEventListener('resize', medirMenuTopo);
 
-  // ---------- UTILITÁRIOS ----------
+  // ---------- UTILS ----------
   function esc(valor) {
     return String(valor ?? '')
       .replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;')
       .replace(/"/g, '&quot;').replace(/'/g, '&#39;');
   }
 
-  // Sanitização: mensagens recebidas não ganham estilo nem imagem remota.
+  // Sanitização: DOMPurify quando disponível; fallback com DOMParser (inerte).
+  // Estrito (padrão) = e-mail recebido: sem style e sem imagens remotas.
+  // permitirEstilo = true: conteúdo escrito por você (envio / pré-visualização).
   function sanitizarHtml(html, permitirEstilo) {
     if (!html) return '';
-    const proibidas = ['style', 'form', 'input', 'button', 'textarea', 'select', 'iframe', 'object', 'embed', 'link', 'meta', 'base', 'svg', 'math', 'script'];
+    const proibidas = ['style','form','input','button','textarea','select','iframe','object','embed','link','meta','base','svg','math','script'];
     let limpo;
     if (window.DOMPurify) {
       const cfg = { USE_PROFILES: { html: true }, FORBID_TAGS: proibidas };
@@ -1577,16 +1615,16 @@
     } else {
       const bruto = new DOMParser().parseFromString('<body>' + html, 'text/html').body;
       bruto.querySelectorAll(proibidas.join(',')).forEach(el => el.remove());
+      bruto.querySelectorAll('*').forEach(el => [...el.attributes].forEach(attr => {
+        if (/^on/i.test(attr.name) || (!permitirEstilo && attr.name === 'style') ||
+            (/^(href|src|xlink:href|formaction)$/i.test(attr.name) && /^\s*(javascript|vbscript|data):/i.test(attr.value) && !/^\s*data:image\//i.test(attr.value))) el.removeAttribute(attr.name);
+      }));
       limpo = bruto.innerHTML;
     }
     const doc = new DOMParser().parseFromString('<body>' + limpo, 'text/html').body;
     doc.querySelectorAll('a[href]').forEach(a => { a.setAttribute('target', '_blank'); a.setAttribute('rel', 'noopener noreferrer nofollow'); });
     if (!permitirEstilo) doc.querySelectorAll('img').forEach(img => {
-      if (!/^data:image\//i.test(img.getAttribute('src') || '')) {
-        img.removeAttribute('src');
-        img.removeAttribute('srcset');
-        img.setAttribute('alt', img.getAttribute('alt') || '[imagem bloqueada]');
-      }
+      if (!/^data:image\//i.test(img.getAttribute('src') || '')) { img.removeAttribute('src'); img.removeAttribute('srcset'); img.setAttribute('alt', img.getAttribute('alt') || '[imagem bloqueada]'); }
     });
     return doc.innerHTML;
   }
@@ -1605,14 +1643,15 @@
   }
 
   function formatarDataCurta(d) {
-    const meses = ['jan', 'fev', 'mar', 'abr', 'mai', 'jun', 'jul', 'ago', 'set', 'out', 'nov', 'dez'];
+    const meses = ['jan','fev','mar','abr','mai','jun','jul','ago','set','out','nov','dez'];
     return d.getDate().toString().padStart(2, '0') + ' ' + meses[d.getMonth()];
   }
 
   function formatarDataHora(iso) {
     if (!iso) return '';
     try {
-      return new Date(iso).toLocaleString('pt-BR', { day: '2-digit', month: 'short', hour: '2-digit', minute: '2-digit' });
+      const d = new Date(iso);
+      return d.toLocaleString('pt-BR', { day: '2-digit', month: 'short', hour: '2-digit', minute: '2-digit' });
     } catch { return iso; }
   }
 
@@ -1624,6 +1663,7 @@
     box.appendChild(t);
     setTimeout(() => { t.style.opacity = '0'; setTimeout(() => t.remove(), 300); }, 2800);
   }
+
   </script>
 </body>
 </html>
