@@ -1,4 +1,4 @@
-    (function () {
+  (function () {
       'use strict';
       var WHATSAPP_SUPORTE = '';
       var CATALOG_SB_URL = 'https://paetkspbfejtjjkngqej.supabase.co';
@@ -340,6 +340,7 @@
         setupMobileBarAutoFade();
         setupObsAutoExpand();
         setupLocalReferencia();
+        setupKeyboardBarHide();
         setupResumoSheetMobile();
         setupDesktopStickyResumo();
         aplicarPermissaoDesconto();
@@ -369,6 +370,49 @@
         atualizarLblDuracao();
       }
       
+      
+      function setupKeyboardBarHide() {
+        var bar = document.getElementById('mobileBarraResumo');
+        if (!bar) return;
+        bar.style.transition = 'transform 0.22s ease, opacity 0.18s ease';
+        function isField(el) {
+          if (!el || !el.tagName) return false;
+          var t = el.tagName.toUpperCase();
+          return t === 'INPUT' || t === 'TEXTAREA' || t === 'SELECT' || !!el.isContentEditable;
+        }
+        function hideBar() {
+          if (window.innerWidth >= 1024) return;
+          bar.style.transform = 'translateY(110%)';
+          bar.style.opacity = '0';
+          bar.style.pointerEvents = 'none';
+          bar.setAttribute('data-kb-hidden', '1');
+        }
+        function showBar() {
+          bar.style.transform = '';
+          bar.style.opacity = '';
+          bar.style.pointerEvents = '';
+          bar.removeAttribute('data-kb-hidden');
+        }
+        document.addEventListener('focusin', function (e) {
+          if (isField(e.target)) hideBar();
+        });
+        document.addEventListener('focusout', function () {
+          setTimeout(function () {
+            if (isField(document.activeElement)) return;
+            showBar();
+          }, 150);
+        });
+        // iOS: viewport encolhe com teclado
+        if (window.visualViewport) {
+          var baseH = window.visualViewport.height;
+          window.visualViewport.addEventListener('resize', function () {
+            if (window.innerWidth >= 1024) return;
+            var h = window.visualViewport.height;
+            if (h < baseH - 100 && isField(document.activeElement)) hideBar();
+            else if (h >= baseH - 40) showBar();
+          });
+        }
+      }
       function setupObsAutoExpand() {
         var el = document.getElementById('fObs');
         if (!el) return;
@@ -704,24 +748,92 @@
         });
       }
       /**
-       * Desktop: volta ao sticky CSS original (.sticky-card no nova-proposta.css).
-       * A classe sticky-card tinha sido removida sem querer — por isso parou de grudar.
-       * JS float desligado de propósito.
+       * Desktop: sticky CSS + fallback JS (pin fixed) se o sticky não “grudar”.
        */
       function setupDesktopStickyResumo() {
-        console.log('[NP] desktop: sticky CSS (.sticky-card) — JS float off');
-        // Garante que nenhum float residual fique no body
-        document.querySelectorAll('[data-np-float]').forEach(function (el) {
-          if (el.parentNode) el.parentNode.removeChild(el);
-        });
-        var card = document.querySelector('#sidebarTargetAnchor .sticky-card, #sidebarTargetAnchor .np-resumo-card');
-        if (card) {
-          card.style.visibility = '';
+        var col = document.getElementById('sidebarTargetAnchor');
+        var card = col && (col.querySelector('.sticky-card') || col.querySelector('.np-resumo-card'));
+        if (!col || !card) {
+          console.warn('[NP] desktop sticky: coluna/card ausente');
+          return;
+        }
+        var topGap = 88;
+        var pinned = false;
+        var placeholder = null;
+        var naturalTop = null;
+
+        function measureNatural() {
+          if (pinned) return;
+          var r = card.getBoundingClientRect();
+          naturalTop = r.top + (window.pageYOffset || document.documentElement.scrollTop || 0);
+        }
+
+        function unpin() {
+          if (!pinned) return;
+          pinned = false;
           card.style.position = '';
           card.style.top = '';
           card.style.left = '';
           card.style.width = '';
+          card.style.zIndex = '';
+          card.style.maxHeight = '';
+          card.style.overflowY = '';
+          if (placeholder && placeholder.parentNode) placeholder.parentNode.removeChild(placeholder);
+          placeholder = null;
         }
+
+        function pin() {
+          var r = card.getBoundingClientRect();
+          if (!pinned) {
+            placeholder = document.createElement('div');
+            placeholder.style.width = r.width + 'px';
+            placeholder.style.height = r.height + 'px';
+            placeholder.setAttribute('data-np-sticky-ph', '1');
+            card.parentNode.insertBefore(placeholder, card);
+            pinned = true;
+          }
+          var left = (placeholder || card).getBoundingClientRect().left;
+          var width = (placeholder || card).getBoundingClientRect().width;
+          var maxH = Math.max(200, window.innerHeight - topGap - 12);
+          card.style.position = 'fixed';
+          card.style.top = topGap + 'px';
+          card.style.left = left + 'px';
+          card.style.width = width + 'px';
+          card.style.zIndex = '40';
+          card.style.maxHeight = maxH + 'px';
+          card.style.overflowY = 'auto';
+        }
+
+        function tick() {
+          if (window.innerWidth < 1024) {
+            unpin();
+            naturalTop = null;
+            return;
+          }
+          if (naturalTop == null) measureNatural();
+          var scrollY = window.pageYOffset || document.documentElement.scrollTop || 0;
+          var leftCol = document.querySelector('main .lg\\:col-span-2') || document.querySelector('main .min-w-0');
+          var leftBottom = leftCol ? leftCol.getBoundingClientRect().bottom : Infinity;
+          // solta no fim da coluna esquerda
+          if (leftBottom <= topGap + 40) {
+            unpin();
+            return;
+          }
+          if (scrollY + topGap >= (naturalTop || 0)) pin();
+          else unpin();
+        }
+
+        window.addEventListener('scroll', tick, { passive: true });
+        window.addEventListener('resize', function () {
+          naturalTop = null;
+          unpin();
+          measureNatural();
+          tick();
+        });
+        setTimeout(measureNatural, 200);
+        setTimeout(measureNatural, 800);
+        setTimeout(tick, 250);
+        console.log('[NP] desktop sticky+pin ativo');
       }
       function aplicarTravaSomenteLeitura(statusTexto) {
         formularioBloqueadoSomenteLeitura = true;
