@@ -657,9 +657,7 @@
 
           <p id="clausula_pagamento_condicoes" style="display: none; margin-top: 4px;"></p>
 
-          <div class="clause" id="clausula_recebedor" style="display:none;">
-            <p><strong>Recebedor indicado.</strong> O CONTRATANTE autoriza, expressamente, que os pagamentos devidos à CONTRATADA sejam efetuados ao recebedor indicado abaixo, e que o pagamento feito a este recebedor tenha efeito de quitação plena: <span id="recebedor_nome">—</span>, <span id="recebedor_tipo_doc">—</span>, chave Pix <span id="recebedor_chave">—</span> (<span id="recebedor_tipo_chave">—</span>). A CONTRATADA permanece integralmente responsável pela execução dos serviços contratados.</p>
-          </div>
+          <div class="clause" id="clausula_recebedor" style="display:none;"></div>
         </div>
 
         <!-- 7. EXECUÇÃO DOS SERVIÇOS -->
@@ -1006,14 +1004,33 @@
         setSafeText('empresa_cnpj', dadosEmpresa.cnpj);
         setSafeText('assinatura_empresa_cnpj', dadosEmpresa.cnpj ? `CNPJ: ${dadosEmpresa.cnpj}` : '');
 
-        // Cláusula do recebedor secundário: só aparece se o checkbox "Usar outro recebedor no contrato" estiver marcado
-        if (dadosEmpresa.aplicar_recebedor_contrato === true && dadosEmpresa.recebedor_alt_nome) {
-          setSafeText('recebedor_nome', dadosEmpresa.recebedor_alt_nome);
-          setSafeText('recebedor_tipo_doc', `${dadosEmpresa.recebedor_alt_tipo || 'Documento'}: ${dadosEmpresa.recebedor_alt_documento || '—'}`);
-          setSafeText('recebedor_chave', dadosEmpresa.recebedor_alt_chave_pix);
-          setSafeText('recebedor_tipo_chave', dadosEmpresa.recebedor_alt_tipo_chave_pix);
-          document.getElementById('clausula_recebedor').style.display = '';
-        }
+        // Cláusula de pagamento: sempre identifica para quem o CONTRATANTE deve pagar.
+        // Com "Usar outro recebedor" marcado: recebedor secundário (recebedor_alt_*).
+        // Desmarcado: a própria CONTRATADA (conta da tabela co_dados_bancarios_empresa).
+        (function () {
+          const esc = s => String(s == null ? '' : s).replace(/[&<>"']/g, c => ({
+            '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;'
+          }[c]));
+
+          const alt = dadosEmpresa.aplicar_recebedor_contrato === true && !!dadosEmpresa.recebedor_alt_chave_pix;
+          const nome = alt ? dadosEmpresa.recebedor_alt_nome : dadosEmpresa.titular;
+          const doc = alt ? dadosEmpresa.recebedor_alt_documento : dadosEmpresa.documento_titular;
+          const chave = alt ? dadosEmpresa.recebedor_alt_chave_pix : dadosEmpresa.chave_pix;
+          const tipoChave = alt ? dadosEmpresa.recebedor_alt_tipo_chave_pix : dadosEmpresa.tipo_chave_pix;
+          const tipoDoc = alt ? dadosEmpresa.recebedor_alt_tipo : null;
+
+          const clausula = document.getElementById('clausula_recebedor');
+          if (!clausula || !nome || !chave) return;
+
+          const docTxt = doc ? (tipoDoc ? `${tipoDoc}: ${doc}` : `CPF/CNPJ: ${doc}`) : '';
+          const chaveTxt = tipoChave ? `${esc(chave)} (${esc(tipoChave)})` : esc(chave);
+
+          clausula.innerHTML = alt
+            ? `<p><strong>Recebedor indicado.</strong> O CONTRATANTE autoriza, expressamente, que os pagamentos devidos à CONTRATADA sejam efetuados ao recebedor indicado abaixo, e que o pagamento feito a este recebedor tenha efeito de quitação plena: ${esc(nome)}${docTxt ? ', ' + esc(docTxt) : ''}, chave Pix ${chaveTxt}. A CONTRATADA permanece integralmente responsável pela execução dos serviços contratados.</p>`
+            : `<p><strong>Recebedor dos pagamentos.</strong> Os pagamentos devidos pelo CONTRATANTE à CONTRATADA deverão ser efetuados na conta indicada abaixo, e o pagamento feito por esta forma terá efeito de quitação: ${esc(nome)}${docTxt ? ', ' + esc(docTxt) : ''}, chave Pix ${chaveTxt}.</p>`;
+
+          clausula.style.display = '';
+        })();
 
         const empLogrComp = [
           dadosEmpresa.logradouro,
