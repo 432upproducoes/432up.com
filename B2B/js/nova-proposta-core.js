@@ -1,4 +1,4 @@
-  (function () {
+    (function () {
       'use strict';
       var WHATSAPP_SUPORTE = '';
       var CATALOG_SB_URL = 'https://paetkspbfejtjjkngqej.supabase.co';
@@ -490,8 +490,28 @@
           }
         });
 
+        // Marca campos de desconto e totais ANTES de remover ids (sheet mobile)
+        ['fDescontoPct', 'fTotalDesejado'].forEach(function (id) {
+          var el = portal.querySelector('#' + id);
+          if (el) el.setAttribute('data-np-field', id);
+        });
+        ['sumValorTotal', 'sumDescontoValor', 'sumValorSubtotal', 'sumComissaoValor', 'sumValorTransporte', 'sumValorHospedagem'].forEach(function (id) {
+          var el = portal.querySelector('#' + id);
+          if (el) el.setAttribute('data-np-sync', id);
+        });
         portal.querySelectorAll('[id]').forEach(function (el) { el.removeAttribute('id'); });
         bindPortalActions(portal);
+      }
+      function syncPortalMoney(portal) {
+        if (!portal) return;
+        portal.querySelectorAll('[data-np-sync]').forEach(function (el) {
+          var id = el.getAttribute('data-np-sync');
+          var real = document.getElementById(id);
+          if (real) {
+            el.textContent = real.textContent;
+            el.className = real.className;
+          }
+        });
       }
       function bindPortalActions(portal) {
         if (!portal) return;
@@ -529,6 +549,42 @@
             if (id) { removerDoCarrinho(id); refresh(); }
           });
         });
+        // Desconto % e total desejado (espelha no DOM real e recalcula — sem rebuild do sheet no meio da digitação)
+        var portalPct = portal.querySelector('[data-np-field="fDescontoPct"]');
+        var portalTot = portal.querySelector('[data-np-field="fTotalDesejado"]');
+        if (portalPct) {
+          portalPct.removeAttribute('readonly');
+          portalPct.disabled = false;
+          function applyPct() {
+            var real = document.getElementById('fDescontoPct');
+            if (real) real.value = portalPct.value;
+            onDescontoPctChange();
+            syncPortalMoney(portal);
+          }
+          portalPct.addEventListener('input', function () {
+            if (descontoUiUpdating) return;
+            clearTimeout(portalPct._t);
+            portalPct._t = setTimeout(applyPct, 280);
+          });
+          portalPct.addEventListener('change', applyPct);
+        }
+        if (portalTot) {
+          portalTot.removeAttribute('readonly');
+          portalTot.disabled = false;
+          function applyTot() {
+            var real = document.getElementById('fTotalDesejado');
+            if (real) real.value = portalTot.value;
+            onTotalDesejadoChange();
+            syncPortalMoney(portal);
+          }
+          portalTot.addEventListener('input', function () {
+            if (descontoUiUpdating) return;
+            clearTimeout(portalTot._t);
+            portalTot._t = setTimeout(applyTot, 280);
+          });
+          portalTot.addEventListener('change', applyTot);
+          portalTot.addEventListener('blur', applyTot);
+        }
         // Status pendente/pago (agenda)
         portal.querySelectorAll('[data-status-field]').forEach(function (grupo) {
           grupo.style.display = 'flex';
