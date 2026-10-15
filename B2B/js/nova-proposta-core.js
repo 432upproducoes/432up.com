@@ -338,6 +338,8 @@
         bindPagamentoEvents();
         atualizarLabelFCep();
         setupMobileBarAutoFade();
+        setupObsAutoExpand();
+        setupLocalReferencia();
         setupResumoSheetMobile();
         setupDesktopStickyResumo();
         aplicarPermissaoDesconto();
@@ -365,6 +367,38 @@
         if (campoInicio && !campoInicio.value) campoInicio.value = horaAtual;
         if (campoFinal && !campoFinal.value) campoFinal.value = horaFim;
         atualizarLblDuracao();
+      }
+      
+      function setupObsAutoExpand() {
+        var el = document.getElementById('fObs');
+        if (!el) return;
+        function adjust() {
+          var has = (el.value || '').trim().length > 0;
+          if (!has && document.activeElement !== el) {
+            el.rows = 2;
+            el.style.minHeight = '';
+            el.style.overflowY = 'hidden';
+            return;
+          }
+          el.rows = 12;
+          el.style.minHeight = '14rem';
+          el.style.overflowY = 'auto';
+        }
+        el.addEventListener('focus', adjust);
+        el.addEventListener('input', adjust);
+        el.addEventListener('blur', adjust);
+        adjust();
+      }
+      function setupLocalReferencia() {
+        var local = document.getElementById('fLocal');
+        var comp = document.getElementById('fEventoComplemento');
+        if (!local || !comp) return;
+        // Se Local estiver vazio e complemento for preenchido, sugere o complemento
+        comp.addEventListener('blur', function () {
+          if (!(local.value || '').trim() && (comp.value || '').trim()) {
+            local.placeholder = 'Ex.: ' + comp.value.trim();
+          }
+        });
       }
       function setupMobileBarAutoFade() {
         /* No mobile o resumo vira sheet sob demanda; a barra inferior permanece sempre visível. */
@@ -417,8 +451,9 @@
           'padding:1rem 1.25rem 9rem!important;min-height:100%;' +
           'background:linear-gradient(135deg,rgba(245,158,11,0.12),rgba(10,18,28,0.96));' +
           'border-radius:1rem 1rem 0 0;position:relative!important;top:auto!important;max-height:none!important;">' +
-          '<div style="text-align:center;padding:6px 0 10px;touch-action:none;" data-np-sheet-handle="1">' +
-          '<span style="display:inline-block;width:40px;height:4px;border-radius:99px;background:rgba(255,255,255,0.28)"></span></div>' +
+          '<div style="text-align:center;padding:10px 0 8px;touch-action:none;" data-np-sheet-handle="1">' +
+          '<span style="display:inline-block;width:44px;height:5px;border-radius:99px;background:rgba(255,255,255,0.35)"></span>' +
+          '<div style="font-size:10px;color:rgba(226,232,240,0.55);margin-top:6px;letter-spacing:0.04em;text-transform:uppercase;">Arraste ou role o resumo</div></div>' +
           html + '</div>';
 
         // Layout dos chips FORÇADO inline (não depende de CSS externo / ids)
@@ -492,6 +527,36 @@
             e.stopPropagation();
             var id = btn.getAttribute('data-cart-remove');
             if (id) { removerDoCarrinho(id); refresh(); }
+          });
+        });
+        // Status pendente/pago (agenda)
+        portal.querySelectorAll('[data-status-field]').forEach(function (grupo) {
+          grupo.style.display = 'flex';
+          grupo.style.flexWrap = 'wrap';
+          grupo.style.gap = '8px';
+          grupo.querySelectorAll('.chip-item').forEach(function (chip) {
+            chip.style.display = 'inline-flex';
+            chip.style.alignItems = 'center';
+            chip.style.justifyContent = 'center';
+            chip.style.padding = '8px 14px';
+            chip.style.minHeight = '36px';
+            chip.style.borderRadius = '20px';
+            chip.style.cursor = 'pointer';
+            chip.style.flex = '1 1 40%';
+            chip.style.boxSizing = 'border-box';
+            chip.style.whiteSpace = 'nowrap';
+            chip.addEventListener('click', function (e) {
+              e.preventDefault();
+              e.stopPropagation();
+              var campo = grupo.getAttribute('data-status-field');
+              var stVal = chip.getAttribute('data-status-val');
+              if (!campo || !stVal) return;
+              if (typeof pagamentoAgendaState === 'object') {
+                pagamentoAgendaState[campo] = stVal;
+              }
+              if (typeof renderAgendaPagamento === 'function') renderAgendaPagamento();
+              refresh();
+            });
           });
         });
         // Ações principais
@@ -2598,11 +2663,15 @@
         });
 
         // Composer ativo no card (ainda não enviado ao carrinho) — entra no total ao vivo
+        // NÃO soma serviços included no pacote (já estão no preço do pacote)
         SVC.forEach(function (s) {
+          var st = svcState[s.servico_id];
+          if (st === 'included') return;
+          // Já no carrinho → não duplicar via composer
+          if (orcamentoItens.some(function (it) { return it.id === s.servico_id; })) return;
           var qtd = Number(svcQuantidade[s.servico_id]) || 0;
           var metragemAtual = svcMetragem[s.servico_id] || 0;
           var horasAtual = svcHoras[s.servico_id] || 0;
-          var st = svcState[s.servico_id];
           var ligado = qtd > 0 || metragemAtual > 0 || horasAtual > 0 || st === 'manual';
           if (!ligado) return;
           if (qtd <= 0) qtd = 1;
