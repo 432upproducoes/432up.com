@@ -1,0 +1,1613 @@
+<!DOCTYPE html>
+<html lang="pt-BR" class="h-full">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
+  <title>432UP Partner | Administração de E-mails</title>
+
+  <link rel="stylesheet" href="https://www.432up.com/css/style.css">
+  <script src="https://cdn.tailwindcss.com"></script>
+
+  <style>
+    :root {
+      --texto: #F1F5F9;
+      --texto-2: #CBD5E1;
+      --texto-muted: #94A3B8;
+      --lime: #00FF66;
+      --ciano: #00e5ff;
+      --lilas: #A855F7;
+      --rosa: #FF007F;
+      --borda: rgba(255, 255, 255, 0.22);
+      --borda-lilas: rgba(168, 85, 247, 0.40);
+      --vidro-bg: linear-gradient(135deg, rgba(255, 255, 255, 0.16) 0%, rgba(196, 160, 255, 0.10) 100%);
+      --vidro-bg-2: rgba(255, 255, 255, 0.10);
+      --vidro-bg-3: rgba(255, 255, 255, 0.07);
+    }
+
+    html, body {
+      color: var(--texto);
+      font-family: var(--font-base, Inter, -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif);
+      -webkit-user-select: text;
+      user-select: text;
+    }
+
+    .vidro {
+      background: var(--vidro-bg);
+      backdrop-filter: blur(22px);
+      -webkit-backdrop-filter: blur(22px);
+      border: 1px solid var(--borda);
+      border-radius: 18px;
+      box-shadow: 0 16px 40px rgba(0, 0, 0, 0.35), inset 0 1px 0 rgba(255, 255, 255, 0.25);
+    }
+
+    .btn-amarelo {
+      background: linear-gradient(135deg, #ffc800 0%, #ffa200 100%);
+      color: #0d081a;
+      font-weight: 700;
+      box-shadow: 0 4px 15px rgba(255, 183, 0, 0.35);
+      transition: all 0.2s ease;
+    }
+    .btn-amarelo:hover { box-shadow: 0 6px 20px rgba(255, 183, 0, 0.6); transform: translateY(-1px); }
+
+    .btn-vidro {
+      border: 1px solid var(--borda);
+      background: var(--vidro-bg-2);
+      color: var(--texto);
+      transition: all 0.2s ease;
+    }
+    .btn-vidro:hover { border-color: var(--lime); color: var(--lime); }
+
+    .botao-lixeira {
+      border: 1px solid rgba(255, 77, 77, 0.55);
+      color: #FF8A8A;
+      background: rgba(255, 77, 77, 0.10);
+      transition: all 0.2s ease;
+    }
+    .botao-lixeira:hover { background: rgba(255, 77, 77, 0.22); }
+
+    .item-pasta { color: var(--texto-2); transition: background 0.2s ease, color 0.2s ease; }
+    .item-pasta:hover { background: rgba(255, 255, 255, 0.12); color: #fff; }
+    .item-pasta.ativo {
+      background: rgba(0, 229, 255, 0.20);
+      color: #fff;
+      font-weight: 700;
+      border: 1px solid rgba(0, 229, 255, 0.55);
+    }
+
+    .badge { background: rgba(0, 255, 102, 0.22); color: #B9FFD3; }
+    .badge-nao-lida { background: rgba(0, 229, 255, 0.35); color: #fff; }
+
+    .chip {
+      padding: 5px 14px;
+      border-radius: 999px;
+      border: 1px solid var(--borda);
+      background: var(--vidro-bg-2);
+      color: var(--texto-2);
+      font-size: 12px;
+      font-weight: 600;
+      white-space: nowrap;
+      transition: all 0.2s ease;
+      cursor: pointer;
+    }
+    .chip:hover { color: #fff; border-color: var(--borda-lilas); }
+    .chip.ativo { background: rgba(168, 85, 247, 0.55); border-color: rgba(196, 160, 255, 0.8); color: #fff; }
+
+    .cartao-email {
+      background: var(--vidro-bg-3);
+      border: 1px solid var(--borda);
+      border-radius: 14px;
+      padding: 12px 14px;
+      cursor: pointer;
+      transition: all 0.25s ease;
+      position: relative;
+    }
+    .cartao-email:hover { border-color: rgba(255, 255, 255, 0.40); background: var(--vidro-bg-2); transform: translateY(-1px); }
+    .cartao-email.ativo {
+      border-color: var(--ciano) !important;
+      background: linear-gradient(90deg, rgba(0, 229, 255, 0.24), rgba(255, 255, 255, 0.10));
+      box-shadow: 0 0 18px rgba(0, 229, 255, 0.28);
+    }
+    .cartao-email.ativo::before {
+      content: ''; position: absolute; left: 0; top: 10px; bottom: 10px;
+      width: 4px; border-radius: 0 4px 4px 0; background: var(--ciano);
+      box-shadow: 0 0 8px var(--ciano);
+    }
+    .cartao-email.nao-lida { border-left: 3px solid var(--ciano); }
+
+    .aba {
+      padding: 6px 12px;
+      font-size: 13px;
+      color: var(--texto-muted);
+      border-bottom: 2px solid transparent;
+      cursor: pointer;
+      background: none;
+      border-top: none; border-left: none; border-right: none;
+    }
+    .aba:hover { color: #fff; }
+    .aba.ativa { color: #fff; font-weight: 700; border-bottom-color: var(--ciano); background: rgba(0, 229, 255, 0.12); border-radius: 8px 8px 0 0; }
+
+    .barra-ferramentas { background: var(--vidro-bg-2); border: 1px solid var(--borda); }
+    .barra-ferramentas button {
+      padding: 2px 10px;
+      border-radius: 6px;
+      color: #BDF6FF;
+      font-size: 13px;
+      background: transparent;
+      border: none;
+      cursor: pointer;
+    }
+    .barra-ferramentas button:hover { background: rgba(0, 229, 255, 0.20); }
+
+    .editor {
+      min-height: 180px;
+      outline: none;
+      background: var(--vidro-bg-2);
+      border: 1px solid var(--borda);
+      border-radius: 14px;
+      padding: 12px;
+      font-size: 14px;
+      line-height: 1.6;
+      color: var(--texto);
+      overflow-y: auto;
+      -webkit-user-select: text;
+      user-select: text;
+    }
+    .editor:focus { border-color: var(--ciano); box-shadow: 0 0 12px rgba(0, 229, 255, 0.25); }
+    .editor:empty:before { content: attr(data-placeholder); color: var(--texto-muted); }
+    .editor ul { list-style: disc; padding-left: 22px; }
+
+    .campo { background: transparent; outline: none; width: 100%; font-size: 14px; color: var(--texto); }
+    .campo::placeholder { color: var(--texto-muted); }
+
+    .campo-busca {
+      background: var(--vidro-bg-2);
+      border: 1px solid var(--borda);
+      color: #fff;
+      transition: all 0.2s ease;
+    }
+    .campo-busca:focus { border-color: var(--ciano); box-shadow: 0 0 12px rgba(0, 229, 255, 0.25); outline: none; }
+    .campo-busca::placeholder { color: var(--texto-muted); }
+
+    .linha-borda { border-color: var(--borda); }
+
+    .modal-fundo {
+      position: fixed; inset: 0; z-index: 2000;
+      background: rgba(30, 20, 60, 0.30);
+      backdrop-filter: blur(14px);
+      -webkit-backdrop-filter: blur(14px);
+      display: none; align-items: center; justify-content: center; padding: 16px;
+    }
+    .modal-fundo.aberto { display: flex; }
+    .modal-cartao {
+      background: linear-gradient(135deg, rgba(255, 255, 255, 0.20), rgba(196, 160, 255, 0.14));
+      backdrop-filter: blur(26px);
+      -webkit-backdrop-filter: blur(26px);
+      border: 1px solid rgba(255, 255, 255, 0.35);
+      border-radius: 24px;
+      box-shadow: 0 25px 60px rgba(0, 0, 0, 0.45), inset 0 1px 0 rgba(255, 255, 255, 0.3);
+      width: 100%; max-width: 760px; max-height: 85vh;
+      display: flex; flex-direction: column; padding: 20px;
+    }
+    .modal-cartao.tela-cheia { max-width: none; width: 100%; height: 100%; max-height: none; border-radius: 0; }
+    .bloco-modal {
+      background: var(--vidro-bg-2);
+      border: 1px solid var(--borda);
+      border-radius: 14px;
+      padding: 14px;
+      font-size: 14px;
+      line-height: 1.6;
+      color: var(--texto);
+    }
+
+    .toast {
+      background: rgba(255, 255, 255, 0.18);
+      backdrop-filter: blur(18px);
+      -webkit-backdrop-filter: blur(18px);
+      border: 1px solid rgba(0, 229, 255, 0.7);
+      color: #fff;
+      font-size: 13px; font-weight: 600;
+      padding: 10px 16px; border-radius: 12px;
+      box-shadow: 0 8px 24px rgba(0, 0, 0, 0.35);
+      transition: opacity 0.3s ease;
+      pointer-events: auto;
+      display: flex; align-items: center; gap: 10px;
+    }
+    .toast.erro { border-color: rgba(255, 0, 127, 0.8); color: #FFD1E6; }
+    .toast button { background: rgba(0,229,255,0.25); border: 1px solid var(--ciano); color: #fff; padding: 2px 10px; border-radius: 8px; font-size: 12px; cursor: pointer; }
+    .toast button:hover { background: rgba(0,229,255,0.45); }
+
+    .status-badge {
+      display: inline-flex; align-items: center; gap: 4px;
+      padding: 2px 8px; border-radius: 999px; font-size: 10px; font-weight: 700;
+    }
+    .status-enviado { background: rgba(148,163,184,0.3); color: #CBD5E1; }
+    .status-entregue { background: rgba(0,229,255,0.25); color: #BDF6FF; }
+    .status-aberto { background: rgba(0,255,102,0.25); color: #B9FFD3; }
+    .status-falhou { background: rgba(255,0,127,0.25); color: #FFD1E6; }
+    .status-rascunho { background: rgba(168,85,247,0.3); color: #E9D5FF; }
+
+
+    /* Responsivo: em telas pequenas a interface vira uma navegação por telas,
+       em vez de empilhar lista, leitura e editor numa página interminável. */
+    .mobile-only { display: none; }
+    @media (max-width: 1023px) {
+      html, body { min-height: 100%; height: auto; }
+      body { overflow-x: hidden; }
+      .main-grid { display: block !important; height: auto !important; min-height: 0 !important; }
+      .main-grid > section { width: 100%; min-height: 0; height: auto; margin-bottom: 12px; }
+      .email-list-pane, .email-detail-pane { min-width: 0; }
+      body.mobile-view-list .email-detail-pane { display: none !important; }
+      body.mobile-view-reader .email-list-pane { display: none !important; }
+      body.mobile-view-reader .email-detail-pane { display: flex !important; min-height: calc(100dvh - 150px); }
+      .email-detail-pane > .vidro { min-height: calc(100dvh - 150px); }
+      #lista-emails { overflow: visible; max-height: none; }
+      #painel-leitura, #painel-composer { overflow: visible; }
+      #painel-composer { padding: 12px; }
+      .mobile-only { display: inline-flex; }
+      .sidebar-mobile {
+        position: fixed; top: 0; left: 0; bottom: 0; width: min(320px, 88vw);
+        height: 100dvh; z-index: 1500; transform: translateX(-105%);
+        transition: transform 0.25s ease; overflow-y: auto; overscroll-behavior: contain;
+        background: rgba(20, 12, 40, 0.98); -webkit-backdrop-filter: blur(20px); backdrop-filter: blur(20px);
+        padding: 16px; border-right: 1px solid var(--borda);
+      }
+      .sidebar-mobile.aberto { transform: translateX(0); }
+      .overlay-mobile { position: fixed; inset: 0; background: rgba(0,0,0,0.55); z-index: 1400; display: none; }
+      .overlay-mobile.aberto { display: block; }
+      .campo, .campo-busca, #seletor-modelo { font-size: 16px; }
+      .barra-ferramentas { position: sticky; top: 0; z-index: 3; }
+      .editor { min-height: 220px; max-height: 42dvh; }
+      .modal-fundo { padding: max(8px, env(safe-area-inset-top)) 8px max(8px, env(safe-area-inset-bottom)); align-items: flex-end; }
+      .modal-cartao { max-height: 92dvh; border-radius: 20px 20px 12px 12px; padding: 14px; }
+      .modal-cartao.tela-cheia { height: 100dvh; max-height: 100dvh; }
+      #toast-container { left: 10px; right: 10px; bottom: max(10px, env(safe-area-inset-bottom)); }
+      #toast-container .toast { max-width: 100%; overflow-wrap: anywhere; }
+      #filtros { overflow-x: auto; flex-wrap: nowrap; padding-bottom: 3px; }
+    }
+    @media (max-width: 420px) {
+      .cartao-email { padding: 11px; }
+      .chip { padding: 6px 11px; }
+      .email-detail-pane .btn-vidro, .email-detail-pane .botao-lixeira { min-height: 36px; }
+      #painel-composer .flex.flex-wrap.gap-2.pt-2 > button { flex: 1 1 auto; }
+      #status-rascunho { width: 100%; margin-left: 0; }
+    }
+    @media (min-width: 1024px) {
+      .main-grid > section { min-width: 0; }
+    }
+
+    ::-webkit-scrollbar { width: 5px; height: 5px; }
+    ::-webkit-scrollbar-track { background: transparent; }
+    ::-webkit-scrollbar-thumb { background: rgba(255, 255, 255, 0.25); border-radius: 10px; }
+    ::-webkit-scrollbar-thumb:hover { background: var(--ciano); }
+
+    .preview-anexo {
+      max-width: 120px; max-height: 80px; object-fit: cover; border-radius: 8px;
+      border: 1px solid var(--borda);
+    }
+
+    /* ===== CORREÇÕES (menu do topo, filtros, mover para pasta, gaveta mobile) ===== */
+    :root{--menu-topo:72px;--h-ctl:36px;--conteudo-topo:100px}
+    html{scroll-padding-top:calc(var(--menu-topo) + 8px)}
+    select option{background:#1a1030;color:#fff}
+    #filtros{display:grid;grid-template-columns:repeat(auto-fit,minmax(120px,1fr));gap:8px;overflow:visible}
+    .chip{height:var(--h-ctl);display:inline-flex;align-items:center;justify-content:center;padding:0 12px}
+    .filtro-datas{display:grid;grid-template-columns:repeat(auto-fit,minmax(120px,1fr));gap:8px}
+    #campo-busca{height:var(--h-ctl);box-sizing:border-box}
+    .chip-data{position:relative;gap:6px;overflow:hidden}
+    .chip-data .rot{opacity:.75}
+    .chip-data:not(.ativo) .val{opacity:.6}
+    .chip-data.ativo{padding-right:32px}
+    .chip-data input{position:absolute;inset:0;width:100%;height:100%;opacity:0;cursor:pointer;font-size:16px;-webkit-appearance:none;appearance:none}
+    .chip-data .limpar{position:absolute;right:6px;top:50%;transform:translateY(-50%);width:22px;height:22px;border-radius:999px;display:none;align-items:center;justify-content:center;z-index:2;background:rgba(255,255,255,.18);color:#fff;font-size:13px;line-height:1;border:0;cursor:pointer}
+    .chip-data.ativo .limpar{display:flex}
+    .rotulo-campo{width:60px;flex-shrink:0}
+    .ctl-composer{height:36px;display:inline-flex;align-items:center;padding:0 12px;box-sizing:border-box}
+    .item-pasta.arrasto-sobre{outline:2px dashed var(--ciano);background:rgba(0,229,255,.15)}
+    .modal-fundo{top:var(--menu-topo)}
+    .modal-cartao{max-height:calc(100dvh - var(--menu-topo) - 32px)}
+    body.drawer-aberto{overflow:hidden}
+    #sidebar-pastas{overflow-y:auto;overscroll-behavior:contain}
+    #sidebar-pastas > .vidro:last-child{flex:1 0 230px}
+    #painel-composer:not(.hidden){display:flex;flex-direction:column;gap:14px}
+    @media (min-width:1024px){.main-grid{height:calc(100dvh - var(--conteudo-topo) - 24px)!important}}
+    @media (max-width:1023px){
+      .overlay-mobile{top:var(--menu-topo)}
+      .main-grid > section.sidebar-mobile{top:var(--menu-topo);bottom:0;height:auto;width:min(320px,88vw);margin:0;visibility:hidden;transition:transform .25s ease,visibility 0s linear .25s;padding-bottom:calc(16px + env(safe-area-inset-bottom))}
+      .main-grid > section.sidebar-mobile.aberto{visibility:visible;transition:transform .25s ease,visibility 0s}
+      .barra-ferramentas{top:var(--menu-topo)}
+      .modal-cartao.tela-cheia{height:calc(100dvh - var(--menu-topo));max-height:none}
+      .modal-fundo{padding-top:8px}
+    }
+  </style>
+</head>
+<body class="h-full antialiased overflow-x-hidden">
+
+  <canvas id="orbit-canvas"></canvas>
+  <div id="plasmaLayer" class="plasma-top-layer"></div>
+
+  <header id="calc-header"></header>
+  <div id="mobile-menu"></div>
+
+  <div id="toast-container" class="fixed bottom-5 right-5 z-[60] flex flex-col gap-2 pointer-events-none"></div>
+
+  <div id="conteudo-email" class="relative z-10 flex flex-col min-h-screen pt-4 lg:pt-6 pb-6 px-3 lg:px-8 max-w-[1650px] mx-auto w-full">
+    <!-- Overlay mobile (dentro do container, no mesmo contexto de empilhamento da gaveta) -->
+    <div id="overlay-mobile" class="overlay-mobile" onclick="fecharSidebarMobile()"></div>
+
+    <!-- Botão hamburger mobile -->
+    <button onclick="abrirSidebarMobile()" class="lg:hidden mb-3 btn-vidro px-4 py-2 rounded-full text-sm flex items-center gap-2 w-fit">
+      <svg class="w-5 h-5" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path stroke-linecap="round" d="M4 6h16M4 12h16M4 18h16"/></svg>
+      Pastas
+    </button>
+
+    <main class="main-grid grid grid-cols-12 gap-4 lg:gap-5 flex-1 lg:h-[calc(100vh-180px)] min-h-[500px]">
+
+      <!-- COLUNA 1: PASTAS -->
+      <section id="sidebar-pastas" class="col-span-12 lg:col-span-3 flex flex-col gap-4 h-full min-h-0 sidebar-mobile lg:relative lg:translate-x-0 lg:bg-transparent lg:p-0 lg:border-0">
+
+        <button type="button" class="mobile-only btn-vidro text-xs px-3 py-1.5 rounded-full self-end" onclick="fecharSidebarMobile()">✕ Fechar</button>
+        <div class="vidro p-4 space-y-4 shrink-0">
+          <button onclick="abrirNovaMensagem(); fecharSidebarMobile();" class="btn-amarelo w-full py-3 px-5 rounded-full flex items-center justify-center gap-2 text-sm">
+            <svg class="w-4 h-4" fill="none" stroke="currentColor" stroke-width="2.5" viewBox="0 0 24 24"><path stroke-linecap="round" d="M12 4v16m8-8H4"/></svg>
+            Escrever E-mail
+          </button>
+
+          <ul class="space-y-1 text-sm" id="lista-pastas">
+            <!-- preenchido por JS -->
+          </ul>
+
+          <div class="pt-2 border-t border-white/10 space-y-2">
+            <button onclick="criarPasta()" class="btn-vidro w-full py-2 px-3 rounded-xl text-xs flex items-center justify-center gap-1.5">
+              <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path stroke-linecap="round" d="M12 4v16m8-8H4"/></svg>
+              Nova pasta
+            </button>
+          </div>
+        </div>
+
+        <!-- Lixeira rápida -->
+        <div class="vidro p-3 flex-1 min-h-0 flex flex-col">
+          <div class="flex items-center justify-between mb-2">
+            <span class="text-xs font-bold text-white/80">Lixeira</span>
+            <div class="flex gap-1">
+              <button onclick="restaurarSelecionadosLixeira()" class="text-[10px] text-cyan-300 hover:underline" title="Restaurar">Restaurar</button>
+              <button onclick="esvaziarLixeira()" class="text-[10px] text-red-300 hover:underline">Esvaziar</button>
+            </div>
+          </div>
+          <div id="lista-lixeira" class="space-y-1.5 overflow-y-auto flex-1 text-xs"></div>
+        </div>
+      </section>
+
+      <!-- COLUNA 2: LISTA -->
+      <section class="email-list-pane col-span-12 lg:col-span-4 flex flex-col gap-3 h-full min-h-0">
+        <div class="vidro p-3 space-y-2 shrink-0">
+          <div class="flex gap-2">
+            <input id="campo-busca" type="search" placeholder="Buscar remetente, assunto, data..." class="campo-busca flex-1 rounded-xl px-3 py-2 text-sm" oninput="buscar()">
+          </div>
+          <div class="flex flex-wrap gap-1.5" id="filtros">
+            <button data-filtro="todos" onclick="trocarFiltro('todos')" class="chip ativo">Todos</button>
+            <button data-filtro="nao-lidos" onclick="trocarFiltro('nao-lidos')" class="chip">Não lidos</button>
+            <button data-filtro="importantes" onclick="trocarFiltro('importantes')" class="chip">Importantes</button>
+            <button data-filtro="com-anexo" onclick="trocarFiltro('com-anexo')" class="chip">Com anexo</button>
+          </div>
+          <div class="filtro-datas">
+            <label class="chip chip-data">
+              <span class="rot">De</span><span class="val">dd/mm/aaaa</span>
+              <input type="date" id="filtro-data-de" aria-label="Data inicial" onchange="atualizarChipData(this); buscar()">
+              <button type="button" class="limpar" aria-label="Limpar data inicial" onclick="limparData(event,'filtro-data-de')">×</button>
+            </label>
+            <label class="chip chip-data">
+              <span class="rot">Até</span><span class="val">dd/mm/aaaa</span>
+              <input type="date" id="filtro-data-ate" aria-label="Data final" onchange="atualizarChipData(this); buscar()">
+              <button type="button" class="limpar" aria-label="Limpar data final" onclick="limparData(event,'filtro-data-ate')">×</button>
+            </label>
+          </div>
+        </div>
+
+        <div id="lista-emails" class="vidro p-2 flex-1 overflow-y-auto space-y-2 min-h-0"></div>
+      </section>
+
+      <!-- COLUNA 3: LEITURA / COMPOSER -->
+      <section class="email-detail-pane col-span-12 lg:col-span-5 flex flex-col h-full min-h-0">
+        <div class="vidro flex flex-col h-full min-h-0 overflow-hidden">
+          <!-- Abas -->
+          <div class="flex items-center gap-1 px-3 pt-2 border-b border-white/10 shrink-0 flex-wrap">
+            <button type="button" class="mobile-only btn-vidro text-xs px-3 py-1.5 rounded-full" onclick="voltarListaMobile()">← Lista</button>
+            <button class="aba ativa" data-modo="leitura" onclick="trocarModo('leitura')">Leitura</button>
+            <button class="aba" data-modo="composer" onclick="trocarModo('composer')">Escrever</button>
+            <div class="flex-1"></div>
+            <button onclick="abrirTelaCheia()" class="text-xs text-cyan-300 hover:underline px-2" title="Tela cheia">⛶</button>
+          </div>
+
+          <!-- Painel leitura -->
+          <div id="painel-leitura" class="flex-1 overflow-y-auto p-4 min-h-0"></div>
+
+          <!-- Painel composer (oculto por padrão) -->
+          <div id="painel-composer" class="flex-1 overflow-y-auto p-4 min-h-0 hidden flex-col gap-3">
+            <div class="space-y-2">
+              <div class="flex items-center gap-2 border-b border-white/10 pb-2">
+                <span class="text-xs text-white/50 rotulo-campo">Para</span>
+                <input id="campo-para" class="campo" type="text" inputmode="email" autocomplete="email" placeholder="email@exemplo.com (separe vários por vírgula ou ponto e vírgula)">
+              </div>
+              <div class="flex items-center gap-2 border-b border-white/10 pb-2">
+                <span class="text-xs text-white/50 rotulo-campo">Cc</span>
+                <input id="campo-cc" class="campo" type="text" inputmode="email" placeholder="opcional; vários separados por vírgula">
+              </div>
+              <div class="flex items-center gap-2 border-b border-white/10 pb-2">
+                <span class="text-xs text-white/50 rotulo-campo">Assunto</span>
+                <input id="campo-assunto" class="campo" type="text" placeholder="Assunto da mensagem">
+              </div>
+            </div>
+
+            <!-- Modelos e assinatura -->
+            <div class="flex flex-wrap gap-3 items-center">
+              <select id="seletor-modelo" onchange="aplicarModelo(this.value)" class="ctl-composer bg-black/30 border border-white/20 rounded-lg text-xs text-white">
+                <option value="">Modelos de resposta…</option>
+                <option value="agradecimento">Agradecimento</option>
+                <option value="confirmacao">Confirmação de recebimento</option>
+                <option value="proposta">Envio de proposta</option>
+                <option value="followup">Follow-up</option>
+              </select>
+              <button onclick="inserirAssinatura()" class="btn-vidro text-xs ctl-composer rounded-lg">Inserir assinatura</button>
+            </div>
+
+            <!-- Toolbar editor -->
+            <div class="barra-ferramentas flex flex-wrap gap-1 p-1.5 rounded-xl">
+              <button data-cmd="bold" title="Negrito" aria-label="Negrito"><b>N</b></button>
+              <button data-cmd="italic" title="Itálico"><i>I</i></button>
+              <button data-cmd="underline" title="Sublinhado" aria-label="Sublinhado"><u>S</u></button>
+              <button data-cmd="insertUnorderedList" title="Lista">• Lista</button>
+              <button onclick="document.execCommand('formatBlock', false, 'p')" title="Parágrafo">¶</button>
+            </div>
+
+            <div id="editor-corpo" class="editor flex-1" contenteditable="true" data-placeholder="Escreva sua mensagem..."></div>
+
+            <!-- Anexos -->
+            <div class="space-y-2">
+              <div class="flex items-center justify-between">
+                <span class="text-xs font-semibold text-white/70">Anexos <span class="text-white/40">(máx. 10 MB · PDF, imagens)</span></span>
+                <label class="btn-vidro text-xs px-3 py-1 rounded-lg cursor-pointer">
+                  + Anexar
+                  <input id="campo-arquivos" type="file" class="hidden" multiple accept=".pdf,.png,.jpg,.jpeg,.webp,.gif,application/pdf,image/png,image/jpeg,image/webp,image/gif" onchange="anexarArquivos(event)">
+                </label>
+              </div>
+              <div id="lista-anexos" class="flex flex-wrap gap-2"></div>
+            </div>
+
+            <div class="flex flex-wrap gap-2 pt-2">
+              <button onclick="enviarEmail()" class="btn-amarelo px-5 py-2.5 rounded-full text-sm">Enviar</button>
+              <button onclick="salvarRascunho(true)" class="btn-vidro px-4 py-2.5 rounded-full text-sm">Salvar rascunho</button>
+              <button onclick="descartarComposer()" class="botao-lixeira px-4 py-2.5 rounded-full text-sm">Descartar</button>
+              <span id="status-rascunho" class="text-[11px] text-white/50 self-center ml-auto"></span>
+            </div>
+          </div>
+        </div>
+      </section>
+    </main>
+  </div>
+
+  <!-- MODAL TELA CHEIA / CONFIRMAÇÃO -->
+  <div id="modal-fundo" class="modal-fundo" onclick="if(event.target===this) fecharModal()">
+    <div class="modal-cartao" id="modal-cartao">
+      <div class="flex items-center justify-between mb-3 shrink-0">
+        <h2 id="modal-titulo" class="text-lg font-bold text-white truncate pr-4"></h2>
+        <div class="flex gap-2">
+          <button onclick="alternarTelaCheia()" class="btn-vidro text-xs px-3 py-1 rounded-lg" id="btn-tela-cheia">Tela cheia</button>
+          <button onclick="fecharModal()" class="text-white/70 hover:text-white text-xl leading-none">×</button>
+        </div>
+      </div>
+      <div id="modal-conteudo" class="overflow-y-auto flex-1"></div>
+    </div>
+  </div>
+
+  <!-- MODAL CONFIRMAÇÃO -->
+  <div id="modal-confirm" class="modal-fundo" onclick="if(event.target===this) fecharConfirm()">
+    <div class="modal-cartao" style="max-width:420px">
+      <h2 id="confirm-titulo" class="text-lg font-bold text-white mb-2"></h2>
+      <p id="confirm-texto" class="text-sm text-white/80 mb-5"></p>
+      <div class="flex gap-3 justify-end">
+        <button onclick="fecharConfirm()" class="btn-vidro px-4 py-2 rounded-full text-sm">Cancelar</button>
+        <button id="confirm-ok" class="btn-amarelo px-5 py-2 rounded-full text-sm">Confirmar</button>
+      </div>
+    </div>
+  </div>
+
+  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+  <script src="https://www.432up.com/B2B/partner-config.js"></script>
+  <script src="https://www.432up.com/script/script.js" defer></script>
+  <script src="https://www.432up.com/B2B/partner-header.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/dompurify@3.2.6/dist/purify.min.js"></script>
+
+  <script>
+  // ============================================================
+  // Cliente de e-mail · 432UP Partner
+  // ============================================================
+
+  const LIMITE_ANEXO_MB = 10;
+  const LIMITE_TOTAL_ANEXOS_MB = 25;
+  // Configure com a URL de um endpoint SEGURO (Worker/servidor) que chama a API Resend.
+  // Nunca coloque a chave secreta do Resend neste HTML. Endpoint esperado: POST JSON.
+  const EMAIL_API_ENDPOINT = 'https://paetkspbfejtjjkngqej.supabase.co/functions/v1/gerenciador-de-email/enviar';
+  const STORAGE_KEY = '432up_email_admin_v3';
+  const STORAGE_KEY_ANTIGA = '432up_email_admin_v2'; // chave antiga: removida ao carregar
+  const TIPOS_ANEXO = ['application/pdf', 'image/png', 'image/jpeg', 'image/webp', 'image/gif'];
+
+  function usuarioAtual() {
+    return (estado.usuario && estado.usuario.nome) ? estado.usuario : { nome: 'Equipe 432UP', email: '' };
+  }
+  function gerarAssinatura() {
+    const zap = (typeof PARTNER_CFG !== 'undefined' && PARTNER_CFG.WHATSAPP_SUPORTE) ? 'WhatsApp: ' + esc(PARTNER_CFG.WHATSAPP_SUPORTE) + '<br>' : '';
+    return '<br><br>--<br><strong>' + esc(usuarioAtual().nome) + '</strong><br>432UP Produções<br>' + zap +
+      '<a href="https://www.432up.com" style="color:#00e5ff">www.432up.com</a>';
+  }
+
+  const MODELOS = {
+    agradecimento: `<p>Olá!</p><p>Agradecemos o contato e o envio das informações. Já estamos analisando e retornamos em breve.</p><p>Atenciosamente,</p>`,
+    confirmacao: `<p>Prezado(a),</p><p>Confirmamos o recebimento da sua mensagem e dos anexos. Nossa equipe dará andamento conforme o fluxo interno.</p><p>Qualquer novidade, avisamos.</p>`,
+    proposta: `<p>Olá,</p><p>Segue em anexo a proposta revisada com os valores e condições alinhados.</p><p>Ficamos à disposição para esclarecimentos.</p>`,
+    followup: `<p>Olá,</p><p>Passando para dar um follow-up sobre o assunto abaixo. Precisa de mais alguma informação da nossa parte?</p><p>Obrigado!</p>`
+  };
+
+  let estado = {
+    pasta: 'entrada',
+    filtro: 'todos',
+    busca: '',
+    ativoId: null,
+    modo: 'leitura',
+    telaCheia: false,
+    usuario: { nome: '', email: '' },
+    anexosComposer: [],
+    proximoId: 1000,
+    ultimaAcao: null, // para desfazer
+    rascunhoTimer: null,
+    pastasCustom: [], // { id, nome }
+    pastas: {
+      entrada: [],
+      enviados: [],
+      rascunhos: [],
+      spam: [],
+      arquivo: [],
+      lixeira: []
+    }
+  };
+
+  // ---------- INICIALIZAÇÃO ----------
+  document.addEventListener('DOMContentLoaded', () => {
+    carregarEstadoSalvo();
+    document.body.classList.add('mobile-view-list');
+    const primeiro = mensagensVisiveis(estado.pasta)[0] || mensagensVisiveis('entrada')[0];
+    if (!encontrarEmail(estado.ativoId)) estado.ativoId = primeiro ? primeiro.id : null;
+
+    ligarFerramentas();
+    renderizarPastas();
+    destacarPasta();
+    destacarFiltro();
+    atualizarTudo();
+    trocarModo('leitura');
+    if (estado.modo !== 'composer') definirTelaMobile('list');
+
+    // Auto-save rascunho a cada 8s se estiver no composer
+    document.getElementById('editor-corpo').addEventListener('input', agendarRascunho);
+    document.getElementById('campo-assunto').addEventListener('input', agendarRascunho);
+    document.getElementById('campo-para').addEventListener('input', agendarRascunho);
+    document.getElementById('campo-cc').addEventListener('input', agendarRascunho);
+
+    document.addEventListener('keydown', (e) => {
+      if (e.key === 'Escape') { fecharModal(); fecharConfirm(); fecharSidebarMobile(); }
+    });
+
+    if (typeof partnerRequireAuth === 'function') {
+      partnerRequireAuth().then(function (parceiro) {
+        if (typeof partnerFillSidebar === 'function') partnerFillSidebar(parceiro);
+        const papel = String(parceiro.role || parceiro.nivel || '').toLowerCase().trim();
+        if (typeof window.updateAdminState === 'function') window.updateAdminState(papel === 'admin' || papel === 'master' || parceiro.is_admin === true);
+        estado.usuario = { nome: parceiro.nome_completo || 'Equipe 432UP', email: parceiro.email || '' };
+        if (!estado.usuario.email && typeof sbPartner !== 'undefined') {
+          sbPartner.auth.getSession().then(function (r) { const u = r.data && r.data.session && r.data.session.user; if (u) estado.usuario.email = u.email || ''; });
+        }
+      }).catch(function (err) { console.error('Erro na autenticação:', err); });
+    }
+  });
+
+  // ---------- LISTAGEM ----------
+  // A visibilidade por parceiro deve ser garantida no servidor (RLS); aqui só se exibe o que o servidor devolveu.
+  function mensagensVisiveis(pastaKey) {
+    return estado.pastas[pastaKey] || [];
+  }
+
+  // ---------- PASTAS ----------
+  const PASTAS_FIXAS = [
+    { id: 'entrada', nome: 'Caixa de Entrada', icon: 'M20 13V6a2 2 0 00-2-2H6a2 2 0 00-2 2v7m16 0v5a2 2 0 01-2 2H6a2 2 0 01-2-2v-5m16 0h-2.586a1 1 0 00-.707.293l-2.414 2.414a1 1 0 01-.707.293h-3.172a1 1 0 01-.707-.293l-2.414-2.414A1 1 0 006.586 13H4' },
+    { id: 'enviados', nome: 'Enviados', icon: 'M22 2L11 13M22 2l-7 20-4-9-9-4 20-7z' },
+    { id: 'rascunhos', nome: 'Rascunhos', icon: 'M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z' },
+    { id: 'arquivo', nome: 'Arquivo', icon: 'M5 8h14M5 8a2 2 0 110-4h14a2 2 0 110 4M5 8v10a2 2 0 002 2h10a2 2 0 002-2V8m-9 4h4' },
+    { id: 'spam', nome: 'Spam', icon: 'M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z' },
+    { id: 'lixeira', nome: 'Lixeira', icon: 'M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16' }
+  ];
+
+  function renderizarPastas() {
+    const ul = document.getElementById('lista-pastas');
+    const todas = [...PASTAS_FIXAS, ...estado.pastasCustom.map(p => ({ id: p.id, nome: p.nome, icon: 'M3 7v10a2 2 0 002 2h14a2 2 0 002-2V9a2 2 0 00-2-2h-6l-2-2H5a2 2 0 00-2 2z', custom: true }))];
+    ul.innerHTML = todas.map(p => {
+      const count = mensagensVisiveis(p.id).length;
+      const badge = count > 0 ? `<span class="badge text-[11px] font-bold px-2 py-0.5 rounded-full" data-contador="${p.id}">${count}</span>` : `<span class="badge text-[11px] font-bold px-2 py-0.5 rounded-full hidden" data-contador="${p.id}">0</span>`;
+      const delBtn = p.custom ? `<button onclick="event.stopPropagation(); excluirPasta('${p.id}')" class="text-red-300/70 hover:text-red-300 text-xs ml-1" title="Excluir pasta">×</button>` : '';
+      return `<li data-pasta="${p.id}" ondragover="arrastarSobre(event)" ondragleave="this.classList.remove('arrasto-sobre')" ondrop="soltarNaPasta(event,'${p.id}')" onclick="trocarPasta('${p.id}'); fecharSidebarMobile();" class="item-pasta flex items-center justify-between p-2.5 rounded-xl cursor-pointer">
+        <span class="flex items-center gap-2.5 min-w-0">
+          <svg class="w-4 h-4 shrink-0" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="${p.icon}"/></svg>
+          <span class="truncate">${esc(p.nome)}</span>
+        </span>
+        <span class="flex items-center gap-1">${badge}${delBtn}</span>
+      </li>`;
+    }).join('');
+  }
+
+  function criarPasta() {
+    const nome = prompt('Nome da nova pasta:');
+    if (!nome || !nome.trim()) return;
+    const id = 'custom_' + Date.now();
+    estado.pastasCustom.push({ id, nome: nome.trim() });
+    estado.pastas[id] = [];
+    renderizarPastas();
+    persistirEstado();
+    destacarPasta();
+    registrarAcao({ tipo: 'criar-pasta', id, nome: nome.trim() });
+    mostrarAviso('Pasta criada: ' + nome.trim());
+  }
+
+  function excluirPasta(id) {
+    confirmar('Excluir pasta?', 'As mensagens serão movidas para a Lixeira.', () => {
+      const msgs = estado.pastas[id] || [];
+      msgs.forEach(m => { m.pastaOrigem = id; estado.pastas.lixeira.push(m); });
+      delete estado.pastas[id];
+      estado.pastasCustom = estado.pastasCustom.filter(p => p.id !== id);
+      if (estado.pasta === id) trocarPasta('entrada');
+      renderizarPastas();
+      atualizarTudo();
+      registrarAcao({ tipo: 'excluir-pasta', id, msgs });
+      mostrarAviso('Pasta excluída. Mensagens na lixeira.');
+    });
+  }
+
+  function trocarPasta(pasta) {
+    estado.pasta = pasta;
+    const lista = mensagensVisiveis(pasta);
+    estado.ativoId = lista.length ? lista[0].id : null;
+    destacarPasta();
+    renderizarLista();
+    trocarModo('leitura');
+    definirTelaMobile('list');
+    persistirEstado();
+  }
+
+  function destacarPasta() {
+    document.querySelectorAll('#lista-pastas [data-pasta]').forEach(li => {
+      li.classList.toggle('ativo', li.dataset.pasta === estado.pasta);
+    });
+  }
+
+  // ---------- FILTROS / BUSCA ----------
+  function trocarFiltro(filtro) {
+    estado.filtro = filtro;
+    destacarFiltro();
+    renderizarLista();
+  }
+
+  function destacarFiltro() {
+    document.querySelectorAll('#filtros [data-filtro]').forEach(b => {
+      b.classList.toggle('ativo', b.dataset.filtro === estado.filtro);
+    });
+  }
+
+  function buscar() {
+    estado.busca = document.getElementById('campo-busca').value.trim().toLowerCase();
+    renderizarLista();
+  }
+
+  function filtrarLista(lista) {
+    let r = lista;
+    if (estado.filtro === 'nao-lidos') r = r.filter(m => !m.lida);
+    if (estado.filtro === 'importantes') r = r.filter(m => m.importante);
+    if (estado.filtro === 'com-anexo') r = r.filter(m => m.anexos && m.anexos.length);
+
+    const de = document.getElementById('filtro-data-de')?.value;
+    const ate = document.getElementById('filtro-data-ate')?.value;
+    if (de) r = r.filter(m => m.dataISO >= de);
+    if (ate) r = r.filter(m => m.dataISO <= ate);
+
+    if (estado.busca) {
+      const q = estado.busca;
+      r = r.filter(m =>
+        (m.remetente || '').toLowerCase().includes(q) ||
+        (m.email || '').toLowerCase().includes(q) ||
+        (m.assunto || '').toLowerCase().includes(q) ||
+        (m.previa || '').toLowerCase().includes(q) ||
+        (m.para || '').toLowerCase().includes(q) ||
+        (m.data || '').toLowerCase().includes(q) ||
+        (m.dataISO || '').includes(q)
+      );
+    }
+    return r;
+  }
+
+  // ---------- FILTRO DE DATAS (cápsulas) ----------
+  function atualizarChipData(input) {
+    const chip = input.closest('.chip-data');
+    chip.classList.toggle('ativo', !!input.value);
+    chip.querySelector('.val').textContent = input.value ? input.value.split('-').reverse().join('/') : 'dd/mm/aaaa';
+  }
+  function limparData(ev, id) {
+    ev.preventDefault(); ev.stopPropagation();
+    const i = document.getElementById(id);
+    i.value = ''; atualizarChipData(i); buscar();
+  }
+
+  // ---------- LISTA ----------
+  function renderizarLista() {
+    const box = document.getElementById('lista-emails');
+    const lista = filtrarLista(mensagensVisiveis(estado.pasta));
+    if (!lista.length) {
+      box.innerHTML = '<div class="text-center py-12 text-sm text-[#CBD5E1]">Nenhuma mensagem.</div>';
+      return;
+    }
+    box.innerHTML = lista.map(m => {
+      const ativo = m.id === estado.ativoId ? 'ativo' : '';
+      const naoLida = !m.lida ? 'nao-lida' : '';
+      const peso = !m.lida ? 'font-bold' : '';
+      const estrela = m.importante
+        ? '<span class="text-yellow-400" onclick="event.stopPropagation(); alternarImportante(event,' + m.id + ')">★</span>'
+        : '<span class="text-white/30 hover:text-yellow-400" onclick="event.stopPropagation(); alternarImportante(event,' + m.id + ')">☆</span>';
+      const anexoIcon = (m.anexos && m.anexos.length) ? '<span class="text-[10px] text-white/50">📎</span>' : '';
+      const statusHtml = m.statusEnvio ? badgeStatus(m.statusEnvio) : '';
+      return `<div class="cartao-email ${ativo} ${naoLida}" draggable="${estado.pasta !== 'rascunhos'}" ondragstart="iniciarArraste(event,${m.id})" onclick="${estado.pasta === 'rascunhos' ? `abrirRascunho(${m.id})` : `selecionarEmail(${m.id})`}">
+        <div class="flex items-start justify-between gap-2">
+          <div class="min-w-0 flex-1">
+            <div class="flex items-center gap-1.5 ${peso}">
+              ${estrela}
+              <span class="text-sm text-white truncate">${esc(m.remetente)}</span>
+              ${anexoIcon}
+            </div>
+            <div class="text-xs ${peso} text-white/90 truncate mt-0.5">${esc(m.assunto)}</div>
+            <div class="text-[11px] text-[#94A3B8] truncate mt-0.5">${esc(m.previa)}</div>
+          </div>
+          <div class="flex flex-col items-end gap-1 shrink-0">
+            <span class="text-[10px] text-[#94A3B8] font-mono">${esc(m.data)}</span>
+            ${statusHtml}
+          </div>
+        </div>
+      </div>`;
+    }).join('');
+  }
+
+  function badgeStatus(s) {
+    const map = { enviado: 'status-enviado', entregue: 'status-entregue', aberto: 'status-aberto', falhou: 'status-falhou', rascunho: 'status-rascunho' };
+    const labels = { enviado: 'Enviado', entregue: 'Entregue', aberto: 'Aberto', falhou: 'Falhou', rascunho: 'Rascunho' };
+    return `<span class="status-badge ${map[s] || ''}">${labels[s] || s}</span>`;
+  }
+
+  function selecionarEmail(id) {
+    if (encontrarPastaDoEmail(id) !== 'rascunhos') estado.rascunhoEditandoId = null;
+    estado.ativoId = id;
+    const m = encontrarEmail(id);
+    if (m && !m.lida) {
+      m.lida = true;
+      atualizarContadores();
+    }
+    renderizarLista();
+    trocarModo('leitura');
+    renderizarLeitura();
+    definirTelaMobile('reader');
+    persistirEstado();
+  }
+
+  function alternarImportante(e, id) {
+    e.stopPropagation();
+    const m = encontrarEmail(id);
+    if (!m) return;
+    m.importante = !m.importante;
+    renderizarLista();
+    if (estado.ativoId === id) renderizarLeitura();
+    persistirEstado();
+  }
+
+  // ---------- LEITURA ----------
+  function renderizarLeitura() {
+    const box = document.getElementById('painel-leitura');
+    const m = encontrarEmail(estado.ativoId);
+    if (!m) {
+      box.innerHTML = '<div class="text-center py-16 text-sm text-[#CBD5E1]">Selecione uma mensagem para ler.</div>';
+      return;
+    }
+
+    const statusHtml = m.statusEnvio ? `<div class="mt-1">${badgeStatus(m.statusEnvio)}</div>` : '';
+    const logHtml = m.enviadoPor ? `<div class="text-[10px] text-white/50 mt-1">Enviado por ${esc(m.enviadoPor)} em ${esc(formatarDataHora(m.enviadoEm))}</div>` : '';
+
+    const anexosHtml = (m.anexos && m.anexos.length) ? `
+      <div class="mt-3 space-y-1">
+        <div class="text-xs font-semibold text-white/70">Anexos</div>
+        <div class="flex flex-wrap gap-2">
+          ${m.anexos.map(a => `
+            <div class="flex items-center gap-2 bg-white/10 rounded-lg px-2 py-1.5 text-xs">
+              <span>📄</span>
+              <span class="text-white">${esc(a.nome)}</span>
+              <span class="text-white/40">${formatBytes(a.tamanho || 0)}</span>
+            </div>`).join('')}
+        </div>
+      </div>` : '';
+
+    const acoesLeitura = `
+      <div class="flex flex-wrap gap-2 pt-3 border-t border-white/10 mt-3">
+        <button onclick="responder()" class="btn-vidro text-xs px-3 py-1.5 rounded-full">Responder</button>
+        <button onclick="responderTodos()" class="btn-vidro text-xs px-3 py-1.5 rounded-full">Responder a todos</button>
+        <button onclick="encaminhar()" class="btn-vidro text-xs px-3 py-1.5 rounded-full">Encaminhar</button>
+        <button onclick="alternarLida()" class="btn-vidro text-xs px-3 py-1.5 rounded-full">${m.lida ? 'Marcar não lida' : 'Marcar lida'}</button>
+        <button onclick="arquivar()" class="btn-vidro text-xs px-3 py-1.5 rounded-full">Arquivar</button>
+        ${seletorMoverHtml(m.id)}
+        ${encontrarPastaDoEmail(m.id) === 'lixeira' ? '' : `<button onclick="moverParaLixeira()" class="botao-lixeira text-xs px-3 py-1.5 rounded-full">Lixeira</button>`}
+      </div>`;
+
+    box.innerHTML = `
+      <div class="space-y-3">
+        <div class="flex items-start justify-between gap-3 pb-2 border-b linha-borda">
+          <div class="min-w-0">
+            <h3 class="text-sm font-bold text-white">${esc(m.assunto)}</h3>
+            <div class="text-xs text-[#CBD5E1] mt-0.5">De: <strong class="text-white">${esc(m.remetente)}</strong> &lt;${esc(m.email)}&gt;</div>
+            ${m.para ? `<div class="text-xs text-[#CBD5E1]">Para: ${esc(m.para)}</div>` : ''}
+            ${statusHtml}
+            ${logHtml}
+          </div>
+          <span class="text-[11px] text-[#CBD5E1] font-mono shrink-0">${esc(m.data)}</span>
+        </div>
+        <div class="bloco-modal min-h-[140px]">${sanitizarHtml(m.corpo)}</div>
+        ${anexosHtml}
+        ${acoesLeitura}
+      </div>`;
+  }
+
+  // ---------- AÇÕES DE MENSAGEM ----------
+  function responder() {
+    const m = encontrarEmail(estado.ativoId);
+    if (!m) return;
+    document.getElementById('campo-para').value = m.email || '';
+    document.getElementById('campo-cc').value = '';
+    document.getElementById('campo-assunto').value = (m.assunto || '').startsWith('Re:') ? m.assunto : 'Re: ' + (m.assunto || '');
+    document.getElementById('editor-corpo').innerHTML = `<br><br><hr style="border-color:rgba(255,255,255,0.2)"><p class="text-xs text-white/50">Em ${esc(m.data)}, ${esc(m.remetente)} escreveu:</p><blockquote style="border-left:2px solid #00e5ff;padding-left:10px;color:#94A3B8">${sanitizarHtml(m.corpo)}</blockquote>`;
+    estado.anexosComposer = [];
+    renderizarAnexos();
+    trocarModo('composer');
+  }
+
+  function responderTodos() {
+    const m = encontrarEmail(estado.ativoId);
+    if (!m) return;
+    document.getElementById('campo-para').value = m.email || '';
+    document.getElementById('campo-cc').value = m.para && m.para !== m.email ? m.para : '';
+    document.getElementById('campo-assunto').value = (m.assunto || '').startsWith('Re:') ? m.assunto : 'Re: ' + (m.assunto || '');
+    document.getElementById('editor-corpo').innerHTML = `<br><br><hr style="border-color:rgba(255,255,255,0.2)"><p class="text-xs text-white/50">Em ${esc(m.data)}, ${esc(m.remetente)} escreveu:</p><blockquote style="border-left:2px solid #00e5ff;padding-left:10px;color:#94A3B8">${sanitizarHtml(m.corpo)}</blockquote>`;
+    estado.anexosComposer = [];
+    renderizarAnexos();
+    trocarModo('composer');
+  }
+
+  function encaminhar() {
+    const m = encontrarEmail(estado.ativoId);
+    if (!m) return;
+    document.getElementById('campo-para').value = '';
+    document.getElementById('campo-cc').value = '';
+    document.getElementById('campo-assunto').value = (m.assunto || '').startsWith('Enc:') ? m.assunto : 'Enc: ' + (m.assunto || '');
+    document.getElementById('editor-corpo').innerHTML = `<br><br><hr style="border-color:rgba(255,255,255,0.2)"><p class="text-xs text-white/50">---------- Mensagem encaminhada ----------<br>De: ${esc(m.remetente)} &lt;${esc(m.email)}&gt;<br>Data: ${esc(m.data)}<br>Assunto: ${esc(m.assunto)}</p><div>${sanitizarHtml(m.corpo)}</div>`;
+    estado.anexosComposer = (m.anexos || []).map((a, i) => ({ id: Date.now() + i, nome: a.nome, tamanho: a.tamanho, tipo: a.tipo, file: null }));
+    renderizarAnexos();
+    trocarModo('composer');
+  }
+
+  function alternarLida() {
+    const m = encontrarEmail(estado.ativoId);
+    if (!m) return;
+    m.lida = !m.lida;
+    renderizarLista();
+    renderizarLeitura();
+    atualizarContadores();
+    persistirEstado();
+    mostrarAviso(m.lida ? 'Marcada como lida' : 'Marcada como não lida');
+  }
+
+  function arquivar() {
+    const m = encontrarEmail(estado.ativoId);
+    if (!m) return;
+    const pastaAtual = encontrarPastaDoEmail(m.id);
+    if (!pastaAtual || pastaAtual === 'arquivo') return;
+    removerDePasta(m.id, pastaAtual);
+    m.pastaOrigem = pastaAtual;
+    estado.pastas.arquivo.push(m);
+    registrarAcao({ tipo: 'mover', id: m.id, de: pastaAtual, para: 'arquivo', msg: m });
+    estado.ativoId = null;
+    atualizarTudo();
+    definirTelaMobile('list');
+    mostrarAvisoComDesfazer('Mensagem arquivada.');
+  }
+
+  function moverParaLixeira() {
+    const m = encontrarEmail(estado.ativoId);
+    if (!m) return;
+    const pastaAtual = encontrarPastaDoEmail(m.id);
+    if (!pastaAtual || pastaAtual === 'lixeira') return;
+    removerDePasta(m.id, pastaAtual);
+    m.pastaOrigem = pastaAtual;
+    estado.pastas.lixeira.push(m);
+    registrarAcao({ tipo: 'mover', id: m.id, de: pastaAtual, para: 'lixeira', msg: m });
+    estado.ativoId = null;
+    atualizarTudo();
+    definirTelaMobile('list');
+    mostrarAvisoComDesfazer('Mensagem movida para a lixeira.');
+  }
+
+  // ---------- LIXEIRA ----------
+  function esvaziarLixeira() {
+    if (!estado.pastas.lixeira.length) {
+      mostrarAviso('Lixeira já está vazia.', true);
+      return;
+    }
+    confirmar('Esvaziar lixeira?', 'Esta ação é irreversível. Todas as mensagens serão apagadas permanentemente.', () => {
+      const backup = [...estado.pastas.lixeira];
+      estado.pastas.lixeira = [];
+      registrarAcao({ tipo: 'esvaziar', msgs: backup });
+      atualizarTudo();
+      mostrarAviso('Lixeira esvaziada.');
+    });
+  }
+
+  function restaurarSelecionadosLixeira() {
+    // Restaura todos da lixeira para pasta de origem
+    if (!estado.pastas.lixeira.length) return;
+    const msgs = [...estado.pastas.lixeira];
+    msgs.forEach(m => {
+      const dest = m.pastaOrigem && estado.pastas[m.pastaOrigem] ? m.pastaOrigem : 'entrada';
+      estado.pastas[dest].push(m);
+      delete m.pastaOrigem;
+    });
+    estado.pastas.lixeira = [];
+    registrarAcao({ tipo: 'restaurar-lote', msgs });
+    atualizarTudo();
+    mostrarAvisoComDesfazer(msgs.length + ' mensagem(ns) restaurada(s).');
+  }
+
+  function renderizarLixeira() {
+    const box = document.getElementById('lista-lixeira');
+    const itens = mensagensVisiveis('lixeira');
+    if (!itens.length) {
+      box.innerHTML = '<div class="text-xs text-[#CBD5E1] py-3 text-center">Lixeira vazia.</div>';
+      return;
+    }
+    box.innerHTML = itens.map(m => `
+      <div class="p-2.5 bg-white/10 border border-[rgba(255,255,255,0.2)] rounded-xl space-y-0.5 cursor-pointer hover:bg-white/15" onclick="trocarPasta('lixeira'); selecionarEmail(${m.id}); fecharSidebarMobile();">
+        <div class="flex items-center justify-between gap-2">
+          <span class="font-bold text-xs text-white truncate">${esc(m.remetente)}</span>
+          <span class="text-[10px] text-[#CBD5E1] font-mono shrink-0">${esc(m.data)}</span>
+        </div>
+        <div class="text-[11px] text-[#CBD5E1] truncate">${esc(m.assunto)}</div>
+        <div class="text-[10px] text-white/40">Origem: ${esc(m.pastaOrigem || 'entrada')}</div>
+      </div>`).join('');
+  }
+
+  // ---------- COMPOSER ----------
+  function abrirNovaMensagem() {
+    document.getElementById('campo-para').value = '';
+    document.getElementById('campo-cc').value = '';
+    document.getElementById('campo-assunto').value = '';
+    document.getElementById('editor-corpo').innerHTML = '';
+    estado.anexosComposer = [];
+    renderizarAnexos();
+    document.getElementById('status-rascunho').textContent = '';
+    estado.rascunhoEditandoId = null;
+    trocarModo('composer');
+    definirTelaMobile('reader');
+  }
+
+  function trocarModo(modo) {
+    estado.modo = modo;
+    document.querySelectorAll('.aba').forEach(a => a.classList.toggle('ativa', a.dataset.modo === modo));
+    document.getElementById('painel-leitura').classList.toggle('hidden', modo !== 'leitura');
+    document.getElementById('painel-composer').classList.toggle('hidden', modo !== 'composer');
+    if (modo === 'leitura') renderizarLeitura();
+    if (modo === 'composer') definirTelaMobile('reader');
+  }
+
+  function validarEmails(str) {
+    if (!str || !str.trim()) return { ok: false, msg: 'Informe ao menos um destinatário.' };
+    const emails = str.split(/[,;]+/).map(s => s.trim()).filter(Boolean);
+    const re = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+    for (const e of emails) {
+      if (!re.test(e)) return { ok: false, msg: 'E-mail inválido: ' + e };
+    }
+    return { ok: true, emails };
+  }
+
+  async function enviarEmail() {
+    const para = document.getElementById('campo-para').value;
+    const ccTexto = document.getElementById('campo-cc').value;
+    const valid = validarEmails(para);
+    if (!valid.ok) { mostrarAviso(valid.msg, true); return; }
+    const validCc = ccTexto.trim() ? validarEmails(ccTexto) : { ok: true, emails: [] };
+    if (!validCc.ok) { mostrarAviso('Cc: ' + validCc.msg, true); return; }
+
+    const assunto = document.getElementById('campo-assunto').value.trim() || '(sem assunto)';
+    const corpo = document.getElementById('editor-corpo').innerHTML || '';
+    if (!stripHtml(corpo).trim()) { mostrarAviso('Escreva o conteúdo do e-mail antes de enviar.', true); return; }
+    if (estado.anexosComposer.some(a => !a.file)) {
+      mostrarAviso('Um ou mais anexos encaminhados não estão disponíveis nesta sessão. Anexe os arquivos novamente.', true);
+      return;
+    }
+    if (!EMAIL_API_ENDPOINT) {
+      mostrarAviso('Envio indisponível: o endpoint de envio não está configurado. Nada foi enviado.', true);
+      return;
+    }
+
+    const btn = document.querySelector('button[onclick="enviarEmail()"]');
+    if (btn) { btn.disabled = true; btn.textContent = 'Enviando…'; }
+    try {
+      const anexos = await Promise.all(estado.anexosComposer.map(async a => ({
+        filename: a.nome,
+        content: await arquivoBase64(a.file),
+        contentType: a.tipo || 'application/octet-stream'
+      })));
+      const payload = {
+        to: valid.emails,
+        cc: validCc.emails,
+        subject: assunto,
+        html: sanitizarHtml(corpo, true),
+        text: stripHtml(corpo),
+        attachments: anexos
+      };
+      const headers = { 'Content-Type': 'application/json' };
+      // Se a configuração do portal expuser o cliente Supabase, encaminha o JWT da sessão.
+      // O endpoint deve validar esse token no servidor; CORS não é controle de acesso.
+      try {
+        if (typeof sbPartner !== 'undefined' && sbPartner?.auth?.getSession) {
+          const sessionResult = await sbPartner.auth.getSession();
+          const token = sessionResult?.data?.session?.access_token;
+          if (token) headers.Authorization = 'Bearer ' + token;
+        }
+      } catch (authErr) { console.warn('[432UP E-mail] Não foi possível obter sessão para o endpoint.', authErr); }
+      const response = await fetch(EMAIL_API_ENDPOINT, {
+        method: 'POST', headers, credentials: 'same-origin', body: JSON.stringify(payload)
+      });
+      let result = {};
+      try { result = await response.json(); } catch (_) {}
+      if (!response.ok || result.ok === false) {
+        throw new Error(result.message || result.error || `Falha no endpoint (${response.status}).`);
+      }
+
+      const agora = new Date();
+      const msg = {
+        id: estado.proximoId++, remetente: usuarioAtual().nome, email: usuarioAtual().email,
+        para: valid.emails.join(', '), cc: validCc.emails.join(', '), assunto,
+        previa: stripHtml(corpo).slice(0, 80), corpo, dataISO: agora.toISOString().slice(0, 10),
+        data: formatarDataCurta(agora), importante: false, lida: true, categoria: 'parceiros',
+        parceiroId: null,
+        anexos: estado.anexosComposer.map(a => ({ nome: a.nome, tamanho: a.tamanho, tipo: a.tipo })),
+        statusEnvio: 'enviado', enviadoPor: usuarioAtual().nome, enviadoEm: agora.toISOString(),
+        idResend: result.id || result.data?.id || null
+      };
+      estado.pastas.enviados.unshift(msg);
+      if (estado.rascunhoEditandoId) {
+        estado.pastas.rascunhos = estado.pastas.rascunhos.filter(r => r.id !== estado.rascunhoEditandoId);
+      }
+      limparComposer();
+      estado.rascunhoEditandoId = null;
+      estado.pasta = 'enviados'; estado.ativoId = msg.id;
+      atualizarTudo(); trocarModo('leitura'); definirTelaMobile('reader'); persistirEstado();
+      mostrarAviso('Solicitação aceita pelo endpoint. Isso confirma o envio ao provedor, não entrega nem leitura.');
+    } catch (err) {
+      console.error('[432UP E-mail] Falha no envio:', err);
+      mostrarAviso('Não foi possível enviar: ' + (err.message || 'erro de rede') + '. O conteúdo foi mantido para nova tentativa.', true);
+    } finally {
+      if (btn) { btn.disabled = false; btn.textContent = 'Enviar'; }
+    }
+  }
+
+  function arquivoBase64(file) {
+    return new Promise((resolve, reject) => {
+      const reader = new FileReader();
+      reader.onload = () => resolve(String(reader.result || '').split(',')[1] || '');
+      reader.onerror = () => reject(new Error('Não foi possível ler o anexo: ' + file.name));
+      reader.readAsDataURL(file);
+    });
+  }
+
+  function salvarRascunho(manual) {
+    const para = document.getElementById('campo-para').value.trim();
+    const assunto = document.getElementById('campo-assunto').value.trim();
+    const corpo = document.getElementById('editor-corpo').innerHTML;
+    if (!para && !assunto && !stripHtml(corpo)) {
+      if (manual) mostrarAviso('Nada para salvar.', true);
+      return;
+    }
+    const agora = new Date();
+    // Atualiza rascunho existente ou cria novo
+    let r = estado.rascunhoEditandoId ? estado.pastas.rascunhos.find(x => x.id === estado.rascunhoEditandoId) : null;
+    if (!r) {
+      r = {
+        id: estado.proximoId++,
+        remetente: 'Rascunho',
+        email: '',
+        para,
+        cc: document.getElementById('campo-cc').value.trim(),
+        assunto: assunto || '(sem assunto)',
+        previa: stripHtml(corpo).slice(0, 80),
+        corpo,
+        dataISO: agora.toISOString().slice(0, 10),
+        data: formatarDataCurta(agora),
+        importante: false,
+        lida: true,
+        categoria: 'parceiros',
+        parceiroId: null,
+        anexos: estado.anexosComposer.map(a => ({ ...a })),
+        statusEnvio: 'rascunho'
+      };
+      estado.pastas.rascunhos.unshift(r);
+      estado.rascunhoEditandoId = r.id;
+    } else {
+      r.para = para;
+      r.cc = document.getElementById('campo-cc').value.trim();
+      r.assunto = assunto || '(sem assunto)';
+      r.previa = stripHtml(corpo).slice(0, 80);
+      r.corpo = corpo;
+      r.dataISO = agora.toISOString().slice(0, 10);
+      r.data = formatarDataCurta(agora);
+      r.anexos = estado.anexosComposer.map(a => ({ ...a }));
+    }
+    atualizarContadores();
+    persistirEstado();
+    document.getElementById('status-rascunho').textContent = 'Rascunho salvo às ' + agora.toLocaleTimeString('pt-BR', { hour: '2-digit', minute: '2-digit' });
+    if (manual) mostrarAviso('Rascunho salvo.');
+  }
+
+  function agendarRascunho() {
+    clearTimeout(estado.rascunhoTimer);
+    estado.rascunhoTimer = setTimeout(() => salvarRascunho(false), 8000);
+  }
+
+  function descartarComposer() {
+    confirmar('Descartar mensagem?', 'O conteúdo do compositor será perdido (rascunhos salvos permanecem).', () => {
+      document.getElementById('campo-para').value = '';
+      document.getElementById('campo-cc').value = '';
+      document.getElementById('campo-assunto').value = '';
+      document.getElementById('editor-corpo').innerHTML = '';
+      estado.anexosComposer = [];
+      estado.rascunhoEditandoId = null;
+      renderizarAnexos();
+      persistirEstado();
+      trocarModo('leitura');
+    });
+  }
+
+  function aplicarModelo(key) {
+    if (!key || !MODELOS[key]) return;
+    const ed = document.getElementById('editor-corpo');
+    ed.innerHTML = MODELOS[key] + ed.innerHTML;
+    document.getElementById('seletor-modelo').value = '';
+  }
+
+  function inserirAssinatura() {
+    const ed = document.getElementById('editor-corpo');
+    ed.innerHTML = ed.innerHTML + gerarAssinatura();
+  }
+
+  // ---------- ANEXOS ----------
+  function anexarArquivos(event) {
+    const files = Array.from(event.target.files || []);
+    event.target.value = '';
+    for (const f of files) {
+      if (f.size > LIMITE_ANEXO_MB * 1024 * 1024) {
+        mostrarAviso(`Arquivo "${f.name}" excede ${LIMITE_ANEXO_MB} MB.`, true);
+        continue;
+      }
+      const ext = (f.name.split('.').pop() || '').toLowerCase();
+      const okTipo = TIPOS_ANEXO.includes(f.type) || (ext === 'pdf' && (!f.type || f.type === 'application/octet-stream'));
+      if (estado.anexosComposer.reduce((n, a) => n + (a.tamanho || 0), 0) + f.size > LIMITE_TOTAL_ANEXOS_MB * 1024 * 1024) {
+        mostrarAviso(`O total dos anexos não pode ultrapassar ${LIMITE_TOTAL_ANEXOS_MB} MB.`, true);
+        continue;
+      }
+      if (!okTipo) {
+        mostrarAviso(`Tipo não permitido: ${f.name}. Use PDF ou imagem.`, true);
+        continue;
+      }
+      const item = { id: Date.now() + Math.random(), nome: f.name, tamanho: f.size, tipo: f.type, file: f };
+      // preview para imagens
+      if (f.type.startsWith('image/')) {
+        const reader = new FileReader();
+        reader.onload = (ev) => { item.previewUrl = ev.target.result; renderizarAnexos(); };
+        reader.readAsDataURL(f);
+      }
+      estado.anexosComposer.push(item);
+    }
+    renderizarAnexos();
+  }
+
+  function removerAnexo(id) {
+    estado.anexosComposer = estado.anexosComposer.filter(a => a.id !== id);
+    renderizarAnexos();
+  }
+
+  function renderizarAnexos() {
+    const box = document.getElementById('lista-anexos');
+    if (!estado.anexosComposer.length) {
+      box.innerHTML = '';
+      return;
+    }
+    box.innerHTML = estado.anexosComposer.map(a => {
+      const preview = a.previewUrl
+        ? `<img src="${a.previewUrl}" class="preview-anexo" alt="">`
+        : `<div class="w-10 h-10 rounded bg-white/10 flex items-center justify-center text-[10px] font-bold">${esc((a.nome.split('.').pop() || 'file').toUpperCase())}</div>`;
+      return `<div class="flex items-center gap-2 bg-white/10 rounded-xl px-2 py-1.5 max-w-[200px]">
+        ${preview}
+        <div class="min-w-0 flex-1">
+          <div class="text-[11px] font-semibold text-white truncate">${esc(a.nome)}</div>
+          <div class="text-[10px] text-white/40">${formatBytes(a.tamanho)}</div>
+        </div>
+        <button onclick="removerAnexo(${a.id})" class="text-[#CBD5E1] hover:text-[#FF8AC4] text-xs px-1">✕</button>
+      </div>`;
+    }).join('');
+  }
+
+  // ---------- DESFAZER ----------
+  function registrarAcao(acao) {
+    estado.ultimaAcao = acao;
+  }
+
+  function desfazer() {
+    const a = estado.ultimaAcao;
+    if (!a) { mostrarAviso('Nada para desfazer.', true); return; }
+    if (a.tipo === 'mover') {
+      removerDePasta(a.id, a.para);
+      if (!estado.pastas[a.de]) a.de = 'entrada';
+      if (a.de === 'lixeira') a.msg.pastaOrigem = a.origemAnterior || 'entrada'; else delete a.msg.pastaOrigem;
+      inserirOrdenado(a.de, a.msg);
+      atualizarTudo();
+      mostrarAviso('Ação desfeita.');
+    } else if (a.tipo === 'restaurar-lote') {
+      a.msgs.forEach(m => {
+        const pasta = encontrarPastaDoEmail(m.id);
+        if (pasta) removerDePasta(m.id, pasta);
+        m.pastaOrigem = m.pastaOrigem || 'entrada';
+        estado.pastas.lixeira.push(m);
+      });
+      atualizarTudo();
+      mostrarAviso('Restauração desfeita.');
+    } else if (a.tipo === 'esvaziar') {
+      // esvaziar a lixeira é definitivo e não pode ser desfeito
+      mostrarAviso('Não é possível desfazer esvaziar lixeira.', true);
+    }
+    estado.ultimaAcao = null;
+  }
+
+  function mostrarAvisoComDesfazer(texto) {
+    const box = document.getElementById('toast-container');
+    const t = document.createElement('div');
+    t.className = 'toast';
+    t.innerHTML = `<span>${esc(texto)}</span><button onclick="desfazer(); this.parentElement.remove()">Desfazer</button>`;
+    box.appendChild(t);
+    setTimeout(() => { t.style.opacity = '0'; setTimeout(() => t.remove(), 300); }, 5000);
+  }
+
+  // ---------- MODAL / CONFIRMA ----------
+  function confirmar(titulo, texto, cb) {
+    document.getElementById('confirm-titulo').textContent = titulo;
+    document.getElementById('confirm-texto').textContent = texto;
+    document.getElementById('confirm-ok').onclick = () => { fecharConfirm(); cb(); };
+    document.getElementById('modal-confirm').classList.add('aberto');
+  }
+  function fecharConfirm() {
+    document.getElementById('modal-confirm').classList.remove('aberto');
+  }
+
+  function abrirTelaCheia() {
+    let dados;
+    if (estado.modo === 'leitura') {
+      const m = encontrarEmail(estado.ativoId);
+      if (!m) return;
+      dados = { titulo: m.assunto, remetente: m.remetente, email: m.email, data: m.data, corpo: m.corpo };
+    } else {
+      const corpo = document.getElementById('editor-corpo').innerHTML || '<em>Sem conteúdo ainda.</em>';
+      dados = { titulo: document.getElementById('campo-assunto').value || 'Nova mensagem', remetente: usuarioAtual().nome, email: usuarioAtual().email, data: 'Agora', corpo };
+    }
+    document.getElementById('modal-titulo').textContent = dados.titulo;
+    document.getElementById('modal-conteudo').innerHTML = `
+      <div class="bloco-modal">
+        <div class="text-xs text-white/60 mb-3"><strong class="text-white">De:</strong> ${esc(dados.remetente)} (${esc(dados.email)}) · ${esc(dados.data)}</div>
+        <div>${sanitizarHtml(dados.corpo, estado.modo === 'composer')}</div>
+      </div>`;
+    document.getElementById('modal-fundo').classList.add('aberto');
+    estado.telaCheia = false;
+    aplicarTelaCheia();
+  }
+
+  function fecharModal() {
+    document.getElementById('modal-fundo').classList.remove('aberto');
+    document.getElementById('modal-cartao').classList.remove('tela-cheia');
+    estado.telaCheia = false;
+  }
+
+  function alternarTelaCheia() {
+    estado.telaCheia = !estado.telaCheia;
+    aplicarTelaCheia();
+  }
+
+  function aplicarTelaCheia() {
+    document.getElementById('modal-cartao').classList.toggle('tela-cheia', estado.telaCheia);
+    document.getElementById('btn-tela-cheia').textContent = estado.telaCheia ? 'Sair tela cheia' : 'Tela cheia';
+  }
+
+  // ---------- RESPONSIVO ----------
+  function definirTelaMobile(tela) {
+    if (window.matchMedia('(max-width: 1023px)').matches) {
+      document.body.classList.toggle('mobile-view-list', tela === 'list');
+      document.body.classList.toggle('mobile-view-reader', tela === 'reader');
+    } else {
+      document.body.classList.remove('mobile-view-list', 'mobile-view-reader');
+    }
+  }
+  function voltarListaMobile() { definirTelaMobile('list'); fecharSidebarMobile(); }
+  function abrirSidebarMobile() {
+    medirMenuTopo();
+    document.getElementById('sidebar-pastas').classList.add('aberto');
+    document.getElementById('overlay-mobile').classList.add('aberto');
+    document.body.classList.add('drawer-aberto');
+  }
+  function fecharSidebarMobile() {
+    document.getElementById('sidebar-pastas').classList.remove('aberto');
+    document.getElementById('overlay-mobile').classList.remove('aberto');
+    document.body.classList.remove('drawer-aberto');
+  }
+  window.addEventListener('resize', () => {
+    if (!window.matchMedia('(max-width: 1023px)').matches) { document.body.classList.remove('mobile-view-list', 'mobile-view-reader'); fecharSidebarMobile(); }
+    else if (!document.body.classList.contains('mobile-view-reader')) document.body.classList.add('mobile-view-list');
+  });
+
+  // ---------- PERSISTÊNCIA LOCAL (metadados; arquivos binários não são persistidos) ----------
+  function persistirEstado() {
+    try {
+      const snapshot = {
+        pasta: estado.pasta, filtro: estado.filtro, ativoId: estado.ativoId,
+        proximoId: estado.proximoId, pastasCustom: estado.pastasCustom,
+        pastas: Object.fromEntries(Object.entries(estado.pastas).map(([key, msgs]) => [key, msgs.map(m => ({
+          ...m, anexos: (m.anexos || []).map(a => ({ nome: a.nome, tamanho: a.tamanho, tipo: a.tipo }))
+        }))]))
+      };
+      localStorage.setItem(STORAGE_KEY, JSON.stringify(snapshot));
+    } catch (err) { console.warn('[432UP E-mail] Não foi possível persistir estado local:', err); }
+  }
+  function carregarEstadoSalvo() {
+    try { localStorage.removeItem(STORAGE_KEY_ANTIGA); } catch (e) {}
+    try {
+      const raw = localStorage.getItem(STORAGE_KEY);
+      if (!raw) return false;
+      const saved = JSON.parse(raw);
+      if (!saved || !saved.pastas || !saved.pastas.entrada) return false;
+      estado.pasta = saved.pastas[ saved.pasta ] ? saved.pasta : 'entrada';
+      estado.filtro = saved.filtro || 'todos'; estado.ativoId = saved.ativoId || null;
+      estado.proximoId = Number(saved.proximoId) || 1000;
+      estado.pastasCustom = Array.isArray(saved.pastasCustom) ? saved.pastasCustom : [];
+      estado.pastas = { entrada: [], enviados: [], rascunhos: [], spam: [], arquivo: [], lixeira: [], ...(saved.pastas || {}) };
+      return true;
+    } catch (err) { console.warn('[432UP E-mail] Estado salvo inválido; iniciando vazio.', err); return false; }
+  }
+  function limparComposer() {
+    ['campo-para','campo-cc','campo-assunto'].forEach(id => { const el = document.getElementById(id); if (el) el.value = ''; });
+    document.getElementById('editor-corpo').innerHTML = '';
+    estado.anexosComposer = [];
+    const fileInput = document.getElementById('campo-arquivos'); if (fileInput) fileInput.value = '';
+    renderizarAnexos();
+    const status = document.getElementById('status-rascunho'); if (status) status.textContent = '';
+  }
+  function abrirRascunho(id) {
+    const r = encontrarEmail(id);
+    if (!r || encontrarPastaDoEmail(id) !== 'rascunhos') return;
+    estado.rascunhoEditandoId = r.id;
+    document.getElementById('campo-para').value = r.para || '';
+    document.getElementById('campo-cc').value = r.cc || '';
+    document.getElementById('campo-assunto').value = r.assunto === '(sem assunto)' ? '' : (r.assunto || '');
+    document.getElementById('editor-corpo').innerHTML = r.corpo || '';
+    estado.anexosComposer = (r.anexos || []).map(a => ({ ...a, file: a.file || null }));
+    renderizarAnexos(); trocarModo('composer'); definirTelaMobile('reader');
+  }
+
+  // ---------- FERRAMENTAS EDITOR ----------
+  function ligarFerramentas() {
+    document.querySelectorAll('[data-cmd]').forEach(botao => {
+      botao.addEventListener('mousedown', e => e.preventDefault());
+      botao.addEventListener('click', () => {
+        document.getElementById('editor-corpo').focus();
+        document.execCommand(botao.dataset.cmd, false, null);
+      });
+    });
+  }
+
+  // ---------- ATUALIZAÇÃO ----------
+  function atualizarTudo() {
+    atualizarContadores();
+    renderizarLixeira();
+    renderizarLista();
+    if (estado.modo === 'leitura') renderizarLeitura();
+    renderizarAnexos();
+    renderizarPastas();
+    destacarPasta();
+    persistirEstado();
+  }
+
+  function atualizarContadores() {
+    const keys = Object.keys(estado.pastas);
+    keys.forEach(pasta => {
+      const el = document.querySelector(`[data-contador="${pasta}"]`);
+      if (!el) return;
+      const total = mensagensVisiveis(pasta).length;
+      el.textContent = total;
+      el.classList.toggle('hidden', total === 0);
+    });
+  }
+
+  // ---------- MOVER PARA PASTA / MENU DO TOPO ----------
+  function nomePasta(id) {
+    const p = PASTAS_FIXAS.find(x => x.id === id) || estado.pastasCustom.find(x => x.id === id);
+    return p ? p.nome : id;
+  }
+  function ehEnviada(m) { return !!(m && m.para && m.statusEnvio !== 'rascunho'); }
+  function seletorMoverHtml(id) {
+    const m = encontrarEmail(id), atual = encontrarPastaDoEmail(id);
+    const dest = [{ id: 'entrada', nome: 'Caixa de Entrada' }, { id: 'arquivo', nome: 'Arquivo' }, { id: 'spam', nome: 'Spam' }];
+    if (ehEnviada(m)) dest.push({ id: 'enviados', nome: 'Enviados' });
+    estado.pastasCustom.forEach(p => dest.push(p));
+    const opts = dest.filter(d => d.id !== atual).map(d => `<option value="${esc(d.id)}">${esc(d.nome)}</option>`).join('');
+    return `<select onchange="moverParaPasta(this.value)" class="btn-vidro text-xs px-3 py-1.5 rounded-full" aria-label="Mover para pasta"><option value="">Mover para…</option>${opts}</select>`;
+  }
+  function inserirOrdenado(pasta, m) {
+    const arr = estado.pastas[pasta];
+    const i = arr.findIndex(x => (x.dataISO || '') < (m.dataISO || ''));
+    if (i === -1) arr.push(m); else arr.splice(i, 0, m);
+  }
+  function moverParaPasta(destino, idMsg) {
+    const id = idMsg != null ? idMsg : estado.ativoId;
+    const m = encontrarEmail(id), de = encontrarPastaDoEmail(id);
+    if (!m || !destino || !estado.pastas[destino] || !de || de === destino) return;
+    if (de === 'rascunhos' || destino === 'rascunhos') return;
+    if (destino === 'enviados' && !ehEnviada(m)) { mostrarAviso('Só mensagens enviadas por você podem ir para Enviados.', true); return; }
+    const origemAnterior = m.pastaOrigem;
+    removerDePasta(id, de);
+    if (destino === 'lixeira') m.pastaOrigem = de; else delete m.pastaOrigem;
+    inserirOrdenado(destino, m);
+    registrarAcao({ tipo: 'mover', id, de, para: destino, msg: m, origemAnterior });
+    if (id === estado.ativoId) estado.ativoId = null;
+    atualizarTudo();
+    definirTelaMobile('list');
+    mostrarAvisoComDesfazer('Movida para ' + nomePasta(destino) + '.');
+  }
+  function iniciarArraste(e, id) { e.dataTransfer.setData('text/plain', String(id)); e.dataTransfer.effectAllowed = 'move'; }
+  function arrastarSobre(e) { e.preventDefault(); e.currentTarget.classList.add('arrasto-sobre'); }
+  function soltarNaPasta(e, pasta) {
+    e.preventDefault(); e.currentTarget.classList.remove('arrasto-sobre');
+    const id = Number(e.dataTransfer.getData('text/plain'));
+    if (id) moverParaPasta(pasta, id);
+  }
+  function ajustarRespiroTopo() {
+    const c = document.getElementById('conteudo-email');
+    if (!c) return;
+    c.style.paddingTop = '';
+    const menu = parseFloat(getComputedStyle(document.documentElement).getPropertyValue('--menu-topo')) || 72;
+    const padBase = parseFloat(getComputedStyle(c).paddingTop) || 0;
+    const topoConteudo = c.getBoundingClientRect().top + window.scrollY + padBase;
+    const alvo = menu + 20;
+    if (topoConteudo < alvo) c.style.paddingTop = (padBase + alvo - topoConteudo) + 'px';
+    document.documentElement.style.setProperty('--conteudo-topo', Math.round(Math.max(topoConteudo, alvo)) + 'px');
+  }
+  function medirMenuTopo() {
+    let topo = 0;
+    document.querySelectorAll('#calc-header, #calc-header *').forEach(el => {
+      const pos = getComputedStyle(el).position;
+      if (pos !== 'fixed' && pos !== 'sticky') return;
+      const r = el.getBoundingClientRect();
+      if (r.height > 20 && r.top >= -2 && r.top <= 2 && r.bottom < window.innerHeight * 0.5) topo = Math.max(topo, Math.round(r.bottom));
+    });
+    if (topo > 0) document.documentElement.style.setProperty('--menu-topo', topo + 'px');
+    ajustarRespiroTopo();
+  }
+  document.addEventListener('DOMContentLoaded', () => {
+    medirMenuTopo();
+    [400, 1200, 2500].forEach(t => setTimeout(medirMenuTopo, t));
+    const h = document.getElementById('calc-header');
+    if (h && window.MutationObserver) new MutationObserver(medirMenuTopo).observe(h, { childList: true, subtree: true });
+  });
+  window.addEventListener('load', medirMenuTopo);
+  window.addEventListener('resize', medirMenuTopo);
+
+  // ---------- UTILS ----------
+  function encontrarEmail(id) {
+    for (const pasta in estado.pastas) {
+      const achado = estado.pastas[pasta].find(m => m.id === id);
+      if (achado) return achado;
+    }
+    return null;
+  }
+
+  function encontrarPastaDoEmail(id) {
+    for (const pasta in estado.pastas) {
+      if (estado.pastas[pasta].some(m => m.id === id)) return pasta;
+    }
+    return null;
+  }
+
+  function removerDePasta(id, pasta) {
+    estado.pastas[pasta] = estado.pastas[pasta].filter(m => m.id !== id);
+  }
+
+  function esc(valor) {
+    return String(valor ?? '')
+      .replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;')
+      .replace(/"/g, '&quot;').replace(/'/g, '&#39;');
+  }
+
+  // Sanitização: DOMPurify quando disponível; fallback com DOMParser (inerte).
+  // Estrito (padrão) = e-mail recebido: sem style e sem imagens remotas.
+  // permitirEstilo = true: conteúdo escrito por você (envio / pré-visualização).
+  function sanitizarHtml(html, permitirEstilo) {
+    if (!html) return '';
+    const proibidas = ['style','form','input','button','textarea','select','iframe','object','embed','link','meta','base','svg','math','script'];
+    let limpo;
+    if (window.DOMPurify) {
+      const cfg = { USE_PROFILES: { html: true }, FORBID_TAGS: proibidas };
+      if (!permitirEstilo) cfg.FORBID_ATTR = ['style'];
+      limpo = window.DOMPurify.sanitize(html, cfg);
+    } else {
+      const bruto = new DOMParser().parseFromString('<body>' + html, 'text/html').body;
+      bruto.querySelectorAll(proibidas.join(',')).forEach(el => el.remove());
+      bruto.querySelectorAll('*').forEach(el => [...el.attributes].forEach(attr => {
+        if (/^on/i.test(attr.name) || (!permitirEstilo && attr.name === 'style') ||
+            (/^(href|src|xlink:href|formaction)$/i.test(attr.name) && /^\s*(javascript|vbscript|data):/i.test(attr.value) && !/^\s*data:image\//i.test(attr.value))) el.removeAttribute(attr.name);
+      }));
+      limpo = bruto.innerHTML;
+    }
+    const doc = new DOMParser().parseFromString('<body>' + limpo, 'text/html').body;
+    doc.querySelectorAll('a[href]').forEach(a => { a.setAttribute('target', '_blank'); a.setAttribute('rel', 'noopener noreferrer nofollow'); });
+    if (!permitirEstilo) doc.querySelectorAll('img').forEach(img => {
+      if (!/^data:image\//i.test(img.getAttribute('src') || '')) { img.removeAttribute('src'); img.removeAttribute('srcset'); img.setAttribute('alt', img.getAttribute('alt') || '[imagem bloqueada]'); }
+    });
+    return doc.innerHTML;
+  }
+
+  function stripHtml(html) {
+    const d = document.createElement('div');
+    d.innerHTML = html || '';
+    return d.textContent || '';
+  }
+
+  function formatBytes(n) {
+    if (!n) return '0 B';
+    if (n < 1024) return n + ' B';
+    if (n < 1024 * 1024) return (n / 1024).toFixed(1) + ' KB';
+    return (n / (1024 * 1024)).toFixed(1) + ' MB';
+  }
+
+  function formatarDataCurta(d) {
+    const meses = ['jan','fev','mar','abr','mai','jun','jul','ago','set','out','nov','dez'];
+    return d.getDate().toString().padStart(2, '0') + ' ' + meses[d.getMonth()];
+  }
+
+  function formatarDataHora(iso) {
+    if (!iso) return '';
+    try {
+      const d = new Date(iso);
+      return d.toLocaleString('pt-BR', { day: '2-digit', month: 'short', hour: '2-digit', minute: '2-digit' });
+    } catch { return iso; }
+  }
+
+  function mostrarAviso(texto, erro) {
+    const box = document.getElementById('toast-container');
+    const t = document.createElement('div');
+    t.className = 'toast' + (erro ? ' erro' : '');
+    t.textContent = texto;
+    box.appendChild(t);
+    setTimeout(() => { t.style.opacity = '0'; setTimeout(() => t.remove(), 300); }, 2800);
+  }
+
+  </script>
+</body>
+</html>
