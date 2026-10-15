@@ -4,7 +4,7 @@
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>Proposta Comercial - 432UP! Produções</title>
-  
+
   <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
   <script src="https://www.432up.com/B2B/partner-config.js"></script>
 
@@ -30,12 +30,12 @@
     }
 
     * { box-sizing: border-box; margin: 0; padding: 0; }
-    body { 
-      font-family: 'Inter', -apple-system, 'Helvetica Neue', Arial, sans-serif; 
-      color: var(--text-dark); 
-      background: #D6D6DC; 
-      line-height: 1.4; 
-      font-size: 13.5px; 
+    body {
+      font-family: 'Inter', -apple-system, 'Helvetica Neue', Arial, sans-serif;
+      color: var(--text-dark);
+      background: #D6D6DC;
+      line-height: 1.4;
+      font-size: 13.5px;
       overflow-x: hidden;
     }
 
@@ -181,7 +181,7 @@
       letter-spacing: -0.01em;
       color: #FFFFFF;
     }
-    
+
     .cover-logo-badge {
       position: absolute;
       right: 12mm;
@@ -447,7 +447,7 @@
 
   <div id="doc-scale">
   <div id="document-content">
-    
+
     <div class="page">
       <div class="cover-container">
         <div class="cover-hero-wrapper">
@@ -549,7 +549,7 @@
 
       <div class="page-body">
         <div class="section-header" style="margin-top: 28px;">⚠️ CONDIÇÕES GERAIS:</div>
-        
+
         <p class="terms-text keep-next"><strong>Política de Cancelamento:</strong></p>
         <div id="politica-cancelamento-container"></div>
         <p class="terms-text"><strong>Rider Técnico:</strong> A estrutura requer condições técnicas mínimas previamente especificadas em nosso rider técnico. O contratante deve garantir que o local atenda a essas especificações, especialmente em relação à energia elétrica, espaço e acessos.</p>
@@ -580,7 +580,7 @@
 
         <div class="page-body" style="padding-top: 25px;">
           <div class="section-header">SERVIÇOS INCLUÍDOS E VALORES</div>
-          
+
           <div class="items-table-container" id="items-table-container">
             <table class="items-table">
               <thead>
@@ -637,7 +637,7 @@
             </div>
           </div>
 
-          <div class="section-header" id="bancarios-header">DADOS BANCÁRIOS</div>
+          <div class="section-header" id="bancarios-header">DADOS PARA PAGAMENTO</div>
           <div class="bank-info" id="bank-info"></div>
           <button type="button" id="btn-copiar-pix" onclick="copiarChavePix()" style="margin-top: 8px; display: inline-flex; align-items: center; gap: 6px; background: #F3F4F6; color: var(--purple-deep); border: 1px solid #E5E7EB; padding: 6px 14px; border-radius: 6px; font-size: 12.5px; font-weight: 700; font-family: inherit; cursor: pointer;">📋 Copiar Chave PIX</button>
         </div>
@@ -971,7 +971,7 @@
       document.getElementById('document-content').style.display = 'none';
       const btnPdf = document.getElementById('btn-exportar-pdf');
       if (btnPdf) btnPdf.style.display = 'none';
-      
+
       const container = document.getElementById('status-container');
       document.getElementById('status-title').textContent = titulo;
       document.getElementById('status-desc').textContent = mensagem;
@@ -1025,7 +1025,7 @@
     }
 
     /* =========================================================
-       CONTATO (WHATSAPP) E DADOS BANCÁRIOS DA EMPRESA
+       CONTATO (WHATSAPP) E DADOS DE PAGAMENTO DA EMPRESA
        Fonte: co_dados_contato_empresa.whatsapp
               co_dados_bancarios_empresa (preferência: ativo = true)
        Sem nenhum valor fixo no HTML e sem fallback para valores antigos.
@@ -1084,7 +1084,18 @@
       if (linkEl) linkEl.href = `https://wa.me/${digitos}`;
     }
 
+    // Exibe a conta da 432UP, ou o recebedor secundário quando o checkbox
+    // "Usar outro recebedor no contrato" estiver marcado em Dados da Empresa.
     function renderDadosBancarios(banco) {
+      if (banco && banco.aplicar_recebedor_contrato === true && realValue(banco.recebedor_alt_chave_pix)) {
+        banco = {
+          titular: banco.recebedor_alt_nome,
+          documento_titular: banco.recebedor_alt_documento,
+          tipo_chave_pix: banco.recebedor_alt_tipo_chave_pix,
+          chave_pix: banco.recebedor_alt_chave_pix
+        };
+      }
+
       const header = document.getElementById('bancarios-header');
       const box = document.getElementById('bank-info');
       const btnPix = document.getElementById('btn-copiar-pix');
@@ -1107,8 +1118,6 @@
       const titular = realValue(banco.titular);
       const tipoChavePix = realValue(banco.tipo_chave_pix);
       const chavePix = realValue(banco.chave_pix);
-      // recebedor_nome / recebedor_documento / recebedor_tipo: campos independentes do titular;
-      // esta seção não possui estrutura própria para eles, portanto não são exibidos aqui.
 
       box.innerHTML = '';
       let temLinha = false;
@@ -1134,7 +1143,7 @@
       // Agência: [agencia]
       if (agencia) novaLinha('Agência: ', agencia);
 
-      // [tipo_conta]: [conta]
+      // [tipo_conta]: [conta]  (só para conta bancária; no recebedor secundário não há conta)
       if (conta) {
         let rotuloConta = 'Conta';
         if (tipoConta) rotuloConta = /^conta/i.test(tipoConta) ? tipoConta : `Conta ${tipoConta}`;
@@ -1632,7 +1641,7 @@
           setTextOrHide('p2-contratada-cnpj', null, 'p2-contratada-cnpj-wrap');
         }
 
-        // Contato (WhatsApp) e dados bancários da empresa — tabelas próprias (registros guardados em variáveis próprias)
+        // Contato (WhatsApp) e dados de pagamento da empresa
         const [dadosContatoEmpresa, dadosBancariosEmpresa] = await Promise.all([
           carregarContatoEmpresa(),
           carregarDadosBancariosEmpresa()
@@ -1651,7 +1660,6 @@
               const imgAvatar = document.getElementById('vendedor-avatar');
               const wrapAvatar = document.getElementById('vendedor-avatar-wrap');
               if (imgAvatar && wrapAvatar) {
-              
                 imgAvatar.src = parceiro.avatar_url;
                 wrapAvatar.style.display = 'flex';
               }
