@@ -16,7 +16,7 @@
   <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
 
   <style>
-    input:disabled { opacity: .4; cursor: not-allowed; }
+    input:disabled, select:disabled { opacity: .4; cursor: not-allowed; }
   </style>
 </head>
 <body class="h-full text-slate-200 font-sans antialiased bg-[#06080c] overflow-x-hidden">
@@ -147,7 +147,7 @@
             </div>
           </div>
 
-          <!-- DADOS BANCÁRIOS -->
+          <!-- DADOS BANCÁRIOS (conta da 432UP) -->
           <h3 style="margin:20px 0 12px;font-size:1rem;font-weight:600">Dados bancários</h3>
           <div class="leads-filters">
             <div class="field">
@@ -187,18 +187,6 @@
               <input id="chave_pix" type="text">
             </div>
             <div class="field">
-              <label for="recebedor_nome">Recebedor</label>
-              <input id="recebedor_nome" type="text">
-            </div>
-            <div class="field">
-              <label for="recebedor_documento">Documento do recebedor</label>
-              <input id="recebedor_documento" type="text">
-            </div>
-            <div class="field">
-              <label for="recebedor_tipo">Tipo do recebedor</label>
-              <input id="recebedor_tipo" type="text">
-            </div>
-            <div class="field">
               <label for="ativo">Conta ativa</label>
               <select id="ativo">
                 <option value="true">Sim</option>
@@ -207,6 +195,7 @@
             </div>
           </div>
 
+          <!-- RECEBEDOR SECUNDÁRIO (só vai para o contrato se marcado) -->
           <div style="margin-top:16px;">
             <label style="display:flex;align-items:center;gap:8px;cursor:pointer;">
               <input id="aplicar_recebedor" type="checkbox" onchange="aplicarEstadoRecebedor()">
@@ -222,12 +211,16 @@
                 <input id="recebedor_alt_nome" type="text">
               </div>
               <div class="field">
-                <label for="recebedor_alt_documento">CPF/CNPJ</label>
-                <input id="recebedor_alt_documento" type="text">
+                <label for="recebedor_alt_tipo">Tipo do recebedor</label>
+                <select id="recebedor_alt_tipo">
+                  <option value="">Selecione</option>
+                  <option value="Pessoa física">Pessoa física</option>
+                  <option value="Pessoa jurídica">Pessoa jurídica</option>
+                </select>
               </div>
               <div class="field">
-                <label for="recebedor_alt_tipo">Tipo do recebedor</label>
-                <input id="recebedor_alt_tipo" type="text">
+                <label for="recebedor_alt_documento">CPF/CNPJ</label>
+                <input id="recebedor_alt_documento" type="text">
               </div>
               <div class="field">
                 <label for="recebedor_alt_tipo_chave_pix">Tipo de chave Pix</label>
@@ -576,18 +569,42 @@
   var CAMPOS_BANCARIOS = [
     'banco', 'codigo_banco', 'agencia', 'conta', 'tipo_conta',
     'titular', 'documento_titular', 'tipo_chave_pix', 'chave_pix',
-    'recebedor_nome', 'recebedor_documento', 'recebedor_tipo',
     'recebedor_alt_nome', 'recebedor_alt_documento', 'recebedor_alt_tipo',
     'recebedor_alt_tipo_chave_pix', 'recebedor_alt_chave_pix'
   ];
 
-  // Com "Usar outro recebedor" marcado: o recebedor atual fica bloqueado (guardado, sem apagar)
-  // e o bloco "Outro recebedor" é habilitado. Desmarcado: é o inverso.
+  // Máscara de CPF/CNPJ conforme o tipo escolhido
+  function formatarDocumento(valor, tipo) {
+    if (!tipo) return valor;
+    var d = String(valor).replace(/\D/g, '');
+    if (tipo === 'Pessoa jurídica') {
+      d = d.slice(0, 14);
+      return d
+        .replace(/^(\d{2})(\d)/, '$1.$2')
+        .replace(/^(\d{2})\.(\d{3})(\d)/, '$1.$2.$3')
+        .replace(/\.(\d{3})(\d)/, '.$1/$2')
+        .replace(/(\d{4})(\d)/, '$1-$2');
+    }
+    d = d.slice(0, 11);
+    return d
+      .replace(/(\d{3})(\d)/, '$1.$2')
+      .replace(/(\d{3})(\d)/, '$1.$2')
+      .replace(/(\d{3})(\d{1,2})$/, '$1-$2');
+  }
+
+  function ligarMascaraDocumento(tipoId, docId) {
+    var sel = campo(tipoId);
+    var inp = campo(docId);
+    function aplicar() {
+      inp.value = formatarDocumento(inp.value, sel.value);
+    }
+    sel.addEventListener('change', aplicar);
+    inp.addEventListener('input', aplicar);
+  }
+
+  // Checkbox marcado: habilita o outro recebedor. Desmarcado: esconde e bloqueia.
   function aplicarEstadoRecebedor() {
     var outro = campo('aplicar_recebedor').checked;
-    ['recebedor_nome', 'recebedor_documento', 'recebedor_tipo'].forEach(function (id) {
-      campo(id).disabled = outro;
-    });
     ['recebedor_alt_nome', 'recebedor_alt_documento', 'recebedor_alt_tipo',
      'recebedor_alt_tipo_chave_pix', 'recebedor_alt_chave_pix'].forEach(function (id) {
       campo(id).disabled = !outro;
@@ -705,6 +722,8 @@
   window.salvarDadosEmpresa = salvarDadosEmpresa;
   window.aplicarEstadoRecebedor = aplicarEstadoRecebedor;
   window.__adminPageInit = function () { carregarDadosEmpresa(); };
+
+  ligarMascaraDocumento('recebedor_alt_tipo', 'recebedor_alt_documento');
 
   // ============================================================
   // AUTENTICAÇÃO (mesmo padrão do Leads)
