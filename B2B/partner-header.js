@@ -199,8 +199,14 @@
         display: flex !important;
         align-items: center !important;
         justify-content: space-between !important;
-        height: 68px !important;
-        padding: 0 1.5rem !important;
+        box-sizing: border-box !important;
+        /* 64px de conteúdo + faixa do relógio (iPhone/iPad standalone) */
+        height: calc(64px + env(safe-area-inset-top, 0px)) !important;
+        min-height: calc(64px + env(safe-area-inset-top, 0px)) !important;
+        padding-top: env(safe-area-inset-top, 0px) !important;
+        padding-bottom: 0 !important;
+        padding-left: 1.5rem !important;
+        padding-right: 1.5rem !important;
       }
       #calc-header.mn-ready > .desktop-nav,
       #calc-header.b2b-header-cyan .desktop-nav {
@@ -596,6 +602,7 @@
     if (!document.querySelector('meta[name="apple-mobile-web-app-capable"]')) add('meta', { name: 'apple-mobile-web-app-capable', content: 'yes' });
     if (!document.querySelector('meta[name="mobile-web-app-capable"]')) add('meta', { name: 'mobile-web-app-capable', content: 'yes' });
     if (!document.querySelector('meta[name="apple-mobile-web-app-title"]')) add('meta', { name: 'apple-mobile-web-app-title', content: '432UP' });
+    if (!document.querySelector('meta[name="apple-mobile-web-app-status-bar-style"]')) add('meta', { name: 'apple-mobile-web-app-status-bar-style', content: 'black-translucent' });
     if (!document.querySelector('meta[name="theme-color"]')) add('meta', { name: 'theme-color', content: '#0a0f16' });
     registerSW();
   }
