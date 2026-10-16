@@ -483,7 +483,7 @@
   var mailTimer = null;
 
   /* PWA / Push: cole aqui a chave PÚBLICA VAPID (a privada fica só no Supabase) */
-  var VAPID_PUBLIC = 'BI08pGVOMADtgjdbX2pTI-tF8fgBFawrrJzueYM2ESVhSUQN9YKuifVoLNiQUg8p0ZsGAZivarAKVwV-MNcdNSk';
+  var VAPID_PUBLIC = 'BEF-JUEO6YtF00cNtYg8t1k5jfz7M8JUtFu-66SWc7UGUElGgENmzAgw3vYTmY1kbeC6UQVKEY2B8jPDOtiThCk';
   var ICON_URL = '/imagens/logo512x512.png';
 
   var MAIL_SVG = '<svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="3" y="5" width="18" height="14" rx="2"/><path d="m3 7 9 6 9-6"/></svg>';
