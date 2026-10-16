@@ -1,7 +1,7 @@
 /* 432UP Partner · service worker (push + bolinha no ícone + instalação no Chrome)
    Subir em: https://www.432up.com/B2B/sw.js */
 
-var ICON = '/imagens/logo512x512.png';
+var ICON = 'https://www.432up.com/imagens/logo512x512.png';
 var URL_EMAIL = '/B2B/e-mail.html';
 
 self.addEventListener('install', function () {
