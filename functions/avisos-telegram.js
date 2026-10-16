@@ -275,6 +275,114 @@ export async function onRequest(context) {
   }
 
   // ==========================================================
+  // PUSH NO APP (admin) — mesmo aviso do Telegram, no celular
+  // Para mudar o título, o texto ou a página que abre ao tocar,
+  // edite só a função montarPush() logo abaixo.
+  // Se o push falhar, o Telegram continua funcionando normalmente.
+  // ==========================================================
+
+  const PUSH_URL_PADRAO =
+    "https://paetkspbfejtjjkngqej.supabase.co/functions/v1/push-admin";
+
+  function montarPush() {
+
+    const ev = data.event;
+    const id = data.proposta_id ? `#${data.proposta_id}` : "";
+
+    if (ev === "novo_colaborador" || ev === "novo_parceiro" || data.origem === "b2b_partner") {
+      return {
+        title: "🤝 Novo parceiro pendente",
+        body: `${nome} — ${empresa}`,
+        url: "/B2B/admin/parceiros.html"
+      };
+    }
+
+    if (ev === "contrato_assinado") {
+      return {
+        title: "✍️ Contrato assinado",
+        body: `${id} ${data.cliente_nome || ""}`.trim(),
+        url: "/B2B/admin/index.html"
+      };
+    }
+
+    if (ev === "proposta_enviada") {
+      return {
+        title: "🚨 Nova proposta recebida",
+        body: `${id} ${data.parceiro_nome || "—"} → ${data.cliente_nome || "—"} · ${fmtMoeda(data.valor_total)}`.trim(),
+        url: "/B2B/admin/index.html"
+      };
+    }
+
+    if (ev === "proposta_hold") {
+      return {
+        title: "⏳ Novo hold de 48h",
+        body: `${id} ${data.cliente_nome || "—"} · ${fmtData(data.data_evento)} · ${fmtMoeda(data.valor_total)}`.trim(),
+        url: "/B2B/admin/index.html"
+      };
+    }
+
+    if (ev === "solicitacao_saque") {
+      return {
+        title: "💸 Saque PIX para pagar",
+        body: `${data.parceiro_nome || "Vendedor"} — ${fmtMoeda(data.valor_solicitado)}`,
+        url: "/B2B/admin/comissoes.html"
+      };
+    }
+
+    if (ev === "midia_pendente_aprovacao") {
+      return {
+        title: "🖼️ Mídia para aprovar",
+        body: `${data.parceiro_nome || "Parceiro"} — ${data.total_midias_pendentes ?? "?"} item(ns)`,
+        url: "/B2B/admin/parceiros.html"
+      };
+    }
+
+    // Lead normal
+    return {
+      title: "🔥 Novo lead",
+      body: `${nome} · ${telefone} · ${mensagem}`,
+      url: "/B2B/admin/admin-leads.html"
+    };
+  }
+
+  async function enviarPushAdmin() {
+
+    const segredo = context.env.PUSH_ADMIN_SECRET;
+
+    if (!segredo) {
+      return { ok: false, skipped: "PUSH_ADMIN_SECRET não definido" };
+    }
+
+    try {
+
+      const p = montarPush();
+
+      const resp = await fetch(context.env.PUSH_ADMIN_URL || PUSH_URL_PADRAO, {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+          "x-push-secret": segredo
+        },
+        body: JSON.stringify({
+          title: p.title,
+          body: String(p.body || "").slice(0, 140),
+          url: p.url,
+          tag: `${data.event || "lead"}-${Date.now()}`
+        })
+      });
+
+      return { ok: resp.ok, status: resp.status };
+
+    } catch (err) {
+
+      return { ok: false, error: err?.message || "Erro desconhecido" };
+    }
+  }
+
+  // Dispara agora, em paralelo com o Telegram (nunca lança erro)
+  const pushPromise = enviarPushAdmin();
+
+  // ==========================================================
   // ENVIA PARA TELEGRAM
   // ==========================================================
 
@@ -311,7 +419,8 @@ export async function onRequest(context) {
       JSON.stringify({
         ok: telegramResponse.ok,
         telegram_status: telegramResponse.status,
-        telegram_response: telegramBody
+        telegram_response: telegramBody,
+        push: await pushPromise
       }),
       {
         status: 200,
@@ -325,7 +434,8 @@ export async function onRequest(context) {
       JSON.stringify({
         ok: false,
         error: "Falha ao conectar com Telegram",
-        detail: err?.message || "Erro desconhecido"
+        detail: err?.message || "Erro desconhecido",
+        push: await pushPromise
       }),
       {
         status: 500,
