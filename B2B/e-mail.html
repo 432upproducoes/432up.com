@@ -1129,22 +1129,26 @@
     }
   }
 
-  function esvaziarLixeira() {
-    const itens = mensagensDaPasta('lixeira');
-    if (!itens.length) return mostrarAviso('Lixeira já está vazia.', true);
-    confirmar('Esvaziar lixeira?', 'Esta ação é irreversível. Todas as mensagens da lixeira serão apagadas.', async () => {
-      const { data, error } = await sb.from('email_mensagens')
-        .delete()
-        .eq('dono_user_id', estado.me.user_id)
-        .not('excluida_em', 'is', null)
-        .select('id');
-      if (error) return mostrarAviso('Não foi possível esvaziar: ' + error.message, true);
-      if (!data || !data.length) return mostrarAviso('Nada foi apagado: sem permissão para excluir.', true);
-      estado.ultimaAcao = null;
+function esvaziarLixeira() {
+  const itens = mensagensDaPasta('lixeira');
+  if (!itens.length) return mostrarAviso('Lixeira já está vazia.', true);
+  confirmar('Esvaziar lixeira?', 'Esta ação é irreversível. Todas as mensagens da lixeira serão apagadas.', async () => {
+    const { data, error } = await sb.from('email_mensagens')
+      .delete()
+      .not('excluida_em', 'is', null)
+      .select('id');
+    if (error) return mostrarAviso('Não foi possível esvaziar: ' + error.message, true);
+    const apagadas = (data || []).length;
+    if (apagadas < itens.length) {
+      mostrarAviso(`Apagadas ${apagadas} de ${itens.length}. Sem permissão para as demais.`, true);
+    } else {
       mostrarAviso('Lixeira esvaziada.');
-      carregarTudo(true);
-    });
-  }
+    }
+    estado.ultimaAcao = null;
+    carregarTudo(true);
+  });
+}
+
 
   // ---------- DESFAZER ----------
   async function desfazer() {
