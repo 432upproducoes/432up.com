@@ -450,7 +450,7 @@
       .mn-badge { position: absolute; top: -3px; right: -4px; min-width: 16px; height: 16px; padding: 0 4px;
         box-sizing: border-box; border-radius: 999px; background: #ff2d6f; color: #fff;
         font-size: 10px; font-weight: 700; line-height: 16px; text-align: center; box-shadow: 0 0 0 2px #0a0f16; }
-      .mn-badge[hidden] { display: none; }
+      .mn-badge[hidden] { display: none !important; }
       .mn-mail-hdr { display: none !important; }
       @media (max-width: 1024px) { .mn-mail-hdr { display: inline-flex !important; margin-left: 8px; } }
 
@@ -512,8 +512,15 @@
     mailCount = n;
     var bs = document.querySelectorAll('.mn-badge');
     for (var i = 0; i < bs.length; i++) {
-      bs[i].textContent = n > 99 ? '99+' : String(n);
-      bs[i].hidden = !(n > 0);
+      if (n > 0) {
+        bs[i].textContent = n > 99 ? '99+' : String(n);
+        bs[i].hidden = false;
+        bs[i].style.removeProperty('display');
+      } else {
+        bs[i].textContent = '';
+        bs[i].hidden = true;
+        bs[i].style.setProperty('display', 'none', 'important');
+      }
     }
   }
 
