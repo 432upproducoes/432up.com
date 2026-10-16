@@ -452,6 +452,12 @@
         font-size: 10px; font-weight: 700; line-height: 16px; text-align: center; box-shadow: 0 0 0 2px #0a0f16; }
       .mn-badge[hidden] { display: none !important; }
       .mn-mail-hdr { display: none !important; }
+
+      /* ---------- Botão "ativar avisos" (só no app instalado) ---------- */
+      .mn-push { display: none !important; align-items: center; justify-content: center;
+        width: 34px; height: 34px; border-radius: 50%; border: 1px solid rgba(245,158,11,.5);
+        background: rgba(245,158,11,.12); font-size: 16px; line-height: 1; cursor: pointer; flex: none; padding: 0; }
+      .mn-push.on { display: inline-flex !important; }
       @media (max-width: 1024px) { .mn-mail-hdr { display: inline-flex !important; margin-left: 8px; } }
 
       @media (prefers-reduced-motion: reduce) {
@@ -475,6 +481,10 @@
   var mailUid = null;
   var mailCount = 0;
   var mailTimer = null;
+
+  /* PWA / Push: cole aqui a chave PÚBLICA VAPID (a privada fica só no Supabase) */
+  var VAPID_PUBLIC = 'BI08pGVOMADtgjdbX2pTI-tF8fgBFawrrJzueYM2ESVhSUQN9YKuifVoLNiQUg8p0ZsGAZivarAKVwV-MNcdNSk';
+  var ICON_URL = '/imagens/logo512x512.png';
 
   var MAIL_SVG = '<svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="3" y="5" width="18" height="14" rx="2"/><path d="m3 7 9 6 9-6"/></svg>';
 
@@ -532,7 +542,10 @@
       .eq('direcao', 'recebida').eq('lida', false)
       .is('excluida_em', null).eq('pasta_sistema', 'entrada').is('pasta_id', null)
       .then(function (r) {
-        if (!r.error && typeof r.count === 'number') setMailBadge(r.count);
+        if (!r.error && typeof r.count === 'number') {
+          setMailBadge(r.count);
+          setAppBadge(r.count);
+        }
       });
   }
 
@@ -555,9 +568,114 @@
     });
   }
 
+  /* ---------- PWA: ícone na tela de início, avisos e bolinha no ícone ---------- */
+  function isStandalone() {
+    return !!((window.matchMedia && window.matchMedia('(display-mode: standalone)').matches) || window.navigator.standalone === true);
+  }
+
+  /* Manifest e ícone entram em toda página que carrega o menu.
+     Ficam na mesma origem da página (exigência de manifest e service worker). */
+  function injectPwaTags() {
+    var h = document.head;
+    if (!h) return;
+    function add(tag, attrs) {
+      var el = document.createElement(tag);
+      for (var k in attrs) el.setAttribute(k, attrs[k]);
+      h.appendChild(el);
+    }
+    if (!document.querySelector('link[rel="manifest"]')) add('link', { rel: 'manifest', href: location.origin + '/B2B/manifest.json' });
+    if (!document.querySelector('link[rel="apple-touch-icon"]')) add('link', { rel: 'apple-touch-icon', href: location.origin + ICON_URL });
+    if (!document.querySelector('meta[name="apple-mobile-web-app-capable"]')) add('meta', { name: 'apple-mobile-web-app-capable', content: 'yes' });
+    if (!document.querySelector('meta[name="apple-mobile-web-app-title"]')) add('meta', { name: 'apple-mobile-web-app-title', content: '432UP' });
+  }
+
+  /* Número no ícone do app instalado (quando o app está aberto) */
+  function setAppBadge(n) {
+    try {
+      if (n > 0 && navigator.setAppBadge) navigator.setAppBadge(n).catch(function () {});
+      else if (n <= 0 && navigator.clearAppBadge) navigator.clearAppBadge().catch(function () {});
+    } catch (e) {}
+  }
+
+  function pushOK() {
+    return !!(VAPID_PUBLIC && VAPID_PUBLIC.indexOf('COLE_AQUI') !== 0 && !onSite &&
+      'serviceWorker' in navigator && 'PushManager' in window && 'Notification' in window && isStandalone());
+  }
+
+  function b64ToU8(b64) {
+    var pad = '='.repeat((4 - b64.length % 4) % 4);
+    var raw = atob((b64 + pad).replace(/-/g, '+').replace(/_/g, '/'));
+    var out = new Uint8Array(raw.length);
+    for (var i = 0; i < raw.length; i++) out[i] = raw.charCodeAt(i);
+    return out;
+  }
+
+  function pushBtnHTML() {
+    return '<button type="button" class="mn-push" title="Ativar avisos de novos e-mails" aria-label="Ativar avisos de novos e-mails">🔔</button>';
+  }
+
+  function refreshPushUI() {
+    var show = pushOK() && Notification.permission === 'default' && isLogged();
+    var bs = document.querySelectorAll('.mn-push');
+    for (var i = 0; i < bs.length; i++) bs[i].classList.toggle('on', show);
+  }
+
+  /* Registra o service worker e grava o aparelho no Supabase */
+  function syncPush() {
+    return navigator.serviceWorker.register(location.origin + '/B2B/sw.js', { scope: '/B2B/' })
+      .then(function () { return navigator.serviceWorker.ready; })
+      .then(function (reg) {
+        return reg.pushManager.getSubscription().then(function (sub) {
+          return sub || reg.pushManager.subscribe({ userVisibleOnly: true, applicationServerKey: b64ToU8(VAPID_PUBLIC) });
+        });
+      })
+      .then(function (sub) {
+        var j = sub.toJSON();
+        return sbPartner.rpc('registrar_push', {
+          p_endpoint: j.endpoint,
+          p_p256dh: j.keys.p256dh,
+          p_auth: j.keys.auth,
+          p_ua: String(navigator.userAgent).slice(0, 200)
+        });
+      })
+      .catch(function (err) { console.warn('[432UP push]', err); });
+  }
+
+  function initPush() {
+    if (!pushOK()) return;
+    if (Notification.permission === 'granted') syncPush();
+    refreshPushUI();
+  }
+
+  /* iOS exige que a permissão seja pedida a partir de um toque */
+  function askPush() {
+    if (!pushOK()) return;
+    Notification.requestPermission().then(function (p) {
+      if (p === 'granted') syncPush();
+      refreshPushUI();
+    });
+  }
+
+  /* No logout: remove o aparelho do usuário que saiu e zera a bolinha */
+  function removePush() {
+    try { if (navigator.clearAppBadge) navigator.clearAppBadge().catch(function () {}); } catch (e) {}
+    if (!('serviceWorker' in navigator) || typeof sbPartner === 'undefined') return Promise.resolve();
+    var work = navigator.serviceWorker.getRegistration('/B2B/').then(function (reg) {
+      if (!reg) return;
+      return reg.pushManager.getSubscription().then(function (sub) {
+        if (!sub) return;
+        return Promise.resolve(sbPartner.rpc('remover_push', { p_endpoint: sub.endpoint }))
+          .catch(function () {})
+          .then(function () { return sub.unsubscribe(); });
+      });
+    }).catch(function () {});
+    return Promise.race([work, new Promise(function (r) { setTimeout(r, 2500); })]);
+  }
+
   function userWidgetHTML() {
     if (!isLogged()) return '';
     return '<div class="b2b-user-widget" data-mn-user="1">' +
+      pushBtnHTML() +
       mailLinkHTML('', false) +
       '<a href="' + B2B + 'perfil.html" title="Meu Perfil" class="b2b-avatar-link' + (!isSubdirAdmin && currentPath === 'perfil.html' ? ' active' : '') + '">' +
         '<div data-partner-avatar class="b2b-avatar-img"></div>' +
@@ -576,7 +694,7 @@
           '<span style="font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:.05em;color:' + (master ? '#fbbf24' : '#22d3ee') + ';">' +
             (master ? 'Master Admin ➔' : 'Ver Meu Perfil ➔') + '</span>' +
         '</div></a>' +
-      mailLinkHTML('', false) +
+      '<div style="display:flex;align-items:center;gap:6px;flex:none;">' + pushBtnHTML() + mailLinkHTML('', false) + '</div>' +
     '</div>';
   }
 
@@ -608,6 +726,7 @@
 
     fillUserParts();
     setMailBadge(mailCount);
+    refreshPushUI();
   }
 
   function settleHeader(headerEl) {
@@ -903,7 +1022,9 @@
             else window.location.replace(B2B + 'login.html');
           }
           if (typeof sbPartner !== 'undefined' && sbPartner.auth) {
-            Promise.resolve(sbPartner.auth.signOut()).then(go).catch(go);
+            Promise.resolve(removePush())
+              .then(function () { return sbPartner.auth.signOut(); })
+              .then(go).catch(go);
           } else {
             go();
           }
@@ -1011,6 +1132,11 @@
     bindDrag();
 
     document.addEventListener('click', function (e) {
+      if (up(e, '.mn-push')) {
+        askPush();
+        return;
+      }
+
       var tab = up(e, '.mn-tab');
       if (tab) {
         var wrap = up(e, '.mn-toggle');
@@ -1140,7 +1266,10 @@
     lastParceiro = parceiro || null;
     window.updateAuthState({ loggedIn: !!parceiro, isAdmin: isAdminParceiro(parceiro) });
     fillUserParts();
-    if (parceiro && parceiro.user_id) startMail(parceiro.user_id);
+    if (parceiro && parceiro.user_id) {
+      startMail(parceiro.user_id);
+      initPush();
+    }
   }
 
   function peekAuth() {
@@ -1181,6 +1310,8 @@
     }
     partnerRequireAuth({ requireAdmin: false }).then(applyParceiro).catch(function () {});
   }
+
+  injectPwaTags();
 
   if (document.readyState === 'loading') {
     document.addEventListener('DOMContentLoaded', function () {
