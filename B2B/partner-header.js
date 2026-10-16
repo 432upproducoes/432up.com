@@ -13,15 +13,14 @@
     cachedLoggedIn = false;
   }
 
-  /* ---------- 2. Rotas ---------- */
+  /* ---------- 2. Rotas (endereços completos) ---------- */
   var SITE = 'https://www.432up.com/';
+  var B2B = SITE + 'B2B/';
+  var ADM = SITE + 'B2B/admin/';
   var pathName = window.location.pathname || '';
   var isSubdirAdmin = pathName.indexOf('/admin/') !== -1;
   var onSite = pathName.indexOf('/B2B/') === -1 && pathName.indexOf('/b2b/') === -1 && !isSubdirAdmin;
   if (!onSite && !cachedLoggedIn) cachedLoggedIn = true;
-  var rootPath = isSubdirAdmin ? '../../' : (onSite ? '' : '../');
-  var B2B = isSubdirAdmin ? '../' : (onSite ? 'B2B/' : '');
-  var ADM = isSubdirAdmin ? '' : (onSite ? 'B2B/admin/' : 'admin/');
   var currentPath = pathName.split('/').pop() || 'index.html';
   var pageArea = isSubdirAdmin ? 'admin' : (onSite ? 'site' : 'parceiro');
   var areaAtual = pageArea;
@@ -431,6 +430,30 @@
       .mn-m-sub.open { display: block; }
       .mn-m-sub a { display: block; }
 
+      /* ---------- Avatar (todas as áreas) ---------- */
+      #calc-header .b2b-avatar-img, .mn-m-av {
+        width: 34px; height: 34px; border-radius: 50%; flex: none;
+        background-size: cover; background-position: center;
+        background-color: rgba(0,240,255,.12); border: 1px solid rgba(0,240,255,.4);
+        display: flex; align-items: center; justify-content: center; font-size: 16px;
+      }
+      .mn-m-av { width: 40px; height: 40px; }
+      .mn-m-user { display: flex; align-items: center; justify-content: space-between; gap: 12px;
+        margin-bottom: 16px; padding-bottom: 12px; border-bottom: 1px solid rgba(0,240,255,.2); }
+      .mn-m-prof { display: flex; align-items: center; gap: 12px; text-decoration: none; min-width: 0; }
+
+      /* ---------- Envelope de e-mail + contador ---------- */
+      .mn-mail { position: relative; display: inline-flex !important; align-items: center; justify-content: center;
+        width: 34px; height: 34px; border-radius: 50%; color: #8da2b5; text-decoration: none; flex: none;
+        transition: color .2s, background .2s; }
+      .mn-mail:hover, .mn-mail.active { color: #00f0ff; background: rgba(0,240,255,.1); }
+      .mn-badge { position: absolute; top: -3px; right: -4px; min-width: 16px; height: 16px; padding: 0 4px;
+        box-sizing: border-box; border-radius: 999px; background: #ff2d6f; color: #fff;
+        font-size: 10px; font-weight: 700; line-height: 16px; text-align: center; box-shadow: 0 0 0 2px #0a0f16; }
+      .mn-badge[hidden] { display: none; }
+      .mn-mail-hdr { display: none !important; }
+      @media (max-width: 1024px) { .mn-mail-hdr { display: inline-flex !important; margin-left: 8px; } }
+
       @media (prefers-reduced-motion: reduce) {
         #calc-header *, #calc-header, #mobile-menu *, #mn-float {
           transition-duration: .01ms !important;
@@ -447,9 +470,88 @@
   var lastSig = '';
   var userSig = null;
 
+  /* Estado do parceiro (avatar/nome) e do contador de e-mails */
+  var lastParceiro = null;
+  var mailUid = null;
+  var mailCount = 0;
+  var mailTimer = null;
+
+  var MAIL_SVG = '<svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="3" y="5" width="18" height="14" rx="2"/><path d="m3 7 9 6 9-6"/></svg>';
+
+  function mailLinkHTML(cls, standalone) {
+    var ativo = (!isSubdirAdmin && currentPath === 'e-mail.html') ? ' active' : '';
+    return '<a href="' + B2B + 'e-mail.html" class="mn-mail ' + cls + ativo + '"' +
+      (standalone ? ' data-mn-user="1"' : '') + ' title="E-mail" aria-label="E-mail">' +
+      MAIL_SVG + '<span class="mn-badge" hidden></span></a>';
+  }
+
+  /* Preenche avatar e nome em qualquer área (site, parceiro, admin) */
+  function fillUserParts(p) {
+    if (p) lastParceiro = p;
+    p = lastParceiro;
+    if (!p) return;
+    var url = p.avatar_url && String(p.avatar_url).trim();
+    var nome = p.nome_completo ? String(p.nome_completo).split(' ')[0] : '';
+    var avs = document.querySelectorAll('#calc-header [data-partner-avatar], #mobile-menu [data-partner-avatar]');
+    for (var i = 0; i < avs.length; i++) {
+      if (url) {
+        avs[i].style.backgroundImage = 'url("' + url.replace(/"/g, '%22') + '")';
+        avs[i].textContent = '';
+        avs[i].title = 'Meu Perfil';
+      } else {
+        avs[i].style.backgroundImage = 'none';
+        avs[i].textContent = '👤';
+        avs[i].title = 'Clique para adicionar sua foto de perfil!';
+      }
+    }
+    var nomes = document.querySelectorAll('#mobile-menu [data-partner-nome]');
+    for (var j = 0; j < nomes.length; j++) if (nome) nomes[j].textContent = nome;
+  }
+
+  function setMailBadge(n) {
+    mailCount = n;
+    var bs = document.querySelectorAll('.mn-badge');
+    for (var i = 0; i < bs.length; i++) {
+      bs[i].textContent = n > 99 ? '99+' : String(n);
+      bs[i].hidden = !(n > 0);
+    }
+  }
+
+  /* Mesma regra da pasta "Caixa de Entrada" do e-mail.html */
+  function refreshMailCount() {
+    if (typeof sbPartner === 'undefined' || !sbPartner.from) return;
+    sbPartner.from('email_mensagens')
+      .select('id', { count: 'exact', head: true })
+      .eq('direcao', 'recebida').eq('lida', false)
+      .is('excluida_em', null).eq('pasta_sistema', 'entrada').is('pasta_id', null)
+      .then(function (r) {
+        if (!r.error && typeof r.count === 'number') setMailBadge(r.count);
+      });
+  }
+
+  /* Contagem inicial + Realtime do Supabase */
+  function startMail(uid) {
+    if (!uid || mailUid === uid || typeof sbPartner === 'undefined') return;
+    mailUid = uid;
+    refreshMailCount();
+    function debounced() {
+      clearTimeout(mailTimer);
+      mailTimer = setTimeout(refreshMailCount, 400);
+    }
+    if (sbPartner.channel) {
+      sbPartner.channel('mn-mail-' + uid)
+        .on('postgres_changes', { event: '*', schema: 'public', table: 'email_mensagens' }, debounced)
+        .subscribe();
+    }
+    document.addEventListener('visibilitychange', function () {
+      if (!document.hidden) refreshMailCount();
+    });
+  }
+
   function userWidgetHTML() {
     if (!isLogged()) return '';
     return '<div class="b2b-user-widget" data-mn-user="1">' +
+      mailLinkHTML('', false) +
       '<a href="' + B2B + 'perfil.html" title="Meu Perfil" class="b2b-avatar-link' + (!isSubdirAdmin && currentPath === 'perfil.html' ? ' active' : '') + '">' +
         '<div data-partner-avatar class="b2b-avatar-img"></div>' +
       '</a>' +
@@ -459,14 +561,16 @@
 
   function mobUserHTML() {
     var master = isSubdirAdmin || cachedIsAdmin;
-    return '<a href="' + B2B + 'perfil.html" data-mn-user="1" class="flex items-center gap-3 mb-4 border-b border-cyan-500/20 pb-3 hover:opacity-80 transition">' +
-      '<div data-partner-avatar class="w-10 h-10 rounded-full bg-cyan-500/20 border border-cyan-500/40 bg-cover bg-center shrink-0"></div>' +
-      '<div class="text-left">' +
-        '<span data-partner-nome class="text-sm font-bold text-white block">—</span>' +
-        '<span class="text-[10px] ' + (master ? 'text-amber-400' : 'text-cyan-400') + ' font-bold uppercase tracking-wider">' +
-          (master ? 'Master Admin ➔' : 'Ver Meu Perfil ➔') + '</span>' +
-      '</div>' +
-    '</a>';
+    return '<div data-mn-user="1" class="mn-m-user">' +
+      '<a href="' + B2B + 'perfil.html" class="mn-m-prof">' +
+        '<div data-partner-avatar class="mn-m-av"></div>' +
+        '<div style="text-align:left;">' +
+          '<span data-partner-nome style="display:block;font-size:.9rem;font-weight:700;color:#fff;">—</span>' +
+          '<span style="font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:.05em;color:' + (master ? '#fbbf24' : '#22d3ee') + ';">' +
+            (master ? 'Master Admin ➔' : 'Ver Meu Perfil ➔') + '</span>' +
+        '</div></a>' +
+      mailLinkHTML('', false) +
+    '</div>';
   }
 
   function mobLogoutHTML() {
@@ -490,6 +594,13 @@
       menu.insertAdjacentHTML('beforeend', mobLogoutHTML());
     }
     bindLogoutEvents();
+
+    /* Envelope extra no header: só aparece no mobile (o widget fica oculto ali) */
+    var hdr = document.getElementById('calc-header');
+    if (hdr) hdr.insertAdjacentHTML('beforeend', mailLinkHTML('mn-mail-hdr', true));
+
+    fillUserParts();
+    setMailBadge(mailCount);
   }
 
   function settleHeader(headerEl) {
@@ -515,8 +626,8 @@
           '<i class="mn-bg-l" data-t="cyan"></i><i class="mn-bg-l" data-t="amber"></i><i class="mn-bg-l" data-t="admin"></i>' +
         '</div>' +
         '<div class="logo-container flex items-center">' +
-          '<a href="' + (onSite ? (rootPath || SITE) + (rootPath ? 'index.html' : '') : rootPath + 'index.html') + '" class="logo-link flex items-center" aria-label="Página Inicial 432UP">' +
-            '<img src="' + (onSite ? SITE + 'imagens/logo.png' : rootPath + 'imagens/logo.png') + '" alt="432UP! Produções" class="logo-img" onerror="this.src=\'../imagens/logo.png\'">' +
+          '<a href="' + SITE + 'index.html" class="logo-link flex items-center" aria-label="Página Inicial 432UP">' +
+            '<img src="' + SITE + 'imagens/logo.png" alt="432UP! Produções" class="logo-img">' +
           '</a>' +
         '</div>' +
         toggleHTML('mn-toggle-d') +
@@ -780,9 +891,9 @@
             sessionStorage.removeItem('432up_is_admin');
           } catch (err) {}
           function go() {
-            if (onSite) window.location.replace((rootPath || '') + 'index.html');
+            if (onSite) window.location.replace(SITE + 'index.html');
             else if (typeof partnerLogout === 'function') partnerLogout(e);
-            else window.location.replace((B2B || '') + 'login.html');
+            else window.location.replace(B2B + 'login.html');
           }
           if (typeof sbPartner !== 'undefined' && sbPartner.auth) {
             Promise.resolve(sbPartner.auth.signOut()).then(go).catch(go);
@@ -1019,7 +1130,10 @@
   }
 
   function applyParceiro(parceiro) {
+    lastParceiro = parceiro || null;
     window.updateAuthState({ loggedIn: !!parceiro, isAdmin: isAdminParceiro(parceiro) });
+    fillUserParts();
+    if (parceiro && parceiro.user_id) startMail(parceiro.user_id);
   }
 
   function peekAuth() {
