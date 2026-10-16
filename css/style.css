@@ -166,12 +166,16 @@ input, textarea {
   top: 0 !important;
   left: 0 !important;
   width: 100% !important;
-  height: 80px !important;
+  /* 64px de conteúdo + faixa do relógio (safe-area no iPhone/iPad em modo app) */
+  height: calc(64px + env(safe-area-inset-top, 0px)) !important;
   z-index: 9999 !important;
   display: flex !important;
   align-items: center !important;
   justify-content: space-between !important;
-  padding: 0 4% !important;
+  padding-top: env(safe-area-inset-top, 0px) !important;
+  padding-bottom: 0 !important;
+  padding-left: 4% !important;
+  padding-right: 4% !important;
   box-sizing: border-box !important;
   background: linear-gradient(180deg, rgba(168, 85, 247, 0.08) 0%, rgba(8, 8, 10, 0.35) 100%) !important;
   backdrop-filter: blur(16px) !important;
@@ -664,7 +668,8 @@ body.embed-mode { background: transparent !important; }
 #calc-hero.hero-center, .gallery-hero {
   position: relative;
   inset: auto;
-  padding-top: 130px;
+  /* Header (64px) + safe-area + respiro */
+  padding-top: calc(64px + env(safe-area-inset-top, 0px) + 24px);
   padding-bottom: 24px;
 }
 
@@ -1809,4 +1814,17 @@ input[type="date"] {
   border-radius: 16px;
   display: none;
   overflow-wrap: break-word;
+}
+
+/* =========================================================================
+   SAFE-AREA iOS/iPad (PWA) — sobrescreve height fixo dos HTMLs do B2B
+   ========================================================================= */
+#calc-header.b2b-header-cyan,
+#calc-header.mn-ready,
+#calc-header {
+  height: calc(64px + env(safe-area-inset-top, 0px)) !important;
+  min-height: calc(64px + env(safe-area-inset-top, 0px)) !important;
+  padding-top: env(safe-area-inset-top, 0px) !important;
+  padding-bottom: 0 !important;
+  box-sizing: border-box !important;
 }
