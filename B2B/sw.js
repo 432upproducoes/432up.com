@@ -1,4 +1,4 @@
-/* 432UP Partner · service worker (push + bolinha no ícone)
+/* 432UP Partner · service worker (push + bolinha no ícone + instalação no Chrome)
    Subir em: https://www.432up.com/B2B/sw.js */
 
 var ICON = '/imagens/logo512x512.png';
@@ -10,6 +10,12 @@ self.addEventListener('install', function () {
 
 self.addEventListener('activate', function (event) {
   event.waitUntil(self.clients.claim());
+});
+
+/* O Chrome exige um handler de fetch para oferecer "Instalar app".
+   Tudo vai direto para a rede, sem cache, para não mostrar e-mail desatualizado. */
+self.addEventListener('fetch', function (event) {
+  event.respondWith(fetch(event.request));
 });
 
 /* O iOS exige mostrar uma notificação a cada push (push silencioso é revogado) */
