@@ -361,7 +361,7 @@ export async function onRequest(context) {
         method: "POST",
         headers: {
           "Content-Type": "application/json",
-          "x-push-secret": qwehjg12378hwheruyur273
+          "x-push-secret": segredo
         },
         body: JSON.stringify({
           title: p.title,
