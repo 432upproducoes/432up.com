@@ -573,8 +573,16 @@
     return !!((window.matchMedia && window.matchMedia('(display-mode: standalone)').matches) || window.navigator.standalone === true);
   }
 
-  /* Manifest e ícone entram em toda página que carrega o menu.
-     Ficam na mesma origem da página (exigência de manifest e service worker). */
+  /* Service worker sempre registrado, em qualquer navegador e qualquer página:
+     é isso que faz o Chrome do Android oferecer "Instalar app" em vez de só atalho.
+     O arquivo e o escopo ficam em /B2B/ (mesma origem da página). */
+  function registerSW() {
+    if (!('serviceWorker' in navigator)) return;
+    navigator.serviceWorker.register(location.origin + '/B2B/sw.js', { scope: '/B2B/' })
+      .catch(function (err) { console.warn('[432UP PWA] service worker não registrado', err); });
+  }
+
+  /* Manifest e ícone entram em toda página que carrega o menu. */
   function injectPwaTags() {
     var h = document.head;
     if (!h) return;
@@ -586,7 +594,10 @@
     if (!document.querySelector('link[rel="manifest"]')) add('link', { rel: 'manifest', href: location.origin + '/B2B/manifest.json' });
     if (!document.querySelector('link[rel="apple-touch-icon"]')) add('link', { rel: 'apple-touch-icon', href: location.origin + ICON_URL });
     if (!document.querySelector('meta[name="apple-mobile-web-app-capable"]')) add('meta', { name: 'apple-mobile-web-app-capable', content: 'yes' });
+    if (!document.querySelector('meta[name="mobile-web-app-capable"]')) add('meta', { name: 'mobile-web-app-capable', content: 'yes' });
     if (!document.querySelector('meta[name="apple-mobile-web-app-title"]')) add('meta', { name: 'apple-mobile-web-app-title', content: '432UP' });
+    if (!document.querySelector('meta[name="theme-color"]')) add('meta', { name: 'theme-color', content: '#0a0f16' });
+    registerSW();
   }
 
   /* Número no ícone do app instalado (quando o app está aberto) */
