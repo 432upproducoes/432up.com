@@ -1,0 +1,291 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>432UP! - Instalar Aplicativo</title>
+  
+  <!-- Tailwind CSS CDN -->
+  <script src="https://cdn.tailwindcss.com"></script>
+  
+  <!-- Fontes Google -->
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&display=swap" rel="stylesheet">
+  
+  <!-- Ícones Phosphor -->
+  <script src="https://unpkg.com/@phosphor-icons/web"></script>
+
+  <script>
+    tailwind.config = {
+      theme: {
+        extend: {
+          fontFamily: {
+            sans: ['Inter', 'sans-serif'],
+          },
+          colors: {
+            brand: {
+              dark: '#0B0914',
+              card: 'rgba(25, 20, 41, 0.75)',
+              purple: '#7C3AED',
+              pink: '#D946EF',
+              cyan: '#06B6D4',
+              accent: '#8B5CF6',
+            }
+          },
+          backgroundImage: {
+            'cosmic-gradient': 'radial-gradient(circle at 50% 0%, #3B0764 0%, #1E1B4B 40%, #0B0914 100%)',
+            'btn-gradient': 'linear-gradient(135deg, #8B5CF6 0%, #D946EF 100%)',
+          }
+        }
+      }
+    }
+  </script>
+
+  <style>
+    /* Sombra brilhante no estilo neon */
+    .glow-purple {
+      box-shadow: 0 0 25px -5px rgba(139, 92, 246, 0.5);
+    }
+    .glow-purple:hover {
+      box-shadow: 0 0 35px 0px rgba(217, 70, 239, 0.6);
+    }
+    
+    /* Efeito de vidro borrado */
+    .glass-card {
+      background: rgba(23, 15, 38, 0.65);
+      backdrop-filter: blur(16px);
+      -webkit-backdrop-filter: blur(16px);
+      border: 1px solid rgba(255, 255, 255, 0.08);
+    }
+
+    /* Animação suave para modal */
+    @keyframes fadeIn {
+      from { opacity: 0; transform: scale(0.95); }
+      to { opacity: 1; transform: scale(1); }
+    }
+    .animate-pop {
+      animation: fadeIn 0.25s cubic-bezier(0.16, 1, 0.3, 1) forwards;
+    }
+  </style>
+</head>
+
+<body class="bg-brand-dark bg-cosmic-gradient text-slate-100 min-h-screen flex flex-col justify-between font-sans relative overflow-x-hidden">
+
+  <!-- Elementos decorativos cósmicos em segundo plano -->
+  <div class="absolute top-[-10%] left-1/2 -translate-x-1/2 w-[600px] h-[600px] bg-purple-600/15 rounded-full blur-[120px] pointer-events-none"></div>
+  <div class="absolute bottom-0 right-0 w-[400px] h-[400px] bg-pink-600/10 rounded-full blur-[100px] pointer-events-none"></div>
+
+  <!-- Cabeçalho -->
+  <header class="w-full max-w-4xl mx-auto px-6 py-8 flex justify-between items-center z-10">
+    <div class="flex items-center gap-2">
+      <span class="text-3xl font-extrabold tracking-wider bg-clip-text text-transparent bg-gradient-to-r from-purple-400 via-pink-400 to-cyan-400">
+        432UP!
+      </span>
+    </div>
+    <a href="https://432up.com" target="_blank" class="text-xs text-slate-400 hover:text-white transition flex items-center gap-1">
+      432up.com <i class="ph ph-arrow-square-out"></i>
+    </a>
+  </header>
+
+  <!-- Conteúdo Principal -->
+  <main class="w-full max-w-md mx-auto px-5 py-4 flex-1 flex flex-col justify-center items-center z-10 text-center">
+    
+    <!-- Ícone ou Logo do PWA -->
+    <div class="w-24 h-24 mb-6 rounded-3xl bg-gradient-to-tr from-purple-600 to-pink-500 p-0.5 shadow-2xl glow-purple flex items-center justify-center">
+      <div class="w-full h-full bg-brand-dark rounded-[22px] flex items-center justify-center">
+        <i class="ph-bold ph-rocket-launch text-4xl text-purple-400"></i>
+      </div>
+    </div>
+
+    <!-- Título Principal -->
+    <h1 class="text-3xl font-bold tracking-tight mb-2 text-white">
+      Instale o <span class="bg-clip-text text-transparent bg-gradient-to-r from-purple-400 to-pink-400">432UP!</span>
+    </h1>
+    <p class="text-sm text-slate-300 mb-8 max-w-xs leading-relaxed">
+      Acesse todas as suas propostas, notificações e painéis direto da tela inicial do seu celular.
+    </p>
+
+    <!-- Indicador se o app já está rodando em modo Standalone -->
+    <div id="status-installed" class="hidden w-full glass-card p-4 rounded-2xl mb-6 border-emerald-500/30 text-emerald-300 flex items-center gap-3 text-left">
+      <i class="ph-fill ph-check-circle text-2xl text-emerald-400 shrink-0"></i>
+      <div class="text-xs">
+        <strong class="block text-emerald-200 text-sm">Aplicativo Instalado!</strong>
+        Você já está usando o 432UP! na tela de início.
+      </div>
+    </div>
+
+    <!-- Card com Botões de Instalação -->
+    <div class="w-full glass-card p-6 rounded-3xl shadow-xl space-y-4">
+
+      <p class="text-xs font-semibold uppercase tracking-wider text-purple-300/80 mb-2">
+        Escolha seu sistema operacional
+      </p>
+
+      <!-- Botão Android -->
+      <button id="btn-install-android" class="w-full py-4 px-5 rounded-2xl bg-btn-gradient text-white font-semibold flex items-center justify-between shadow-lg glow-purple active:scale-[0.98] transition-all duration-200 group">
+        <div class="flex items-center gap-3">
+          <i class="ph-fill ph-android-logo text-2xl group-hover:scale-110 transition-transform"></i>
+          <span class="text-sm font-medium">Instalar no Android</span>
+        </div>
+        <i class="ph-bold ph-download-simple text-lg"></i>
+      </button>
+
+      <!-- Botão iOS -->
+      <button id="btn-install-ios" onclick="openIosModal()" class="w-full py-4 px-5 rounded-2xl bg-white/10 hover:bg-white/15 border border-white/10 text-white font-semibold flex items-center justify-between active:scale-[0.98] transition-all duration-200 group">
+        <div class="flex items-center gap-3">
+          <i class="ph-fill ph-apple-logo text-2xl group-hover:scale-110 transition-transform"></i>
+          <span class="text-sm font-medium">Instalar no iPhone / iPad</span>
+        </div>
+        <i class="ph-bold ph-caret-right text-lg text-slate-400"></i>
+      </button>
+
+      <!-- Dica / Recomendação Dinâmica -->
+      <p id="platform-hint" class="text-[11px] text-slate-400 pt-2 flex items-center justify-center gap-1">
+        <i class="ph ph-info"></i> Toque para iniciar a instalação rápida.
+      </p>
+
+    </div>
+
+  </main>
+
+  <!-- Rodapé -->
+  <footer class="w-full max-w-4xl mx-auto px-6 py-6 text-center text-xs text-slate-500 z-10">
+    © 2026 432UP! Produções. Todos os direitos reservados.
+  </footer>
+
+  <!-- ================= MODAL DE INSTRUÇÕES PARA iOS ================= -->
+  <div id="ios-modal" class="fixed inset-0 bg-black/80 backdrop-blur-md hidden z-50 flex items-end sm:items-center justify-center p-0 sm:p-4 transition-opacity">
+    
+    <div class="w-full max-w-md glass-card bg-brand-dark/95 border-t border-purple-500/30 rounded-t-3xl sm:rounded-3xl p-6 text-left animate-pop relative max-h-[90vh] overflow-y-auto">
+      
+      <!-- Botão Fechar -->
+      <button onclick="closeIosModal()" class="absolute top-5 right-5 w-8 h-8 rounded-full bg-white/10 text-slate-300 hover:text-white flex items-center justify-center transition">
+        <i class="ph-bold ph-x text-lg"></i>
+      </button>
+
+      <!-- Cabeçalho Modal -->
+      <div class="flex items-center gap-3 mb-5">
+        <div class="w-10 h-10 rounded-xl bg-purple-500/20 text-purple-400 flex items-center justify-center text-xl">
+          <i class="ph-fill ph-apple-logo"></i>
+        </div>
+        <div>
+          <h3 class="text-lg font-bold text-white">Instalar no Safari (iOS)</h3>
+          <p class="text-xs text-slate-400">Siga os 2 passos simples abaixo</p>
+        </div>
+      </div>
+
+      <!-- Passo 1 -->
+      <div class="flex items-start gap-4 mb-5 p-3.5 rounded-2xl bg-white/5 border border-white/5">
+        <div class="w-7 h-7 rounded-full bg-purple-600 text-white font-bold flex items-center justify-center text-xs shrink-0 mt-0.5">
+          1
+        </div>
+        <div class="text-xs text-slate-200">
+          <p class="mb-1">Toque no botão de <strong class="text-purple-300">Compartilhar</strong> na barra do Safari na parte inferior da tela.</p>
+          <div class="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-lg bg-white/10 text-cyan-300 font-medium text-[11px] mt-1">
+            <i class="ph-bold ph-share-network text-sm"></i> Botão Compartilhar
+          </div>
+        </div>
+      </div>
+
+      <!-- Passo 2 -->
+      <div class="flex items-start gap-4 mb-6 p-3.5 rounded-2xl bg-white/5 border border-white/5">
+        <div class="w-7 h-7 rounded-full bg-pink-600 text-white font-bold flex items-center justify-center text-xs shrink-0 mt-0.5">
+          2
+        </div>
+        <div class="text-xs text-slate-200">
+          <p class="mb-1">Role a lista de opções para baixo e selecione <strong class="text-pink-300">Adicionar à Tela de Início</strong>.</p>
+          <div class="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-lg bg-white/10 text-pink-300 font-medium text-[11px] mt-1">
+            <i class="ph-bold ph-plus-square text-sm"></i> Adicionar à Tela de Início
+          </div>
+        </div>
+      </div>
+
+      <!-- Botão Entendido -->
+      <button onclick="closeIosModal()" class="w-full py-3.5 rounded-xl bg-purple-600 hover:bg-purple-500 font-semibold text-white text-sm transition text-center shadow-lg">
+        Entendi, vou instalar
+      </button>
+
+    </div>
+  </div>
+
+  <!-- ================= SCRIPT PWA & LÓGICA ================= -->
+  <script>
+    let deferredPrompt = null;
+
+    const btnAndroid = document.getElementById('btn-install-android');
+    const btnIos = document.getElementById('btn-install-ios');
+    const platformHint = document.getElementById('platform-hint');
+    const statusInstalled = document.getElementById('status-installed');
+    const iosModal = document.getElementById('ios-modal');
+
+    // 1. Verificar se o PWA já está rodando em modo standalone (Instalado)
+    const isStandalone = window.matchMedia('(display-mode: standalone)').matches || window.navigator.standalone;
+
+    if (isStandalone) {
+      statusInstalled.classList.remove('hidden');
+      btnAndroid.classList.add('opacity-50');
+    }
+
+    // 2. Capturar o evento 'beforeinstallprompt' no Android
+    window.addEventListener('beforeinstallprompt', (e) => {
+      // Impede que o prompt padrão do navegador apareça imediatamente
+      e.preventDefault();
+      deferredPrompt = e;
+      
+      // Destaca o botão Android
+      btnAndroid.classList.remove('opacity-60');
+      console.log('Evento beforeinstallprompt pronto para ser ativado no Android.');
+    });
+
+    // 3. Clique no Botão Android
+    btnAndroid.addEventListener('click', async () => {
+      if (deferredPrompt) {
+        // Dispara o prompt nativo de instalação
+        deferredPrompt.prompt();
+        const { outcome } = await deferredPrompt.userChoice;
+        console.log(`Resultado da instalação do usuário: ${outcome}`);
+        deferredPrompt = null;
+      } else {
+        // Caso o evento ainda não tenha disparado (por exemplo, via Chrome desktop ou navegador incompatível)
+        alert('Se a janela de instalação automática não abrir, toque nos 3 pontinhos do seu navegador e escolha "Instalar aplicativo" ou "Adicionar à tela inicial".');
+      }
+    });
+
+    // 4. Modal do iOS
+    function openIosModal() {
+      iosModal.classList.remove('hidden');
+    }
+
+    function closeIosModal() {
+      iosModal.classList.add('hidden');
+    }
+
+    // Fechar modal ao clicar fora do conteúdo
+    iosModal.addEventListener('click', (e) => {
+      if (e.target === iosModal) {
+        closeIosModal();
+      }
+    });
+
+    // 5. Detecção Inteligente de Sistema Operacional para Destacar o Botão Certo
+    function detectPlatform() {
+      const userAgent = navigator.userAgent || navigator.vendor || window.opera;
+
+      // Se for iOS
+      if (/iPad|iPhone|iPod/.test(userAgent) && !window.MSStream) {
+        btnIos.classList.add('border-purple-500', 'bg-purple-500/20');
+        platformHint.innerHTML = '<i class="ph ph-device-mobile"></i> Detectamos um dispositivo iOS (iPhone/iPad).';
+      } 
+      // Se for Android
+      else if (/android/i.test(userAgent)) {
+        btnAndroid.classList.add('glow-purple');
+        platformHint.innerHTML = '<i class="ph ph-device-mobile"></i> Detectamos um dispositivo Android.';
+      }
+    }
+
+    // Executa a detecção ao carregar
+    window.onload = detectPlatform;
+  </script>
+</body>
+</html>
