@@ -786,6 +786,118 @@
         return pai.id;
       }
 
+      var vitrinesPorParceiro = {};
+      var mVitrineId = null;
+      function obterFichaParaModal(id) {
+        var base = listaParceiros.find(function (item) { return String(item.id) === String(id); });
+        if (!base || !mVitrineId) return base;
+        var vit = (vitrinesPorParceiro[base.id] || []).find(function (v) { return v.id === mVitrineId; });
+        if (!vit) return base;
+        return Object.assign({}, base, vit, {
+          id: base.id, status: base.status, status_artista: base.status_artista,
+          __vitrineId: vit.id, __vitrineStatus: vit.status
+        });
+      }
+
+      function filtrarPayloadVitrine(payload) {
+        var permitidos = ['nome_artistico','tagline_artistica','cache_base','experiencia_comercial','bio_artistica',
+          'rider_tecnico','youtube_1','youtube_2','galeria_fotos','foto_capa_url','midias_pendentes'];
+        var out = {};
+        permitidos.forEach(function (k) { if (payload[k] !== undefined) out[k] = payload[k]; });
+        return out;
+      }
+
+      window.abrirVitrineNoModal = function (vid) {
+        window.__vitrineSolicitada = vid || null;
+        abrirFichaParceiro(parceiroSelecionadoId);
+      };
+
+      function renderAbasVitrinesAdmin() {
+        var modal = document.getElementById('modalFicha');
+        if (!modal || !parceiroSelecionadoId) return;
+        var host = modal.firstElementChild || modal;
+        var box = document.getElementById('abasVitrinesAdmin');
+        if (!box) {
+          box = document.createElement('div');
+          box.id = 'abasVitrinesAdmin';
+          box.style.cssText = 'display:flex;flex-wrap:wrap;gap:6px;padding:10px 4px 0;';
+          host.insertBefore(box, host.firstChild);
+        }
+        var base = listaParceiros.find(function (item) { return String(item.id) === String(parceiroSelecionadoId); }) || {};
+        var lista = (vitrinesPorParceiro[parceiroSelecionadoId] || []).slice().sort(function (a, b) { return a.ordem - b.ordem; });
+        var aba = function (ativa) {
+          return 'padding:8px 14px;border-radius:12px 12px 0 0;font-size:12px;font-weight:700;cursor:pointer;border:1px solid ' +
+            (ativa ? '#22d3ee;border-bottom:1px solid #0f172a;background:#0f172a;color:#22d3ee' : 'rgba(255,255,255,.12);background:rgba(15,23,42,.55);color:#94a3b8');
+        };
+        var html = '<button type="button" style="' + aba(!mVitrineId) + '" onclick="abrirVitrineNoModal(null)">' +
+          esc(base.nome_artistico || 'Vitrine principal') + '</button>';
+        lista.forEach(function (v) {
+          var st = v.status === 'aprovada' ? ' ✓' : v.status === 'recusada' ? ' ✕' : ' ⏳';
+          html += '<button type="button" style="' + aba(mVitrineId === v.id) + '" onclick="abrirVitrineNoModal(\'' + v.id + '\')">' +
+            esc(v.nome_artistico || 'Nova vitrine') + st + '</button>';
+        });
+        box.innerHTML = html;
+      }
+
+      async function aprovarVitrineAtiva() {
+        var pay = { galeria_fotos: mGaleriaFotosAtual, foto_capa_url: mFotoCapaUrlAtual, midias_pendentes: [] };
+        (mMidiasPendentesAtual || []).filter(function (m) { return m.tipo === 'video'; }).forEach(function (vid) {
+          pay[vid.campo_destino || 'youtube_1'] = vid.url;
+        });
+        (mMidiasPendentesAtual || []).filter(function (m) { return m.tipo === 'galeria' || !m.tipo; }).forEach(function (item) {
+          if (pay.galeria_fotos.indexOf(item.url) < 0) pay.galeria_fotos.push(item.url);
+        });
+        if (!confirm('Aprovar e publicar esta vitrine?')) return;
+        pay.status = 'aprovada';
+        pay.aprovada_em = new Date().toISOString();
+        var r = await sbPartner.from('vitrines').update(pay).eq('id', mVitrineId);
+        if (r.error) { alert('Erro ao aprovar: ' + r.error.message); return; }
+        alert('✅ Vitrine aprovada.');
+        mMidiasPendentesAtual = [];
+        await carregarVitrinesAdmin();
+        renderAbasVitrinesAdmin();
+        carregarTaxonomiaEParceiros();
+      }
+
+      async function recusarVitrineAtiva() {
+        var motivo = prompt('Motivo da recusa (o artista verá):');
+        if (motivo === null) return;
+        var r = await sbPartner.from('vitrines')
+          .update({ status: 'recusada', motivo_recusa: motivo, midias_pendentes: [] })
+          .eq('id', mVitrineId);
+        if (r.error) { alert('Erro ao recusar: ' + r.error.message); return; }
+        alert('Vitrine recusada.');
+        mMidiasPendentesAtual = [];
+        await carregarVitrinesAdmin();
+        renderAbasVitrinesAdmin();
+        carregarTaxonomiaEParceiros();
+      }
+
+      async function carregarVitrinesAdmin() {
+        try {
+          var r = await sbPartner.from('vitrines').select('*');
+          vitrinesPorParceiro = {};
+          (r.data || []).forEach(function (v) {
+            (vitrinesPorParceiro[v.parceiro_id] = vitrinesPorParceiro[v.parceiro_id] || []).push(v);
+          });
+        } catch (e) {
+          console.error('Falha ao carregar vitrines:', e);
+        }
+      }
+
+      // Pendências do artista: mídias do cadastro + vitrines em análise + mídias das vitrines extras
+      function contarPendencias(p) {
+        if (!p) return 0;
+        var n = 0;
+        if (p.fotos_pendentes_aprovacao) n += 1;
+        if (Array.isArray(p.midias_pendentes)) n += p.midias_pendentes.length;
+        (vitrinesPorParceiro[p.id] || []).forEach(function (v) {
+          if (v.status === 'pendente') n += 1;
+          if (Array.isArray(v.midias_pendentes)) n += v.midias_pendentes.length;
+        });
+        return n;
+      }
+
       function temFotosPendentes(p) {
         if (!p) return false;
         if (p.fotos_pendentes_aprovacao) return true;
@@ -1234,6 +1346,7 @@
           }
 
           var resParc = await sbPartner.from('parceiros').select('*').order('criado_em', { ascending: false });
+          await carregarVitrinesAdmin();
           var tbody = document.getElementById('tbodyParceiros');
           if (resParc.error) {
             tbody.innerHTML = '<tr><td colspan="7" class="py-4 text-center text-red-400">Erro ao carregar usuários: ' + esc(resParc.error.message) + '</td></tr>';
@@ -1497,6 +1610,12 @@
 
       function renderTabela(lista) {
         var tbody = document.getElementById('tbodyParceiros');
+        lista = lista.slice().sort(function (a, b) {
+          var pa = contarPendencias(a), pb = contarPendencias(b);
+          if ((pb > 0) !== (pa > 0)) return (pb > 0) ? 1 : -1;
+          if (pb !== pa) return pb - pa;
+          return String(a.nome_completo || '').localeCompare(String(b.nome_completo || ''), 'pt-BR');
+        });
         var totalRegistros = lista.length;
 
         if (!totalRegistros) {
@@ -1530,8 +1649,9 @@
             ? '<span class="inline-flex items-center px-1.5 py-0.5 rounded text-[9px] font-extrabold bg-amber-400/20 text-amber-300 border border-amber-400/50 whitespace-nowrap shadow-[0_0_8px_rgba(245,158,11,0.3)]">⭐ Destaque</span>' 
             : '';
 
-          var badgeMidiasPendenteHtml = temFotosPendentes(p) 
-            ? '<span class="inline-flex items-center px-2 py-0.5 rounded text-[10px] font-extrabold bg-amber-500/20 text-amber-300 border border-amber-500/50 animate-pulse whitespace-nowrap">⏳ ' + txtMidias + ' P/ Aprovar</span>' 
+          var nPend = contarPendencias(p);
+          var badgeMidiasPendenteHtml = nPend > 0
+            ? '<span class="inline-flex items-center px-2 py-0.5 rounded text-[10px] font-extrabold bg-amber-500/20 text-amber-300 border border-amber-500/50 animate-pulse whitespace-nowrap">⏳ ' + nPend + (nPend > 1 ? ' pendências' : ' pendência') + '</span>'
             : '';
 
           return '<tr class="hover:bg-white/[0.02] transition border-b border-white/5">' +
@@ -2348,8 +2468,11 @@
       };
 
       window.abrirFichaParceiro = function (id) {
-        var parceiro = listaParceiros.find(function (item) { return String(item.id) === String(id); });
+        mVitrineId = window.__vitrineSolicitada || null;
+        window.__vitrineSolicitada = null;
+        var parceiro = obterFichaParaModal(id);
         if (!parceiro) return;
+        setTimeout(renderAbasVitrinesAdmin, 0);
 
         parceiroSelecionadoId = parceiro.id;
 
@@ -2649,7 +2772,7 @@
 
       window.removerVideoAtivoAdmin = function(campo) {
         atualizarLabelsVideoAdmin(campo, '', false);
-        var parceiro = listaParceiros.find(function(item) { return String(item.id) === String(parceiroSelecionadoId); });
+        var parceiro = obterFichaParaModal(parceiroSelecionadoId);
         if (parceiro) parceiro[campo] = null;
         mostrarBannerPendente();
         renderGaleriaAdmin();
@@ -2717,6 +2840,7 @@
 
       window.aprovarMidiasArtista = function() {
         if (!parceiroSelecionadoId) return;
+        if (mVitrineId) { aprovarVitrineAtiva(); return; }
 
         var payloadToUpdate = {};
 
@@ -2761,7 +2885,7 @@
               // Só agora limpa o estado local
               mMidiasPendentesAtual = [];
               // Sincroniza objeto em memória para o Salvar Cadastro não sobrescrever
-              var parceiro = listaParceiros.find(function(item) { return String(item.id) === String(parceiroSelecionadoId); });
+              var parceiro = obterFichaParaModal(parceiroSelecionadoId);
               if (parceiro) {
                 if (payloadToUpdate.youtube_1) parceiro.youtube_1 = payloadToUpdate.youtube_1;
                 if (payloadToUpdate.youtube_2) parceiro.youtube_2 = payloadToUpdate.youtube_2;
@@ -2784,6 +2908,7 @@
       };
 
       window.recusarMidiasArtista = function() {
+        if (mVitrineId) { recusarVitrineAtiva(); return; }
         if (!parceiroSelecionadoId) return;
 
         var motivo = prompt('Informe o motivo da recusa:');
@@ -2797,7 +2922,7 @@
             observacoes_admin: novaObs
           };
 
-          var parceiro = listaParceiros.find(function(item) { return String(item.id) === String(parceiroSelecionadoId); });
+          var parceiro = obterFichaParaModal(parceiroSelecionadoId);
           if (parceiro && parceiro.midias_pendentes !== undefined) {
             payload.midias_pendentes = [];
           }
@@ -2896,15 +3021,15 @@ youtube_2: (document.getElementById('mArtYoutube2').value || '').trim() || (list
           foto_capa_url: mFotoCapaUrlAtual
         };
 
-        var parceiro = listaParceiros.find(function(item) { return String(item.id) === String(parceiroSelecionadoId); });
+        var parceiro = obterFichaParaModal(parceiroSelecionadoId);
         if (parceiro && parceiro.midias_pendentes !== undefined) {
           payload.midias_pendentes = mMidiasPendentesAtual;
         }
 
         sbPartner
-          .from('parceiros')
-          .update(payload)
-          .eq('id', parceiroSelecionadoId)
+          .from(mVitrineId ? 'vitrines' : 'parceiros')
+          .update(mVitrineId ? filtrarPayloadVitrine(payload) : payload)
+          .eq('id', mVitrineId || parceiroSelecionadoId)
           .then(function (res) {
             hideLoadingProgress();
             btn.disabled = false;
