@@ -72,7 +72,7 @@
       color: #FFF;
       border: none;
       border-radius: 20px;
-      padding: 10px 18px;
+      padding: 0 18px; height: 40px; line-height: 1; box-sizing: border-box; display: flex; align-items: center; justify-content: center; white-space: nowrap;
       font-family: inherit;
       font-size: 14px;
       font-weight: 700;
@@ -90,7 +90,7 @@
       color: #FFF;
       border: none;
       border-radius: 20px;
-      padding: 10px 18px;
+      padding: 0 18px; height: 40px; line-height: 1; box-sizing: border-box; display: flex; align-items: center; justify-content: center; white-space: nowrap;
       font-family: inherit;
       font-size: 14px;
       font-weight: 700;
@@ -2422,23 +2422,34 @@
     });
   }
   // Foto grande do celular: reduz antes de enviar. PDF e formatos que o navegador não decodifica seguem como estão.
-  function prepararImagem(file, t) {
-    return new Promise(function (resolve) {
-      if (t === 'application/pdf' || file.size <= LIMITE_ENVIO / 1.4) return resolve({ blob: file, mime: t });
+  // Converte imagens para PNG (formato que já envia certo) e reduz fotos grandes. PDF segue como está.
+  function carregarImagem(file) {
+    return new Promise(function (resolve, reject) {
       var url = URL.createObjectURL(file), img = new Image();
-      img.onload = function () {
-        var w = img.naturalWidth, h = img.naturalHeight, k = Math.min(1, 2200 / Math.max(w, h));
-        var c = document.createElement('canvas');
-        c.width = Math.round(w * k); c.height = Math.round(h * k);
-        c.getContext('2d').drawImage(img, 0, 0, c.width, c.height);
-        c.toBlob(function (b) {
-          URL.revokeObjectURL(url);
-          resolve(b && b.size < file.size ? { blob: b, mime: 'image/jpeg' } : { blob: file, mime: t });
-        }, 'image/jpeg', 0.86);
-      };
-      img.onerror = function () { URL.revokeObjectURL(url); resolve({ blob: file, mime: t }); };
+      img.onload = function () { resolve({ img: img, url: url }); };
+      img.onerror = function () { URL.revokeObjectURL(url); reject(new Error('Não consegui abrir esta imagem. Tente enviar em PNG ou PDF.')); };
       img.src = url;
     });
+  }
+  function paraPng(img, maxLado) {
+    var w = img.naturalWidth, h = img.naturalHeight, k = Math.min(1, maxLado / Math.max(w, h));
+    var c = document.createElement('canvas');
+    c.width = Math.round(w * k); c.height = Math.round(h * k);
+    c.getContext('2d').drawImage(img, 0, 0, c.width, c.height);
+    return new Promise(function (res) { c.toBlob(res, 'image/png'); });
+  }
+  async function prepararImagem(file, t) {
+    if (t === 'application/pdf') return { blob: file, mime: t };
+    if (t === 'image/png' && file.size <= LIMITE_ENVIO / 1.4) return { blob: file, mime: t };
+    var carregada = await carregarImagem(file);
+    try {
+      var blob = await paraPng(carregada.img, 2000);
+      if (blob && blob.size > LIMITE_ENVIO) blob = await paraPng(carregada.img, 1400);
+      if (!blob) throw new Error('Não consegui preparar esta imagem. Tente enviar em PNG ou PDF.');
+      return { blob: blob, mime: 'image/png' };
+    } finally {
+      URL.revokeObjectURL(carregada.url);
+    }
   }
   // Mostra a mensagem que o servidor devolveu (antes ela era trocada por um texto genérico)
   async function msgDoServidor(err, data) {
