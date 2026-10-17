@@ -803,35 +803,51 @@
       html += '</div>';
     });
 
-    // ---- Venda: cancelamento, reembolso, pendências de comissão e envio em nome do cliente ----
+    // ---- Venda: troca de painel com transição (cancelada: reembolso; ativa: envio em nome do cliente) ----
     var cancelada = P.status === 'cancelada';
     var recebidoAprov = lista.filter(function (x) { return x.status === 'aprovado'; })
       .reduce(function (a, x) { return a + Number(x.valor_confirmado || 0); }, 0);
     var jaReembolsado = (rb.data || []).reduce(function (a, x) { return a + Number(x.valor || 0); }, 0);
     var aReembolsar = Math.max(0, recebidoAprov - jaReembolsado);
+    var campo = 'background:#020617;color:#e2e8f0;border:1px solid rgba(255,255,255,.1);border-radius:8px;padding:6px;';
+    var botaoPrincipal = 'padding:7px 14px;border-radius:8px;background:#a3e635;color:#0b1020;border:none;font-weight:700;cursor:pointer;';
 
-    html += '<div style="border:1px solid rgba(255,255,255,.1);border-radius:10px;padding:12px;margin-bottom:14px;"><strong>Venda</strong>';
+    html += '<style>@keyframes finTroca{from{opacity:0;transform:translateY(6px) scale(.985);filter:blur(2px)}to{opacity:1;transform:none;filter:none}}' +
+      '.finPainel{animation:finTroca .55s cubic-bezier(.22,.61,.36,1) both;}</style>';
+
     if (cancelada) {
-      html += '<div style="margin-top:6px;color:#fca5a5;font-weight:700;">Cancelada em ' + DH(P.cancelada_em) + ' · Motivo: ' + E(P.cancelamento_motivo) + '</div>' +
+      html += '<div class="finPainel" style="border:1px solid rgba(248,113,113,.35);border-radius:10px;padding:12px;margin-bottom:14px;">' +
+        '<strong>Pedido cancelado</strong>' +
+        '<div style="margin-top:6px;color:#fca5a5;">Cancelado em ' + DH(P.cancelada_em) + ' · Motivo: ' + E(P.cancelamento_motivo) + '</div>' +
         '<div style="margin-top:6px;">Recebido e aprovado: ' + BRL(recebidoAprov) + ' · Já reembolsado: ' + BRL(jaReembolsado) +
         ' · <strong>A reembolsar: ' + BRL(aReembolsar) + '</strong></div>';
       if (aReembolsar > 0) {
-        html += '<div style="margin-top:10px;border-top:1px solid rgba(255,255,255,.08);padding-top:10px;"><strong>Registrar reembolso</strong>' +
+        html += '<div style="margin-top:12px;"><strong>Registrar reembolso</strong>' +
           '<div style="display:grid;gap:8px;margin-top:8px;grid-template-columns:repeat(auto-fit,minmax(160px,1fr));">' +
-          '<input id="rbValor" value="' + String(aReembolsar).replace('.', ',') + '" placeholder="Valor (R$)" style="background:#020617;color:#e2e8f0;border:1px solid rgba(255,255,255,.1);border-radius:8px;padding:6px;">' +
-          '<input id="rbData" type="date" value="' + new Date().toISOString().slice(0, 10) + '" style="background:#020617;color:#e2e8f0;border:1px solid rgba(255,255,255,.1);border-radius:8px;padding:6px;">' +
-          '<input id="rbMotivo" placeholder="Observação (opcional)" style="background:#020617;color:#e2e8f0;border:1px solid rgba(255,255,255,.1);border-radius:8px;padding:6px;">' +
+          '<input id="rbValor" value="' + String(aReembolsar).replace('.', ',') + '" placeholder="Valor (R$)" style="' + campo + '">' +
+          '<input id="rbData" type="date" value="' + new Date().toISOString().slice(0, 10) + '" style="' + campo + '">' +
+          '<input id="rbMotivo" placeholder="Observação (opcional)" style="' + campo + '">' +
           '<input id="rbArq" type="file" accept="image/*,application/pdf" style="color:#94a3b8;font-size:12px;"></div>' +
-          '<div style="margin-top:8px;"><button onclick="finRegistrarReembolso()" style="padding:6px 12px;border-radius:8px;background:#a3e635;color:#0b1020;border:none;font-weight:700;cursor:pointer;">Registrar reembolso</button> <span id="rbMsg" style="font-size:12px;margin-left:8px;"></span></div></div>';
+          '<div style="margin-top:8px;"><button onclick="finRegistrarReembolso()" style="' + botaoPrincipal + '">Registrar reembolso</button> <span id="rbMsg" style="font-size:12px;margin-left:8px;"></span></div></div>';
       }
       (rb.data || []).forEach(function (x) {
         html += '<div style="margin-top:6px;font-size:12px;">Reembolso ' + BRL(x.valor) + ' em ' + DH(x.data_reembolso) +
           ' · <a href="' + E(x.comprovante_url) + '" target="_blank" rel="noopener" style="color:#a3e635;">comprovante</a></div>';
       });
+      html += '</div>';
     } else {
-      html += '<div style="margin-top:8px;"><button onclick="finCancelar()" style="padding:6px 12px;border-radius:8px;background:transparent;color:#fca5a5;border:1px solid rgba(248,113,113,.4);cursor:pointer;">Cancelar pedido</button></div>';
+      html += '<div class="finPainel" style="border:1px solid rgba(255,255,255,.1);border-radius:10px;padding:12px;margin-bottom:14px;">' +
+        '<strong>Enviar comprovante em nome do cliente</strong>' +
+        '<div style="font-size:12px;color:#94a3b8;margin-top:4px;">Use quando o cliente mandar o comprovante por outro canal. Depois ele segue para conferência, como os demais.</div>' +
+        '<div style="display:grid;gap:8px;margin-top:8px;grid-template-columns:repeat(auto-fit,minmax(160px,1fr));">' +
+        '<select id="ecTipo" style="' + campo + '"><option value="sinal">Entrada / Sinal</option><option value="parcela">Parcela</option><option value="saldo">Saldo</option><option value="outro">Outro</option></select>' +
+        '<input id="ecValor" placeholder="Valor (R$)" style="' + campo + '">' +
+        '<input id="ecData" type="date" style="' + campo + '">' +
+        '<input id="ecArq" type="file" accept="image/*,application/pdf" style="color:#94a3b8;font-size:12px;"></div>' +
+        '<div style="margin-top:8px;"><button onclick="finEnviarEmNomeDoCliente()" style="' + botaoPrincipal + '">Enviar comprovante</button> <span id="ecMsg" style="font-size:12px;margin-left:8px;"></span></div>' +
+        '<div style="margin-top:12px;border-top:1px solid rgba(255,255,255,.08);padding-top:10px;"><button onclick="finCancelar()" style="padding:6px 12px;border-radius:8px;background:transparent;color:#fca5a5;border:1px solid rgba(248,113,113,.4);cursor:pointer;">Cancelar pedido</button></div>' +
+        '</div>';
     }
-    html += '</div>';
 
     if ((pd.data || []).length) {
       html += '<div style="border:1px solid rgba(250,204,21,.35);border-radius:10px;padding:12px;margin-bottom:14px;"><strong>Comissão a decidir (venda cancelada)</strong>';
@@ -843,15 +859,6 @@
       });
       html += '</div>';
     }
-
-    html += '<div style="border:1px solid rgba(255,255,255,.1);border-radius:10px;padding:12px;margin-bottom:14px;"><strong>Enviar comprovante em nome do cliente</strong>' +
-      '<div style="font-size:12px;color:#94a3b8;margin-top:4px;">Use quando o cliente mandar o comprovante por outro canal. Depois ele segue para conferência, como os demais.</div>' +
-      '<div style="display:grid;gap:8px;margin-top:8px;grid-template-columns:repeat(auto-fit,minmax(160px,1fr));">' +
-      '<select id="ecTipo" style="background:#020617;color:#e2e8f0;border:1px solid rgba(255,255,255,.1);border-radius:8px;padding:6px;"><option value="sinal">Entrada / Sinal</option><option value="parcela">Parcela</option><option value="saldo">Saldo</option><option value="outro">Outro</option></select>' +
-      '<input id="ecValor" placeholder="Valor (R$)" style="background:#020617;color:#e2e8f0;border:1px solid rgba(255,255,255,.1);border-radius:8px;padding:6px;">' +
-      '<input id="ecData" type="date" style="background:#020617;color:#e2e8f0;border:1px solid rgba(255,255,255,.1);border-radius:8px;padding:6px;">' +
-      '<input id="ecArq" type="file" accept="image/*,application/pdf" style="color:#94a3b8;font-size:12px;"></div>' +
-      '<div style="margin-top:8px;"><button onclick="finEnviarEmNomeDoCliente()" style="padding:6px 12px;border-radius:8px;background:#a3e635;color:#0b1020;border:none;font-weight:700;cursor:pointer;">Enviar comprovante</button> <span id="ecMsg" style="font-size:12px;margin-left:8px;"></span></div></div>';
 
     html += '<strong style="display:block;margin-top:14px;">Histórico financeiro (interno)</strong>';
     if (!l.data || !l.data.length) html += '<div style="color:#94a3b8;margin-top:6px;">Nada registrado ainda.</div>';
