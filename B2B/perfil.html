@@ -2,6 +2,10 @@
 <html lang="pt-BR" class="h-full">
 <head>
   <script async src="https://www.googletagmanager.com/gtag/js?id=G-7SWNCP1NV6"></script>
+  <script><!DOCTYPE html>
+<html lang="pt-BR" class="h-full">
+<head>
+  <script async src="https://www.googletagmanager.com/gtag/js?id=G-7SWNCP1NV6"></script>
   <script>
     window.dataLayer = window.dataLayer || [];
     function gtag(){dataLayer.push(arguments);}
@@ -344,7 +348,7 @@
         <!-- FICHA COMPLEMENTAR (Antiga Ficha Artística) -->
         <div id="secaoArtistica" class="section-artistic-toggle glass-b2b p-6 rounded-2xl space-y-6 border border-cyan-500/30 shadow-[0_0_25px_rgba(0,240,255,0.1)]">
           
-            <div id="abasVitrines" style="display:flex;flex-wrap:wrap;align-items:flex-end;padding:0 4px;"></div>
+            <div id="abasVitrines" style="display:flex;flex-wrap:wrap;align-items:flex-end;padding:0 18px;margin-bottom:-1px;position:relative;z-index:2;"></div>
           <div class="bg-gradient-to-br from-slate-900/90 to-cyan-950/40 border border-cyan-500/30 rounded-2xl p-5 md:p-6 shadow-[0_10px_30px_rgba(0,0,0,0.5)]">
             <span class="text-[10px] font-extrabold text-cyan-400 uppercase tracking-widest block mb-3">⭐ Pré-visualização do Perfil Comercial</span>
             
@@ -973,6 +977,7 @@
         merged.id = parceiro.id;
         merged.status = parceiro.status;
         merged.status_artista = parceiro.status_artista;
+        merged.__baseNome = parceiro.nome_artistico;
         merged.__vitrineId = v.id;
         merged.__vitrineStatus = v.status;
         merged.__vitrineOriginal = JSON.parse(JSON.stringify(v));
@@ -1014,10 +1019,12 @@
         if (!box) return;
         var r = await sbPartner.from('vitrines').select('id, ordem, nome_artistico, status').order('ordem');
         var extras = r.data || [];
-        var nomeBase = parceiroAtual.nome_artistico || 'Vitrine principal';
+        var nomeBase = parceiroAtual.__baseNome || parceiroAtual.nome_artistico || 'Vitrine principal';
         var aba = function (ativa) {
-          return 'display:inline-block;padding:9px 16px;border-radius:12px 12px 0 0;font-size:12px;font-weight:700;text-decoration:none;margin-right:6px;border:1px solid ' +
-            (ativa ? '#22d3ee;border-bottom:1px solid #0f172a;background:#0f172a;color:#22d3ee' : 'rgba(255,255,255,.12);color:#94a3b8;background:rgba(15,23,42,.6)');
+          return 'display:inline-block;padding:10px 18px;border-radius:14px 14px 0 0;font-size:12px;font-weight:700;text-decoration:none;margin-right:6px;' +
+            (ativa
+              ? 'border:1px solid #22d3ee;border-bottom:1px solid #111c33;background:#111c33;color:#22d3ee;box-shadow:0 -2px 10px rgba(34,211,238,.15);'
+              : 'border:1px solid rgba(255,255,255,.12);border-bottom:1px solid transparent;background:rgba(15,23,42,.55);color:#94a3b8;');
         };
         var html = '<a href="perfil.html" style="' + aba(vitrineNum === 1) + '">' + esc(nomeBase) + '</a>';
         extras.forEach(function (v) {
@@ -1052,6 +1059,7 @@
         if (typeof partnerFillSidebar === 'function') {
           partnerFillSidebar(parceiro);
         }
+        parceiro = parceiroAtual;
 
         document.getElementById('fNome').value = parceiro.nome_completo || '';
         document.getElementById('fEmpresa').value = parceiro.empresa || '';
