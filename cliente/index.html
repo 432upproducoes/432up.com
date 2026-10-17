@@ -1,0 +1,95 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+<meta charset="UTF-8"><meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Entrar · 432UP</title>
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+<script src="../B2B/partner-config.js"></script>
+<style>
+  body { margin:0; min-height:100vh; display:flex; align-items:center; justify-content:center; font-family:system-ui,-apple-system,Segoe UI,Roboto,sans-serif; background:radial-gradient(circle at 20% 10%,#2a1640,#070b1a 60%); color:#e2e8f0; padding:20px; }
+  .card { width:100%; max-width:380px; background:#111a31; border:1px solid rgba(255,255,255,.08); border-radius:18px; padding:26px; box-shadow:0 20px 60px rgba(0,0,0,.45); }
+  h1 { font-size:20px; margin:0 0 4px; } .sub { font-size:13px; color:#94a3b8; margin-bottom:18px; }
+  label { display:block; font-size:11px; text-transform:uppercase; letter-spacing:.05em; color:#94a3b8; margin:12px 0 5px; }
+  input { width:100%; box-sizing:border-box; background:#020617; color:#e2e8f0; border:1px solid rgba(255,255,255,.1); border-radius:10px; padding:11px; font:inherit; }
+  button { width:100%; margin-top:16px; padding:12px; border:none; border-radius:10px; background:#22d3ee; color:#0b1020; font-weight:700; font-size:14px; cursor:pointer; }
+  button:disabled { opacity:.5; cursor:wait; }
+  .msg { font-size:13px; min-height:18px; margin-top:12px; color:#fca5a5; }
+  .ok { color:#a3e635; } .link { display:block; margin-top:14px; font-size:12px; color:#94a3b8; text-align:center; }
+  .link a { color:#22d3ee; }
+  .hide { display:none; }
+  .fade { animation: f .6s cubic-bezier(.22,.61,.36,1) both; } @keyframes f { from { opacity:0; transform:translateY(8px); filter:blur(2px);} to { opacity:1; transform:none; filter:none; } }
+</style>
+</head>
+<body>
+<div class="card">
+  <h1>Área do cliente</h1>
+  <div class="sub">Acompanhe seu pedido com a 432UP.</div>
+
+  <form id="passo1">
+    <label for="cpf">CPF</label>
+    <input id="cpf" inputmode="numeric" autocomplete="username" placeholder="000.000.000-00" required>
+    <label for="senha">Senha</label>
+    <input id="senha" type="password" autocomplete="current-password" required>
+    <button id="btn1" type="submit">Entrar</button>
+  </form>
+
+  <form id="passo2" class="hide">
+    <div class="sub" id="texto2">Enviamos um código de 6 números para o seu e-mail. Ele vale por 15 minutos.</div>
+    <label for="codigo">Código</label>
+    <input id="codigo" inputmode="numeric" maxlength="6" autocomplete="one-time-code" placeholder="000000" required>
+    <button id="btn2" type="submit">Confirmar</button>
+  </form>
+
+  <div class="msg" id="msg"></div>
+  <div class="link">Recebeu um convite? <a href="convite.html">Criar meu acesso</a></div>
+</div>
+
+<script>
+(function () {
+  var CFG = window.PARTNER_CFG;
+  var SB = window.supabase.createClient(CFG.SB_URL, CFG.SB_KEY, {
+    auth: { storageKey: 'cliente-432up', persistSession: true, autoRefreshToken: true }
+  });
+  var cpfAtual = '';
+  var $ = function (id) { return document.getElementById(id); };
+  var soNumeros = function (t) { return String(t || '').replace(/\D/g, ''); };
+  var mostrarMsg = function (t, ok) { $('msg').className = 'msg' + (ok ? ' ok' : ''); $('msg').textContent = t; };
+
+  $('cpf').addEventListener('input', function (e) {
+    var d = soNumeros(e.target.value).slice(0, 11);
+    e.target.value = d.replace(/^(\d{3})(\d)/, '$1.$2').replace(/^(\d{3})\.(\d{3})(\d)/, '$1.$2.$3').replace(/\.(\d{3})(\d)/, '.$1-$2');
+  });
+
+  $('passo1').addEventListener('submit', async function (e) {
+    e.preventDefault();
+    mostrarMsg(''); $('btn1').disabled = true;
+    cpfAtual = soNumeros($('cpf').value);
+    var r = await SB.functions.invoke('cliente-entrar', { body: { cpf: cpfAtual, senha: $('senha').value } });
+    $('btn1').disabled = false;
+    if (r.error || (r.data && r.data.erro)) {
+      mostrarMsg((r.data && r.data.erro) || 'Não foi possível entrar. Tente novamente.'); return;
+    }
+    $('passo1').classList.add('hide');
+    $('passo2').classList.remove('hide');
+    $('passo2').classList.add('fade');
+    $('texto2').textContent = 'Enviamos um código para ' + r.data.email_mascarado + '. Ele vale por 15 minutos.';
+    $('codigo').focus();
+  });
+
+  $('passo2').addEventListener('submit', async function (e) {
+    e.preventDefault();
+    mostrarMsg(''); $('btn2').disabled = true;
+    var r = await SB.functions.invoke('cliente-confirmar', { body: { cpf: cpfAtual, codigo: soNumeros($('codigo').value) } });
+    if (r.error || (r.data && r.data.erro)) {
+      $('btn2').disabled = false;
+      mostrarMsg((r.data && r.data.erro) || 'Código inválido ou vencido.'); return;
+    }
+    var v = await SB.auth.verifyOtp({ token_hash: r.data.token_hash, type: r.data.type });
+    if (v.error) { $('btn2').disabled = false; mostrarMsg('Não foi possível entrar. Tente novamente.'); return; }
+    mostrarMsg('Entrando…', true);
+    location.href = 'area.html';
+  });
+})();
+</script>
+</body>
+</html>
