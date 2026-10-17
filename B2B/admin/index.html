@@ -860,6 +860,11 @@
       html += '</div>';
     }
 
+    html += '<div style="border:1px solid rgba(255,255,255,.1);border-radius:10px;padding:12px;margin-bottom:14px;"><strong>Acesso do cliente</strong>' +
+      '<div style="font-size:12px;color:#94a3b8;margin-top:4px;">Gere um link para o cliente criar o acesso à área dele. O link vale por 7 dias.</div>' +
+      '<div style="margin-top:8px;"><button onclick="finGerarConvite()" style="padding:6px 12px;border-radius:8px;background:#a3e635;color:#0b1020;border:none;font-weight:700;cursor:pointer;">Gerar link de convite</button></div>' +
+      '<div id="convBox" style="margin-top:8px;font-size:12px;word-break:break-all;"></div></div>';
+
     html += '<strong style="display:block;margin-top:14px;">Histórico financeiro (interno)</strong>';
     if (!l.data || !l.data.length) html += '<div style="color:#94a3b8;margin-top:6px;">Nada registrado ainda.</div>';
     else html += '<table style="width:100%;border-collapse:collapse;font-size:12px;margin-top:6px;"><thead><tr style="color:#94a3b8;text-align:left;"><th style="padding:6px;">Quando</th><th style="padding:6px;">Evento</th><th style="padding:6px;">Digitado</th><th style="padding:6px;">Anterior → Novo</th><th style="padding:6px;">Motivo</th></tr></thead><tbody>' +
@@ -997,6 +1002,21 @@
       await enviarArquivo(arq, { kind: 'admin', proposta_id: pidAtual, tipo: document.getElementById('ecTipo').value, valor: valor, data_pagamento: data });
       carregarFin();
     } catch (e) { msg.style.color = '#fca5a5'; msg.textContent = e.message; }
+  };
+
+  window.finGerarConvite = async function () {
+    var box = document.getElementById('convBox');
+    box.style.color = '#94a3b8'; box.textContent = 'Gerando…';
+    var r = await sbPartner.functions.invoke('cliente-convite', { body: { proposta_id: pidAtual } });
+    if (r.error || (r.data && r.data.erro)) {
+      box.style.color = '#fca5a5'; box.textContent = (r.data && r.data.erro) || 'Falha ao gerar o link.'; return;
+    }
+    var link = r.data.link;
+    var txt = 'Olá! Seu pedido já está disponível para acompanhamento na área do cliente da 432UP. Crie seu acesso por este link (vale por 7 dias): ' + link;
+    box.style.color = '#e2e8f0';
+    box.innerHTML = '<div>' + E(link) + '</div><div style="margin-top:6px;display:flex;gap:8px;flex-wrap:wrap;">' +
+      '<button onclick="navigator.clipboard.writeText(\'' + link + '\')" style="padding:5px 10px;border-radius:8px;background:transparent;color:#e2e8f0;border:1px solid rgba(255,255,255,.2);cursor:pointer;">Copiar link</button>' +
+      '<a href="https://wa.me/?text=' + encodeURIComponent(txt) + '" target="_blank" rel="noopener" style="padding:5px 10px;border-radius:8px;background:#25d366;color:#0b1020;font-weight:700;text-decoration:none;">Enviar pelo WhatsApp</a></div>';
   };
 
   window.finExcluir = async function (id) {
