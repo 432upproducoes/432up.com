@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
-  <title>432UP Admin | Painel Gestor de Vendas v1.0</title>
+  <title>432UP Admin | Painel Gestor de Vendas</title>
   
   <!-- CSS Global do Site -->
   <link rel="stylesheet" href="../../css/style.css">
@@ -740,9 +740,11 @@
   async function carregarFin() {
     var box = document.getElementById('finConteudo');
     box.innerHTML = 'Carregando…';
-    var p = await sbPartner.from('propostas').select('numero, cliente_nome, valor_total, assinado_em, bloqueio_sem_pagamento, bloqueio_forma, bloqueio_data_limite, bloqueio_alerta_em, bloqueio_resolvido_em').eq('id', pidAtual).maybeSingle();
+    var p = await sbPartner.from('propostas').select('status, cancelada_em, cancelamento_motivo, numero, cliente_nome, valor_total, assinado_em, bloqueio_sem_pagamento, bloqueio_forma, bloqueio_data_limite, bloqueio_alerta_em, bloqueio_resolvido_em').eq('id', pidAtual).maybeSingle();
     var c = await sbPartner.from('contrato_comprovantes').select('*').eq('proposta_id', pidAtual).order('enviado_em');
     var l = await sbPartner.from('financeiro_log').select('*').eq('proposta_id', pidAtual).order('criado_em', { ascending: false });
+    var rb = await sbPartner.from('reembolsos').select('*').eq('proposta_id', pidAtual).order('criado_em');
+    var pd = await sbPartner.from('comissao_pendencias').select('*').eq('proposta_id', pidAtual).eq('status', 'aberta');
     if (p.error || !p.data) { box.innerHTML = 'Proposta não encontrada.'; return; }
     var P = p.data;
 
@@ -801,6 +803,50 @@
       html += '</div>';
     });
 
+    // ---- Venda: cancelamento, reembolso, pendências de comissão e envio em nome do cliente ----
+    var cancelada = P.status === 'cancelada';
+    var recebidoAprov = lista.filter(function (x) { return x.status === 'aprovado'; })
+      .reduce(function (a, x) { return a + Number(x.valor_confirmado || 0); }, 0);
+    var jaReembolsado = (rb.data || []).reduce(function (a, x) { return a + Number(x.valor || 0); }, 0);
+    var aReembolsar = Math.max(0, recebidoAprov - jaReembolsado);
+
+    html += '<div style="border:1px solid rgba(255,255,255,.1);border-radius:10px;padding:12px;margin-bottom:14px;"><strong>Venda</strong>';
+    if (cancelada) {
+      html += '<div style="margin-top:6px;color:#fca5a5;font-weight:700;">Cancelada em ' + DH(P.cancelada_em) + ' · Motivo: ' + E(P.cancelamento_motivo) + '</div>' +
+        '<div style="margin-top:6px;">Recebido e aprovado: ' + BRL(recebidoAprov) + ' · Já reembolsado: ' + BRL(jaReembolsado) +
+        ' · <strong>A reembolsar: ' + BRL(aReembolsar) + '</strong></div>';
+      if (aReembolsar > 0) {
+        html += '<div style="margin-top:8px;"><button onclick="finReembolsar(' + aReembolsar + ')" style="padding:6px 12px;border-radius:8px;background:#a3e635;color:#0b1020;border:none;font-weight:700;cursor:pointer;">Registrar reembolso</button></div>';
+      }
+      (rb.data || []).forEach(function (x) {
+        html += '<div style="margin-top:6px;font-size:12px;">Reembolso ' + BRL(x.valor) + ' em ' + DH(x.data_reembolso) +
+          ' · <a href="' + E(x.comprovante_url) + '" target="_blank" rel="noopener" style="color:#a3e635;">comprovante</a></div>';
+      });
+    } else {
+      html += '<div style="margin-top:8px;"><button onclick="finCancelar()" style="padding:6px 12px;border-radius:8px;background:transparent;color:#fca5a5;border:1px solid rgba(248,113,113,.4);cursor:pointer;">Cancelar pedido</button></div>';
+    }
+    html += '</div>';
+
+    if ((pd.data || []).length) {
+      html += '<div style="border:1px solid rgba(250,204,21,.35);border-radius:10px;padding:12px;margin-bottom:14px;"><strong>Comissão a decidir (venda cancelada)</strong>';
+      (pd.data || []).forEach(function (x) {
+        html += '<div style="margin-top:8px;display:flex;gap:8px;flex-wrap:wrap;align-items:center;">' +
+          '<span>' + BRL(x.valor) + ' já paga ao vendedor.</span>' +
+          '<button onclick="finDecidirComissao(\'' + x.id + '\',\'descontar_proximo\')" style="padding:5px 10px;border-radius:8px;background:transparent;color:#e2e8f0;border:1px solid rgba(255,255,255,.2);cursor:pointer;">Descontar do próximo repasse</button>' +
+          '<button onclick="finDecidirComissao(\'' + x.id + '\',\'devolucao\')" style="padding:5px 10px;border-radius:8px;background:transparent;color:#e2e8f0;border:1px solid rgba(255,255,255,.2);cursor:pointer;">Pedir devolução</button></div>';
+      });
+      html += '</div>';
+    }
+
+    html += '<div style="border:1px solid rgba(255,255,255,.1);border-radius:10px;padding:12px;margin-bottom:14px;"><strong>Enviar comprovante em nome do cliente</strong>' +
+      '<div style="font-size:12px;color:#94a3b8;margin-top:4px;">Use quando o cliente mandar o comprovante por outro canal. Depois ele segue para conferência, como os demais.</div>' +
+      '<div style="display:grid;gap:8px;margin-top:8px;grid-template-columns:repeat(auto-fit,minmax(160px,1fr));">' +
+      '<select id="ecTipo" style="background:#020617;color:#e2e8f0;border:1px solid rgba(255,255,255,.1);border-radius:8px;padding:6px;"><option value="sinal">Entrada / Sinal</option><option value="parcela">Parcela</option><option value="saldo">Saldo</option><option value="outro">Outro</option></select>' +
+      '<input id="ecValor" placeholder="Valor (R$)" style="background:#020617;color:#e2e8f0;border:1px solid rgba(255,255,255,.1);border-radius:8px;padding:6px;">' +
+      '<input id="ecData" type="date" style="background:#020617;color:#e2e8f0;border:1px solid rgba(255,255,255,.1);border-radius:8px;padding:6px;">' +
+      '<input id="ecArq" type="file" accept="image/*,application/pdf" style="color:#94a3b8;font-size:12px;"></div>' +
+      '<div style="margin-top:8px;"><button onclick="finEnviarEmNomeDoCliente()" style="padding:6px 12px;border-radius:8px;background:#a3e635;color:#0b1020;border:none;font-weight:700;cursor:pointer;">Enviar comprovante</button> <span id="ecMsg" style="font-size:12px;margin-left:8px;"></span></div></div>';
+
     html += '<strong style="display:block;margin-top:14px;">Histórico financeiro (interno)</strong>';
     if (!l.data || !l.data.length) html += '<div style="color:#94a3b8;margin-top:6px;">Nada registrado ainda.</div>';
     else html += '<table style="width:100%;border-collapse:collapse;font-size:12px;margin-top:6px;"><thead><tr style="color:#94a3b8;text-align:left;"><th style="padding:6px;">Quando</th><th style="padding:6px;">Evento</th><th style="padding:6px;">Digitado</th><th style="padding:6px;">Anterior → Novo</th><th style="padding:6px;">Motivo</th></tr></thead><tbody>' +
@@ -857,6 +903,85 @@
     var r = await sbPartner.rpc('alterar_valor_comprovante', { p_id: id, p_valor: num(novo), p_motivo: motivo });
     if (r.error) return alert(r.error.message);
     carregarFin();
+  };
+
+  function lerArquivo(file) {
+    return new Promise(function (res, rej) {
+      var r = new FileReader();
+      r.onload = function () { res(String(r.result).split(',')[1]); };
+      r.onerror = function () { rej(new Error('Não foi possível ler o arquivo.')); };
+      r.readAsDataURL(file);
+    });
+  }
+  async function enviarArquivo(file, corpo) {
+    var t = file.type || '';
+    if (!(t === 'application/pdf' || (t.indexOf('image/') === 0 && t !== 'image/svg+xml'))) throw new Error('Envie uma imagem ou PDF.');
+    if (file.size > 5 * 1024 * 1024) throw new Error('Arquivo maior que 5 MB.');
+    var b64 = await lerArquivo(file);
+    var r = await sbPartner.functions.invoke('anexar-comprovante', { body: Object.assign({}, corpo, { arquivo_base64: b64, mime: t }) });
+    if (r.error || (r.data && r.data.erro)) throw new Error((r.data && r.data.erro) || 'Falha ao enviar o arquivo.');
+    return r.data;
+  }
+  function escolherArquivo(cb) {
+    var inp = document.createElement('input');
+    inp.type = 'file';
+    inp.accept = 'image/*,application/pdf';
+    inp.onchange = function () { if (inp.files[0]) cb(inp.files[0]); };
+    inp.click();
+  }
+
+  window.finCancelar = async function () {
+    var motivo = prompt('Motivo do cancelamento (obrigatório). Vendedor e cliente serão avisados:');
+    if (motivo === null || !motivo.trim()) return;
+    if (!confirm('Cancelar este pedido? A data sai da agenda.')) return;
+    var r = await sbPartner.rpc('cancelar_contrato', { p_id: pidAtual, p_motivo: motivo.trim() });
+    if (r.error) return alert(r.error.message);
+    dispararAvisos();
+    carregarFin();
+  };
+
+  window.finReembolsar = function (saldo) {
+    escolherArquivo(async function (file) {
+      var valor = prompt('Valor do reembolso (a reembolsar: R$ ' + String(saldo).replace('.', ',') + '):', String(saldo).replace('.', ','));
+      if (valor === null) return;
+      var data = prompt('Data do reembolso (AAAA-MM-DD):', new Date().toISOString().slice(0, 10));
+      if (data === null) return;
+      var motivo = prompt('Observação (opcional):', '') || '';
+      try {
+        var up = await enviarArquivo(file, { kind: 'reembolso', proposta_id: pidAtual });
+        var r = await sbPartner.rpc('registrar_reembolso', {
+          p_id: pidAtual, p_valor: num(valor), p_data: data, p_comprovante_url: up.url, p_motivo: motivo
+        });
+        if (r.error) return alert(r.error.message);
+        dispararAvisos();
+        carregarFin();
+      } catch (e) { alert(e.message); }
+    });
+  };
+
+  window.finDecidirComissao = async function (id, decisao) {
+    var txt = decisao === 'descontar_proximo'
+      ? 'Registrar: descontar este valor do próximo repasse do vendedor?'
+      : 'Registrar: pedir a devolução deste valor ao vendedor?';
+    if (!confirm(txt)) return;
+    var r = await sbPartner.rpc('resolver_pendencia_comissao', { p_id: id, p_decisao: decisao });
+    if (r.error) return alert(r.error.message);
+    carregarFin();
+  };
+
+  window.finEnviarEmNomeDoCliente = async function () {
+    var msg = document.getElementById('ecMsg');
+    var arq = document.getElementById('ecArq').files[0];
+    var valor = num(document.getElementById('ecValor').value);
+    var data = document.getElementById('ecData').value;
+    if (!arq) { msg.style.color = '#fca5a5'; msg.textContent = 'Escolha o arquivo.'; return; }
+    if (!valor || valor <= 0) { msg.style.color = '#fca5a5'; msg.textContent = 'Informe o valor.'; return; }
+    if (!data) { msg.style.color = '#fca5a5'; msg.textContent = 'Informe a data.'; return; }
+    msg.style.color = '#94a3b8'; msg.textContent = 'Enviando…';
+    try {
+      await enviarArquivo(arq, { kind: 'admin', proposta_id: pidAtual, tipo: document.getElementById('ecTipo').value, valor: valor, data_pagamento: data });
+      carregarFin();
+    } catch (e) { msg.style.color = '#fca5a5'; msg.textContent = e.message; }
   };
 
   window.finExcluir = async function (id) {
