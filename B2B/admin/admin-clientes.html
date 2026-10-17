@@ -1277,24 +1277,26 @@ Data: preencha Dia e/ou Mês e/ou Ano (Ano Qualquer = qualquer ano)</pre>
       };
 
       var convProposta = null;
+      var convCpf = null;
       async function atualizarBotaoConvite(c) {
         var btn = document.getElementById('btnConvidarCliente');
         if (!btn) return;
         btn.classList.add('hidden');
         convProposta = null;
-        var cpfD = String((c && c.cpf_cnpj) || '').replace(/\D/g, '');
-        if (cpfD.length !== 11) return;
-        var pc = await sbPartner.from('portal_clientes').select('id').eq('cpf', cpfD).maybeSingle();
-        if (pc.data) return;
+        convCpf = String((c && c.cpf_cnpj) || '').replace(/\D/g, '');
+        if (convCpf.length === 11) {
+          var pc = await sbPartner.from('portal_clientes').select('id').eq('cpf', convCpf).maybeSingle();
+          if (pc.data) return;
+        }
         var pr = await sbPartner.from('propostas').select('id, status').eq('cliente_id', c.id)
           .neq('status', 'cancelada').order('criado_em', { ascending: false }).limit(1).maybeSingle();
-        if (!pr.data) return;
-        convProposta = pr.data.id;
+        convProposta = pr.data ? pr.data.id : null;
         btn.classList.remove('hidden');
       }
 
       window.convidarClienteAtual = async function () {
-        if (!convProposta) return;
+        if (convCpf.length !== 11) { alert('Preencha o CPF do cliente antes de convidar.'); return; }
+        if (!convProposta) { alert('Este cliente ainda não tem um pedido ativo. Crie uma proposta para ele antes de convidar.'); return; }
         var r = await sbPartner.functions.invoke('cliente-convite', { body: { proposta_id: convProposta } });
         if (r.error || (r.data && r.data.erro)) {
           var detalhe = (r.data && r.data.erro) || (r.error && r.error.message) || 'sem detalhe';
