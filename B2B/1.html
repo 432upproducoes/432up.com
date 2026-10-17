@@ -228,7 +228,8 @@
       </div>
 
       <!-- DADOS CADASTRAIS / FISCAIS / ENDEREÇO / PIX -->
-      <form id="dadosForm" method="POST" class="space-y-6">
+      <div id="barraPerfis" style="padding:6px 4px 12px;"></div>
+          <form id="dadosForm" method="POST" class="space-y-6">
         
         <div class="glass-b2b p-6 pb-8 rounded-2xl space-y-6 border border-cyan-500/20">
           <div class="space-y-4">
@@ -961,13 +962,102 @@
         }).length + galeriaBlobs.length;
       }
 
+      // ===== PERFIS (1 = cadastro principal; 2 e 3 = vitrines extras, mesma ficha) =====
+      var perfilNum = parseInt(new URLSearchParams(window.location.search).get('perfil') || '1', 10);
+      if (!(perfilNum >= 1 && perfilNum <= 3)) perfilNum = 1;
+      var IDENTIDADE_KEYS = ['nome_completo','empresa','whatsapp','instagram','cpf_cnpj','data_nascimento',
+        'cep','endereco','bairro','cidade','estado','tipo_pix','chave_pix','termos_aceitos','termos_aceitos_em'];
+
+      function prefixoMidia() {
+        return parceiroAtual.user_id + (perfilNum > 1 ? '/perfil-' + perfilNum : '');
+      }
+
+      async function aplicarPerfilSelecionado(parceiro) {
+        if (perfilNum === 1) return parceiro;
+        var r = await sbPartner.from('vitrines').select('*')
+          .eq('parceiro_id', parceiro.id).eq('ordem', perfilNum).maybeSingle();
+        if (!r.data) { showAlert('Este perfil não existe.', 'error'); return parceiro; }
+        var v = r.data;
+        var merged = Object.assign({}, parceiro, v);
+        merged.id = parceiro.id;
+        merged.status = parceiro.status;
+        merged.status_artista = parceiro.status_artista;
+        merged.__baseNome = parceiro.nome_artistico;
+        merged.__vitrineId = v.id;
+        merged.__vitrineStatus = v.status;
+        merged.__vitrineOriginal = JSON.parse(JSON.stringify(v));
+        return merged;
+      }
+
+      // Grava o perfil 2 ou 3: identidade no cadastro, ficha na vitrine.
+      // Acréscimo volta para análise; só remover não muda o status.
+      async function salvarPerfilExtra(payload) {
+        var antigo = parceiroAtual.__vitrineOriginal || {};
+        var identidade = {}, ficha = {};
+        Object.keys(payload).forEach(function (k) {
+          if (IDENTIDADE_KEYS.indexOf(k) >= 0) identidade[k] = payload[k]; else ficha[k] = payload[k];
+        });
+        var r1 = await sbPartner.from('parceiros').update(identidade).eq('id', parceiroAtual.id);
+        if (r1.error) return r1;
+
+        var houveAcrescimo = Object.keys(ficha).some(function (k) {
+          var novo = ficha[k], velho = antigo[k];
+          if (novo === undefined || novo === null || novo === '') return false;
+          if (Array.isArray(novo)) {
+            var velhoArr = Array.isArray(velho) ? velho : [];
+            var marcas = velhoArr.map(function (x) { return JSON.stringify(x); });
+            return novo.some(function (item) { return marcas.indexOf(JSON.stringify(item)) < 0; });
+          }
+          return JSON.stringify(novo) !== JSON.stringify(velho);
+        });
+
+        var atualizacao = Object.assign({}, ficha);
+        delete atualizacao.id;
+        if (houveAcrescimo && parceiroAtual.__vitrineStatus !== 'pendente') atualizacao.status = 'pendente';
+        var r2 = await sbPartner.from('vitrines').update(atualizacao).eq('id', parceiroAtual.__vitrineId);
+        if (!r2.error && atualizacao.status === 'pendente') parceiroAtual.__vitrineStatus = 'pendente';
+        return r2;
+      }
+
+      async function renderBarraPerfis() {
+        var box = document.getElementById('barraPerfis');
+        if (!box) return;
+        var r = await sbPartner.from('vitrines').select('id, ordem, nome_artistico, status').order('ordem');
+        var extras = r.data || [];
+        var nomeBase = parceiroAtual.__baseNome || parceiroAtual.nome_artistico || 'Cadastro principal';
+        var estilo = function (ativo) {
+          return 'display:inline-block;padding:8px 14px;border-radius:999px;font-size:12px;font-weight:700;text-decoration:none;margin:4px 6px 4px 0;border:1px solid ' +
+            (ativo ? '#22d3ee;background:#22d3ee;color:#0f172a' : 'rgba(255,255,255,.2);color:#e2e8f0');
+        };
+        var html = '<a href="perfil.html" style="' + estilo(perfilNum === 1) + '">Cadastro principal · ' + esc(nomeBase) + '</a>';
+        extras.forEach(function (v) {
+          var rotulo = v.nome_artistico || 'Novo perfil';
+          var st = v.status === 'aprovada' ? ' ✓' : v.status === 'recusada' ? ' ✕' : ' ⏳';
+          html += '<a href="perfil.html?perfil=' + v.ordem + '" style="' + estilo(perfilNum === v.ordem) + '">Perfil ' + v.ordem + ' · ' + esc(rotulo) + st + '</a>';
+        });
+        if (extras.length < 2) {
+          html += '<button type="button" onclick="adicionarPerfilExtra()" style="display:inline-block;padding:8px 14px;border-radius:999px;font-size:12px;font-weight:700;margin:4px 6px 4px 0;border:1px dashed #22d3ee;background:transparent;color:#22d3ee;cursor:pointer;">+ Adicionar perfil</button>';
+        }
+        box.innerHTML = html;
+      }
+
+      window.adicionarPerfilExtra = async function () {
+        var r = await sbPartner.rpc('solicitar_vitrine', { p_dados: {} });
+        if (r.error) { showAlert(r.error.message, 'error'); return; }
+        var lista = await sbPartner.from('vitrines').select('ordem').order('ordem', { ascending: false }).limit(1);
+        var nova = lista.data && lista.data[0] ? lista.data[0].ordem : 2;
+        window.location.href = 'perfil.html?perfil=' + nova;
+      };
+
+      function esc(t) { return String(t == null ? '' : t).replace(/[&<>"']/g, function (c) { return {'&':'&amp;','<':'&gt;','"':'&quot;',"'":'&#39;'}[c]; }); }
+
       // INICIALIZAÇÃO DA PÁGINA COM CARREGAMENTO PARALELO
       Promise.all([
         partnerRequireAuth(),
         carregarTaxonomiaPerfis()
-      ]).then(function (results) {
+      ]).then(async function (results) {
         var parceiro = results[0];
-        parceiroAtual = parceiro;
+        parceiroAtual = await aplicarPerfilSelecionado(parceiro);
 
         if (typeof partnerFillSidebar === 'function') {
           partnerFillSidebar(parceiro);
@@ -1106,6 +1196,7 @@
         }
 
         updateVitrinePreview();
+        renderBarraPerfis();
       }).catch(function (err) {
         console.error("Erro na inicialização:", err);
         showAlert('Erro de autenticação ou carregamento de dados.', 'error');
@@ -1810,7 +1901,7 @@
 
           if (video1File) {
             try {
-              var path1 = parceiroAtual.user_id + '/video_principal_' + Date.now() + '_' + video1File.name;
+              var path1 = prefixoMidia() + '/video_principal_' + Date.now() + '_' + video1File.name;
               var video1Url = await uploadComTentativas(path1, video1File);
               houveEnvioMidia = true;
               novasMidiasPendentes = novasMidiasPendentes.filter(function(m) {
@@ -1834,7 +1925,7 @@
 
           if (video2File) {
             try {
-              var path2 = parceiroAtual.user_id + '/video_secundario_' + Date.now() + '_' + video2File.name;
+              var path2 = prefixoMidia() + '/video_secundario_' + Date.now() + '_' + video2File.name;
               var video2Url = await uploadComTentativas(path2, video2File);
               houveEnvioMidia = true;
               novasMidiasPendentes = novasMidiasPendentes.filter(function(m) {
@@ -1860,7 +1951,7 @@
             payload.foto_capa_url = null;
           } else if (novaCapaBlob) {
             try {
-              var capaPath = parceiroAtual.user_id + '/capa_vitrine_' + Date.now() + '.webp';
+              var capaPath = prefixoMidia() + '/capa_vitrine_' + Date.now() + '.webp';
               var novaCapaUrl = await uploadComTentativas(capaPath, novaCapaBlob);
               houveEnvioMidia = true;
               novasMidiasPendentes.push({
@@ -1883,7 +1974,7 @@
           if (galeriaBlobs.length > 0) {
             houveEnvioMidia = true;
             var uploadsG = galeriaBlobs.map(function(item, idx) {
-              var gPath = parceiroAtual.user_id + '/galeria_' + Date.now() + '_' + idx + '.webp';
+              var gPath = prefixoMidia() + '/galeria_' + Date.now() + '_' + idx + '.webp';
               return uploadComTentativas(gPath, item.blob)
                 .then(function(url) {
                   avancarProgresso('Foto da galeria enviada');
@@ -1917,7 +2008,9 @@
           updateLoadingProgress(92, 'Finalizando cadastro...');
 
           if (urlsNoBanco === null) urlsNoBanco = coletarUrlsFinais({}, parceiroAtual);
-          var resUpdate = await sbPartner.from('parceiros').update(payload).eq('id', parceiroAtual.id);
+          var resUpdate = parceiroAtual.__vitrineId
+            ? await salvarPerfilExtra(payload)
+            : await sbPartner.from('parceiros').update(payload).eq('id', parceiroAtual.id);
 
           if (resUpdate.error) {
             showAlert('Erro ao salvar: ' + resUpdate.error.message, 'error');
