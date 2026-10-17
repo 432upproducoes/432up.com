@@ -63,9 +63,21 @@
     .pdf-mode #btn-exportar-pdf { display: none !important; }
     .pdf-mode #btn-enviar-comprovante, .pdf-mode #modal-comprovante { display: none !important; }
     #btn-enviar-comprovante {
-      display: none; position: fixed; top: 10px; right: 170px; z-index: 9999;
-      background: #15803d; color: #FFF; border: none; padding: 10px 16px;
-      border-radius: 8px; font-weight: 700; font-size: 12px; cursor: pointer;
+      display: none;
+      position: fixed;
+      top: 10px;
+      right: 170px;
+      z-index: 9999;
+      background: #15803d;
+      color: #FFF;
+      border: none;
+      border-radius: 20px;
+      padding: 10px 18px;
+      font-family: inherit;
+      font-size: 14px;
+      font-weight: 700;
+      box-shadow: 0 4px 14px rgba(0,0,0,0.3);
+      cursor: pointer;
     }
     @media print { #btn-enviar-comprovante, #modal-comprovante { display: none !important; } }
     #btn-exportar-pdf {
@@ -449,13 +461,17 @@
       <input id="cmp-valor" type="number" step="0.01" min="0.01" style="width:100%;padding:8px;margin:4px 0 10px;box-sizing:border-box;">
       <label for="cmp-data" style="font-size:12px;font-weight:700;">Data do pagamento</label>
       <input id="cmp-data" type="date" style="width:100%;padding:8px;margin:4px 0 10px;box-sizing:border-box;">
-      <label for="cmp-arquivo" style="font-size:12px;font-weight:700;">Arquivo (PNG, JPG ou PDF, até 5 MB)</label>
-      <input id="cmp-arquivo" type="file" accept="image/png,image/jpeg,application/pdf" style="width:100%;margin:4px 0 4px;">
+      <label for="cmp-arquivo" style="font-size:12px;font-weight:700;">Foto ou PDF (qualquer formato de imagem)</label>
+      <input id="cmp-arquivo" type="file" accept="image/*,application/pdf" style="width:100%;margin:4px 0 4px;">
       <div style="display:flex;gap:8px;margin-top:14px;justify-content:flex-end;">
         <button id="cmp-fechar" type="button" style="padding:8px 14px;border:1px solid #ccc;background:#fff;border-radius:8px;cursor:pointer;">Fechar</button>
         <button id="cmp-enviar" type="button" style="padding:8px 14px;border:none;background:#8A10D8;color:#fff;border-radius:8px;font-weight:700;cursor:pointer;">Enviar</button>
       </div>
       <div id="cmp-msg" style="font-size:12px;margin-top:10px;min-height:16px;"></div>
+      <div style="margin-top:14px;border-top:1px solid #e5e5e5;padding-top:12px;">
+        <strong style="font-size:13px;">Comprovantes enviados</strong>
+        <div id="cmp-lista" style="font-size:12px;margin-top:6px;color:#333;">Carregando…</div>
+      </div>
     </div>
   </div>
 
@@ -2378,41 +2394,126 @@
   </script>
 <script>
 (function () {
-  var MIMES = { 'image/png': 1, 'image/jpeg': 1, 'application/pdf': 1 };
   var propostaId = new URLSearchParams(window.location.search).get('id');
+  var LIMITE_ENVIO = 4 * 1024 * 1024; // base64 aumenta ~33%; mantém o pacote dentro do limite do servidor
+  var EXT = { jpg:'image/jpeg', jpeg:'image/jpeg', jfif:'image/jpeg', png:'image/png', webp:'image/webp',
+              heic:'image/heic', heif:'image/heif', gif:'image/gif', bmp:'image/bmp', tif:'image/tiff', tiff:'image/tiff', pdf:'application/pdf' };
+  var ROTULO = { sinal:'Entrada / Sinal', parcela:'Parcela', saldo:'Saldo', outro:'Outro' };
+
   function $(id) { return document.getElementById(id); }
-  function mostrarErro(t) { $('cmp-msg').style.color = '#b91c1c'; $('cmp-msg').textContent = t; }
-  function lerBase64(file) {
+  function esc(t) { return String(t == null ? '' : t).replace(/[&<>"']/g, function (c) { return {'&':'&amp;','<':'&gt;','"':'&quot;',"'":'&#39;'}[c]; }); }
+  function msg(t, ok) { $('cmp-msg').style.color = ok ? '#15803d' : '#b91c1c'; $('cmp-msg').textContent = t; }
+
+  function tipoReal(file) {
+    var t = (file.type || '').toLowerCase();
+    if (t === 'image/jpg' || t === 'image/pjpeg') t = 'image/jpeg';
+    if (!t || t === 'application/octet-stream') t = EXT[(file.name.split('.').pop() || '').toLowerCase()] || '';
+    return t;
+  }
+  function ehAceito(t) {
+    return t === 'application/pdf' || (t.indexOf('image/') === 0 && t !== 'image/svg+xml');
+  }
+  function lerBase64(blob) {
     return new Promise(function (res, rej) {
       var r = new FileReader();
       r.onload = function () { res(String(r.result).split(',')[1]); };
       r.onerror = function () { rej(new Error('Não foi possível ler o arquivo.')); };
-      r.readAsDataURL(file);
+      r.readAsDataURL(blob);
     });
   }
+  // Foto grande do celular: reduz antes de enviar. PDF e formatos que o navegador não decodifica seguem como estão.
+  function prepararImagem(file, t) {
+    return new Promise(function (resolve) {
+      if (t === 'application/pdf' || file.size <= LIMITE_ENVIO / 1.4) return resolve({ blob: file, mime: t });
+      var url = URL.createObjectURL(file), img = new Image();
+      img.onload = function () {
+        var w = img.naturalWidth, h = img.naturalHeight, k = Math.min(1, 2200 / Math.max(w, h));
+        var c = document.createElement('canvas');
+        c.width = Math.round(w * k); c.height = Math.round(h * k);
+        c.getContext('2d').drawImage(img, 0, 0, c.width, c.height);
+        c.toBlob(function (b) {
+          URL.revokeObjectURL(url);
+          resolve(b && b.size < file.size ? { blob: b, mime: 'image/jpeg' } : { blob: file, mime: t });
+        }, 'image/jpeg', 0.86);
+      };
+      img.onerror = function () { URL.revokeObjectURL(url); resolve({ blob: file, mime: t }); };
+      img.src = url;
+    });
+  }
+  // Mostra a mensagem que o servidor devolveu (antes ela era trocada por um texto genérico)
+  async function msgDoServidor(err, data) {
+    if (data && data.erro) return data.erro;
+    try {
+      if (err && err.context && typeof err.context.json === 'function') {
+        var j = await err.context.json();
+        if (j && j.erro) return j.erro;
+      }
+    } catch (e) {}
+    return 'Não foi possível concluir. Verifique a conexão e tente novamente.';
+  }
+
+  async function listar() {
+    var box = $('cmp-lista');
+    var r = await sbPartner.functions.invoke('gerenciar-comprovantes', { body: { action: 'listar', proposta_id: propostaId } });
+    if (r.error || (r.data && r.data.erro)) { box.textContent = await msgDoServidor(r.error, r.data); return; }
+    var rows = (r.data && r.data.comprovantes) || [];
+    if (!rows.length) { box.innerHTML = '<span style="color:#666">Nenhum comprovante enviado ainda.</span>'; return; }
+    box.innerHTML = rows.map(function (c) {
+      var valor = Number(c.valor).toFixed(2).replace('.', ',');
+      var data = c.data_pagamento ? c.data_pagamento.split('-').reverse().join('/') : '';
+      var status = c.confirmado
+        ? '<span style="color:#15803d;font-weight:700;white-space:nowrap;">✓ Aprovado</span>'
+        : '<button type="button" data-del="' + esc(c.id) + '" title="Excluir comprovante" style="background:none;border:none;color:#b91c1c;font-weight:700;font-size:16px;cursor:pointer;">✕</button>';
+      return '<div style="display:flex;justify-content:space-between;align-items:center;gap:8px;padding:7px 0;border-bottom:1px solid #eee;">' +
+        '<div><strong>' + esc(ROTULO[c.tipo] || c.tipo) + '</strong> · R$ ' + valor + ' · ' + data +
+        ' · <a href="' + esc(c.arquivo_url) + '" target="_blank" rel="noopener" style="color:#8A10D8;">ver</a></div>' + status + '</div>';
+    }).join('');
+    box.querySelectorAll('[data-del]').forEach(function (b) {
+      b.onclick = function () { excluir(b.getAttribute('data-del')); };
+    });
+  }
+
+  async function excluir(id) {
+    if (!confirm('Excluir este comprovante?')) return;
+    var r = await sbPartner.functions.invoke('gerenciar-comprovantes', { body: { action: 'excluir', proposta_id: propostaId, comprovante_id: id } });
+    if (r.error || (r.data && r.data.erro)) { msg(await msgDoServidor(r.error, r.data), false); return; }
+    msg('Comprovante excluído.', true);
+    listar();
+  }
+
   window.abrirComprovante = function () {
-    $('cmp-msg').textContent = '';
+    msg('', true);
     $('modal-comprovante').style.display = 'flex';
+    listar();
   };
   $('cmp-fechar').onclick = function () { $('modal-comprovante').style.display = 'none'; };
+
   $('cmp-enviar').onclick = async function () {
     var btn = this;
     var valor = parseFloat($('cmp-valor').value);
     var data = $('cmp-data').value;
     var file = $('cmp-arquivo').files[0];
-    if (!propostaId) return mostrarErro('Link do contrato inválido.');
-    if (!valor || valor <= 0) return mostrarErro('Informe o valor pago.');
-    if (!data) return mostrarErro('Informe a data do pagamento.');
-    if (!file) return mostrarErro('Escolha o arquivo do comprovante.');
-    if (!MIMES[file.type]) return mostrarErro('Formato não aceito. Use PNG, JPG ou PDF.');
-    if (file.size > 5 * 1024 * 1024) return mostrarErro('Arquivo maior que 5 MB.');
+    if (!propostaId) return msg('Link do contrato inválido.', false);
+    if (!valor || valor <= 0) return msg('Informe o valor pago.', false);
+    if (!data) return msg('Informe a data do pagamento.', false);
+    if (!file) return msg('Escolha o arquivo do comprovante.', false);
+
+    var t = tipoReal(file);
+    if (!ehAceito(t)) {
+      var nome = t || ('.' + (file.name.split('.').pop() || '?'));
+      return msg('Este formato não é aceito (' + nome + '). Envie uma foto (qualquer imagem) ou um PDF.', false);
+    }
 
     btn.disabled = true;
-    $('cmp-msg').style.color = '#555';
-    $('cmp-msg').textContent = 'Enviando…';
+    msg('Preparando arquivo…', true);
     try {
-      var b64 = await lerBase64(file);
-      var resp = await sbPartner.functions.invoke('anexar-comprovante', {
+      var p = await prepararImagem(file, t);
+      if (p.blob.size > LIMITE_ENVIO) {
+        throw new Error('Arquivo muito grande (' + (p.blob.size / 1048576).toFixed(1) + ' MB). O limite é 4 MB: envie uma foto menor ou um PDF comprimido.');
+      }
+      msg('Enviando…', true);
+      var b64 = await lerBase64(p.blob);
+      var r = await sbPartner.functions.invoke('anexar-comprovante', {
         body: {
           kind: 'contrato',
           proposta_id: propostaId,
@@ -2420,19 +2521,17 @@
           valor: valor,
           data_pagamento: data,
           arquivo_base64: b64,
-          mime: file.type
+          mime: p.mime
         }
       });
-      if (resp.error || (resp.data && resp.data.erro)) {
-        throw new Error((resp.data && resp.data.erro) || 'Não foi possível enviar. Tente novamente.');
-      }
-      $('cmp-msg').style.color = '#15803d';
-      $('cmp-msg').textContent = 'Comprovante enviado. Pode enviar outro, se precisar.';
+      if (r.error || (r.data && r.data.erro)) throw new Error(await msgDoServidor(r.error, r.data));
+      msg('Comprovante enviado. Pode enviar outro, se precisar.', true);
       $('cmp-valor').value = '';
       $('cmp-data').value = '';
       $('cmp-arquivo').value = '';
+      listar();
     } catch (e) {
-      mostrarErro(e.message);
+      msg(e.message, false);
     } finally {
       btn.disabled = false;
     }
