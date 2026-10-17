@@ -228,8 +228,7 @@
       </div>
 
       <!-- DADOS CADASTRAIS / FISCAIS / ENDEREÇO / PIX -->
-      <div id="barraPerfis" style="padding:6px 4px 12px;"></div>
-          <form id="dadosForm" method="POST" class="space-y-6">
+      <form id="dadosForm" method="POST" class="space-y-6">
         
         <div class="glass-b2b p-6 pb-8 rounded-2xl space-y-6 border border-cyan-500/20">
           <div class="space-y-4">
@@ -345,6 +344,7 @@
         <!-- FICHA COMPLEMENTAR (Antiga Ficha Artística) -->
         <div id="secaoArtistica" class="section-artistic-toggle glass-b2b p-6 rounded-2xl space-y-6 border border-cyan-500/30 shadow-[0_0_25px_rgba(0,240,255,0.1)]">
           
+            <div id="abasVitrines" style="display:flex;flex-wrap:wrap;align-items:flex-end;padding:0 4px;"></div>
           <div class="bg-gradient-to-br from-slate-900/90 to-cyan-950/40 border border-cyan-500/30 rounded-2xl p-5 md:p-6 shadow-[0_10px_30px_rgba(0,0,0,0.5)]">
             <span class="text-[10px] font-extrabold text-cyan-400 uppercase tracking-widest block mb-3">⭐ Pré-visualização do Perfil Comercial</span>
             
@@ -446,15 +446,6 @@
           <div class="col-span-full mt-2 space-y-1 text-[11px] text-slate-400 leading-relaxed">
             <p>Envie um vídeo comercial de até 60 segundos.</p>
             <p>Evite vídeos com propagandas, nomes ou contatos. Envie apenas vídeos de performance, sem marca, nome, contato, telefone ou e-mail. Vídeos com logotipo ou logomarca não serão aprovados.</p>
-          </div>
-
-          <div class="space-y-4">
-            <div class="flex items-center justify-between border-b border-white/10 pb-2">
-              <h2 class="text-sm font-bold text-cyan-300">🎤 Vitrines do Artista (até 3)</h2>
-              <button type="button" id="btnNovaVitrine" onclick="abrirModalVitrine()" class="px-3 py-2 rounded-lg bg-cyan-500/20 text-cyan-200 border border-cyan-500/40 hover:bg-cyan-500/30 text-xs font-bold">+ Nova vitrine</button>
-            </div>
-            <p class="text-[11px] text-slate-400">Sua vitrine principal continua no ar. Cada nova vitrine fica em análise até o administrador aprovar.</p>
-            <div id="listaVitrinesPerfil" class="space-y-2 text-xs text-slate-300">Carregando…</div>
           </div>
 
           <div class="space-y-4">
@@ -962,36 +953,35 @@
         }).length + galeriaBlobs.length;
       }
 
-      // ===== PERFIS (1 = cadastro principal; 2 e 3 = vitrines extras, mesma ficha) =====
-      var perfilNum = parseInt(new URLSearchParams(window.location.search).get('perfil') || '1', 10);
-      if (!(perfilNum >= 1 && perfilNum <= 3)) perfilNum = 1;
+      // ===== VITRINES (abas): vitrine 1 = cadastro; 2 e 3 = vitrines extras, mesma ficha =====
+      var vitrineNum = parseInt(new URLSearchParams(window.location.search).get('vitrine') || '1', 10);
+      if (!(vitrineNum >= 1 && vitrineNum <= 3)) vitrineNum = 1;
       var IDENTIDADE_KEYS = ['nome_completo','empresa','whatsapp','instagram','cpf_cnpj','data_nascimento',
         'cep','endereco','bairro','cidade','estado','tipo_pix','chave_pix','termos_aceitos','termos_aceitos_em'];
 
       function prefixoMidia() {
-        return parceiroAtual.user_id + (perfilNum > 1 ? '/perfil-' + perfilNum : '');
+        return parceiroAtual.user_id + (vitrineNum > 1 ? '/vitrine-' + vitrineNum : '');
       }
 
-      async function aplicarPerfilSelecionado(parceiro) {
-        if (perfilNum === 1) return parceiro;
+      async function aplicarVitrineSelecionada(parceiro) {
+        if (vitrineNum === 1) return parceiro;
         var r = await sbPartner.from('vitrines').select('*')
-          .eq('parceiro_id', parceiro.id).eq('ordem', perfilNum).maybeSingle();
-        if (!r.data) { showAlert('Este perfil não existe.', 'error'); return parceiro; }
+          .eq('parceiro_id', parceiro.id).eq('ordem', vitrineNum).maybeSingle();
+        if (!r.data) { showAlert('Esta vitrine não existe.', 'error'); return parceiro; }
         var v = r.data;
         var merged = Object.assign({}, parceiro, v);
         merged.id = parceiro.id;
         merged.status = parceiro.status;
         merged.status_artista = parceiro.status_artista;
-        merged.__baseNome = parceiro.nome_artistico;
         merged.__vitrineId = v.id;
         merged.__vitrineStatus = v.status;
         merged.__vitrineOriginal = JSON.parse(JSON.stringify(v));
         return merged;
       }
 
-      // Grava o perfil 2 ou 3: identidade no cadastro, ficha na vitrine.
+      // Vitrine 2 ou 3: identidade vai para o cadastro; a ficha vai para a vitrine.
       // Acréscimo volta para análise; só remover não muda o status.
-      async function salvarPerfilExtra(payload) {
+      async function salvarVitrineExtra(payload) {
         var antigo = parceiroAtual.__vitrineOriginal || {};
         var identidade = {}, ficha = {};
         Object.keys(payload).forEach(function (k) {
@@ -1019,34 +1009,34 @@
         return r2;
       }
 
-      async function renderBarraPerfis() {
-        var box = document.getElementById('barraPerfis');
+      async function renderAbasVitrines() {
+        var box = document.getElementById('abasVitrines');
         if (!box) return;
         var r = await sbPartner.from('vitrines').select('id, ordem, nome_artistico, status').order('ordem');
         var extras = r.data || [];
-        var nomeBase = parceiroAtual.__baseNome || parceiroAtual.nome_artistico || 'Cadastro principal';
-        var estilo = function (ativo) {
-          return 'display:inline-block;padding:8px 14px;border-radius:999px;font-size:12px;font-weight:700;text-decoration:none;margin:4px 6px 4px 0;border:1px solid ' +
-            (ativo ? '#22d3ee;background:#22d3ee;color:#0f172a' : 'rgba(255,255,255,.2);color:#e2e8f0');
+        var nomeBase = parceiroAtual.nome_artistico || 'Vitrine principal';
+        var aba = function (ativa) {
+          return 'display:inline-block;padding:9px 16px;border-radius:12px 12px 0 0;font-size:12px;font-weight:700;text-decoration:none;margin-right:6px;border:1px solid ' +
+            (ativa ? '#22d3ee;border-bottom:1px solid #0f172a;background:#0f172a;color:#22d3ee' : 'rgba(255,255,255,.12);color:#94a3b8;background:rgba(15,23,42,.6)');
         };
-        var html = '<a href="perfil.html" style="' + estilo(perfilNum === 1) + '">Cadastro principal · ' + esc(nomeBase) + '</a>';
+        var html = '<a href="perfil.html" style="' + aba(vitrineNum === 1) + '">' + esc(nomeBase) + '</a>';
         extras.forEach(function (v) {
-          var rotulo = v.nome_artistico || 'Novo perfil';
+          var rotulo = v.nome_artistico || 'Nova vitrine';
           var st = v.status === 'aprovada' ? ' ✓' : v.status === 'recusada' ? ' ✕' : ' ⏳';
-          html += '<a href="perfil.html?perfil=' + v.ordem + '" style="' + estilo(perfilNum === v.ordem) + '">Perfil ' + v.ordem + ' · ' + esc(rotulo) + st + '</a>';
+          html += '<a href="perfil.html?vitrine=' + v.ordem + '" style="' + aba(vitrineNum === v.ordem) + '">' + esc(rotulo) + st + '</a>';
         });
         if (extras.length < 2) {
-          html += '<button type="button" onclick="adicionarPerfilExtra()" style="display:inline-block;padding:8px 14px;border-radius:999px;font-size:12px;font-weight:700;margin:4px 6px 4px 0;border:1px dashed #22d3ee;background:transparent;color:#22d3ee;cursor:pointer;">+ Adicionar perfil</button>';
+          html += '<button type="button" onclick="adicionarVitrine()" style="display:inline-block;padding:9px 16px;border-radius:12px 12px 0 0;font-size:12px;font-weight:700;border:1px dashed #22d3ee;background:transparent;color:#22d3ee;cursor:pointer;">+ Adicionar vitrine</button>';
         }
         box.innerHTML = html;
       }
 
-      window.adicionarPerfilExtra = async function () {
+      window.adicionarVitrine = async function () {
         var r = await sbPartner.rpc('solicitar_vitrine', { p_dados: {} });
         if (r.error) { showAlert(r.error.message, 'error'); return; }
         var lista = await sbPartner.from('vitrines').select('ordem').order('ordem', { ascending: false }).limit(1);
         var nova = lista.data && lista.data[0] ? lista.data[0].ordem : 2;
-        window.location.href = 'perfil.html?perfil=' + nova;
+        window.location.href = 'perfil.html?vitrine=' + nova;
       };
 
       function esc(t) { return String(t == null ? '' : t).replace(/[&<>"']/g, function (c) { return {'&':'&amp;','<':'&gt;','"':'&quot;',"'":'&#39;'}[c]; }); }
@@ -1057,7 +1047,7 @@
         carregarTaxonomiaPerfis()
       ]).then(async function (results) {
         var parceiro = results[0];
-        parceiroAtual = await aplicarPerfilSelecionado(parceiro);
+        parceiroAtual = await aplicarVitrineSelecionada(parceiro);
 
         if (typeof partnerFillSidebar === 'function') {
           partnerFillSidebar(parceiro);
@@ -1196,7 +1186,7 @@
         }
 
         updateVitrinePreview();
-        renderBarraPerfis();
+        renderAbasVitrines();
       }).catch(function (err) {
         console.error("Erro na inicialização:", err);
         showAlert('Erro de autenticação ou carregamento de dados.', 'error');
@@ -2009,7 +1999,7 @@
 
           if (urlsNoBanco === null) urlsNoBanco = coletarUrlsFinais({}, parceiroAtual);
           var resUpdate = parceiroAtual.__vitrineId
-            ? await salvarPerfilExtra(payload)
+            ? await salvarVitrineExtra(payload)
             : await sbPartner.from('parceiros').update(payload).eq('id', parceiroAtual.id);
 
           if (resUpdate.error) {
@@ -2100,94 +2090,5 @@
       });
     })();
   </script>
-<div id="modal-vitrine" style="display:none;position:fixed;inset:0;background:rgba(0,0,0,.7);z-index:10000;align-items:center;justify-content:center;padding:16px;">
-  <div style="background:#0f172a;color:#e2e8f0;border:1px solid rgba(255,255,255,.1);border-radius:14px;max-width:520px;width:100%;max-height:90vh;overflow:auto;padding:20px;">
-    <h3 style="margin:0 0 4px;font-size:15px;">Solicitar nova vitrine</h3>
-    <p style="margin:0 0 12px;font-size:12px;color:#94a3b8;">Preencha os dados deste trabalho (ex.: banda, solo). Sua vitrine atual não muda.</p>
-    <div style="display:grid;gap:10px;font-size:12px;">
-      <label>Nome artístico desta vitrine *<input id="nv-nome" style="width:100%;margin-top:4px;padding:8px;background:#020617;color:#e2e8f0;border:1px solid rgba(255,255,255,.1);border-radius:8px;"></label>
-      <label>Categoria<input id="nv-categoria" placeholder="Ex.: Banda, Voz e violão, Solo" style="width:100%;margin-top:4px;padding:8px;background:#020617;color:#e2e8f0;border:1px solid rgba(255,255,255,.1);border-radius:8px;"></label>
-      <label>Frase de apresentação<input id="nv-tagline" style="width:100%;margin-top:4px;padding:8px;background:#020617;color:#e2e8f0;border:1px solid rgba(255,255,255,.1);border-radius:8px;"></label>
-      <label>Cache base (texto livre)<input id="nv-cache" placeholder="Ex.: a partir de R$ 3.500" style="width:100%;margin-top:4px;padding:8px;background:#020617;color:#e2e8f0;border:1px solid rgba(255,255,255,.1);border-radius:8px;"></label>
-      <label>Descrição do trabalho<textarea id="nv-bio" rows="4" style="width:100%;margin-top:4px;padding:8px;background:#020617;color:#e2e8f0;border:1px solid rgba(255,255,255,.1);border-radius:8px;"></textarea></label>
-      <label>YouTube 1<input id="nv-yt1" type="url" style="width:100%;margin-top:4px;padding:8px;background:#020617;color:#e2e8f0;border:1px solid rgba(255,255,255,.1);border-radius:8px;"></label>
-      <label>YouTube 2<input id="nv-yt2" type="url" style="width:100%;margin-top:4px;padding:8px;background:#020617;color:#e2e8f0;border:1px solid rgba(255,255,255,.1);border-radius:8px;"></label>
-    </div>
-    <div style="display:flex;gap:8px;justify-content:flex-end;margin-top:16px;">
-      <button type="button" onclick="fecharModalVitrine()" style="padding:9px 14px;background:transparent;color:#e2e8f0;border:1px solid rgba(255,255,255,.2);border-radius:8px;cursor:pointer;">Cancelar</button>
-      <button type="button" id="nv-enviar" onclick="enviarNovaVitrine()" style="padding:9px 16px;background:#22d3ee;color:#0f172a;border:none;border-radius:8px;font-weight:700;cursor:pointer;">Enviar para análise</button>
-    </div>
-    <div id="nv-msg" style="font-size:12px;margin-top:10px;min-height:16px;"></div>
-  </div>
-</div>
-<script>
-(function () {
-  var meuParceiro = null;
-  function esc(t) { return String(t == null ? '' : t).replace(/[&<>"']/g, function (c) { return {'&':'&amp;','<':'&gt;','"':'&quot;',"'":'&#39;'}[c]; }); }
-  var ROTULO = { pendente: 'Em análise', aprovada: 'Aprovada', recusada: 'Recusada' };
-  var COR = { pendente: 'color:#facc15', aprovada: 'color:#a3e635', recusada: 'color:#fca5a5' };
-
-  window.abrirModalVitrine = function () {
-    document.getElementById('nv-msg').textContent = '';
-    document.getElementById('modal-vitrine').style.display = 'flex';
-  };
-  window.fecharModalVitrine = function () {
-    document.getElementById('modal-vitrine').style.display = 'none';
-  };
-
-  async function carregarVitrines() {
-    var box = document.getElementById('listaVitrinesPerfil');
-    var sess = await sbPartner.auth.getSession();
-    var session = sess.data && sess.data.session;
-    if (!session) return;
-    var eu = await sbPartner.from('parceiros').select('id, nome_artistico, is_artista, status_artista').eq('user_id', session.user.id).maybeSingle();
-    if (!eu.data) return;
-    meuParceiro = eu.data;
-    if (!eu.data.is_artista) { box.textContent = 'Vitrines extras são para artistas.'; document.getElementById('btnNovaVitrine').style.display = 'none'; return; }
-
-    var r = await sbPartner.from('vitrines').select('*').order('ordem');
-    if (r.error) { box.innerHTML = '<span style="color:#fca5a5">Erro: ' + esc(r.error.message) + '</span>'; return; }
-    var linhas = ['<div class="flex items-center justify-between bg-slate-900/60 rounded-lg p-2.5 border border-white/5"><div><strong class="text-white">' + esc(eu.data.nome_artistico || 'Vitrine principal') + '</strong><span class="block text-slate-400">Vitrine principal</span></div><span class="text-[11px] font-bold text-slate-400 uppercase">Ativa</span></div>'];
-    (r.data || []).forEach(function (v) {
-      linhas.push('<div class="flex items-center justify-between bg-slate-900/60 rounded-lg p-2.5 border border-white/5"><div><strong class="text-white">' + esc(v.nome_artistico || 'Sem nome') + '</strong><span class="block text-slate-400">Vitrine ' + v.ordem + '</span>' +
-        (v.status === 'recusada' && v.motivo_recusa ? '<span class="block text-rose-300">Motivo: ' + esc(v.motivo_recusa) + '</span>' : '') +
-        '</div><span class="text-[11px] font-bold uppercase" style="' + COR[v.status] + '">' + ROTULO[v.status] + '</span></div>');
-    });
-    box.innerHTML = linhas.join('');
-    var cheio = (1 + (r.data || []).length) >= 3;
-    var btn = document.getElementById('btnNovaVitrine');
-    btn.disabled = cheio; btn.style.opacity = cheio ? '.4' : '1';
-  }
-
-  window.enviarNovaVitrine = async function () {
-    var msg = document.getElementById('nv-msg'), btn = document.getElementById('nv-enviar');
-    var nome = document.getElementById('nv-nome').value.trim();
-    if (!nome) { msg.style.color = '#fca5a5'; msg.textContent = 'Informe o nome artístico desta vitrine.'; return; }
-    var dados = {
-      nome_artistico: nome,
-      categoria_artistica: document.getElementById('nv-categoria').value.trim() || null,
-      tagline_artistica: document.getElementById('nv-tagline').value.trim() || null,
-      cache_base: document.getElementById('nv-cache').value.trim() || null,
-      bio_artistica: document.getElementById('nv-bio').value.trim() || null,
-      youtube_1: document.getElementById('nv-yt1').value.trim() || null,
-      youtube_2: document.getElementById('nv-yt2').value.trim() || null
-    };
-    btn.disabled = true; msg.style.color = '#94a3b8'; msg.textContent = 'Enviando…';
-    var r = await sbPartner.rpc('solicitar_vitrine', { p_dados: dados });
-    btn.disabled = false;
-    if (r.error) {
-      msg.style.color = '#fca5a5';
-      msg.textContent = r.error.message.indexOf('Limite') >= 0 ? 'Você já tem as 3 vitrines.' : 'Não foi possível enviar: ' + r.error.message;
-      return;
-    }
-    msg.style.color = '#a3e635';
-    msg.textContent = 'Enviada! Aguardando aprovação do administrador.';
-    ['nv-nome','nv-categoria','nv-tagline','nv-cache','nv-bio','nv-yt1','nv-yt2'].forEach(function (id) { document.getElementById(id).value = ''; });
-    carregarVitrines();
-  };
-
-  carregarVitrines();
-})();
-</script>
 </body>
 </html>
