@@ -689,5 +689,183 @@
       };
     })();
   </script>
+<div id="modalFin" style="display:none;position:fixed;inset:0;background:rgba(0,0,0,.8);z-index:10000;align-items:center;justify-content:center;padding:16px;">
+  <div style="background:#0f172a;color:#e2e8f0;border:1px solid rgba(255,255,255,.1);border-radius:14px;max-width:860px;width:100%;max-height:90vh;overflow:auto;padding:20px;font-size:13px;">
+    <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:12px;">
+      <strong style="font-size:15px;">💳 Comprovantes e pagamentos</strong>
+      <button type="button" onclick="fecharFinanceiro()" style="background:none;border:none;color:#94a3b8;font-size:18px;cursor:pointer;">✕</button>
+    </div>
+    <div id="finConteudo"></div>
+  </div>
+</div>
+<script>
+(function () {
+  'use strict';
+  var pidAtual = null;
+  var BRL = function (v) { return v == null || v === '' ? '—' : 'R$ ' + Number(v).toFixed(2).replace('.', ','); };
+  var DH = function (v) { return v ? new Date(v).toLocaleString('pt-BR') : '—'; };
+  var E = function (t) { return String(t == null ? '' : t).replace(/[&<>"']/g, function (c) { return {'&':'&amp;','<':'&gt;','"':'&quot;',"'":'&#39;'}[c]; }); };
+  var TIPO = { sinal:'Entrada / Sinal', parcela:'Parcela', saldo:'Saldo', outro:'Outro' };
+  var EVT = { valor_conferido:'Valor conferido', valor_alterado:'Valor alterado', aprovado:'Aprovado', recusado:'Recusado', pendente:'Reaberto', excluido:'Excluído', bloqueio_aceito:'Bloqueio sem pagamento aceito', bloqueio_resolvido:'Bloqueio resolvido' };
+  var num = function (v) { return parseFloat(String(v || '').replace(/\./g, '').replace(',', '.')); };
+  var dispararAvisos = function () { sbPartner.functions.invoke('enviar-notificacoes', { body: { proposta_id: pidAtual } }).catch(function () {}); };
+
+  window.abrirFinanceiro = function (id) {
+    pidAtual = id;
+    document.getElementById('modalFin').style.display = 'flex';
+    carregarFin();
+  };
+  window.fecharFinanceiro = function () { document.getElementById('modalFin').style.display = 'none'; };
+
+  // Botão 💳 nas linhas da tabela, inserido por código (a listagem original não é alterada)
+  function injetarBotoesFin() {
+    document.querySelectorAll('a[href*="nova-proposta.html?id="]').forEach(function (a) {
+      if (a.dataset.finBtn) return;
+      a.dataset.finBtn = '1';
+      var m = (a.getAttribute('href') || '').match(/id=([^&]+)/);
+      if (!m) return;
+      var id = m[1];
+      var b = document.createElement('button');
+      b.type = 'button';
+      b.textContent = '💳 Comprovantes';
+      b.className = 'px-2.5 py-1 rounded bg-cyan-500/20 hover:bg-cyan-500/30 text-cyan-300 border border-cyan-500/30 text-[11px] font-semibold transition cursor-pointer';
+      b.addEventListener('click', function () { window.abrirFinanceiro(id); });
+      a.parentNode.insertBefore(b, a);
+    });
+  }
+  var tbodyGestao = document.getElementById('tbodyPropostasGestao');
+  if (tbodyGestao) new MutationObserver(injetarBotoesFin).observe(tbodyGestao, { childList: true, subtree: true });
+  injetarBotoesFin();
+
+  async function carregarFin() {
+    var box = document.getElementById('finConteudo');
+    box.innerHTML = 'Carregando…';
+    var p = await sbPartner.from('propostas').select('numero, cliente_nome, valor_total, assinado_em, bloqueio_sem_pagamento, bloqueio_forma, bloqueio_data_limite, bloqueio_alerta_em, bloqueio_resolvido_em').eq('id', pidAtual).maybeSingle();
+    var c = await sbPartner.from('contrato_comprovantes').select('*').eq('proposta_id', pidAtual).order('enviado_em');
+    var l = await sbPartner.from('financeiro_log').select('*').eq('proposta_id', pidAtual).order('criado_em', { ascending: false });
+    if (p.error || !p.data) { box.innerHTML = 'Proposta não encontrada.'; return; }
+    var P = p.data;
+
+    var html = '<div style="margin-bottom:14px;"><strong>Proposta #' + E(P.numero) + '</strong> · ' + E(P.cliente_nome) +
+      ' · Total ' + BRL(P.valor_total) + ' · ' + (P.assinado_em ? 'Contrato assinado em ' + DH(P.assinado_em) : 'Contrato não assinado') + '</div>';
+
+    html += '<div style="border:1px solid rgba(255,255,255,.1);border-radius:10px;padding:12px;margin-bottom:14px;">' +
+      '<strong>Bloqueio sem pagamento prévio</strong>';
+    if (!P.assinado_em) {
+      html += '<div style="color:#94a3b8;margin-top:6px;">Disponível depois que o contrato for assinado.</div>';
+    } else if (P.bloqueio_sem_pagamento) {
+      var vencido = P.bloqueio_alerta_em && !P.bloqueio_resolvido_em;
+      html += '<div style="margin-top:6px;">Forma: ' + E(P.bloqueio_forma) + '<br>Limite: ' + DH(P.bloqueio_data_limite) + '</div>';
+      if (P.bloqueio_resolvido_em) {
+        html += '<div style="margin-top:6px;color:#a3e635;">Decisão registrada em ' + DH(P.bloqueio_resolvido_em) + '.</div>';
+      } else if (vencido) {
+        html += '<div style="margin-top:6px;color:#fca5a5;font-weight:700;">⚠️ Prazo vencido. Decida: manter ou resolver.</div>' +
+          '<div style="margin-top:8px;"><button onclick="finResolver()" style="padding:6px 12px;border-radius:8px;background:#a3e635;color:#0b1020;border:none;font-weight:700;cursor:pointer;">Registrar decisão</button></div>';
+      } else {
+        html += '<div style="margin-top:6px;color:#94a3b8;">Aguardando pagamento até o limite.</div>';
+      }
+    } else {
+      html += '<div style="margin-top:8px;display:grid;gap:8px;">' +
+        '<textarea id="finForma" rows="2" placeholder="Como será feito o pagamento (ex.: PIX, tudo ou parte)" style="background:#020617;color:#e2e8f0;border:1px solid rgba(255,255,255,.1);border-radius:8px;padding:8px;"></textarea>' +
+        '<input id="finLimite" type="datetime-local" style="background:#020617;color:#e2e8f0;border:1px solid rgba(255,255,255,.1);border-radius:8px;padding:8px;">' +
+        '<div><button onclick="finAceitarBloqueio()" style="padding:7px 14px;border-radius:8px;background:#a3e635;color:#0b1020;border:none;font-weight:700;cursor:pointer;">Aceitar bloqueio</button></div></div>';
+    }
+    html += '</div>';
+
+    var lista = c.data || [];
+    html += '<strong>Comprovantes do cliente</strong>';
+    if (!lista.length) html += '<div style="color:#94a3b8;margin:6px 0 14px;">Nenhum comprovante enviado ainda.</div>';
+    lista.forEach(function (x) {
+      var badge = x.status === 'aprovado' ? '<span style="color:#a3e635;font-weight:700;">Aprovado</span>'
+        : x.status === 'recusado' ? '<span style="color:#fca5a5;font-weight:700;">Recusado</span>'
+        : '<span style="color:#facc15;font-weight:700;">Aguardando conferência</span>';
+      html += '<div style="border:1px solid rgba(255,255,255,.1);border-radius:10px;padding:10px;margin:8px 0;">' +
+        '<div style="display:flex;justify-content:space-between;flex-wrap:wrap;gap:6px;"><strong>' + E(TIPO[x.tipo] || x.tipo) + '</strong>' + badge + '</div>' +
+        '<div style="margin-top:6px;">Valor digitado: <strong>' + BRL(x.valor) + '</strong> · Data: ' + (x.data_pagamento ? x.data_pagamento.split('-').reverse().join('/') : '—') +
+        ' · <a href="' + E(x.arquivo_url) + '" target="_blank" rel="noopener" style="color:#a3e635;">Abrir comprovante</a></div>';
+      if (x.status === 'pendente') {
+        html += '<div style="display:flex;gap:8px;flex-wrap:wrap;margin-top:8px;align-items:end;">' +
+          '<div><div style="font-size:11px;color:#94a3b8;">Valor conferido</div><input id="fv-' + x.id + '" value="' + String(x.valor).replace('.', ',') + '" style="background:#020617;color:#e2e8f0;border:1px solid rgba(255,255,255,.1);border-radius:8px;padding:6px;width:120px;"></div>' +
+          '<div><div style="font-size:11px;color:#94a3b8;">Motivo (se diferente)</div><input id="fm-' + x.id + '" style="background:#020617;color:#e2e8f0;border:1px solid rgba(255,255,255,.1);border-radius:8px;padding:6px;width:220px;"></div>' +
+          '<button onclick="finAprovar(\'' + x.id + '\')" style="padding:6px 12px;border-radius:8px;background:#a3e635;color:#0b1020;border:none;font-weight:700;cursor:pointer;">Aprovar</button>' +
+          '<button onclick="finRecusar(\'' + x.id + '\')" style="padding:6px 12px;border-radius:8px;background:transparent;color:#fca5a5;border:1px solid rgba(248,113,113,.4);cursor:pointer;">Recusar</button>' +
+          '<button onclick="finExcluir(\'' + x.id + '\')" style="padding:6px 12px;border-radius:8px;background:transparent;color:#e2e8f0;border:1px solid rgba(255,255,255,.2);cursor:pointer;">Excluir</button></div>';
+      }
+      if (x.status === 'aprovado') {
+        html += '<div style="margin-top:6px;">Valor conferido: <strong>' + BRL(x.valor_confirmado) + '</strong> · Aprovado em ' + DH(x.aprovado_em) +
+          ' <button onclick="finAlterar(\'' + x.id + '\',' + (x.valor_confirmado || 0) + ')" style="margin-left:8px;padding:4px 10px;border-radius:8px;background:transparent;color:#e2e8f0;border:1px solid rgba(255,255,255,.2);cursor:pointer;">Alterar valor</button></div>';
+      }
+      if (x.status === 'recusado') {
+        html += '<div style="margin-top:6px;color:#fca5a5;">Motivo: ' + E(x.motivo_recusa || '—') + ' · <button onclick="finExcluir(\'' + x.id + '\')" style="padding:4px 10px;border-radius:8px;background:transparent;color:#e2e8f0;border:1px solid rgba(255,255,255,.2);cursor:pointer;">Excluir</button></div>';
+      }
+      html += '</div>';
+    });
+
+    html += '<strong style="display:block;margin-top:14px;">Histórico financeiro (interno)</strong>';
+    if (!l.data || !l.data.length) html += '<div style="color:#94a3b8;margin-top:6px;">Nada registrado ainda.</div>';
+    else html += '<table style="width:100%;border-collapse:collapse;font-size:12px;margin-top:6px;"><thead><tr style="color:#94a3b8;text-align:left;"><th style="padding:6px;">Quando</th><th style="padding:6px;">Evento</th><th style="padding:6px;">Digitado</th><th style="padding:6px;">Anterior → Novo</th><th style="padding:6px;">Motivo</th></tr></thead><tbody>' +
+      l.data.map(function (e) {
+        var troca = (e.valor_anterior != null || e.valor_novo != null) ? BRL(e.valor_anterior) + ' → ' + BRL(e.valor_novo) : '—';
+        return '<tr style="border-top:1px solid rgba(255,255,255,.08);"><td style="padding:6px;">' + DH(e.criado_em) + '</td><td style="padding:6px;">' + E(EVT[e.evento] || e.evento) +
+          '</td><td style="padding:6px;">' + BRL(e.valor_digitado) + '</td><td style="padding:6px;">' + troca + '</td><td style="padding:6px;">' + E(e.motivo || '') + '</td></tr>';
+      }).join('') + '</tbody></table>';
+
+    box.innerHTML = html;
+  }
+
+  window.finAceitarBloqueio = async function () {
+    var forma = document.getElementById('finForma').value.trim();
+    var lim = document.getElementById('finLimite').value;
+    if (!forma) return alert('Descreva como será feito o pagamento.');
+    if (!lim) return alert('Informe o dia e a hora limite.');
+    var r = await sbPartner.rpc('aceitar_bloqueio_sem_pagamento', { p_id: pidAtual, p_forma: forma, p_data_limite: new Date(lim).toISOString() });
+    if (r.error) return alert(r.error.message);
+    carregarFin();
+  };
+
+  window.finResolver = async function () {
+    var motivo = prompt('Registre a decisão (ex.: mantido, cliente confirmou nova data):');
+    if (motivo === null) return;
+    var r = await sbPartner.rpc('resolver_bloqueio_sem_pagamento', { p_id: pidAtual, p_motivo: motivo });
+    if (r.error) return alert(r.error.message);
+    carregarFin();
+  };
+
+  window.finAprovar = async function (id) {
+    var valor = num(document.getElementById('fv-' + id).value);
+    var motivo = document.getElementById('fm-' + id).value.trim();
+    var r = await sbPartner.rpc('aprovar_comprovante', { p_id: id, p_valor: valor, p_motivo: motivo || null });
+    if (r.error) return alert(r.error.message);
+    dispararAvisos();
+    carregarFin();
+  };
+
+  window.finRecusar = async function (id) {
+    var motivo = prompt('Motivo da recusa (o cliente verá):');
+    if (motivo === null) return;
+    var r = await sbPartner.rpc('recusar_comprovante', { p_id: id, p_motivo: motivo });
+    if (r.error) return alert(r.error.message);
+    dispararAvisos();
+    carregarFin();
+  };
+
+  window.finAlterar = async function (id, atual) {
+    var novo = prompt('Novo valor conferido (atual: ' + atual + '):');
+    if (novo === null) return;
+    var motivo = prompt('Motivo da alteração (obrigatório):');
+    if (motivo === null) return;
+    var r = await sbPartner.rpc('alterar_valor_comprovante', { p_id: id, p_valor: num(novo), p_motivo: motivo });
+    if (r.error) return alert(r.error.message);
+    carregarFin();
+  };
+
+  window.finExcluir = async function (id) {
+    if (!confirm('Excluir este comprovante? Fica registrado no histórico.')) return;
+    var r = await sbPartner.from('contrato_comprovantes').delete().eq('id', id);
+    if (r.error) return alert(r.error.message);
+    carregarFin();
+  };
+})();
+</script>
 </body>
 </html>
