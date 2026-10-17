@@ -543,6 +543,11 @@
                   <option value="recusado">🔴 Vitrine Recusada</option>
                 </select>
               </div>
+
+              <div id="mVitrinesExtras" class="hidden mt-4 rounded-xl border border-cyan-500/30 bg-cyan-500/5 p-4">
+                <strong class="text-xs text-white block uppercase tracking-wider mb-2">🎤 Vitrines extras (2 e 3) · solicitadas pelo artista</strong>
+                <div id="mVitrinesExtrasLista" class="space-y-2 text-xs text-slate-300">Carregando…</div>
+              </div>
             </div>
 
             <div id="mContainerAcaoMidias" class="flex items-center justify-end gap-2 pt-2 border-t border-white/10">
@@ -2410,6 +2415,7 @@
         document.getElementById('mIsDestaque').checked = Boolean(parceiro.is_destaque);
         document.getElementById('mStatusArtista').value = (parceiro.status_artista || 'pendente').toLowerCase();
         document.getElementById('mArtNomeArtistico').value = parceiro.nome_artistico || '';
+        carregarVitrinesExtras(parceiro.id);
         document.getElementById('mArtTagline').value = parceiro.tagline_artistica || '';
         document.getElementById('mArtCacheBase').value = parceiro.cache_base || '';
         document.getElementById('mArtExperiencia').value = parceiro.experiencia_comercial || '';
@@ -2669,6 +2675,44 @@
         }
         mostrarBannerPendente();
         renderGaleriaAdmin();
+      };
+
+      var _vitrineParceiroId = null;
+      function _escV(t) { return String(t == null ? '' : t).replace(/[&<>"']/g, function (c) { return {'&':'&amp;','<':'&gt;','"':'&quot;',"'":'&#39;'}[c]; }); }
+      window.carregarVitrinesExtras = async function (parceiroId) {
+        _vitrineParceiroId = parceiroId;
+        var box = document.getElementById('mVitrinesExtrasLista');
+        var wrap = document.getElementById('mVitrinesExtras');
+        if (!box || !wrap) return;
+        wrap.classList.remove('hidden');
+        var r = await sbPartner.from('vitrines').select('*').eq('parceiro_id', parceiroId).order('ordem');
+        if (r.error) { box.textContent = 'Erro: ' + r.error.message; return; }
+        if (!r.data || !r.data.length) { box.textContent = 'Nenhuma vitrine extra solicitada.'; return; }
+        box.innerHTML = r.data.map(function (v) {
+          var acoes = v.status === 'pendente'
+            ? '<div class="flex gap-2"><button type="button" onclick="decidirVitrine(\'' + v.id + '\',\'aprovada\')" class="px-3 py-1.5 rounded-lg bg-emerald-500 text-slate-950 font-bold">Aprovar</button>' +
+              '<button type="button" onclick="decidirVitrine(\'' + v.id + '\',\'recusada\')" class="px-3 py-1.5 rounded-lg border border-rose-500/50 text-rose-300">Recusar</button></div>'
+            : '';
+          return '<div class="flex items-center justify-between gap-3 bg-slate-900/60 rounded-lg p-2.5 border border-white/5">' +
+            '<div><strong class="text-white">' + _escV(v.nome_artistico || 'Sem nome') + '</strong>' +
+            '<span class="block text-slate-400">Vitrine ' + v.ordem + ' · ' + _escV(v.status) + '</span>' +
+            (v.motivo_recusa ? '<span class="block text-rose-300">Motivo: ' + _escV(v.motivo_recusa) + '</span>' : '') +
+            '</div>' + acoes + '</div>';
+        }).join('');
+      };
+      window.decidirVitrine = async function (id, status) {
+        var motivo = null;
+        if (status === 'recusada') {
+          motivo = prompt('Motivo da recusa (o artista verá):');
+          if (motivo === null) return;
+        }
+        var r = await sbPartner.from('vitrines').update({
+          status: status,
+          aprovada_em: status === 'aprovada' ? new Date().toISOString() : null,
+          motivo_recusa: motivo
+        }).eq('id', id);
+        if (r.error) { alert('Erro: ' + r.error.message); return; }
+        carregarVitrinesExtras(_vitrineParceiroId);
       };
 
       window.aprovarMidiasArtista = function() {
