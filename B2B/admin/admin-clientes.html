@@ -396,6 +396,7 @@ Data: preencha Dia e/ou Mês e/ou Ano (Ano Qualquer = qualquer ano)</pre>
           <h3 id="modalClienteTitulo" class="text-base font-bold text-white tracking-tight">Ficha Completa do Cliente</h3>
         </div>
         <div class="flex items-center gap-3">
+          <button type="button" id="btnConvidarCliente" onclick="convidarClienteAtual()" class="hidden px-3.5 py-1.5 rounded-lg bg-emerald-500/20 hover:bg-emerald-500/30 text-emerald-300 border border-emerald-500/40 text-xs font-bold transition cursor-pointer">Convidar cliente</button>
           <button type="button" id="btnModoEdicao" onclick="habilitarModoEdicao(true)" class="hidden px-3.5 py-1.5 rounded-lg bg-amber-500/20 hover:bg-amber-500/30 text-amber-300 border border-amber-500/40 text-xs font-bold transition cursor-pointer">✏️ Editar</button>
           <button type="button" id="btnSalvarCliente" onclick="salvarCliente()" class="px-4 py-2 rounded-xl bg-amber-500 hover:bg-amber-400 text-slate-950 font-bold text-xs uppercase tracking-wider transition shadow-[0_0_15px_rgba(0,240,255,0.3)] cursor-pointer">Salvar Cliente</button>
           <button type="button" onclick="fecharModalCliente()" class="text-slate-400 hover:text-white text-lg font-bold p-1 transition cursor-pointer">✕</button>
@@ -1275,6 +1276,39 @@ Data: preencha Dia e/ou Mês e/ou Ano (Ano Qualquer = qualquer ano)</pre>
         modal.classList.add('flex');
       };
 
+      var convProposta = null;
+      async function atualizarBotaoConvite(c) {
+        var btn = document.getElementById('btnConvidarCliente');
+        if (!btn) return;
+        btn.classList.add('hidden');
+        convProposta = null;
+        var cpfD = String((c && c.cpf_cnpj) || '').replace(/\D/g, '');
+        if (cpfD.length !== 11) return;
+        var pc = await sbPartner.from('portal_clientes').select('id').eq('cpf', cpfD).maybeSingle();
+        if (pc.data) return;
+        var pr = await sbPartner.from('propostas').select('id, status').eq('cliente_id', c.id)
+          .neq('status', 'cancelada').order('criado_em', { ascending: false }).limit(1).maybeSingle();
+        if (!pr.data) return;
+        convProposta = pr.data.id;
+        btn.classList.remove('hidden');
+      }
+
+      window.convidarClienteAtual = async function () {
+        if (!convProposta) return;
+        var r = await sbPartner.functions.invoke('cliente-convite', { body: { proposta_id: convProposta } });
+        if (r.error || (r.data && r.data.erro)) {
+          var detalhe = (r.data && r.data.erro) || (r.error && r.error.message) || 'sem detalhe';
+          alert('Não foi possível gerar o link de convite. Motivo: ' + detalhe);
+          return;
+        }
+        var link = r.data.link;
+        var txt = 'Olá! Seu pedido já está disponível para acompanhamento na área do cliente da 432UP. Crie seu acesso por este link (vale por 7 dias): ' + link;
+        window.prompt('Link de convite (copie e envie):', link);
+        if (confirm('Abrir o WhatsApp com a mensagem pronta?')) {
+          window.open('https://wa.me/?text=' + encodeURIComponent(txt), '_blank');
+        }
+      };
+
       function preencherModalComCliente(id) {
         var c = clientes.find(function(item) { return item.id === id; });
         if (!c) return;
@@ -1285,6 +1319,7 @@ Data: preencha Dia e/ou Mês e/ou Ano (Ano Qualquer = qualquer ano)</pre>
         document.getElementById('cCpfCnpj').value = c.cpf_cnpj || '';
         document.getElementById('cTelefone').value = c.telefone || '';
         document.getElementById('cEmail').value = c.email || '';
+        atualizarBotaoConvite(c);
         document.getElementById('cContatoNome').value = c.contato_nome || '';
         document.getElementById('cContatoCargo').value = c.contato_cargo || '';
         document.getElementById('cNomeFantasia').value = c.nome_fantasia || '';
