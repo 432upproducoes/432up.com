@@ -468,6 +468,12 @@
         <button id="cmp-enviar" type="button" style="padding:8px 14px;border:none;background:#8A10D8;color:#fff;border-radius:8px;font-weight:700;cursor:pointer;">Enviar</button>
       </div>
       <div id="cmp-msg" style="font-size:12px;margin-top:10px;min-height:16px;"></div>
+      <div id="cmp-avisos" style="display:none;margin-top:12px;padding:10px;border-radius:10px;background:#f5f0ff;font-size:12px;color:#1F1F24;">
+        <strong style="font-size:13px;">🔔 Receber avisos deste contrato</strong>
+        <div style="color:#555;margin-top:4px;">Avisamos no seu celular quando seu comprovante for confirmado ou precisar de ajuste.</div>
+        <button id="cmp-ativar-avisos" type="button" style="margin-top:8px;padding:7px 12px;border:none;background:#8A10D8;color:#fff;border-radius:8px;font-weight:700;cursor:pointer;">Ativar avisos</button>
+        <div id="cmp-avisos-msg" style="margin-top:6px;"></div>
+      </div>
       <div style="margin-top:14px;border-top:1px solid #e5e5e5;padding-top:12px;">
         <strong style="font-size:13px;">Comprovantes enviados</strong>
         <div id="cmp-lista" style="font-size:12px;margin-top:6px;color:#333;">Carregando…</div>
@@ -2472,12 +2478,21 @@
     box.innerHTML = rows.map(function (c) {
       var valor = Number(c.valor).toFixed(2).replace('.', ',');
       var data = c.data_pagamento ? c.data_pagamento.split('-').reverse().join('/') : '';
-      var status = c.confirmado
-        ? '<span style="color:#15803d;font-weight:700;white-space:nowrap;">✓ Aprovado</span>'
-        : '<button type="button" data-del="' + esc(c.id) + '" title="Excluir comprovante" style="background:none;border:none;color:#b91c1c;font-weight:700;font-size:16px;cursor:pointer;">✕</button>';
-      return '<div style="display:flex;justify-content:space-between;align-items:center;gap:8px;padding:7px 0;border-bottom:1px solid #eee;">' +
+      var status;
+      if (c.confirmado) status = '<span style="color:#15803d;font-weight:700;white-space:nowrap;">✓ Aprovado</span>';
+      else if (c.status === 'recusado') status = '<span style="color:#b91c1c;font-weight:700;white-space:nowrap;">Recusado</span>';
+      else status = '<span style="color:#b45309;font-weight:700;white-space:nowrap;">Em conferência</span>';
+      var botao = !c.confirmado
+        ? '<button type="button" data-del="' + esc(c.id) + '" title="Excluir comprovante" style="background:none;border:none;color:#b91c1c;font-weight:700;font-size:16px;cursor:pointer;">✕</button>'
+        : '';
+      var motivo = (!c.confirmado && c.status === 'recusado' && c.motivo_recusa)
+        ? '<div style="color:#b91c1c;font-size:11px;margin-top:3px;">Motivo: ' + esc(c.motivo_recusa) + '. Você pode excluir e enviar novamente.</div>'
+        : '';
+      return '<div style="padding:7px 0;border-bottom:1px solid #eee;">' +
+        '<div style="display:flex;justify-content:space-between;align-items:center;gap:8px;">' +
         '<div><strong>' + esc(ROTULO[c.tipo] || c.tipo) + '</strong> · R$ ' + valor + ' · ' + data +
-        ' · <a href="' + esc(c.arquivo_url) + '" target="_blank" rel="noopener" style="color:#8A10D8;">ver</a></div>' + status + '</div>';
+        ' · <a href="' + esc(c.arquivo_url) + '" target="_blank" rel="noopener" style="color:#8A10D8;">ver</a></div>' +
+        '<div style="display:flex;align-items:center;gap:8px;">' + status + botao + '</div></div>' + motivo + '</div>';
     }).join('');
     box.querySelectorAll('[data-del]').forEach(function (b) {
       b.onclick = function () { excluir(b.getAttribute('data-del')); };
@@ -2492,8 +2507,67 @@
     listar();
   }
 
+  // ---- Avisos no celular (push) para o cliente ----
+  var VAPID_PUBLIC = 'BM6ILzfra83ovE2AOg_xIW7_YioGcj6E0EkPKgVZI944NVoPhBHoJaIMZuZMOvD0hp4YTqq9GxiXor5VB3N4m-Y';
+  function b64ToU8(b64) {
+    var pad = '='.repeat((4 - b64.length % 4) % 4);
+    var raw = atob((b64 + pad).replace(/-/g, '+').replace(/_/g, '/'));
+    var out = new Uint8Array(raw.length);
+    for (var i = 0; i < raw.length; i++) out[i] = raw.charCodeAt(i);
+    return out;
+  }
+  function mostrarAvisos() {
+    var box = $('cmp-avisos'), btn = $('cmp-ativar-avisos'), txt = $('cmp-avisos-msg');
+    var iOS = /iPhone|iPad|iPod/.test(navigator.userAgent);
+    var emCasa = window.navigator.standalone === true || window.matchMedia('(display-mode: standalone)').matches;
+    box.style.display = 'block';
+    if (!('serviceWorker' in navigator) || !('PushManager' in window) || !('Notification' in window)) {
+      btn.style.display = 'none';
+      txt.style.color = '#555';
+      txt.textContent = 'Este navegador não recebe avisos. Use o Chrome no Android ou adicione esta página à tela inicial.';
+      return;
+    }
+    if (iOS && !emCasa) {
+      btn.style.display = 'none';
+      txt.style.color = '#555';
+      txt.textContent = 'No iPhone, primeiro toque em Compartilhar > Adicionar à Tela de Início. Depois abra o site por lá para ativar os avisos.';
+      return;
+    }
+    btn.style.display = '';
+    txt.textContent = '';
+  }
+  async function ativarAvisos() {
+    var m = $('cmp-avisos-msg');
+    m.style.color = '#555'; m.textContent = 'Ativando…';
+    try {
+      var perm = await Notification.requestPermission();
+      if (perm !== 'granted') {
+        m.style.color = '#b91c1c';
+        m.textContent = 'Permissão negada. Você pode liberar nas configurações do navegador.';
+        return;
+      }
+      var reg = await navigator.serviceWorker.register('/B2B/sw.js', { scope: '/B2B/' });
+      await navigator.serviceWorker.ready;
+      var sub = await reg.pushManager.getSubscription() ||
+        await reg.pushManager.subscribe({ userVisibleOnly: true, applicationServerKey: b64ToU8(VAPID_PUBLIC) });
+      var j = sub.toJSON();
+      var r = await sbPartner.functions.invoke('registrar-push-cliente', {
+        body: { proposta_id: propostaId, subscription: { endpoint: j.endpoint, keys: j.keys } }
+      });
+      if (r.error || (r.data && r.data.erro)) throw new Error(await msgDoServidor(r.error, r.data));
+      m.style.color = '#15803d';
+      m.textContent = 'Avisos ativados neste aparelho.';
+      $('cmp-ativar-avisos').style.display = 'none';
+    } catch (e) {
+      m.style.color = '#b91c1c';
+      m.textContent = e.message || 'Não foi possível ativar os avisos.';
+    }
+  }
+  $('cmp-ativar-avisos').onclick = ativarAvisos;
+
   window.abrirComprovante = function () {
     msg('', true);
+    mostrarAvisos();
     $('modal-comprovante').style.display = 'flex';
     listar();
   };
