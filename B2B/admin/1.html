@@ -1,0 +1,335 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Agenda · 432UP Admin</title>
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+<script src="../partner-config.js"></script>
+<style>
+  :root { --bg:#0b1020; --card:#131a2e; --line:rgba(255,255,255,.08); --txt:#e2e8f0; --mut:#94a3b8; --acc:#a3e635; }
+  * { box-sizing: border-box; }
+  body { margin:0; font-family: system-ui, -apple-system, Segoe UI, Roboto, sans-serif; background:var(--bg); color:var(--txt); }
+  header { display:flex; align-items:center; justify-content:space-between; gap:12px; padding:16px 20px; border-bottom:1px solid var(--line); flex-wrap:wrap; }
+  h1 { font-size:18px; margin:0; letter-spacing:.5px; }
+  .nav { display:flex; align-items:center; gap:8px; }
+  button { font:inherit; color:var(--txt); background:transparent; border:1px solid var(--line); padding:7px 12px; border-radius:8px; cursor:pointer; }
+  button:hover { border-color:var(--acc); }
+  button.primary { background:var(--acc); color:#0b1020; border-color:var(--acc); font-weight:700; }
+  button.danger { color:#fca5a5; border-color:rgba(248,113,113,.4); }
+  .mes { min-width:170px; text-align:center; font-weight:700; text-transform:capitalize; }
+  .legenda { display:flex; flex-wrap:wrap; gap:10px; padding:12px 20px; font-size:12px; color:var(--mut); }
+  .sw { display:inline-flex; align-items:center; gap:6px; }
+  .sw i { width:12px; height:12px; border-radius:3px; display:inline-block; }
+  main { display:grid; grid-template-columns: minmax(0,1fr) 340px; gap:16px; padding:0 20px 24px; }
+  @media (max-width: 900px) { main { grid-template-columns: 1fr; } }
+  .grid { display:grid; grid-template-columns: repeat(7, minmax(0,1fr)); gap:6px; }
+  .dow { font-size:11px; text-transform:uppercase; color:var(--mut); text-align:center; padding:4px 0; }
+  .dia { background:var(--card); border:1px solid var(--line); border-radius:10px; min-height:96px; padding:6px; cursor:pointer; display:flex; flex-direction:column; gap:3px; overflow:hidden; }
+  .dia:hover { border-color:rgba(163,230,53,.5); }
+  .dia.outro { opacity:.35; }
+  .dia.hoje { outline:2px solid var(--acc); outline-offset:-2px; }
+  .dia.sel { border-color:var(--acc); }
+  .num { font-size:12px; font-weight:700; color:var(--mut); }
+  .ev { font-size:11px; line-height:1.25; padding:2px 5px; border-radius:5px; color:#0b1020; white-space:nowrap; overflow:hidden; text-overflow:ellipsis; font-weight:600; }
+  .mais { font-size:10px; color:var(--mut); }
+  .painel { background:var(--card); border:1px solid var(--line); border-radius:12px; padding:14px; align-self:start; }
+  .painel h2 { font-size:14px; margin:0 0 10px; }
+  .item { border:1px solid var(--line); border-radius:8px; padding:8px 10px; margin-bottom:8px; font-size:13px; }
+  .item small { color:var(--mut); display:block; margin-top:2px; }
+  .form label { display:block; font-size:11px; text-transform:uppercase; color:var(--mut); margin:8px 0 4px; }
+  .form input, .form select { width:100%; background:#0b1020; color:var(--txt); border:1px solid var(--line); border-radius:8px; padding:8px; font:inherit; }
+  .msg { font-size:12px; margin-top:8px; min-height:16px; }
+  .msg.err { color:#fca5a5; } .msg.ok { color:var(--acc); }
+  .vazio { color:var(--mut); font-size:13px; }
+</style>
+</head>
+<body>
+<header>
+  <h1>AGENDA · 4.3.2.0</h1>
+  <div class="nav">
+    <button id="prev">‹</button>
+    <div class="mes" id="mesTitulo"></div>
+    <button id="next">›</button>
+    <button id="hoje">Hoje</button>
+  </div>
+</header>
+
+<div class="legenda">
+  <span class="sw"><i style="background:#f97316"></i>Holding 24 h</span>
+  <span class="sw"><i style="background:#2563eb"></i>Contrato assinado</span>
+  <span class="sw"><i style="background:#22c55e"></i>Aprovado / depósito feito</span>
+  <span class="sw"><i style="background:#8A10D8"></i>Proposta enviada</span>
+  <span class="sw"><i style="background:#facc15"></i>Lead pediu a data</span>
+  <span class="sw"><i style="background:#64748b"></i>Indisponível</span>
+  <span class="sw"><i style="background:#15803d"></i>Comissão a pagar</span>
+  <span class="sw"><i style="background:#86efac"></i>Recebimento pendente</span>
+  <span class="sw"><i style="background:transparent;border:1px dashed #64748b"></i>Data vazia</span>
+</div>
+
+<main>
+  <section>
+    <div class="grid" id="cabecalho"></div>
+    <div class="grid" id="grade"></div>
+  </section>
+
+  <aside class="painel">
+    <h2 id="diaTitulo">Selecione um dia</h2>
+    <div id="diaLista" class="vazio">Clique em um dia para ver os eventos.</div>
+
+    <hr style="border-color:var(--line);margin:16px 0">
+
+    <h2>Marcar indisponibilidade</h2>
+    <form class="form" id="formBloqueio">
+      <label for="recurso">Artista ou colaborador</label>
+      <select id="recurso" required></select>
+      <label for="ini">De</label>
+      <input type="date" id="ini" required>
+      <label for="fim">Até</label>
+      <input type="date" id="fim" required>
+      <label for="motivo">Motivo</label>
+      <input type="text" id="motivo" placeholder="Ex.: Férias, compromisso">
+      <div style="margin-top:12px"><button class="primary" type="submit">Bloquear datas</button></div>
+      <div class="msg" id="msgBloqueio"></div>
+    </form>
+  </aside>
+</main>
+
+<script>
+(function () {
+  'use strict';
+
+  // Confirme o nome real da tabela de leads no seu banco (o export tem "leads", o código usa "co_leads").
+  const TABELA_LEADS = 'co_leads';
+
+  const sb = window.sbPartner;
+  const COR = {
+    holding: '#f97316',        // holding 24 h: laranja
+    contrato: '#2563eb',       // contrato assinado: azul
+    aprovado: '#22c55e',       // depósito feito / tudo aprovado: verde
+    proposta: '#8A10D8',       // proposta enviada (roxo da marca)
+    lead: '#facc15',           // lead pediu a data (amarelo)
+    indisponibilidade: '#64748b',
+    pagamento: '#15803d',      // comissão a pagar
+    recebimento: '#86efac'     // recebimento do cliente pendente
+  };
+  const ROTULO = {
+    holding: 'Holding 24 h', contrato: 'Contrato assinado', aprovado: 'Aprovado / depósito feito',
+    proposta: 'Proposta enviada', lead: 'Lead pediu a data', indisponibilidade: 'Indisponível',
+    pagamento: 'Comissão a pagar', recebimento: 'Recebimento pendente'
+  };
+  const MESES = ['janeiro','fevereiro','março','abril','maio','junho','julho','agosto','setembro','outubro','novembro','dezembro'];
+  const DOW = ['seg','ter','qua','qui','sex','sáb','dom'];
+
+  let ref = new Date(); ref.setDate(1);
+  let eventosDoMes = {};   // 'YYYY-MM-DD' -> [evento]
+  let diaSel = null;
+
+  const esc = (s) => String(s ?? '').replace(/[&<>"']/g, c => ({'&':'&amp;','<':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
+  const iso = (d) => d.getFullYear() + '-' + String(d.getMonth()+1).padStart(2,'0') + '-' + String(d.getDate()).padStart(2,'0');
+  const soData = (v) => v ? String(v).slice(0,10) : null;
+  const nomeRecurso = (r) => r ? (r.nome_artistico || r.nome_completo || 'Sem nome') : '—';
+
+  async function exigirAdmin() {
+    if (!sb) { location.href = 'login.html'; return false; }
+    const { data: { session } } = await sb.auth.getSession();
+    if (!session) { location.href = 'login.html'; return false; }
+    const { data: eu } = await sb.from('parceiros').select('role, nivel').eq('user_id', session.user.id).maybeSingle();
+    const papel = String((eu && (eu.role || eu.nivel)) || '').toLowerCase().trim();
+    if (papel === 'admin' || papel === 'master') return true;
+    // Logado, mas sem papel de admin: não redireciona (evita laço com a tela de login)
+    document.body.innerHTML = '<div style="padding:40px;font-family:system-ui;color:#e2e8f0;background:#0b1020;min-height:100vh;">' +
+      '<h2>Sem permissão de administrador</h2><p>Sua conta está logada, mas não tem papel de admin. ' +
+      'Papel encontrado: <strong>' + (papel || 'nenhum') + '</strong>.</p></div>';
+    return false;
+  }
+
+  function adicionarEvento(mapa, dataStr, ev) {
+    if (!dataStr) return;
+    (mapa[dataStr] = mapa[dataStr] || []).push(ev);
+  }
+
+  function expandirPeriodo(mapa, ini, fim, ev) {
+    const a = new Date(ini + 'T00:00:00'), b = new Date(fim + 'T00:00:00');
+    for (let d = new Date(a); d <= b; d.setDate(d.getDate() + 1)) adicionarEvento(mapa, iso(d), ev);
+  }
+
+  async function carregarMes() {
+    const primeiro = new Date(ref.getFullYear(), ref.getMonth(), 1);
+    const ultimo = new Date(ref.getFullYear(), ref.getMonth() + 1, 0);
+    const ini = iso(primeiro), fim = iso(ultimo);
+    const mapa = {};
+
+    // 1. Reservas oficiais (proposta, holding, contrato, indisponibilidade)
+    const { data: res, error: e1 } = await sb.from('agenda_reservas')
+      .select('id, tipo, proposta_id, data_inicio, data_fim, expira_em, observacao, recurso:parceiros!recurso_id(nome_completo, nome_artistico)')
+      .lte('data_inicio', fim).gte('data_fim', ini);
+    if (e1) throw e1;
+    const idsContrato = (res || []).filter(r => r.tipo === 'contrato' && r.proposta_id).map(r => r.proposta_id);
+    const aprovadas = {};
+    if (idsContrato.length) {
+      const { data: ca } = await sb.from('contrato_comprovantes')
+        .select('proposta_id').in('proposta_id', idsContrato).eq('status', 'aprovado');
+      (ca || []).forEach(x => { aprovadas[x.proposta_id] = true; });
+    }
+    (res || []).forEach(r => expandirPeriodo(mapa, r.data_inicio, r.data_fim, {
+      tipo: (r.tipo === 'contrato' && aprovadas[r.proposta_id]) ? 'aprovado' : r.tipo, id: r.id, titulo: nomeRecurso(r.recurso),
+      detalhe: r.observacao || '', expira: r.expira_em, origem: 'reserva'
+    }));
+
+    // 3. Leads que pediram data (co_leads não tem etapa; mostra todos com data)
+    const { data: leads, error: e3 } = await sb.from(TABELA_LEADS)
+      .select('id, nome, data_evento')
+      .gte('data_evento', ini).lte('data_evento', fim);
+    if (e3) throw e3;
+    (leads || []).forEach(l => adicionarEvento(mapa, soData(l.data_evento), {
+      tipo: 'lead', id: l.id, titulo: l.nome || 'Lead', detalhe: 'Pediu esta data', origem: 'lead'
+    }));
+
+    // 4. Comissões solicitadas pelo vendedor e aguardando liquidação do admin
+    const { data: com, error: e4 } = await sb.from('propostas')
+      .select('id, numero, comissao_solicitada_valor, comissao_solicitada_data, parceiros(nome_completo, nome_artistico)')
+      .gt('comissao_solicitada_valor', 0);
+    if (e4) throw e4;
+    (com || []).forEach(c => {
+      const dia = soData(c.comissao_solicitada_data);
+      if (!dia || dia < ini || dia > fim) return;
+      adicionarEvento(mapa, dia, {
+        tipo: 'pagamento', id: c.id, titulo: 'Comissão · ' + nomeRecurso(c.parceiros),
+        detalhe: 'Solicitado R$ ' + Number(c.comissao_solicitada_valor).toFixed(2) + ' · Proposta #' + c.numero,
+        origem: 'comissao'
+      });
+    });
+
+    // 5. Recebimentos do cliente (coluna JSON pagamento_agenda em propostas)
+    const { data: pags, error: e5 } = await sb.from('propostas')
+      .select('id, numero, cliente_nome, pagamento_agenda')
+      .not('pagamento_agenda', 'is', null);
+    if (e5) throw e5;
+    (pags || []).forEach(p => {
+      const pa = p.pagamento_agenda || {};
+      [['entrada', pa.data_entrada, pa.status_entrada], ['saldo', pa.data_saldo, pa.status_saldo]]
+        .forEach(([rotulo, dataPgto, status]) => {
+          const dia = soData(dataPgto);
+          if (!dia || dia < ini || dia > fim || status === 'pago') return;
+          adicionarEvento(mapa, dia, {
+            tipo: 'recebimento', id: p.id, titulo: (p.cliente_nome || 'Cliente') + ' · ' + rotulo,
+            detalhe: 'Proposta #' + p.numero + ' · pendente', origem: 'recebimento'
+          });
+        });
+    });
+
+    eventosDoMes = mapa;
+  }
+
+  function renderCabecalho() {
+    const cab = document.getElementById('cabecalho');
+    cab.innerHTML = DOW.map(d => '<div class="dow">' + d + '</div>').join('');
+  }
+
+  function renderMes() {
+    document.getElementById('mesTitulo').textContent = MESES[ref.getMonth()] + ' ' + ref.getFullYear();
+    const grade = document.getElementById('grade');
+    const primeiro = new Date(ref.getFullYear(), ref.getMonth(), 1);
+    const offset = (primeiro.getDay() + 6) % 7;             // semana começa na segunda
+    const inicio = new Date(primeiro); inicio.setDate(1 - offset);
+    const hoje = iso(new Date());
+    let html = '';
+
+    for (let i = 0; i < 42; i++) {
+      const d = new Date(inicio); d.setDate(inicio.getDate() + i);
+      const k = iso(d);
+      const evs = eventosDoMes[k] || [];
+      const cls = ['dia'];
+      if (d.getMonth() !== ref.getMonth()) cls.push('outro');
+      if (k === hoje) cls.push('hoje');
+      if (k === diaSel) cls.push('sel');
+      const visiveis = evs.slice(0, 3).map(e =>
+        '<div class="ev" style="background:' + COR[e.tipo] + '">' + esc(e.titulo) + '</div>').join('');
+      const mais = evs.length > 3 ? '<div class="mais">+' + (evs.length - 3) + ' mais</div>' : '';
+      html += '<div class="' + cls.join(' ') + '" data-dia="' + k + '"><span class="num">' + d.getDate() + '</span>' + visiveis + mais + '</div>';
+    }
+    grade.innerHTML = html;
+    grade.querySelectorAll('.dia').forEach(el => el.addEventListener('click', () => selecionarDia(el.dataset.dia)));
+  }
+
+  function selecionarDia(k) {
+    diaSel = k;
+    const [y, m, d] = k.split('-').map(Number);
+    document.getElementById('diaTitulo').textContent = d + ' de ' + MESES[m - 1] + ' de ' + y;
+    const lista = document.getElementById('diaLista');
+    const evs = eventosDoMes[k] || [];
+    if (!evs.length) { lista.className = 'vazio'; lista.textContent = 'Nenhum evento neste dia.'; }
+    else {
+      lista.className = '';
+      lista.innerHTML = evs.map(e => {
+        const acao = (e.origem === 'reserva' && e.tipo === 'indisponibilidade')
+          ? '<div style="margin-top:6px"><button class="danger" data-del="' + e.id + '">Remover bloqueio</button></div>' : '';
+        const exp = e.expira ? '<small>Expira em ' + new Date(e.expira).toLocaleString('pt-BR') + '</small>' : '';
+        return '<div class="item" style="border-left:4px solid ' + COR[e.tipo] + '">' +
+          '<strong>' + esc(e.titulo) + '</strong> <span style="color:var(--mut)">· ' + ROTULO[e.tipo] + '</span>' +
+          (e.detalhe ? '<small>' + esc(e.detalhe) + '</small>' : '') + exp + acao + '</div>';
+      }).join('');
+      lista.querySelectorAll('[data-del]').forEach(b => b.addEventListener('click', () => removerBloqueio(b.dataset.del)));
+    }
+    renderMes();
+  }
+
+  async function removerBloqueio(id) {
+    if (!confirm('Remover este bloqueio?')) return;
+    const { error } = await sb.from('agenda_reservas').delete().eq('id', id);
+    if (error) return alert('Não foi possível remover: ' + error.message);
+    await atualizar();
+  }
+
+  async function carregarRecursos() {
+    const { data, error } = await sb.from('parceiros')
+      .select('id, nome_completo, nome_artistico').eq('status', 'aprovado').order('nome_completo');
+    if (error) throw error;
+    document.getElementById('recurso').innerHTML =
+      '<option value="">Escolha…</option>' +
+      (data || []).map(p => '<option value="' + p.id + '">' + esc(p.nome_artistico || p.nome_completo) + '</option>').join('');
+  }
+
+  document.getElementById('formBloqueio').addEventListener('submit', async (ev) => {
+    ev.preventDefault();
+    const msg = document.getElementById('msgBloqueio');
+    const recurso = document.getElementById('recurso').value;
+    const ini = document.getElementById('ini').value, fim = document.getElementById('fim').value;
+    const motivo = document.getElementById('motivo').value.trim() || 'Indisponível';
+    if (fim < ini) { msg.className = 'msg err'; msg.textContent = 'A data final é anterior à inicial.'; return; }
+    const { error } = await sb.from('agenda_reservas').insert({
+      recurso_id: recurso, tipo: 'indisponibilidade', data_inicio: ini, data_fim: fim, observacao: motivo
+    });
+    if (error) {
+      const conflito = error.code === '23P01';
+      msg.className = 'msg err';
+      msg.textContent = conflito
+        ? 'Conflito: esse artista já tem holding, contrato ou bloqueio nessas datas.'
+        : 'Erro: ' + error.message;
+      return;
+    }
+    msg.className = 'msg ok'; msg.textContent = 'Datas bloqueadas.';
+    document.getElementById('formBloqueio').reset();
+    await atualizar();
+  });
+
+  async function atualizar() {
+    try { await carregarMes(); renderMes(); if (diaSel) selecionarDia(diaSel); }
+    catch (e) { alert('Erro ao carregar a agenda: ' + (e.message || e)); }
+  }
+
+  document.getElementById('prev').onclick = () => { ref.setMonth(ref.getMonth() - 1); atualizar(); };
+  document.getElementById('next').onclick = () => { ref.setMonth(ref.getMonth() + 1); atualizar(); };
+  document.getElementById('hoje').onclick = () => { ref = new Date(); ref.setDate(1); atualizar(); };
+
+  (async function iniciar() {
+    if (!(await exigirAdmin())) return;
+    renderCabecalho();
+    await carregarRecursos();
+    await atualizar();
+  })();
+})();
+</script>
+</body>
+</html>
