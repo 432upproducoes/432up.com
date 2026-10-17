@@ -399,6 +399,39 @@
     return null;
   }
 
+  // Vitrines extras aprovadas (perfis 2 e 3) viram produtos separados, com a identidade do cadastro
+  async function carregarVitrinesAprovadas(client) {
+    try {
+      const { data: extras, error } = await client
+        .from('vitrines').select('*').eq('status', 'aprovada').order('ordem');
+      if (error || !extras || extras.length === 0) return [];
+      const ids = [...new Set(extras.map(v => v.parceiro_id))];
+      const { data: pais } = await client
+        .from('parceiros').select('*').in('id', ids)
+        .eq('is_artista', true).eq('status_artista', 'aprovado');
+      if (!pais) return [];
+      return extras
+        .map(v => {
+          const pai = pais.find(p => p.id === v.parceiro_id);
+          if (!pai) return null;
+          // Só valores preenchidos na vitrine sobrescrevem o cadastro
+          const fundido = Object.assign({}, pai);
+          Object.keys(v).forEach(k => { if (v[k] !== null && v[k] !== undefined) fundido[k] = v[k]; });
+          return Object.assign(fundido, {
+            id: v.id,
+            nome_completo: pai.nome_completo,
+            cidade: pai.cidade,
+            estado: pai.estado,
+            fotos_pendentes_aprovacao: false
+          });
+        })
+        .filter(Boolean);
+    } catch (e) {
+      console.error('[432UP Vitrine] Falha ao carregar vitrines extras:', e);
+      return [];
+    }
+  }
+
   async function carregarVitrineCategorias() {
     const container = document.getElementById('categories-grid');
     const client = getSupabaseClient();
@@ -434,12 +467,13 @@
       if (errFilhas) throw errFilhas;
 
       // 3. Buscar todos os parceiros cadastrados
-      const { data: parceiros, error: errParceiros } = await client
+      const { data: parceirosBase, error: errParceiros } = await client
         .from('parceiros')
         .select('id, perfil_parceiro_id, foto_capa_url, avatar_url, galeria_fotos')
         .or('status_artista.eq.aprovado,status_artista.is.null');
 
       if (errParceiros) throw errParceiros;
+      const parceiros = (parceirosBase || []).concat(await carregarVitrinesAprovadas(client));
 
       // 4. Mapear dados e filtrar quem tem 0 opções
       // Regra especial: a categoria-pai "Outros" não deve virar 1 card agregado.
