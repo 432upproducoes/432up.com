@@ -1,0 +1,65 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Minhas indicações · 432UP Partner</title>
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+<script src="partner-config.js"></script>
+<style>
+  :root { --bg:#070b1a; --card:#111a31; --line:rgba(255,255,255,.08); --txt:#e2e8f0; --mut:#94a3b8; --acc:#22d3ee; }
+  * { box-sizing:border-box; }
+  body { margin:0; font-family:system-ui,-apple-system,Segoe UI,Roboto,sans-serif; background:var(--bg); color:var(--txt); padding:20px; }
+  .wrap { max-width:960px; margin:0 auto; display:grid; gap:14px; }
+  h1 { font-size:18px; margin:0; } .sub { color:var(--mut); font-size:13px; }
+  .card { background:var(--card); border:1px solid var(--line); border-radius:14px; padding:16px; overflow-x:auto; }
+  table { width:100%; border-collapse:collapse; font-size:13px; }
+  th, td { text-align:left; padding:9px 8px; border-bottom:1px solid var(--line); }
+  th { font-size:11px; text-transform:uppercase; color:var(--mut); letter-spacing:.04em; }
+  .vazio { color:var(--mut); font-size:13px; padding:20px 4px; }
+  .tag { font-size:11px; font-weight:700; padding:3px 8px; border-radius:999px; text-transform:uppercase; }
+  .t-ok { background:rgba(163,230,53,.15); color:#a3e635; }
+  .t-pend { background:rgba(250,204,21,.15); color:#facc15; }
+  .t-rec { background:rgba(248,113,113,.15); color:#fca5a5; }
+  a.voltar { color:var(--acc); text-decoration:none; font-size:13px; }
+</style>
+</head>
+<body>
+<div class="wrap">
+  <div>
+    <a class="voltar" href="index.html">← Voltar ao painel</a>
+    <h1 style="margin-top:8px;">Minhas indicações</h1>
+    <div class="sub">Aqui aparecem as vendas dos vendedores que você indicou. Você vê só as vendas, sem comissão nem dados pessoais deles.</div>
+  </div>
+  <div class="card" id="box"><div class="vazio">Carregando…</div></div>
+</div>
+
+<script>
+(function () {
+  'use strict';
+  var sb = window.sbPartner;
+  var BRL = function (v) { return v == null ? '—' : 'R$ ' + Number(v).toFixed(2).replace('.', ','); };
+  var DATA = function (v) { return v ? new Date(String(v).slice(0, 10) + 'T12:00:00').toLocaleDateString('pt-BR') : '—'; };
+  var esc = function (t) { return String(t == null ? '' : t).replace(/[&<>"']/g, function (c) { return {'&':'&amp;','<':'&gt;','"':'&quot;',"'":'&#39;'}[c]; }); };
+  var ROTULO = { rascunho:'Rascunho', enviada:'Enviada', aprovada:'Aprovada', expirada:'Expirada', cancelada:'Cancelada' };
+  var CLASSE = { aprovada:'t-ok', enviada:'t-pend', rascunho:'t-pend', expirada:'t-rec', cancelada:'t-rec' };
+
+  (async function iniciar() {
+    var box = document.getElementById('box');
+    var parceiro = await partnerRequireAuth();
+    if (!parceiro) return;
+    var r = await sb.rpc('vendas_do_indicado');
+    if (r.error) { box.innerHTML = '<div class="vazio">Não foi possível carregar: ' + esc(r.error.message) + '</div>'; return; }
+    var rows = r.data || [];
+    if (!rows.length) { box.innerHTML = '<div class="vazio">Nenhuma venda de vendedores indicados por você ainda.</div>'; return; }
+    box.innerHTML = '<table><thead><tr><th>Proposta</th><th>Vendedor</th><th>Cliente</th><th>Evento</th><th>Data</th><th>Valor</th><th>Status</th></tr></thead><tbody>' +
+      rows.map(function (x) {
+        return '<tr><td>#' + esc(x.numero) + '</td><td>' + esc(x.vendedor_nome) + '</td><td>' + esc(x.cliente_nome) + '</td><td>' + esc(x.tipo_evento) +
+          '</td><td>' + DATA(x.data_evento) + '</td><td>' + BRL(x.valor_total) + '</td><td><span class="tag ' + (CLASSE[x.status] || 't-pend') + '">' +
+          esc(ROTULO[x.status] || x.status) + '</span></td></tr>';
+      }).join('') + '</tbody></table>';
+  })();
+})();
+</script>
+</body>
+</html>
