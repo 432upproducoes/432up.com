@@ -544,6 +544,11 @@
                 </select>
               </div>
 
+              <div class="mt-4 rounded-xl border border-white/10 bg-slate-900/40 p-4">
+                <label class="block text-xs uppercase tracking-wider text-slate-300 font-semibold mb-1.5">Indicado por (vendedor que indicou)</label>
+                <select id="mIndicadoPor" class="w-full bg-slate-950 border border-white/10 rounded-xl px-3 py-2 text-sm text-white"></select>
+                <p class="text-[11px] text-slate-500 mt-1.5">O vendedor que indicou vê somente as vendas deste vendedor.</p>
+              </div>
               <div id="mVitrinesExtras" class="hidden mt-4 rounded-xl border border-cyan-500/30 bg-cyan-500/5 p-4">
                 <strong class="text-xs text-white block uppercase tracking-wider mb-2">🎤 Vitrines extras (2 e 3) · solicitadas pelo artista</strong>
                 <div id="mVitrinesExtrasLista" class="space-y-2 text-xs text-slate-300">Carregando…</div>
@@ -787,6 +792,18 @@
       }
 
       var vitrinesPorParceiro = {};
+      function preencherSelectIndicado(id) {
+        var sel = document.getElementById('mIndicadoPor');
+        if (!sel) return;
+        var base = listaParceiros.find(function (p) { return String(p.id) === String(id); }) || {};
+        var opcoes = listaParceiros
+          .filter(function (p) { return String(p.id) !== String(id) && String(p.role || p.nivel || 'vendedor').toLowerCase() !== 'admin'; })
+          .sort(function (a, b) { return String(a.nome_completo || '').localeCompare(String(b.nome_completo || ''), 'pt-BR'); });
+        sel.innerHTML = '<option value="">— Venda direta (sem indicação) —</option>' +
+          opcoes.map(function (p) { return '<option value="' + p.id + '">' + esc(p.nome_completo || p.email) + '</option>'; }).join('');
+        sel.value = base.indicado_por || '';
+      }
+
       var mVitrineId = null;
       function obterFichaParaModal(id) {
         var base = listaParceiros.find(function (item) { return String(item.id) === String(id); });
@@ -795,7 +812,7 @@
         if (!vit) return base;
         return Object.assign({}, base, vit, {
           id: base.id, status: base.status, status_artista: base.status_artista,
-          __vitrineId: vit.id, __vitrineStatus: vit.status
+          __vitrineId: vit.id, __vitrineStatus: vit.status, __vitrineOrdem: vit.ordem
         });
       }
 
@@ -841,6 +858,8 @@
 
       async function aprovarVitrineAtiva() {
         var pay = { galeria_fotos: mGaleriaFotosAtual, foto_capa_url: mFotoCapaUrlAtual, midias_pendentes: [] };
+        var capaP = (mMidiasPendentesAtual || []).find(function (m) { return m.tipo === 'capa'; });
+        if (capaP) { pay.foto_capa_url = capaP.url; mFotoCapaUrlAtual = capaP.url; }
         (mMidiasPendentesAtual || []).filter(function (m) { return m.tipo === 'video'; }).forEach(function (vid) {
           pay[vid.campo_destino || 'youtube_1'] = vid.url;
         });
@@ -852,8 +871,17 @@
         pay.aprovada_em = new Date().toISOString();
         var r = await sbPartner.from('vitrines').update(pay).eq('id', mVitrineId);
         if (r.error) { alert('Erro ao aprovar: ' + r.error.message); return; }
-        alert('✅ Vitrine aprovada.');
+        (mMidiasPendentesAtual || []).filter(function (m) { return m.tipo === 'video'; }).forEach(function (vid) {
+          atualizarLabelsVideoAdmin(vid.campo_destino || 'youtube_1', vid.url, false);
+        });
         mMidiasPendentesAtual = [];
+        document.getElementById('mMediaPendingBadge').classList.add('hidden');
+        document.getElementById('mContainerAcaoMidias').classList.add('hidden');
+        document.getElementById('mContainerAcaoMidias').classList.remove('flex');
+        document.getElementById('mMidiasEmDiaMsg').classList.remove('hidden');
+        renderCapaAdmin();
+        renderGaleriaAdmin();
+        alert('✅ Vitrine aprovada.');
         await carregarVitrinesAdmin();
         renderAbasVitrinesAdmin();
         carregarTaxonomiaEParceiros();
@@ -2269,7 +2297,7 @@
 
       /* Publica as mídias novas no R2 (chamado ao clicar em Salvar, antes de montar o payload) */
       async function admPublicarMidiasNovas(parceiro) {
-        var uid = parceiro.user_id;
+        var uid = parceiro.user_id + (parceiro.__vitrineOrdem && parceiro.__vitrineOrdem > 1 ? '/vitrine-' + parceiro.__vitrineOrdem : '');
         var ts = Date.now();
         var temAlgo = admCapaBlob || admGaleriaNovas.length || admVideoNovo.youtube_1 || admVideoNovo.youtube_2;
         if (!temAlgo) return;
@@ -2472,7 +2500,7 @@
         window.__vitrineSolicitada = null;
         var parceiro = obterFichaParaModal(id);
         if (!parceiro) return;
-        setTimeout(renderAbasVitrinesAdmin, 0);
+        setTimeout(function () { renderAbasVitrinesAdmin(); preencherSelectIndicado(parceiro.id); }, 0);
 
         parceiroSelecionadoId = parceiro.id;
 
@@ -2955,7 +2983,7 @@
         btn.textContent = 'Salvando...';
 
         // 1) Envia para o R2 o que foi escolhido (capa, fotos, vídeos) — só agora
-        var parceiroParaEnvio = listaParceiros.find(function(item) { return String(item.id) === String(parceiroSelecionadoId); });
+        var parceiroParaEnvio = obterFichaParaModal(parceiroSelecionadoId);
         if (parceiroParaEnvio) {
           try {
             await admPublicarMidiasNovas(parceiroParaEnvio);
@@ -2999,6 +3027,7 @@
           observacoes_admin: document.getElementById('mObsAdmin').value.trim(),
 
           status_artista: document.getElementById('mStatusArtista').value,
+          indicado_por: (document.getElementById('mIndicadoPor') && document.getElementById('mIndicadoPor').value) || null,
           is_destaque: document.getElementById('mIsDestaque').checked,
           nome_artistico: document.getElementById('mArtNomeArtistico').value.trim() || null,
           tagline_artistica: document.getElementById('mArtTagline').value.trim() || null,
@@ -3011,8 +3040,8 @@
 
 
 // URLs R2 dos vídeos (campos técnicos youtube_1/2 por compatibilidade)
-youtube_1: (document.getElementById('mArtYoutube1').value || '').trim() || (listaParceiros.find(function(item) { return String(item.id) === String(parceiroSelecionadoId); }) || {}).youtube_1 || null,
-youtube_2: (document.getElementById('mArtYoutube2').value || '').trim() || (listaParceiros.find(function(item) { return String(item.id) === String(parceiroSelecionadoId); }) || {}).youtube_2 || null,
+youtube_1: (document.getElementById('mArtYoutube1').value || '').trim() || (obterFichaParaModal(parceiroSelecionadoId) || {}).youtube_1 || null,
+youtube_2: (document.getElementById('mArtYoutube2').value || '').trim() || (obterFichaParaModal(parceiroSelecionadoId) || {}).youtube_2 || null,
 
 
 
