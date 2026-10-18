@@ -860,6 +860,20 @@
       html += '</div>';
     }
 
+    html += '<div style="border:1px solid rgba(255,255,255,.1);border-radius:10px;padding:12px;margin-bottom:14px;"><strong>Linha do tempo do evento</strong>' +
+      '<div style="font-size:12px;color:#94a3b8;margin-top:4px;">Marque as etapas deste evento e ajuste a hora de cada uma. Para outra etapa, busque na lista ou digite um nome novo.</div>' +
+      '<div id="etapasBox" style="margin-top:8px;">Carregando…</div>' +
+      '<div style="display:flex;gap:8px;margin-top:10px;flex-wrap:wrap;">' +
+      '<input id="etapaNova" list="etapasCatalogo" placeholder="Buscar ou criar etapa" style="flex:1;min-width:180px;background:#020617;color:#e2e8f0;border:1px solid rgba(255,255,255,.1);border-radius:8px;padding:6px;">' +
+      '<datalist id="etapasCatalogo"></datalist>' +
+      '<button onclick="finAdicionarEtapa()" style="padding:6px 12px;border-radius:8px;background:#a3e635;color:#0b1020;border:none;font-weight:700;cursor:pointer;">+ Adicionar</button></div></div>' +
+      '<div style="border:1px solid rgba(255,255,255,.1);border-radius:10px;padding:12px;margin-bottom:14px;"><strong>Instruções do evento</strong>' +
+      '<div style="font-size:12px;color:#94a3b8;margin-top:4px;">O cliente também escreve aqui. Você pode acrescentar ou remover.</div>' +
+      '<div id="obsBox" style="margin-top:8px;">Carregando…</div>' +
+      '<div style="display:flex;gap:8px;margin-top:10px;">' +
+      '<input id="obsNova" maxlength="400" placeholder="Nova instrução" style="flex:1;background:#020617;color:#e2e8f0;border:1px solid rgba(255,255,255,.1);border-radius:8px;padding:6px;">' +
+      '<button onclick="finAdicionarObs()" style="padding:6px 12px;border-radius:8px;background:#a3e635;color:#0b1020;border:none;font-weight:700;cursor:pointer;">+</button></div></div>';
+
     html += '<strong style="display:block;margin-top:14px;">Histórico financeiro (interno)</strong>';
     if (!l.data || !l.data.length) html += '<div style="color:#94a3b8;margin-top:6px;">Nada registrado ainda.</div>';
     else html += '<table style="width:100%;border-collapse:collapse;font-size:12px;margin-top:6px;"><thead><tr style="color:#94a3b8;text-align:left;"><th style="padding:6px;">Quando</th><th style="padding:6px;">Evento</th><th style="padding:6px;">Digitado</th><th style="padding:6px;">Anterior → Novo</th><th style="padding:6px;">Motivo</th></tr></thead><tbody>' +
@@ -870,6 +884,7 @@
       }).join('') + '</tbody></table>';
 
     box.innerHTML = html;
+    carregarEtapasEObs();
   }
 
   window.finAceitarBloqueio = async function () {
@@ -997,6 +1012,69 @@
       await enviarArquivo(arq, { kind: 'admin', proposta_id: pidAtual, tipo: document.getElementById('ecTipo').value, valor: valor, data_pagamento: data });
       carregarFin();
     } catch (e) { msg.style.color = '#fca5a5'; msg.textContent = e.message; }
+  };
+
+  async function carregarEtapasEObs() {
+    var cat = await sbPartner.from('evento_etapas_catalogo').select('nome, hora_padrao, ordem').eq('ativo', true).order('ordem');
+    var et = await sbPartner.from('evento_etapas').select('*').eq('proposta_id', pidAtual).order('ordem');
+    var ob = await sbPartner.from('evento_observacoes').select('*').eq('proposta_id', pidAtual).is('removido_em', null).order('criado_em');
+    var catalogo = cat.data || [];
+    var marcadas = {};
+    (et.data || []).forEach(function (x) { marcadas[x.nome] = x; });
+    document.getElementById('etapasCatalogo').innerHTML = catalogo.map(function (c) { return '<option value="' + E(c.nome) + '">'; }).join('');
+
+    var nomes = catalogo.map(function (c) { return c.nome; });
+    (et.data || []).forEach(function (x) { if (nomes.indexOf(x.nome) < 0) nomes.push(x.nome); });
+    document.getElementById('etapasBox').innerHTML = nomes.map(function (n) {
+      var m = marcadas[n];
+      var c1 = catalogo.find(function (c) { return c.nome === n; });
+      var hora = (m && m.hora) || (c1 && c1.hora_padrao) || '';
+      return '<div style="display:flex;gap:8px;align-items:center;padding:6px 0;border-bottom:1px solid rgba(255,255,255,.06);">' +
+        '<input type="checkbox" ' + (m ? 'checked' : '') + ' onchange="finToggleEtapa(\'' + E(n) + '\', this.checked)">' +
+        '<span style="flex:1;">' + E(n) + (m && m.situacao === 'concluida' ? ' ✓' : '') + '</span>' +
+        '<input type="time" value="' + E(hora) + '" ' + (m ? '' : 'disabled') + ' onchange="finHoraEtapa(\'' + E(n) + '\', this.value)" style="background:#020617;color:#e2e8f0;border:1px solid rgba(255,255,255,.1);border-radius:8px;padding:4px;"></div>';
+    }).join('') || '<span>Nenhuma etapa cadastrada.</span>';
+
+    document.getElementById('obsBox').innerHTML = (ob.data || []).map(function (o) {
+      return '<div style="display:flex;justify-content:space-between;gap:8px;padding:6px 0;border-bottom:1px solid rgba(255,255,255,.06);font-size:13px;">' +
+        '<span>' + E(o.texto) + (o.criado_por === 'cliente' ? ' <em style="color:#a3e635;font-size:11px;">(cliente)</em>' : '') + '</span>' +
+        '<button onclick="finRemoverObs(\'' + o.id + '\')" style="background:none;border:none;color:#fca5a5;cursor:pointer;">✕</button></div>';
+    }).join('') || '<span style="color:#94a3b8;">Nenhuma instrução ainda.</span>';
+  }
+
+  window.finToggleEtapa = async function (nome, ligar) {
+    if (ligar) {
+      var cat = await sbPartner.from('evento_etapas_catalogo').select('nome, hora_padrao, ordem').eq('nome', nome).maybeSingle();
+      await sbPartner.from('evento_etapas').insert({
+        proposta_id: pidAtual, nome: nome, hora: cat.data ? cat.data.hora_padrao : null,
+        ordem: cat.data ? cat.data.ordem : 500, origem: cat.data ? 'catalogo' : 'avulsa'
+      });
+    } else {
+      await sbPartner.from('evento_etapas').delete().eq('proposta_id', pidAtual).eq('nome', nome).neq('situacao', 'concluida');
+    }
+    carregarEtapasEObs();
+  };
+  window.finHoraEtapa = async function (nome, hora) {
+    await sbPartner.from('evento_etapas').update({ hora: hora || null }).eq('proposta_id', pidAtual).eq('nome', nome);
+  };
+  window.finAdicionarEtapa = async function () {
+    var nome = document.getElementById('etapaNova').value.trim();
+    if (!nome) return;
+    await window.finToggleEtapa(nome, true);
+    document.getElementById('etapaNova').value = '';
+  };
+  window.finAdicionarObs = async function () {
+    var txt = document.getElementById('obsNova').value.trim();
+    if (!txt) return;
+    var r = await sbPartner.from('evento_observacoes').insert({ proposta_id: pidAtual, texto: txt, criado_por: 'admin' });
+    if (r.error) return alert(r.error.message);
+    document.getElementById('obsNova').value = '';
+    carregarEtapasEObs();
+  };
+  window.finRemoverObs = async function (id) {
+    if (!confirm('Remover esta instrução?')) return;
+    await sbPartner.from('evento_observacoes').update({ removido_em: new Date().toISOString() }).eq('id', id);
+    carregarEtapasEObs();
   };
 
   window.finExcluir = async function (id) {
