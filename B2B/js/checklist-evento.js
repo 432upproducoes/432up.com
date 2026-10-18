@@ -1,8 +1,9 @@
 /* Checklist do evento: um único componente, usado no admin (cartão do projeto),
-   na tela de projetos, na tela de checklist do colaborador e (somente leitura + slider) na área do cliente.
-   Uso: ChecklistEvento.montar(elemento, { propostaId, sb, modo: 'admin' | 'colaborador' | 'cliente', confirmar })
+   na tela de projetos, na tela de checklist do colaborador/parceiro e (somente leitura + slider) na área do cliente.
+   Uso: ChecklistEvento.montar(elemento, { propostaId, sb, modo: 'admin' | 'colaborador' | 'parceiro' | 'cliente', confirmar })
    - admin: tudo, inclusive desfazer etapa concluída e remover instruções
    - colaborador: adiciona, edita hora, reordena, avança etapa (slider). Não desfaz.
+   - parceiro: só desliza para concluir + pode escrever observações. Não edita a lista.
    - cliente: só lê e confirma etapa pendente (slider) via opts.confirmar(etapaId). */
 (function () {
   'use strict';
@@ -48,8 +49,10 @@
     var modo = opts.modo || 'colaborador';
     var pid = opts.propostaId;
     var sb = opts.sb;
-    var podeEditar = modo !== 'cliente';
+    // admin e colaborador podem editar a estrutura; parceiro e cliente não
+    var podeEditar = (modo === 'admin' || modo === 'colaborador');
     var ehAdmin = modo === 'admin';
+    var soConcluir = (modo === 'parceiro' || modo === 'cliente');
     el.classList.add('ce-wrap');
     el.innerHTML = '<div class="ce-hint">Carregando checklist…</div>';
 
@@ -76,8 +79,11 @@
       et.forEach(function (x) { if (nomes.indexOf(x.nome) < 0) nomes.push(x.nome); });
 
       var linhas = '';
-      if (modo === 'cliente') {
-        linhas = et.length ? et.map(function (e) { return linhaCliente(e); }).join('') : '<div class="ce-hint">Ainda não há etapas.</div>';
+      if (soConcluir) {
+        // parceiro e cliente: só etapas existentes + slider (sem editar estrutura)
+        linhas = et.length
+          ? et.map(function (e) { return linhaCliente(e); }).join('')
+          : '<div class="ce-hint">Ainda não há etapas neste evento.</div>';
       } else {
         linhas = nomes.map(function (n) {
           var m = marcadas[n];
@@ -98,20 +104,27 @@
           (o.criado_por === 'cliente' ? ' <em style="color:#a3e635;font-size:11px;">(cliente)</em>' : '') + '</span>' +
           (ehAdmin ? '<button class="ce-btn" data-obs-del="' + E(o.id) + '">✕</button>' : '') + '</div>';
       }).join('') : '<div class="ce-hint">Nenhuma instrução ainda.</div>');
-      if (podeEditar) {
-        obsHtml += '<div style="display:flex;gap:8px;margin-top:10px;"><input id="ce-obs-nova" maxlength="400" placeholder="Nova instrução" class="ce-in" style="flex:1;">' +
+      // admin, colaborador e parceiro podem escrever observações; cliente não (usa outra tela)
+      if (modo !== 'cliente') {
+        obsHtml += '<div style="display:flex;gap:8px;margin-top:10px;"><input id="ce-obs-nova" maxlength="400" placeholder="' +
+          (modo === 'parceiro' ? 'Ex.: Cheguei na portaria…' : 'Nova instrução') +
+          '" class="ce-in" style="flex:1;">' +
           '<button class="ce-btn ok" id="ce-obs-add">+</button></div>';
       }
 
+      var hintLista = soConcluir
+        ? (modo === 'parceiro'
+            ? 'Deslize para concluir cada etapa. Você pode deixar observações abaixo.'
+            : 'Deslize para confirmar cada etapa. Depois de confirmada, não tem como desfazer.')
+        : 'Marque as etapas, ajuste a hora e arraste para reordenar. Deslize para concluir. Concluir não se desfaz (só o admin desfaz).';
+
       el.innerHTML =
         '<div class="ce-sec"><strong>Checklist do evento</strong>' +
-        '<div class="ce-hint">' + (modo === 'cliente'
-          ? 'Deslize para confirmar cada etapa. Depois de confirmada, não tem como desfazer.'
-          : 'Marque as etapas, ajuste a hora e arraste para reordenar. Deslize para concluir. Concluir não se desfaz (só o admin desfaz).') + '</div>' +
+        '<div class="ce-hint">' + hintLista + '</div>' +
         '<div id="ce-lista">' + linhas + '</div>' + addHtml + '</div>' +
         (modo === 'cliente' ? '' :
-        '<div class="ce-sec"><strong>Instruções do evento</strong>' +
-        '<div class="ce-hint">O cliente também escreve aqui.</div>' +
+        '<div class="ce-sec"><strong>Instruções / Observações</strong>' +
+        '<div class="ce-hint">' + (modo === 'parceiro' ? 'Deixe um registro (ex.: “cheguei na portaria”).' : 'O cliente também escreve aqui.') + '</div>' +
         '<div id="ce-obs">' + obsHtml + '</div></div>');
 
       ligarEventos(cat, et);
@@ -251,7 +264,11 @@
       if (oa) oa.addEventListener('click', async function () {
         var t = (document.getElementById('ce-obs-nova').value || '').trim();
         if (!t) return;
-        await sb.from('evento_observacoes').insert({ proposta_id: pid, texto: t, criado_por: ehAdmin ? 'admin' : 'equipe' });
+        await sb.from('evento_observacoes').insert({
+          proposta_id: pid,
+          texto: t,
+          criado_por: ehAdmin ? 'admin' : (modo === 'parceiro' ? 'parceiro' : 'equipe')
+        });
         carregar();
       });
       el.querySelectorAll('[data-obs-del]').forEach(function (b) {
