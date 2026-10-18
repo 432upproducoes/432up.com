@@ -80,8 +80,7 @@
         if (res.data && res.data.session) {
           sbPartner.from('parceiros').select('id').eq('user_id', res.data.session.user.id).maybeSingle().then(function (r) {
             if (r.error || !r.data) {
-              sbPartner.auth.signOut();
-              showAlert('Seu cadastro de parceiro não foi encontrado. Fale com o suporte se acredita que isso é um engano.', 'error');
+              window.location.href = '../cliente/area.html';
               return;
             }
             window.location.href = 'index.html';
@@ -111,6 +110,45 @@
       }
       function hideAlert() {
         document.getElementById('formAlert').classList.remove('show');
+      }
+
+      /* ── conta só de cliente: segundo fator por e-mail, na mesma tela ── */
+      function entrarComoCliente(email, senha, btn) {
+        sbPartner.auth.signOut().then(function () {
+          return sbPartner.functions.invoke('cliente-entrar', { body: { email: email, senha: senha } });
+        }).then(function (r) {
+          if (r.error || (r.data && r.data.erro)) {
+            showAlert((r.data && r.data.erro) || 'E-mail ou senha incorretos.', 'error');
+            btn.classList.remove('btn-loading');
+            btn.textContent = 'Acessar Portal';
+            return;
+          }
+          mostrarCodigoCliente(email, r.data.email_mascarado);
+        });
+      }
+
+      function mostrarCodigoCliente(email, mascarado) {
+        var form = document.getElementById('loginForm');
+        form.innerHTML = '<p style="color:#cbd5e1;font-size:13px;margin:0 0 12px;">Enviamos um código de 6 números para ' + mascarado +
+          '. Ele vale por 15 minutos.</p>' +
+          '<input id="codCliente" inputmode="numeric" maxlength="6" placeholder="000000" style="width:100%;padding:12px;border-radius:12px;background:#020617;color:#e2e8f0;border:1px solid rgba(255,255,255,.12);font-size:18px;letter-spacing:.3em;text-align:center;">' +
+          '<button type="submit" style="margin-top:14px;width:100%;padding:12px;border:none;border-radius:12px;background:#22d3ee;color:#0b1020;font-weight:800;">Confirmar código</button>';
+        form.addEventListener('submit', function (e) {
+          e.preventDefault();
+          var SBC = window.supabase.createClient(window.PARTNER_CFG.SB_URL, window.PARTNER_CFG.SB_KEY,
+            { auth: { storageKey: 'cliente-432up', persistSession: true, autoRefreshToken: true } });
+          SBC.functions.invoke('cliente-confirmar', { body: { email: email, codigo: document.getElementById('codCliente').value.replace(/\D/g, '') } })
+            .then(function (r) {
+              if (r.error || (r.data && r.data.erro)) {
+                showAlert((r.data && r.data.erro) || 'Código inválido ou vencido.', 'error');
+                return;
+              }
+              return SBC.auth.verifyOtp({ token_hash: r.data.token_hash, type: r.data.type }).then(function (v) {
+                if (v.error) { showAlert('Não foi possível entrar. Tente novamente.', 'error'); return; }
+                window.location.href = '../cliente/area.html';
+              });
+            });
+        });
       }
 
       document.getElementById('loginForm').addEventListener('submit', function (e) {
@@ -152,10 +190,7 @@
               })
               .then(function (r) {
                 if (r.error || !r.data) {
-                  showAlert('Cadastro de parceiro não encontrado para este login.', 'error');
-                  sbPartner.auth.signOut();
-                  btn.classList.remove('btn-loading');
-                  btn.textContent = 'Acessar Portal';
+                  entrarComoCliente(email, senha, btn);
                   return;
                 }
                 if (r.data.status === 'pendente') {
