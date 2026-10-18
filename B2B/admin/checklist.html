@@ -6,6 +6,7 @@
 <title>Checklist · 432UP</title>
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
 <script src="partner-config.js"></script>
+<script src="js/checklist-evento.js"></script>
 <style>
   :root { --bg:#0b1020; --card:#131a2e; --line:rgba(255,255,255,.08); --txt:#e2e8f0; --mut:#94a3b8; --acc:#a3e635; --ouro:#c5a059; --ciano:#00f0ff; }
   * { box-sizing:border-box; }
@@ -34,9 +35,8 @@
     <div id="projs"><div class="vazio">Carregando…</div></div>
   </div>
   <div class="card" id="cardEtapas" style="display:none">
-    <h2 id="tituloEtapas">Etapas</h2>
-    <div id="etapas"></div>
-    <p class="aviso">Marcar como feita é definitivo. Só o administrador pode desfazer.</p>
+    <h2 id="tituloEtapas">Checklist</h2>
+    <div id="checklistMount"></div>
   </div>
 </main>
 
@@ -76,28 +76,13 @@
       el.classList.toggle('on', el.getAttribute('data-id') === id);
     });
     $('cardEtapas').style.display = 'block';
-    $('tituloEtapas').textContent = 'Etapas · #' + ATUAL.numero;
-    await desenhar(id);
-  }
-
-  async function desenhar(id) {
-    var r = await SB.from('evento_etapas').select('id, nome, hora, situacao, ordem').eq('proposta_id', id).order('ordem');
-    var l = r.data || [];
-    $('etapas').innerHTML = l.length ? l.map(function (e) {
-      var feita = e.situacao === 'concluida';
-      return '<div class="item ' + (feita ? 'feita' : '') + '"><div><div class="nome">' + E(e.nome) + '</div>' +
-        '<div class="mut">' + E(e.hora || 'Horário a confirmar') + '</div></div>' +
-        (feita ? '<span class="mut">feita</span>' : '<button data-ok="' + E(e.id) + '">Marcar como feita</button>') + '</div>';
-    }).join('') : '<div class="vazio">Sem etapas.</div>';
-    document.querySelectorAll('[data-ok]').forEach(function (b) {
-      b.addEventListener('click', async function () {
-        b.disabled = true;
-        await SB.from('evento_etapas').update({ situacao: 'concluida', concluida_por: ME.nome_completo, concluida_em: new Date().toISOString() })
-          .eq('id', b.getAttribute('data-ok')).eq('situacao', 'pendente');
-        desenhar(id);
-      });
+    $('tituloEtapas').textContent = 'Checklist · #' + ATUAL.numero;
+    window.ChecklistEvento.montar($('checklistMount'), {
+      propostaId: id, sb: SB, modo: ehAdmin() ? 'admin' : 'colaborador', nomeUsuario: ME.nome_completo
     });
   }
+
+  function ehAdmin() { return /^(admin|master)$/i.test(String(ME.role || '').trim()); }
 
   init();
 })();
