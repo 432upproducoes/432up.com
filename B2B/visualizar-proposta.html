@@ -513,11 +513,6 @@
           </div>
         </div>
 
-        <div id="bloco-observacoes" style="display: none;">
-          <div class="section-header">OBSERVAÇÕES</div>
-          <p id="p2-observacoes" class="terms-text" style="white-space: pre-wrap; margin-bottom: 12px;"></p>
-        </div>
-
         <div class="section-header">A EXPERIÊNCIA</div>
         <p style="margin-bottom: 10px; text-align: justify; font-size: 13px; font-weight: 500;">
           Acreditamos que grandes eventos são feitos de sensações marcantes, encontros inesquecíveis e detalhes impecáveis. Na 432UP! Produções, nosso propósito é transformar ideias em atmosfera: criamos o ambiente perfeito para que a sua mensagem ecoe, a sua celebração emocione e a energia do momento contagie a todos.
@@ -536,6 +531,11 @@
         <p style="margin-top: 12px; text-align: justify; font-size: 13px; font-weight: 700; font-style: italic;">
           Nossa equipe não entrega apenas estrutura, nós sustentamos o ambiente perfeito para que o seu momento seja inesquecível.
         </p>
+
+        <div id="bloco-observacoes" style="display: none;">
+          <div class="section-header">ESPECIFICAÇÕES DA ENTREGA</div>
+          <p id="p2-observacoes" class="terms-text" style="white-space: pre-wrap; margin-bottom: 12px;"></p>
+        </div>
       </div>
 
       <div class="bottom-bar"></div>
@@ -1516,10 +1516,10 @@
     function achatarObservacoes() {
       const bloco = document.getElementById('bloco-observacoes');
       const el = document.getElementById('p2-observacoes');
-      if (!bloco || !el || bloco.style.display === 'none') return;
+      if (!bloco || !el || bloco.style.display === 'none') return [];
 
       const linhas = el.textContent.split(/\n+/).map(t => t.trim()).filter(Boolean);
-      if (!linhas.length) return;
+      if (!linhas.length) return [];
 
       const titulo = bloco.querySelector('.section-header');
       const novos = [titulo];
@@ -1531,6 +1531,7 @@
         novos.push(p);
       });
       bloco.replaceWith(...novos);
+      return novos;
     }
 
     // Empurra o excesso de `inicio` para páginas novas, em cascata, logo após ele.
@@ -1664,6 +1665,15 @@
         if (!ex.length) break;
         atual = criarPaginaContinuacaoFin(atual);
         atual.querySelector('.page-body').append(...ex);
+        // Se a caixa "Vamos criar..." abre esta página, ela fica no meio da página (topo vazio)
+        const primeiro = Array.from(atual.querySelector('.page-body').children).find(ehVisivel);
+        if (primeiro && primeiro.classList.contains('contact-box-wrapper')) {
+          const corpo = atual.querySelector('.page-body');
+          const topoPag = corpo.parentElement;
+          topoPag.style.cssText += ';flex: 1; display: flex; flex-direction: column;';
+          corpo.style.flex = '1';
+          corpo.style.justifyContent = 'center';
+        }
       }
 
       // A assinatura fica somente na última página
@@ -1697,11 +1707,19 @@
         if (p4 && snapPaginas.p4 !== null) p4.innerHTML = snapPaginas.p4;
       }
 
-      achatarObservacoes();
+      // Especificações da entrega: sempre numa página própria (quando existir), entre a pág. 2 e as Condições Gerais.
+      const novasObs = achatarObservacoes();
+      let pagObs = null;
+      if (novasObs.length) {
+        pagObs = criarPaginaContinuacao(p2);
+        pagObs.querySelector('.page-body').append(...novasObs);
+      }
 
-      // Pág. 2 (Sobre o Evento, Observações, Experiência, Excelência): o excesso vira páginas
-      // de continuação ANTES das Condições Gerais, que sempre começam em página própria.
+      // Pág. 2 (Sobre o Evento, Experiência, Excelência): o excesso vira páginas de continuação
+      // antes da página de Especificações da entrega.
       paginarEmCascata(p2);
+      // Especificações da entrega: quebra em cascata para as páginas seguintes.
+      if (pagObs) paginarEmCascata(pagObs);
       // Condições Gerais: quebra em cascata para as páginas seguintes.
       paginarEmCascata(p3);
       // Página de valores: tabela, banner e dados de pagamento quebram acima do "Atenciosamente".
