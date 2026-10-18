@@ -54,6 +54,11 @@
   var $ = function (id) { return document.getElementById(id); };
   var soNumeros = function (t) { return String(t || '').replace(/\D/g, ''); };
   var mostrarMsg = function (t, ok) { $('msg').className = 'msg' + (ok ? ' ok' : ''); $('msg').textContent = t; };
+  async function mensagemErro(r, padrao) {
+    if (r.data && r.data.erro) return r.data.erro;
+    try { if (r.error && r.error.context && typeof r.error.context.json === 'function') { var j = await r.error.context.json(); if (j && j.erro) return j.erro; } } catch (e) {}
+    return padrao;
+  }
 
   $('cpf').addEventListener('input', function (e) {
     var d = String(e.target.value || '').replace(/\D/g, '').slice(0, 14);
@@ -71,7 +76,7 @@
     var r = await SB.functions.invoke('cliente-entrar', { body: { cpf: cpfAtual, senha: $('senha').value } });
     $('btn1').disabled = false;
     if (r.error || (r.data && r.data.erro)) {
-      mostrarMsg((r.data && r.data.erro) || 'Não foi possível entrar. Tente novamente.'); return;
+      mostrarMsg(await mensagemErro(r, 'Não foi possível entrar. Tente novamente.')); return;
     }
     $('passo1').classList.add('hide');
     $('passo2').classList.remove('hide');
@@ -86,7 +91,7 @@
     var r = await SB.functions.invoke('cliente-confirmar', { body: { cpf: cpfAtual, codigo: soNumeros($('codigo').value) } });
     if (r.error || (r.data && r.data.erro)) {
       $('btn2').disabled = false;
-      mostrarMsg((r.data && r.data.erro) || 'Código inválido ou vencido.'); return;
+      mostrarMsg(await mensagemErro(r, 'Código inválido ou vencido.')); return;
     }
     var v = await SB.auth.verifyOtp({ token_hash: r.data.token_hash, type: r.data.type });
     if (v.error) { $('btn2').disabled = false; mostrarMsg('Não foi possível entrar. Tente novamente.'); return; }
