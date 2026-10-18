@@ -239,7 +239,6 @@
   <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
   <script src="../B2B/partner-config.js"></script>
   <script src="../script/script.js" defer></script>
-  <script src="../B2B/partner-header.js"></script>
   <script>
 (function () {
   'use strict';
@@ -531,7 +530,6 @@
     try {
       sessionStorage.setItem('432up_is_cliente', 'true');
       sessionStorage.setItem('432up_is_logged', 'true');
-      sessionStorage.removeItem('432up_cli_redirect');
     } catch (e) {}
     if (typeof window.updateAuthState === 'function') {
       window.updateAuthState({ loggedIn: true, isCliente: true, isAdmin: false });
@@ -539,44 +537,25 @@
     await carregar();
   }
 
-  function irLoginManual() {
-    /* NUNCA redireciona em loop: só link manual se não houver sessão */
-    var main = document.querySelector('main');
-    if (!main) return;
-    main.innerHTML = '<div class="cli-card" style="margin-top:40px;text-align:center">' +
-      '<h2 style="color:#c5a059;margin-bottom:12px">Sessão não encontrada</h2>' +
-      '<p class="cli-sub">Entre de novo pelo portal.</p>' +
-      '<a class="cli-btn" style="display:inline-block;text-decoration:none;max-width:280px" href="../B2B/login.html">Ir para o login</a>' +
-      '</div>';
-  }
-
   (async function iniciar() {
-    /* 1) sessão já pronta */
+    /* Uma só leitura de sessão, com pequena espera se o redirect do login acabou de acontecer */
     var s = await SB.auth.getSession();
+    if (!(s.data && s.data.session)) {
+      await new Promise(function (r) { setTimeout(r, 500); });
+      s = await SB.auth.getSession();
+    }
     if (s.data && s.data.session) {
       await iniciarApp();
       return;
     }
-    /* 2) espera o Auth hidratar (redirect do login) — sem ir ao login sozinho */
-    var resolvido = false;
-    var sub = SB.auth.onAuthStateChange(function (event, session) {
-      if (resolvido) return;
-      if (session) {
-        resolvido = true;
-        iniciarApp();
-      }
-    });
-    setTimeout(async function () {
-      if (resolvido) return;
-      var s2 = await SB.auth.getSession();
-      if (s2.data && s2.data.session) {
-        resolvido = true;
-        await iniciarApp();
-        return;
-      }
-      resolvido = true;
-      irLoginManual();
-    }, 2000);
+    /* Sem sessão: link manual (não redireciona sozinho → não pisca com a home) */
+    var main = document.querySelector('main');
+    if (main) {
+      main.innerHTML = '<div class="cli-card" style="margin-top:40px;text-align:center">' +
+        '<h2 style="color:#c5a059;margin-bottom:12px">Sessão não encontrada</h2>' +
+        '<p class="cli-sub">Entre pelo portal B2B com o e-mail do cliente.</p>' +
+        '<a class="cli-btn" style="display:inline-block;text-decoration:none;max-width:280px" href="../B2B/login.html">Ir para o login</a></div>';
+    }
   })();
 })();
   </script>
