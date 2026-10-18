@@ -1,190 +1,288 @@
 <!DOCTYPE html>
-<html lang="pt-BR">
+<html lang="pt-BR" class="h-full">
 <head>
-<meta charset="UTF-8"><meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
-<title>Minha diária · 432UP</title>
-<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
-<script src="../B2B/partner-config.js"></script>
-<style>
-  :root {
-    --bg:#08080A; --card:rgba(14,18,28,.78); --line:rgba(168,85,247,.18); --txt:#E2E8F0; --mut:#9a97b0;
-    --acc:#00f0ff; --ouro:#c5a059; --vio:#a855f7; --rail:76px;
-  }
-  * { box-sizing:border-box; }
-  html, body { height:100%; margin:0; }
-  body {
-    font-family:system-ui,-apple-system,Segoe UI,Roboto,sans-serif;
-    background:
-      radial-gradient(ellipse 80% 50% at 10% -10%, rgba(168,85,247,.22), transparent 55%),
-      radial-gradient(ellipse 60% 40% at 90% 0%, rgba(0,240,255,.08), transparent 50%),
-      #08080A;
-    color:var(--txt); overflow:hidden;
-  }
-  .app { display:flex; height:100vh; height:100dvh; }
-  .rail {
-    width:var(--rail); flex:0 0 var(--rail); display:flex; flex-direction:column; gap:10px;
-    padding:calc(env(safe-area-inset-top, 0px) + 16px) 8px 16px;
-    background:rgba(8,8,10,.88); border-right:1px solid var(--line);
-    backdrop-filter:blur(16px); -webkit-backdrop-filter:blur(16px);
-  }
-  .aba { position:relative; background:transparent; border:1px solid transparent; color:var(--mut); border-radius:14px; padding:12px 4px; font:inherit; font-size:11px; font-weight:700; letter-spacing:.03em; cursor:pointer; text-align:center; transition:all .35s cubic-bezier(.22,.61,.36,1); }
-  .aba.on { color:var(--ouro); border-color:rgba(197,160,89,.45); background:rgba(197,160,89,.1); box-shadow:0 0 22px rgba(197,160,89,.12); }
-  .aba .ic { display:block; font-size:18px; margin-bottom:4px; }
-  .wrap { flex:1; display:flex; overflow-x:auto; overflow-y:hidden; scroll-snap-type:x mandatory; scroll-behavior:smooth; overscroll-behavior-x:contain; -webkit-overflow-scrolling:touch; }
-  .wrap::-webkit-scrollbar { display:none; }
-  .painel { flex:0 0 100%; scroll-snap-align:start; overflow-y:auto; padding:calc(env(safe-area-inset-top, 0px) + 22px) 18px 40px; }
-  h1 { font-size:20px; margin:0 0 4px; font-weight:800; letter-spacing:.01em; }
-  .sub { font-size:13px; color:var(--mut); margin-bottom:18px; line-height:1.55; }
-  .card {
-    background:var(--card); border:1px solid var(--line); border-radius:16px; padding:16px; margin-bottom:14px;
-    backdrop-filter:blur(14px); -webkit-backdrop-filter:blur(14px);
-    box-shadow:0 10px 30px rgba(0,0,0,.35);
-  }
-  .card h2 { font-size:13px; margin:0 0 10px; color:var(--ouro); text-transform:uppercase; letter-spacing:.06em; }
-  label { display:block; font-size:10px; text-transform:uppercase; letter-spacing:.05em; color:var(--mut); margin:10px 0 4px; }
-  input, select, textarea { width:100%; background:#020617; color:var(--txt); border:1px solid rgba(255,255,255,.1); border-radius:10px; padding:10px; font:inherit; font-size:14px; }
-  .linha2 { display:grid; grid-template-columns:1fr 1fr; gap:10px; }
-  button.p { margin-top:12px; width:100%; padding:11px; border:none; border-radius:12px; background:linear-gradient(135deg,#00f0ff,#22d3ee); color:#0b1020; font-weight:800; font-size:13px; cursor:pointer; }
-  button.s { margin-top:8px; padding:8px 12px; border:1px solid rgba(255,255,255,.2); background:transparent; color:var(--txt); border-radius:10px; font:inherit; font-size:12px; cursor:pointer; }
-  button:disabled { opacity:.5; }
-  .msg { font-size:12px; min-height:16px; margin-top:8px; color:#fca5a5; } .ok { color:#a3e635; }
-  .tag { font-size:10px; font-weight:800; padding:3px 8px; border-radius:999px; text-transform:uppercase; }
-  .t-ok { background:rgba(163,230,53,.15); color:#a3e635; } .t-pend { background:rgba(250,204,21,.15); color:#facc15; } .t-rec { background:rgba(248,113,113,.15); color:#fca5a5; }
-  .linha-tempo { position:relative; padding-left:18px; }
-  .linha-tempo::before { content:""; position:absolute; left:6px; top:6px; bottom:6px; width:2px; background:linear-gradient(var(--ouro),rgba(231,200,115,.1)); }
-  .etapa { position:relative; padding:8px 0 12px; }
-  .etapa::before { content:""; position:absolute; left:-17px; top:12px; width:10px; height:10px; border-radius:50%; background:#0b1020; border:2px solid rgba(255,255,255,.25); }
-  .etapa.feita::before { background:var(--ouro); border-color:var(--ouro); box-shadow:0 0 12px rgba(231,200,115,.6); }
-  .etapa .nome { font-size:14px; font-weight:700; } .etapa .hora { font-size:12px; color:var(--mut); }
-  .convite { border:1px solid rgba(231,200,115,.35); background:linear-gradient(135deg,rgba(231,200,115,.08),rgba(34,211,238,.05)); border-radius:16px; padding:18px; text-align:left; line-height:1.65; font-size:14px; }
-  .convite strong { color:var(--ouro); }
-  .obs { display:flex; justify-content:space-between; gap:8px; align-items:flex-start; padding:9px 0; border-bottom:1px solid var(--line); font-size:14px; }
-  .obs .x { background:none; border:none; color:#fca5a5; font-size:16px; cursor:pointer; padding:0 4px; }
-  .pill { display:inline-block; font-size:11px; color:var(--mut); }
-  .vazio { font-size:13px; color:var(--mut); padding:6px 0; }
-</style>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
+  <meta name="theme-color" content="#0a0f16">
+  <meta name="apple-mobile-web-app-capable" content="yes">
+  <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+  <title>Minha diária · 432UP</title>
+  <link rel="stylesheet" href="../css/style.css">
+  <script src="https://cdn.tailwindcss.com"></script>
+  <style>
+    :root {
+      --cli-ouro: #c5a059;
+      --cli-acc: #00f0ff;
+      --cli-mut: #9a97b0;
+      --cli-line: rgba(168, 85, 247, 0.18);
+      --cli-card: rgba(14, 18, 28, 0.78);
+    }
+    .cli-tabs {
+      display: flex; gap: 6px; flex-wrap: wrap;
+      margin-bottom: 1.25rem; padding: 4px; border-radius: 14px;
+      background: rgba(8, 8, 12, 0.55); border: 1px solid var(--cli-line);
+      backdrop-filter: blur(12px); -webkit-backdrop-filter: blur(12px);
+    }
+    .cli-tab {
+      flex: 1 1 auto; min-width: 100px; padding: 10px 14px; border-radius: 11px;
+      border: 1px solid transparent; background: transparent; color: var(--cli-mut);
+      font-size: 12px; font-weight: 700; letter-spacing: 0.04em;
+      text-transform: uppercase; cursor: pointer;
+      transition: 0.3s cubic-bezier(0.22, 0.61, 0.36, 1);
+    }
+    .cli-tab.on {
+      color: var(--cli-ouro); border-color: rgba(197, 160, 89, 0.4);
+      background: rgba(197, 160, 89, 0.1); box-shadow: 0 0 20px rgba(197, 160, 89, 0.12);
+    }
+    .cli-panel { display: none; animation: cliIn 0.45s cubic-bezier(0.22, 0.61, 0.36, 1) both; }
+    .cli-panel.on { display: block; }
+    @keyframes cliIn {
+      from { opacity: 0; transform: translateY(10px); filter: blur(3px); }
+      to { opacity: 1; transform: none; filter: none; }
+    }
+    .cli-card {
+      background: var(--cli-card); border: 1px solid var(--cli-line); border-radius: 16px;
+      padding: 16px 18px; margin-bottom: 14px;
+      backdrop-filter: blur(14px); -webkit-backdrop-filter: blur(14px);
+      box-shadow: 0 12px 32px rgba(0, 0, 0, 0.35);
+    }
+    .cli-card h2 {
+      font-size: 12px; margin: 0 0 12px; color: var(--cli-ouro);
+      text-transform: uppercase; letter-spacing: 0.08em; font-weight: 800;
+    }
+    .cli-sub { font-size: 13px; color: var(--cli-mut); line-height: 1.55; margin: 0 0 16px; }
+    .cli-card label {
+      display: block; font-size: 10px; text-transform: uppercase;
+      letter-spacing: 0.05em; color: var(--cli-mut); margin: 10px 0 4px;
+    }
+    .cli-card input, .cli-card select, .cli-card textarea {
+      width: 100%; background: #020617; color: #e2e8f0;
+      border: 1px solid rgba(255, 255, 255, 0.1); border-radius: 10px;
+      padding: 10px; font: inherit; font-size: 14px;
+    }
+    .cli-linha2 { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; }
+    .cli-btn {
+      margin-top: 14px; width: 100%; padding: 12px; border: none; border-radius: 12px;
+      background: linear-gradient(135deg, #00f0ff, #22d3ee); color: #0b1020;
+      font-weight: 800; font-size: 13px; cursor: pointer;
+    }
+    .cli-btn-s {
+      margin-top: 8px; padding: 8px 12px; border-radius: 10px;
+      border: 1px solid rgba(255, 255, 255, 0.2); background: transparent;
+      color: #e2e8f0; font-size: 12px; cursor: pointer;
+    }
+    .cli-btn:disabled { opacity: 0.5; }
+    .cli-msg { font-size: 12px; min-height: 16px; margin-top: 8px; color: #fca5a5; }
+    .cli-msg.ok { color: #a3e635; }
+    .cli-tag { font-size: 10px; font-weight: 800; padding: 3px 8px; border-radius: 999px; text-transform: uppercase; }
+    .t-ok { background: rgba(163, 230, 53, 0.15); color: #a3e635; }
+    .t-pend { background: rgba(250, 204, 21, 0.15); color: #facc15; }
+    .t-rec { background: rgba(248, 113, 113, 0.15); color: #fca5a5; }
+    .cli-pill { display: inline-block; font-size: 11px; color: var(--cli-mut); }
+    .cli-vazio { font-size: 13px; color: var(--cli-mut); padding: 6px 0; }
+    .cli-convite {
+      border: 1px solid rgba(197, 160, 89, 0.35);
+      background: linear-gradient(135deg, rgba(197, 160, 89, 0.1), rgba(0, 240, 255, 0.05));
+      border-radius: 16px; padding: 18px; line-height: 1.65; font-size: 14px; margin-bottom: 14px;
+    }
+    .cli-convite strong { color: var(--cli-ouro); }
+    .linha-tempo { position: relative; padding-left: 18px; }
+    .linha-tempo::before {
+      content: ""; position: absolute; left: 6px; top: 6px; bottom: 6px; width: 2px;
+      background: linear-gradient(var(--cli-ouro), rgba(197, 160, 89, 0.1));
+    }
+    .etapa { position: relative; padding: 8px 0 12px; }
+    .etapa::before {
+      content: ""; position: absolute; left: -17px; top: 12px; width: 10px; height: 10px;
+      border-radius: 50%; background: #0b1020; border: 2px solid rgba(255, 255, 255, 0.25);
+    }
+    .etapa.feita::before {
+      background: var(--cli-ouro); border-color: var(--cli-ouro);
+      box-shadow: 0 0 12px rgba(197, 160, 89, 0.55);
+    }
+    .etapa .nome { font-size: 14px; font-weight: 700; }
+    .etapa .hora { font-size: 12px; color: var(--cli-mut); }
+    .obs {
+      display: flex; justify-content: space-between; gap: 8px; align-items: flex-start;
+      padding: 9px 0; border-bottom: 1px solid rgba(255, 255, 255, 0.06); font-size: 14px;
+    }
+    .obs .x { background: none; border: none; color: #fca5a5; font-size: 16px; cursor: pointer; }
+    .cli-cal {
+      display: grid; grid-template-columns: repeat(7, 1fr); gap: 4px; font-size: 11px; text-align: center;
+    }
+    .cli-cal .hd { color: var(--cli-mut); font-weight: 700; padding: 6px 0; }
+    .cli-cal .d {
+      padding: 10px 0; border-radius: 10px; border: 1px solid transparent; color: #cbd5e1;
+    }
+    .cli-cal .d.muted { opacity: 0.35; }
+    .cli-cal .d.evento {
+      border-color: rgba(0, 240, 255, 0.35); background: rgba(0, 240, 255, 0.08);
+      color: #00f0ff; font-weight: 800;
+    }
+    .cli-cal .d.hoje { border-color: rgba(197, 160, 89, 0.5); }
+  </style>
 </head>
-<body>
-<div class="app">
-  <nav class="rail" id="rail">
-    <button class="aba on" data-i="0"><span class="ic">◉</span>Cadastro</button>
-    <button class="aba" data-i="1"><span class="ic">✦</span>Memórias</button>
-    <button class="aba" data-i="2"><span class="ic">❖</span>Guia do evento</button>
-  </nav>
+<body class="h-full text-slate-200 font-sans antialiased bg-[#06080c] overflow-x-hidden">
 
-  <main class="wrap" id="wrap">
-    <!-- 1. CADASTRO -->
-    <section class="painel" id="p0">
-      <h1 id="saudacao">Olá</h1>
-      <div class="sub">Seu espaço para manter seus dados e acompanhar seus pedidos com a 432UP.</div>
-      <button class="s" id="btnSair" type="button" style="margin:0 0 14px;">Sair</button>
+  <canvas id="orbit-canvas"></canvas>
+  <div id="plasmaLayer" class="plasma-top-layer"></div>
 
-      <div class="card">
-        <h2>Seus dados</h2>
-        <div id="semCadastro" class="vazio" style="display:none">Seu cadastro ainda não está vinculado. Fale com a 432UP.</div>
-        <form id="formCadastro" style="display:none">
-          <label for="c_nome">Nome completo ou razão social</label><input id="c_nome">
-          <label for="c_tel">Telefone / WhatsApp</label><input id="c_tel" inputmode="tel">
-          <label for="c_email">E-mail (obrigatório)</label><input id="c_email" type="email" required>
-          <div class="linha2">
-            <div><label for="c_cep">CEP</label><input id="c_cep" inputmode="numeric"></div>
-            <div><label for="c_uf">UF</label><input id="c_uf" maxlength="2"></div>
-          </div>
-          <label for="c_log">Logradouro</label><input id="c_log">
-          <div class="linha2">
-            <div><label for="c_num">Número</label><input id="c_num"></div>
-            <div><label for="c_comp">Complemento</label><input id="c_comp"></div>
-          </div>
-          <label for="c_bairro">Bairro</label><input id="c_bairro">
-          <label for="c_cidade">Cidade</label><input id="c_cidade">
-          <button class="p" type="submit" id="btnCadastro">Salvar meus dados</button>
-          <div class="msg" id="msgCadastro"></div>
-        </form>
-      </div>
+  <header id="calc-header"></header>
+  <div id="mobile-menu"></div>
 
-      <div class="card">
-        <h2>Seus pedidos e contratos</h2>
-        <div id="listaPedidos" class="vazio">Carregando…</div>
-      </div>
-    </section>
+  <div class="flex flex-col min-h-screen relative z-10 pb-16">
+    <main class="flex-1 p-4 lg:p-8 space-y-4 pt-20 lg:pt-24 w-full max-w-3xl mx-auto">
 
-    <!-- 2. MEMÓRIAS -->
-    <section class="painel" id="p1">
-      <h1>Memórias</h1>
-      <div class="sub">Fotos e avaliações do seu evento vão aparecer aqui depois que ele acontecer.</div>
-      <div class="convite">Cada evento vira uma lembrança. Quando a sua chegar, ela estará aqui, guardada com o cuidado de sempre.</div>
-    </section>
-
-    <!-- 3. GUIA DO EVENTO -->
-    <section class="painel" id="p2">
-      <h1>Guia do evento</h1>
-      <div class="sub" id="subGuia">Acompanhe cada preparativo, em ordem.</div>
-
-      <div class="convite" id="conviteGuia" style="display:none;margin-bottom:14px;">
-        Este é o seu espaço de preparação. A partir da assinatura do contrato, você acompanha aqui cada detalhe do seu evento, passo a passo, até o grande dia. A sua história começa agora, e a gente cuida de cada etapa com você.
-      </div>
-
-      <div class="card" id="cardAvisos" style="display:none;">
-        <h2>Avisos no celular</h2>
-        <div class="sub">Receba no celular cada novidade do seu evento, como uma etapa confirmada.</div>
-        <button class="p" id="btnAvisos">Ativar avisos</button>
-        <div class="msg" id="msgAvisos"></div>
-      </div>
-
-      <div class="card">
-        <h2>Linha do tempo</h2>
-        <div class="linha-tempo" id="linhaTempo"><div class="vazio">Carregando…</div></div>
-      </div>
-
-      <div class="card">
-        <h2>Instruções para o seu evento</h2>
-        <div class="sub" style="margin-bottom:8px;">Ex.: falar com o porteiro, entrar pela porta lateral, ir direto ao camarim. Você pode mudar isso até o dia do evento.</div>
-        <div id="listaObs"></div>
-        <div style="display:flex;gap:8px;margin-top:10px;">
-          <input id="obsNova" maxlength="400" placeholder="Nova instrução">
-          <button class="s" id="btnObs" style="margin-top:0;padding:10px 14px;">+ Adicionar</button>
+      <div class="flex items-start justify-between gap-3 flex-wrap">
+        <div>
+          <h1 class="text-xl font-extrabold tracking-tight text-white" id="saudacao">Olá</h1>
+          <p class="cli-sub mb-0">Sua diária 432UP — cadastro, evento e memórias num só lugar.</p>
         </div>
-        <div class="msg" id="msgObs"></div>
+        <button type="button" class="cli-btn-s" id="btnSair" style="margin-top:0">Sair</button>
       </div>
-    </section>
-  </main>
-</div>
 
-<script>
+      <nav class="cli-tabs" role="tablist" aria-label="Área do cliente">
+        <button type="button" class="cli-tab on" data-i="0" role="tab">Cadastro</button>
+        <button type="button" class="cli-tab" data-i="1" role="tab">Guia do evento</button>
+        <button type="button" class="cli-tab" data-i="2" role="tab">Calendário</button>
+        <button type="button" class="cli-tab" data-i="3" role="tab">Memórias</button>
+      </nav>
+
+      <section class="cli-panel on" id="p0" role="tabpanel">
+        <div class="cli-card" id="semCadastro" style="display:none">
+          <p class="cli-vazio">Não encontramos seu cadastro de cliente vinculado a esta conta. Fale com o suporte 432UP.</p>
+        </div>
+        <div class="cli-card" id="formCadastroWrap">
+          <h2>Seus dados</h2>
+          <form id="formCadastro">
+            <label for="c_nome">Nome / razão social</label>
+            <input id="c_nome" autocomplete="name">
+            <label for="c_tel">Telefone</label>
+            <input id="c_tel" inputmode="tel" autocomplete="tel">
+            <label for="c_email">E-mail</label>
+            <input id="c_email" type="email" required autocomplete="email">
+            <div class="cli-linha2">
+              <div><label for="c_cep">CEP</label><input id="c_cep" inputmode="numeric"></div>
+              <div><label for="c_uf">UF</label><input id="c_uf" maxlength="2"></div>
+            </div>
+            <label for="c_log">Logradouro</label>
+            <input id="c_log">
+            <div class="cli-linha2">
+              <div><label for="c_num">Número</label><input id="c_num"></div>
+              <div><label for="c_comp">Complemento</label><input id="c_comp"></div>
+            </div>
+            <label for="c_bairro">Bairro</label>
+            <input id="c_bairro">
+            <label for="c_cidade">Cidade</label>
+            <input id="c_cidade">
+            <button class="cli-btn" type="submit" id="btnCadastro">Salvar meus dados</button>
+            <div class="cli-msg" id="msgCadastro"></div>
+          </form>
+        </div>
+        <div class="cli-card">
+          <h2>Pedidos e contratos</h2>
+          <div id="listaPedidos" class="cli-vazio">Carregando…</div>
+        </div>
+      </section>
+
+      <section class="cli-panel" id="p1" role="tabpanel">
+        <div class="cli-convite" id="conviteGuia">
+          A partir da assinatura do contrato, você acompanha aqui cada detalhe do evento — etapa a etapa — até o grande dia.
+        </div>
+        <div class="cli-card" id="cardAvisos">
+          <h2>Avisos no celular</h2>
+          <p class="cli-sub">Receba no aparelho quando uma etapa do seu evento for confirmada.</p>
+          <button type="button" class="cli-btn" id="btnAvisos">Ativar avisos</button>
+          <div class="cli-msg" id="msgAvisos"></div>
+        </div>
+        <div class="cli-card">
+          <h2>Linha do tempo</h2>
+          <div class="linha-tempo" id="linhaTempo"><div class="cli-vazio">Carregando…</div></div>
+        </div>
+        <div class="cli-card">
+          <h2>Instruções para o seu evento</h2>
+          <div id="listaObs" class="cli-vazio">Carregando…</div>
+          <form id="formObs" style="margin-top:12px">
+            <label for="obsNova">Nova instrução</label>
+            <input id="obsNova" maxlength="400" placeholder="Ex.: horário de chegada da noiva">
+            <button class="cli-btn" type="submit" id="btnObs">Enviar</button>
+            <div class="cli-msg" id="msgObs"></div>
+          </form>
+        </div>
+      </section>
+
+      <section class="cli-panel" id="p2" role="tabpanel">
+        <div class="cli-card">
+          <h2>Calendário do evento</h2>
+          <p class="cli-sub" id="calSub">Datas do seu pedido aparecem destacadas.</p>
+          <div class="cli-cal" id="calGrid" aria-label="Calendário"></div>
+        </div>
+        <div class="cli-card">
+          <h2>Próximos marcos</h2>
+          <div id="calLista" class="cli-vazio">Carregando…</div>
+        </div>
+      </section>
+
+      <section class="cli-panel" id="p3" role="tabpanel">
+        <div class="cli-convite">
+          Cada evento vira uma lembrança. Quando a sua chegar — fotos e avaliação — ela fica guardada aqui.
+        </div>
+        <div class="cli-card">
+          <h2>Galeria</h2>
+          <div id="memGaleria" class="cli-vazio">Ainda não há fotos publicadas para o seu evento.</div>
+        </div>
+      </section>
+
+    </main>
+  </div>
+
+  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+  <script src="../B2B/partner-config.js"></script>
+  <script src="../script/script.js" defer></script>
+  <script src="../B2B/partner-header.js"></script>
+  <script>
 (function () {
+  'use strict';
   var CFG = window.PARTNER_CFG;
-  /* Login unificado grava sessão no storage padrão; mantém fallback do storage antigo */
-  var SB = window.supabase.createClient(CFG.SB_URL, CFG.SB_KEY, { auth: { persistSession: true, autoRefreshToken: true } });
-  var SB_OLD = window.supabase.createClient(CFG.SB_URL, CFG.SB_KEY, { auth: { storageKey: 'cliente-432up', persistSession: true, autoRefreshToken: true } });
-  var $ = function (id) { return document.getElementById(id); };
-  var E = function (t) { return String(t == null ? '' : t).replace(/[&<>"']/g, function (c) { return {'&':'&amp;','<':'&gt;','"':'&quot;',"'":'&#39;'}[c]; }); };
-  var DATA = function (v) { return v ? new Date(String(v).slice(0, 10) + 'T12:00:00').toLocaleDateString('pt-BR') : '—'; };
-  var BRL = function (v) { return v == null ? '—' : 'R$ ' + Number(v).toFixed(2).replace('.', ','); };
-  var ST = { pendente: 'Em conferência', aprovado: 'Aprovado', recusado: 'Recusado' };
-  var ST_CLASSE = { pendente: 't-pend', aprovado: 't-ok', recusado: 't-rec' };
-  var dados = null;
-  var abaAtual = 0;
+  if (!CFG) { console.error('PARTNER_CFG ausente'); return; }
 
-  // ---------- abas laterais que deslizam ----------
-  function irPara(i) {
-    abaAtual = i;
-    document.querySelectorAll('.aba').forEach(function (b) { b.classList.toggle('on', Number(b.dataset.i) === i); });
-    $('wrap').scrollTo({ left: i * $('wrap').clientWidth, behavior: 'smooth' });
-  }
-  document.querySelectorAll('.aba').forEach(function (b) {
-    b.addEventListener('click', function () { irPara(Number(b.dataset.i)); });
+  var SB = window.supabase.createClient(CFG.SB_URL, CFG.SB_KEY, {
+    auth: { persistSession: true, autoRefreshToken: true }
   });
-  var ticking = false;
-  $('wrap').addEventListener('scroll', function () {
-    if (ticking) return; ticking = true;
-    requestAnimationFrame(function () {
-      var i = Math.round($('wrap').scrollLeft / $('wrap').clientWidth);
-      if (i !== abaAtual) { abaAtual = i; document.querySelectorAll('.aba').forEach(function (b) { b.classList.toggle('on', Number(b.dataset.i) === i); }); }
-      ticking = false;
+  var SB_OLD = window.supabase.createClient(CFG.SB_URL, CFG.SB_KEY, {
+    auth: { storageKey: 'cliente-432up', persistSession: true, autoRefreshToken: true }
+  });
+
+  var $ = function (id) { return document.getElementById(id); };
+  var E = function (s) {
+    return String(s == null ? '' : s)
+      .replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;');
+  };
+  var BRL = function (n) {
+    try { return Number(n || 0).toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' }); }
+    catch (e) { return 'R$ —'; }
+  };
+  var DATA = function (d) {
+    if (!d) return '—';
+    try { return new Date(d).toLocaleDateString('pt-BR'); } catch (e) { return '—'; }
+  };
+  var ST = { pendente: 'Pendente', aprovado: 'Aprovado', recusado: 'Recusado', pago: 'Pago' };
+  var ST_CLASSE = { pendente: 't-pend', aprovado: 't-ok', recusado: 't-rec', pago: 't-ok' };
+  var dados = null;
+  var VAPID_PUBLIC = (CFG.VAPID_PUBLIC_KEY || CFG.VAPID_PUBLIC || '').trim();
+
+  document.querySelectorAll('.cli-tab').forEach(function (btn) {
+    btn.addEventListener('click', function () {
+      var i = Number(btn.getAttribute('data-i'));
+      document.querySelectorAll('.cli-tab').forEach(function (b) {
+        b.classList.toggle('on', Number(b.getAttribute('data-i')) === i);
+      });
+      document.querySelectorAll('.cli-panel').forEach(function (p, idx) {
+        p.classList.toggle('on', idx === i);
+      });
     });
   });
 
-  // ---------- chamadas ----------
   async function chamar(acao, extra) {
     var r = await SB.functions.invoke('cliente-area', { body: Object.assign({ acao: acao }, extra || {}) });
     if (r.error || (r.data && r.data.erro)) {
@@ -197,206 +295,221 @@
     return r.data;
   }
 
-  async function carregar() {
-    dados = await chamar('dados');
-    if (dados.erro) { $('listaPedidos').textContent = dados.erro; return; }
-    render();
-  }
-
-  // ---------- cadastro ----------
   function renderCadastro() {
-    var c = dados.cadastro;
-    if (!c) { $('semCadastro').style.display = 'block'; return; }
-    $('formCadastro').style.display = 'block';
-    $('saudacao').textContent = 'Olá, ' + ((c.nome_razao || '').split(' ')[0] || 'seja bem-vindo');
-    $('c_nome').value = c.nome_razao || ''; $('c_tel').value = c.telefone || ''; $('c_email').value = c.email || '';
-    $('c_cep').value = c.cep || ''; $('c_uf').value = c.uf || ''; $('c_log').value = c.logradouro || '';
-    $('c_num').value = c.numero || ''; $('c_comp').value = c.complemento || ''; $('c_bairro').value = c.bairro || ''; $('c_cidade').value = c.cidade || '';
+    var c = dados && dados.cadastro;
+    if (!c) {
+      $('semCadastro').style.display = 'block';
+      $('formCadastroWrap').style.display = 'none';
+      return;
+    }
+    $('semCadastro').style.display = 'none';
+    $('formCadastroWrap').style.display = 'block';
+    var primeiro = ((c.nome_razao || '').split(' ')[0]) || 'seja bem-vindo';
+    $('saudacao').textContent = 'Olá, ' + primeiro;
+    $('c_nome').value = c.nome_razao || '';
+    $('c_tel').value = c.telefone || '';
+    $('c_email').value = c.email || '';
+    $('c_cep').value = c.cep || '';
+    $('c_uf').value = c.uf || '';
+    $('c_log').value = c.logradouro || '';
+    $('c_num').value = c.numero || '';
+    $('c_comp').value = c.complemento || '';
+    $('c_bairro').value = c.bairro || '';
+    $('c_cidade').value = c.cidade || '';
   }
-  $('formCadastro').addEventListener('submit', async function (e) {
-    e.preventDefault();
-    $('btnCadastro').disabled = true; $('msgCadastro').className = 'msg'; $('msgCadastro').textContent = '';
-    var r = await chamar('salvar_cadastro', { campos: {
-      nome_razao: $('c_nome').value, telefone: $('c_tel').value, email: $('c_email').value, cep: $('c_cep').value,
-      uf: $('c_uf').value, logradouro: $('c_log').value, numero: $('c_num').value, complemento: $('c_comp').value,
-      bairro: $('c_bairro').value, cidade: $('c_cidade').value } });
-    $('btnCadastro').disabled = false;
-    if (r.erro) { $('msgCadastro').textContent = r.erro; return; }
-    $('msgCadastro').className = 'msg ok'; $('msgCadastro').textContent = 'Dados salvos.';
-  });
 
-  // ---------- pedidos, contrato, comprovantes ----------
   function renderPedidos() {
     var el = $('listaPedidos');
-    if (!dados.propostas.length) { el.innerHTML = '<div class="vazio">Você ainda não tem pedidos conosco.</div>'; return; }
+    if (!dados.propostas || !dados.propostas.length) {
+      el.innerHTML = '<div class="cli-vazio">Você ainda não tem pedidos conosco.</div>';
+      return;
+    }
     el.innerHTML = dados.propostas.map(function (p) {
       var cancelado = p.status === 'cancelada';
       var assinado = !!p.assinado_em;
-      var comps = dados.comprovantes.filter(function (c) { return c.proposta_id === p.id; });
+      var comps = (dados.comprovantes || []).filter(function (c) { return c.proposta_id === p.id; });
       var lista = comps.map(function (c) {
         return '<div class="obs"><span>' + E(c.tipo) + ' · ' + BRL(c.valor) + ' · ' + DATA(c.data_pagamento) + '</span>' +
-          '<span class="tag ' + (ST_CLASSE[c.status] || 't-pend') + '">' + E(ST[c.status] || c.status) + '</span></div>' +
-          (c.status === 'recusado' && c.motivo_recusa ? '<div class="pill" style="color:#fca5a5;">Motivo: ' + E(c.motivo_recusa) + '</div>' : '');
-      }).join('') || '<div class="vazio">Nenhum comprovante enviado ainda.</div>';
-      var topo = '<div style="display:flex;justify-content:space-between;gap:8px;flex-wrap:wrap;"><strong>Pedido #' + E(p.numero) + '</strong>' +
-        (cancelado ? '<span class="tag t-rec">Cancelado</span>' : assinado ? '<span class="tag t-ok">Contrato assinado</span>' : '<span class="tag t-pend">Aguardando assinatura</span>') + '</div>' +
-        '<div class="pill">' + E(p.tipo_evento || '') + ' · ' + DATA(p.data_evento) + ' · ' + BRL(p.valor_total) + '</div>';
+          '<span class="cli-tag ' + (ST_CLASSE[c.status] || 't-pend') + '">' + E(ST[c.status] || c.status) + '</span></div>';
+      }).join('') || '<div class="cli-vazio">Nenhum comprovante enviado ainda.</div>';
+      var topo = '<div style="display:flex;justify-content:space-between;gap:8px;flex-wrap:wrap"><strong>Pedido #' + E(p.numero) + '</strong>' +
+        (cancelado ? '<span class="cli-tag t-rec">Cancelado</span>' : assinado ? '<span class="cli-tag t-ok">Contrato assinado</span>' : '<span class="cli-tag t-pend">Aguardando assinatura</span>') + '</div>' +
+        '<div class="cli-pill">' + E(p.tipo_evento || '') + ' · ' + DATA(p.data_evento) + ' · ' + BRL(p.valor_total) + '</div>';
       if (cancelado) {
-        return '<div class="card" style="margin-bottom:10px;">' + topo +
-          '<div style="margin-top:8px;color:#fca5a5;font-size:13px;">Este pedido foi cancelado. Motivo: ' + E(p.cancelamento_motivo || '—') + '</div></div>';
+        return '<div style="margin-bottom:12px">' + topo + '</div>';
       }
-      var acoes = assinado
-        ? '<button class="s" data-pdf="' + E(p.id) + '">Baixar contrato (PDF)</button>'
-        : '';
-      var envio = assinado
-        ? '<div style="margin-top:12px;border-top:1px solid var(--line);padding-top:10px;"><strong style="font-size:13px;">Enviar comprovante de pagamento</strong>' +
-          '<div class="linha2"><div><label>Tipo</label><select data-tipo="' + E(p.id) + '"><option value="sinal">Entrada / Sinal</option><option value="parcela">Parcela</option><option value="saldo">Saldo</option><option value="outro">Outro</option></select></div>' +
-          '<div><label>Valor (R$)</label><input data-valor="' + E(p.id) + '" inputmode="decimal"></div></div>' +
-          '<label>Data do pagamento</label><input type="date" data-data="' + E(p.id) + '">' +
-          '<label>Comprovante (foto ou PDF)</label><input type="file" accept="image/*,application/pdf" data-arq="' + E(p.id) + '">' +
-          '<button class="p" data-enviar="' + E(p.id) + '">Enviar comprovante</button><div class="msg" data-msg="' + E(p.id) + '"></div></div>'
-        : '';
-      return '<div class="card" style="margin-bottom:10px;">' + topo + '<div style="margin-top:10px;">' + lista + '</div>' + acoes + envio + '</div>';
+      var acoes = assinado ? '<button type="button" class="cli-btn-s" data-pdf="' + E(p.id) + '">Baixar contrato (PDF)</button>' : '';
+      return '<div style="margin-bottom:14px;padding-bottom:12px;border-bottom:1px solid rgba(255,255,255,.06)">' + topo + acoes +
+        '<div style="margin-top:10px"><strong style="font-size:12px;color:var(--cli-ouro)">Comprovantes</strong>' + lista + '</div></div>';
     }).join('');
     el.querySelectorAll('[data-pdf]').forEach(function (b) {
-      b.addEventListener('click', async function () {
-        b.disabled = true;
-        var r = await chamar('contrato_pdf', { proposta_id: b.dataset.pdf });
-        b.disabled = false;
-        if (r.erro) return alert(r.erro);
-        window.open(r.url, '_blank');
+      b.addEventListener('click', function () {
+        window.open('../B2B/visualizar-contrato.html?id=' + encodeURIComponent(b.getAttribute('data-pdf')), '_blank');
       });
     });
-    el.querySelectorAll('[data-enviar]').forEach(function (b) {
-      b.addEventListener('click', function () { enviarComprovante(b.dataset.enviar, b); });
-    });
   }
 
-  function lerArquivo(file) {
-    return new Promise(function (res, rej) {
-      var r = new FileReader();
-      r.onload = function () { res(String(r.result).split(',')[1]); };
-      r.onerror = function () { rej(new Error('Não foi possível ler o arquivo.')); };
-      r.readAsDataURL(file);
-    });
-  }
-  async function enviarComprovante(pid, btn) {
-    var q = function (sel) { return document.querySelector(sel + '[data-' + sel.slice(0) + ']'); };
-    var tipo = document.querySelector('[data-tipo="' + pid + '"]').value;
-    var valor = parseFloat(String(document.querySelector('[data-valor="' + pid + '"]').value).replace(/\./g, '').replace(',', '.'));
-    var data = document.querySelector('[data-data="' + pid + '"]').value;
-    var file = document.querySelector('[data-arq="' + pid + '"]').files[0];
-    var msg = document.querySelector('[data-msg="' + pid + '"]');
-    msg.className = 'msg';
-    if (!valor || valor <= 0) { msg.textContent = 'Informe o valor pago.'; return; }
-    if (!data) { msg.textContent = 'Informe a data do pagamento.'; return; }
-    if (!file) { msg.textContent = 'Escolha o comprovante.'; return; }
-    if (file.size > 5 * 1024 * 1024) { msg.textContent = 'Arquivo maior que 5 MB.'; return; }
-    btn.disabled = true; msg.textContent = 'Enviando…';
-    try {
-      var b64 = await lerArquivo(file);
-      var r = await SB.functions.invoke('anexar-comprovante', { body: { kind: 'contrato', proposta_id: pid, tipo: tipo, valor: valor, data_pagamento: data, arquivo_base64: b64, mime: file.type } });
-      if (r.error || (r.data && r.data.erro)) {
-        var m = (r.data && r.data.erro);
-        if (!m && r.error && r.error.context && typeof r.error.context.json === 'function') { try { m = (await r.error.context.json()).erro; } catch (e) {} }
-        throw new Error(m || 'Não foi possível enviar.');
-      }
-      msg.className = 'msg ok'; msg.textContent = 'Comprovante enviado. Ele será conferido pela 432UP.';
-      carregar();
-    } catch (e) { msg.textContent = e.message; btn.disabled = false; }
-  }
-
-  // ---------- guia do evento ----------
   function renderGuia() {
-    var pedido = dados.propostas.find(function (p) { return p.status !== 'cancelada'; });
-    var assinado = pedido && pedido.assinado_em;
-    $('conviteGuia').style.display = assinado ? 'none' : 'block';
-    $('cardAvisos').style.display = assinado ? 'block' : 'none';
-    $('subGuia').textContent = assinado ? 'Acompanhe cada preparativo, em ordem.' : 'Assim que o contrato for assinado, a linha do tempo ganha vida.';
-
-    var etapas = pedido ? dados.etapas.filter(function (e) { return e.proposta_id === pedido.id; }) : [];
+    var pedido = (dados.propostas || []).find(function (p) { return p.status !== 'cancelada'; });
+    var etapas = pedido ? (dados.etapas || []).filter(function (e) { return e.proposta_id === pedido.id; }) : [];
     var lt = $('linhaTempo');
     if (!etapas.length) {
-      lt.innerHTML = '<div class="etapa"><div class="nome" style="color:var(--mut);">Boas-vindas</div><div class="hora">Em breve</div></div>' +
-        '<div class="etapa"><div class="nome" style="color:var(--mut);">Setlist</div><div class="hora">Em breve</div></div>' +
-        '<div class="etapa"><div class="nome" style="color:var(--mut);">Dia do seu evento</div><div class="hora">Em breve</div></div>';
+      lt.innerHTML =
+        '<div class="etapa"><div class="nome" style="color:var(--cli-mut)">Boas-vindas</div><div class="hora">Em breve</div></div>' +
+        '<div class="etapa"><div class="nome" style="color:var(--cli-mut)">Setlist / preparativos</div><div class="hora">Em breve</div></div>' +
+        '<div class="etapa"><div class="nome" style="color:var(--cli-mut)">Dia do seu evento</div><div class="hora">Em breve</div></div>';
     } else {
       lt.innerHTML = etapas.map(function (e) {
         return '<div class="etapa ' + (e.situacao === 'concluida' ? 'feita' : '') + '"><div class="nome">' + E(e.nome) + '</div>' +
-          '<div class="hora">' + (e.hora ? E(e.hora) : 'Horário a confirmar') + (e.situacao === 'concluida' ? ' · concluída' : '') + '</div></div>';
+          '<div class="hora">' + (e.hora ? E(e.hora) : 'Horário a confirmar') +
+          (e.situacao === 'concluida' ? ' · concluída' : '') + '</div></div>';
       }).join('');
     }
-
-    var obs = pedido ? dados.observacoes.filter(function (o) { return o.proposta_id === pedido.id; }) : [];
-    $('listaObs').innerHTML = obs.map(function (o) {
+    var obs = pedido ? (dados.observacoes || []).filter(function (o) { return o.proposta_id === pedido.id; }) : [];
+    var lo = $('listaObs');
+    if (!obs.length) lo.innerHTML = '<div class="cli-vazio">Nenhuma instrução ainda.</div>';
+    else lo.innerHTML = obs.map(function (o) {
       var minha = o.criado_por === 'cliente';
-      return '<div class="obs"><span>' + E(o.texto) + (minha ? '' : ' <span class="pill">(da 432UP)</span>') + '</span>' +
-        (minha ? '<button class="x" data-rm="' + E(o.id) + '" title="Remover">−</button>' : '') + '</div>';
-    }).join('') || '<div class="vazio">Nenhuma instrução ainda.</div>';
-    $('listaObs').querySelectorAll('[data-rm]').forEach(function (b) {
+      return '<div class="obs"><span>' + E(o.texto) +
+        (minha ? ' <em style="color:#a3e635;font-size:11px">(você)</em>' : '') + '</span>' +
+        (minha ? '<button type="button" class="x" data-obs="' + E(o.id) + '">✕</button>' : '') + '</div>';
+    }).join('');
+    lo.querySelectorAll('[data-obs]').forEach(function (b) {
       b.addEventListener('click', async function () {
-        var r = await chamar('obs_remover', { id: b.dataset.rm });
-        if (r.erro) { $('msgObs').textContent = r.erro; return; }
-        carregar();
+        var r = await chamar('remover_obs', { id: b.getAttribute('data-obs') });
+        if (r.erro) return alert(r.erro);
+        await carregar();
       });
     });
-    $('btnObs').dataset.pid = pedido ? pedido.id : '';
   }
-  $('btnObs').addEventListener('click', async function () {
-    var texto = $('obsNova').value.trim();
-    var pid = $('btnObs').dataset.pid;
-    $('msgObs').textContent = '';
-    if (!pid) { $('msgObs').textContent = 'Você ainda não tem um evento para receber instruções.'; return; }
-    if (!texto) return;
-    var r = await chamar('obs_adicionar', { proposta_id: pid, texto: texto });
-    if (r.erro) { $('msgObs').textContent = r.erro; return; }
-    $('obsNova').value = '';
-    carregar();
-  });
 
-  var VAPID_PUBLIC = 'BM6ILzfra83ovE2AOg_xIW7_YioGcj6E0EkPKgVZI944NVoPhBHoJaIMZuZMOvD0hp4YTqq9GxiXor5VB3N4m-Y';
-  function b64ToU8(b64) {
-    var pad = '='.repeat((4 - b64.length % 4) % 4);
-    var raw = atob((b64 + pad).replace(/-/g, '+').replace(/_/g, '/'));
-    var out = new Uint8Array(raw.length);
-    for (var i = 0; i < raw.length; i++) out[i] = raw.charCodeAt(i);
-    return out;
-  }
-  async function ativarAvisos() {
-    var m = $('msgAvisos'); m.className = 'msg'; m.textContent = '';
-    var pedido = dados.propostas.find(function (p) { return p.status !== 'cancelada' && p.assinado_em; });
-    if (!pedido) { m.textContent = 'Os avisos ficam disponíveis depois da assinatura do contrato.'; return; }
-    var iOS = /iPhone|iPad|iPod/.test(navigator.userAgent);
-    var emCasa = window.navigator.standalone === true || window.matchMedia('(display-mode: standalone)').matches;
-    if (iOS && !emCasa) { m.textContent = 'No iPhone, primeiro toque em Compartilhar > Adicionar à Tela de Início, e abra por lá.'; return; }
-    if (!('serviceWorker' in navigator) || !('PushManager' in window) || !('Notification' in window)) {
-      m.textContent = 'Este navegador não recebe avisos. Use o Chrome no Android ou adicione à tela inicial.'; return;
+  function renderCalendario() {
+    var pedidos = (dados.propostas || []).filter(function (p) { return p.status !== 'cancelada' && p.data_evento; });
+    var datas = {};
+    pedidos.forEach(function (p) {
+      datas[String(p.data_evento).slice(0, 10)] = p;
+    });
+    var agora = new Date();
+    var y = agora.getFullYear();
+    var m = agora.getMonth();
+    var primeiro = new Date(y, m, 1);
+    var inicio = new Date(y, m, 1 - primeiro.getDay());
+    var hojeStr = agora.toISOString().slice(0, 10);
+    var html = ['Dom', 'Seg', 'Ter', 'Qua', 'Qui', 'Sex', 'Sáb'].map(function (h) {
+      return '<div class="hd">' + h + '</div>';
+    }).join('');
+    for (var i = 0; i < 42; i++) {
+      var dia = new Date(inicio);
+      dia.setDate(inicio.getDate() + i);
+      var iso = dia.toISOString().slice(0, 10);
+      var fora = dia.getMonth() !== m;
+      var cls = 'd' + (fora ? ' muted' : '') + (datas[iso] ? ' evento' : '') + (iso === hojeStr ? ' hoje' : '');
+      html += '<div class="' + cls + '">' + dia.getDate() + '</div>';
     }
-    $('btnAvisos').disabled = true; m.textContent = 'Ativando…';
-    try {
-      var perm = await Notification.requestPermission();
-      if (perm !== 'granted') { m.textContent = 'Permissão negada. Você pode liberar nas configurações do navegador.'; $('btnAvisos').disabled = false; return; }
-      var reg = await navigator.serviceWorker.register('/cliente/sw.js', { scope: '/cliente/' });
-      await navigator.serviceWorker.ready;
-      var sub = await reg.pushManager.getSubscription() ||
-        await reg.pushManager.subscribe({ userVisibleOnly: true, applicationServerKey: b64ToU8(VAPID_PUBLIC) });
-      var j = sub.toJSON();
-      var r = await SB.functions.invoke('registrar-push-cliente', { body: { proposta_id: pedido.id, subscription: { endpoint: j.endpoint, keys: j.keys } } });
-      if (r.error || (r.data && r.data.erro)) throw new Error((r.data && r.data.erro) || 'Não foi possível ativar os avisos.');
-      m.className = 'msg ok'; m.textContent = 'Avisos ativados neste aparelho.';
-      $('btnAvisos').style.display = 'none';
-    } catch (e) {
-      m.textContent = e.message || 'Não foi possível ativar os avisos.';
-      $('btnAvisos').disabled = false;
-    }
+    $('calGrid').innerHTML = html;
+    $('calSub').textContent = pedidos.length
+      ? 'Mês atual · ' + pedidos.length + ' evento(s) com data marcada.'
+      : 'Quando houver data de evento no pedido, ela aparece destacada aqui.';
+    $('calLista').innerHTML = pedidos.length
+      ? pedidos.map(function (p) {
+          return '<div class="obs"><span><strong>#' + E(p.numero) + '</strong> · ' + E(p.tipo_evento || 'Evento') +
+            '</span><span class="cli-pill">' + DATA(p.data_evento) + '</span></div>';
+        }).join('')
+      : '<div class="cli-vazio">Nenhum evento com data ainda.</div>';
   }
-  $('btnAvisos').addEventListener('click', ativarAvisos);
 
   function render() {
     renderCadastro();
     renderPedidos();
     renderGuia();
+    renderCalendario();
   }
+
+  async function carregar() {
+    dados = await chamar('dados');
+    if (dados.erro) {
+      $('listaPedidos').textContent = dados.erro;
+      return;
+    }
+    render();
+  }
+
+  $('formCadastro').addEventListener('submit', async function (e) {
+    e.preventDefault();
+    $('btnCadastro').disabled = true;
+    $('msgCadastro').className = 'cli-msg';
+    $('msgCadastro').textContent = '';
+    var r = await chamar('salvar_cadastro', {
+      campos: {
+        nome_razao: $('c_nome').value, telefone: $('c_tel').value, email: $('c_email').value,
+        cep: $('c_cep').value, uf: $('c_uf').value, logradouro: $('c_log').value,
+        numero: $('c_num').value, complemento: $('c_comp').value,
+        bairro: $('c_bairro').value, cidade: $('c_cidade').value
+      }
+    });
+    $('btnCadastro').disabled = false;
+    if (r.erro) { $('msgCadastro').textContent = r.erro; return; }
+    $('msgCadastro').className = 'cli-msg ok';
+    $('msgCadastro').textContent = 'Dados salvos.';
+    await carregar();
+  });
+
+  $('formObs').addEventListener('submit', async function (e) {
+    e.preventDefault();
+    var txt = $('obsNova').value.trim();
+    if (!txt) return;
+    $('btnObs').disabled = true;
+    var r = await chamar('adicionar_obs', { texto: txt });
+    $('btnObs').disabled = false;
+    if (r.erro) { $('msgObs').textContent = r.erro; return; }
+    $('obsNova').value = '';
+    $('msgObs').className = 'cli-msg ok';
+    $('msgObs').textContent = 'Instrução enviada.';
+    await carregar();
+  });
+
+  function b64ToU8(b64) {
+    var pad = '='.repeat((4 - (b64.length % 4)) % 4);
+    var base = (b64 + pad).replace(/-/g, '+').replace(/_/g, '/');
+    var raw = atob(base);
+    var out = new Uint8Array(raw.length);
+    for (var i = 0; i < raw.length; i++) out[i] = raw.charCodeAt(i);
+    return out;
+  }
+
+  async function ativarAvisos() {
+    var m = $('msgAvisos');
+    m.className = 'cli-msg';
+    var pedido = (dados.propostas || []).find(function (p) { return p.status !== 'cancelada' && p.assinado_em; });
+    if (!pedido) { m.textContent = 'Ative os avisos depois que o contrato estiver assinado.'; return; }
+    if (!VAPID_PUBLIC) { m.textContent = 'Avisos ainda não configurados neste ambiente.'; return; }
+    if (!('serviceWorker' in navigator) || !('PushManager' in window)) {
+      m.textContent = 'Este navegador não recebe avisos.';
+      return;
+    }
+    $('btnAvisos').disabled = true;
+    m.textContent = 'Ativando…';
+    try {
+      var perm = await Notification.requestPermission();
+      if (perm !== 'granted') { m.textContent = 'Permissão negada.'; $('btnAvisos').disabled = false; return; }
+      var reg = await navigator.serviceWorker.register('/cliente/sw.js', { scope: '/cliente/' });
+      await navigator.serviceWorker.ready;
+      var sub = await reg.pushManager.getSubscription() ||
+        await reg.pushManager.subscribe({ userVisibleOnly: true, applicationServerKey: b64ToU8(VAPID_PUBLIC) });
+      var j = sub.toJSON();
+      var r = await SB.functions.invoke('registrar-push-cliente', {
+        body: { proposta_id: pedido.id, subscription: { endpoint: j.endpoint, keys: j.keys } }
+      });
+      if (r.error || (r.data && r.data.erro)) throw new Error((r.data && r.data.erro) || 'Falha ao registrar avisos.');
+      m.className = 'cli-msg ok';
+      m.textContent = 'Avisos ativados neste aparelho.';
+      $('btnAvisos').style.display = 'none';
+    } catch (err) {
+      m.textContent = err.message || 'Não foi possível ativar os avisos.';
+      $('btnAvisos').disabled = false;
+    }
+  }
+  $('btnAvisos').addEventListener('click', ativarAvisos);
 
   $('btnSair').addEventListener('click', async function () {
     try { await SB.auth.signOut(); } catch (e) {}
@@ -413,20 +526,22 @@
     var s = await SB.auth.getSession();
     if ((!s.data || !s.data.session) && SB_OLD) {
       var s2 = await SB_OLD.auth.getSession();
-      if (s2.data && s2.data.session) {
-        /* migra sessão antiga do storage cliente-432up */
-        SB = SB_OLD;
-        s = s2;
-      }
+      if (s2.data && s2.data.session) { SB = SB_OLD; s = s2; }
     }
     if (!s.data || !s.data.session) {
       location.href = '../B2B/login.html';
       return;
     }
-    try { sessionStorage.setItem('432up_is_cliente', 'true'); sessionStorage.setItem('432up_is_logged', 'true'); } catch (e) {}
+    try {
+      sessionStorage.setItem('432up_is_cliente', 'true');
+      sessionStorage.setItem('432up_is_logged', 'true');
+    } catch (e) {}
+    if (typeof window.updateAuthState === 'function') {
+      window.updateAuthState({ loggedIn: true, isCliente: true, isAdmin: false });
+    }
     await carregar();
   })();
 })();
-</script>
+  </script>
 </body>
 </html>
