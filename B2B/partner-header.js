@@ -4,13 +4,16 @@
   /* ---------- 1. Nível do usuário (leitura síncrona do cache) ---------- */
   var cachedIsAdmin = false;
   var cachedLoggedIn = false;
+  var cachedIsCliente = false;
   var logoutLock = false;
   try {
     cachedIsAdmin = sessionStorage.getItem('432up_is_admin') === 'true';
     cachedLoggedIn = sessionStorage.getItem('432up_is_logged') === 'true' || cachedIsAdmin;
+    cachedIsCliente = sessionStorage.getItem('432up_is_cliente') === 'true';
   } catch (e) {
     cachedIsAdmin = false;
     cachedLoggedIn = false;
+    cachedIsCliente = false;
   }
 
   /* ---------- 2. Rotas (endereços completos) ---------- */
@@ -19,11 +22,14 @@
   var ADM = SITE + 'B2B/admin/';
   var pathName = window.location.pathname || '';
   var isSubdirAdmin = pathName.indexOf('/admin/') !== -1;
-  var onSite = pathName.indexOf('/B2B/') === -1 && pathName.indexOf('/b2b/') === -1 && !isSubdirAdmin;
-  if (!onSite && !cachedLoggedIn) cachedLoggedIn = true;
+  var onCliente = pathName.indexOf('/cliente/') !== -1;
+  var onSite = pathName.indexOf('/B2B/') === -1 && pathName.indexOf('/b2b/') === -1 && !isSubdirAdmin && !onCliente;
+  if ((!onSite || onCliente) && !cachedLoggedIn) cachedLoggedIn = true;
+  if (onCliente) cachedIsCliente = true;
   var currentPath = pathName.split('/').pop() || 'index.html';
-  var pageArea = isSubdirAdmin ? 'admin' : (onSite ? 'site' : 'parceiro');
+  var pageArea = isSubdirAdmin ? 'admin' : (onCliente ? 'cliente' : (onSite ? 'site' : 'parceiro'));
   var areaAtual = pageArea;
+  var CLIENTE = SITE + 'cliente/';
 
   /* ---------- 3. MAPA DOS MENUS (edite aqui) ---------- */
   var MENUS = {
@@ -71,13 +77,19 @@
         { label: 'Galeria', href: ADM + 'admin-galeria.html', file: 'admin-galeria.html' }
       ]},
       { label: 'Studio', href: ADM + 'studio.html', file: 'studio.html' }
+    ],
+
+    cliente: [
+      { label: 'Minha diária', icon: '◉', href: CLIENTE + 'index.html', file: 'index.html' },
+      { label: 'Convite / acesso', href: CLIENTE + 'convite.html', file: 'convite.html' }
     ]
   };
 
   var TABS = [
     { area: 'site', label: 'Site' },
     { area: 'parceiro', label: 'Parceiro' },
-    { area: 'admin', label: 'Admin' }
+    { area: 'admin', label: 'Admin' },
+    { area: 'cliente', label: 'Cliente' }
   ];
 
   /* ---------- 4. Utilitários ---------- */
@@ -93,6 +105,8 @@
     if (area === 'site') return true;
     if (area === 'parceiro') return cachedLoggedIn || cachedIsAdmin || isSubdirAdmin;
     if (area === 'admin') return cachedIsAdmin || isSubdirAdmin;
+    /* Admin NÃO vê toggle Cliente; só quem é cliente de fato */
+    if (area === 'cliente') return cachedIsCliente && !cachedIsAdmin && !isSubdirAdmin;
     return false;
   }
 
@@ -269,6 +283,9 @@
       #calc-header.mn-ready.mn-theme-amber {
         border-bottom-color: rgba(168, 85, 247, 0.16) !important;
         box-shadow: 0 4px 20px rgba(0, 0, 0, 0.2) !important;
+      }
+      #calc-header.mn-ready.mn-theme-cliente {
+        border-bottom-color: rgba(231, 200, 115, 0.35) !important;
       }
       #calc-header.mn-ready.mn-theme-admin {
         border-bottom-color: rgba(245, 158, 11, 0.32) !important;
@@ -1033,6 +1050,7 @@
           try {
             sessionStorage.removeItem('432up_is_logged');
             sessionStorage.removeItem('432up_is_admin');
+            sessionStorage.removeItem('432up_is_cliente');
           } catch (err) {}
           function go() {
             if (onSite) window.location.replace(SITE + 'index.html');
@@ -1251,17 +1269,20 @@
     opts = opts || {};
     cachedLoggedIn = !!opts.loggedIn;
     cachedIsAdmin = !!opts.isAdmin;
+    if (typeof opts.isCliente === 'boolean') cachedIsCliente = opts.isCliente;
     if (cachedIsAdmin) cachedLoggedIn = true;
-    if (!onSite) cachedLoggedIn = true;
+    if (!onSite || onCliente) cachedLoggedIn = true;
+    if (onCliente) cachedIsCliente = true;
     try {
       sessionStorage.setItem('432up_is_logged', cachedLoggedIn ? 'true' : 'false');
       sessionStorage.setItem('432up_is_admin', cachedIsAdmin ? 'true' : 'false');
+      sessionStorage.setItem('432up_is_cliente', cachedIsCliente ? 'true' : 'false');
     } catch (e) {}
 
     /* Antes de montar o header, o estado fica só no cache */
     if (!rendered) return;
 
-    var novaSig = (isLogged() ? '1' : '0') + '|' + (cachedIsAdmin || isSubdirAdmin ? '1' : '0');
+    var novaSig = (isLogged() ? '1' : '0') + '|' + (cachedIsAdmin || isSubdirAdmin ? '1' : '0') + '|' + (cachedIsCliente ? '1' : '0');
     if (novaSig !== userSig) refreshUserParts();
     applyLevel(true);
   };
@@ -1282,10 +1303,23 @@
 
   function applyParceiro(parceiro) {
     lastParceiro = parceiro || null;
-    window.updateAuthState({ loggedIn: !!parceiro, isAdmin: isAdminParceiro(parceiro) });
-    fillUserParts();
-    if (parceiro && parceiro.user_id) {
-      startMail(parceiro.user_id);
+    var uid = parceiro && parceiro.user_id;
+    var base = { loggedIn: !!parceiro, isAdmin: isAdminParceiro(parceiro) };
+    if (!uid || typeof sbPartner === 'undefined') {
+      window.updateAuthState(base);
+      fillUserParts();
+      return;
+    }
+    sbPartner.from('portal_clientes').select('id').eq('user_id', uid).maybeSingle().then(function (pc) {
+      base.isCliente = !!(pc && pc.data);
+      window.updateAuthState(base);
+      fillUserParts();
+    }).catch(function () {
+      window.updateAuthState(base);
+      fillUserParts();
+    });
+    if (uid) {
+      startMail(uid);
       initPush();
     }
   }
@@ -1297,14 +1331,16 @@
     return sbPartner.auth.getSession().then(function (res) {
       var session = res.data && res.data.session;
       if (!session || !session.user) return null;
+      var uid = session.user.id;
       return sbPartner
         .from('parceiros')
         .select('*')
-        .eq('user_id', session.user.id)
+        .eq('user_id', uid)
         .maybeSingle()
         .then(function (r) {
           if (r.data) return r.data;
-          return { role: 'partner', user_id: session.user.id };
+          /* Sessão válida sem linha de parceiro: ainda assim marca logado (ex.: cliente) */
+          return { role: 'client', user_id: uid };
         });
     }).catch(function () {
       return null;
