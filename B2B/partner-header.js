@@ -5,6 +5,7 @@
   var cachedIsAdmin = false;
   var cachedLoggedIn = false;
   var cachedIsCliente = false;
+  var cachedIsParceiro = false;
   var logoutLock = false;
   try {
     cachedIsAdmin = sessionStorage.getItem('432up_is_admin') === 'true';
@@ -105,7 +106,12 @@
   function podeVer(area) {
     if (area === 'site') return true;
     /* Página do cliente: só Home e Cliente, sem Parceiro nem Admin */
-    if (onCliente) return area === 'cliente';
+    if (onCliente) {
+      if (area === 'cliente') return !cachedIsAdmin;
+      if (area === 'parceiro') return cachedIsParceiro || cachedIsAdmin;
+      if (area === 'admin') return cachedIsAdmin;
+      return false;
+    }
     if (area === 'parceiro') return cachedLoggedIn || cachedIsAdmin || isSubdirAdmin;
     if (area === 'admin') return cachedIsAdmin || isSubdirAdmin;
     /* Admin NÃO vê toggle Cliente; só quem é cliente de fato */
@@ -1306,6 +1312,7 @@
 
   function applyParceiro(parceiro) {
     lastParceiro = parceiro || null;
+    cachedIsParceiro = !!parceiro && parceiro.role !== 'client';
     var uid = parceiro && parceiro.user_id;
     var base = { loggedIn: !!parceiro, isAdmin: isAdminParceiro(parceiro) };
     if (!uid || typeof sbPartner === 'undefined') {
@@ -1363,6 +1370,10 @@
 
     if (typeof partnerRequireAuth !== 'function') {
       if (_authSyncTries++ < 40) setTimeout(syncAuth, 50);
+      return;
+    }
+    if (onCliente) {
+      peekAuth().then(function (p) { if (p) applyParceiro(p); }).catch(function () {});
       return;
     }
     partnerRequireAuth({ requireAdmin: false }).then(applyParceiro).catch(function () {});
