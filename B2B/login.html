@@ -88,7 +88,8 @@
           var parc = results[0].data;
           var isCliente = !!(results[1].data || results[2].data);
           if (parc && parc.status === 'aprovado') { window.location.href = 'index.html'; return; }
-          if (isCliente) { window.location.href = '../cliente/index.html'; return; }
+          if (isCliente) { try { sessionStorage.removeItem('432up_cli_redirect'); sessionStorage.setItem('432up_is_cliente','true'); sessionStorage.setItem('432up_is_logged','true'); } catch(e) {}
+                window.location.replace('../cliente/index.html'); return; }
           if (parc && parc.status === 'pendente') { window.location.href = 'pendente.html'; return; }
         });
       });
@@ -150,7 +151,8 @@
               }
               return SBC.auth.verifyOtp({ token_hash: r.data.token_hash, type: r.data.type }).then(function (v) {
                 if (v.error) { showAlert('Não foi possível entrar. Tente novamente.', 'error'); return; }
-                window.location.href = '../cliente/index.html';
+                try { sessionStorage.removeItem('432up_cli_redirect'); sessionStorage.setItem('432up_is_cliente','true'); sessionStorage.setItem('432up_is_logged','true'); } catch(e) {}
+                window.location.replace('../cliente/index.html');
               });
             });
         });
@@ -213,7 +215,8 @@
               }
               if (isCliente) {
                 try { sessionStorage.setItem('432up_is_cliente', 'true'); sessionStorage.setItem('432up_is_logged', 'true'); } catch (e) {}
-                window.location.href = '../cliente/index.html';
+                try { sessionStorage.removeItem('432up_cli_redirect'); sessionStorage.setItem('432up_is_cliente','true'); sessionStorage.setItem('432up_is_logged','true'); } catch(e) {}
+                window.location.replace('../cliente/index.html');
                 return;
               }
               if (statusAtual === 'pendente') {
