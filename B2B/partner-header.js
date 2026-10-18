@@ -104,6 +104,8 @@
 
   function podeVer(area) {
     if (area === 'site') return true;
+    /* Página do cliente: só Home e Cliente, sem Parceiro nem Admin */
+    if (onCliente) return area === 'cliente';
     if (area === 'parceiro') return cachedLoggedIn || cachedIsAdmin || isSubdirAdmin;
     if (area === 'admin') return cachedIsAdmin || isSubdirAdmin;
     /* Admin NÃO vê toggle Cliente; só quem é cliente de fato */
