@@ -7,59 +7,122 @@
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
 <script src="../partner-config.js"></script>
 <style>
-  :root { --bg:#0b1020; --card:#131a2e; --line:rgba(255,255,255,.08); --txt:#e2e8f0; --mut:#94a3b8; --acc:#a3e635; --ouro:#c5a059; --ciano:#00f0ff; --amb:#facc15; }
+  :root {
+    --bg:#0b1020; --card:#131a2e; --line:rgba(255,255,255,.08);
+    --txt:#e2e8f0; --mut:#94a3b8; --acc:#a3e635; --ouro:#c5a059;
+    --ciano:#00f0ff; --amb:#facc15; --laranja:#f97316; --azul:#2563eb;
+    --verde-esc:#15803d; --verde-claro:#86efac; --roxo:#8A10D8; --cinza:#64748b;
+  }
   * { box-sizing:border-box; }
   body { margin:0; font-family: system-ui, -apple-system, Segoe UI, Roboto, sans-serif; background:var(--bg); color:var(--txt); }
   header { padding:14px 20px; border-bottom:1px solid var(--line); display:flex; justify-content:space-between; align-items:center; gap:12px; flex-wrap:wrap; }
   h1 { font-size:17px; margin:0; text-transform:capitalize; }
   button { font:inherit; color:var(--txt); background:#0f1628; border:1px solid var(--line); padding:7px 12px; border-radius:8px; cursor:pointer; }
   button:hover { border-color:var(--acc); }
-  .nav { display:flex; gap:8px; align-items:center; }
-  main { display:grid; grid-template-columns: minmax(0,1fr) 320px; gap:16px; padding:16px 20px; }
+  .nav { display:flex; gap:8px; align-items:center; flex-wrap:wrap; }
+  a.link { color:var(--ciano); text-decoration:none; font-size:13px; margin-left:4px; }
+
+  /* Toggles de filtro */
+  .filtros {
+    display:flex; flex-wrap:wrap; gap:8px 14px; padding:10px 20px;
+    border-bottom:1px solid var(--line); background:rgba(0,0,0,.2);
+    font-size:12px; align-items:center;
+  }
+  .filtros .lbl { color:var(--mut); margin-right:4px; font-weight:600; }
+  .tog {
+    display:inline-flex; align-items:center; gap:6px; cursor:pointer;
+    user-select:none; padding:4px 8px; border-radius:8px; border:1px solid transparent;
+  }
+  .tog:hover { border-color:var(--line); }
+  .tog input { accent-color: var(--acc); width:15px; height:15px; cursor:pointer; }
+  .tog .dot { width:10px; height:10px; border-radius:3px; display:inline-block; flex-shrink:0; }
+  .tog.off { opacity:.45; }
+
+  main { display:grid; grid-template-columns: minmax(0,1fr) 340px; gap:16px; padding:16px 20px; }
   @media (max-width: 900px) { main { grid-template-columns:1fr; } }
+
   .grid { display:grid; grid-template-columns:repeat(7,minmax(0,1fr)); gap:6px; }
   .dow { font-size:11px; text-transform:uppercase; color:var(--mut); text-align:center; padding:4px 0; }
-  .dia { background:var(--card); border:1px solid var(--line); border-radius:10px; min-height:96px; padding:6px; cursor:pointer; display:flex; flex-direction:column; gap:3px; overflow:hidden; }
+  .dia {
+    background:var(--card); border:1px solid var(--line); border-radius:10px;
+    min-height:96px; padding:6px; cursor:pointer; display:flex; flex-direction:column; gap:3px; overflow:hidden;
+  }
   .dia:hover { border-color:rgba(163,230,53,.5); }
   .dia.outro { opacity:.35; }
   .dia.hoje { outline:2px solid var(--acc); outline-offset:-2px; }
   .dia.sel { border-color:var(--acc); }
   .num { font-size:12px; font-weight:700; color:var(--mut); }
-  .ev { font-size:11px; line-height:1.25; padding:2px 5px; border-radius:5px; white-space:nowrap; overflow:hidden; text-overflow:ellipsis; font-weight:600; }
-  .e-hold { background:rgba(250,204,21,.2); color:var(--amb); }
-  .e-contrato { background:rgba(163,230,53,.2); color:var(--acc); }
-  .e-evento { background:rgba(0,240,255,.2); color:var(--ciano); }
+  .ev {
+    font-size:11px; line-height:1.25; padding:2px 5px; border-radius:5px;
+    white-space:nowrap; overflow:hidden; text-overflow:ellipsis; font-weight:600;
+  }
+  .mais { font-size:10px; color:var(--mut); padding-left:2px; }
+
+  /* Cores por tipo */
+  .e-evento { background:rgba(0,240,255,.18); color:var(--ciano); }
+  .e-hold { background:rgba(249,115,22,.2); color:var(--laranja); }
+  .e-contrato { background:rgba(37,99,235,.22); color:#93c5fd; }
+  .e-aprovado { background:rgba(34,197,94,.2); color:#4ade80; }
+  .e-comissao { background:rgba(21,128,61,.25); color:#86efac; }
+  .e-recebimento { background:rgba(134,239,172,.15); color:#bbf7d0; }
+  .e-lead { background:rgba(250,204,21,.18); color:var(--amb); }
+  .e-bloqueio { background:rgba(100,116,139,.25); color:#94a3b8; }
+
   .painel { background:var(--card); border:1px solid var(--line); border-radius:12px; padding:14px; align-self:start; }
   .painel h2 { font-size:12px; margin:0 0 10px; color:var(--ouro); text-transform:uppercase; letter-spacing:.06em; }
-  .item { border:1px solid var(--line); border-radius:10px; padding:10px; margin-bottom:8px; cursor:pointer; }
-  .item:hover { border-color:var(--acc); }
-  .item small { color:var(--mut); display:block; margin-top:3px; }
-  .legenda { display:flex; gap:12px; font-size:12px; color:var(--mut); flex-wrap:wrap; padding:0 20px; }
-  .vazio { color:var(--mut); font-size:13px; }
+  .item {
+    border:1px solid var(--line); border-radius:10px; padding:10px 12px; margin-bottom:8px;
+    font-size:13px; cursor:pointer; border-left:4px solid var(--line);
+    transition: border-color .15s, background .15s;
+  }
+  .item:hover { background:rgba(255,255,255,.03); }
+  .item strong { display:block; margin-bottom:2px; }
+  .item small { color:var(--mut); display:block; margin-top:2px; font-size:12px; }
+  .item .tags { display:flex; flex-wrap:wrap; gap:5px; margin-top:6px; }
+  .item .tag {
+    font-size:10px; font-weight:700; padding:2px 7px; border-radius:999px;
+    background:rgba(255,255,255,.06); color:var(--mut);
+  }
+  .item .tag.ok { background:rgba(163,230,53,.15); color:var(--acc); }
+  .item .tag.pend { background:rgba(250,204,21,.12); color:var(--amb); }
+  .item .acoes { display:flex; gap:6px; flex-wrap:wrap; margin-top:8px; }
+  .item .acoes a, .item .acoes button {
+    font-size:12px; padding:5px 10px; border-radius:8px; text-decoration:none;
+    border:1px solid var(--line); background:transparent; color:var(--txt); cursor:pointer;
+  }
+  .item .acoes a.pri { background:var(--acc); color:#0b1020; border-color:var(--acc); font-weight:700; }
+  .vazio { color:var(--mut); font-size:13px; padding:6px 0; }
+  .legenda { display:flex; flex-wrap:wrap; gap:10px; padding:8px 20px 0; font-size:11px; color:var(--mut); }
+  .legenda span { display:inline-flex; align-items:center; gap:5px; }
+  .legenda i { width:10px; height:10px; border-radius:3px; display:inline-block; }
 </style>
 </head>
 <body>
 <header>
   <h1 id="tituloMes">Agenda</h1>
   <div class="nav">
-    <button id="btnPrev">‹</button>
-    <button id="btnHoje">Hoje</button>
-    <button id="btnNext">›</button>
-    <a href="projeto.html" style="color:var(--ciano);text-decoration:none;margin-left:8px">Projetos →</a>
+    <button type="button" id="btnPrev">‹</button>
+    <button type="button" id="btnHoje">Hoje</button>
+    <button type="button" id="btnNext">›</button>
+    <a class="link" href="projeto.html">Projetos →</a>
+    <a class="link" href="../checklist.html">Checklist →</a>
   </div>
 </header>
-<div class="legenda" style="margin:10px 0">
-  <span><i class="ev e-hold" style="display:inline-block">Hold</i> contagem de 48 h</span>
-  <span><i class="ev e-contrato" style="display:inline-block">Contrato</i> fechado no dia</span>
-  <span><i class="ev e-evento" style="display:inline-block">Evento</i> execução</span>
+
+<div class="filtros" id="filtros">
+  <span class="lbl">Mostrar:</span>
+  <!-- preenchido via JS -->
 </div>
+
+<div class="legenda" id="legenda"></div>
+
 <main>
   <section>
     <div class="grid" id="cabec"></div>
-    <div class="grid" id="grade" style="margin-top:6px"></div>
+    <div class="grid" id="grade"></div>
   </section>
   <aside class="painel">
-    <h2 id="tituloDia">Escolha um dia</h2>
+    <h2 id="tituloDia">Selecione um dia</h2>
     <div id="listaDia" class="vazio">Clique em um dia para ver os itens.</div>
   </aside>
 </main>
@@ -67,76 +130,324 @@
 <script>
 (function () {
   'use strict';
+
   var CFG = window.PARTNER_CFG;
-  var SB = window.sbPartner || window.supabase.createClient(CFG.SB_URL, CFG.SB_KEY, { auth: { persistSession: true, autoRefreshToken: true } });
-  window.sbPartner = SB;
+  if (!CFG) { document.body.innerHTML = '<p style="padding:40px;color:#e2e8f0">Configuração ausente.</p>'; return; }
+
+  if (typeof window.sbPartner === 'undefined') {
+    window.sbPartner = window.supabase.createClient(CFG.SB_URL, CFG.SB_KEY, {
+      auth: { persistSession: true, autoRefreshToken: true }
+    });
+  }
+  var SB = window.sbPartner;
+
+  var MESES = ['janeiro','fevereiro','março','abril','maio','junho','julho','agosto','setembro','outubro','novembro','dezembro'];
+  var DIAS = ['seg','ter','qua','qui','sex','sáb','dom'];
+  var CACHE_KEY = '432up_agenda_filtros_v1';
+
+  /* Tipos e toggles — padrão: todos ligados */
+  var TIPOS = [
+    { id: 'evento',      label: 'Eventos',            cls: 'e-evento',      cor: '#00f0ff' },
+    { id: 'hold',        label: 'Holding',            cls: 'e-hold',        cor: '#f97316' },
+    { id: 'contrato',    label: 'Contratos',          cls: 'e-contrato',    cor: '#2563eb' },
+    { id: 'aprovado',    label: 'Aprovados / depósito', cls: 'e-aprovado',  cor: '#22c55e' },
+    { id: 'comissao',    label: 'Comissões a pagar',  cls: 'e-comissao',    cor: '#15803d' },
+    { id: 'recebimento', label: 'Recebimentos',       cls: 'e-recebimento', cor: '#86efac' },
+    { id: 'lead',        label: 'Leads (data)',        cls: 'e-lead',        cor: '#facc15' },
+    { id: 'bloqueio',    label: 'Bloqueios / indispon.', cls: 'e-bloqueio', cor: '#64748b' }
+  ];
+
+  function carregarFiltros() {
+    var padrao = {};
+    TIPOS.forEach(function (t) { padrao[t.id] = true; });
+    try {
+      var raw = localStorage.getItem(CACHE_KEY);
+      if (raw) {
+        var salvos = JSON.parse(raw);
+        TIPOS.forEach(function (t) {
+          if (typeof salvos[t.id] === 'boolean') padrao[t.id] = salvos[t.id];
+        });
+      }
+    } catch (e) {}
+    return padrao;
+  }
+
+  function salvarFiltros() {
+    try { localStorage.setItem(CACHE_KEY, JSON.stringify(FILTROS)); } catch (e) {}
+  }
+
+  var FILTROS = carregarFiltros();
+  var ANO, MES, DIA_SEL = null;
+  var ITENS = {};   // 'YYYY-MM-DD' -> [item]
+  var CHECKLIST = {}; // proposta_id -> { total, pend, ok }
 
   var $ = function (id) { return document.getElementById(id); };
-  var E = function (s) { return String(s == null ? '' : s).replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;'); };
-  var DIAS = ['Dom', 'Seg', 'Ter', 'Qua', 'Qui', 'Sex', 'Sáb'];
-  var MESES = ['janeiro','fevereiro','março','abril','maio','junho','julho','agosto','setembro','outubro','novembro','dezembro'];
-
-  var hoje = new Date();
-  var ANO = hoje.getFullYear(), MES = hoje.getMonth();
-  var ITENS = {};          // 'YYYY-MM-DD' -> [ {tipo, prop, quando} ]
-  var DIA_SEL = null;
-
+  var E = function (s) {
+    return String(s == null ? '' : s)
+      .replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;');
+  };
   function chave(d) {
-    return d.getFullYear() + '-' + String(d.getMonth() + 1).padStart(2, '0') + '-' + String(d.getDate()).padStart(2, '0');
+    return d.getFullYear() + '-' + String(d.getMonth()+1).padStart(2,'0') + '-' + String(d.getDate()).padStart(2,'0');
   }
   function chaveData(s) { return s ? String(s).slice(0, 10) : null; }
-  function chaveIso(iso) { return iso ? chave(new Date(iso)) : null; }
   function tempo(iso) {
-    if (!iso) return '48H 00M';
-    var d = new Date(iso) - new Date();
-    if (d <= 0) return 'EXPIRADO';
-    var h = Math.floor(d / 3600000), m = Math.floor((d % 3600000) / 60000);
-    return (h < 10 ? '0' : '') + h + 'H ' + (m < 10 ? '0' : '') + m + 'M';
+    if (!iso) return '';
+    try {
+      var d = new Date(iso);
+      return d.toLocaleString('pt-BR', { day:'2-digit', month:'2-digit', hour:'2-digit', minute:'2-digit' });
+    } catch (e) { return ''; }
   }
-  function add(k, item) { if (!k) return; (ITENS[k] = ITENS[k] || []).push(item); }
+  function add(k, item) {
+    if (!k) return;
+    (ITENS[k] = ITENS[k] || []).push(item);
+  }
+  function nomeParceiro(p) {
+    if (!p) return '';
+    return p.nome_artistico || p.nome_completo || '';
+  }
 
-  async function carregarMes() {
-    var ini = new Date(ANO, MES - 1, 1).toISOString().slice(0, 10);
-    var fim = new Date(ANO, MES + 2, 0).toISOString().slice(0, 10);
-    var r = await SB.from('propostas')
-      .select('id, numero, cliente_nome, tipo_evento, data_evento, horario_inicio, status, hold_expira_em, assinado_em, cancelada_em')
-      .or('data_evento.gte.' + ini + ',hold_expira_em.gte.' + ini + ',assinado_em.gte.' + ini)
-      .limit(1000);
-    ITENS = {};
-    (r.data || []).forEach(function (p) {
-      if (p.cancelada_em || p.status === 'cancelada') return;
-      var st = String(p.status || '').toLowerCase();
-      if (st === 'hold' && p.hold_expira_em) add(chaveIso(p.hold_expira_em), { tipo: 'hold', prop: p });
-      if (p.assinado_em) add(chaveIso(p.assinado_em), { tipo: 'contrato', prop: p });
-      if (p.data_evento) add(chaveData(p.data_evento), { tipo: 'evento', prop: p });
+  /* ---------- UI dos toggles ---------- */
+  function montarFiltros() {
+    var box = $('filtros');
+    var html = '<span class="lbl">Mostrar:</span>';
+    TIPOS.forEach(function (t) {
+      var on = FILTROS[t.id] !== false;
+      html += '<label class="tog' + (on ? '' : ' off') + '" data-id="' + t.id + '">' +
+        '<input type="checkbox" ' + (on ? 'checked' : '') + '>' +
+        '<i class="dot" style="background:' + t.cor + '"></i>' +
+        E(t.label) +
+        '</label>';
     });
+    box.innerHTML = html;
+    box.querySelectorAll('.tog').forEach(function (lab) {
+      var id = lab.getAttribute('data-id');
+      var inp = lab.querySelector('input');
+      inp.addEventListener('change', function () {
+        FILTROS[id] = inp.checked;
+        lab.classList.toggle('off', !inp.checked);
+        salvarFiltros();
+        desenhar();
+        if (DIA_SEL) abrirDia(DIA_SEL, true);
+      });
+    });
+
+    // Legenda compacta
+    $('legenda').innerHTML = TIPOS.map(function (t) {
+      return '<span><i style="background:' + t.cor + '"></i>' + E(t.label) + '</span>';
+    }).join('');
+  }
+
+  function visivel(tipo) {
+    return FILTROS[tipo] !== false;
+  }
+
+  /* ---------- Carga de dados ---------- */
+  async function carregarMes() {
+    ITENS = {};
+    CHECKLIST = {};
+    var primeiro = new Date(ANO, MES, 1);
+    var ultimo = new Date(ANO, MES + 1, 0);
+    var ini = chave(primeiro);
+    var fim = chave(ultimo);
+
+    // 1. Propostas (eventos, holds, contratos)
+    var rProp = await SB.from('propostas')
+      .select('id, numero, cliente_nome, tipo_evento, data_evento, horario_inicio, status, hold_expira_em, assinado_em, cancelada_em, comissao_status, comissao_paga, comissao_valor, comissao_solicitada_valor, comissao_solicitada_data, pagamento_agenda, parceiro_id, parceiros:parceiros!parceiro_id(nome_completo, nome_artistico)')
+      .or('data_evento.gte.' + ini + ',hold_expira_em.gte.' + ini + ',assinado_em.gte.' + ini + ',comissao_solicitada_data.gte.' + ini)
+      .is('cancelada_em', null);
+
+    var props = rProp.data || [];
+    var idsProp = [];
+
+    props.forEach(function (p) {
+      idsProp.push(p.id);
+      var vend = nomeParceiro(p.parceiros);
+
+      // Evento principal
+      var de = chaveData(p.data_evento);
+      if (de && de >= ini && de <= fim) {
+        add(de, {
+          tipo: 'evento',
+          id: p.id,
+          titulo: p.cliente_nome || ('#' + p.numero),
+          sub: (p.horario_inicio ? String(p.horario_inicio).slice(0,5) + ' · ' : '') + (p.tipo_evento || '') + (vend ? ' · ' + vend : ''),
+          prop: p
+        });
+      }
+
+      // Holding
+      if (p.hold_expira_em && !p.assinado_em) {
+        var dh = chaveData(p.hold_expira_em);
+        if (dh && dh >= ini && dh <= fim) {
+          add(dh, {
+            tipo: 'hold',
+            id: p.id,
+            titulo: 'Hold · ' + (p.cliente_nome || ('#' + p.numero)),
+            sub: 'Expira ' + tempo(p.hold_expira_em),
+            prop: p
+          });
+        }
+      }
+
+      // Contrato assinado (no dia da assinatura)
+      if (p.assinado_em) {
+        var dc = chaveData(p.assinado_em);
+        if (dc && dc >= ini && dc <= fim) {
+          add(dc, {
+            tipo: 'contrato',
+            id: p.id,
+            titulo: 'Contrato · ' + (p.cliente_nome || ('#' + p.numero)),
+            sub: p.tipo_evento || '',
+            prop: p
+          });
+        }
+      }
+
+      // Comissão solicitada (aguardando pagamento)
+      if (p.comissao_solicitada_valor > 0 && p.comissao_solicitada_data) {
+        var dcom = chaveData(p.comissao_solicitada_data);
+        if (dcom && dcom >= ini && dcom <= fim && !p.comissao_paga) {
+          add(dcom, {
+            tipo: 'comissao',
+            id: p.id,
+            titulo: 'Comissão · ' + (vend || 'vendedor'),
+            sub: 'R$ ' + Number(p.comissao_solicitada_valor).toFixed(2) + ' · #' + p.numero,
+            prop: p
+          });
+        }
+      }
+
+      // Recebimentos do cliente (pagamento_agenda JSON)
+      var pa = p.pagamento_agenda || {};
+      [['entrada', pa.data_entrada, pa.status_entrada], ['saldo', pa.data_saldo, pa.status_saldo]].forEach(function (row) {
+        var dia = chaveData(row[1]);
+        if (!dia || dia < ini || dia > fim || row[2] === 'pago') return;
+        add(dia, {
+          tipo: 'recebimento',
+          id: p.id,
+          titulo: (p.cliente_nome || 'Cliente') + ' · ' + row[0],
+          sub: '#' + p.numero + ' · pendente',
+          prop: p
+        });
+      });
+    });
+
+    // 2. Comprovantes aprovados → marca “aprovado” no dia do evento (ou da aprovação)
+    if (idsProp.length) {
+      try {
+        var { data: comps } = await SB.from('contrato_comprovantes')
+          .select('proposta_id, status, aprovado_em')
+          .in('proposta_id', idsProp)
+          .eq('status', 'aprovado');
+        (comps || []).forEach(function (c) {
+          var p = props.find(function (x) { return x.id === c.proposta_id; });
+          if (!p) return;
+          var dia = chaveData(c.aprovado_em) || chaveData(p.data_evento);
+          if (dia && dia >= ini && dia <= fim) {
+            add(dia, {
+              tipo: 'aprovado',
+              id: p.id,
+              titulo: 'Depósito ok · ' + (p.cliente_nome || ('#' + p.numero)),
+              sub: p.tipo_evento || '',
+              prop: p
+            });
+          }
+        });
+      } catch (e) {}
+    }
+
+    // 3. Bloqueios / indisponibilidades (agenda_reservas)
+    try {
+      var { data: res } = await SB.from('agenda_reservas')
+        .select('id, tipo, proposta_id, data_inicio, data_fim, observacao, recurso:parceiros!recurso_id(nome_completo, nome_artistico)')
+        .lte('data_inicio', fim).gte('data_fim', ini);
+      (res || []).forEach(function (r) {
+        if (r.tipo !== 'indisponibilidade' && r.tipo !== 'bloqueio') return;
+        var a = new Date(r.data_inicio + 'T00:00:00');
+        var b = new Date(r.data_fim + 'T00:00:00');
+        for (var d = new Date(a); d <= b; d.setDate(d.getDate() + 1)) {
+          var k = chave(d);
+          if (k < ini || k > fim) continue;
+          add(k, {
+            tipo: 'bloqueio',
+            id: r.id,
+            titulo: nomeParceiro(r.recurso) || 'Recurso',
+            sub: r.observacao || 'Indisponível',
+            reserva: r
+          });
+        }
+      });
+    } catch (e) {}
+
+    // 4. Leads (se a tabela existir)
+    try {
+      var { data: leads } = await SB.from('co_leads')
+        .select('id, nome, data_evento')
+        .gte('data_evento', ini).lte('data_evento', fim);
+      (leads || []).forEach(function (l) {
+        add(chaveData(l.data_evento), {
+          tipo: 'lead',
+          id: l.id,
+          titulo: l.nome || 'Lead',
+          sub: 'Pediu esta data'
+        });
+      });
+    } catch (e) {
+      // tabela pode não existir ou ter outro nome — ignora
+    }
+
+    // 5. Checklist dos eventos do mês (uma query só)
+    if (idsProp.length) {
+      try {
+        var { data: etapas } = await SB.from('evento_etapas')
+          .select('proposta_id, situacao')
+          .in('proposta_id', idsProp);
+        (etapas || []).forEach(function (e) {
+          if (!CHECKLIST[e.proposta_id]) CHECKLIST[e.proposta_id] = { total: 0, pend: 0, ok: 0 };
+          CHECKLIST[e.proposta_id].total++;
+          if (e.situacao === 'pendente') CHECKLIST[e.proposta_id].pend++;
+          else CHECKLIST[e.proposta_id].ok++;
+        });
+      } catch (e) {}
+    }
+
     desenhar();
   }
 
+  /* ---------- Desenho ---------- */
   function desenhar() {
     $('tituloMes').textContent = MESES[MES] + ' ' + ANO;
     $('cabec').innerHTML = DIAS.map(function (d) { return '<div class="dow">' + d + '</div>'; }).join('');
+
+    var grade = $('grade');
     var primeiro = new Date(ANO, MES, 1);
-    var inicio = new Date(ANO, MES, 1 - primeiro.getDay());
-    var hk = chave(new Date());
+    var offset = (primeiro.getDay() + 6) % 7; // segunda = 0
+    var inicio = new Date(primeiro); inicio.setDate(1 - offset);
+    var hoje = chave(new Date());
     var html = '';
+
     for (var i = 0; i < 42; i++) {
       var d = new Date(inicio); d.setDate(inicio.getDate() + i);
       var k = chave(d);
-      var itens = ITENS[k] || [];
-      var cls = 'dia' + (d.getMonth() !== MES ? ' outro' : '') + (k === hk ? ' hoje' : '') + (k === DIA_SEL ? ' sel' : '');
-      html += '<div class="' + cls + '" data-k="' + k + '"><span class="num">' + d.getDate() + '</span>';
-      itens.slice(0, 3).forEach(function (it) {
-        var rot = it.tipo === 'hold' ? 'Hold ' + tempo(it.prop.hold_expira_em) :
-                  it.tipo === 'contrato' ? 'Contrato #' + it.prop.numero :
-                  'Evento #' + it.prop.numero;
-        html += '<span class="ev e-' + it.tipo + '">' + E(rot) + '</span>';
-      });
-      if (itens.length > 3) html += '<span class="num">+' + (itens.length - 3) + '</span>';
-      html += '</div>';
+      var todos = ITENS[k] || [];
+      var itens = todos.filter(function (it) { return visivel(it.tipo); });
+      var cls = ['dia'];
+      if (d.getMonth() !== MES) cls.push('outro');
+      if (k === hoje) cls.push('hoje');
+      if (k === DIA_SEL) cls.push('sel');
+
+      var chips = itens.slice(0, 3).map(function (it) {
+        var t = TIPOS.find(function (x) { return x.id === it.tipo; });
+        var c = t ? t.cls : 'e-evento';
+        return '<div class="ev ' + c + '">' + E(it.titulo) + '</div>';
+      }).join('');
+      var mais = itens.length > 3 ? '<div class="mais">+' + (itens.length - 3) + '</div>' : '';
+
+      html += '<div class="' + cls.join(' ') + '" data-k="' + k + '">' +
+        '<span class="num">' + d.getDate() + '</span>' + chips + mais + '</div>';
     }
-    $('grade').innerHTML = html;
-    document.querySelectorAll('#grade [data-k]').forEach(function (el) {
+    grade.innerHTML = html;
+    grade.querySelectorAll('[data-k]').forEach(function (el) {
       el.addEventListener('click', function () { abrirDia(el.getAttribute('data-k')); });
     });
     if (DIA_SEL) abrirDia(DIA_SEL, true);
@@ -146,31 +457,82 @@
     DIA_SEL = k;
     var partes = k.split('-');
     $('tituloDia').textContent = partes[2] + '/' + partes[1] + '/' + partes[0];
-    var itens = ITENS[k] || [];
-    $('listaDia').className = '';
-    $('listaDia').innerHTML = itens.length ? itens.map(function (it) {
-      var p = it.prop;
-      var titulo = it.tipo === 'hold' ? 'Hold 48 h · ' + tempo(p.hold_expira_em) :
-                   it.tipo === 'contrato' ? 'Contrato fechado' : 'Execução de evento';
-      return '<div class="item" data-id="' + E(p.id) + '">' +
-        '<strong>' + E(titulo) + '</strong>' +
-        '<small>#' + E(p.numero) + ' · ' + E(p.cliente_nome || '') + '</small>' +
-        '<small>' + E(p.tipo_evento || '') + (p.horario_inicio ? ' · ' + E(String(p.horario_inicio).slice(0, 5)) : '') + '</small></div>';
-    }).join('') : '<div class="vazio">Nada neste dia.</div>';
-    document.querySelectorAll('#listaDia [data-id]').forEach(function (el) {
-      el.addEventListener('click', function () {
-        location.href = 'projeto.html?id=' + encodeURIComponent(el.getAttribute('data-id'));
+
+    var todos = ITENS[k] || [];
+    var itens = todos.filter(function (it) { return visivel(it.tipo); });
+
+    if (!itens.length) {
+      $('listaDia').className = 'vazio';
+      $('listaDia').textContent = todos.length
+        ? 'Nada neste dia com os filtros atuais.'
+        : 'Nada neste dia.';
+    } else {
+      $('listaDia').className = '';
+      $('listaDia').innerHTML = itens.map(function (it) {
+        var t = TIPOS.find(function (x) { return x.id === it.tipo; });
+        var cor = t ? t.cor : '#64748b';
+        var p = it.prop;
+        var tags = '';
+        var acoes = '';
+
+        if (p && it.tipo === 'evento') {
+          var ck = CHECKLIST[p.id] || { total: 0, pend: 0, ok: 0 };
+          if (ck.total === 0) {
+            tags += '<span class="tag pend">Sem checklist</span>';
+          } else if (ck.pend === 0) {
+            tags += '<span class="tag ok">Checklist ✓</span>';
+          } else {
+            tags += '<span class="tag pend">' + ck.pend + ' etapa' + (ck.pend > 1 ? 's' : '') + ' pend.</span>';
+          }
+          if (p.comissao_paga) tags += '<span class="tag ok">Comissão paga</span>';
+          else if (p.comissao_status) tags += '<span class="tag">' + E(p.comissao_status) + '</span>';
+          if (p.status) tags += '<span class="tag">' + E(p.status) + '</span>';
+
+          acoes =
+            '<div class="acoes">' +
+              '<a class="pri" href="projeto.html?id=' + encodeURIComponent(p.id) + '">Abrir ficha</a>' +
+              '<a href="../checklist.html?proposta=' + encodeURIComponent(p.id) + '">Checklist</a>' +
+            '</div>';
+        } else if (p && (it.tipo === 'hold' || it.tipo === 'contrato' || it.tipo === 'comissao' || it.tipo === 'recebimento' || it.tipo === 'aprovado')) {
+          acoes =
+            '<div class="acoes">' +
+              '<a class="pri" href="projeto.html?id=' + encodeURIComponent(p.id) + '">Abrir ficha</a>' +
+            '</div>';
+        }
+
+        return '<div class="item" style="border-left-color:' + cor + '" data-tipo="' + E(it.tipo) + '" data-id="' + E(it.id) + '">' +
+          '<strong>' + E(it.titulo) + '</strong>' +
+          (it.sub ? '<small>' + E(it.sub) + '</small>' : '') +
+          (tags ? '<div class="tags">' + tags + '</div>' : '') +
+          acoes +
+          '</div>';
+      }).join('');
+    }
+
+    if (!silencioso) {
+      document.querySelectorAll('#grade .dia').forEach(function (el) {
+        el.classList.toggle('sel', el.getAttribute('data-k') === k);
       });
-    });
-    if (!silencioso) document.querySelectorAll('#grade .dia').forEach(function (el) {
-      el.classList.toggle('sel', el.getAttribute('data-k') === k);
-    });
+    }
   }
 
-  $('btnPrev').addEventListener('click', function () { MES--; if (MES < 0) { MES = 11; ANO--; } carregarMes(); });
-  $('btnNext').addEventListener('click', function () { MES++; if (MES > 11) { MES = 0; ANO++; } carregarMes(); });
-  $('btnHoje').addEventListener('click', function () { var h = new Date(); ANO = h.getFullYear(); MES = h.getMonth(); DIA_SEL = chave(h); carregarMes(); });
+  /* ---------- Navegação ---------- */
+  $('btnPrev').addEventListener('click', function () {
+    MES--; if (MES < 0) { MES = 11; ANO--; }
+    carregarMes();
+  });
+  $('btnNext').addEventListener('click', function () {
+    MES++; if (MES > 11) { MES = 0; ANO++; }
+    carregarMes();
+  });
+  $('btnHoje').addEventListener('click', function () {
+    var h = new Date();
+    ANO = h.getFullYear(); MES = h.getMonth();
+    DIA_SEL = chave(h);
+    carregarMes();
+  });
 
+  /* ---------- Init ---------- */
   (async function init() {
     var s = await SB.auth.getSession();
     if (!(s.data && s.data.session)) { location.href = '../login.html'; return; }
@@ -179,9 +541,13 @@
       document.querySelector('main').innerHTML = '<div class="painel"><div class="vazio">Acesso restrito ao administrador.</div></div>';
       return;
     }
-    DIA_SEL = chave(new Date());
-    carregarMes();
-    setInterval(desenhar, 30000);   // atualiza os cronômetros de hold
+    var hoje = new Date();
+    ANO = hoje.getFullYear();
+    MES = hoje.getMonth();
+    DIA_SEL = chave(hoje);
+    montarFiltros();
+    await carregarMes();
+    setInterval(function () { if (document.visibilityState === 'visible') desenhar(); }, 30000);
   })();
 })();
 </script>
