@@ -104,6 +104,13 @@
         Este é o seu espaço de preparação. A partir da assinatura do contrato, você acompanha aqui cada detalhe do seu evento, passo a passo, até o grande dia. A sua história começa agora, e a gente cuida de cada etapa com você.
       </div>
 
+      <div class="card" id="cardAvisos" style="display:none;">
+        <h2>Avisos no celular</h2>
+        <div class="sub">Receba no celular cada novidade do seu evento, como uma etapa confirmada.</div>
+        <button class="p" id="btnAvisos">Ativar avisos</button>
+        <div class="msg" id="msgAvisos"></div>
+      </div>
+
       <div class="card">
         <h2>Linha do tempo</h2>
         <div class="linha-tempo" id="linhaTempo"><div class="vazio">Carregando…</div></div>
@@ -282,6 +289,7 @@
     var pedido = dados.propostas.find(function (p) { return p.status !== 'cancelada'; });
     var assinado = pedido && pedido.assinado_em;
     $('conviteGuia').style.display = assinado ? 'none' : 'block';
+    $('cardAvisos').style.display = assinado ? 'block' : 'none';
     $('subGuia').textContent = assinado ? 'Acompanhe cada preparativo, em ordem.' : 'Assim que o contrato for assinado, a linha do tempo ganha vida.';
 
     var etapas = pedido ? dados.etapas.filter(function (e) { return e.proposta_id === pedido.id; }) : [];
@@ -323,6 +331,44 @@
     $('obsNova').value = '';
     carregar();
   });
+
+  var VAPID_PUBLIC = 'BM6ILzfra83ovE2AOg_xIW7_YioGcj6E0EkPKgVZI944NVoPhBHoJaIMZuZMOvD0hp4YTqq9GxiXor5VB3N4m-Y';
+  function b64ToU8(b64) {
+    var pad = '='.repeat((4 - b64.length % 4) % 4);
+    var raw = atob((b64 + pad).replace(/-/g, '+').replace(/_/g, '/'));
+    var out = new Uint8Array(raw.length);
+    for (var i = 0; i < raw.length; i++) out[i] = raw.charCodeAt(i);
+    return out;
+  }
+  async function ativarAvisos() {
+    var m = $('msgAvisos'); m.className = 'msg'; m.textContent = '';
+    var pedido = dados.propostas.find(function (p) { return p.status !== 'cancelada' && p.assinado_em; });
+    if (!pedido) { m.textContent = 'Os avisos ficam disponíveis depois da assinatura do contrato.'; return; }
+    var iOS = /iPhone|iPad|iPod/.test(navigator.userAgent);
+    var emCasa = window.navigator.standalone === true || window.matchMedia('(display-mode: standalone)').matches;
+    if (iOS && !emCasa) { m.textContent = 'No iPhone, primeiro toque em Compartilhar > Adicionar à Tela de Início, e abra por lá.'; return; }
+    if (!('serviceWorker' in navigator) || !('PushManager' in window) || !('Notification' in window)) {
+      m.textContent = 'Este navegador não recebe avisos. Use o Chrome no Android ou adicione à tela inicial.'; return;
+    }
+    $('btnAvisos').disabled = true; m.textContent = 'Ativando…';
+    try {
+      var perm = await Notification.requestPermission();
+      if (perm !== 'granted') { m.textContent = 'Permissão negada. Você pode liberar nas configurações do navegador.'; $('btnAvisos').disabled = false; return; }
+      var reg = await navigator.serviceWorker.register('/cliente/sw.js', { scope: '/cliente/' });
+      await navigator.serviceWorker.ready;
+      var sub = await reg.pushManager.getSubscription() ||
+        await reg.pushManager.subscribe({ userVisibleOnly: true, applicationServerKey: b64ToU8(VAPID_PUBLIC) });
+      var j = sub.toJSON();
+      var r = await SB.functions.invoke('registrar-push-cliente', { body: { proposta_id: pedido.id, subscription: { endpoint: j.endpoint, keys: j.keys } } });
+      if (r.error || (r.data && r.data.erro)) throw new Error((r.data && r.data.erro) || 'Não foi possível ativar os avisos.');
+      m.className = 'msg ok'; m.textContent = 'Avisos ativados neste aparelho.';
+      $('btnAvisos').style.display = 'none';
+    } catch (e) {
+      m.textContent = e.message || 'Não foi possível ativar os avisos.';
+      $('btnAvisos').disabled = false;
+    }
+  }
+  $('btnAvisos').addEventListener('click', ativarAvisos);
 
   function render() {
     renderCadastro();
