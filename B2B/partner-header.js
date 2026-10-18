@@ -17,7 +17,8 @@
   }
 
   /* ---------- 2. Rotas (endereços completos) ---------- */
-  var SITE = 'https://www.432up.com/';
+  /* Origem atual (evita loop www ↔ apex e preview ↔ produção) */
+  var SITE = (window.location.origin || 'https://www.432up.com') + '/';
   var B2B = SITE + 'B2B/';
   var ADM = SITE + 'B2B/admin/';
   var pathName = window.location.pathname || '';
