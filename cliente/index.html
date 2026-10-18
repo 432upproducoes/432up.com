@@ -26,8 +26,8 @@
   <div class="sub">Acompanhe seu pedido com a 432UP.</div>
 
   <form id="passo1">
-    <label for="cpf">CPF ou CNPJ</label>
-    <input id="cpf" inputmode="numeric" autocomplete="username" placeholder="CPF ou CNPJ" required>
+    <label for="cpf">E-mail</label>
+    <input id="cpf" type="email" autocomplete="username" placeholder="seu@email.com" required>
     <label for="senha">Senha</label>
     <input id="senha" type="password" autocomplete="current-password" required>
     <button id="btn1" type="submit">Entrar</button>
@@ -60,20 +60,12 @@
     return padrao;
   }
 
-  $('cpf').addEventListener('input', function (e) {
-    var d = String(e.target.value || '').replace(/\D/g, '').slice(0, 14);
-    if (d.length <= 11) {
-      e.target.value = d.replace(/^(\d{3})(\d)/, '$1.$2').replace(/^(\d{3})\.(\d{3})(\d)/, '$1.$2.$3').replace(/\.(\d{3})(\d)/, '.$1-$2');
-    } else {
-      e.target.value = d.replace(/^(\d{2})(\d)/, '$1.$2').replace(/^(\d{2})\.(\d{3})(\d)/, '$1.$2.$3').replace(/\.(\d{3})(\d)/, '.$1/$2').replace(/(\d{4})(\d)/, '$1-$2');
-    }
-  });
 
   $('passo1').addEventListener('submit', async function (e) {
     e.preventDefault();
     mostrarMsg(''); $('btn1').disabled = true;
-    cpfAtual = soNumeros($('cpf').value);
-    var r = await SB.functions.invoke('cliente-entrar', { body: { cpf: cpfAtual, senha: $('senha').value } });
+    cpfAtual = $('cpf').value.trim().toLowerCase();
+    var r = await SB.functions.invoke('cliente-entrar', { body: { email: cpfAtual, senha: $('senha').value } });
     $('btn1').disabled = false;
     if (r.error || (r.data && r.data.erro)) {
       mostrarMsg(await mensagemErro(r, 'Não foi possível entrar. Tente novamente.')); return;
@@ -88,7 +80,7 @@
   $('passo2').addEventListener('submit', async function (e) {
     e.preventDefault();
     mostrarMsg(''); $('btn2').disabled = true;
-    var r = await SB.functions.invoke('cliente-confirmar', { body: { cpf: cpfAtual, codigo: soNumeros($('codigo').value) } });
+    var r = await SB.functions.invoke('cliente-confirmar', { body: { email: cpfAtual, codigo: soNumeros($('codigo').value) } });
     if (r.error || (r.data && r.data.erro)) {
       $('btn2').disabled = false;
       mostrarMsg(await mensagemErro(r, 'Código inválido ou vencido.')); return;
