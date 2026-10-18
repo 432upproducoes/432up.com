@@ -261,6 +261,14 @@ export async function onRequest(context) {
       `📦 <b>Itens novos em análise:</b> ${data.total_midias_pendentes ?? "—"}\n\n` +
       `🟡 <b>Ação necessária:</b> Autorizar no Admin (Perfil do Parceiro → Mídias Pendentes)`;
 
+  } else if (data.event === "etapa_concluida") {
+
+    texto =
+      `✅ <b>ETAPA CONCLUÍDA</b>\n\n` +
+      `🆔 <b>Proposta:</b> #${esc(data.proposta_id || "—")}\n` +
+      `📌 <b>Etapa:</b> ${esc(data.etapa || data.mensagem || "—")}\n` +
+      `🕒 <b>Quando:</b> ${fmtDataHora(new Date().toISOString())}`;
+
   } else {
 
     // ========================================================
@@ -334,6 +342,14 @@ export async function onRequest(context) {
         title: "🖼️ Mídia para aprovar",
         body: `${data.parceiro_nome || "Parceiro"} — ${data.total_midias_pendentes ?? "?"} item(ns)`,
         url: "/B2B/admin/parceiros.html"
+      };
+    }
+
+    if (ev === "etapa_concluida") {
+      return {
+        title: "✅ Etapa do evento",
+        body: String(data.etapa || data.mensagem || "Etapa concluída").slice(0, 120),
+        url: "/cliente/index.html"
       };
     }
 
