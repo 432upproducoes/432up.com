@@ -23,10 +23,10 @@
 <body>
 <div class="card">
   <h1>Criar meu acesso</h1>
-  <div class="sub">Use o CPF e o e-mail do seu contrato. Assim confirmamos que é você. Depois, você entra com o CPF e a senha que escolher.</div>
+  <div class="sub">Use o CPF ou CNPJ e o e-mail do seu contrato. Assim confirmamos que é você. Depois, você entra com o CPF e a senha que escolher.</div>
   <form id="form">
-    <label for="cpf">CPF</label>
-    <input id="cpf" inputmode="numeric" placeholder="000.000.000-00" required>
+    <label for="cpf">CPF ou CNPJ</label>
+    <input id="cpf" inputmode="numeric" placeholder="CPF ou CNPJ" required>
     <label for="email">E-mail</label>
     <input id="email" type="email" autocomplete="email" required>
     <label for="senha">Crie uma senha (mínimo 8 caracteres)</label>
@@ -48,8 +48,12 @@
   if (!token) { $('msg').textContent = 'Link incompleto. Peça um novo convite à 432UP.'; $('form').style.display = 'none'; return; }
 
   $('cpf').addEventListener('input', function (e) {
-    var d = String(e.target.value || '').replace(/\D/g, '').slice(0, 11);
-    e.target.value = d.replace(/^(\d{3})(\d)/, '$1.$2').replace(/^(\d{3})\.(\d{3})(\d)/, '$1.$2.$3').replace(/\.(\d{3})(\d)/, '.$1-$2');
+    var d = String(e.target.value || '').replace(/\D/g, '').slice(0, 14);
+    if (d.length <= 11) {
+      e.target.value = d.replace(/^(\d{3})(\d)/, '$1.$2').replace(/^(\d{3})\.(\d{3})(\d)/, '$1.$2.$3').replace(/\.(\d{3})(\d)/, '.$1-$2');
+    } else {
+      e.target.value = d.replace(/^(\d{2})(\d)/, '$1.$2').replace(/^(\d{2})\.(\d{3})(\d)/, '$1.$2.$3').replace(/\.(\d{3})(\d)/, '.$1/$2').replace(/(\d{4})(\d)/, '$1-$2');
+    }
   });
 
   $('form').addEventListener('submit', async function (e) {
