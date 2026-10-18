@@ -26,8 +26,8 @@
   <div class="sub">Acompanhe seu pedido com a 432UP.</div>
 
   <form id="passo1">
-    <label for="cpf">CPF</label>
-    <input id="cpf" inputmode="numeric" autocomplete="username" placeholder="000.000.000-00" required>
+    <label for="cpf">CPF ou CNPJ</label>
+    <input id="cpf" inputmode="numeric" autocomplete="username" placeholder="CPF ou CNPJ" required>
     <label for="senha">Senha</label>
     <input id="senha" type="password" autocomplete="current-password" required>
     <button id="btn1" type="submit">Entrar</button>
@@ -56,8 +56,12 @@
   var mostrarMsg = function (t, ok) { $('msg').className = 'msg' + (ok ? ' ok' : ''); $('msg').textContent = t; };
 
   $('cpf').addEventListener('input', function (e) {
-    var d = soNumeros(e.target.value).slice(0, 11);
-    e.target.value = d.replace(/^(\d{3})(\d)/, '$1.$2').replace(/^(\d{3})\.(\d{3})(\d)/, '$1.$2.$3').replace(/\.(\d{3})(\d)/, '.$1-$2');
+    var d = String(e.target.value || '').replace(/\D/g, '').slice(0, 14);
+    if (d.length <= 11) {
+      e.target.value = d.replace(/^(\d{3})(\d)/, '$1.$2').replace(/^(\d{3})\.(\d{3})(\d)/, '$1.$2.$3').replace(/\.(\d{3})(\d)/, '.$1-$2');
+    } else {
+      e.target.value = d.replace(/^(\d{2})(\d)/, '$1.$2').replace(/^(\d{2})\.(\d{3})(\d)/, '$1.$2.$3').replace(/\.(\d{3})(\d)/, '.$1/$2').replace(/(\d{4})(\d)/, '$1-$2');
+    }
   });
 
   $('passo1').addEventListener('submit', async function (e) {
