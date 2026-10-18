@@ -93,5 +93,30 @@
       });
     })();
   </script>
+
+  <script>
+  (function () {
+    if (typeof sbPartner === 'undefined') return;
+    sbPartner.auth.getSession().then(async function (res) {
+      var session = res.data && res.data.session;
+      if (!session) return;
+      var uid = session.user.id;
+      var em = (session.user.email || '').toLowerCase();
+      var r = await sbPartner.from('portal_clientes').select('id').eq('user_id', uid).maybeSingle();
+      if (!r.data && em) {
+        r = await sbPartner.from('portal_clientes').select('id').eq('email', em).maybeSingle();
+      }
+      if (r.data) {
+        try {
+          sessionStorage.setItem('432up_is_cliente', 'true');
+          sessionStorage.setItem('432up_is_logged', 'true');
+          sessionStorage.setItem('432up_login_done', '1');
+        } catch (e) {}
+        window.location.replace('../cliente/index.html');
+      }
+    });
+  })();
+  </script>
+
 </body>
 </html>
