@@ -28,6 +28,8 @@
   var onSite = pathName.indexOf('/B2B/') === -1 && pathName.indexOf('/b2b/') === -1 && !isSubdirAdmin && !onCliente;
   if ((!onSite || onCliente) && !cachedLoggedIn) cachedLoggedIn = true;
   if (onCliente) cachedIsCliente = true;
+  /* Na página do cliente, admin/parceiro só valem se confirmados no banco (nunca pelo cache da sessão) */
+  if (onCliente) { cachedIsAdmin = false; cachedIsParceiro = false; }
   var currentPath = pathName.split('/').pop() || 'index.html';
   var pageArea = isSubdirAdmin ? 'admin' : (onCliente ? 'cliente' : (onSite ? 'site' : 'parceiro'));
   var areaAtual = pageArea;
@@ -1312,7 +1314,8 @@
 
   function applyParceiro(parceiro) {
     lastParceiro = parceiro || null;
-    cachedIsParceiro = !!parceiro && parceiro.role !== 'client';
+    /* Na página do cliente, aba Parceiro só para cadastro de parceiro aprovado */
+    cachedIsParceiro = !!parceiro && parceiro.role !== 'client' && parceiro.status === 'aprovado';
     var uid = parceiro && parceiro.user_id;
     var base = { loggedIn: !!parceiro, isAdmin: isAdminParceiro(parceiro) };
     if (!uid || typeof sbPartner === 'undefined') {
