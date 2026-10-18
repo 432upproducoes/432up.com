@@ -1,0 +1,295 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Projetos · 432UP Admin</title>
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+<script src="../partner-config.js"></script>
+<style>
+  :root { --bg:#0b1020; --card:#131a2e; --line:rgba(255,255,255,.08); --txt:#e2e8f0; --mut:#94a3b8; --acc:#a3e635; --ouro:#c5a059; --ciano:#00f0ff; }
+  * { box-sizing: border-box; }
+  body { margin:0; font-family: system-ui, -apple-system, Segoe UI, Roboto, sans-serif; background:var(--bg); color:var(--txt); }
+  header { padding:14px 20px; border-bottom:1px solid var(--line); display:flex; justify-content:space-between; align-items:center; gap:12px; flex-wrap:wrap; }
+  h1 { font-size:17px; margin:0; }
+  h2 { font-size:12px; margin:0 0 10px; color:var(--ouro); text-transform:uppercase; letter-spacing:.06em; }
+  button, select, input { font:inherit; color:var(--txt); background:#0f1628; border:1px solid var(--line); padding:7px 10px; border-radius:8px; }
+  button { cursor:pointer; }
+  button:hover { border-color:var(--acc); }
+  button.primary { background:var(--acc); color:#0b1020; border-color:var(--acc); font-weight:700; }
+  button.danger { color:#fca5a5; border-color:rgba(248,113,113,.4); }
+  button:disabled { opacity:.5; cursor:default; }
+  main { display:grid; grid-template-columns: 300px minmax(0,1fr); gap:16px; padding:16px 20px; }
+  @media (max-width: 900px) { main { grid-template-columns: 1fr; } }
+  .card { background:var(--card); border:1px solid var(--line); border-radius:12px; padding:14px; margin-bottom:14px; }
+  .proj { padding:10px; border:1px solid var(--line); border-radius:10px; margin-bottom:8px; cursor:pointer; }
+  .proj.on { border-color:var(--acc); }
+  .proj small, .mut { color:var(--mut); font-size:12px; }
+  .row { display:flex; gap:8px; flex-wrap:wrap; align-items:center; margin-bottom:8px; }
+  .row label { font-size:11px; color:var(--mut); text-transform:uppercase; display:block; margin-bottom:3px; }
+  .item { display:flex; justify-content:space-between; gap:8px; align-items:center; padding:8px 0; border-bottom:1px solid var(--line); font-size:14px; flex-wrap:wrap; }
+  .tag { font-size:10px; font-weight:800; padding:3px 8px; border-radius:999px; text-transform:uppercase; }
+  .t-hold { background:rgba(250,204,21,.15); color:#facc15; }
+  .t-ok { background:rgba(163,230,53,.15); color:#a3e635; }
+  .t-x { background:rgba(248,113,113,.15); color:#fca5a5; }
+  .msg { font-size:12px; min-height:16px; color:#fca5a5; }
+  .msg.ok { color:#a3e635; }
+  .vazio { color:var(--mut); font-size:13px; padding:6px 0; }
+  .grid2 { display:grid; grid-template-columns:1fr 1fr; gap:10px; }
+  @media (max-width: 600px) { .grid2 { grid-template-columns:1fr; } }
+</style>
+</head>
+<body>
+<header>
+  <h1>Projetos · administração</h1>
+  <div class="row" style="margin:0">
+    <a href="agenda.html" style="color:var(--ciano);text-decoration:none">Agenda →</a>
+  </div>
+</header>
+<main>
+  <aside>
+    <div class="card">
+      <h2>Projetos</h2>
+      <input id="busca" placeholder="Buscar nº ou cliente" style="width:100%;margin-bottom:10px">
+      <div id="listaProj"><div class="vazio">Carregando…</div></div>
+    </div>
+  </aside>
+
+  <section id="detalhe">
+    <div class="card" id="semSel"><div class="vazio">Escolha um projeto na lista.</div></div>
+    <div id="conteudo" style="display:none">
+
+      <div class="card">
+        <h2 id="tituloProj">Projeto</h2>
+        <div class="grid2">
+          <div><label>Data do evento</label><input type="date" id="fData"></div>
+          <div><label>Status</label>
+            <select id="fStatus">
+              <option value="rascunho">Rascunho</option>
+              <option value="hold">Hold 48h</option>
+              <option value="enviada">Enviada</option>
+              <option value="aprovada">Aprovada</option>
+              <option value="adiada">Adiada</option>
+              <option value="cancelada">Cancelada</option>
+            </select>
+          </div>
+          <div><label>Início</label><input type="time" id="fIni"></div>
+          <div><label>Fim</label><input type="time" id="fFim"></div>
+          <div style="grid-column:1/-1"><label>Local</label><input id="fLocal" style="width:100%"></div>
+        </div>
+        <div class="row" style="margin-top:10px">
+          <button class="primary" id="btnSalvar">Salvar alterações</button>
+          <span class="mut" id="holdInfo"></span>
+        </div>
+        <div class="msg" id="msgDados"></div>
+      </div>
+
+      <div class="card">
+        <h2>Dados do pedido</h2>
+        <div id="dadosPedido" class="mut"></div>
+      </div>
+
+      <div class="card">
+        <h2>Colaboradores do projeto</h2>
+        <div class="row">
+          <select id="addParceiro" style="min-width:200px"></select>
+          <select id="addNivel">
+            <option value="agenda">Só agenda</option>
+            <option value="dados_sensiveis">Agenda + dados sensíveis</option>
+          </select>
+          <button class="primary" id="btnAddCol">Adicionar</button>
+        </div>
+        <div class="msg" id="msgCol"></div>
+        <div id="listaCol"></div>
+      </div>
+
+      <div class="card">
+        <h2>Checklist</h2>
+        <div id="listaEtapas"></div>
+      </div>
+
+      <div class="card">
+        <h2>Instruções</h2>
+        <div id="listaObs"></div>
+      </div>
+
+    </div>
+  </section>
+</main>
+
+<script>
+(function () {
+  'use strict';
+  var CFG = window.PARTNER_CFG;
+  var SB = window.sbPartner || window.supabase.createClient(CFG.SB_URL, CFG.SB_KEY, { auth: { persistSession: true, autoRefreshToken: true } });
+  window.sbPartner = SB;
+
+  var $ = function (id) { return document.getElementById(id); };
+  var E = function (s) { return String(s == null ? '' : s).replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;'); };
+  var BRL = function (n) { try { return Number(n || 0).toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' }); } catch (e) { return ''; } };
+  var ME = null, PROPS = [], ATUAL = null, PARCEIROS = [];
+
+  function tempo(iso) {
+    if (!iso) return '48H 00M';
+    var d = new Date(iso) - new Date();
+    if (d <= 0) return 'EXPIRADO';
+    var h = Math.floor(d / 3600000), m = Math.floor((d % 3600000) / 60000);
+    return (h < 10 ? '0' : '') + h + 'H ' + (m < 10 ? '0' : '') + m + 'M';
+  }
+
+  async function init() {
+    var s = await SB.auth.getSession();
+    if (!(s.data && s.data.session)) { location.href = '../login.html'; return; }
+    var r = await SB.from('parceiros').select('id, nome_completo, role, status').eq('user_id', s.data.session.user.id).maybeSingle();
+    ME = r.data;
+    if (!ME || !/^(admin|master)$/i.test(String(ME.role || '').trim())) {
+      document.querySelector('main').innerHTML = '<div class="card"><div class="vazio">Acesso restrito ao administrador.</div></div>';
+      return;
+    }
+    var p = await SB.from('parceiros').select('id, nome_completo, email').eq('status', 'aprovado').order('nome_completo');
+    PARCEIROS = p.data || [];
+    $('addParceiro').innerHTML = PARCEIROS.map(function (v) { return '<option value="' + v.id + '">' + E(v.nome_completo || v.email) + '</option>'; }).join('');
+    await carregarLista();
+    var q = new URLSearchParams(location.search).get('id');
+    if (q) selecionar(q);
+  }
+
+  async function carregarLista() {
+    var r = await SB.from('propostas')
+      .select('id, numero, cliente_nome, tipo_evento, data_evento, status, hold_expira_em, cancelada_em')
+      .order('data_evento', { ascending: true }).limit(500);
+    PROPS = r.data || [];
+    desenharLista();
+  }
+
+  function desenharLista() {
+    var t = ($('busca').value || '').toLowerCase().trim();
+    var lista = PROPS.filter(function (p) {
+      return !t || String(p.numero).indexOf(t) >= 0 || String(p.cliente_nome || '').toLowerCase().indexOf(t) >= 0;
+    });
+    $('listaProj').innerHTML = lista.length ? lista.map(function (p) {
+      return '<div class="proj ' + (ATUAL && ATUAL.id === p.id ? 'on' : '') + '" data-id="' + E(p.id) + '">' +
+        '<strong>#' + E(p.numero) + '</strong> · ' + E(p.cliente_nome || '') + '<br>' +
+        '<small>' + E(p.tipo_evento || '') + ' · ' + E(p.data_evento || 'sem data') + ' · ' + E(p.status || '') + '</small></div>';
+    }).join('') : '<div class="vazio">Nenhum projeto.</div>';
+    document.querySelectorAll('#listaProj [data-id]').forEach(function (el) {
+      el.addEventListener('click', function () { selecionar(el.getAttribute('data-id')); });
+    });
+  }
+  $('busca').addEventListener('input', desenharLista);
+
+  async function selecionar(id) {
+    ATUAL = PROPS.find(function (p) { return p.id === id; }) || null;
+    if (!ATUAL) return;
+    history.replaceState(null, '', '?id=' + encodeURIComponent(id));
+    desenharLista();
+    $('semSel').style.display = 'none';
+    $('conteudo').style.display = 'block';
+    $('tituloProj').textContent = 'Projeto #' + ATUAL.numero + ' · ' + (ATUAL.cliente_nome || '');
+    $('fData').value = ATUAL.data_evento || '';
+    $('fStatus').value = String(ATUAL.status || 'rascunho').toLowerCase();
+    $('msgDados').textContent = '';
+    var full = await SB.from('propostas').select('horario_inicio, horario_final, local_evento, valor_total, tipo_evento, cliente_nome, comissao_valor, assinado_em').eq('id', id).maybeSingle();
+    var d = full.data || {};
+    $('fIni').value = (d.horario_inicio || '').slice(0, 5);
+    $('fFim').value = (d.horario_final || '').slice(0, 5);
+    $('fLocal').value = d.local_evento || '';
+    $('dadosPedido').innerHTML = 'Tipo: ' + E(d.tipo_evento || '') + ' · Valor: ' + BRL(d.valor_total) +
+      ' · Comissão: ' + BRL(d.comissao_valor) + ' · Contrato: ' + (d.assinado_em ? 'assinado' : 'não assinado');
+    $('holdInfo').textContent = ATUAL.status === 'hold' ? 'Hold · ' + tempo(ATUAL.hold_expira_em) : '';
+    await Promise.all([carregarColaboradores(), carregarEtapas(), carregarObs()]);
+  }
+
+  $('btnSalvar').addEventListener('click', async function () {
+    if (!ATUAL) return;
+    var st = $('fStatus').value;
+    var patch = {
+      data_evento: $('fData').value || null,
+      status: st,
+      horario_inicio: $('fIni').value || null,
+      horario_final: $('fFim').value || null,
+      local_evento: $('fLocal').value || null
+    };
+    if (st === 'hold' && ATUAL.status !== 'hold') {
+      var h = new Date(); h.setHours(h.getHours() + 48); patch.hold_expira_em = h.toISOString();
+    }
+    if (st !== 'hold') patch.hold_expira_em = null;
+    var r = await SB.from('propostas').update(patch).eq('id', ATUAL.id);
+    if (r.error) { $('msgDados').className = 'msg'; $('msgDados').textContent = 'Não foi possível salvar.'; return; }
+    $('msgDados').className = 'msg ok'; $('msgDados').textContent = 'Salvo.';
+    await carregarLista();
+    selecionar(ATUAL.id);
+  });
+
+  async function carregarColaboradores() {
+    var r = await SB.from('projeto_colaboradores').select('id, nivel, parceiro_id, parceiros(nome_completo, email)').eq('proposta_id', ATUAL.id);
+    var l = r.data || [];
+    $('listaCol').innerHTML = l.length ? l.map(function (c) {
+      var nome = (c.parceiros && (c.parceiros.nome_completo || c.parceiros.email)) || '—';
+      return '<div class="item"><span>' + E(nome) + '</span><span class="mut">' +
+        (c.nivel === 'dados_sensiveis' ? 'agenda + dados sensíveis' : 'só agenda') + '</span>' +
+        '<button class="danger" data-rem="' + E(c.id) + '">Remover</button></div>';
+    }).join('') : '<div class="vazio">Nenhum colaborador ainda.</div>';
+    document.querySelectorAll('[data-rem]').forEach(function (b) {
+      b.addEventListener('click', async function () {
+        await SB.from('projeto_colaboradores').delete().eq('id', b.getAttribute('data-rem'));
+        carregarColaboradores();
+      });
+    });
+  }
+
+  $('btnAddCol').addEventListener('click', async function () {
+    if (!ATUAL) return;
+    var r = await SB.from('projeto_colaboradores').insert({
+      proposta_id: ATUAL.id, parceiro_id: $('addParceiro').value, nivel: $('addNivel').value, criado_por: ME.id
+    });
+    $('msgCol').className = r.error ? 'msg' : 'msg ok';
+    $('msgCol').textContent = r.error ? 'Não foi possível adicionar (já está no projeto?).' : 'Adicionado.';
+    carregarColaboradores();
+  });
+
+  async function carregarEtapas() {
+    var r = await SB.from('evento_etapas').select('id, nome, hora, situacao, concluida_por, concluida_em, ordem').eq('proposta_id', ATUAL.id).order('ordem');
+    var l = r.data || [];
+    $('listaEtapas').innerHTML = l.length ? l.map(function (e) {
+      var feita = e.situacao === 'concluida';
+      return '<div class="item"><span>' + E(e.nome) + ' <span class="mut">' + E(e.hora || '') + '</span>' +
+        (feita ? ' <span class="tag t-ok">feita</span>' : ' <span class="tag t-hold">pendente</span>') + '</span>' +
+        '<span>' + (feita
+          ? '<button data-desfazer="' + E(e.id) + '">Desfazer</button>'
+          : '<button class="primary" data-feita="' + E(e.id) + '">Marcar feita</button>') + '</span></div>';
+    }).join('') : '<div class="vazio">Sem etapas.</div>';
+    document.querySelectorAll('[data-feita]').forEach(function (b) {
+      b.addEventListener('click', async function () {
+        await SB.from('evento_etapas').update({ situacao: 'concluida', concluida_por: ME.nome_completo, concluida_em: new Date().toISOString() }).eq('id', b.getAttribute('data-feita'));
+        carregarEtapas();
+      });
+    });
+    document.querySelectorAll('[data-desfazer]').forEach(function (b) {
+      b.addEventListener('click', async function () {
+        await SB.from('evento_etapas').update({ situacao: 'pendente', concluida_por: null, concluida_em: null }).eq('id', b.getAttribute('data-desfazer'));
+        carregarEtapas();
+      });
+    });
+  }
+
+  async function carregarObs() {
+    var r = await SB.from('evento_observacoes').select('id, texto, criado_por').eq('proposta_id', ATUAL.id).is('removido_em', null).order('criado_em');
+    var l = r.data || [];
+    $('listaObs').innerHTML = l.length ? l.map(function (o) {
+      return '<div class="item"><span>' + E(o.texto) + ' <span class="mut">(' + E(o.criado_por) + ')</span></span>' +
+        '<button class="danger" data-obs="' + E(o.id) + '">Remover</button></div>';
+    }).join('') : '<div class="vazio">Nenhuma instrução.</div>';
+    document.querySelectorAll('[data-obs]').forEach(function (b) {
+      b.addEventListener('click', async function () {
+        await SB.from('evento_observacoes').update({ removido_em: new Date().toISOString() }).eq('id', b.getAttribute('data-obs'));
+        carregarObs();
+      });
+    });
+  }
+
+  init();
+})();
+</script>
+</body>
+</html>
