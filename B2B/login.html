@@ -76,8 +76,10 @@
       linkWA.href = 'https://wa.me/' + (window.CONTATO_WHATSAPP || '') + '?text=' + encodeURIComponent('Olá! Preciso de ajuda para acessar o Portal B2B Partner 432UP.');
 
       /* ── se já tem sessão válida, pula direto pro painel ── */
+      /* Se já tem sessão, manda pro destino certo (uma vez) */
       sbPartner.auth.getSession().then(function (res) {
         if (!(res.data && res.data.session)) return;
+        if (sessionStorage.getItem('432up_login_done') === '1') return;
         var uid = res.data.session.user.id;
         var em = (res.data.session.user.email || '').toLowerCase();
         Promise.all([
@@ -87,9 +89,13 @@
         ]).then(function (results) {
           var parc = results[0].data;
           var isCliente = !!(results[1].data || results[2].data);
+          try { sessionStorage.setItem('432up_login_done', '1'); } catch (e) {}
           if (parc && parc.status === 'aprovado') { window.location.href = 'index.html'; return; }
-          if (isCliente) { try { sessionStorage.removeItem('432up_cli_redirect'); sessionStorage.setItem('432up_is_cliente','true'); sessionStorage.setItem('432up_is_logged','true'); } catch(e) {}
-                window.location.replace('../cliente/index.html'); return; }
+          if (isCliente) {
+            try { sessionStorage.setItem('432up_is_cliente', 'true'); sessionStorage.setItem('432up_is_logged', 'true'); } catch (e) {}
+            window.location.href = '../cliente/index.html';
+            return;
+          }
           if (parc && parc.status === 'pendente') { window.location.href = 'pendente.html'; return; }
         });
       });
@@ -151,8 +157,15 @@
               }
               return SBC.auth.verifyOtp({ token_hash: r.data.token_hash, type: r.data.type }).then(function (v) {
                 if (v.error) { showAlert('Não foi possível entrar. Tente novamente.', 'error'); return; }
-                try { sessionStorage.removeItem('432up_cli_redirect'); sessionStorage.setItem('432up_is_cliente','true'); sessionStorage.setItem('432up_is_logged','true'); } catch(e) {}
-                window.location.replace('../cliente/index.html');
+                try {
+                  sessionStorage.setItem('432up_login_done', '1');
+                  sessionStorage.setItem('432up_is_cliente', 'true');
+                  sessionStorage.setItem('432up_is_logged', 'true');
+                } catch (e) {}
+                /* Copia sessão OTP pro storage padrão do sbPartner */
+                return sbPartner.auth.getSession().then(function () {
+                  window.location.href = '../cliente/index.html';
+                });
               });
             });
         });
@@ -167,6 +180,7 @@
 
         btn.classList.add('btn-loading');
         btn.textContent = 'Entrando...';
+        try { sessionStorage.removeItem('432up_login_done'); } catch (e) {}
 
         sbPartner.auth.signInWithPassword({ email: email, password: senha })
           .then(function (res) {
@@ -214,9 +228,12 @@
                 return;
               }
               if (isCliente) {
-                try { sessionStorage.setItem('432up_is_cliente', 'true'); sessionStorage.setItem('432up_is_logged', 'true'); } catch (e) {}
-                try { sessionStorage.removeItem('432up_cli_redirect'); sessionStorage.setItem('432up_is_cliente','true'); sessionStorage.setItem('432up_is_logged','true'); } catch(e) {}
-                window.location.replace('../cliente/index.html');
+                try {
+                  sessionStorage.setItem('432up_login_done', '1');
+                  sessionStorage.setItem('432up_is_cliente', 'true');
+                  sessionStorage.setItem('432up_is_logged', 'true');
+                } catch (e) {}
+                window.location.href = '../cliente/index.html';
                 return;
               }
               if (statusAtual === 'pendente') {
