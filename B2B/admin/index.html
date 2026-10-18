@@ -1029,10 +1029,15 @@
       var m = marcadas[n];
       var c1 = catalogo.find(function (c) { return c.nome === n; });
       var hora = (m && m.hora) || (c1 && c1.hora_padrao) || '';
-      return '<div style="display:flex;gap:8px;align-items:center;padding:6px 0;border-bottom:1px solid rgba(255,255,255,.06);">' +
+      var feita = m && m.situacao === 'concluida';
+      var btn = !m ? '' : (feita
+        ? '<span style="font-size:11px;color:#a3e635;font-weight:700;">Concluída</span>'
+        : '<button type="button" onclick="finConcluirEtapa(\'' + E(n) + '\')" style="padding:5px 10px;border-radius:8px;border:none;background:#a3e635;color:#0b1020;font-weight:800;font-size:11px;cursor:pointer;">Concluir e avisar</button>');
+      return '<div style="display:flex;gap:8px;align-items:center;padding:6px 0;border-bottom:1px solid rgba(255,255,255,.06);flex-wrap:wrap;">' +
         '<input type="checkbox" ' + (m ? 'checked' : '') + ' onchange="finToggleEtapa(\'' + E(n) + '\', this.checked)">' +
-        '<span style="flex:1;">' + E(n) + (m && m.situacao === 'concluida' ? ' ✓' : '') + '</span>' +
-        '<input type="time" value="' + E(hora) + '" ' + (m ? '' : 'disabled') + ' onchange="finHoraEtapa(\'' + E(n) + '\', this.value)" style="background:#020617;color:#e2e8f0;border:1px solid rgba(255,255,255,.1);border-radius:8px;padding:4px;"></div>';
+        '<span style="flex:1;min-width:120px;">' + E(n) + (feita ? ' ✓' : '') + '</span>' +
+        '<input type="time" value="' + E(hora) + '" ' + (m ? '' : 'disabled') + ' onchange="finHoraEtapa(\'' + E(n) + '\', this.value)" style="background:#020617;color:#e2e8f0;border:1px solid rgba(255,255,255,.1);border-radius:8px;padding:4px;">' +
+        btn + '</div>';
     }).join('') || '<span>Nenhuma etapa cadastrada.</span>';
 
     document.getElementById('obsBox').innerHTML = (ob.data || []).map(function (o) {
@@ -1056,6 +1061,32 @@
   };
   window.finHoraEtapa = async function (nome, hora) {
     await sbPartner.from('evento_etapas').update({ hora: hora || null }).eq('proposta_id', pidAtual).eq('nome', nome);
+  };
+  window.finConcluirEtapa = async function (nome) {
+    if (!confirm('Marcar "' + nome + '" como concluída e avisar o cliente?')) return;
+    var up = await sbPartner.from('evento_etapas').update({
+      situacao: 'concluida',
+      concluida_em: new Date().toISOString()
+    }).eq('proposta_id', pidAtual).eq('nome', nome);
+    if (up.error) { alert(up.error.message); return; }
+    try {
+      await fetch('https://www.432up.com/avisos-telegram', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          event: 'etapa_concluida',
+          proposta_id: pidAtual,
+          etapa: nome,
+          mensagem: 'Etapa concluída: ' + nome
+        })
+      });
+    } catch (e) {}
+    try {
+      await sbPartner.functions.invoke('notificar-cliente-etapa', {
+        body: { proposta_id: pidAtual, etapa: nome }
+      });
+    } catch (e) {}
+    carregarEtapasEObs();
   };
   window.finAdicionarEtapa = async function () {
     var nome = document.getElementById('etapaNova').value.trim();
