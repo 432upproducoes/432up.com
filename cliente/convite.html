@@ -27,6 +27,10 @@
   <form id="form">
     <label for="cpf">CPF ou CNPJ</label>
     <input id="cpf" inputmode="numeric" placeholder="CPF ou CNPJ" required>
+    <label for="nome">Nome completo ou razão social (opcional)</label>
+    <input id="nome" autocomplete="name">
+    <label for="telefone">Telefone / WhatsApp (opcional)</label>
+    <input id="telefone" inputmode="tel" autocomplete="tel">
     <label for="email">E-mail</label>
     <input id="email" type="email" autocomplete="email" required>
     <label for="senha">Crie uma senha (mínimo 8 caracteres)</label>
@@ -44,6 +48,11 @@
   var CFG = window.PARTNER_CFG;
   var SB = window.supabase.createClient(CFG.SB_URL, CFG.SB_KEY, { auth: { persistSession: false } });
   var $ = function (id) { return document.getElementById(id); };
+  async function mensagemErro(r) {
+    if (r.data && r.data.erro) return r.data.erro;
+    try { if (r.error && r.error.context && typeof r.error.context.json === 'function') { var j = await r.error.context.json(); if (j && j.erro) return j.erro; } } catch (e) {}
+    return 'Não foi possível criar o acesso. Tente novamente.';
+  }
   var token = new URLSearchParams(location.search).get('t');
   if (!token) { $('msg').textContent = 'Link incompleto. Peça um novo convite à 432UP.'; $('form').style.display = 'none'; return; }
 
@@ -64,12 +73,13 @@
     var r = await SB.functions.invoke('cliente-aceitar-convite', {
       body: {
         token: token, cpf: $('cpf').value, email: $('email').value, senha: $('senha').value,
+        nome: $('nome').value, telefone: $('telefone').value,
         termos_versao: 'rascunho-1', politica_versao: 'rascunho-1'
       }
     });
     $('btn').disabled = false;
     if (r.error || (r.data && r.data.erro)) {
-      $('msg').textContent = (r.data && r.data.erro) || 'Não foi possível criar o acesso. Tente novamente.'; return;
+      $('msg').textContent = await mensagemErro(r); return;
     }
     $('msg').className = 'msg ok';
     $('msg').textContent = 'Acesso criado. Agora é só entrar com o CPF e a senha.';
