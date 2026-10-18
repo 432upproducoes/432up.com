@@ -77,26 +77,20 @@
 
       /* ── se já tem sessão válida, pula direto pro painel ── */
       sbPartner.auth.getSession().then(function (res) {
-        if (res.data && res.data.session) {
-          var uid = res.data.session.user.id;
-          sbPartner.from('parceiros').select('id, status').eq('user_id', uid).maybeSingle().then(function (r) {
-            var parc = r.data;
-            if (parc && parc.status === 'aprovado') {
-              window.location.href = 'index.html';
-              return;
-            }
-            sbPartner.from('portal_clientes').select('id').eq('user_id', uid).maybeSingle().then(function (pc) {
-              if (pc.data) {
-                window.location.href = '../cliente/index.html';
-                return;
-              }
-              if (parc && parc.status === 'pendente') {
-                window.location.href = 'pendente.html';
-                return;
-              }
-            });
-          });
-        }
+        if (!(res.data && res.data.session)) return;
+        var uid = res.data.session.user.id;
+        var em = (res.data.session.user.email || '').toLowerCase();
+        Promise.all([
+          sbPartner.from('parceiros').select('status').eq('user_id', uid).maybeSingle(),
+          sbPartner.from('portal_clientes').select('id').eq('user_id', uid).maybeSingle(),
+          em ? sbPartner.from('portal_clientes').select('id').eq('email', em).maybeSingle() : Promise.resolve({ data: null })
+        ]).then(function (results) {
+          var parc = results[0].data;
+          var isCliente = !!(results[1].data || results[2].data);
+          if (parc && parc.status === 'aprovado') { window.location.href = 'index.html'; return; }
+          if (isCliente) { window.location.href = '../cliente/index.html'; return; }
+          if (parc && parc.status === 'pendente') { window.location.href = 'pendente.html'; return; }
+        });
       });
 
       /* ── mensagem de acesso negado vinda de redirect ── */
@@ -187,49 +181,54 @@
             }
             
             var userId = res.data.user.id;
+            var emailLower = email.toLowerCase();
 
-            /* Registra a telemetria do login */
-            return sbPartner
-              .from('parceiros')
-              .update({
-                ultimo_login: new Date().toISOString(),
-                ultima_atividade: new Date().toISOString(),
-                user_agent: navigator.userAgent
-              })
-              .eq('user_id', userId)
-              .then(function () {
-                /* Verifica o status do parceiro */
-                return sbPartner.from('parceiros').select('status').eq('user_id', userId).single();
-              })
-              .then(function (r) {
-                var statusAtual = (r.data && r.data.status) || null;
-                /* Parceiro aprovado: B2B */
-                if (r.data && statusAtual === 'aprovado') {
-                  window.location.href = 'index.html';
-                  return;
-                }
-                /* Cliente (mesmo com parceiro pendente): área do cliente — sem OTP, senha já validou */
-                return sbPartner.from('portal_clientes').select('id').eq('user_id', userId).maybeSingle().then(function (pc) {
-                  if (pc.data) {
-                    window.location.href = '../cliente/index.html';
-                    return;
-                  }
-                  if (statusAtual === 'pendente') {
-                    window.location.href = 'pendente.html';
-                    return;
-                  }
-                  if (statusAtual === 'bloqueado' || statusAtual === 'recusado') {
-                    showAlert('Seu acesso está bloqueado. Fale com o suporte.', 'error');
-                    sbPartner.auth.signOut();
-                  } else {
-                    /* Senha ok no Auth mas sem papel: tenta 1º acesso cliente (OTP só neste caso) */
-                    entrarComoCliente(email, senha, btn);
-                    return;
-                  }
-                  btn.classList.remove('btn-loading');
-                  btn.textContent = 'Acessar Portal';
-                });
-              });
+            /* Telemetria de parceiro (ignora erro se não for parceiro) */
+            sbPartner.from('parceiros').update({
+              ultimo_login: new Date().toISOString(),
+              ultima_atividade: new Date().toISOString(),
+              user_agent: navigator.userAgent
+            }).eq('user_id', userId).then(function () {});
+
+            /* Ordem fixa:
+               1) parceiro aprovado → B2B
+               2) portal_clientes (user_id OU e-mail) → /cliente
+               3) parceiro pendente → pendente
+               4) bloqueado/recusado → erro
+               5) senão → tenta fluxo cliente OTP (1º acesso) */
+            return Promise.all([
+              sbPartner.from('parceiros').select('status').eq('user_id', userId).maybeSingle(),
+              sbPartner.from('portal_clientes').select('id, user_id').eq('user_id', userId).maybeSingle(),
+              sbPartner.from('portal_clientes').select('id, user_id').eq('email', emailLower).maybeSingle()
+            ]).then(function (results) {
+              var parc = results[0].data;
+              var pcUid = results[1].data;
+              var pcEmail = results[2].data;
+              var isCliente = !!(pcUid || pcEmail);
+              var statusAtual = (parc && parc.status) || null;
+
+              if (statusAtual === 'aprovado') {
+                window.location.href = 'index.html';
+                return;
+              }
+              if (isCliente) {
+                try { sessionStorage.setItem('432up_is_cliente', 'true'); sessionStorage.setItem('432up_is_logged', 'true'); } catch (e) {}
+                window.location.href = '../cliente/index.html';
+                return;
+              }
+              if (statusAtual === 'pendente') {
+                window.location.href = 'pendente.html';
+                return;
+              }
+              if (statusAtual === 'bloqueado' || statusAtual === 'recusado') {
+                showAlert('Seu acesso está bloqueado. Fale com o suporte.', 'error');
+                sbPartner.auth.signOut();
+                btn.classList.remove('btn-loading');
+                btn.textContent = 'Acessar Portal';
+                return;
+              }
+              entrarComoCliente(email, senha, btn);
+            });
           });
       });
 
