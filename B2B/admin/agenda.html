@@ -1,0 +1,189 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Agenda · 432UP Admin</title>
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+<script src="../partner-config.js"></script>
+<style>
+  :root { --bg:#0b1020; --card:#131a2e; --line:rgba(255,255,255,.08); --txt:#e2e8f0; --mut:#94a3b8; --acc:#a3e635; --ouro:#c5a059; --ciano:#00f0ff; --amb:#facc15; }
+  * { box-sizing:border-box; }
+  body { margin:0; font-family: system-ui, -apple-system, Segoe UI, Roboto, sans-serif; background:var(--bg); color:var(--txt); }
+  header { padding:14px 20px; border-bottom:1px solid var(--line); display:flex; justify-content:space-between; align-items:center; gap:12px; flex-wrap:wrap; }
+  h1 { font-size:17px; margin:0; text-transform:capitalize; }
+  button { font:inherit; color:var(--txt); background:#0f1628; border:1px solid var(--line); padding:7px 12px; border-radius:8px; cursor:pointer; }
+  button:hover { border-color:var(--acc); }
+  .nav { display:flex; gap:8px; align-items:center; }
+  main { display:grid; grid-template-columns: minmax(0,1fr) 320px; gap:16px; padding:16px 20px; }
+  @media (max-width: 900px) { main { grid-template-columns:1fr; } }
+  .grid { display:grid; grid-template-columns:repeat(7,minmax(0,1fr)); gap:6px; }
+  .dow { font-size:11px; text-transform:uppercase; color:var(--mut); text-align:center; padding:4px 0; }
+  .dia { background:var(--card); border:1px solid var(--line); border-radius:10px; min-height:96px; padding:6px; cursor:pointer; display:flex; flex-direction:column; gap:3px; overflow:hidden; }
+  .dia:hover { border-color:rgba(163,230,53,.5); }
+  .dia.outro { opacity:.35; }
+  .dia.hoje { outline:2px solid var(--acc); outline-offset:-2px; }
+  .dia.sel { border-color:var(--acc); }
+  .num { font-size:12px; font-weight:700; color:var(--mut); }
+  .ev { font-size:11px; line-height:1.25; padding:2px 5px; border-radius:5px; white-space:nowrap; overflow:hidden; text-overflow:ellipsis; font-weight:600; }
+  .e-hold { background:rgba(250,204,21,.2); color:var(--amb); }
+  .e-contrato { background:rgba(163,230,53,.2); color:var(--acc); }
+  .e-evento { background:rgba(0,240,255,.2); color:var(--ciano); }
+  .painel { background:var(--card); border:1px solid var(--line); border-radius:12px; padding:14px; align-self:start; }
+  .painel h2 { font-size:12px; margin:0 0 10px; color:var(--ouro); text-transform:uppercase; letter-spacing:.06em; }
+  .item { border:1px solid var(--line); border-radius:10px; padding:10px; margin-bottom:8px; cursor:pointer; }
+  .item:hover { border-color:var(--acc); }
+  .item small { color:var(--mut); display:block; margin-top:3px; }
+  .legenda { display:flex; gap:12px; font-size:12px; color:var(--mut); flex-wrap:wrap; padding:0 20px; }
+  .vazio { color:var(--mut); font-size:13px; }
+</style>
+</head>
+<body>
+<header>
+  <h1 id="tituloMes">Agenda</h1>
+  <div class="nav">
+    <button id="btnPrev">‹</button>
+    <button id="btnHoje">Hoje</button>
+    <button id="btnNext">›</button>
+    <a href="projeto.html" style="color:var(--ciano);text-decoration:none;margin-left:8px">Projetos →</a>
+  </div>
+</header>
+<div class="legenda" style="margin:10px 0">
+  <span><i class="ev e-hold" style="display:inline-block">Hold</i> contagem de 48 h</span>
+  <span><i class="ev e-contrato" style="display:inline-block">Contrato</i> fechado no dia</span>
+  <span><i class="ev e-evento" style="display:inline-block">Evento</i> execução</span>
+</div>
+<main>
+  <section>
+    <div class="grid" id="cabec"></div>
+    <div class="grid" id="grade" style="margin-top:6px"></div>
+  </section>
+  <aside class="painel">
+    <h2 id="tituloDia">Escolha um dia</h2>
+    <div id="listaDia" class="vazio">Clique em um dia para ver os itens.</div>
+  </aside>
+</main>
+
+<script>
+(function () {
+  'use strict';
+  var CFG = window.PARTNER_CFG;
+  var SB = window.sbPartner || window.supabase.createClient(CFG.SB_URL, CFG.SB_KEY, { auth: { persistSession: true, autoRefreshToken: true } });
+  window.sbPartner = SB;
+
+  var $ = function (id) { return document.getElementById(id); };
+  var E = function (s) { return String(s == null ? '' : s).replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;'); };
+  var DIAS = ['Dom', 'Seg', 'Ter', 'Qua', 'Qui', 'Sex', 'Sáb'];
+  var MESES = ['janeiro','fevereiro','março','abril','maio','junho','julho','agosto','setembro','outubro','novembro','dezembro'];
+
+  var hoje = new Date();
+  var ANO = hoje.getFullYear(), MES = hoje.getMonth();
+  var ITENS = {};          // 'YYYY-MM-DD' -> [ {tipo, prop, quando} ]
+  var DIA_SEL = null;
+
+  function chave(d) {
+    return d.getFullYear() + '-' + String(d.getMonth() + 1).padStart(2, '0') + '-' + String(d.getDate()).padStart(2, '0');
+  }
+  function chaveData(s) { return s ? String(s).slice(0, 10) : null; }
+  function chaveIso(iso) { return iso ? chave(new Date(iso)) : null; }
+  function tempo(iso) {
+    if (!iso) return '48H 00M';
+    var d = new Date(iso) - new Date();
+    if (d <= 0) return 'EXPIRADO';
+    var h = Math.floor(d / 3600000), m = Math.floor((d % 3600000) / 60000);
+    return (h < 10 ? '0' : '') + h + 'H ' + (m < 10 ? '0' : '') + m + 'M';
+  }
+  function add(k, item) { if (!k) return; (ITENS[k] = ITENS[k] || []).push(item); }
+
+  async function carregarMes() {
+    var ini = new Date(ANO, MES - 1, 1).toISOString().slice(0, 10);
+    var fim = new Date(ANO, MES + 2, 0).toISOString().slice(0, 10);
+    var r = await SB.from('propostas')
+      .select('id, numero, cliente_nome, tipo_evento, data_evento, horario_inicio, status, hold_expira_em, assinado_em, cancelada_em')
+      .or('data_evento.gte.' + ini + ',hold_expira_em.gte.' + ini + ',assinado_em.gte.' + ini)
+      .limit(1000);
+    ITENS = {};
+    (r.data || []).forEach(function (p) {
+      if (p.cancelada_em || p.status === 'cancelada') return;
+      var st = String(p.status || '').toLowerCase();
+      if (st === 'hold' && p.hold_expira_em) add(chaveIso(p.hold_expira_em), { tipo: 'hold', prop: p });
+      if (p.assinado_em) add(chaveIso(p.assinado_em), { tipo: 'contrato', prop: p });
+      if (p.data_evento) add(chaveData(p.data_evento), { tipo: 'evento', prop: p });
+    });
+    desenhar();
+  }
+
+  function desenhar() {
+    $('tituloMes').textContent = MESES[MES] + ' ' + ANO;
+    $('cabec').innerHTML = DIAS.map(function (d) { return '<div class="dow">' + d + '</div>'; }).join('');
+    var primeiro = new Date(ANO, MES, 1);
+    var inicio = new Date(ANO, MES, 1 - primeiro.getDay());
+    var hk = chave(new Date());
+    var html = '';
+    for (var i = 0; i < 42; i++) {
+      var d = new Date(inicio); d.setDate(inicio.getDate() + i);
+      var k = chave(d);
+      var itens = ITENS[k] || [];
+      var cls = 'dia' + (d.getMonth() !== MES ? ' outro' : '') + (k === hk ? ' hoje' : '') + (k === DIA_SEL ? ' sel' : '');
+      html += '<div class="' + cls + '" data-k="' + k + '"><span class="num">' + d.getDate() + '</span>';
+      itens.slice(0, 3).forEach(function (it) {
+        var rot = it.tipo === 'hold' ? 'Hold ' + tempo(it.prop.hold_expira_em) :
+                  it.tipo === 'contrato' ? 'Contrato #' + it.prop.numero :
+                  'Evento #' + it.prop.numero;
+        html += '<span class="ev e-' + it.tipo + '">' + E(rot) + '</span>';
+      });
+      if (itens.length > 3) html += '<span class="num">+' + (itens.length - 3) + '</span>';
+      html += '</div>';
+    }
+    $('grade').innerHTML = html;
+    document.querySelectorAll('#grade [data-k]').forEach(function (el) {
+      el.addEventListener('click', function () { abrirDia(el.getAttribute('data-k')); });
+    });
+    if (DIA_SEL) abrirDia(DIA_SEL, true);
+  }
+
+  function abrirDia(k, silencioso) {
+    DIA_SEL = k;
+    var partes = k.split('-');
+    $('tituloDia').textContent = partes[2] + '/' + partes[1] + '/' + partes[0];
+    var itens = ITENS[k] || [];
+    $('listaDia').className = '';
+    $('listaDia').innerHTML = itens.length ? itens.map(function (it) {
+      var p = it.prop;
+      var titulo = it.tipo === 'hold' ? 'Hold 48 h · ' + tempo(p.hold_expira_em) :
+                   it.tipo === 'contrato' ? 'Contrato fechado' : 'Execução de evento';
+      return '<div class="item" data-id="' + E(p.id) + '">' +
+        '<strong>' + E(titulo) + '</strong>' +
+        '<small>#' + E(p.numero) + ' · ' + E(p.cliente_nome || '') + '</small>' +
+        '<small>' + E(p.tipo_evento || '') + (p.horario_inicio ? ' · ' + E(String(p.horario_inicio).slice(0, 5)) : '') + '</small></div>';
+    }).join('') : '<div class="vazio">Nada neste dia.</div>';
+    document.querySelectorAll('#listaDia [data-id]').forEach(function (el) {
+      el.addEventListener('click', function () {
+        location.href = 'projeto.html?id=' + encodeURIComponent(el.getAttribute('data-id'));
+      });
+    });
+    if (!silencioso) document.querySelectorAll('#grade .dia').forEach(function (el) {
+      el.classList.toggle('sel', el.getAttribute('data-k') === k);
+    });
+  }
+
+  $('btnPrev').addEventListener('click', function () { MES--; if (MES < 0) { MES = 11; ANO--; } carregarMes(); });
+  $('btnNext').addEventListener('click', function () { MES++; if (MES > 11) { MES = 0; ANO++; } carregarMes(); });
+  $('btnHoje').addEventListener('click', function () { var h = new Date(); ANO = h.getFullYear(); MES = h.getMonth(); DIA_SEL = chave(h); carregarMes(); });
+
+  (async function init() {
+    var s = await SB.auth.getSession();
+    if (!(s.data && s.data.session)) { location.href = '../login.html'; return; }
+    var r = await SB.from('parceiros').select('role').eq('user_id', s.data.session.user.id).maybeSingle();
+    if (!r.data || !/^(admin|master)$/i.test(String(r.data.role || '').trim())) {
+      document.querySelector('main').innerHTML = '<div class="painel"><div class="vazio">Acesso restrito ao administrador.</div></div>';
+      return;
+    }
+    DIA_SEL = chave(new Date());
+    carregarMes();
+    setInterval(desenhar, 30000);   // atualiza os cronômetros de hold
+  })();
+})();
+</script>
+</body>
+</html>
