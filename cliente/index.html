@@ -96,10 +96,33 @@
       content: ""; position: absolute; left: -17px; top: 12px; width: 10px; height: 10px;
       border-radius: 50%; background: #0b1020; border: 2px solid rgba(255, 255, 255, 0.25);
     }
-    .etapa.feita::before {
-      background: var(--cli-ouro); border-color: var(--cli-ouro);
-      box-shadow: 0 0 12px rgba(197, 160, 89, 0.55);
+    .etapa.feita::before { background: #64748b; border-color: #64748b; }
+    .etapa.feita .nome { color: #94a3b8; text-decoration: line-through; text-decoration-color: rgba(148,163,184,.5); }
+    .slider {
+      position: relative; height: 46px; border-radius: 999px; margin-top: 8px; overflow: hidden;
+      background: rgba(0, 240, 255, 0.06); border: 1px solid rgba(0, 240, 255, 0.3); user-select: none; touch-action: none;
     }
+    .slider-fill { position: absolute; left: 0; top: 0; bottom: 0; width: 0; background: rgba(0, 240, 255, 0.18); }
+    .slider-knob {
+      position: absolute; left: 2px; top: 2px; width: 40px; height: 40px; border-radius: 50%;
+      background: #00f0ff; color: #0b1020; font-weight: 900; font-size: 20px;
+      display: flex; align-items: center; justify-content: center; cursor: grab; transform: translateX(0);
+    }
+    .slider-txt { position: absolute; inset: 0; display: flex; align-items: center; justify-content: center; font-size: 12px; color: var(--cli-mut); padding-left: 40px; pointer-events: none; }
+    .slider.done { border-color: rgba(163, 230, 53, 0.5); }
+    .slider.done .slider-knob { background: #64748b; cursor: default; }
+    .sino { position: relative; }
+    .sino-badge {
+      position: absolute; top: -6px; right: -6px; min-width: 18px; height: 18px; padding: 0 5px; border-radius: 999px;
+      background: #c5a059; color: #0b1020; font-size: 11px; font-weight: 800; display: none; align-items: center; justify-content: center;
+    }
+    .modal-bg { position: fixed; inset: 0; z-index: 60; background: rgba(0,0,0,.6); display: none; align-items: center; justify-content: center; padding: 16px; }
+    .modal-bg.on { display: flex; }
+    .modal-box { width: 100%; max-width: 480px; max-height: 80vh; overflow: auto; background: #0e121c; border: 1px solid var(--cli-line); border-radius: 16px; padding: 18px; }
+    .notif { padding: 10px 0; border-bottom: 1px solid rgba(255,255,255,.06); cursor: pointer; }
+    .notif.nova .t { color: #00f0ff; font-weight: 800; }
+    .notif .t { font-size: 14px; }
+    .notif .d { font-size: 11px; color: var(--cli-mut); }
     .etapa .nome { font-size: 14px; font-weight: 700; }
     .etapa .hora { font-size: 12px; color: var(--cli-mut); }
     .obs {
@@ -138,7 +161,10 @@
           <h1 class="text-xl font-extrabold tracking-tight text-white" id="saudacao">Olá</h1>
           <p class="cli-sub mb-0">Sua diária 432UP — cadastro, evento e memórias num só lugar.</p>
         </div>
-        <button type="button" class="cli-btn-s" id="btnSair" style="margin-top:0">Sair</button>
+        <div style="display:flex;gap:8px;align-items:center">
+          <button type="button" class="cli-btn-s sino" id="btnSino" style="margin-top:0" aria-label="Notificações">🔔<span class="sino-badge" id="sinoBadge">0</span></button>
+          <button type="button" class="cli-btn-s" id="btnSair" style="margin-top:0">Sair</button>
+        </div>
       </div>
 
       <nav class="cli-tabs" role="tablist" aria-label="Área do cliente">
@@ -218,6 +244,13 @@
           <div class="cli-cal" id="calGrid" aria-label="Calendário"></div>
         </div>
         <div class="cli-card">
+          <h2>Levar para o meu calendário</h2>
+          <p class="cli-sub">Assine e as datas dos seus eventos entram no calendário do celular e atualizam sozinhas.</p>
+          <button type="button" class="cli-btn" id="btnAssinarCal">Assinar calendário</button>
+          <button type="button" class="cli-btn-s" id="btnCopiarCal">Copiar link</button>
+          <div class="cli-msg" id="msgCal"></div>
+        </div>
+        <div class="cli-card">
           <h2>Próximos marcos</h2>
           <div id="calLista" class="cli-vazio">Carregando…</div>
         </div>
@@ -234,6 +267,19 @@
       </section>
 
     </main>
+  </div>
+
+  <div class="modal-bg" id="modalNotif" role="dialog" aria-modal="true" aria-label="Notificações">
+    <div class="modal-box">
+      <div style="display:flex;justify-content:space-between;align-items:center;gap:8px">
+        <h2 style="font-size:12px;color:#c5a059;text-transform:uppercase;letter-spacing:.08em;font-weight:800;margin:0">Notificações</h2>
+        <button type="button" class="cli-btn-s" id="btnFecharNotif" style="margin-top:0">Fechar</button>
+      </div>
+      <div id="notifNovas" style="margin-top:12px"></div>
+      <button type="button" class="cli-btn-s" id="btnTodasLidas" style="display:none">Marcar todas como lidas</button>
+      <h2 style="font-size:11px;color:#9a97b0;margin:18px 0 6px;text-transform:uppercase;letter-spacing:.06em">Já lidas</h2>
+      <div id="notifLidas"></div>
+    </div>
   </div>
 
   <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
@@ -361,10 +407,16 @@
         '<div class="etapa"><div class="nome" style="color:var(--cli-mut)">Dia do seu evento</div><div class="hora">Em breve</div></div>';
     } else {
       lt.innerHTML = etapas.map(function (e) {
-        return '<div class="etapa ' + (e.situacao === 'concluida' ? 'feita' : '') + '"><div class="nome">' + E(e.nome) + '</div>' +
-          '<div class="hora">' + (e.hora ? E(e.hora) : 'Horário a confirmar') +
-          (e.situacao === 'concluida' ? ' · concluída' : '') + '</div></div>';
+        var feita = e.situacao === 'concluida';
+        return '<div class="etapa ' + (feita ? 'feita' : '') + '"><div class="nome">' + E(e.nome) + '</div>' +
+          '<div class="hora">' + (e.hora ? E(e.hora) : 'Horário a confirmar') + (feita ? ' · confirmada' : '') + '</div>' +
+          (feita ? '' :
+            '<div class="slider" data-etapa="' + E(e.id) + '"><div class="slider-fill"></div>' +
+            '<div class="slider-knob" role="slider" aria-label="Deslize para confirmar">›</div>' +
+            '<span class="slider-txt">Deslize para confirmar (não pode desfazer)</span></div>') +
+          '</div>';
       }).join('');
+      initSliders(lt);
     }
     var obs = pedido ? (dados.observacoes || []).filter(function (o) { return o.proposta_id === pedido.id; }) : [];
     var lo = $('listaObs');
@@ -377,7 +429,7 @@
     }).join('');
     lo.querySelectorAll('[data-obs]').forEach(function (b) {
       b.addEventListener('click', async function () {
-        var r = await chamar('remover_obs', { id: b.getAttribute('data-obs') });
+        var r = await chamar('obs_remover', { id: b.getAttribute('data-obs') });
         if (r.erro) return alert(r.erro);
         await carregar();
       });
@@ -460,7 +512,7 @@
     var txt = $('obsNova').value.trim();
     if (!txt) return;
     $('btnObs').disabled = true;
-    var r = await chamar('adicionar_obs', { texto: txt });
+    var r = await chamar('obs_adicionar', { texto: txt });
     $('btnObs').disabled = false;
     if (r.erro) { $('msgObs').textContent = r.erro; return; }
     $('obsNova').value = '';
@@ -524,6 +576,108 @@
     location.href = '../B2B/login.html';
   });
 
+  /* ---------- Confirmação de etapa por slider (sem desfazer) ---------- */
+  function initSliders(root) {
+    root.querySelectorAll('.slider').forEach(function (s) {
+      var knob = s.querySelector('.slider-knob');
+      var fill = s.querySelector('.slider-fill');
+      var arrastando = false, x0 = 0, max = 0, pos = 0;
+      function mover(p) {
+        pos = Math.max(0, Math.min(p, max));
+        knob.style.transform = 'translateX(' + pos + 'px)';
+        fill.style.width = (pos + knob.offsetWidth) + 'px';
+      }
+      knob.addEventListener('pointerdown', function (ev) {
+        arrastando = true;
+        max = s.clientWidth - knob.offsetWidth - 4;
+        x0 = ev.clientX - pos;
+        knob.setPointerCapture(ev.pointerId);
+      });
+      knob.addEventListener('pointermove', function (ev) {
+        if (arrastando) mover(ev.clientX - x0);
+      });
+      knob.addEventListener('pointerup', async function () {
+        if (!arrastando) return;
+        arrastando = false;
+        if (pos >= max * 0.9) {
+          mover(max);
+          s.classList.add('done');
+          await confirmarEtapa(s.getAttribute('data-etapa'));
+        } else {
+          mover(0);
+        }
+      });
+    });
+  }
+
+  async function confirmarEtapa(etapaId) {
+    var r = await chamar('etapa_confirmar', { etapa_id: etapaId });
+    if (r.erro) alert(r.erro);
+    await carregar();
+    await carregarNotif();
+  }
+
+  /* ---------- Central de notificações ---------- */
+  function itemNotif(n) {
+    var data = n.criado_em ? new Date(n.criado_em).toLocaleString('pt-BR', { dateStyle: 'short', timeStyle: 'short' }) : '';
+    return '<div class="notif ' + (n.lida ? '' : 'nova') + '" data-notif="' + E(n.id) + '" data-lida="' + (n.lida ? '1' : '0') + '">' +
+      '<div class="t">' + E(n.titulo) + '</div>' +
+      (n.texto ? '<div class="t" style="font-size:13px;color:#cbd5e1">' + E(n.texto) + '</div>' : '') +
+      '<div class="d">' + E(data) + '</div></div>';
+  }
+
+  async function carregarNotif() {
+    var r = await chamar('notificacoes_listar');
+    if (r.erro) return;
+    var n = r.nao_lidas || 0;
+    var badge = $('sinoBadge');
+    badge.textContent = n > 9 ? '9+' : String(n);
+    badge.style.display = n ? 'flex' : 'none';
+    $('notifNovas').innerHTML = (r.nao_lidas_lista || []).length
+      ? r.nao_lidas_lista.map(itemNotif).join('')
+      : '<div class="cli-vazio">Nenhuma notificação nova.</div>';
+    $('btnTodasLidas').style.display = n ? 'inline-block' : 'none';
+    $('notifLidas').innerHTML = (r.lidas_lista || []).length
+      ? r.lidas_lista.map(itemNotif).join('')
+      : '<div class="cli-vazio">Nada por aqui ainda.</div>';
+    document.querySelectorAll('#modalNotif [data-notif][data-lida="0"]').forEach(function (el) {
+      el.addEventListener('click', async function () {
+        await chamar('notificacao_marcar_lida', { id: el.getAttribute('data-notif') });
+        await carregarNotif();
+      });
+    });
+  }
+
+  $('btnSino').addEventListener('click', async function () {
+    $('modalNotif').classList.add('on');
+    await carregarNotif();
+  });
+  $('btnFecharNotif').addEventListener('click', function () { $('modalNotif').classList.remove('on'); });
+  $('modalNotif').addEventListener('click', function (e) {
+    if (e.target === $('modalNotif')) $('modalNotif').classList.remove('on');
+  });
+  $('btnTodasLidas').addEventListener('click', async function () {
+    await chamar('notificacao_marcar_lida', { id: 'todas' });
+    await carregarNotif();
+  });
+
+  /* ---------- Calendário (assinatura ICS) ---------- */
+  function linkCalendario() {
+    if (!dados || !dados.token_ics) return null;
+    return CFG.SB_URL.replace(/\/$/, '') + '/functions/v1/calendario-ics?token=' + encodeURIComponent(dados.token_ics);
+  }
+  $('btnAssinarCal').addEventListener('click', function () {
+    var l = linkCalendario();
+    if (!l) { $('msgCal').textContent = 'Calendário ainda não disponível. Fale com a 432UP.'; return; }
+    location.href = l.replace(/^https?:/, 'webcal:');
+  });
+  $('btnCopiarCal').addEventListener('click', async function () {
+    var l = linkCalendario();
+    if (!l) { $('msgCal').textContent = 'Calendário ainda não disponível. Fale com a 432UP.'; return; }
+    try { await navigator.clipboard.writeText(l); $('msgCal').className = 'cli-msg ok'; $('msgCal').textContent = 'Link copiado.'; }
+    catch (e) { $('msgCal').className = 'cli-msg'; $('msgCal').textContent = 'Não foi possível copiar.'; }
+  });
+
   var appIniciado = false;
   async function iniciarApp() {
     if (appIniciado) return;
@@ -536,6 +690,7 @@
       window.updateAuthState({ loggedIn: true, isCliente: true, isAdmin: false });
     }
     await carregar();
+    await carregarNotif();
   }
 
   (async function iniciar() {
