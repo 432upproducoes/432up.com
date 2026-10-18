@@ -210,15 +210,22 @@
       bar.appendChild(sp);
     }
 
-    // Montar checklist no modo colaborador
+    // Admin = controle total | Parceiro = só deslizar + observações
     var host = document.getElementById('ce-host');
     host.innerHTML = '';
+    var ehAdmin = parceiro && (
+      String(parceiro.role || '').toLowerCase() === 'admin' ||
+      String(parceiro.role || '').toLowerCase() === 'master'
+    );
+    var modoUso = ehAdmin ? 'admin' : 'parceiro';
+    var nomeUso = (parceiro && (parceiro.nome_artistico || parceiro.nome_completo)) || (ehAdmin ? 'admin' : 'parceiro');
+
     if (window.ChecklistEvento) {
       ceInstancia = window.ChecklistEvento.montar(host, {
         propostaId: p.id,
         sb: sb,
-        modo: 'colaborador',
-        nomeUsuario: (parceiro && (parceiro.nome_artistico || parceiro.nome_completo)) || 'colaborador'
+        modo: modoUso,
+        nomeUsuario: nomeUso
       });
     } else {
       host.innerHTML = '<div class="msg err">Componente de checklist não carregou.</div>';
@@ -244,43 +251,69 @@
       return;
     }
     parceiro = pr.data;
+    var ehAdmin = String(parceiro.role || '').toLowerCase() === 'admin' || String(parceiro.role || '').toLowerCase() === 'master';
 
-    // Eventos em que o parceiro participa:
-    // 1) propostas onde ele é o vendedor (parceiro_id)
-    // 2) comissões vinculadas a ele
-    // 3) agenda_reservas onde ele é o recurso
-    var ids = new Set();
+    var props = [];
+    var error = null;
+    var idList = [];
 
-    var { data: minhas } = await sb.from('propostas')
-      .select('id, numero, cliente_nome, tipo_evento, data_evento, horario_inicio, status')
-      .eq('parceiro_id', parceiro.id)
-      .is('cancelada_em', null)
-      .order('data_evento', { ascending: true });
+    if (ehAdmin) {
+      // Admin vê eventos próximos e recentes (últimos 30 dias + próximos 90)
+      var hoje = new Date();
+      var ini = new Date(hoje); ini.setDate(ini.getDate() - 30);
+      var fim = new Date(hoje); fim.setDate(fim.getDate() + 90);
+      var iso = function (d) {
+        return d.getFullYear() + '-' + String(d.getMonth()+1).padStart(2,'0') + '-' + String(d.getDate()).padStart(2,'0');
+      };
+      var r = await sb.from('propostas')
+        .select('id, numero, cliente_nome, tipo_evento, data_evento, horario_inicio, status')
+        .is('cancelada_em', null)
+        .gte('data_evento', iso(ini))
+        .lte('data_evento', iso(fim))
+        .order('data_evento', { ascending: true })
+        .limit(80);
+      props = r.data || [];
+      error = r.error;
+      idList = props.map(function (p) { return p.id; });
+    } else {
+      // Parceiro: só eventos em que participa
+      // 1) propostas onde ele é o vendedor
+      // 2) comissões vinculadas a ele
+      // 3) agenda_reservas onde ele é o recurso
+      var ids = new Set();
 
-    (minhas || []).forEach(function (p) { ids.add(p.id); });
+      var { data: minhas } = await sb.from('propostas')
+        .select('id, numero, cliente_nome, tipo_evento, data_evento, horario_inicio, status')
+        .eq('parceiro_id', parceiro.id)
+        .is('cancelada_em', null)
+        .order('data_evento', { ascending: true });
+      (minhas || []).forEach(function (p) { ids.add(p.id); });
 
-    var { data: coms } = await sb.from('comissoes')
-      .select('proposta_id')
-      .eq('parceiro_id', parceiro.id);
-    (coms || []).forEach(function (c) { if (c.proposta_id) ids.add(c.proposta_id); });
+      var { data: coms } = await sb.from('comissoes')
+        .select('proposta_id')
+        .eq('parceiro_id', parceiro.id);
+      (coms || []).forEach(function (c) { if (c.proposta_id) ids.add(c.proposta_id); });
 
-    var { data: reservas } = await sb.from('agenda_reservas')
-      .select('proposta_id')
-      .eq('recurso_id', parceiro.id)
-      .not('proposta_id', 'is', null);
-    (reservas || []).forEach(function (r) { if (r.proposta_id) ids.add(r.proposta_id); });
+      var { data: reservas } = await sb.from('agenda_reservas')
+        .select('proposta_id')
+        .eq('recurso_id', parceiro.id)
+        .not('proposta_id', 'is', null);
+      (reservas || []).forEach(function (r) { if (r.proposta_id) ids.add(r.proposta_id); });
 
-    var idList = Array.from(ids);
-    if (!idList.length) {
-      el.innerHTML = '<div class="msg">Nenhum evento atribuído a você no momento.</div>';
-      return;
+      idList = Array.from(ids);
+      if (!idList.length) {
+        el.innerHTML = '<div class="msg">Nenhum evento atribuído a você no momento.</div>';
+        return;
+      }
+
+      var r2 = await sb.from('propostas')
+        .select('id, numero, cliente_nome, tipo_evento, data_evento, horario_inicio, status')
+        .in('id', idList)
+        .is('cancelada_em', null)
+        .order('data_evento', { ascending: true });
+      props = r2.data || [];
+      error = r2.error;
     }
-
-    var { data: props, error } = await sb.from('propostas')
-      .select('id, numero, cliente_nome, tipo_evento, data_evento, horario_inicio, status')
-      .in('id', idList)
-      .is('cancelada_em', null)
-      .order('data_evento', { ascending: true });
 
     if (error) {
       el.innerHTML = '<div class="msg err">Erro ao carregar eventos: ' + E(error.message) + '</div>';
@@ -296,14 +329,16 @@
     // Contagem de etapas pendentes por proposta (para badge)
     var pendMap = {};
     try {
-      var { data: etapas } = await sb.from('evento_etapas')
-        .select('proposta_id, situacao')
-        .in('proposta_id', idList);
-      (etapas || []).forEach(function (e) {
-        if (!pendMap[e.proposta_id]) pendMap[e.proposta_id] = { total: 0, pend: 0 };
-        pendMap[e.proposta_id].total++;
-        if (e.situacao === 'pendente') pendMap[e.proposta_id].pend++;
-      });
+      if (idList.length) {
+        var { data: etapas } = await sb.from('evento_etapas')
+          .select('proposta_id, situacao')
+          .in('proposta_id', idList);
+        (etapas || []).forEach(function (e) {
+          if (!pendMap[e.proposta_id]) pendMap[e.proposta_id] = { total: 0, pend: 0 };
+          pendMap[e.proposta_id].total++;
+          if (e.situacao === 'pendente') pendMap[e.proposta_id].pend++;
+        });
+      }
     } catch (e) {}
 
     el.innerHTML = eventos.map(function (p) {
