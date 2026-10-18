@@ -246,15 +246,13 @@
   var CFG = window.PARTNER_CFG;
   if (!CFG) { console.error('PARTNER_CFG ausente'); return; }
 
-  /* Mesmo cliente Auth do B2B (evita loop login ↔ cliente por storage diferente) */
-  var SB = (typeof window.sbPartner !== 'undefined' && window.sbPartner)
-    ? window.sbPartner
-    : window.supabase.createClient(CFG.SB_URL, CFG.SB_KEY, {
-        auth: { persistSession: true, autoRefreshToken: true }
-      });
-  var SB_OLD = window.supabase.createClient(CFG.SB_URL, CFG.SB_KEY, {
-    auth: { storageKey: 'cliente-432up', persistSession: true, autoRefreshToken: true }
-  });
+  /* Mesmo sbPartner do B2B — uma sessão só, sem segundo storage */
+  if (typeof window.sbPartner === 'undefined') {
+    window.sbPartner = window.supabase.createClient(CFG.SB_URL, CFG.SB_KEY, {
+      auth: { persistSession: true, autoRefreshToken: true }
+    });
+  }
+  var SB = window.sbPartner;
 
   var $ = function (id) { return document.getElementById(id); };
   var E = function (s) {
@@ -515,57 +513,70 @@
   $('btnAvisos').addEventListener('click', ativarAvisos);
 
   $('btnSair').addEventListener('click', async function () {
-    try { await SB.auth.signOut(); } catch (e) {}
-    try { await SB_OLD.auth.signOut(); } catch (e) {}
     try {
+      sessionStorage.removeItem('432up_login_done');
       sessionStorage.removeItem('432up_is_logged');
       sessionStorage.removeItem('432up_is_cliente');
       sessionStorage.removeItem('432up_is_admin');
+      sessionStorage.removeItem('432up_cli_redirect');
     } catch (e) {}
+    try { await SB.auth.signOut(); } catch (e) {}
     location.href = '../B2B/login.html';
   });
 
-  async function obterSessao() {
-    var s = await SB.auth.getSession();
-    if (s.data && s.data.session) return s;
-    if (SB_OLD) {
-      var s2 = await SB_OLD.auth.getSession();
-      if (s2.data && s2.data.session) { SB = SB_OLD; return s2; }
-    }
-    /* Auth ainda hidratando após redirect do login */
-    await new Promise(function (r) { setTimeout(r, 350); });
-    s = await SB.auth.getSession();
-    if (s.data && s.data.session) return s;
-    if (SB_OLD) {
-      var s3 = await SB_OLD.auth.getSession();
-      if (s3.data && s3.data.session) { SB = SB_OLD; return s3; }
-    }
-    return s;
-  }
-
-  (async function iniciar() {
-    var s = await obterSessao();
-    if (!s.data || !s.data.session) {
-      /* evita loop: só redireciona se realmente não houver sessão */
-      if (sessionStorage.getItem('432up_cli_redirect') === '1') {
-        sessionStorage.removeItem('432up_cli_redirect');
-        document.body.innerHTML = '<div style="padding:40px;font-family:system-ui;color:#e2e8f0;background:#06080c;min-height:100vh;text-align:center">' +
-          '<p>Não foi possível recuperar a sessão. <a href="../B2B/login.html" style="color:#00f0ff">Entrar de novo</a></p></div>';
-        return;
-      }
-      sessionStorage.setItem('432up_cli_redirect', '1');
-      location.replace('../B2B/login.html');
-      return;
-    }
-    sessionStorage.removeItem('432up_cli_redirect');
+  var appIniciado = false;
+  async function iniciarApp() {
+    if (appIniciado) return;
+    appIniciado = true;
     try {
       sessionStorage.setItem('432up_is_cliente', 'true');
       sessionStorage.setItem('432up_is_logged', 'true');
+      sessionStorage.removeItem('432up_cli_redirect');
     } catch (e) {}
     if (typeof window.updateAuthState === 'function') {
       window.updateAuthState({ loggedIn: true, isCliente: true, isAdmin: false });
     }
     await carregar();
+  }
+
+  function irLoginManual() {
+    /* NUNCA redireciona em loop: só link manual se não houver sessão */
+    var main = document.querySelector('main');
+    if (!main) return;
+    main.innerHTML = '<div class="cli-card" style="margin-top:40px;text-align:center">' +
+      '<h2 style="color:#c5a059;margin-bottom:12px">Sessão não encontrada</h2>' +
+      '<p class="cli-sub">Entre de novo pelo portal.</p>' +
+      '<a class="cli-btn" style="display:inline-block;text-decoration:none;max-width:280px" href="../B2B/login.html">Ir para o login</a>' +
+      '</div>';
+  }
+
+  (async function iniciar() {
+    /* 1) sessão já pronta */
+    var s = await SB.auth.getSession();
+    if (s.data && s.data.session) {
+      await iniciarApp();
+      return;
+    }
+    /* 2) espera o Auth hidratar (redirect do login) — sem ir ao login sozinho */
+    var resolvido = false;
+    var sub = SB.auth.onAuthStateChange(function (event, session) {
+      if (resolvido) return;
+      if (session) {
+        resolvido = true;
+        iniciarApp();
+      }
+    });
+    setTimeout(async function () {
+      if (resolvido) return;
+      var s2 = await SB.auth.getSession();
+      if (s2.data && s2.data.session) {
+        resolvido = true;
+        await iniciarApp();
+        return;
+      }
+      resolvido = true;
+      irLoginManual();
+    }, 2000);
   })();
 })();
   </script>
