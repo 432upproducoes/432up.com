@@ -1,0 +1,112 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Espelho do cliente · 432UP Admin</title>
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+<script src="../partner-config.js"></script>
+<style>
+  :root { --bg:#0b1020; --card:#131a2e; --line:rgba(255,255,255,.08); --txt:#e2e8f0; --mut:#94a3b8; --acc:#a3e635; --ouro:#c5a059; --ciano:#00f0ff; }
+  * { box-sizing:border-box; }
+  body { margin:0; font-family: system-ui, -apple-system, Segoe UI, Roboto, sans-serif; background:var(--bg); color:var(--txt); }
+  header { padding:14px 20px; border-bottom:1px solid var(--line); display:flex; justify-content:space-between; align-items:center; gap:12px; flex-wrap:wrap; }
+  h1 { font-size:17px; margin:0; }
+  h2 { font-size:12px; margin:0 0 10px; color:var(--ouro); text-transform:uppercase; letter-spacing:.06em; }
+  a { color:var(--ciano); text-decoration:none; }
+  main { max-width:760px; margin:0 auto; padding:16px 20px; }
+  .card { background:var(--card); border:1px solid var(--line); border-radius:12px; padding:14px; margin-bottom:14px; }
+  .item { display:flex; justify-content:space-between; gap:8px; align-items:center; padding:8px 0; border-bottom:1px solid var(--line); font-size:14px; flex-wrap:wrap; }
+  .mut { color:var(--mut); font-size:12px; }
+  .tag { font-size:10px; font-weight:800; padding:3px 8px; border-radius:999px; text-transform:uppercase; }
+  .t-ok { background:rgba(163,230,53,.15); color:#a3e635; }
+  .t-pend { background:rgba(250,204,21,.15); color:#facc15; }
+  .t-rec { background:rgba(248,113,113,.15); color:#fca5a5; }
+  .vivo { font-size:11px; color:var(--acc); }
+  .vazio { color:var(--mut); font-size:13px; }
+</style>
+</head>
+<body>
+<header>
+  <h1 id="titulo">Espelho do cliente</h1>
+  <span class="vivo" id="vivo">● ao vivo</span>
+</header>
+<main>
+  <div class="card"><div id="resumo" class="mut">Carregando…</div></div>
+  <div class="card"><h2>Etapas</h2><div id="etapas"></div></div>
+  <div class="card"><h2>Comprovantes</h2><div id="comps"></div></div>
+  <div class="card"><h2>Instruções do cliente</h2><div id="obs"></div></div>
+  <p class="mut"><a href="projeto.html" id="voltar">← Voltar aos projetos</a></p>
+</main>
+
+<script>
+(function () {
+  'use strict';
+  var CFG = window.PARTNER_CFG;
+  var SB = window.sbPartner || window.supabase.createClient(CFG.SB_URL, CFG.SB_KEY, { auth: { persistSession: true, autoRefreshToken: true } });
+  window.sbPartner = SB;
+
+  var $ = function (id) { return document.getElementById(id); };
+  var E = function (s) { return String(s == null ? '' : s).replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;'); };
+  var BRL = function (n) { try { return Number(n || 0).toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' }); } catch (e) { return ''; } };
+  var ID = new URLSearchParams(location.search).get('id');
+  var CANAL = null;
+
+  var ST = { pendente: 'Em conferência', aprovado: 'Aprovado', recusado: 'Recusado', pago: 'Pago' };
+  var STC = { pendente: 't-pend', aprovado: 't-ok', recusado: 't-rec', pago: 't-ok' };
+
+  async function carregarTudo() {
+    var p = await SB.from('propostas').select('numero, cliente_nome, tipo_evento, data_evento, status, assinado_em, cancelada_em').eq('id', ID).maybeSingle();
+    if (p.data) {
+      $('titulo').textContent = 'Espelho · #' + p.data.numero + ' · ' + (p.data.cliente_nome || '');
+      $('resumo').innerHTML = E(p.data.tipo_evento || '') + ' · ' + E(p.data.data_evento || 'sem data') +
+        ' · contrato ' + (p.data.assinado_em ? 'assinado' : 'não assinado') +
+        (p.data.cancelada_em ? ' · <span class="tag t-rec">cancelado</span>' : '');
+    }
+    var et = await SB.from('evento_etapas').select('id, nome, hora, situacao, concluida_por, concluida_em, ordem').eq('proposta_id', ID).order('ordem');
+    $('etapas').innerHTML = (et.data || []).length ? et.data.map(function (e) {
+      var feita = e.situacao === 'concluida';
+      return '<div class="item"><span>' + E(e.nome) + ' <span class="mut">' + E(e.hora || '') + '</span></span>' +
+        '<span>' + (feita ? '<span class="tag t-ok">feita</span> <span class="mut">' + E(e.concluida_por || '') + '</span>' : '<span class="tag t-pend">pendente</span>') + '</span></div>';
+    }).join('') : '<div class="vazio">Sem etapas.</div>';
+
+    var cp = await SB.from('contrato_comprovantes').select('id, tipo, valor, data_pagamento, status, confirmado, motivo_recusa, enviado_em, enviado_por').eq('proposta_id', ID).order('enviado_em');
+    $('comps').innerHTML = (cp.data || []).length ? cp.data.map(function (c) {
+      var s = c.status || 'pendente';
+      return '<div class="item"><span>' + E(c.tipo) + ' · ' + BRL(c.valor) + ' · ' + E(c.data_pagamento || '') + '</span>' +
+        '<span><span class="tag ' + (STC[s] || 't-pend') + '">' + E(ST[s] || s) + '</span>' +
+        (c.motivo_recusa ? ' <span class="mut">' + E(c.motivo_recusa) + '</span>' : '') + '</span></div>';
+    }).join('') : '<div class="vazio">Nenhum comprovante.</div>';
+
+    var ob = await SB.from('evento_observacoes').select('id, texto, criado_por, criado_em').eq('proposta_id', ID).is('removido_em', null).order('criado_em');
+    $('obs').innerHTML = (ob.data || []).length ? ob.data.map(function (o) {
+      return '<div class="item"><span>' + E(o.texto) + '</span><span class="mut">' + (o.criado_por === 'cliente' ? 'cliente' : 'equipe') + '</span></div>';
+    }).join('') : '<div class="vazio">Nenhuma instrução.</div>';
+  }
+
+  function ligarTempoReal() {
+    CANAL = SB.channel('espelho-' + ID)
+      .on('postgres_changes', { event: '*', schema: 'public', table: 'evento_etapas', filter: 'proposta_id=eq.' + ID }, carregarTudo)
+      .on('postgres_changes', { event: '*', schema: 'public', table: 'evento_observacoes', filter: 'proposta_id=eq.' + ID }, carregarTudo)
+      .on('postgres_changes', { event: '*', schema: 'public', table: 'contrato_comprovantes', filter: 'proposta_id=eq.' + ID }, carregarTudo)
+      .subscribe(function (status) {
+        $('vivo').textContent = status === 'SUBSCRIBED' ? '● ao vivo' : '○ sem conexão ao vivo';
+      });
+  }
+
+  (async function init() {
+    var s = await SB.auth.getSession();
+    if (!(s.data && s.data.session)) { location.href = '../login.html'; return; }
+    var r = await SB.from('parceiros').select('role').eq('user_id', s.data.session.user.id).maybeSingle();
+    if (!r.data || !/^(admin|master)$/i.test(String(r.data.role || '').trim()) || !ID) {
+      document.querySelector('main').innerHTML = '<div class="card"><div class="vazio">Acesso restrito ao administrador.</div></div>';
+      return;
+    }
+    $('voltar').href = 'projeto.html?id=' + encodeURIComponent(ID);
+    await carregarTudo();
+    ligarTempoReal();
+  })();
+})();
+</script>
+</body>
+</html>
