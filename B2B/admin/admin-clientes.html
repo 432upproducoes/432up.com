@@ -210,7 +210,8 @@ Data: preencha Dia e/ou Mês e/ou Ano (Ano Qualquer = qualquer ano)</pre>
         <div class="flex items-center gap-2 self-start sm:self-auto">
           <button type="button" onclick="toggleAjudaFiltros(true)" class="w-10 h-10 rounded-xl bg-emerald-500/20 hover:bg-emerald-500/30 text-emerald-300 border border-emerald-500/40 font-extrabold text-lg leading-none cursor-pointer" title="Como gravar origem e filtros">?</button>
           <button type="button" onclick="abrirModalMensagem()" class="px-5 py-2.5 rounded-xl bg-emerald-500/20 hover:bg-emerald-500/30 text-emerald-300 border border-emerald-500/40 font-extrabold text-xs uppercase tracking-wider transition cursor-pointer">Mensagem</button>
-          <button type="button" onclick="abrirModalNovoCliente()" class="px-5 py-2.5 rounded-xl bg-amber-500 hover:bg-amber-400 text-slate-950 font-extrabold text-xs uppercase tracking-wider transition shadow-[0_0_20px_rgba(0,240,255,0.4)] cursor-pointer flex items-center gap-2">
+          <button type="button" onclick="abrirModalConvite()" class="px-4 py-2 rounded-xl bg-emerald-500/20 hover:bg-emerald-500/30 text-emerald-300 border border-emerald-500/40 text-xs font-bold transition cursor-pointer">Enviar convite pelo WhatsApp</button>
+            <button type="button" onclick="abrirModalNovoCliente()" class="px-5 py-2.5 rounded-xl bg-amber-500 hover:bg-amber-400 text-slate-950 font-extrabold text-xs uppercase tracking-wider transition shadow-[0_0_20px_rgba(0,240,255,0.4)] cursor-pointer flex items-center gap-2">
             <span>➕ Novo Cliente</span>
           </button>
         </div>
@@ -1276,39 +1277,75 @@ Data: preencha Dia e/ou Mês e/ou Ano (Ano Qualquer = qualquer ano)</pre>
         modal.classList.add('flex');
       };
 
-      var convProposta = null;
-      var convCpf = null;
+      var convCliente = null;
       async function atualizarBotaoConvite(c) {
         var btn = document.getElementById('btnConvidarCliente');
         if (!btn) return;
         btn.classList.add('hidden');
-        convProposta = null;
-        convCpf = String((c && c.cpf_cnpj) || '').replace(/\D/g, '');
-        if (convCpf.length === 11 || convCpf.length === 14) {
-          var pc = await sbPartner.from('portal_clientes').select('id').eq('cpf', convCpf).maybeSingle();
-          if (pc.data) return;
-        }
-        var pr = await sbPartner.from('propostas').select('id, status').eq('cliente_id', c.id)
-          .neq('status', 'cancelada').order('criado_em', { ascending: false }).limit(1).maybeSingle();
-        convProposta = pr.data ? pr.data.id : null;
+        convCliente = c && c.id ? c.id : null;
+        if (!convCliente) return;
+        var pc = await sbPartner.from('portal_clientes').select('id').eq('cliente_id', convCliente).maybeSingle();
+        if (pc.data) return;
         btn.classList.remove('hidden');
       }
 
-      window.convidarClienteAtual = async function () {
-        if (convCpf.length !== 11 && convCpf.length !== 14) { alert('Preencha o CPF ou CNPJ do cliente antes de convidar.'); return; }
-        if (!convProposta) { alert('Este cliente ainda não tem um pedido ativo. Crie uma proposta para ele antes de convidar.'); return; }
-        var r = await sbPartner.functions.invoke('cliente-convite', { body: { proposta_id: convProposta } });
-        if (r.error || (r.data && r.data.erro)) {
-          var detalhe = (r.data && r.data.erro) || (r.error && r.error.message) || 'sem detalhe';
-          alert('Não foi possível gerar o link de convite. Motivo: ' + detalhe);
-          return;
-        }
-        var link = r.data.link;
-        var txt = 'Olá! Seu pedido já está disponível para acompanhamento na área do cliente da 432UP. Crie seu acesso por este link (vale por 7 dias): ' + link;
+      function mensagemConvite(link) {
+        return 'Olá! Você está recebendo o acesso à área do cliente da 432UP. Crie seu acesso por este link (vale por 7 dias): ' + link;
+      }
+      function linkWhatsApp(c, txt) {
+        var n = String((c && c.telefone) || '').replace(/\D/g, '');
+        if (n && n.length <= 11) n = '55' + n;
+        return 'https://wa.me/' + n + '?text=' + encodeURIComponent(txt);
+      }
+      function mostrarLinkConvite(link, c) {
         window.prompt('Link de convite (copie e envie):', link);
         if (confirm('Abrir o WhatsApp com a mensagem pronta?')) {
-          window.open('https://wa.me/?text=' + encodeURIComponent(txt), '_blank');
+          window.open(linkWhatsApp(c, mensagemConvite(link)), '_blank');
         }
+      }
+      async function gerarConvite(id) {
+        var r = await sbPartner.functions.invoke('cliente-convite', { body: { cliente_id: id } });
+        if (r.error || (r.data && r.data.erro)) {
+          alert('Não foi possível gerar o link de convite. Motivo: ' + ((r.data && r.data.erro) || (r.error && r.error.message) || 'sem detalhe'));
+          return null;
+        }
+        return r.data.link;
+      }
+
+      window.convidarClienteAtual = async function () {
+        if (!convCliente) return;
+        var link = await gerarConvite(convCliente);
+        if (!link) return;
+        var c = clientes.find(function (x) { return x.id === convCliente; }) || {};
+        mostrarLinkConvite(link, c);
+      };
+
+      window.abrirModalConvite = async function () {
+        var sel = document.getElementById('convSelect');
+        sel.innerHTML = '<option value="">Carregando…</option>';
+        var pcs = await sbPartner.from('portal_clientes').select('cliente_id');
+        var comAcesso = {};
+        (pcs.data || []).forEach(function (x) { if (x.cliente_id) comAcesso[x.cliente_id] = true; });
+        var lista = (clientes || []).filter(function (c) { return !comAcesso[c.id]; })
+          .sort(function (a, b) { return String(a.nome_razao || '').localeCompare(String(b.nome_razao || ''), 'pt-BR'); });
+        sel.innerHTML = lista.length
+          ? lista.map(function (c) { return '<option value="' + c.id + '">' + esc(c.nome_razao || c.email || 'Sem nome') + (c.telefone ? '' : ' (sem telefone)') + '</option>'; }).join('')
+          : '<option value="">Todos os clientes já têm acesso</option>';
+        var m = document.getElementById('modalConvite');
+        m.classList.remove('hidden'); m.classList.add('flex');
+      };
+      window.fecharModalConvite = function () {
+        var m = document.getElementById('modalConvite');
+        m.classList.add('hidden'); m.classList.remove('flex');
+      };
+      window.enviarConviteSelecionado = async function () {
+        var id = document.getElementById('convSelect').value;
+        if (!id) return;
+        var link = await gerarConvite(id);
+        if (!link) return;
+        var c = clientes.find(function (x) { return x.id === id; }) || {};
+        window.fecharModalConvite();
+        mostrarLinkConvite(link, c);
       };
 
       function preencherModalComCliente(id) {
@@ -1482,5 +1519,20 @@ Data: preencha Dia e/ou Mês e/ou Ano (Ano Qualquer = qualquer ano)</pre>
 
     })();
   </script>
+<div id="modalConvite" class="fixed inset-0 bg-black/80 hidden items-center justify-center p-4 z-[10000]">
+  <div class="bg-slate-900 border border-white/10 rounded-2xl p-5 w-full max-w-md">
+    <div class="flex justify-between items-center mb-4">
+      <strong class="text-white">Enviar convite pelo WhatsApp</strong>
+      <button type="button" onclick="fecharModalConvite()" class="text-slate-400 hover:text-white text-lg">✕</button>
+    </div>
+    <label class="block text-xs uppercase tracking-wider text-slate-400 mb-1.5">Cliente sem acesso ainda</label>
+    <select id="convSelect" class="w-full bg-slate-950 border border-white/10 rounded-xl px-3 py-2 text-sm text-white"></select>
+    <p class="text-[11px] text-slate-500 mt-2">O cliente completa os próprios dados ao criar o acesso. Quem tem telefone cadastrado abre direto no WhatsApp.</p>
+    <div class="mt-4 flex justify-end gap-2">
+      <button type="button" onclick="fecharModalConvite()" class="px-4 py-2 rounded-xl text-xs text-slate-300 border border-white/10">Cancelar</button>
+      <button type="button" onclick="enviarConviteSelecionado()" class="px-4 py-2 rounded-xl bg-emerald-500 text-slate-950 text-xs font-bold">Gerar e enviar</button>
+    </div>
+  </div>
+</div>
 </body>
 </html>
