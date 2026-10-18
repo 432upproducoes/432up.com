@@ -637,9 +637,11 @@
             </div>
           </div>
 
+          <div id="bloco-bancario">
           <div class="section-header" id="bancarios-header">DADOS PARA PAGAMENTO</div>
           <div class="bank-info" id="bank-info"></div>
           <button type="button" id="btn-copiar-pix" onclick="copiarChavePix()" style="margin-top: 8px; display: inline-flex; align-items: center; gap: 6px; background: #F3F4F6; color: var(--purple-deep); border: 1px solid #E5E7EB; padding: 6px 14px; border-radius: 6px; font-size: 12.5px; font-weight: 700; font-family: inherit; cursor: pointer;">📋 Copiar Chave PIX</button>
+          </div>
         </div>
       </div>
 
@@ -1546,6 +1548,131 @@
     // (ex.: quando as fontes terminam de carregar e o texto muda de altura).
     let snapPaginas = null;
 
+    /* =========================================================
+       PAGINAÇÃO DA PÁGINA DE VALORES (última página)
+       Reserva o espaço do "Atenciosamente" no rodapé. Se a tabela de
+       itens, o banner ou os Dados para Pagamento (Copiar Chave PIX)
+       chegarem nesse limite, o excesso vai para uma nova página, com o
+       mesmo layout (barra do topo, conteúdo, rodapé). A assinatura
+       fica somente na última página.
+       ========================================================= */
+
+    const MARGEM_FIN = 14; // folga em px acima do rodapé
+
+    // Fim do bloco, considerando a foto do vendedor que "vaza" para fora do banner.
+    function fimBlocoFin(el) {
+      let fim = fimDoElemento(el);
+      const av = el.querySelector('.vendedor-avatar-container');
+      if (av && getComputedStyle(av).display !== 'none') {
+        fim = Math.max(fim, av.getBoundingClientRect().bottom + 4);
+      }
+      return fim;
+    }
+
+    function limiteFin(page, alturaReservada) {
+      const barra = page.children[1].querySelector('.bottom-bar');
+      return page.getBoundingClientRect().bottom - (barra ? barra.offsetHeight : 0) - alturaReservada - MARGEM_FIN;
+    }
+
+    // Divide as linhas da tabela: mantém as que cabem e devolve um novo bloco (com cabeçalho repetido) com o resto.
+    function dividirTabelaFin(container, limite) {
+      const tbody = container.querySelector('tbody');
+      const tabela = container.querySelector('table');
+      const thead = container.querySelector('thead');
+      if (!tbody || !tabela) return null;
+
+      const guardadas = [];
+      while (tbody.rows.length > 1 && fimBlocoFin(container) > limite) {
+        const ultima = tbody.rows[tbody.rows.length - 1];
+        ultima.remove();
+        guardadas.unshift(ultima);
+      }
+      if (!guardadas.length) return null;
+
+      const novo = container.cloneNode(false);
+      novo.removeAttribute('id');
+      const novaTabela = tabela.cloneNode(false);
+      const novoTbody = document.createElement('tbody');
+      guardadas.forEach(r => novoTbody.appendChild(r));
+      if (thead) novaTabela.appendChild(thead.cloneNode(true));
+      novaTabela.appendChild(novoTbody);
+      novo.appendChild(novaTabela);
+      return novo;
+    }
+
+    function empurrarExcessoFin(page, limite) {
+      const body = page.querySelector('.page-body');
+      const filhos = Array.from(body.children);
+
+      let corte = -1;
+      for (let i = 0; i < filhos.length; i++) {
+        if (!ehVisivel(filhos[i])) continue;
+        if (fimBlocoFin(filhos[i]) > limite) { corte = i; break; }
+      }
+      if (corte === -1) return [];
+
+      // 1) Tabela de itens: quebra entre linhas
+      const alvo = filhos[corte];
+      if (alvo.classList.contains('items-table-container')) {
+        const resto = dividirTabelaFin(alvo, limite);
+        if (resto) {
+          const depois = filhos.slice(corte + 1);
+          depois.forEach(el => el.remove());
+          return [resto, ...depois];
+        }
+      }
+
+      // 2) Corte entre blocos (banner, Dados para Pagamento...). Mantém ao menos 1 bloco na página.
+      const primeiroVisivel = filhos.findIndex(ehVisivel);
+      const minimo = primeiroVisivel + 1;
+      while (corte > minimo && ehKeepNext(filhos[corte - 1])) corte--;
+      if (corte < minimo) corte = minimo;
+
+      const excesso = filhos.slice(corte);
+      excesso.forEach(el => el.remove());
+      return excesso;
+    }
+
+    function criarPaginaContinuacaoFin(modelo) {
+      const nova = document.createElement('div');
+      nova.className = 'page page-cont';
+      const topo = document.createElement('div');
+      const body = document.createElement('div');
+      body.className = 'page-body';
+      body.style.paddingTop = '25px';
+      topo.append(modelo.querySelector('.top-bar').cloneNode(true), body);
+      const rodape = document.createElement('div');
+      rodape.append(modelo.children[1].querySelector('.bottom-bar').cloneNode(true));
+      nova.append(topo, rodape);
+      modelo.after(nova);
+      return nova;
+    }
+
+    function paginarFinanceira(p4) {
+      const assin = p4.querySelector('#footer-vendedor-wrap');
+      let alturaAssin = 0;
+      if (assin && ehVisivel(assin)) {
+        alturaAssin = assin.offsetHeight + (parseFloat(getComputedStyle(assin).marginBottom) || 0);
+      }
+
+      let atual = p4;
+      for (let guarda = 0; guarda < 30; guarda++) {
+        // 1º: sem reservar a assinatura (se já estoura, esta página não é a última).
+        // 2º: reservando a assinatura (acima do "Atenciosamente").
+        let ex = empurrarExcessoFin(atual, limiteFin(atual, 0));
+        if (!ex.length) ex = empurrarExcessoFin(atual, limiteFin(atual, alturaAssin));
+        if (!ex.length) break;
+        atual = criarPaginaContinuacaoFin(atual);
+        atual.querySelector('.page-body').append(...ex);
+      }
+
+      // A assinatura fica somente na última página
+      if (atual !== p4 && assin) {
+        const rodape = atual.children[1];
+        rodape.insertBefore(assin, rodape.querySelector('.bottom-bar'));
+      }
+    }
+
     function paginarProposta() {
       const conteudo = document.getElementById('document-content');
       if (!conteudo || conteudo.style.display === 'none') return;
@@ -1556,17 +1683,18 @@
       if (wrapEsc) wrapEsc.style.height = 'auto';
 
       const paginas = Array.from(conteudo.querySelectorAll('.page:not(.page-cont)'));
-      const p2 = paginas[1], p3 = paginas[2];
+      const p2 = paginas[1], p3 = paginas[2], p4 = paginas[3];
       if (!p2 || !p3) return;
       const b2 = p2.querySelector('.page-body');
       const b3 = p3.querySelector('.page-body');
 
       if (!snapPaginas) {
-        snapPaginas = { p2: b2.innerHTML, p3: b3.innerHTML };
+        snapPaginas = { p2: b2.innerHTML, p3: b3.innerHTML, p4: p4 ? p4.innerHTML : null };
       } else {
         conteudo.querySelectorAll('.page-cont').forEach(el => el.remove());
         b2.innerHTML = snapPaginas.p2;
         b3.innerHTML = snapPaginas.p3;
+        if (p4 && snapPaginas.p4 !== null) p4.innerHTML = snapPaginas.p4;
       }
 
       achatarObservacoes();
@@ -1576,6 +1704,8 @@
       paginarEmCascata(p2);
       // Condições Gerais: quebra em cascata para as páginas seguintes.
       paginarEmCascata(p3);
+      // Página de valores: tabela, banner e dados de pagamento quebram acima do "Atenciosamente".
+      if (p4) paginarFinanceira(p4);
 
       // Só depois de paginar: reduz a folha inteira para caber na tela (celular).
       ajustarEscala();
