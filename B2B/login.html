@@ -189,9 +189,21 @@
                 return sbPartner.from('parceiros').select('status').eq('user_id', userId).single();
               })
               .then(function (r) {
-                if (r.error || !r.data) {
-                  entrarComoCliente(email, senha, btn);
-                  return;
+                if (r.error || !r.data || r.data.status !== 'aprovado') {
+                  var statusAtual = (r.data && r.data.status) || null;
+                  return sbPartner.from('portal_clientes').select('id').eq('user_id', userId).maybeSingle().then(function (pc) {
+                    if (pc.data) { entrarComoCliente(email, senha, btn); return; }
+                    if (statusAtual === 'pendente') { window.location.href = 'pendente.html'; return; }
+                    if (statusAtual === 'bloqueado' || statusAtual === 'recusado') {
+                      showAlert('Seu acesso está bloqueado. Fale com o suporte.', 'error');
+                      sbPartner.auth.signOut();
+                    } else {
+                      showAlert('Cadastro de parceiro não encontrado para este login.', 'error');
+                      sbPartner.auth.signOut();
+                    }
+                    btn.classList.remove('btn-loading');
+                    btn.textContent = 'Acessar Portal';
+                  });
                 }
                 if (r.data.status === 'pendente') {
                   window.location.href = 'pendente.html';
