@@ -1284,7 +1284,7 @@ Data: preencha Dia e/ou Mês e/ou Ano (Ano Qualquer = qualquer ano)</pre>
         btn.classList.add('hidden');
         convProposta = null;
         convCpf = String((c && c.cpf_cnpj) || '').replace(/\D/g, '');
-        if (convCpf.length === 11) {
+        if (convCpf.length === 11 || convCpf.length === 14) {
           var pc = await sbPartner.from('portal_clientes').select('id').eq('cpf', convCpf).maybeSingle();
           if (pc.data) return;
         }
@@ -1295,7 +1295,7 @@ Data: preencha Dia e/ou Mês e/ou Ano (Ano Qualquer = qualquer ano)</pre>
       }
 
       window.convidarClienteAtual = async function () {
-        if (convCpf.length !== 11) { alert('Preencha o CPF do cliente antes de convidar.'); return; }
+        if (convCpf.length !== 11 && convCpf.length !== 14) { alert('Preencha o CPF ou CNPJ do cliente antes de convidar.'); return; }
         if (!convProposta) { alert('Este cliente ainda não tem um pedido ativo. Crie uma proposta para ele antes de convidar.'); return; }
         var r = await sbPartner.functions.invoke('cliente-convite', { body: { proposta_id: convProposta } });
         if (r.error || (r.data && r.data.erro)) {
