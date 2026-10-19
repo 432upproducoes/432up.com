@@ -3,203 +3,169 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
-  <meta name="theme-color" content="#0a0f16">
+  <meta name="theme-color" content="#08080A">
   <meta name="apple-mobile-web-app-capable" content="yes">
   <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
-  <title>Minha diária · 432UP</title>
+  <title>Minha área · 432UP!</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&display=swap" rel="stylesheet">
   <link rel="stylesheet" href="../css/style.css">
-  <script src="https://cdn.tailwindcss.com"></script>
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/cropperjs/1.5.13/cropper.min.css">
   <style>
     :root {
-      --cli-ouro: #c5a059;
-      --cli-acc: #00f0ff;
-      --cli-mut: #9a97b0;
-      --cli-line: rgba(168, 85, 247, 0.18);
-      --cli-card: rgba(14, 18, 28, 0.78);
+      --bg: #08080A;
+      --text: #FFFFFF;
+      --body: #E7E7EC;
+      --mut: #9A97B0;
+      --action: #00FF66;
+      --purple: #A855F7;
+      --pink: #FF007F;
+      --tech: #06B6D4;
+      --gold: #D4AF37;
+      --alert: #FF4D4D;
+      --line: rgba(255, 255, 255, 0.1);
     }
-    .cli-tabs {
-      display: flex; gap: 6px; flex-wrap: wrap;
-      margin-bottom: 1.25rem; padding: 4px; border-radius: 14px;
-      background: rgba(8, 8, 12, 0.55); border: 1px solid var(--cli-line);
-      backdrop-filter: blur(12px); -webkit-backdrop-filter: blur(12px);
+    body { background: var(--bg) !important; color: var(--text) !important; font-family: 'Inter', system-ui, sans-serif; }
+    *, *::before, *::after { box-sizing: border-box; }
+
+    .area { width: min(1040px, calc(100% - 28px)); margin: 0 auto; padding: 96px 0 110px; position: relative; z-index: 2; }
+    .eyebrow { font-size: .68rem; letter-spacing: .18em; text-transform: uppercase; font-weight: 700; opacity: .72; color: var(--gold); }
+    .titulo { font-size: clamp(1.9rem, 5vw, 3rem); line-height: 1; letter-spacing: -.045em; margin: 10px 0 12px; font-weight: 800; }
+    .lead { font-size: 1rem; line-height: 1.6; color: var(--body); margin: 0 0 24px; max-width: 640px; }
+    .mut { color: var(--mut); }
+
+    /* Caixa CHEIA: destaque (intensidade 1 a 4) */
+    .box-full {
+      border-radius: 24px; padding: 26px; position: relative; overflow: hidden; margin-bottom: 18px;
+      background: rgba(255, 255, 255, .045); border: 1px solid rgba(255, 255, 255, .14);
+      backdrop-filter: blur(24px); -webkit-backdrop-filter: blur(24px);
     }
-    .cli-tab {
-      flex: 1 1 auto; min-width: 100px; padding: 10px 14px; border-radius: 11px;
-      border: 1px solid transparent; background: transparent; color: var(--cli-mut);
-      font-size: 12px; font-weight: 700; letter-spacing: 0.04em;
-      text-transform: uppercase; cursor: pointer;
-      transition: 0.3s cubic-bezier(0.22, 0.61, 0.36, 1);
+    .box-full.i2 { border-color: rgba(168, 85, 247, .36); background: linear-gradient(135deg, rgba(168, 85, 247, .12), rgba(10, 8, 20, .6)); }
+    .box-full.i3 { border-color: rgba(0, 255, 102, .3); background: rgba(0, 255, 102, .05); }
+    .box-full.i4 { border-color: rgba(255, 0, 127, .3); background: rgba(255, 0, 127, .05); }
+    .box-full h2 { font-size: .72rem; letter-spacing: .14em; text-transform: uppercase; color: var(--gold); margin: 0 0 14px; font-weight: 800; }
+
+    /* Caixa VAZIA: leitura fluida e respiro */
+    .open { padding: 6px 4px 22px; margin-bottom: 8px; }
+    .open p { font-size: clamp(1.05rem, 2.2vw, 1.35rem); line-height: 1.5; color: var(--body); margin: 0; }
+
+    .btn {
+      display: inline-flex; align-items: center; justify-content: center; gap: 6px;
+      width: 100%; margin-top: 14px; padding: 13px 16px; border-radius: 14px; border: 0;
+      background: var(--action); color: #04120a; font-weight: 800; font-size: 14px; cursor: pointer; text-decoration: none;
     }
-    .cli-tab.on {
-      color: var(--cli-ouro); border-color: rgba(197, 160, 89, 0.4);
-      background: rgba(197, 160, 89, 0.1); box-shadow: 0 0 20px rgba(197, 160, 89, 0.12);
+    .btn:disabled { opacity: .5; cursor: default; }
+    .btn-s {
+      display: inline-flex; align-items: center; justify-content: center;
+      margin-top: 8px; padding: 9px 14px; border-radius: 12px; border: 1px solid rgba(255, 255, 255, .18);
+      background: transparent; color: var(--text); font-size: 13px; cursor: pointer; text-decoration: none;
     }
-    .cli-panel { display: none; animation: cliIn 0.45s cubic-bezier(0.22, 0.61, 0.36, 1) both; }
-    .cli-panel.on { display: block; }
-    @keyframes cliIn {
-      from { opacity: 0; transform: translateY(10px); filter: blur(3px); }
-      to { opacity: 1; transform: none; filter: none; }
+    .btn-s:disabled { opacity: .5; }
+
+    .tabs { display: flex; gap: 6px; flex-wrap: wrap; margin: 18px 0 26px; padding-bottom: 14px; border-bottom: 1px solid var(--line); }
+    .tab {
+      padding: 10px 14px; border-radius: 12px; border: 1px solid transparent; background: transparent;
+      color: var(--mut); font-size: 12px; font-weight: 700; letter-spacing: .04em; text-transform: uppercase; cursor: pointer;
     }
-    .cli-card {
-      background: var(--cli-card); border: 1px solid var(--cli-line); border-radius: 16px;
-      padding: 16px 18px; margin-bottom: 14px;
-      backdrop-filter: blur(14px); -webkit-backdrop-filter: blur(14px);
-      box-shadow: 0 12px 32px rgba(0, 0, 0, 0.35);
+    .tab.on { color: var(--text); border-color: rgba(168, 85, 247, .45); background: rgba(168, 85, 247, .1); }
+    .panel { display: none; }
+    .panel.on { display: block; animation: entra .4s ease both; }
+    @keyframes entra { from { opacity: 0; transform: translateY(8px); } to { opacity: 1; transform: none; } }
+
+    .tag { display: inline-block; font-size: 10px; font-weight: 800; padding: 4px 9px; border-radius: 999px; text-transform: uppercase; letter-spacing: .04em; }
+    .t-ok { background: rgba(0, 255, 102, .14); color: var(--action); }
+    .t-pend { background: rgba(212, 175, 55, .16); color: var(--gold); }
+    .t-rec { background: rgba(255, 77, 77, .15); color: var(--alert); }
+    .pill { font-size: 12px; color: var(--mut); }
+    .vazio { font-size: 13px; color: var(--mut); padding: 6px 0; }
+    .linha { display: flex; justify-content: space-between; gap: 10px; align-items: center; flex-wrap: wrap; padding: 10px 0; border-bottom: 1px solid var(--line); font-size: 14px; }
+    .linha:last-child { border-bottom: 0; }
+    .linha .x { background: none; border: 0; color: var(--alert); font-size: 16px; cursor: pointer; }
+
+    .campo-linha { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; }
+    label.cap { display: block; font-size: 10px; text-transform: uppercase; letter-spacing: .06em; color: var(--mut); margin: 12px 0 4px; }
+    input, select, textarea {
+      width: 100%; background: #030306; color: var(--body); border: 1px solid rgba(255, 255, 255, .12);
+      border-radius: 12px; padding: 11px 12px; font: inherit; font-size: 14px;
     }
-    .cli-card h2 {
-      font-size: 12px; margin: 0 0 12px; color: var(--cli-ouro);
-      text-transform: uppercase; letter-spacing: 0.08em; font-weight: 800;
-    }
-    .cli-sub { font-size: 13px; color: var(--cli-mut); line-height: 1.55; margin: 0 0 16px; }
-    .cli-card label {
-      display: block; font-size: 10px; text-transform: uppercase;
-      letter-spacing: 0.05em; color: var(--cli-mut); margin: 10px 0 4px;
-    }
-    .cli-card input, .cli-card select, .cli-card textarea {
-      width: 100%; background: #020617; color: #e2e8f0;
-      border: 1px solid rgba(255, 255, 255, 0.1); border-radius: 10px;
-      padding: 10px; font: inherit; font-size: 14px;
-    }
-    .cli-linha2 { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; }
-    .cli-btn {
-      margin-top: 14px; width: 100%; padding: 12px; border: none; border-radius: 12px;
-      background: linear-gradient(135deg, #00f0ff, #22d3ee); color: #0b1020;
-      font-weight: 800; font-size: 13px; cursor: pointer;
-    }
-    .cli-btn-s {
-      margin-top: 8px; padding: 8px 12px; border-radius: 10px;
-      border: 1px solid rgba(255, 255, 255, 0.2); background: transparent;
-      color: #e2e8f0; font-size: 12px; cursor: pointer;
-    }
-    .cli-btn:disabled { opacity: 0.5; }
-    .cli-msg { font-size: 12px; min-height: 16px; margin-top: 8px; color: #fca5a5; }
-    .cli-msg.ok { color: #a3e635; }
-    .cli-tag { font-size: 10px; font-weight: 800; padding: 3px 8px; border-radius: 999px; text-transform: uppercase; }
-    .t-ok { background: rgba(163, 230, 53, 0.15); color: #a3e635; }
-    .t-pend { background: rgba(250, 204, 21, 0.15); color: #facc15; }
-    .t-rec { background: rgba(248, 113, 113, 0.15); color: #fca5a5; }
-    .cli-pill { display: inline-block; font-size: 11px; color: var(--cli-mut); }
-    .cli-vazio { font-size: 13px; color: var(--cli-mut); padding: 6px 0; }
-    .cli-convite {
-      border: 1px solid rgba(197, 160, 89, 0.35);
-      background: linear-gradient(135deg, rgba(197, 160, 89, 0.1), rgba(0, 240, 255, 0.05));
-      border-radius: 16px; padding: 18px; line-height: 1.65; font-size: 14px; margin-bottom: 14px;
-    }
-    .cli-convite strong { color: var(--cli-ouro); }
-    .linha-tempo { position: relative; padding-left: 18px; }
-    .linha-tempo::before {
-      content: ""; position: absolute; left: 6px; top: 6px; bottom: 6px; width: 2px;
-      background: linear-gradient(var(--cli-ouro), rgba(197, 160, 89, 0.1));
-    }
-    .etapa {
-      position: relative; padding: 14px 14px 14px 16px; margin-bottom: 10px;
-      border-radius: 14px; border: 1px solid var(--cli-line);
-      background: rgba(14, 18, 28, 0.55);
-    }
-    .etapa::before {
-      content: ""; position: absolute; left: -17px; top: 22px; width: 12px; height: 12px;
-      border-radius: 50%; background: #0b1020; border: 2px solid rgba(0, 240, 255, 0.5);
-      box-shadow: 0 0 10px rgba(0, 240, 255, 0.28);
-    }
-    .etapa.feita {
-      opacity: 0.75; border-color: rgba(163, 230, 53, 0.22);
-      background: rgba(163, 230, 53, 0.05);
-    }
-    .etapa.feita::before {
-      background: #a3e635; border-color: #a3e635; box-shadow: none;
-    }
-    .etapa.feita .nome {
-      color: #94a3b8; text-decoration: line-through; text-decoration-color: rgba(148,163,184,.45);
-    }
-    .etapa .nome { font-size: 15px; font-weight: 700; color: #e2e8f0; }
-    .etapa .hora { font-size: 12px; color: var(--cli-mut); margin-top: 3px; }
-    .etapa .tag-ok {
-      display: inline-block; margin-top: 6px; font-size: 11px; font-weight: 800;
-      color: #a3e635; background: rgba(163,230,53,.12); padding: 3px 8px; border-radius: 999px;
-    }
-    .slider {
-      position: relative; height: 52px; border-radius: 999px; margin-top: 10px; overflow: hidden;
-      background: rgba(0, 240, 255, 0.06); border: 1px solid rgba(0, 240, 255, 0.35);
-      user-select: none; touch-action: none;
-    }
-    .slider-fill { position: absolute; left: 0; top: 0; bottom: 0; width: 0; background: rgba(0, 240, 255, 0.2); }
-    .slider-knob {
-      position: absolute; left: 3px; top: 3px; width: 46px; height: 46px; border-radius: 50%;
-      background: #00f0ff; color: #0b1020; font-weight: 900; font-size: 22px;
-      display: flex; align-items: center; justify-content: center; cursor: grab; transform: translateX(0);
-      box-shadow: 0 4px 14px rgba(0, 240, 255, 0.35);
-    }
-    .slider-txt {
-      position: absolute; inset: 0; display: flex; align-items: center; justify-content: center;
-      font-size: 12px; font-weight: 600; color: var(--cli-mut); padding-left: 48px; pointer-events: none;
-    }
-    .slider.done { border-color: rgba(163, 230, 53, 0.45); background: rgba(163, 230, 53, 0.06); }
-    .slider.done .slider-knob { background: #64748b; cursor: default; box-shadow: none; }
+    input:focus, select:focus, textarea:focus { outline: none; border-color: rgba(168, 85, 247, .55); }
+    .msg { font-size: 12px; min-height: 16px; margin-top: 8px; color: #fca5a5; }
+    .msg.ok { color: var(--action); }
+
+    /* Linha do tempo com etapas */
+    .trilha { position: relative; padding-left: 20px; }
+    .trilha::before { content: ""; position: absolute; left: 6px; top: 8px; bottom: 8px; width: 2px; background: rgba(255, 255, 255, .12); }
+    .etapa { position: relative; padding: 14px 14px 14px 16px; margin-bottom: 10px; border-radius: 18px; border: 1px solid var(--line); background: rgba(255, 255, 255, .03); }
+    .etapa::before { content: ""; position: absolute; left: -18px; top: 22px; width: 12px; height: 12px; border-radius: 50%; background: var(--bg); border: 2px solid var(--purple); }
+    .etapa.feita::before { background: var(--action); border-color: var(--action); }
+    .etapa.feita { opacity: .8; }
+    .etapa .nome { font-size: 15px; font-weight: 700; }
+    .etapa.feita .nome { text-decoration: line-through; text-decoration-color: rgba(255, 255, 255, .35); color: var(--mut); }
+    .etapa .hora { font-size: 12px; color: var(--mut); margin-top: 3px; }
+    .etapa .ok { display: inline-block; margin-top: 8px; font-size: 11px; font-weight: 800; color: var(--action); }
+    .etapa .aguarda { display: inline-block; margin-top: 8px; font-size: 11px; font-weight: 800; color: var(--gold); }
+
+    .slider { position: relative; height: 52px; border-radius: 999px; margin-top: 10px; overflow: hidden; background: rgba(0, 255, 102, .06); border: 1px solid rgba(0, 255, 102, .3); user-select: none; touch-action: none; }
+    .slider-fill { position: absolute; left: 0; top: 0; bottom: 0; width: 0; background: rgba(0, 255, 102, .18); }
+    .slider-knob { position: absolute; left: 3px; top: 3px; width: 46px; height: 46px; border-radius: 50%; background: var(--action); color: #04120a; font-weight: 900; font-size: 22px; display: flex; align-items: center; justify-content: center; cursor: grab; transform: translateX(0); }
+    .slider-txt { position: absolute; inset: 0; display: flex; align-items: center; justify-content: center; font-size: 12px; font-weight: 700; color: var(--mut); padding-left: 48px; pointer-events: none; }
+    .slider.done { border-color: rgba(255, 255, 255, .18); background: rgba(255, 255, 255, .03); }
+    .slider.done .slider-knob { background: #3f3f46; color: var(--mut); cursor: default; }
+
+    /* Próximo evento */
+    .hero-num { font-size: 30px; font-weight: 800; letter-spacing: -.03em; color: var(--text); }
+    .hero-chips { display: flex; gap: 8px; flex-wrap: wrap; margin-bottom: 12px; }
+    .chip { font-size: 11px; font-weight: 700; padding: 5px 11px; border-radius: 999px; border: 1px solid rgba(255, 255, 255, .18); }
+    .chip.tec { border-color: rgba(6, 182, 212, .4); color: var(--tech); }
+
+    /* Calendário */
+    .cal { display: grid; grid-template-columns: repeat(7, 1fr); gap: 4px; font-size: 11px; text-align: center; }
+    .cal .hd { color: var(--mut); font-weight: 700; padding: 6px 0; }
+    .cal .d { padding: 10px 0; border-radius: 12px; border: 1px solid transparent; color: var(--body); min-height: 44px; }
+    .cal .d.muted { opacity: .3; }
+    .cal .d.evento { border-color: rgba(255, 0, 127, .35); background: rgba(255, 0, 127, .07); color: #ffb3d6; font-weight: 800; cursor: pointer; }
+    .cal .d.hoje { border-color: rgba(212, 175, 55, .5); }
+    .cal .d.sel { outline: 2px solid var(--action); outline-offset: -2px; }
+    .cal-nav { display: flex; align-items: center; justify-content: space-between; gap: 8px; margin-bottom: 12px; }
+    .filtros { display: flex; flex-wrap: wrap; gap: 10px; margin: 6px 0 14px; font-size: 12px; }
+    .filtros label { display: inline-flex; align-items: center; gap: 5px; cursor: pointer; color: var(--body); }
+    .filtros input { width: auto; }
+    .dia-item { border: 1px solid var(--line); border-radius: 16px; padding: 12px; margin-bottom: 8px; border-left: 4px solid var(--purple); background: rgba(255, 255, 255, .025); }
+    .dia-item strong { display: block; margin-bottom: 2px; }
+    .dia-item small { color: var(--mut); display: block; font-size: 12px; }
+
+    /* Memórias */
+    .galeria-vazia { border: 1px dashed rgba(255, 255, 255, .14); border-radius: 18px; padding: 28px 18px; text-align: center; color: var(--mut); font-size: 14px; }
+
+    /* Perfil */
+    .avatar-wrap { display: flex; align-items: center; gap: 14px; flex-wrap: wrap; margin-bottom: 6px; }
+    .avatar { width: 76px; height: 76px; border-radius: 50%; border: 2px solid rgba(168, 85, 247, .45); background: #0b0b10 center/cover no-repeat; display: flex; align-items: center; justify-content: center; font-size: 26px; color: var(--mut); overflow: hidden; flex-shrink: 0; }
+
+    /* Notificações e modais */
     .sino { position: relative; }
-    .sino-badge {
-      position: absolute; top: -6px; right: -6px; min-width: 18px; height: 18px; padding: 0 5px; border-radius: 999px;
-      background: #c5a059; color: #0b1020; font-size: 11px; font-weight: 800; display: none; align-items: center; justify-content: center;
-    }
-    .modal-bg { position: fixed; inset: 0; z-index: 60; background: rgba(0,0,0,.6); display: none; align-items: center; justify-content: center; padding: 16px; }
+    .sino-badge { position: absolute; top: -6px; right: -6px; min-width: 18px; height: 18px; padding: 0 5px; border-radius: 999px; background: var(--pink); color: #fff; font-size: 11px; font-weight: 800; display: none; align-items: center; justify-content: center; }
+    .modal-bg { position: fixed; inset: 0; z-index: 60; background: rgba(0, 0, 0, .7); display: none; align-items: center; justify-content: center; padding: 16px; }
     .modal-bg.on { display: flex; }
-    .modal-box { width: 100%; max-width: 480px; max-height: 80vh; overflow: auto; background: #0e121c; border: 1px solid var(--cli-line); border-radius: 16px; padding: 18px; }
-    .notif { padding: 10px 0; border-bottom: 1px solid rgba(255,255,255,.06); cursor: pointer; }
-    .notif.nova .t { color: #00f0ff; font-weight: 800; }
+    .modal-box { width: 100%; max-width: 480px; max-height: 88vh; overflow: auto; background: #0c0c12; border: 1px solid rgba(168, 85, 247, .28); border-radius: 22px; padding: 20px; }
+    .modal-box h2 { font-size: .72rem; color: var(--gold); text-transform: uppercase; letter-spacing: .12em; font-weight: 800; margin: 0; }
+    .notif { padding: 11px 0; border-bottom: 1px solid var(--line); cursor: pointer; }
+    .notif.nova .t { color: var(--action); font-weight: 800; }
     .notif .t { font-size: 14px; }
-    .notif .d { font-size: 11px; color: var(--cli-mut); }
-    .obs {
-      display: flex; justify-content: space-between; gap: 8px; align-items: flex-start;
-      padding: 9px 0; border-bottom: 1px solid rgba(255, 255, 255, 0.06); font-size: 14px;
+    .notif .d { font-size: 11px; color: var(--mut); }
+    .cmp-item { padding: 10px 0; border-bottom: 1px solid var(--line); font-size: 13px; }
+    .cmp-item .row { display: flex; justify-content: space-between; gap: 8px; align-items: center; flex-wrap: wrap; }
+    .cropper-area { max-height: 50vh; background: #030306; border-radius: 14px; overflow: hidden; }
+    .cropper-area img { display: block; max-width: 100%; }
+
+    @media (max-width: 640px) {
+      .campo-linha { grid-template-columns: 1fr; }
+      .cal { gap: 3px; }
+      .cal .d { min-height: 38px; }
     }
-    .obs .x { background: none; border: none; color: #fca5a5; font-size: 16px; cursor: pointer; }
-    .cli-cal {
-      display: grid; grid-template-columns: repeat(7, 1fr); gap: 4px; font-size: 11px; text-align: center;
-    }
-    .cli-cal .hd { color: var(--cli-mut); font-weight: 700; padding: 6px 0; }
-    .cli-cal .d {
-      padding: 10px 0; border-radius: 10px; border: 1px solid transparent; color: #cbd5e1;
-    }
-    .cli-cal .d.muted { opacity: 0.35; }
-    .cli-cal .d.evento {
-      border-color: rgba(0, 240, 255, 0.35); background: rgba(0, 240, 255, 0.08);
-      color: #00f0ff; font-weight: 800; cursor: pointer;
-    }
-    .cli-cal .d.hoje { border-color: rgba(197, 160, 89, 0.5); }
-    .cli-cal .d.sel { outline: 2px solid #a3e635; outline-offset: -2px; }
-    .cli-cal-nav { display:flex; align-items:center; justify-content:space-between; gap:8px; margin-bottom:10px; }
-    .cli-cal-nav button { min-width:40px; }
-    .cli-dia-detalhe { margin-top:12px; }
-    .cli-dia-detalhe .item {
-      border:1px solid var(--cli-line); border-radius:12px; padding:12px; margin-bottom:8px;
-      border-left:4px solid #00f0ff; background:rgba(0,240,255,.04);
-    }
-    .cli-dia-detalhe .item strong { display:block; margin-bottom:2px; }
-    .cli-dia-detalhe .item small { color:var(--cli-mut); display:block; font-size:12px; }
-  
-    /* Avatar perfil */
-    .cli-avatar-wrap { display:flex; align-items:center; gap:14px; flex-wrap:wrap; margin-bottom:14px; }
-    .cli-avatar {
-      width:72px; height:72px; border-radius:50%; border:2px solid rgba(0,240,255,.35);
-      background:#0b1020 center/cover no-repeat; display:flex; align-items:center; justify-content:center;
-      font-size:28px; color:#64748b; overflow:hidden; flex-shrink:0;
-      box-shadow:0 0 18px rgba(0,240,255,.15);
-    }
-    .cli-cmp-item {
-      padding:10px 0; border-bottom:1px solid rgba(255,255,255,.06); font-size:13px;
-    }
-    .cli-cmp-item .row { display:flex; justify-content:space-between; gap:8px; align-items:center; flex-wrap:wrap; }
-    .modal-cmp-bg { position:fixed; inset:0; z-index:70; background:rgba(0,0,0,.65); display:none; align-items:center; justify-content:center; padding:16px; }
-    .modal-cmp-bg.on { display:flex; }
-    .modal-cmp-box { width:100%; max-width:440px; max-height:88vh; overflow:auto; background:#0e121c; border:1px solid var(--cli-line); border-radius:16px; padding:18px; }
-    .modal-cmp-box label { display:block; font-size:11px; text-transform:uppercase; letter-spacing:.05em; color:var(--cli-mut); margin:10px 0 4px; }
-    .modal-cmp-box input, .modal-cmp-box select {
-      width:100%; background:#020617; color:#e2e8f0; border:1px solid rgba(255,255,255,.12);
-      border-radius:10px; padding:10px 12px; font:inherit; font-size:14px;
-    }
-</style>
-  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/cropperjs/1.5.13/cropper.min.css">
+  </style>
 </head>
-<body class="h-full text-slate-200 font-sans antialiased bg-[#06080c] overflow-x-hidden">
+<body class="h-full antialiased overflow-x-hidden">
 
   <canvas id="orbit-canvas"></canvas>
   <div id="plasmaLayer" class="plasma-top-layer"></div>
@@ -207,158 +173,175 @@
   <header id="calc-header"></header>
   <div id="mobile-menu"></div>
 
-  <div class="flex flex-col min-h-screen relative z-10 pb-16">
-    <main class="flex-1 p-4 lg:p-8 space-y-4 pt-20 lg:pt-24 w-full max-w-3xl mx-auto">
+  <div class="flex flex-col min-h-screen relative z-10">
+    <main class="area">
 
-      <div class="flex items-start justify-between gap-3 flex-wrap">
+      <div style="display:flex;align-items:flex-start;justify-content:space-between;gap:12px;flex-wrap:wrap">
         <div>
-          <h1 class="text-xl font-extrabold tracking-tight text-white" id="saudacao">Olá</h1>
-          <p class="cli-sub mb-0">Sua diária 432UP — cadastro, evento e memórias num só lugar.</p>
+          <span class="eyebrow">Área do cliente</span>
+          <h1 class="titulo" id="saudacao">Olá</h1>
+          <p class="mut" style="margin:0;font-size:14px">Sua área 432UP! — cadastro, evento e memórias num só lugar.</p>
         </div>
         <div style="display:flex;gap:8px;align-items:center">
-          <button type="button" class="cli-btn-s sino" id="btnSino" style="margin-top:0" aria-label="Notificações">🔔<span class="sino-badge" id="sinoBadge">0</span></button>
-          <button type="button" class="cli-btn-s" id="btnSair" style="margin-top:0">Sair</button>
+          <button type="button" class="btn-s sino" id="btnSino" aria-label="Notificações" style="margin-top:0">🔔<span class="sino-badge" id="sinoBadge">0</span></button>
+          <button type="button" class="btn-s" id="btnSair" style="margin-top:0">Sair</button>
         </div>
       </div>
 
-      <nav class="cli-tabs" role="tablist" aria-label="Área do cliente">
-        <button type="button" class="cli-tab on" data-i="0" role="tab">Início</button>
-        <button type="button" class="cli-tab" data-i="1" role="tab">Meu evento</button>
-        <button type="button" class="cli-tab" data-i="2" role="tab">Calendário</button>
-        <button type="button" class="cli-tab" data-i="3" role="tab">Memórias</button>
-        <button type="button" class="cli-tab" data-i="4" role="tab">Perfil</button>
+      <nav class="tabs" role="tablist" aria-label="Área do cliente">
+        <button type="button" class="tab on" data-i="0" role="tab">Início</button>
+        <button type="button" class="tab" data-i="1" role="tab">Meu evento</button>
+        <button type="button" class="tab" data-i="2" role="tab">Calendário</button>
+        <button type="button" class="tab" data-i="3" role="tab">Memórias</button>
+        <button type="button" class="tab" data-i="4" role="tab">Perfil</button>
       </nav>
 
       <!-- 0 · INÍCIO -->
-      <section class="cli-panel on" id="p0" role="tabpanel">
-        <div class="cli-card" id="cardProximo">
+      <section class="panel on" id="p0" role="tabpanel">
+        <div class="box-full i2" id="cardProximo">
+          <div class="hero-chips" id="heroChips"></div>
           <h2>Próximo evento</h2>
-          <div id="proximoEvt" class="cli-vazio">Carregando…</div>
-          <div id="contagemWrap" style="display:none;margin-top:14px;text-align:center">
-            <div style="font-size:11px;color:var(--cli-mut);text-transform:uppercase;letter-spacing:.06em;margin-bottom:6px">Contagem regressiva</div>
-            <div id="contagem" style="font-size:28px;font-weight:800;color:var(--cli-ouro);letter-spacing:.04em">—</div>
+          <div id="proximoEvt" class="vazio">Carregando…</div>
+          <div id="contagemWrap" style="display:none;margin-top:16px">
+            <div class="eyebrow" style="color:var(--mut)">Faltam apenas</div>
+            <div id="contagem" class="hero-num" style="margin-top:4px">—</div>
           </div>
         </div>
-        <div class="cli-card">
-          <h2>Pedidos e contratos</h2>
-          <div id="listaPedidos" class="cli-vazio">Carregando…</div>
+
+        <div class="box-full">
+          <h2>Pedidos e pagamentos</h2>
+          <div id="listaPedidos" class="vazio">Carregando…</div>
         </div>
-        <div class="cli-card">
+
+        <div class="open">
+          <p>Os valores e prazos abaixo são os combinados no contrato. Envie o comprovante assim que pagar.</p>
+        </div>
+
+        <div class="box-full">
           <h2>Resumo rápido</h2>
-          <div id="resumoRapido" class="cli-vazio">Carregando…</div>
+          <div id="resumoRapido" class="vazio">Carregando…</div>
         </div>
       </section>
 
       <!-- 1 · MEU EVENTO -->
-      <section class="cli-panel" id="p1" role="tabpanel">
-        <div class="cli-convite" id="conviteGuia">
-          A partir da assinatura do contrato, você acompanha aqui cada detalhe do evento — etapa a etapa — até o grande dia.
+      <section class="panel" id="p1" role="tabpanel">
+        <div class="open">
+          <p>A partir da assinatura do contrato, você acompanha aqui cada etapa do evento até o grande dia.</p>
         </div>
-        <div class="cli-card" id="cardAvisos">
+
+        <div class="box-full i3" id="cardAvisos">
           <h2>Avisos no celular</h2>
-          <p class="cli-sub">Receba no aparelho quando uma etapa do seu evento for confirmada.</p>
-          <button type="button" class="cli-btn" id="btnAvisos">Ativar avisos</button>
-          <div class="cli-msg" id="msgAvisos"></div>
+          <p class="lead" style="font-size:14px;margin-bottom:4px">Receba no aparelho quando uma etapa do seu evento for confirmada.</p>
+          <button type="button" class="btn" id="btnAvisos">Ativar avisos</button>
+          <div class="msg" id="msgAvisos"></div>
         </div>
-        <div class="cli-card">
+
+        <div class="box-full">
           <h2>Linha do tempo</h2>
-          <div class="linha-tempo" id="linhaTempo"><div class="cli-vazio">Carregando…</div></div>
+          <div class="trilha" id="linhaTempo"><div class="vazio">Carregando…</div></div>
         </div>
-        <div class="cli-card">
+
+        <div class="box-full">
           <h2>Instruções para o seu evento</h2>
-          <div id="listaObs" class="cli-vazio">Carregando…</div>
+          <div id="listaObs" class="vazio">Carregando…</div>
           <form id="formObs" style="margin-top:12px">
-            <label for="obsNova">Nova instrução</label>
+            <label class="cap" for="obsNova">Nova instrução</label>
             <input id="obsNova" maxlength="400" placeholder="Ex.: horário de chegada da noiva">
-            <button class="cli-btn" type="submit" id="btnObs">Enviar</button>
-            <div class="cli-msg" id="msgObs"></div>
+            <button class="btn" type="submit" id="btnObs">Enviar</button>
+            <div class="msg" id="msgObs"></div>
           </form>
         </div>
       </section>
 
-      <section class="cli-panel" id="p2" role="tabpanel">
-        <div class="cli-card">
+      <!-- 2 · CALENDÁRIO -->
+      <section class="panel" id="p2" role="tabpanel">
+        <div class="box-full">
           <h2>Calendário do evento</h2>
-          <p class="cli-sub" id="calSub">Só as datas dos seus pedidos aparecem aqui.</p>
-          <div class="cli-filtros" id="calFiltros" style="display:flex;flex-wrap:wrap;gap:8px;margin:10px 0 12px;font-size:12px">
-            <label class="cli-tog" style="display:inline-flex;align-items:center;gap:5px;cursor:pointer"><input type="checkbox" data-filtro="evento" checked> Evento</label>
-            <label class="cli-tog" style="display:inline-flex;align-items:center;gap:5px;cursor:pointer"><input type="checkbox" data-filtro="contrato" checked> Contrato</label>
-            <label class="cli-tog" style="display:inline-flex;align-items:center;gap:5px;cursor:pointer"><input type="checkbox" data-filtro="pagamento" checked> Pagamentos</label>
-            <label class="cli-tog" style="display:inline-flex;align-items:center;gap:5px;cursor:pointer"><input type="checkbox" data-filtro="comprovante" checked> Comprovantes</label>
+          <p class="pill" id="calSub" style="margin:0 0 10px">Só as datas dos seus pedidos aparecem aqui.</p>
+          <div class="filtros" id="calFiltros">
+            <label><input type="checkbox" data-filtro="evento" checked> Evento</label>
+            <label><input type="checkbox" data-filtro="contrato" checked> Contrato</label>
+            <label><input type="checkbox" data-filtro="pagamento" checked> Pagamentos</label>
+            <label><input type="checkbox" data-filtro="comprovante" checked> Comprovantes</label>
           </div>
-          <div class="cli-cal-nav">
-            <button type="button" class="cli-btn-s" id="calPrev" style="margin-top:0">‹</button>
-            <strong id="calMesTitulo" style="font-size:14px;color:var(--cli-ouro)"></strong>
-            <button type="button" class="cli-btn-s" id="calNext" style="margin-top:0">›</button>
+          <div class="cal-nav">
+            <button type="button" class="btn-s" id="calPrev" style="margin-top:0">‹</button>
+            <strong id="calMesTitulo" style="font-size:15px"></strong>
+            <button type="button" class="btn-s" id="calNext" style="margin-top:0">›</button>
           </div>
-          <div class="cli-cal" id="calGrid" aria-label="Calendário"></div>
-          <div class="cli-dia-detalhe" id="calDiaDetalhe">
-            <div class="cli-vazio">Toque em um dia com evento para ver o detalhe.</div>
+          <div class="cal" id="calGrid" aria-label="Calendário"></div>
+          <div id="calDiaDetalhe" style="margin-top:14px">
+            <div class="vazio">Toque em um dia com evento para ver o detalhe.</div>
           </div>
         </div>
-        <div class="cli-card">
+
+        <div class="box-full">
           <h2>Levar para o meu calendário</h2>
-          <p class="cli-sub">Assine e as datas dos seus eventos entram no calendário do celular e atualizam sozinhas.</p>
-          <button type="button" class="cli-btn" id="btnAssinarCal">Assinar calendário</button>
-          <button type="button" class="cli-btn-s" id="btnCopiarCal">Copiar link</button>
-          <div class="cli-msg" id="msgCal"></div>
+          <p class="lead" style="font-size:14px">Assine e as datas dos seus eventos entram no calendário do celular e atualizam sozinhas.</p>
+          <button type="button" class="btn" id="btnAssinarCal">Assinar calendário</button>
+          <button type="button" class="btn-s" id="btnCopiarCal">Copiar link</button>
+          <div class="msg" id="msgCal"></div>
         </div>
-        <div class="cli-card">
+
+        <div class="box-full">
           <h2>Próximos marcos</h2>
-          <div id="calLista" class="cli-vazio">Carregando…</div>
+          <div id="calLista" class="vazio">Carregando…</div>
         </div>
       </section>
 
-      <section class="cli-panel" id="p3" role="tabpanel">
-        <div class="cli-convite">
-          Cada evento vira uma lembrança. Quando a sua chegar — fotos e avaliação — ela fica guardada aqui.
+      <!-- 3 · MEMÓRIAS -->
+      <section class="panel" id="p3" role="tabpanel">
+        <div class="open">
+          <p>Cada evento vira uma lembrança. Quando a sua chegar, as fotos ficam guardadas aqui.</p>
         </div>
-        <div class="cli-card">
+        <div class="box-full">
           <h2>Galeria</h2>
-          <div id="memGaleria" class="cli-vazio">Ainda não há fotos publicadas para o seu evento.</div>
+          <div id="memGaleria" class="galeria-vazia">Ainda não há fotos publicadas para o seu evento.</div>
         </div>
       </section>
 
       <!-- 4 · PERFIL -->
-      <section class="cli-panel" id="p4" role="tabpanel">
-        <div class="cli-card" id="semCadastro" style="display:none">
-          <p class="cli-vazio">Não encontramos seu cadastro de cliente vinculado a esta conta. Fale com o suporte 432UP.</p>
+      <section class="panel" id="p4" role="tabpanel">
+        <div class="box-full" id="semCadastro" style="display:none">
+          <p class="vazio" style="margin:0">Não encontramos seu cadastro de cliente vinculado a esta conta. Fale com o suporte 432UP!.</p>
         </div>
-        <div class="cli-card" id="formCadastroWrap">
+
+        <div class="box-full" id="formCadastroWrap">
           <h2>Seu avatar</h2>
-          <div class="cli-avatar-wrap">
-            <div class="cli-avatar" id="avatarPreview"><span id="avatarPlaceholder">📷</span></div>
+          <div class="avatar-wrap">
+            <div class="avatar" id="avatarPreview"><span id="avatarPlaceholder">📷</span></div>
             <div style="flex:1;min-width:160px">
-              <input type="file" id="fAvatar" accept="image/png,image/jpeg,image/webp" style="font-size:12px;color:#cbd5e1">
-              <p class="cli-sub" style="margin:6px 0 8px">Mesma compressão do perfil de parceiro (WebP). Aparece no topo da sua área.</p>
-              <button type="button" class="cli-btn-s" id="btnSalvarAvatar" style="display:none;margin-top:0">Salvar foto</button>
-              <div class="cli-msg" id="msgAvatar"></div>
+              <input type="file" id="fAvatar" accept="image/png,image/jpeg,image/webp" style="font-size:12px">
+              <p class="pill" style="margin:6px 0 4px">Formatos aceitos: JPG, PNG ou WebP até 5 MB.</p>
+              <button type="button" class="btn-s" id="btnSalvarAvatar" style="display:none;margin-top:4px">Salvar foto</button>
+              <div class="msg" id="msgAvatar"></div>
             </div>
           </div>
-          <h2 style="margin-top:8px">Seus dados</h2>
+
+          <h2 style="margin-top:20px">Seus dados</h2>
           <form id="formCadastro">
-            <label for="c_nome">Nome / razão social</label>
+            <label class="cap" for="c_nome">Nome completo / razão social</label>
             <input id="c_nome" autocomplete="name">
-            <label for="c_tel">Telefone</label>
-            <input id="c_tel" inputmode="tel" autocomplete="tel">
-            <label for="c_email">E-mail</label>
-            <input id="c_email" type="email" required autocomplete="email">
-            <div class="cli-linha2">
-              <div><label for="c_cep">CEP</label><input id="c_cep" inputmode="numeric"></div>
-              <div><label for="c_uf">UF</label><input id="c_uf" maxlength="2"></div>
+            <div class="campo-linha">
+              <div><label class="cap" for="c_tel">Telefone / WhatsApp</label><input id="c_tel" inputmode="tel" autocomplete="tel"></div>
+              <div><label class="cap" for="c_email">E-mail principal</label><input id="c_email" type="email" required autocomplete="email"></div>
             </div>
-            <label for="c_log">Logradouro</label>
+            <div class="campo-linha">
+              <div><label class="cap" for="c_cep">CEP</label><input id="c_cep" inputmode="numeric"></div>
+              <div><label class="cap" for="c_uf">UF</label><input id="c_uf" maxlength="2"></div>
+            </div>
+            <label class="cap" for="c_log">Logradouro</label>
             <input id="c_log">
-            <div class="cli-linha2">
-              <div><label for="c_num">Número</label><input id="c_num"></div>
-              <div><label for="c_comp">Complemento</label><input id="c_comp"></div>
+            <div class="campo-linha">
+              <div><label class="cap" for="c_num">Número</label><input id="c_num"></div>
+              <div><label class="cap" for="c_comp">Complemento</label><input id="c_comp"></div>
             </div>
-            <label for="c_bairro">Bairro</label>
-            <input id="c_bairro">
-            <label for="c_cidade">Cidade</label>
-            <input id="c_cidade">
-            <button class="cli-btn" type="submit" id="btnCadastro">Salvar meus dados</button>
-            <div class="cli-msg" id="msgCadastro"></div>
+            <div class="campo-linha">
+              <div><label class="cap" for="c_bairro">Bairro</label><input id="c_bairro"></div>
+              <div><label class="cap" for="c_cidade">Cidade</label><input id="c_cidade"></div>
+            </div>
+            <button class="btn" type="submit" id="btnCadastro">Salvar meus dados</button>
+            <div class="msg" id="msgCadastro"></div>
           </form>
         </div>
       </section>
@@ -366,60 +349,58 @@
     </main>
   </div>
 
-  
-  
-  <!-- Cropper avatar -->
-  <div class="modal-cmp-bg" id="modalCrop" role="dialog" aria-modal="true" aria-label="Recortar foto">
-    <div class="modal-cmp-box" style="max-width:520px">
+  <!-- Recorte do avatar -->
+  <div class="modal-bg" id="modalCrop" role="dialog" aria-modal="true" aria-label="Recortar foto">
+    <div class="modal-box" style="max-width:520px">
       <div style="display:flex;justify-content:space-between;align-items:center;gap:8px;margin-bottom:10px">
-        <h2 style="font-size:12px;color:#c5a059;text-transform:uppercase;letter-spacing:.08em;font-weight:800;margin:0">Recortar &amp; compactar</h2>
-        <button type="button" class="cli-btn-s" id="btnCropCancel" style="margin-top:0">Cancelar</button>
+        <h2>Recortar e compactar</h2>
+        <button type="button" class="btn-s" id="btnCropCancel" style="margin-top:0">Cancelar</button>
       </div>
-      <div style="max-height:50vh;background:#020617;border-radius:12px;overflow:hidden">
-        <img id="cropImage" alt="Recorte" style="display:block;max-width:100%">
-      </div>
-      <button type="button" class="cli-btn" id="btnCropOk" style="margin-top:14px">Usar esta foto</button>
-      <div class="cli-msg" id="msgCrop"></div>
+      <div class="cropper-area"><img id="cropImage" alt="Recorte da foto de perfil"></div>
+      <button type="button" class="btn" id="btnCropOk">Usar esta foto</button>
+      <div class="msg" id="msgCrop"></div>
     </div>
   </div>
 
-  <div class="modal-cmp-bg" id="modalCmp" role="dialog" aria-modal="true" aria-label="Enviar comprovante">
-    <div class="modal-cmp-box">
+  <!-- Comprovante -->
+  <div class="modal-bg" id="modalCmp" role="dialog" aria-modal="true" aria-label="Enviar comprovante">
+    <div class="modal-box">
       <div style="display:flex;justify-content:space-between;align-items:center;gap:8px">
-        <h2 style="font-size:12px;color:#c5a059;text-transform:uppercase;letter-spacing:.08em;font-weight:800;margin:0">Enviar comprovante</h2>
-        <button type="button" class="cli-btn-s" id="btnFecharCmp" style="margin-top:0">Fechar</button>
+        <h2>Enviar comprovante</h2>
+        <button type="button" class="btn-s" id="btnFecharCmp" style="margin-top:0">Fechar</button>
       </div>
-      <p class="cli-sub" style="margin-top:8px">Pode enviar quantos forem necessários (entrada, parcelas, saldo).</p>
+      <p class="pill" style="margin:8px 0 0">Pode enviar quantos forem necessários (entrada, parcelas, saldo).</p>
       <input type="hidden" id="cmpPropostaId">
-      <label for="cmpTipo">Tipo</label>
+      <label class="cap" for="cmpTipo">Tipo</label>
       <select id="cmpTipo">
         <option value="entrada">Entrada / sinal</option>
         <option value="parcela">Parcela</option>
         <option value="saldo">Saldo / restante</option>
         <option value="outro">Outro</option>
       </select>
-      <label for="cmpValor">Valor pago (R$)</label>
+      <label class="cap" for="cmpValor">Valor pago (R$)</label>
       <input id="cmpValor" type="number" min="0" step="0.01" inputmode="decimal">
-      <label for="cmpData">Data do pagamento</label>
+      <label class="cap" for="cmpData">Data do pagamento</label>
       <input id="cmpData" type="date">
-      <label for="cmpArquivo">Foto ou PDF</label>
+      <label class="cap" for="cmpArquivo">Foto ou PDF</label>
       <input id="cmpArquivo" type="file" accept="image/*,application/pdf">
-      <button type="button" class="cli-btn" id="btnEnviarCmp" style="margin-top:14px">Enviar comprovante</button>
-      <div class="cli-msg" id="msgCmp"></div>
-      <h2 style="font-size:12px;color:#c5a059;text-transform:uppercase;letter-spacing:.08em;font-weight:800;margin:18px 0 8px">Já enviados neste pedido</h2>
-      <div id="cmpListaModal" class="cli-vazio">—</div>
+      <button type="button" class="btn" id="btnEnviarCmp">Enviar comprovante</button>
+      <div class="msg" id="msgCmp"></div>
+      <h2 style="margin:18px 0 8px">Já enviados neste pedido</h2>
+      <div id="cmpListaModal" class="vazio">—</div>
     </div>
   </div>
 
-<div class="modal-bg" id="modalNotif" role="dialog" aria-modal="true" aria-label="Notificações">
+  <!-- Notificações -->
+  <div class="modal-bg" id="modalNotif" role="dialog" aria-modal="true" aria-label="Notificações">
     <div class="modal-box">
       <div style="display:flex;justify-content:space-between;align-items:center;gap:8px">
-        <h2 style="font-size:12px;color:#c5a059;text-transform:uppercase;letter-spacing:.08em;font-weight:800;margin:0">Notificações</h2>
-        <button type="button" class="cli-btn-s" id="btnFecharNotif" style="margin-top:0">Fechar</button>
+        <h2>Notificações</h2>
+        <button type="button" class="btn-s" id="btnFecharNotif" style="margin-top:0">Fechar</button>
       </div>
       <div id="notifNovas" style="margin-top:12px"></div>
-      <button type="button" class="cli-btn-s" id="btnTodasLidas" style="display:none">Marcar todas como lidas</button>
-      <h2 style="font-size:11px;color:#9a97b0;margin:18px 0 6px;text-transform:uppercase;letter-spacing:.06em">Já lidas</h2>
+      <button type="button" class="btn-s" id="btnTodasLidas" style="display:none">Marcar todas como lidas</button>
+      <h2 style="margin:18px 0 6px;color:var(--mut)">Já lidas</h2>
       <div id="notifLidas"></div>
     </div>
   </div>
@@ -435,7 +416,6 @@
   var CFG = window.PARTNER_CFG;
   if (!CFG) { console.error('PARTNER_CFG ausente'); return; }
 
-  /* Mesmo sbPartner do B2B — uma sessão só, sem segundo storage */
   if (typeof window.sbPartner === 'undefined') {
     window.sbPartner = window.supabase.createClient(CFG.SB_URL, CFG.SB_KEY, {
       auth: { persistSession: true, autoRefreshToken: true }
@@ -458,16 +438,27 @@
   };
   var ST = { pendente: 'Pendente', aprovado: 'Aprovado', recusado: 'Recusado', pago: 'Pago' };
   var ST_CLASSE = { pendente: 't-pend', aprovado: 't-ok', recusado: 't-rec', pago: 't-ok' };
+  var ROTULO_CMP = { entrada: 'Entrada', parcela: 'Parcela', saldo: 'Saldo', outro: 'Outro' };
+  var LIMITE_CMP = 4 * 1024 * 1024;
+  var R2_UPLOAD_URL = 'https://432up-r2-upload.432up-producoes.workers.dev/';
   var dados = null;
-  var VAPID_PUBLIC = (CFG.VAPID_PUBLIC_KEY || CFG.VAPID_PUBLIC || '').trim();
+  var novoAvatarBlob = null;
+  var cropperInst = null;
+  var calAno = null, calMes = null, calDiaSel = null;
+  var _contagemTimer = null;
+  var FILTROS_CAL = { evento: true, contrato: true, pagamento: true, comprovante: true };
+  try {
+    var _fc = JSON.parse(localStorage.getItem('432up_cli_cal_filtros') || '{}');
+    Object.keys(FILTROS_CAL).forEach(function (k) { if (typeof _fc[k] === 'boolean') FILTROS_CAL[k] = _fc[k]; });
+  } catch (e) {}
 
-  document.querySelectorAll('.cli-tab').forEach(function (btn) {
+  document.querySelectorAll('.tab').forEach(function (btn) {
     btn.addEventListener('click', function () {
       var i = Number(btn.getAttribute('data-i'));
-      document.querySelectorAll('.cli-tab').forEach(function (b) {
+      document.querySelectorAll('.tab').forEach(function (b) {
         b.classList.toggle('on', Number(b.getAttribute('data-i')) === i);
       });
-      document.querySelectorAll('.cli-panel').forEach(function (p, idx) {
+      document.querySelectorAll('.panel').forEach(function (p, idx) {
         p.classList.toggle('on', idx === i);
       });
     });
@@ -483,6 +474,10 @@
       return { erro: msg || 'Não foi possível concluir. Tente novamente.' };
     }
     return r.data;
+  }
+
+  function pedidoAtivo() {
+    return (dados.propostas || []).find(function (p) { return p.status !== 'cancelada'; }) || null;
   }
 
   function renderCadastro() {
@@ -508,42 +503,58 @@
     $('c_cidade').value = c.cidade || '';
   }
 
+  function agendaDe(p) {
+    var pa = p.pagamento_agenda || {};
+    if (typeof pa === 'string') { try { pa = JSON.parse(pa); } catch (e) { pa = {}; } }
+    return pa;
+  }
+
   function renderPedidos() {
     var el = $('listaPedidos');
     if (!dados.propostas || !dados.propostas.length) {
-      el.innerHTML = '<div class="cli-vazio">Você ainda não tem pedidos conosco.</div>';
+      el.innerHTML = '<div class="vazio">Você ainda não tem pedidos conosco.</div>';
       return;
     }
     el.innerHTML = dados.propostas.map(function (p) {
       var cancelado = p.status === 'cancelada';
       var assinado = !!p.assinado_em;
       var comps = (dados.comprovantes || []).filter(function (c) { return c.proposta_id === p.id; });
+      var pa = agendaDe(p);
+      var parcelas = [['Sinal inicial', pa.data_entrada, pa.status_entrada, pa.valor_entrada],
+        ['Parcela', pa.data_parcela, pa.status_parcela, pa.valor_parcela],
+        ['Saldo', pa.data_saldo, pa.status_saldo, pa.valor_saldo]]
+        .filter(function (r) { return r[1]; })
+        .map(function (r) {
+          var pago = r[2] === 'pago';
+          return '<div class="linha"><span>' + E(r[0]) + ' <span class="mut" style="font-size:12px">(vence ' + DATA(r[1]) + ')</span>' +
+            (r[3] != null ? '<br><strong>' + BRL(r[3]) + '</strong>' : '') + '</span>' +
+            '<span class="tag ' + (pago ? 't-ok' : 't-pend') + '">' + (pago ? 'Pago' : 'Pendente') + '</span></div>';
+        }).join('');
       var lista = comps.map(function (c) {
         var st = c.confirmado || c.status === 'aprovado' || c.status === 'pago' ? 'aprovado'
           : (c.status === 'recusado' ? 'recusado' : 'pendente');
         var podeExcluir = !(c.confirmado || st === 'aprovado' || st === 'pago');
-        return '<div class="cli-cmp-item"><div class="row">' +
-          '<span>' + E(c.tipo) + ' · ' + BRL(c.valor) + ' · ' + DATA(c.data_pagamento) +
-          (c.arquivo_url ? ' · <a href="' + E(c.arquivo_url) + '" target="_blank" rel="noopener" style="color:#00f0ff">ver</a>' : '') +
+        return '<div class="cmp-item"><div class="row">' +
+          '<span>' + E(ROTULO_CMP[c.tipo] || c.tipo) + ' · ' + BRL(c.valor) + ' · ' + DATA(c.data_pagamento) +
+          (c.arquivo_url ? ' · <a href="' + E(c.arquivo_url) + '" target="_blank" rel="noopener" style="color:var(--action)">ver</a>' : '') +
           '</span>' +
           '<span style="display:flex;align-items:center;gap:8px">' +
-            '<span class="cli-tag ' + (ST_CLASSE[st] || 't-pend') + '">' + E(ST[st] || c.status) + '</span>' +
-            (podeExcluir ? '<button type="button" class="cli-btn-s" style="margin:0;padding:2px 8px;color:#fca5a5" data-del-cmp="' + E(c.id) + '" data-prop="' + E(p.id) + '">✕</button>' : '') +
+            '<span class="tag ' + (ST_CLASSE[st] || 't-pend') + '">' + E(ST[st] || c.status) + '</span>' +
+            (podeExcluir ? '<button type="button" class="x" data-del-cmp="' + E(c.id) + '" data-prop="' + E(p.id) + '">✕</button>' : '') +
           '</span></div>' +
-          (st === 'recusado' && c.motivo_recusa ? '<div style="color:#fca5a5;font-size:11px;margin-top:4px">Motivo: ' + E(c.motivo_recusa) + '. Exclua e envie de novo.</div>' : '') +
+          (st === 'recusado' && c.motivo_recusa ? '<div style="color:var(--alert);font-size:11px;margin-top:4px">Motivo: ' + E(c.motivo_recusa) + '. Exclua e envie de novo.</div>' : '') +
           '</div>';
-      }).join('') || '<div class="cli-vazio">Nenhum comprovante enviado ainda.</div>';
-      var topo = '<div style="display:flex;justify-content:space-between;gap:8px;flex-wrap:wrap"><strong>Pedido #' + E(p.numero) + '</strong>' +
-        (cancelado ? '<span class="cli-tag t-rec">Cancelado</span>' : assinado ? '<span class="cli-tag t-ok">Contrato assinado</span>' : '<span class="cli-tag t-pend">Aguardando assinatura</span>') + '</div>' +
-        '<div class="cli-pill">' + E(p.tipo_evento || '') + ' · ' + DATA(p.data_evento) + ' · ' + BRL(p.valor_total) + '</div>';
-      if (cancelado) return '<div style="margin-bottom:16px">' + topo + '</div>';
+      }).join('') || '<div class="vazio">Nenhum comprovante enviado ainda.</div>';
+      var topo = '<div style="display:flex;justify-content:space-between;gap:8px;flex-wrap:wrap;align-items:center"><strong>Pedido #' + E(p.numero) + '</strong>' +
+        (cancelado ? '<span class="tag t-rec">Cancelado</span>' : assinado ? '<span class="tag t-ok">Contrato assinado</span>' : '<span class="tag t-pend">Aguardando assinatura</span>') + '</div>' +
+        '<div class="pill" style="margin-top:6px">' + E(p.tipo_evento || '') + ' · ' + DATA(p.data_evento) + ' · ' + BRL(p.valor_total) + '</div>';
+      if (cancelado) return '<div style="margin-bottom:12px">' + topo + '</div>';
       var acoes = '';
-      if (assinado) {
-        acoes += '<button type="button" class="cli-btn-s" data-pdf="' + E(p.id) + '">Baixar contrato (PDF)</button> ';
-      }
-      acoes += '<button type="button" class="cli-btn" data-cmp="' + E(p.id) + '" style="margin-top:8px">+ Enviar comprovante</button>';
-      return '<div style="margin-bottom:18px;padding-bottom:14px;border-bottom:1px solid rgba(255,255,255,.06)">' +
-        topo + '<div style="margin-top:10px">' + lista + '</div>' +
+      if (assinado) acoes += '<button type="button" class="btn-s" data-pdf="' + E(p.id) + '">Baixar contrato (PDF)</button> ';
+      acoes += '<button type="button" class="btn" data-cmp="' + E(p.id) + '">+ Enviar comprovante</button>';
+      return '<div style="margin-bottom:18px;padding-bottom:14px;border-bottom:1px solid var(--line)">' +
+        topo + '<div style="margin-top:12px">' + parcelas + '</div>' +
+        '<div style="margin-top:10px">' + lista + '</div>' +
         '<div style="margin-top:8px">' + acoes + '</div></div>';
     }).join('');
 
@@ -573,34 +584,31 @@
   }
 
   function renderGuia() {
-    var pedido = (dados.propostas || []).find(function (p) { return p.status !== 'cancelada'; });
+    var pedido = pedidoAtivo();
     var etapas = pedido ? (dados.etapas || []).filter(function (e) { return e.proposta_id === pedido.id; }) : [];
     var lt = $('linhaTempo');
     if (!etapas.length) {
       lt.innerHTML =
-        '<div class="etapa"><div class="nome" style="color:var(--cli-mut)">Boas-vindas</div><div class="hora">Em breve</div></div>' +
-        '<div class="etapa"><div class="nome" style="color:var(--cli-mut)">Setlist / preparativos</div><div class="hora">Em breve</div></div>' +
-        '<div class="etapa"><div class="nome" style="color:var(--cli-mut)">Dia do seu evento</div><div class="hora">Em breve</div></div>';
+        '<div class="etapa"><div class="nome mut">Boas-vindas</div><div class="hora">Em breve</div></div>' +
+        '<div class="etapa"><div class="nome mut">Setlist e preparativos</div><div class="hora">Em breve</div></div>' +
+        '<div class="etapa"><div class="nome mut">Dia do seu evento</div><div class="hora">Em breve</div></div>';
     } else {
       lt.innerHTML = etapas.map(function (e) {
         var feita = e.situacao === 'concluida';
         return '<div class="etapa ' + (feita ? 'feita' : '') + '">' +
           '<div class="nome">' + E(e.nome) + '</div>' +
           '<div class="hora">' + (e.hora ? E(e.hora) : 'Horário a confirmar') + '</div>' +
-          (feita
-            ? '<span class="tag-ok">✓ Confirmada pela equipe</span>'
-            : '<span class="tag-pend" style="display:inline-block;margin-top:6px;font-size:11px;font-weight:800;color:#facc15;background:rgba(250,204,21,.12);padding:3px 8px;border-radius:999px">Aguardando equipe</span>') +
+          (feita ? '<span class="ok">✓ Confirmada pela equipe</span>' : '<span class="aguarda">Aguardando equipe</span>') +
           '</div>';
       }).join('');
-      /* Cliente não desliza etapas — só visualiza. Quem conclui é o fornecedor no checklist B2B. */
     }
     var obs = pedido ? (dados.observacoes || []).filter(function (o) { return o.proposta_id === pedido.id; }) : [];
     var lo = $('listaObs');
-    if (!obs.length) lo.innerHTML = '<div class="cli-vazio">Nenhuma instrução ainda.</div>';
+    if (!obs.length) lo.innerHTML = '<div class="vazio">Nenhuma instrução ainda.</div>';
     else lo.innerHTML = obs.map(function (o) {
       var minha = o.criado_por === 'cliente';
-      return '<div class="obs"><span>' + E(o.texto) +
-        (minha ? ' <em style="color:#a3e635;font-size:11px">(você)</em>' : '') + '</span>' +
+      return '<div class="linha"><span>' + E(o.texto) +
+        (minha ? ' <em style="color:var(--action);font-size:11px">(você)</em>' : '') + '</span>' +
         (minha ? '<button type="button" class="x" data-obs="' + E(o.id) + '">✕</button>' : '') + '</div>';
     }).join('');
     lo.querySelectorAll('[data-obs]').forEach(function (b) {
@@ -612,37 +620,18 @@
     });
   }
 
-  var calAno = null, calMes = null, calDiaSel = null;
-  var FILTROS_CAL = { evento: true, contrato: true, pagamento: true, comprovante: true };
-  try {
-    var _fc = JSON.parse(localStorage.getItem("432up_cli_cal_filtros") || "{}");
-    Object.keys(FILTROS_CAL).forEach(function (k) { if (typeof _fc[k] === "boolean") FILTROS_CAL[k] = _fc[k]; });
-  } catch (e) {}
-
-
   function renderCalendario() {
     var pedidos = (dados.propostas || []).filter(function (p) { return p.status !== 'cancelada' && p.data_evento; });
     var datas = {};
-    function pushDia(k, item) {
-      if (!k) return;
-      (datas[k] = datas[k] || []).push(item);
-    }
+    function pushDia(k, item) { if (!k) return; (datas[k] = datas[k] || []).push(item); }
+
     pedidos.forEach(function (p) {
-      // 1) Dia do evento
-      var k = p.data_evento ? String(p.data_evento).slice(0, 10) : null;
-      if (k) pushDia(k, { kind: 'evento', prop: p, titulo: '#' + p.numero + ' · Dia do evento', sub: p.tipo_evento || '' });
-
-      // 2) Assinatura do contrato
+      var k = String(p.data_evento).slice(0, 10);
+      pushDia(k, { kind: 'evento', prop: p, titulo: '#' + p.numero + ' · Dia do evento', sub: p.tipo_evento || '' });
       if (p.assinado_em) {
-        var ka = String(p.assinado_em).slice(0, 10);
-        pushDia(ka, { kind: 'contrato', prop: p, titulo: '#' + p.numero + ' · Contrato assinado', sub: 'Documento formalizado' });
+        pushDia(String(p.assinado_em).slice(0, 10), { kind: 'contrato', prop: p, titulo: '#' + p.numero + ' · Contrato assinado', sub: 'Documento formalizado' });
       }
-
-      // 3) Agenda de pagamentos prevista (se a function devolver pagamento_agenda)
-      var pa = p.pagamento_agenda || {};
-      if (typeof pa === 'string') {
-        try { pa = JSON.parse(pa); } catch (e) { pa = {}; }
-      }
+      var pa = agendaDe(p);
       [['entrada', pa.data_entrada, pa.status_entrada], ['saldo', pa.data_saldo, pa.status_saldo],
        ['parcela', pa.data_parcela, pa.status_parcela]].forEach(function (row) {
         var dia = row[1] ? String(row[1]).slice(0, 10) : null;
@@ -650,29 +639,21 @@
         var st = row[2] || 'pendente';
         var label = row[0] === 'entrada' ? 'Entrada' : (row[0] === 'saldo' ? 'Saldo' : 'Parcela');
         pushDia(dia, {
-          kind: 'pagamento',
-          prop: p,
-          titulo: label + ' · #' + p.numero,
-          sub: st === 'pago' ? 'Já pago' : 'Pagamento previsto — toque para enviar comprovante',
-          status: st
+          kind: 'pagamento', prop: p, titulo: label + ' · #' + p.numero,
+          sub: st === 'pago' ? 'Já pago' : 'Pagamento previsto — toque para enviar comprovante', status: st
         });
       });
     });
 
-    // 4) Comprovantes já enviados (data_pagamento real)
     (dados.comprovantes || []).forEach(function (c) {
       if (!c.data_pagamento) return;
       var p = pedidos.find(function (x) { return x.id === c.proposta_id; }) || { id: c.proposta_id, numero: '?' };
-      var kd = String(c.data_pagamento).slice(0, 10);
       var st = (c.confirmado || c.status === 'aprovado' || c.status === 'pago') ? 'aprovado'
         : (c.status === 'recusado' ? 'recusado' : 'pendente');
-      pushDia(kd, {
-        kind: 'comprovante',
-        prop: p,
-        comprovante: c,
-        titulo: (c.tipo || 'Comprovante') + ' · #' + (p.numero || ''),
-        sub: BRL(c.valor) + ' · ' + (ST[st] || c.status || 'enviado'),
-        status: st
+      pushDia(String(c.data_pagamento).slice(0, 10), {
+        kind: 'comprovante', prop: p, comprovante: c,
+        titulo: (ROTULO_CMP[c.tipo] || 'Comprovante') + ' · #' + (p.numero || ''),
+        sub: BRL(c.valor) + ' · ' + (ST[st] || c.status || 'enviado'), status: st
       });
     });
 
@@ -680,70 +661,53 @@
     if (calAno == null) { calAno = agora.getFullYear(); calMes = agora.getMonth(); }
     var y = calAno, m = calMes;
     var MESES = ['janeiro','fevereiro','março','abril','maio','junho','julho','agosto','setembro','outubro','novembro','dezembro'];
-    if ($('calMesTitulo')) $('calMesTitulo').textContent = MESES[m] + ' ' + y;
+    $('calMesTitulo').textContent = MESES[m] + ' ' + y;
 
     var primeiro = new Date(y, m, 1);
     var inicio = new Date(y, m, 1 - primeiro.getDay());
-    var hojeStr = agora.toISOString().slice(0, 10);
+    var hojeStr = agora.getFullYear() + '-' + String(agora.getMonth() + 1).padStart(2, '0') + '-' + String(agora.getDate()).padStart(2, '0');
     var html = ['Dom', 'Seg', 'Ter', 'Qua', 'Qui', 'Sex', 'Sáb'].map(function (h) {
       return '<div class="hd">' + h + '</div>';
     }).join('');
     for (var i = 0; i < 42; i++) {
       var dia = new Date(inicio);
       dia.setDate(inicio.getDate() + i);
-      var iso = dia.getFullYear() + '-' + String(dia.getMonth()+1).padStart(2,'0') + '-' + String(dia.getDate()).padStart(2,'0');
+      var iso = dia.getFullYear() + '-' + String(dia.getMonth() + 1).padStart(2, '0') + '-' + String(dia.getDate()).padStart(2, '0');
       var fora = dia.getMonth() !== m;
-      var listaDia = (datas[iso] || []).filter(function (it) { return FILTROS_CAL[it.kind] !== false; });
-      var tem = listaDia.length > 0;
+      var tem = (datas[iso] || []).some(function (it) { return FILTROS_CAL[it.kind] !== false; });
       var cls = 'd' + (fora ? ' muted' : '') + (tem ? ' evento' : '') + (iso === hojeStr ? ' hoje' : '') + (iso === calDiaSel ? ' sel' : '');
       html += '<div class="' + cls + '" data-iso="' + iso + '">' + dia.getDate() + '</div>';
     }
     $('calGrid').innerHTML = html;
     $('calGrid').querySelectorAll('[data-iso]').forEach(function (el) {
       el.addEventListener('click', function () {
-        var iso = el.getAttribute('data-iso');
-        calDiaSel = iso;
+        calDiaSel = el.getAttribute('data-iso');
         renderCalendario();
-        var lista = (datas[iso] || []).filter(function (it) { return FILTROS_CAL[it.kind] !== false; });
+        var lista = (datas[calDiaSel] || []).filter(function (it) { return FILTROS_CAL[it.kind] !== false; });
         var box = $('calDiaDetalhe');
-        if (!box) return;
-        if (!lista.length) {
-          box.innerHTML = '<div class="cli-vazio">Nada neste dia para você.</div>';
-          return;
-        }
+        if (!lista.length) { box.innerHTML = '<div class="vazio">Nada neste dia para você.</div>'; return; }
         box.innerHTML = lista.map(function (it) {
           var p = it.prop || it;
           if (it.kind === 'pagamento') {
-            return '<div class="item" style="border-left-color:#86efac">' +
-              '<strong>' + E(it.titulo) + '</strong>' +
-              '<small>' + E(it.sub) + '</small>' +
-              '<div style="margin-top:8px"><button type="button" class="cli-btn" style="margin:0" data-open-cmp="' + E(p.id) + '">Enviar comprovante</button></div>' +
-              '</div>';
+            return '<div class="dia-item" style="border-left-color:var(--action)"><strong>' + E(it.titulo) + '</strong><small>' + E(it.sub) + '</small>' +
+              '<div><button type="button" class="btn" style="margin-top:8px" data-open-cmp="' + E(p.id) + '">Enviar comprovante</button></div></div>';
           }
           if (it.kind === 'comprovante') {
             var c = it.comprovante || {};
-            var link = c.arquivo_url ? '<a href="' + E(c.arquivo_url) + '" target="_blank" rel="noopener" style="color:#00f0ff">Ver comprovante</a>' : '';
-            return '<div class="item" style="border-left-color:#a3e635">' +
-              '<strong>' + E(it.titulo) + '</strong>' +
-              '<small>' + E(it.sub) + (link ? ' · ' + link : '') + '</small>' +
-              '<div style="margin-top:8px"><button type="button" class="cli-btn-s" style="margin:0" data-open-cmp="' + E(p.id) + '">Enviar outro</button></div>' +
-              '</div>';
+            var link = c.arquivo_url ? ' · <a href="' + E(c.arquivo_url) + '" target="_blank" rel="noopener" style="color:var(--action)">Ver comprovante</a>' : '';
+            return '<div class="dia-item" style="border-left-color:var(--tech)"><strong>' + E(it.titulo) + '</strong><small>' + E(it.sub) + link + '</small>' +
+              '<div><button type="button" class="btn-s" data-open-cmp="' + E(p.id) + '">Enviar outro</button></div></div>';
           }
           if (it.kind === 'contrato') {
-            return '<div class="item" style="border-left-color:#2563eb">' +
-              '<strong>' + E(it.titulo) + '</strong>' +
-              '<small>' + E(it.sub) + '</small>' +
-              (p.id ? '<div style="margin-top:8px"><button type="button" class="cli-btn-s" style="margin:0" data-pdf="' + E(p.id) + '">Baixar contrato PDF</button></div>' : '') +
-              '</div>';
+            return '<div class="dia-item" style="border-left-color:var(--purple)"><strong>' + E(it.titulo) + '</strong><small>' + E(it.sub) + '</small>' +
+              '<div><button type="button" class="btn-s" data-pdf="' + E(p.id) + '">Baixar contrato PDF</button></div></div>';
           }
           var etapas = (dados.etapas || []).filter(function (e) { return e.proposta_id === p.id; });
           var pend = etapas.filter(function (e) { return e.situacao === 'pendente'; }).length;
           var ck = !etapas.length ? 'Sem checklist ainda' : (pend === 0 ? 'Checklist completo' : pend + ' etapa(s) pendente(s)');
-          return '<div class="item">' +
-            '<strong>' + E(it.titulo || ('#' + p.numero + ' · Evento')) + '</strong>' +
+          return '<div class="dia-item"><strong>' + E(it.titulo) + '</strong>' +
             '<small>' + DATA(p.data_evento) + (p.assinado_em ? ' · Contrato assinado' : ' · Aguardando assinatura') + '</small>' +
-            '<small>' + E(ck) + (p.valor_total != null ? ' · ' + BRL(p.valor_total) : '') + '</small>' +
-            '</div>';
+            '<small>' + E(ck) + (p.valor_total != null ? ' · ' + BRL(p.valor_total) : '') + '</small></div>';
         }).join('');
         box.querySelectorAll('[data-open-cmp]').forEach(function (b) {
           b.addEventListener('click', function () { abrirModalCmp(b.getAttribute('data-open-cmp')); });
@@ -763,16 +727,14 @@
       : 'Quando houver data de evento no pedido, ela aparece destacada aqui.';
     $('calLista').innerHTML = pedidos.length
       ? pedidos.map(function (p) {
-          return '<div class="obs"><span><strong>#' + E(p.numero) + '</strong> · ' + E(p.tipo_evento || 'Evento') +
-            '</span><span class="cli-pill">' + DATA(p.data_evento) + '</span></div>';
+          return '<div class="linha"><span><strong>#' + E(p.numero) + '</strong> · ' + E(p.tipo_evento || 'Evento') +
+            '</span><span class="pill">' + DATA(p.data_evento) + '</span></div>';
         }).join('')
-      : '<div class="cli-vazio">Nenhum evento com data ainda.</div>';
+      : '<div class="vazio">Nenhum evento com data ainda.</div>';
   }
 
-
-  // Filtros do calendário do cliente (localStorage)
   (function bindCalFiltros() {
-    var box = document.getElementById('calFiltros');
+    var box = $('calFiltros');
     if (!box) return;
     box.querySelectorAll('input[data-filtro]').forEach(function (inp) {
       var id = inp.getAttribute('data-filtro');
@@ -785,100 +747,90 @@
     });
   })();
 
-  document.addEventListener('click', function (ev) {
-    if (ev.target && ev.target.id === 'calPrev') {
-      calMes--; if (calMes < 0) { calMes = 11; calAno--; }
-      if (dados) renderCalendario();
-    }
-    if (ev.target && ev.target.id === 'calNext') {
-      calMes++; if (calMes > 11) { calMes = 0; calAno++; }
-      if (dados) renderCalendario();
-    }
+  $('calPrev').addEventListener('click', function () {
+    calMes--; if (calMes < 0) { calMes = 11; calAno--; }
+    if (dados) renderCalendario();
   });
-
-  var _contagemTimer = null;
+  $('calNext').addEventListener('click', function () {
+    calMes++; if (calMes > 11) { calMes = 0; calAno++; }
+    if (dados) renderCalendario();
+  });
 
   function renderInicio() {
     var el = $('proximoEvt');
     var wrap = $('contagemWrap');
     var cont = $('contagem');
-    var resumo = $('resumoRapido');
-    if (!el) return;
+    var chips = $('heroChips');
 
     var pedidos = (dados.propostas || []).filter(function (p) {
       return p.status !== 'cancelada' && p.data_evento;
-    }).sort(function (a, b) {
-      return String(a.data_evento).localeCompare(String(b.data_evento));
-    });
+    }).sort(function (a, b) { return String(a.data_evento).localeCompare(String(b.data_evento)); });
 
-    var agora = new Date();
-    agora.setHours(0, 0, 0, 0);
+    var hoje = new Date(); hoje.setHours(0, 0, 0, 0);
     var prox = null;
     for (var i = 0; i < pedidos.length; i++) {
-      var d = new Date(pedidos[i].data_evento + 'T12:00:00');
-      if (d >= agora) { prox = pedidos[i]; break; }
+      var d = new Date(String(pedidos[i].data_evento).slice(0, 10) + 'T12:00:00');
+      if (d >= hoje) { prox = pedidos[i]; break; }
     }
     if (!prox && pedidos.length) prox = pedidos[pedidos.length - 1];
 
+    if (_contagemTimer) { clearInterval(_contagemTimer); _contagemTimer = null; }
+
     if (!prox) {
-      el.innerHTML = '<div class="cli-vazio">Nenhum evento com data marcada ainda.</div>';
-      if (wrap) wrap.style.display = 'none';
+      el.innerHTML = '<div class="vazio">Nenhum evento com data marcada ainda.</div>';
+      chips.innerHTML = '';
+      wrap.style.display = 'none';
     } else {
       var assinado = !!prox.assinado_em;
-      el.innerHTML =
-        '<div style="display:flex;justify-content:space-between;gap:8px;flex-wrap:wrap">' +
-          '<strong>#' + E(prox.numero) + ' · ' + E(prox.tipo_evento || 'Evento') + '</strong>' +
-          (assinado ? '<span class="cli-tag t-ok">Contrato assinado</span>' : '<span class="cli-tag t-pend">Aguardando assinatura</span>') +
-        '</div>' +
-        '<div class="cli-pill" style="margin-top:6px">' + DATA(prox.data_evento) +
-          (prox.valor_total != null ? ' · ' + BRL(prox.valor_total) : '') + '</div>';
+      chips.innerHTML = '<span class="chip">Próximo evento</span>' +
+        (assinado ? '<span class="chip tec">Contrato assinado</span>' : '<span class="chip">Aguardando assinatura</span>');
+      el.innerHTML = '<p style="margin:0;font-size:16px"><strong>Pedido #' + E(prox.numero) + '</strong> · ' + E(prox.tipo_evento || 'Evento') + '</p>' +
+        '<div class="pill" style="margin-top:6px">' + DATA(prox.data_evento) +
+        (prox.valor_total != null ? ' · ' + BRL(prox.valor_total) : '') + '</div>';
 
-      // Contagem regressiva real (atualiza a cada minuto)
-      if (wrap && cont) {
-        var partes = String(prox.data_evento).slice(0, 10).split('-');
-        var alvo = new Date(Number(partes[0]), Number(partes[1]) - 1, Number(partes[2]), 12, 0, 0).getTime();
-        function tick() {
-          var agora = Date.now();
-          var diff = alvo - agora;
-          if (isNaN(alvo)) {
-            cont.textContent = DATA(prox.data_evento);
-            return;
-          }
-          if (diff <= 0) {
-            var passou = Math.floor((agora - alvo) / 86400000);
-            cont.textContent = passou <= 0 ? 'É hoje!' : ('Há ' + passou + ' dia' + (passou > 1 ? 's' : ''));
-            return;
-          }
-          var dias = Math.floor(diff / 86400000);
-          var horas = Math.floor((diff % 86400000) / 3600000);
-          var mins = Math.floor((diff % 3600000) / 60000);
-          if (dias > 0) cont.textContent = dias + ' dia' + (dias > 1 ? 's' : '') + ' e ' + horas + 'h';
-          else if (horas > 0) cont.textContent = horas + 'h e ' + mins + ' min';
-          else cont.textContent = mins + ' min';
+      var partes = String(prox.data_evento).slice(0, 10).split('-');
+      var alvo = new Date(Number(partes[0]), Number(partes[1]) - 1, Number(partes[2]), 12, 0, 0).getTime();
+      var tick = function () {
+        var diff = alvo - Date.now();
+        if (isNaN(alvo)) { cont.textContent = DATA(prox.data_evento); return; }
+        if (diff <= 0) {
+          var passou = Math.floor((Date.now() - alvo) / 86400000);
+          cont.textContent = passou <= 0 ? 'É hoje!' : ('Há ' + passou + ' dia' + (passou > 1 ? 's' : ''));
+          return;
         }
-        tick();
-        wrap.style.display = 'block';
-        if (_contagemTimer) clearInterval(_contagemTimer);
-        _contagemTimer = setInterval(tick, 30000);
-      }
+        var dias = Math.floor(diff / 86400000);
+        var horas = Math.floor((diff % 86400000) / 3600000);
+        var mins = Math.floor((diff % 3600000) / 60000);
+        if (dias > 0) cont.textContent = dias + 'd ' + horas + 'h ' + mins + 'm';
+        else if (horas > 0) cont.textContent = horas + 'h ' + mins + 'm';
+        else cont.textContent = mins + ' min';
+      };
+      tick();
+      wrap.style.display = 'block';
+      _contagemTimer = setInterval(tick, 30000);
     }
 
-    // Resumo rápido
-    if (resumo) {
-      var total = (dados.propostas || []).length;
-      var ativos = (dados.propostas || []).filter(function (p) { return p.status !== 'cancelada'; }).length;
-      var comps = dados.comprovantes || [];
-      var pend = comps.filter(function (c) { return c.status === 'pendente'; }).length;
-      var ok = comps.filter(function (c) { return c.status === 'aprovado' || c.status === 'pago'; }).length;
-      var etapas = dados.etapas || [];
-      var etPend = etapas.filter(function (e) { return e.situacao === 'pendente'; }).length;
-      resumo.innerHTML =
-        '<div class="obs"><span>Pedidos ativos</span><span class="cli-pill">' + ativos + ' de ' + total + '</span></div>' +
-        '<div class="obs"><span>Comprovantes</span><span class="cli-pill">' + ok + ' ok' + (pend ? ' · ' + pend + ' em análise' : '') + '</span></div>' +
-        '<div class="obs"><span>Etapas do checklist</span><span class="cli-pill">' +
-          (etapas.length ? (etPend === 0 ? '✓ todas confirmadas' : etPend + ' pendente' + (etPend > 1 ? 's' : '')) : 'ainda sem etapas') +
-        '</span></div>';
-    }
+    var total = (dados.propostas || []).length;
+    var ativos = (dados.propostas || []).filter(function (p) { return p.status !== 'cancelada'; }).length;
+    var comps = dados.comprovantes || [];
+    var pend = comps.filter(function (c) { return c.status === 'pendente'; }).length;
+    var ok = comps.filter(function (c) { return c.status === 'aprovado' || c.status === 'pago'; }).length;
+    var etapas = dados.etapas || [];
+    var etPend = etapas.filter(function (e) { return e.situacao === 'pendente'; }).length;
+    $('resumoRapido').innerHTML =
+      '<div class="linha"><span>Pedidos ativos</span><span class="pill">' + ativos + ' de ' + total + '</span></div>' +
+      '<div class="linha"><span>Comprovantes</span><span class="pill">' + ok + ' ok' + (pend ? ' · ' + pend + ' em análise' : '') + '</span></div>' +
+      '<div class="linha"><span>Etapas do checklist</span><span class="pill">' +
+        (etapas.length ? (etPend === 0 ? 'todas confirmadas' : etPend + ' pendente' + (etPend > 1 ? 's' : '')) : 'ainda sem etapas') +
+      '</span></div>';
+  }
+
+  function renderAvatar() {
+    var url = (dados && (dados.avatar_url || (dados.cadastro && dados.cadastro.avatar_url))) || null;
+    var prev = $('avatarPreview');
+    var ph = $('avatarPlaceholder');
+    if (url) { prev.style.backgroundImage = 'url(' + url + ')'; ph.style.display = 'none'; }
+    else { prev.style.backgroundImage = ''; ph.style.display = ''; }
   }
 
   function render() {
@@ -887,21 +839,19 @@
     renderInicio();
     renderGuia();
     renderCalendario();
+    renderAvatar();
   }
 
   async function carregar() {
     dados = await chamar('dados');
-    if (dados.erro) {
-      $('listaPedidos').textContent = dados.erro;
-      return;
-    }
+    if (dados.erro) { $('listaPedidos').textContent = dados.erro; return; }
     render();
   }
 
   $('formCadastro').addEventListener('submit', async function (e) {
     e.preventDefault();
     $('btnCadastro').disabled = true;
-    $('msgCadastro').className = 'cli-msg';
+    $('msgCadastro').className = 'msg';
     $('msgCadastro').textContent = '';
     var r = await chamar('salvar_cadastro', {
       campos: {
@@ -913,7 +863,7 @@
     });
     $('btnCadastro').disabled = false;
     if (r.erro) { $('msgCadastro').textContent = r.erro; return; }
-    $('msgCadastro').className = 'cli-msg ok';
+    $('msgCadastro').className = 'msg ok';
     $('msgCadastro').textContent = 'Dados salvos.';
     await carregar();
   });
@@ -925,9 +875,9 @@
     $('btnObs').disabled = true;
     var r = await chamar('obs_adicionar', { texto: txt });
     $('btnObs').disabled = false;
-    if (r.erro) { $('msgObs').textContent = r.erro; return; }
+    if (r.erro) { $('msgObs').className = 'msg'; $('msgObs').textContent = r.erro; return; }
     $('obsNova').value = '';
-    $('msgObs').className = 'cli-msg ok';
+    $('msgObs').className = 'msg ok';
     $('msgObs').textContent = 'Instrução enviada.';
     await carregar();
   });
@@ -943,9 +893,10 @@
 
   async function ativarAvisos() {
     var m = $('msgAvisos');
-    m.className = 'cli-msg';
+    m.className = 'msg';
     var pedido = (dados.propostas || []).find(function (p) { return p.status !== 'cancelada' && p.assinado_em; });
     if (!pedido) { m.textContent = 'Ative os avisos depois que o contrato estiver assinado.'; return; }
+    var VAPID_PUBLIC = (CFG.VAPID_PUBLIC_KEY || CFG.VAPID_PUBLIC || '').trim();
     if (!VAPID_PUBLIC) { m.textContent = 'Avisos ainda não configurados neste ambiente.'; return; }
     if (!('serviceWorker' in navigator) || !('PushManager' in window)) {
       m.textContent = 'Este navegador não recebe avisos.';
@@ -965,7 +916,7 @@
         body: { proposta_id: pedido.id, subscription: { endpoint: j.endpoint, keys: j.keys } }
       });
       if (r.error || (r.data && r.data.erro)) throw new Error((r.data && r.data.erro) || 'Falha ao registrar avisos.');
-      m.className = 'cli-msg ok';
+      m.className = 'msg ok';
       m.textContent = 'Avisos ativados neste aparelho.';
       $('btnAvisos').style.display = 'none';
     } catch (err) {
@@ -977,17 +928,13 @@
 
   $('btnSair').addEventListener('click', async function () {
     try {
-      sessionStorage.removeItem('432up_login_done');
-      sessionStorage.removeItem('432up_is_logged');
-      sessionStorage.removeItem('432up_is_cliente');
-      sessionStorage.removeItem('432up_is_admin');
-      sessionStorage.removeItem('432up_cli_redirect');
+      ['432up_login_done', '432up_is_logged', '432up_is_cliente', '432up_is_admin', '432up_cli_redirect']
+        .forEach(function (k) { sessionStorage.removeItem(k); });
     } catch (e) {}
     try { await SB.auth.signOut(); } catch (e) {}
     location.href = '../B2B/login.html';
   });
 
-  /* ---------- Confirmação de etapa por slider (sem desfazer) ---------- */
   function initSliders(root) {
     root.querySelectorAll('.slider').forEach(function (s) {
       var knob = s.querySelector('.slider-knob');
@@ -1004,9 +951,7 @@
         x0 = ev.clientX - pos;
         knob.setPointerCapture(ev.pointerId);
       });
-      knob.addEventListener('pointermove', function (ev) {
-        if (arrastando) mover(ev.clientX - x0);
-      });
+      knob.addEventListener('pointermove', function (ev) { if (arrastando) mover(ev.clientX - x0); });
       knob.addEventListener('pointerup', async function () {
         if (!arrastando) return;
         arrastando = false;
@@ -1026,19 +971,13 @@
     if (r.erro) alert(r.erro);
     await carregar();
     await carregarNotif();
-    try {
-      if (new URLSearchParams(location.search).get('notif') === '1' && $('modalNotif')) {
-        $('modalNotif').classList.add('on');
-      }
-    } catch (e) {}
   }
 
-  /* ---------- Central de notificações ---------- */
   function itemNotif(n) {
     var data = n.criado_em ? new Date(n.criado_em).toLocaleString('pt-BR', { dateStyle: 'short', timeStyle: 'short' }) : '';
     return '<div class="notif ' + (n.lida ? '' : 'nova') + '" data-notif="' + E(n.id) + '" data-lida="' + (n.lida ? '1' : '0') + '">' +
       '<div class="t">' + E(n.titulo) + '</div>' +
-      (n.texto ? '<div class="t" style="font-size:13px;color:#cbd5e1">' + E(n.texto) + '</div>' : '') +
+      (n.texto ? '<div class="t" style="font-size:13px;color:var(--body)">' + E(n.texto) + '</div>' : '') +
       '<div class="d">' + E(data) + '</div></div>';
   }
 
@@ -1051,11 +990,11 @@
     badge.style.display = n ? 'flex' : 'none';
     $('notifNovas').innerHTML = (r.nao_lidas_lista || []).length
       ? r.nao_lidas_lista.map(itemNotif).join('')
-      : '<div class="cli-vazio">Nenhuma notificação nova.</div>';
+      : '<div class="vazio">Nenhuma notificação nova.</div>';
     $('btnTodasLidas').style.display = n ? 'inline-block' : 'none';
     $('notifLidas').innerHTML = (r.lidas_lista || []).length
       ? r.lidas_lista.map(itemNotif).join('')
-      : '<div class="cli-vazio">Nada por aqui ainda.</div>';
+      : '<div class="vazio">Nada por aqui ainda.</div>';
     document.querySelectorAll('#modalNotif [data-notif][data-lida="0"]').forEach(function (el) {
       el.addEventListener('click', async function () {
         await chamar('notificacao_marcar_lida', { id: el.getAttribute('data-notif') });
@@ -1077,29 +1016,21 @@
     await carregarNotif();
   });
 
-  /* ---------- Calendário (assinatura ICS) ---------- */
   function linkCalendario() {
     if (!dados || !dados.token_ics) return null;
     return CFG.SB_URL.replace(/\/$/, '') + '/functions/v1/calendario-ics?token=' + encodeURIComponent(dados.token_ics);
   }
   $('btnAssinarCal').addEventListener('click', function () {
     var l = linkCalendario();
-    if (!l) { $('msgCal').textContent = 'Calendário ainda não disponível. Fale com a 432UP.'; return; }
+    if (!l) { $('msgCal').textContent = 'Calendário ainda não disponível. Fale com a 432UP!.'; return; }
     location.href = l.replace(/^https?:/, 'webcal:');
   });
   $('btnCopiarCal').addEventListener('click', async function () {
     var l = linkCalendario();
-    if (!l) { $('msgCal').textContent = 'Calendário ainda não disponível. Fale com a 432UP.'; return; }
-    try { await navigator.clipboard.writeText(l); $('msgCal').className = 'cli-msg ok'; $('msgCal').textContent = 'Link copiado.'; }
-    catch (e) { $('msgCal').className = 'cli-msg'; $('msgCal').textContent = 'Não foi possível copiar.'; }
+    if (!l) { $('msgCal').textContent = 'Calendário ainda não disponível. Fale com a 432UP!.'; return; }
+    try { await navigator.clipboard.writeText(l); $('msgCal').className = 'msg ok'; $('msgCal').textContent = 'Link copiado.'; }
+    catch (e) { $('msgCal').className = 'msg'; $('msgCal').textContent = 'Não foi possível copiar.'; }
   });
-
-
-  /* ========== Comprovantes (mesma stack do visualizar-contrato) ========== */
-  var ROTULO_CMP = { entrada: 'Entrada', parcela: 'Parcela', saldo: 'Saldo', outro: 'Outro' };
-  var LIMITE_CMP = 4 * 1024 * 1024;
-  var R2_UPLOAD_URL = 'https://432up-r2-upload.432up-producoes.workers.dev/';
-  var novoAvatarBlob = null;
 
   function abrirModalCmp(propostaId) {
     $('cmpPropostaId').value = propostaId || '';
@@ -1111,40 +1042,29 @@
     listarCmpModal(propostaId);
   }
   function fecharModalCmp() { $('modalCmp').classList.remove('on'); }
-  if ($('btnFecharCmp')) $('btnFecharCmp').addEventListener('click', fecharModalCmp);
-  if ($('modalCmp')) $('modalCmp').addEventListener('click', function (e) {
-    if (e.target === $('modalCmp')) fecharModalCmp();
-  });
+  $('btnFecharCmp').addEventListener('click', fecharModalCmp);
+  $('modalCmp').addEventListener('click', function (e) { if (e.target === $('modalCmp')) fecharModalCmp(); });
 
   async function listarCmpModal(propostaId) {
     var box = $('cmpListaModal');
-    if (!box) return;
     box.innerHTML = 'Carregando…';
     var r = await SB.functions.invoke('gerenciar-comprovantes', { body: { action: 'listar', proposta_id: propostaId } });
-    if (r.error || (r.data && r.data.erro)) {
-      box.textContent = (r.data && r.data.erro) || 'Não foi possível listar.';
-      return;
-    }
+    if (r.error || (r.data && r.data.erro)) { box.textContent = (r.data && r.data.erro) || 'Não foi possível listar.'; return; }
     var rows = (r.data && r.data.comprovantes) || [];
-    if (!rows.length) { box.innerHTML = '<div class="cli-vazio">Nenhum comprovante neste pedido.</div>'; return; }
+    if (!rows.length) { box.innerHTML = '<div class="vazio">Nenhum comprovante neste pedido.</div>'; return; }
     box.innerHTML = rows.map(function (c) {
       var st = c.confirmado ? 'aprovado' : (c.status === 'recusado' ? 'recusado' : 'pendente');
-      var pode = !c.confirmado;
-      return '<div class="cli-cmp-item"><div class="row"><span>' +
+      return '<div class="cmp-item"><div class="row"><span>' +
         E(ROTULO_CMP[c.tipo] || c.tipo) + ' · ' + BRL(c.valor) + ' · ' + DATA(c.data_pagamento) +
-        (c.arquivo_url ? ' · <a href="' + E(c.arquivo_url) + '" target="_blank" rel="noopener" style="color:#00f0ff">ver</a>' : '') +
-        '</span><span class="cli-tag ' + (ST_CLASSE[st] || 't-pend') + '">' + E(ST[st] || c.status) + '</span></div></div>';
+        (c.arquivo_url ? ' · <a href="' + E(c.arquivo_url) + '" target="_blank" rel="noopener" style="color:var(--action)">ver</a>' : '') +
+        '</span><span class="tag ' + (ST_CLASSE[st] || 't-pend') + '">' + E(ST[st] || c.status) + '</span></div></div>';
     }).join('');
   }
 
   function lerBase64(blob) {
     return new Promise(function (res, rej) {
       var r = new FileReader();
-      r.onload = function () {
-        var s = String(r.result || '');
-        var i = s.indexOf(',');
-        res(i >= 0 ? s.slice(i + 1) : s);
-      };
+      r.onload = function () { var s = String(r.result || ''); var i = s.indexOf(','); res(i >= 0 ? s.slice(i + 1) : s); };
       r.onerror = function () { rej(new Error('Falha ao ler arquivo')); };
       r.readAsDataURL(blob);
     });
@@ -1176,7 +1096,7 @@
     });
   }
 
-  if ($('btnEnviarCmp')) $('btnEnviarCmp').addEventListener('click', async function () {
+  $('btnEnviarCmp').addEventListener('click', async function () {
     var btn = this;
     var propostaId = $('cmpPropostaId').value;
     var valor = parseFloat($('cmpValor').value);
@@ -1188,73 +1108,35 @@
     if (!data) return msg.textContent = 'Informe a data do pagamento.';
     if (!file) return msg.textContent = 'Escolha o arquivo do comprovante.';
     btn.disabled = true;
-    msg.className = 'cli-msg ok';
+    msg.className = 'msg ok';
     msg.textContent = 'Preparando arquivo…';
     try {
-      var t = file.type || '';
-      var p = await prepararImagem(file, t);
+      var p = await prepararImagem(file, file.type || '');
       if (p.blob.size > LIMITE_CMP) throw new Error('Arquivo acima de 4 MB. Envie uma foto menor ou PDF comprimido.');
       msg.textContent = 'Enviando…';
       var b64 = await lerBase64(p.blob);
       var r = await SB.functions.invoke('anexar-comprovante', {
-        body: {
-          kind: 'contrato',
-          proposta_id: propostaId,
-          tipo: $('cmpTipo').value,
-          valor: valor,
-          data_pagamento: data,
-          arquivo_base64: b64,
-          mime: p.mime
-        }
+        body: { kind: 'contrato', proposta_id: propostaId, tipo: $('cmpTipo').value, valor: valor,
+          data_pagamento: data, arquivo_base64: b64, mime: p.mime }
       });
       if (r.error || (r.data && r.data.erro)) {
         var det = (r.data && r.data.erro) || (r.error && r.error.message) || 'Falha no envio';
         if (r.error && r.error.context) {
-          try {
-            var j = await r.error.context.json();
-            if (j && j.erro) det = j.erro;
-          } catch (e2) {}
+          try { var j = await r.error.context.json(); if (j && j.erro) det = j.erro; } catch (e2) {}
         }
         throw new Error(det);
       }
       msg.textContent = 'Comprovante enviado. Pode enviar outro se precisar.';
-      $('cmpValor').value = '';
-      $('cmpData').value = '';
-      $('cmpArquivo').value = '';
+      $('cmpValor').value = ''; $('cmpData').value = ''; $('cmpArquivo').value = '';
       await listarCmpModal(propostaId);
       await carregar();
     } catch (e) {
-      msg.className = 'cli-msg';
+      msg.className = 'msg';
       msg.textContent = e.message || 'Erro ao enviar.';
     } finally {
       btn.disabled = false;
     }
   });
-
-  /* ========== Avatar (mesmo R2 + compactação do perfil B2B) ========== */
-  function compactarAvatar(file) {
-    return new Promise(function (res, rej) {
-      var url = URL.createObjectURL(file);
-      var img = new Image();
-      img.onload = function () {
-        try {
-          var side = Math.min(img.naturalWidth, img.naturalHeight);
-          var sx = (img.naturalWidth - side) / 2;
-          var sy = (img.naturalHeight - side) / 2;
-          var c = document.createElement('canvas');
-          c.width = 512; c.height = 512;
-          c.getContext('2d').drawImage(img, sx, sy, side, side, 0, 0, 512, 512);
-          c.toBlob(function (blob) {
-            URL.revokeObjectURL(url);
-            if (!blob) return rej(new Error('Falha ao compactar'));
-            res(blob);
-          }, 'image/webp', 0.8);
-        } catch (e) { URL.revokeObjectURL(url); rej(e); }
-      };
-      img.onerror = function () { URL.revokeObjectURL(url); rej(new Error('Imagem inválida')); };
-      img.src = url;
-    });
-  }
 
   async function uploadParaR2(path, blob) {
     var sess = await SB.auth.getSession();
@@ -1267,46 +1149,17 @@
     });
     var result = await resp.json().catch(function () { return null; });
     if (!resp.ok || !result || !result.ok) {
-      var msg = (result && result.error) ? result.error : ('Upload falhou (status ' + resp.status + ')');
-      throw new Error(msg);
+      throw new Error((result && result.error) ? result.error : ('Upload falhou (status ' + resp.status + ')'));
     }
     return result.url;
   }
 
-  function mostrarAvatar(url) {
-    var prev = $('avatarPreview');
-    var ph = $('avatarPlaceholder');
-    if (!prev) return;
-    if (url) {
-      prev.style.backgroundImage = 'url(' + url + ')';
-      if (ph) ph.style.display = 'none';
-    } else {
-      prev.style.backgroundImage = '';
-      if (ph) ph.style.display = '';
-    }
-  }
-
-  // tenta ler avatar do cadastro se a function passar no futuro, ou de dados.avatar_url
-  var _origRenderCadastro = typeof renderCadastro === 'function' ? renderCadastro : null;
-  // hook after render
-  var _renderAvatarOnce = function () {
-    var url = (dados && (dados.avatar_url || (dados.cadastro && dados.cadastro.avatar_url))) || null;
-    mostrarAvatar(url);
-  };
-
-  var cropperInst = null;
-  if ($('fAvatar')) $('fAvatar').addEventListener('change', function (e) {
+  $('fAvatar').addEventListener('change', function (e) {
     var file = e.target.files && e.target.files[0];
-    var msg = $('msgAvatar');
     if (!file) return;
-    if (!window.Cropper) {
-      msg.className = 'cli-msg';
-      msg.textContent = 'Cropper não carregou. Recarregue a página.';
-      return;
-    }
-    var url = URL.createObjectURL(file);
+    if (!window.Cropper) { $('msgAvatar').textContent = 'Cropper não carregou. Recarregue a página.'; return; }
     var img = $('cropImage');
-    img.src = url;
+    img.src = URL.createObjectURL(file);
     $('msgCrop').textContent = '';
     $('modalCrop').classList.add('on');
     if (cropperInst) { try { cropperInst.destroy(); } catch (e2) {} cropperInst = null; }
@@ -1314,24 +1167,25 @@
       cropperInst = new Cropper(img, { aspectRatio: 1, viewMode: 1, autoCropArea: 1, background: false });
     };
   });
-  if ($('btnCropCancel')) $('btnCropCancel').addEventListener('click', function () {
+  $('btnCropCancel').addEventListener('click', function () {
     $('modalCrop').classList.remove('on');
     if (cropperInst) { try { cropperInst.destroy(); } catch (e) {} cropperInst = null; }
-    if ($('fAvatar')) $('fAvatar').value = '';
+    $('fAvatar').value = '';
   });
-  if ($('btnCropOk')) $('btnCropOk').addEventListener('click', function () {
-    var msg = $('msgAvatar');
-    var msgC = $('msgCrop');
+  $('btnCropOk').addEventListener('click', function () {
     if (!cropperInst) return;
+    var msgC = $('msgCrop');
     msgC.textContent = 'Compactando…';
     try {
       var canvas = cropperInst.getCroppedCanvas({ width: 512, height: 512 });
       canvas.toBlob(function (blob) {
         if (!blob) { msgC.textContent = 'Falha ao gerar imagem.'; return; }
         novoAvatarBlob = blob;
-        mostrarAvatar(URL.createObjectURL(blob));
+        $('avatarPreview').style.backgroundImage = 'url(' + URL.createObjectURL(blob) + ')';
+        $('avatarPlaceholder').style.display = 'none';
         $('btnSalvarAvatar').style.display = 'inline-block';
-        if (msg) { msg.className = 'cli-msg ok'; msg.textContent = 'Pré-visualização pronta. Clique em Salvar foto.'; }
+        $('msgAvatar').className = 'msg ok';
+        $('msgAvatar').textContent = 'Pré-visualização pronta. Clique em Salvar foto.';
         $('modalCrop').classList.remove('on');
         try { cropperInst.destroy(); } catch (e) {}
         cropperInst = null;
@@ -1341,43 +1195,31 @@
     }
   });
 
-  if ($('btnSalvarAvatar')) $('btnSalvarAvatar').addEventListener('click', async function () {
+  $('btnSalvarAvatar').addEventListener('click', async function () {
     var msg = $('msgAvatar');
     if (!novoAvatarBlob) return;
     var btn = this;
     btn.disabled = true;
-    msg.className = 'cli-msg ok';
+    msg.className = 'msg ok';
     msg.textContent = 'Enviando…';
     try {
       var sess = await SB.auth.getSession();
       var uid = sess.data.session.user.id;
       var url = await uploadParaR2(uid + '/avatar-cliente.webp', novoAvatarBlob);
       if (!url) throw new Error('URL do upload não retornada');
-      // grava no portal_clientes (se RLS permitir) e via function se existir
-      try {
-        await SB.from('portal_clientes').update({ avatar_url: url }).eq('user_id', uid);
-      } catch (e1) {}
-      try {
-        await SB.functions.invoke('cliente-area', { body: { acao: 'avatar_salvar', avatar_url: url } });
-      } catch (e2) {}
-      mostrarAvatar(url);
+      try { await SB.from('portal_clientes').update({ avatar_url: url }).eq('user_id', uid); } catch (e1) {}
+      try { await SB.functions.invoke('cliente-area', { body: { acao: 'avatar_salvar', avatar_url: url } }); } catch (e2) {}
+      $('avatarPreview').style.backgroundImage = 'url(' + url + ')';
       novoAvatarBlob = null;
       btn.style.display = 'none';
       msg.textContent = 'Foto atualizada.';
     } catch (err) {
-      msg.className = 'cli-msg';
+      msg.className = 'msg';
       msg.textContent = err.message || 'Falha ao salvar avatar.';
     } finally {
       btn.disabled = false;
     }
   });
-
-  // patch render() to refresh avatar
-  var _oldRender = render;
-  render = function () {
-    _oldRender();
-    _renderAvatarOnce();
-  };
 
   var appIniciado = false;
   async function iniciarApp() {
@@ -1395,23 +1237,18 @@
   }
 
   (async function iniciar() {
-    /* Uma só leitura de sessão, com pequena espera se o redirect do login acabou de acontecer */
     var s = await SB.auth.getSession();
     if (!(s.data && s.data.session)) {
       await new Promise(function (r) { setTimeout(r, 500); });
       s = await SB.auth.getSession();
     }
-    if (s.data && s.data.session) {
-      await iniciarApp();
-      return;
-    }
-    /* Sem sessão: link manual (não redireciona sozinho → não pisca com a home) */
+    if (s.data && s.data.session) { await iniciarApp(); return; }
     var main = document.querySelector('main');
     if (main) {
-      main.innerHTML = '<div class="cli-card" style="margin-top:40px;text-align:center">' +
-        '<h2 style="color:#c5a059;margin-bottom:12px">Sessão não encontrada</h2>' +
-        '<p class="cli-sub">Entre pelo portal B2B com o e-mail do cliente.</p>' +
-        '<a class="cli-btn" style="display:inline-block;text-decoration:none;max-width:280px" href="../B2B/login.html">Ir para o login</a></div>';
+      main.innerHTML = '<div class="box-full" style="margin-top:40px;text-align:center">' +
+        '<h2>Sessão não encontrada</h2>' +
+        '<p class="lead" style="margin:0 auto 14px">Entre pelo portal com o e-mail do cliente.</p>' +
+        '<a class="btn" style="display:inline-block;text-decoration:none;max-width:280px" href="../B2B/login.html">Ir para o login</a></div>';
     }
   })();
 })();
