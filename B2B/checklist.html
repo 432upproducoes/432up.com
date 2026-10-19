@@ -8,9 +8,8 @@
 <script src="partner-config.js"></script>
 <style>
   :root {
-    --bg: #0b1020; --card: #131a2e; --line: rgba(255,255,255,.08);
-    --txt: #e2e8f0; --mut: #94a3b8; --acc: #a3e635; --ouro: #c5a059;
-    --ciano: #00f0ff;
+    --bg: #0b1020; --line: rgba(255,255,255,.08);
+    --txt: #e2e8f0; --mut: #94a3b8; --acc: #a3e635; --ouro: #c5a059; --ciano: #00f0ff;
   }
   * { box-sizing: border-box; }
   body {
@@ -31,7 +30,7 @@
     border: 1px solid var(--line); background: rgba(255,255,255,.03); color: var(--txt);
     font: inherit; cursor: pointer;
   }
-  .evt:active, .evt.on { border-color: var(--acc); background: rgba(163,230,53,.08); }
+  .evt:active { border-color: var(--acc); background: rgba(163,230,53,.08); }
   .evt .tit { font-weight: 700; font-size: 15px; margin-bottom: 4px; }
   .evt .meta { font-size: 12px; color: var(--mut); }
   .evt .badge {
@@ -51,6 +50,7 @@
     background: transparent; color: var(--mut); font: inherit; font-size: 13px; font-weight: 600; cursor: pointer;
   }
 
+  /* === Mesmo visual/slider que funcionava no cliente === */
   .linha-tempo { position: relative; padding-left: 22px; }
   .linha-tempo::before {
     content: ""; position: absolute; left: 6px; top: 6px; bottom: 6px; width: 2px;
@@ -99,10 +99,7 @@
 
   .obs-box { margin-top: 18px; padding-top: 14px; border-top: 1px solid var(--line); }
   .obs-box h2 { font-size: 12px; color: var(--ouro); text-transform: uppercase; letter-spacing: .06em; margin: 0 0 10px; }
-  .obs {
-    display: flex; justify-content: space-between; gap: 8px; padding: 9px 0;
-    border-bottom: 1px solid rgba(255,255,255,.06); font-size: 14px;
-  }
+  .obs { padding: 9px 0; border-bottom: 1px solid rgba(255,255,255,.06); font-size: 14px; }
   .msg { text-align: center; padding: 28px 16px; color: var(--mut); font-size: 14px; line-height: 1.5; }
   .msg.err { color: #fca5a5; }
   .status-bar { display: flex; gap: 8px; flex-wrap: wrap; margin-bottom: 14px; font-size: 12px; }
@@ -167,63 +164,69 @@
     catch (e) { return String(d).slice(0, 10); }
   }
 
-  async function chamar(acao, extra) {
-    var body = Object.assign({ acao: acao }, extra || {});
-    var r = await SB.functions.invoke('parceiro-checklist', { body: body });
-    if (r.error) {
-      var det = r.error.message || 'Falha na function';
-      try {
-        if (r.error.context) {
-          var j = await r.error.context.json();
-          if (j && j.erro) det = j.erro;
-        }
-      } catch (e2) {}
-      return { erro: det };
-    }
-    if (r.data && r.data.erro) return { erro: r.data.erro };
-    return r.data || {};
-  }
-
   async function carregarLista() {
     var el = $('listaEventos');
     var msg = $('msgLista');
     msg.style.display = 'block';
+    msg.className = 'msg';
+
     var sess = await SB.auth.getSession();
     if (!(sess.data && sess.data.session)) {
       msg.className = 'msg err';
-      msg.textContent = 'Faça login no painel B2B para acessar o checklist.';
+      msg.textContent = 'Faça login no painel B2B.';
       return;
     }
 
-    var r = await chamar('eventos');
-    if (r.erro) {
+    var pr = await SB.from('parceiros')
+      .select('id, nome_completo, nome_artistico, role, status')
+      .eq('user_id', sess.data.session.user.id)
+      .maybeSingle();
+    if (pr.error || !pr.data) {
       msg.className = 'msg err';
-      msg.textContent = r.erro;
+      msg.textContent = 'Parceiro não encontrado.';
       return;
     }
-    ME = r.me || null;
-    EVENTOS = r.eventos || [];
-    var pendMap = r.pendMap || {};
+    ME = pr.data;
 
+    var ids = new Set();
+    var { data: cols } = await SB.from('projeto_colaboradores').select('proposta_id').eq('parceiro_id', ME.id);
+    (cols || []).forEach(function (c) { if (c.proposta_id) ids.add(c.proposta_id); });
+    var { data: minhas } = await SB.from('propostas').select('id').eq('parceiro_id', ME.id).is('cancelada_em', null);
+    (minhas || []).forEach(function (p) { ids.add(p.id); });
+
+    var idList = Array.from(ids);
+    if (!idList.length) {
+      msg.innerHTML = 'Nenhum evento atribuído a você.<br><br><span style="font-size:12px;opacity:.85">Admin → Projetos → Colaboradores do projeto.</span>';
+      el.innerHTML = '';
+      return;
+    }
+
+    var { data: props, error } = await SB.from('propostas')
+      .select('id, numero, cliente_nome, tipo_evento, data_evento, horario_inicio, status')
+      .in('id', idList)
+      .is('cancelada_em', null)
+      .order('data_evento', { ascending: true });
+
+    if (error) {
+      msg.className = 'msg err';
+      msg.textContent = 'Erro ao listar: ' + error.message;
+      return;
+    }
+
+    EVENTOS = props || [];
     if (!EVENTOS.length) {
-      msg.innerHTML = 'Nenhum evento atribuído a você.<br><br><span style="font-size:12px;opacity:.85">O admin precisa adicionar você em <strong>Projetos → Colaboradores do projeto</strong>.</span>';
+      msg.textContent = 'Nenhum evento ativo.';
       el.innerHTML = '';
       return;
     }
 
     msg.style.display = 'none';
     el.innerHTML = EVENTOS.map(function (p) {
-      var st = pendMap[p.id] || { total: 0, pend: 0 };
-      var badge = !st.total
-        ? '<span class="badge pend">Sem etapas ainda</span>'
-        : (st.pend === 0
-          ? '<span class="badge">Checklist completo</span>'
-          : '<span class="badge pend">' + st.pend + ' pendente' + (st.pend > 1 ? 's' : '') + '</span>');
       return '<button type="button" class="evt" data-id="' + E(p.id) + '">' +
         '<div class="tit">#' + E(p.numero) + ' · ' + E(p.cliente_nome || 'Cliente') + '</div>' +
         '<div class="meta">' + E(p.tipo_evento || '') + ' · ' + DATA(p.data_evento) +
         (p.horario_inicio ? ' · ' + E(String(p.horario_inicio).slice(0, 5)) : '') + '</div>' +
-        badge + '</button>';
+        '</button>';
     }).join('');
 
     el.querySelectorAll('.evt').forEach(function (b) {
@@ -245,35 +248,42 @@
     await renderChecklist();
   }
 
-  function voltar() {
+  $('btnVoltar').addEventListener('click', function () {
     ATUAL = null;
     $('painel').classList.remove('visivel');
     $('listaWrap').style.display = 'block';
     carregarLista();
-  }
-  $('btnVoltar').addEventListener('click', voltar);
+  });
 
   async function renderChecklist() {
     var lt = $('linhaTempo');
     var sb = $('statusBar');
     lt.innerHTML = '<div class="msg">Carregando etapas…</div>';
 
-    var r = await chamar('etapas', { proposta_id: ATUAL.id });
-    if (r.erro) {
-      lt.innerHTML = '<div class="msg err">' + E(r.erro) + '</div>';
+    var { data: etapas, error } = await SB.from('evento_etapas')
+      .select('id, nome, hora, situacao, ordem, concluida_por, concluida_em')
+      .eq('proposta_id', ATUAL.id)
+      .order('ordem');
+
+    if (error) {
+      lt.innerHTML = '<div class="msg err">Erro: ' + E(error.message) + '</div>';
       sb.innerHTML = '';
       return;
     }
 
-    var lista = r.etapas || [];
+    var lista = etapas || [];
     var pend = lista.filter(function (e) { return e.situacao === 'pendente'; }).length;
     var ok = lista.length - pend;
     sb.innerHTML = '<span>' + lista.length + ' etapas</span>' +
       (lista.length ? '<span class="ok">' + ok + ' feitas</span><span>' + pend + ' pendentes</span>' : '');
 
     if (!lista.length) {
-      lt.innerHTML = '<div class="msg">Ainda não há etapas neste evento.<br>O administrador monta o checklist no projeto.</div>';
+      lt.innerHTML =
+        '<div class="msg">Nenhuma etapa visível para o seu usuário.<br><br>' +
+        '<span style="font-size:12px;opacity:.9">Se o admin vê etapas neste projeto, rode o SQL de correção da policy ' +
+        '(arquivo <strong>SQL-fix-etapas-colab.sql</strong> no pacote) e recarregue.</span></div>';
     } else {
+      /* Mesmo markup/slider do cliente */
       lt.innerHTML = lista.map(function (e) {
         var feita = e.situacao === 'concluida';
         return '<div class="etapa ' + (feita ? 'feita' : '') + '">' +
@@ -290,16 +300,21 @@
       initSliders(lt);
     }
 
-    var obs = r.observacoes || [];
+    var { data: obs } = await SB.from('evento_observacoes')
+      .select('id, texto, criado_por')
+      .eq('proposta_id', ATUAL.id)
+      .is('removido_em', null)
+      .order('criado_em');
     var lo = $('listaObs');
-    if (!obs.length) lo.innerHTML = '<div class="msg" style="padding:8px 0">Nenhuma observação ainda.</div>';
+    if (!(obs && obs.length)) lo.innerHTML = '<div class="msg" style="padding:8px 0">Nenhuma observação ainda.</div>';
     else lo.innerHTML = obs.map(function (o) {
-      return '<div class="obs"><span>' + E(o.texto) +
+      return '<div class="obs">' + E(o.texto) +
         (o.criado_por ? ' <em style="color:#a3e635;font-size:11px">(' + E(o.criado_por) + ')</em>' : '') +
-        '</span></div>';
+        '</div>';
     }).join('');
   }
 
+  /* Slider idêntico ao que funcionava no cliente */
   function initSliders(root) {
     root.querySelectorAll('.slider').forEach(function (s) {
       var knob = s.querySelector('.slider-knob');
@@ -338,9 +353,18 @@
   }
 
   async function concluir(etapaId) {
-    var r = await chamar('concluir', { proposta_id: ATUAL.id, etapa_id: etapaId });
-    if (r.erro) {
-      alert('Não foi possível confirmar: ' + r.erro);
+    var nome = (ME && (ME.nome_artistico || ME.nome_completo)) || 'parceiro';
+    var { error } = await SB.from('evento_etapas')
+      .update({
+        situacao: 'concluida',
+        concluida_por: nome,
+        concluida_em: new Date().toISOString()
+      })
+      .eq('id', etapaId)
+      .eq('situacao', 'pendente');
+
+    if (error) {
+      alert('Não foi possível confirmar: ' + error.message);
       await renderChecklist();
       return;
     }
