@@ -167,21 +167,21 @@
     catch (e) { return String(d).slice(0, 10); }
   }
 
-  async function idsDoParceiro() {
-    var ids = new Set();
-    try {
-      var { data: cols } = await SB.from('projeto_colaboradores').select('proposta_id').eq('parceiro_id', ME.id);
-      (cols || []).forEach(function (c) { if (c.proposta_id) ids.add(c.proposta_id); });
-    } catch (e) { console.warn(e); }
-    try {
-      var { data: minhas } = await SB.from('propostas').select('id').eq('parceiro_id', ME.id).is('cancelada_em', null);
-      (minhas || []).forEach(function (p) { ids.add(p.id); });
-    } catch (e) {}
-    try {
-      var { data: res } = await SB.from('agenda_reservas').select('proposta_id').eq('recurso_id', ME.id).not('proposta_id', 'is', null);
-      (res || []).forEach(function (r) { if (r.proposta_id) ids.add(r.proposta_id); });
-    } catch (e) {}
-    return Array.from(ids);
+  async function chamar(acao, extra) {
+    var body = Object.assign({ acao: acao }, extra || {});
+    var r = await SB.functions.invoke('parceiro-checklist', { body: body });
+    if (r.error) {
+      var det = r.error.message || 'Falha na function';
+      try {
+        if (r.error.context) {
+          var j = await r.error.context.json();
+          if (j && j.erro) det = j.erro;
+        }
+      } catch (e2) {}
+      return { erro: det };
+    }
+    if (r.data && r.data.erro) return { erro: r.data.erro };
+    return r.data || {};
   }
 
   async function carregarLista() {
@@ -194,50 +194,22 @@
       msg.textContent = 'Faça login no painel B2B para acessar o checklist.';
       return;
     }
-    var pr = await SB.from('parceiros').select('id, nome_completo, nome_artistico, role, status')
-      .eq('user_id', sess.data.session.user.id).maybeSingle();
-    if (pr.error || !pr.data) {
+
+    var r = await chamar('eventos');
+    if (r.erro) {
       msg.className = 'msg err';
-      msg.textContent = 'Parceiro não encontrado.';
+      msg.textContent = r.erro;
       return;
     }
-    ME = pr.data;
+    ME = r.me || null;
+    EVENTOS = r.eventos || [];
+    var pendMap = r.pendMap || {};
 
-    var ids = await idsDoParceiro();
-    if (!ids.length) {
+    if (!EVENTOS.length) {
       msg.innerHTML = 'Nenhum evento atribuído a você.<br><br><span style="font-size:12px;opacity:.85">O admin precisa adicionar você em <strong>Projetos → Colaboradores do projeto</strong>.</span>';
       el.innerHTML = '';
       return;
     }
-
-    var { data: props, error } = await SB.from('propostas')
-      .select('id, numero, cliente_nome, tipo_evento, data_evento, horario_inicio, status')
-      .in('id', ids)
-      .is('cancelada_em', null)
-      .order('data_evento', { ascending: true });
-
-    if (error) {
-      msg.className = 'msg err';
-      msg.textContent = 'Erro ao listar eventos: ' + error.message;
-      return;
-    }
-
-    EVENTOS = props || [];
-    if (!EVENTOS.length) {
-      msg.textContent = 'Nenhum evento ativo encontrado.';
-      el.innerHTML = '';
-      return;
-    }
-
-    var pendMap = {};
-    try {
-      var { data: etapas } = await SB.from('evento_etapas').select('proposta_id, situacao').in('proposta_id', ids);
-      (etapas || []).forEach(function (e) {
-        if (!pendMap[e.proposta_id]) pendMap[e.proposta_id] = { total: 0, pend: 0 };
-        pendMap[e.proposta_id].total++;
-        if (e.situacao === 'pendente') pendMap[e.proposta_id].pend++;
-      });
-    } catch (e) {}
 
     msg.style.display = 'none';
     el.innerHTML = EVENTOS.map(function (p) {
@@ -286,19 +258,14 @@
     var sb = $('statusBar');
     lt.innerHTML = '<div class="msg">Carregando etapas…</div>';
 
-    var { data: etapas, error } = await SB.from('evento_etapas')
-      .select('id, nome, hora, situacao, ordem, concluida_por, concluida_em')
-      .eq('proposta_id', ATUAL.id)
-      .order('ordem');
-
-    if (error) {
-      lt.innerHTML = '<div class="msg err">Não foi possível carregar as etapas: ' + E(error.message) +
-        '<br><br><span style="font-size:12px;opacity:.9">Confira se você está em Colaboradores deste projeto.</span></div>';
+    var r = await chamar('etapas', { proposta_id: ATUAL.id });
+    if (r.erro) {
+      lt.innerHTML = '<div class="msg err">' + E(r.erro) + '</div>';
       sb.innerHTML = '';
       return;
     }
 
-    var lista = etapas || [];
+    var lista = r.etapas || [];
     var pend = lista.filter(function (e) { return e.situacao === 'pendente'; }).length;
     var ok = lista.length - pend;
     sb.innerHTML = '<span>' + lista.length + ' etapas</span>' +
@@ -323,13 +290,9 @@
       initSliders(lt);
     }
 
-    var { data: obs } = await SB.from('evento_observacoes')
-      .select('id, texto, criado_por')
-      .eq('proposta_id', ATUAL.id)
-      .is('removido_em', null)
-      .order('criado_em');
+    var obs = r.observacoes || [];
     var lo = $('listaObs');
-    if (!(obs && obs.length)) lo.innerHTML = '<div class="msg" style="padding:8px 0">Nenhuma observação ainda.</div>';
+    if (!obs.length) lo.innerHTML = '<div class="msg" style="padding:8px 0">Nenhuma observação ainda.</div>';
     else lo.innerHTML = obs.map(function (o) {
       return '<div class="obs"><span>' + E(o.texto) +
         (o.criado_por ? ' <em style="color:#a3e635;font-size:11px">(' + E(o.criado_por) + ')</em>' : '') +
@@ -375,26 +338,12 @@
   }
 
   async function concluir(etapaId) {
-    var nome = ME.nome_artistico || ME.nome_completo || 'parceiro';
-    var { error } = await SB.from('evento_etapas')
-      .update({
-        situacao: 'concluida',
-        concluida_por: nome,
-        concluida_em: new Date().toISOString()
-      })
-      .eq('id', etapaId)
-      .eq('situacao', 'pendente');
-
-    if (error) {
-      alert('Não foi possível confirmar: ' + error.message);
+    var r = await chamar('concluir', { proposta_id: ATUAL.id, etapa_id: etapaId });
+    if (r.erro) {
+      alert('Não foi possível confirmar: ' + r.erro);
       await renderChecklist();
       return;
     }
-    try {
-      await SB.functions.invoke('notificar-cliente-etapa', {
-        body: { proposta_id: ATUAL.id, etapa_id: etapaId }
-      });
-    } catch (e) {}
     await renderChecklist();
   }
 
