@@ -1,10 +1,10 @@
 /* Checklist do evento: um único componente, usado no admin (cartão do projeto),
-   na tela de projetos, na tela de checklist do colaborador/parceiro e (somente leitura + slider) na área do cliente.
+   na tela de projetos, na tela de checklist do colaborador/parceiro. Cliente só visualiza (sem slider) na área do cliente.
    Uso: ChecklistEvento.montar(elemento, { propostaId, sb, modo: 'admin' | 'colaborador' | 'parceiro' | 'cliente', confirmar })
    - admin: tudo, inclusive desfazer etapa concluída e remover instruções
    - colaborador: adiciona, edita hora, reordena, avança etapa (slider). Não desfaz.
    - parceiro: só desliza para concluir + pode escrever observações. Não edita a lista.
-   - cliente: só lê e confirma etapa pendente (slider) via opts.confirmar(etapaId). */
+   - cliente: somente leitura (sem slider). Confirmação operacional é do fornecedor/parceiro. */
 (function () {
   'use strict';
 
@@ -58,32 +58,45 @@
 
     async function carregar() {
       var et = [], cat = [], ob = [];
+      var erroEtapas = null;
       if (sb) {
         var rc = await sb.from('evento_etapas_catalogo').select('nome, hora_padrao, ordem').eq('ativo', true).order('ordem');
         cat = rc.data || [];
-        var re = await sb.from('evento_etapas').select('id, nome, hora, situacao, ordem, concluida_por, concluida_em').eq('proposta_id', pid).order('ordem');
-        et = re.data || [];
+        var re = await sb.from('evento_etapas')
+          .select('id, nome, hora, situacao, ordem, concluida_por, concluida_em')
+          .eq('proposta_id', pid)
+          .order('ordem');
+        if (re.error) {
+          erroEtapas = re.error.message || 'Sem permissão para ler etapas';
+          console.error('evento_etapas', re.error);
+          et = [];
+        } else {
+          et = re.data || [];
+        }
         var ro = await sb.from('evento_observacoes').select('id, texto, criado_por').eq('proposta_id', pid).is('removido_em', null).order('criado_em');
         ob = ro.data || [];
       } else if (opts.dados) {
         et = opts.dados.etapas || [];
         ob = opts.dados.observacoes || [];
       }
-      desenhar(cat, et, ob);
+      desenhar(cat, et, ob, erroEtapas);
     }
 
-    function desenhar(cat, et, ob) {
+    function desenhar(cat, et, ob, erroEtapas) {
       var marcadas = {};
       et.forEach(function (x) { marcadas[x.nome] = x; });
       var nomes = cat.map(function (c) { return c.nome; });
       et.forEach(function (x) { if (nomes.indexOf(x.nome) < 0) nomes.push(x.nome); });
 
       var linhas = '';
-      if (soConcluir) {
-        // parceiro e cliente: só etapas existentes + slider (sem editar estrutura)
+      if (erroEtapas) {
+        linhas = '<div class="ce-hint" style="color:#fca5a5">Não foi possível carregar as etapas: ' + E(erroEtapas) +
+          '<br><span style="opacity:.85;font-size:12px">Confirme se você está em Colaboradores do projeto e se a policy de evento_etapas permite SELECT ao colaborador.</span></div>';
+      } else if (soConcluir) {
+        // parceiro: etapas existentes + slider (cliente NÃO usa mais este modo na área do cliente)
         linhas = et.length
           ? et.map(function (e) { return linhaCliente(e); }).join('')
-          : '<div class="ce-hint">Ainda não há etapas neste evento.</div>';
+          : '<div class="ce-hint">Ainda não há etapas neste evento. O administrador precisa montar o checklist no projeto.</div>';
       } else {
         linhas = nomes.map(function (n) {
           var m = marcadas[n];
