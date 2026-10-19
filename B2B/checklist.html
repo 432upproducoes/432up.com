@@ -105,6 +105,26 @@
   .status-bar { display: flex; gap: 8px; flex-wrap: wrap; margin-bottom: 14px; font-size: 12px; }
   .status-bar span { padding: 5px 10px; border-radius: 999px; background: rgba(255,255,255,.05); color: var(--mut); }
   .status-bar .ok { background: rgba(163,230,53,.15); color: var(--acc); }
+
+  .modal-bg {
+    position: fixed; inset: 0; z-index: 80; background: rgba(0,0,0,.65);
+    display: none; align-items: center; justify-content: center; padding: 16px;
+  }
+  .modal-bg.on { display: flex; }
+  .modal-box {
+    width: 100%; max-width: 360px; background: #0e121c; border: 1px solid var(--line);
+    border-radius: 16px; padding: 20px;
+  }
+  .modal-box h2 { margin: 0 0 8px; font-size: 16px; color: #e2e8f0; }
+  .modal-box p { margin: 0 0 16px; font-size: 14px; color: var(--mut); line-height: 1.45; }
+  .modal-acoes { display: flex; gap: 8px; flex-wrap: wrap; }
+  .modal-acoes button {
+    flex: 1; min-width: 120px; font: inherit; padding: 12px 14px; border-radius: 12px;
+    border: 1px solid var(--line); background: #0f1628; color: var(--txt); cursor: pointer; font-weight: 700;
+  }
+  .modal-acoes button.sim {
+    background: var(--acc); color: #0b1020; border-color: var(--acc);
+  }
 </style>
 </head>
 <body>
@@ -134,6 +154,17 @@
     </div>
   </section>
 </main>
+
+<div class="modal-bg" id="modalConfirma" role="dialog" aria-modal="true" aria-label="Confirmar etapa">
+  <div class="modal-box">
+    <h2>Concluir etapa?</h2>
+    <p id="txtConfirma">Essa ação não pode ser desfeita. Deseja marcar esta etapa como concluída?</p>
+    <div class="modal-acoes">
+      <button type="button" id="btnConfNao">Não</button>
+      <button type="button" class="sim" id="btnConfSim">Sim, concluir</button>
+    </div>
+  </div>
+</div>
 
 <script>
 (function () {
@@ -336,8 +367,9 @@
         if (!dragging) return;
         dragging = false; knob.style.cursor = 'grab';
         if (max > 0 && cur / max >= 0.9) {
-          s.classList.add('done');
-          await concluir(s.getAttribute('data-etapa'));
+          // Volta o slider e pede confirmação — só conclui se a pessoa disser sim
+          apply(0);
+          pedirConfirmacao(s.getAttribute('data-etapa'), s);
         } else apply(0);
       }
 
@@ -351,6 +383,63 @@
       knob.addEventListener('pointercancel', function () { dragging = false; apply(0); });
     });
   }
+
+  var _pendenteEtapaId = null;
+  var _pendenteSlider = null;
+
+  function pedirConfirmacao(etapaId, sliderEl) {
+    _pendenteEtapaId = etapaId;
+    _pendenteSlider = sliderEl;
+    var nomeEtapa = '';
+    try {
+      var card = sliderEl && sliderEl.closest('.etapa');
+      if (card) {
+        var n = card.querySelector('.nome');
+        if (n) nomeEtapa = n.textContent || '';
+      }
+    } catch (e) {}
+    var txt = $('txtConfirma');
+    if (txt) {
+      txt.textContent = nomeEtapa
+        ? ('Confirmar “' + nomeEtapa + '”? Essa ação não pode ser desfeita.')
+        : 'Essa ação não pode ser desfeita. Deseja marcar esta etapa como concluída?';
+    }
+    $('modalConfirma').classList.add('on');
+  }
+
+  function fecharConfirmacao() {
+    _pendenteEtapaId = null;
+    _pendenteSlider = null;
+    $('modalConfirma').classList.remove('on');
+  }
+
+  $('btnConfNao').addEventListener('click', function () {
+    if (_pendenteSlider) {
+      // garante slider zerado
+      try {
+        var kn = _pendenteSlider.querySelector('.slider-knob');
+        var fl = _pendenteSlider.querySelector('.slider-fill');
+        if (kn) kn.style.transform = 'translateX(0)';
+        if (fl) fl.style.width = '0';
+      } catch (e) {}
+    }
+    fecharConfirmacao();
+  });
+
+  $('btnConfSim').addEventListener('click', async function () {
+    var id = _pendenteEtapaId;
+    if (!id) { fecharConfirmacao(); return; }
+    $('btnConfSim').disabled = true;
+    await concluir(id);
+    $('btnConfSim').disabled = false;
+    fecharConfirmacao();
+  });
+
+  $('modalConfirma').addEventListener('click', function (e) {
+    if (e.target === $('modalConfirma')) {
+      $('btnConfNao').click();
+    }
+  });
 
   async function concluir(etapaId) {
     var nome = (ME && (ME.nome_artistico || ME.nome_completo)) || 'parceiro';
