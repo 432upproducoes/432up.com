@@ -97,11 +97,26 @@
   (async function init() {
     var s = await SB.auth.getSession();
     if (!(s.data && s.data.session)) { location.href = '../login.html'; return; }
-    var r = await SB.from('parceiros').select('role').eq('user_id', s.data.session.user.id).maybeSingle();
-    if (!r.data || !/^(admin|master)$/i.test(String(r.data.role || '').trim()) || !ID) {
-      document.querySelector('main').innerHTML = '<div class="card"><div class="vazio">Acesso restrito ao administrador.</div></div>';
+
+    var r = await SB.from('parceiros').select('role, nivel').eq('user_id', s.data.session.user.id).maybeSingle();
+    var papel = String((r.data && (r.data.role || r.data.nivel)) || '').toLowerCase().trim();
+    var ehAdmin = /^(admin|master)$/i.test(papel);
+
+    if (!ehAdmin) {
+      document.querySelector('main').innerHTML = '<div class="card"><div class="vazio">Acesso restrito ao administrador.<br><br><span class="mut">Papel detectado: ' +
+        (papel || 'nenhum') + '. Faça login com uma conta admin/master.</span></div></div>';
       return;
     }
+
+    if (!ID) {
+      document.querySelector('main').innerHTML = '<div class="card"><div class="vazio">' +
+        '<strong>Falta o ID do projeto na URL.</strong><br><br>' +
+        'Abra pelo painel de projetos (link “Espelho do cliente”) ou use:<br>' +
+        '<code style="color:var(--ciano)">/B2B/admin/espelho.html?id=UUID_DA_PROPOSTA</code><br><br>' +
+        '<a href="projeto.html" style="color:var(--ciano)">← Ir para Projetos</a></div></div>';
+      return;
+    }
+
     $('voltar').href = 'projeto.html?id=' + encodeURIComponent(ID);
     await carregarTudo();
     ligarTempoReal();

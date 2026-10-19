@@ -101,6 +101,7 @@
         </div>
         <div class="msg" id="msgCol"></div>
         <div id="listaCol"></div>
+        <p class="mut" style="margin-top:10px"><a id="linkEspelho" href="#" style="color:var(--ciano)">Abrir espelho do cliente →</a></p>
       </div>
 
       <div class="card">
@@ -197,6 +198,8 @@
     $('dadosPedido').innerHTML = 'Tipo: ' + E(d.tipo_evento || '') + ' · Valor: ' + BRL(d.valor_total) +
       ' · Comissão: ' + BRL(d.comissao_valor) + ' · Contrato: ' + (d.assinado_em ? 'assinado' : 'não assinado');
     $('holdInfo').textContent = ATUAL.status === 'hold' ? 'Hold · ' + tempo(ATUAL.hold_expira_em) : '';
+    var le = document.getElementById("linkEspelho");
+    if (le) le.href = "espelho.html?id=" + encodeURIComponent(ATUAL.id);
     await Promise.all([carregarColaboradores(), carregarEtapas(), carregarObs()]);
   }
 
@@ -221,31 +224,84 @@
     selecionar(ATUAL.id);
   });
 
+  function nomeParceiroPorId(pid) {
+    var p = (PARCEIROS || []).find(function (x) { return x.id === pid; });
+    return p ? (p.nome_completo || p.email || pid) : (pid || '—');
+  }
+
   async function carregarColaboradores() {
-    var r = await SB.from('projeto_colaboradores').select('id, nivel, parceiro_id, parceiros(nome_completo, email)').eq('proposta_id', ATUAL.id);
+    if (!ATUAL) return;
+    var box = $('listaCol');
+    box.innerHTML = '<div class="vazio">Carregando colaboradores…</div>';
+
+    // Sem embed (evita falha de FK no PostgREST); nomes vêm da lista PARCEIROS
+    var r = await SB.from('projeto_colaboradores')
+      .select('id, nivel, parceiro_id, criado_em')
+      .eq('proposta_id', ATUAL.id)
+      .order('criado_em', { ascending: true });
+
+    if (r.error) {
+      box.innerHTML = '<div class="vazio" style="color:#fca5a5">Erro ao listar: ' + E(r.error.message) + '</div>';
+      console.error('projeto_colaboradores', r.error);
+      return;
+    }
+
     var l = r.data || [];
-    $('listaCol').innerHTML = l.length ? l.map(function (c) {
-      var nome = (c.parceiros && (c.parceiros.nome_completo || c.parceiros.email)) || '—';
-      return '<div class="item"><span>' + E(nome) + '</span><span class="mut">' +
-        (c.nivel === 'dados_sensiveis' ? 'agenda + dados sensíveis' : 'só agenda') + '</span>' +
-        '<button class="danger" data-rem="' + E(c.id) + '">Remover</button></div>';
-    }).join('') : '<div class="vazio">Nenhum colaborador ainda.</div>';
-    document.querySelectorAll('[data-rem]').forEach(function (b) {
+    if (!l.length) {
+      box.innerHTML = '<div class="vazio">Nenhum colaborador ainda. Use o seletor acima e clique em Adicionar.</div>';
+      return;
+    }
+
+    box.innerHTML = l.map(function (c) {
+      var nome = nomeParceiroPorId(c.parceiro_id);
+      return '<div class="item">' +
+        '<span><strong>' + E(nome) + '</strong><br><span class="mut">' +
+        (c.nivel === 'dados_sensiveis' ? 'agenda + dados sensíveis' : 'só agenda') +
+        '</span></span>' +
+        '<button type="button" class="danger" data-rem="' + E(c.id) + '">Remover</button></div>';
+    }).join('');
+
+    box.querySelectorAll('[data-rem]').forEach(function (b) {
       b.addEventListener('click', async function () {
-        await SB.from('projeto_colaboradores').delete().eq('id', b.getAttribute('data-rem'));
+        if (!confirm('Remover este colaborador do projeto?')) return;
+        var del = await SB.from('projeto_colaboradores').delete().eq('id', b.getAttribute('data-rem'));
+        if (del.error) {
+          alert('Não foi possível remover: ' + del.error.message);
+          return;
+        }
         carregarColaboradores();
       });
     });
   }
 
   $('btnAddCol').addEventListener('click', async function () {
-    if (!ATUAL) return;
+    if (!ATUAL) {
+      $('msgCol').className = 'msg';
+      $('msgCol').textContent = 'Selecione um projeto à esquerda primeiro.';
+      return;
+    }
+    var pid = $('addParceiro').value;
+    if (!pid) {
+      $('msgCol').className = 'msg';
+      $('msgCol').textContent = 'Escolha um parceiro.';
+      return;
+    }
     var r = await SB.from('projeto_colaboradores').insert({
-      proposta_id: ATUAL.id, parceiro_id: $('addParceiro').value, nivel: $('addNivel').value, criado_por: ME.id
-    });
-    $('msgCol').className = r.error ? 'msg' : 'msg ok';
-    $('msgCol').textContent = r.error ? 'Não foi possível adicionar (já está no projeto?).' : 'Adicionado.';
-    carregarColaboradores();
+      proposta_id: ATUAL.id,
+      parceiro_id: pid,
+      nivel: $('addNivel').value,
+      criado_por: ME.id
+    }).select('id, parceiro_id, nivel');
+
+    if (r.error) {
+      $('msgCol').className = 'msg';
+      $('msgCol').textContent = 'Não foi possível adicionar: ' + (r.error.message || 'já está no projeto?');
+      console.error(r.error);
+      return;
+    }
+    $('msgCol').className = 'msg ok';
+    $('msgCol').textContent = 'Adicionado.';
+    await carregarColaboradores();
   });
 
   async function carregarEtapas() {
