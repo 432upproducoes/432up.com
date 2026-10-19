@@ -600,26 +600,53 @@
       (datas[k] = datas[k] || []).push(item);
     }
     pedidos.forEach(function (p) {
-      var k = String(p.data_evento).slice(0, 10);
-      pushDia(k, { kind: 'evento', prop: p, titulo: '#' + p.numero + ' · Evento', sub: p.tipo_evento || '' });
+      // 1) Dia do evento
+      var k = p.data_evento ? String(p.data_evento).slice(0, 10) : null;
+      if (k) pushDia(k, { kind: 'evento', prop: p, titulo: '#' + p.numero + ' · Dia do evento', sub: p.tipo_evento || '' });
+
+      // 2) Assinatura do contrato
+      if (p.assinado_em) {
+        var ka = String(p.assinado_em).slice(0, 10);
+        pushDia(ka, { kind: 'contrato', prop: p, titulo: '#' + p.numero + ' · Contrato assinado', sub: 'Documento formalizado' });
+      }
+
+      // 3) Agenda de pagamentos prevista (se a function devolver pagamento_agenda)
       var pa = p.pagamento_agenda || {};
       if (typeof pa === 'string') {
         try { pa = JSON.parse(pa); } catch (e) { pa = {}; }
       }
-      [['entrada', pa.data_entrada, pa.status_entrada], ['saldo', pa.data_saldo, pa.status_saldo]].forEach(function (row) {
+      [['entrada', pa.data_entrada, pa.status_entrada], ['saldo', pa.data_saldo, pa.status_saldo],
+       ['parcela', pa.data_parcela, pa.status_parcela]].forEach(function (row) {
         var dia = row[1] ? String(row[1]).slice(0, 10) : null;
         if (!dia) return;
         var st = row[2] || 'pendente';
+        var label = row[0] === 'entrada' ? 'Entrada' : (row[0] === 'saldo' ? 'Saldo' : 'Parcela');
         pushDia(dia, {
           kind: 'pagamento',
           prop: p,
-          titulo: (row[0] === 'entrada' ? 'Entrada' : 'Saldo') + ' · #' + p.numero,
-          sub: st === 'pago' ? 'Pago' : 'Pagamento previsto — envie o comprovante no Início',
+          titulo: label + ' · #' + p.numero,
+          sub: st === 'pago' ? 'Já pago' : 'Pagamento previsto — toque para enviar comprovante',
           status: st
         });
       });
     });
-    // etapas com hora no dia do evento já cobertas; observações não entram no calendário
+
+    // 4) Comprovantes já enviados (data_pagamento real)
+    (dados.comprovantes || []).forEach(function (c) {
+      if (!c.data_pagamento) return;
+      var p = pedidos.find(function (x) { return x.id === c.proposta_id; }) || { id: c.proposta_id, numero: '?' };
+      var kd = String(c.data_pagamento).slice(0, 10);
+      var st = (c.confirmado || c.status === 'aprovado' || c.status === 'pago') ? 'aprovado'
+        : (c.status === 'recusado' ? 'recusado' : 'pendente');
+      pushDia(kd, {
+        kind: 'comprovante',
+        prop: p,
+        comprovante: c,
+        titulo: (c.tipo || 'Comprovante') + ' · #' + (p.numero || ''),
+        sub: BRL(c.valor) + ' · ' + (ST[st] || c.status || 'enviado'),
+        status: st
+      });
+    });
 
     var agora = new Date();
     if (calAno == null) { calAno = agora.getFullYear(); calMes = agora.getMonth(); }
@@ -661,7 +688,23 @@
             return '<div class="item" style="border-left-color:#86efac">' +
               '<strong>' + E(it.titulo) + '</strong>' +
               '<small>' + E(it.sub) + '</small>' +
-              '<small style="margin-top:6px"><button type="button" class="cli-btn-s" style="margin:0" data-open-cmp="' + E(p.id) + '">Enviar comprovante</button></small>' +
+              '<div style="margin-top:8px"><button type="button" class="cli-btn" style="margin:0" data-open-cmp="' + E(p.id) + '">Enviar comprovante</button></div>' +
+              '</div>';
+          }
+          if (it.kind === 'comprovante') {
+            var c = it.comprovante || {};
+            var link = c.arquivo_url ? '<a href="' + E(c.arquivo_url) + '" target="_blank" rel="noopener" style="color:#00f0ff">Ver comprovante</a>' : '';
+            return '<div class="item" style="border-left-color:#a3e635">' +
+              '<strong>' + E(it.titulo) + '</strong>' +
+              '<small>' + E(it.sub) + (link ? ' · ' + link : '') + '</small>' +
+              '<div style="margin-top:8px"><button type="button" class="cli-btn-s" style="margin:0" data-open-cmp="' + E(p.id) + '">Enviar outro</button></div>' +
+              '</div>';
+          }
+          if (it.kind === 'contrato') {
+            return '<div class="item" style="border-left-color:#2563eb">' +
+              '<strong>' + E(it.titulo) + '</strong>' +
+              '<small>' + E(it.sub) + '</small>' +
+              (p.id ? '<div style="margin-top:8px"><button type="button" class="cli-btn-s" style="margin:0" data-pdf="' + E(p.id) + '">Baixar contrato PDF</button></div>' : '') +
               '</div>';
           }
           var etapas = (dados.etapas || []).filter(function (e) { return e.proposta_id === p.id; });
@@ -675,6 +718,13 @@
         }).join('');
         box.querySelectorAll('[data-open-cmp]').forEach(function (b) {
           b.addEventListener('click', function () { abrirModalCmp(b.getAttribute('data-open-cmp')); });
+        });
+        box.querySelectorAll('[data-pdf]').forEach(function (b) {
+          b.addEventListener('click', async function () {
+            var r = await chamar('contrato_pdf', { proposta_id: b.getAttribute('data-pdf') });
+            if (r.erro) return alert(r.erro);
+            if (r.url) window.open(r.url, '_blank');
+          });
         });
       });
     });
@@ -738,25 +788,33 @@
         '<div class="cli-pill" style="margin-top:6px">' + DATA(prox.data_evento) +
           (prox.valor_total != null ? ' · ' + BRL(prox.valor_total) : '') + '</div>';
 
-      // Contagem regressiva
+      // Contagem regressiva real (atualiza a cada minuto)
       if (wrap && cont) {
-        var alvo = new Date(prox.data_evento + 'T12:00:00').getTime();
+        var partes = String(prox.data_evento).slice(0, 10).split('-');
+        var alvo = new Date(Number(partes[0]), Number(partes[1]) - 1, Number(partes[2]), 12, 0, 0).getTime();
         function tick() {
-          var diff = alvo - Date.now();
+          var agora = Date.now();
+          var diff = alvo - agora;
+          if (isNaN(alvo)) {
+            cont.textContent = DATA(prox.data_evento);
+            return;
+          }
           if (diff <= 0) {
-            cont.textContent = 'É hoje (ou já foi)';
+            var passou = Math.floor((agora - alvo) / 86400000);
+            cont.textContent = passou <= 0 ? 'É hoje!' : ('Há ' + passou + ' dia' + (passou > 1 ? 's' : ''));
             return;
           }
           var dias = Math.floor(diff / 86400000);
           var horas = Math.floor((diff % 86400000) / 3600000);
-          cont.textContent = dias > 0
-            ? dias + ' dia' + (dias > 1 ? 's' : '') + (horas ? ' e ' + horas + 'h' : '')
-            : horas + 'h restantes';
+          var mins = Math.floor((diff % 3600000) / 60000);
+          if (dias > 0) cont.textContent = dias + ' dia' + (dias > 1 ? 's' : '') + ' e ' + horas + 'h';
+          else if (horas > 0) cont.textContent = horas + 'h e ' + mins + ' min';
+          else cont.textContent = mins + ' min';
         }
         tick();
         wrap.style.display = 'block';
         if (_contagemTimer) clearInterval(_contagemTimer);
-        _contagemTimer = setInterval(tick, 60000);
+        _contagemTimer = setInterval(tick, 30000);
       }
     }
 
@@ -1099,7 +1157,16 @@
           mime: p.mime
         }
       });
-      if (r.error || (r.data && r.data.erro)) throw new Error((r.data && r.data.erro) || 'Falha no envio');
+      if (r.error || (r.data && r.data.erro)) {
+        var det = (r.data && r.data.erro) || (r.error && r.error.message) || 'Falha no envio';
+        if (r.error && r.error.context) {
+          try {
+            var j = await r.error.context.json();
+            if (j && j.erro) det = j.erro;
+          } catch (e2) {}
+        }
+        throw new Error(det);
+      }
       msg.textContent = 'Comprovante enviado. Pode enviar outro se precisar.';
       $('cmpValor').value = '';
       $('cmpData').value = '';
@@ -1144,13 +1211,16 @@
     var token = sess.data && sess.data.session && sess.data.session.access_token;
     if (!token) throw new Error('Sessão expirada');
     var resp = await fetch(R2_UPLOAD_URL + '?path=' + encodeURIComponent(path), {
-      method: 'POST',
-      headers: { Authorization: 'Bearer ' + token, 'Content-Type': blob.type || 'image/webp' },
+      method: 'PUT',
+      headers: { 'Authorization': 'Bearer ' + token, 'Content-Type': blob.type || 'image/webp' },
       body: blob
     });
     var result = await resp.json().catch(function () { return null; });
-    if (!resp.ok) throw new Error((result && result.error) || ('Upload falhou (' + resp.status + ')'));
-    return (result && (result.url || result.publicUrl || result.public_url)) || null;
+    if (!resp.ok || !result || !result.ok) {
+      var msg = (result && result.error) ? result.error : ('Upload falhou (status ' + resp.status + ')');
+      throw new Error(msg);
+    }
+    return result.url;
   }
 
   function mostrarAvatar(url) {
@@ -1202,7 +1272,7 @@
     try {
       var sess = await SB.auth.getSession();
       var uid = sess.data.session.user.id;
-      var url = await uploadParaR2('clientes/' + uid + '/avatar.webp', novoAvatarBlob);
+      var url = await uploadParaR2(uid + '/avatar-cliente.webp', novoAvatarBlob);
       if (!url) throw new Error('URL do upload não retornada');
       // grava no portal_clientes (se RLS permitir) e via function se existir
       try {
