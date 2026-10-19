@@ -124,6 +124,17 @@ body.pg-espelho .pg main{width:min(760px,calc(100% - 32px));margin:0 auto;paddin
 }
 @media(prefers-reduced-motion:reduce){*,*:before,*:after{transition-duration:.001ms!important;animation-duration:.001ms!important}}
 
+/* ===== Dados do projeto + Equipe técnica (referência do Checklist) ===== */
+.pg .eq-data{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:14px}
+.pg .eq-data strong{display:block;font-size:14px;color:#fff;margin-top:2px}
+.pg .eq-row{display:flex;align-items:center;gap:12px;padding:12px 0;border-bottom:1px solid rgba(255,255,255,.08)}
+.pg .eq-row:last-child{border-bottom:0}
+.pg .eq-av{width:44px;height:44px;border-radius:50%;object-fit:cover;flex:none;border:1px solid rgba(0,240,255,.45);background:rgba(0,240,255,.08);display:flex;align-items:center;justify-content:center;font-size:18px;overflow:hidden}
+.pg .eq-txt{flex:1;min-width:0;display:flex;flex-direction:column}
+.pg .eq-role{font-size:12px;color:var(--mut);display:block}
+.pg .eq-name{font-size:14px;font-weight:700;color:#fff}
+@media(max-width:620px){.pg .eq-data{grid-template-columns:1fr}}
+
 </style>
 <script src="https://www.432up.com/script/script.js" defer></script>
 </head>
@@ -182,7 +193,16 @@ body.pg-espelho .pg main{width:min(760px,calc(100% - 32px));margin:0 auto;paddin
       </div>
 
       <div class="card">
-        <h2>Colaboradores do projeto</h2>
+        <h2>Dados do projeto</h2>
+        <div class="eq-data">
+          <div><span class="eq-role">Cliente</span><strong id="dpCliente">—</strong></div>
+          <div><span class="eq-role">Tipo do evento</span><strong id="dpTipo">—</strong></div>
+          <div><span class="eq-role">Local</span><strong id="dpLocal">—</strong></div>
+        </div>
+      </div>
+
+      <div class="card">
+        <h2>Equipe técnica</h2>
         <div class="row">
           <select id="addParceiro" style="min-width:200px"></select>
           <select id="addNivel">
@@ -289,6 +309,9 @@ body.pg-espelho .pg main{width:min(760px,calc(100% - 32px));margin:0 auto;paddin
     $('fIni').value = (d.horario_inicio || '').slice(0, 5);
     $('fFim').value = (d.horario_final || '').slice(0, 5);
     $('fLocal').value = d.local_evento || '';
+    $('dpCliente').textContent = ATUAL.cliente_nome || '—';
+    $('dpTipo').textContent = ATUAL.tipo_evento || '—';
+    $('dpLocal').textContent = d.local_evento || '—';
     $('dadosPedido').innerHTML = 'Tipo: ' + E(d.tipo_evento || '') + ' · Valor: ' + BRL(d.valor_total) +
       ' · Comissão: ' + BRL(d.comissao_valor) + ' · Contrato: ' + (d.assinado_em ? 'assinado' : 'não assinado');
     $('holdInfo').textContent = ATUAL.status === 'hold' ? 'Hold · ' + tempo(ATUAL.hold_expira_em) : '';
@@ -364,17 +387,13 @@ body.pg-espelho .pg main{width:min(760px,calc(100% - 32px));margin:0 auto;paddin
     box.innerHTML = l.map(function (c) {
       var pa = (PARCEIROS || []).find(function (x) { return x.id === c.parceiro_id; }) || {};
       var nome = nomeParceiroPorId(c.parceiro_id);
-      var foto = pa.avatar_url
-        ? '<img src="' + E(pa.avatar_url) + '" alt="" style="width:44px;height:44px;border-radius:50%;object-fit:cover;flex:none;border:1px solid rgba(0,255,102,.35)">'
-        : '<span style="width:44px;height:44px;border-radius:50%;display:inline-flex;align-items:center;justify-content:center;background:rgba(255,255,255,.06);border:1px solid rgba(255,255,255,.14);flex:none;font-size:18px">👤</span>';
+      var avatar = pa.avatar_url
+        ? '<img class="eq-av" src="' + E(pa.avatar_url) + '" alt="">'
+        : '<span class="eq-av">👤</span>';
       var papel = funcaoParceiro(pa);
-      var artistico = pa.nome_artistico ? ' <span class="mut">· ' + E(pa.nome_artistico) + '</span>' : '';
-      return '<div class="item">' +
-        '<span style="display:flex;gap:12px;align-items:center">' + foto +
-        '<span><strong>' + E(nome) + '</strong>' + artistico + '<br><span class="mut">' +
-        (papel ? E(papel) + ' · ' : '') +
-        (c.nivel === 'dados_sensiveis' ? 'agenda + dados sensíveis' : 'só agenda') +
-        '</span></span></span>' +
+      return '<div class="eq-row">' + avatar +
+        '<div class="eq-txt">' + (papel ? '<span class="eq-role">' + E(papel) + '</span>' : '') +
+        '<strong class="eq-name">' + E(nome) + '</strong></div>' +
         '<button type="button" class="danger" data-rem="' + E(c.id) + '">Remover</button></div>';
     }).join('');
 
