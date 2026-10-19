@@ -197,6 +197,7 @@
       border-radius:10px; padding:10px 12px; font:inherit; font-size:14px;
     }
 </style>
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/cropperjs/1.5.13/cropper.min.css">
 </head>
 <body class="h-full text-slate-200 font-sans antialiased bg-[#06080c] overflow-x-hidden">
 
@@ -279,6 +280,12 @@
         <div class="cli-card">
           <h2>Calendário do evento</h2>
           <p class="cli-sub" id="calSub">Só as datas dos seus pedidos aparecem aqui.</p>
+          <div class="cli-filtros" id="calFiltros" style="display:flex;flex-wrap:wrap;gap:8px;margin:10px 0 12px;font-size:12px">
+            <label class="cli-tog" style="display:inline-flex;align-items:center;gap:5px;cursor:pointer"><input type="checkbox" data-filtro="evento" checked> Evento</label>
+            <label class="cli-tog" style="display:inline-flex;align-items:center;gap:5px;cursor:pointer"><input type="checkbox" data-filtro="contrato" checked> Contrato</label>
+            <label class="cli-tog" style="display:inline-flex;align-items:center;gap:5px;cursor:pointer"><input type="checkbox" data-filtro="pagamento" checked> Pagamentos</label>
+            <label class="cli-tog" style="display:inline-flex;align-items:center;gap:5px;cursor:pointer"><input type="checkbox" data-filtro="comprovante" checked> Comprovantes</label>
+          </div>
           <div class="cli-cal-nav">
             <button type="button" class="cli-btn-s" id="calPrev" style="margin-top:0">‹</button>
             <strong id="calMesTitulo" style="font-size:14px;color:var(--cli-ouro)"></strong>
@@ -360,6 +367,22 @@
   </div>
 
   
+  
+  <!-- Cropper avatar -->
+  <div class="modal-cmp-bg" id="modalCrop" role="dialog" aria-modal="true" aria-label="Recortar foto">
+    <div class="modal-cmp-box" style="max-width:520px">
+      <div style="display:flex;justify-content:space-between;align-items:center;gap:8px;margin-bottom:10px">
+        <h2 style="font-size:12px;color:#c5a059;text-transform:uppercase;letter-spacing:.08em;font-weight:800;margin:0">Recortar &amp; compactar</h2>
+        <button type="button" class="cli-btn-s" id="btnCropCancel" style="margin-top:0">Cancelar</button>
+      </div>
+      <div style="max-height:50vh;background:#020617;border-radius:12px;overflow:hidden">
+        <img id="cropImage" alt="Recorte" style="display:block;max-width:100%">
+      </div>
+      <button type="button" class="cli-btn" id="btnCropOk" style="margin-top:14px">Usar esta foto</button>
+      <div class="cli-msg" id="msgCrop"></div>
+    </div>
+  </div>
+
   <div class="modal-cmp-bg" id="modalCmp" role="dialog" aria-modal="true" aria-label="Enviar comprovante">
     <div class="modal-cmp-box">
       <div style="display:flex;justify-content:space-between;align-items:center;gap:8px">
@@ -402,6 +425,7 @@
   </div>
 
   <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/cropperjs/1.5.13/cropper.min.js"></script>
   <script src="../B2B/partner-config.js"></script>
   <script src="../script/script.js" defer></script>
   <script src="../B2B/partner-header.js"></script>
@@ -591,6 +615,12 @@
   }
 
   var calAno = null, calMes = null, calDiaSel = null;
+  var FILTROS_CAL = { evento: true, contrato: true, pagamento: true, comprovante: true };
+  try {
+    var _fc = JSON.parse(localStorage.getItem("432up_cli_cal_filtros") || "{}");
+    Object.keys(FILTROS_CAL).forEach(function (k) { if (typeof _fc[k] === "boolean") FILTROS_CAL[k] = _fc[k]; });
+  } catch (e) {}
+
 
   function renderCalendario() {
     var pedidos = (dados.propostas || []).filter(function (p) { return p.status !== 'cancelada' && p.data_evento; });
@@ -665,7 +695,8 @@
       dia.setDate(inicio.getDate() + i);
       var iso = dia.getFullYear() + '-' + String(dia.getMonth()+1).padStart(2,'0') + '-' + String(dia.getDate()).padStart(2,'0');
       var fora = dia.getMonth() !== m;
-      var tem = !!(datas[iso] && datas[iso].length);
+      var listaDia = (datas[iso] || []).filter(function (it) { return FILTROS_CAL[it.kind] !== false; });
+      var tem = listaDia.length > 0;
       var cls = 'd' + (fora ? ' muted' : '') + (tem ? ' evento' : '') + (iso === hojeStr ? ' hoje' : '') + (iso === calDiaSel ? ' sel' : '');
       html += '<div class="' + cls + '" data-iso="' + iso + '">' + dia.getDate() + '</div>';
     }
@@ -675,7 +706,7 @@
         var iso = el.getAttribute('data-iso');
         calDiaSel = iso;
         renderCalendario();
-        var lista = datas[iso] || [];
+        var lista = (datas[iso] || []).filter(function (it) { return FILTROS_CAL[it.kind] !== false; });
         var box = $('calDiaDetalhe');
         if (!box) return;
         if (!lista.length) {
@@ -739,6 +770,22 @@
         }).join('')
       : '<div class="cli-vazio">Nenhum evento com data ainda.</div>';
   }
+
+
+  // Filtros do calendário do cliente (localStorage)
+  (function bindCalFiltros() {
+    var box = document.getElementById('calFiltros');
+    if (!box) return;
+    box.querySelectorAll('input[data-filtro]').forEach(function (inp) {
+      var id = inp.getAttribute('data-filtro');
+      inp.checked = FILTROS_CAL[id] !== false;
+      inp.addEventListener('change', function () {
+        FILTROS_CAL[id] = inp.checked;
+        try { localStorage.setItem('432up_cli_cal_filtros', JSON.stringify(FILTROS_CAL)); } catch (e) {}
+        if (dados) renderCalendario();
+      });
+    });
+  })();
 
   document.addEventListener('click', function (ev) {
     if (ev.target && ev.target.id === 'calPrev') {
@@ -1244,21 +1291,50 @@
     mostrarAvatar(url);
   };
 
-  if ($('fAvatar')) $('fAvatar').addEventListener('change', async function (e) {
+  var cropperInst = null;
+  if ($('fAvatar')) $('fAvatar').addEventListener('change', function (e) {
     var file = e.target.files && e.target.files[0];
     var msg = $('msgAvatar');
     if (!file) return;
-    try {
-      msg.className = 'cli-msg ok';
-      msg.textContent = 'Compactando…';
-      novoAvatarBlob = await compactarAvatar(file);
-      mostrarAvatar(URL.createObjectURL(novoAvatarBlob));
-      $('btnSalvarAvatar').style.display = 'inline-block';
-      msg.textContent = 'Pré-visualização pronta. Clique em Salvar foto.';
-    } catch (err) {
-      novoAvatarBlob = null;
+    if (!window.Cropper) {
       msg.className = 'cli-msg';
-      msg.textContent = err.message || 'Não foi possível ler a imagem.';
+      msg.textContent = 'Cropper não carregou. Recarregue a página.';
+      return;
+    }
+    var url = URL.createObjectURL(file);
+    var img = $('cropImage');
+    img.src = url;
+    $('msgCrop').textContent = '';
+    $('modalCrop').classList.add('on');
+    if (cropperInst) { try { cropperInst.destroy(); } catch (e2) {} cropperInst = null; }
+    img.onload = function () {
+      cropperInst = new Cropper(img, { aspectRatio: 1, viewMode: 1, autoCropArea: 1, background: false });
+    };
+  });
+  if ($('btnCropCancel')) $('btnCropCancel').addEventListener('click', function () {
+    $('modalCrop').classList.remove('on');
+    if (cropperInst) { try { cropperInst.destroy(); } catch (e) {} cropperInst = null; }
+    if ($('fAvatar')) $('fAvatar').value = '';
+  });
+  if ($('btnCropOk')) $('btnCropOk').addEventListener('click', function () {
+    var msg = $('msgAvatar');
+    var msgC = $('msgCrop');
+    if (!cropperInst) return;
+    msgC.textContent = 'Compactando…';
+    try {
+      var canvas = cropperInst.getCroppedCanvas({ width: 512, height: 512 });
+      canvas.toBlob(function (blob) {
+        if (!blob) { msgC.textContent = 'Falha ao gerar imagem.'; return; }
+        novoAvatarBlob = blob;
+        mostrarAvatar(URL.createObjectURL(blob));
+        $('btnSalvarAvatar').style.display = 'inline-block';
+        if (msg) { msg.className = 'cli-msg ok'; msg.textContent = 'Pré-visualização pronta. Clique em Salvar foto.'; }
+        $('modalCrop').classList.remove('on');
+        try { cropperInst.destroy(); } catch (e) {}
+        cropperInst = null;
+      }, 'image/webp', 0.8);
+    } catch (err) {
+      msgC.textContent = err.message || 'Erro no recorte.';
     }
   });
 
