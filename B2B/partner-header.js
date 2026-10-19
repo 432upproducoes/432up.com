@@ -523,10 +523,29 @@
   var MAIL_SVG = '<svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="3" y="5" width="18" height="14" rx="2"/><path d="m3 7 9 6 9-6"/></svg>';
 
   function mailLinkHTML(cls, standalone) {
+    /* Cliente: envelope abre notificações da área do cliente */
+    if (onCliente || cachedIsCliente) {
+      var ativoC = (onCliente && (location.search.indexOf('notif=1') >= 0 || currentPath === 'index.html')) ? ' active' : '';
+      return '<a href="' + CLIENTE + 'index.html?notif=1" class="mn-mail ' + cls + ativoC + '"' +
+        (standalone ? ' data-mn-user="1"' : '') + ' title="Notificações" aria-label="Notificações">' +
+        MAIL_SVG + '<span class="mn-badge" hidden></span></a>';
+    }
     var ativo = (!isSubdirAdmin && currentPath === 'e-mail.html') ? ' active' : '';
     return '<a href="' + B2B + 'e-mail.html" class="mn-mail ' + cls + ativo + '"' +
       (standalone ? ' data-mn-user="1"' : '') + ' title="E-mail" aria-label="E-mail">' +
       MAIL_SVG + '<span class="mn-badge" hidden></span></a>';
+  }
+
+  var CAL_SVG = '<svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="3" y="4" width="18" height="18" rx="2"/><path d="M16 2v4M8 2v4M3 10h18"/></svg>';
+
+  function calLinkHTML(cls, standalone) {
+    /* Calendário do colaborador/parceiro (lado do envelope) — anotado no menu */
+    if (onCliente) return '';
+    if (!(cachedLoggedIn || cachedIsParceiro || cachedIsAdmin || isSubdirAdmin)) return '';
+    var ativo = (!isSubdirAdmin && currentPath === 'agenda-parceiro.html') ? ' active' : '';
+    return '<a href="' + B2B + 'agenda-parceiro.html" class="mn-mail ' + cls + ativo + '"' +
+      (standalone ? ' data-mn-user="1"' : '') + ' title="Minha agenda" aria-label="Minha agenda">' +
+      CAL_SVG + '</a>';
   }
 
   /* Preenche avatar e nome em qualquer área (site, parceiro, admin) */
@@ -535,7 +554,7 @@
     p = lastParceiro;
     if (!p) return;
     var url = p.avatar_url && String(p.avatar_url).trim();
-    var nome = p.nome_completo ? String(p.nome_completo).split(' ')[0] : '';
+    var nome = p.nome_completo ? String(p.nome_completo).split(' ')[0] : (p.nome_razao ? String(p.nome_razao).split(' ')[0] : '');
     var avs = document.querySelectorAll('#calc-header [data-partner-avatar], #mobile-menu [data-partner-avatar]');
     for (var i = 0; i < avs.length; i++) {
       if (url) {
@@ -720,10 +739,13 @@
 
   function userWidgetHTML() {
     if (!isLogged()) return '';
+    var perfilHref = onCliente ? (CLIENTE + 'index.html') : (B2B + 'perfil.html');
+    var perfilAtivo = onCliente ? '' : (!isSubdirAdmin && currentPath === 'perfil.html' ? ' active' : '');
     return '<div class="b2b-user-widget" data-mn-user="1">' +
       pushBtnHTML() +
+      calLinkHTML('', false) +
       mailLinkHTML('', false) +
-      '<a href="' + B2B + 'perfil.html" title="Meu Perfil" class="b2b-avatar-link' + (!isSubdirAdmin && currentPath === 'perfil.html' ? ' active' : '') + '">' +
+      '<a href="' + perfilHref + '" title="Meu Perfil" class="b2b-avatar-link' + perfilAtivo + '">' +
         '<div data-partner-avatar class="b2b-avatar-img"></div>' +
       '</a>' +
       '<button type="button" id="btnLogoutDesk" title="Sair do Portal" class="mn-logout">🔒 Sair</button>' +
@@ -740,7 +762,7 @@
           '<span style="font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:.05em;color:' + (master ? '#fbbf24' : '#22d3ee') + ';">' +
             (master ? 'Master Admin ➔' : 'Ver Meu Perfil ➔') + '</span>' +
         '</div></a>' +
-      '<div style="display:flex;align-items:center;gap:6px;flex:none;">' + pushBtnHTML() + mailLinkHTML('', false) + '</div>' +
+      '<div style="display:flex;align-items:center;gap:6px;flex:none;">' + pushBtnHTML() + calLinkHTML('', false) + mailLinkHTML('', false) + '</div>' +
     '</div>';
   }
 
@@ -1323,10 +1345,17 @@
       fillUserParts();
       return;
     }
-    sbPartner.from('portal_clientes').select('id').eq('user_id', uid).maybeSingle().then(function (pc) {
+    sbPartner.from('portal_clientes').select('id, avatar_url, email').eq('user_id', uid).maybeSingle().then(function (pc) {
       base.isCliente = !!(pc && pc.data);
       window.updateAuthState(base);
-      fillUserParts();
+      if (pc && pc.data) {
+        fillUserParts({
+          avatar_url: pc.data.avatar_url || '',
+          nome_completo: (pc.data.email || '').split('@')[0] || 'Cliente'
+        });
+      } else {
+        fillUserParts();
+      }
     }).catch(function () {
       window.updateAuthState(base);
       fillUserParts();

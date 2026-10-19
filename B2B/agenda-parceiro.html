@@ -1,0 +1,285 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Minha agenda · 432UP</title>
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+<script src="partner-config.js"></script>
+<style>
+  :root {
+    --bg:#0b1020; --card:#131a2e; --line:rgba(255,255,255,.08);
+    --txt:#e2e8f0; --mut:#94a3b8; --acc:#a3e635; --ouro:#c5a059;
+    --ciano:#00f0ff; --amb:#facc15; --laranja:#f97316;
+  }
+  * { box-sizing:border-box; }
+  body { margin:0; font-family: system-ui, -apple-system, Segoe UI, Roboto, sans-serif; background:var(--bg); color:var(--txt); }
+  header { padding:14px 20px; border-bottom:1px solid var(--line); display:flex; justify-content:space-between; align-items:center; gap:12px; flex-wrap:wrap; }
+  h1 { font-size:17px; margin:0; text-transform:capitalize; }
+  button { font:inherit; color:var(--txt); background:#0f1628; border:1px solid var(--line); padding:7px 12px; border-radius:8px; cursor:pointer; }
+  button:hover { border-color:var(--acc); }
+  .nav { display:flex; gap:8px; align-items:center; flex-wrap:wrap; }
+  a.link { color:var(--ciano); text-decoration:none; font-size:13px; }
+  .filtros { display:flex; flex-wrap:wrap; gap:8px 14px; padding:10px 20px; border-bottom:1px solid var(--line); background:rgba(0,0,0,.2); font-size:12px; }
+  .tog { display:inline-flex; align-items:center; gap:6px; cursor:pointer; padding:4px 8px; border-radius:8px; }
+  .tog.off { opacity:.45; }
+  .tog input { accent-color: var(--acc); }
+  .dot { width:10px; height:10px; border-radius:3px; display:inline-block; }
+  main { display:grid; grid-template-columns: minmax(0,1fr) 320px; gap:16px; padding:16px 20px; }
+  @media (max-width: 900px) { main { grid-template-columns:1fr; } }
+  .grid { display:grid; grid-template-columns:repeat(7,minmax(0,1fr)); gap:6px; }
+  .dow { font-size:11px; text-transform:uppercase; color:var(--mut); text-align:center; padding:4px 0; }
+  .dia { background:var(--card); border:1px solid var(--line); border-radius:10px; min-height:88px; padding:6px; cursor:pointer; display:flex; flex-direction:column; gap:3px; overflow:hidden; }
+  .dia:hover { border-color:rgba(163,230,53,.5); }
+  .dia.outro { opacity:.35; }
+  .dia.hoje { outline:2px solid var(--acc); outline-offset:-2px; }
+  .dia.sel { border-color:var(--acc); }
+  .num { font-size:12px; font-weight:700; color:var(--mut); }
+  .ev { font-size:11px; line-height:1.25; padding:2px 5px; border-radius:5px; white-space:nowrap; overflow:hidden; text-overflow:ellipsis; font-weight:600; }
+  .e-evento { background:rgba(0,240,255,.18); color:var(--ciano); }
+  .e-colab { background:rgba(163,230,53,.15); color:var(--acc); }
+  .e-venda { background:rgba(197,160,89,.2); color:var(--ouro); }
+  .e-reserva { background:rgba(249,115,22,.18); color:var(--laranja); }
+  .painel { background:var(--card); border:1px solid var(--line); border-radius:12px; padding:14px; align-self:start; }
+  .painel h2 { font-size:12px; margin:0 0 10px; color:var(--ouro); text-transform:uppercase; letter-spacing:.06em; }
+  .item { border:1px solid var(--line); border-radius:10px; padding:10px 12px; margin-bottom:8px; font-size:13px; border-left:4px solid var(--line); }
+  .item strong { display:block; margin-bottom:2px; }
+  .item small { color:var(--mut); display:block; margin-top:2px; font-size:12px; }
+  .item .acoes { margin-top:8px; display:flex; gap:6px; flex-wrap:wrap; }
+  .item .acoes a { font-size:12px; padding:5px 10px; border-radius:8px; text-decoration:none; border:1px solid var(--line); color:var(--txt); }
+  .item .acoes a.pri { background:var(--acc); color:#0b1020; border-color:var(--acc); font-weight:700; }
+  .vazio { color:var(--mut); font-size:13px; }
+</style>
+</head>
+<body>
+<header>
+  <h1 id="tituloMes">Minha agenda</h1>
+  <div class="nav">
+    <button type="button" id="btnPrev">‹</button>
+    <button type="button" id="btnHoje">Hoje</button>
+    <button type="button" id="btnNext">›</button>
+    <a class="link" href="checklist.html">Checklist →</a>
+  </div>
+</header>
+<div class="filtros" id="filtros"></div>
+<main>
+  <section>
+    <div class="grid" id="cabec"></div>
+    <div class="grid" id="grade"></div>
+  </section>
+  <aside class="painel">
+    <h2 id="tituloDia">Selecione um dia</h2>
+    <div id="listaDia" class="vazio">Clique em um dia para ver seus eventos.</div>
+  </aside>
+</main>
+<script>
+(function () {
+  'use strict';
+  var CFG = window.PARTNER_CFG;
+  if (!CFG) { document.body.innerHTML = '<p style="padding:40px">Configuração ausente.</p>'; return; }
+  if (typeof window.sbPartner === 'undefined') {
+    window.sbPartner = window.supabase.createClient(CFG.SB_URL, CFG.SB_KEY, {
+      auth: { persistSession: true, autoRefreshToken: true }
+    });
+  }
+  var SB = window.sbPartner;
+  var MESES = ['janeiro','fevereiro','março','abril','maio','junho','julho','agosto','setembro','outubro','novembro','dezembro'];
+  var DIAS = ['seg','ter','qua','qui','sex','sáb','dom'];
+  var CACHE_KEY = '432up_agenda_parceiro_filtros_v1';
+  var TIPOS = [
+    { id: 'evento', label: 'Eventos (data)', cls: 'e-evento', cor: '#00f0ff' },
+    { id: 'colab', label: 'Como colaborador', cls: 'e-colab', cor: '#a3e635' },
+    { id: 'venda', label: 'Como vendedor', cls: 'e-venda', cor: '#c5a059' },
+    { id: 'reserva', label: 'Reserva / recurso', cls: 'e-reserva', cor: '#f97316' }
+  ];
+  function carregarFiltros() {
+    var p = {}; TIPOS.forEach(function (t) { p[t.id] = true; });
+    try {
+      var s = JSON.parse(localStorage.getItem(CACHE_KEY) || '{}');
+      TIPOS.forEach(function (t) { if (typeof s[t.id] === 'boolean') p[t.id] = s[t.id]; });
+    } catch (e) {}
+    return p;
+  }
+  var FILTROS = carregarFiltros();
+  var ANO, MES, DIA_SEL = null, ITENS = {}, ME = null, CHECKLIST = {};
+  var $ = function (id) { return document.getElementById(id); };
+  var E = function (s) {
+    return String(s == null ? '' : s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');
+  };
+  function chave(d) {
+    return d.getFullYear() + '-' + String(d.getMonth()+1).padStart(2,'0') + '-' + String(d.getDate()).padStart(2,'0');
+  }
+  function add(k, item) { if (!k) return; (ITENS[k] = ITENS[k] || []).push(item); }
+  function visivel(tipo) { return FILTROS[tipo] !== false; }
+
+  function montarFiltros() {
+    $('filtros').innerHTML = '<span style="color:var(--mut);font-weight:600">Mostrar:</span>' +
+      TIPOS.map(function (t) {
+        var on = FILTROS[t.id] !== false;
+        return '<label class="tog' + (on ? '' : ' off') + '"><input type="checkbox" data-id="' + t.id + '"' + (on ? ' checked' : '') + '>' +
+          '<i class="dot" style="background:' + t.cor + '"></i>' + E(t.label) + '</label>';
+      }).join('');
+    $('filtros').querySelectorAll('input').forEach(function (inp) {
+      inp.addEventListener('change', function () {
+        FILTROS[inp.getAttribute('data-id')] = inp.checked;
+        inp.parentElement.classList.toggle('off', !inp.checked);
+        try { localStorage.setItem(CACHE_KEY, JSON.stringify(FILTROS)); } catch (e) {}
+        desenhar();
+        if (DIA_SEL) abrirDia(DIA_SEL, true);
+      });
+    });
+  }
+
+  async function idsDoParceiro() {
+    var ids = new Set();
+    var meta = {}; // id -> roles[]
+    function mark(id, role) {
+      if (!id) return;
+      ids.add(id);
+      (meta[id] = meta[id] || []);
+      if (meta[id].indexOf(role) < 0) meta[id].push(role);
+    }
+    try {
+      var { data: cols } = await SB.from('projeto_colaboradores').select('proposta_id').eq('parceiro_id', ME.id);
+      (cols || []).forEach(function (c) { mark(c.proposta_id, 'colab'); });
+    } catch (e) {}
+    try {
+      var { data: minhas } = await SB.from('propostas').select('id').eq('parceiro_id', ME.id).is('cancelada_em', null);
+      (minhas || []).forEach(function (p) { mark(p.id, 'venda'); });
+    } catch (e) {}
+    try {
+      var { data: res } = await SB.from('agenda_reservas').select('proposta_id').eq('recurso_id', ME.id).not('proposta_id', 'is', null);
+      (res || []).forEach(function (r) { mark(r.proposta_id, 'reserva'); });
+    } catch (e) {}
+    return { ids: Array.from(ids), meta: meta };
+  }
+
+  async function carregarMes() {
+    ITENS = {}; CHECKLIST = {};
+    var primeiro = new Date(ANO, MES, 1);
+    var ultimo = new Date(ANO, MES + 1, 0);
+    var ini = chave(primeiro), fim = chave(ultimo);
+    var pack = await idsDoParceiro();
+    if (!pack.ids.length) {
+      desenhar();
+      return;
+    }
+    var { data: props } = await SB.from('propostas')
+      .select('id, numero, cliente_nome, tipo_evento, data_evento, horario_inicio, status, assinado_em')
+      .in('id', pack.ids)
+      .is('cancelada_em', null);
+    var idsProp = [];
+    (props || []).forEach(function (p) {
+      idsProp.push(p.id);
+      var de = p.data_evento ? String(p.data_evento).slice(0, 10) : null;
+      if (!de || de < ini || de > fim) return;
+      var roles = pack.meta[p.id] || [];
+      var tipo = roles.indexOf('colab') >= 0 ? 'colab' : (roles.indexOf('venda') >= 0 ? 'venda' : (roles.indexOf('reserva') >= 0 ? 'reserva' : 'evento'));
+      add(de, {
+        tipo: tipo,
+        id: p.id,
+        titulo: p.cliente_nome || ('#' + p.numero),
+        sub: (p.horario_inicio ? String(p.horario_inicio).slice(0,5) + ' · ' : '') + (p.tipo_evento || '') +
+          (roles.length ? ' · ' + roles.join(', ') : ''),
+        prop: p,
+        roles: roles
+      });
+    });
+    if (idsProp.length) {
+      try {
+        var { data: etapas } = await SB.from('evento_etapas').select('proposta_id, situacao').in('proposta_id', idsProp);
+        (etapas || []).forEach(function (e) {
+          if (!CHECKLIST[e.proposta_id]) CHECKLIST[e.proposta_id] = { total: 0, pend: 0 };
+          CHECKLIST[e.proposta_id].total++;
+          if (e.situacao === 'pendente') CHECKLIST[e.proposta_id].pend++;
+        });
+      } catch (e) {}
+    }
+    desenhar();
+  }
+
+  function desenhar() {
+    $('tituloMes').textContent = MESES[MES] + ' ' + ANO;
+    $('cabec').innerHTML = DIAS.map(function (d) { return '<div class="dow">' + d + '</div>'; }).join('');
+    var primeiro = new Date(ANO, MES, 1);
+    var offset = (primeiro.getDay() + 6) % 7;
+    var inicio = new Date(primeiro); inicio.setDate(1 - offset);
+    var hoje = chave(new Date());
+    var html = '';
+    for (var i = 0; i < 42; i++) {
+      var d = new Date(inicio); d.setDate(inicio.getDate() + i);
+      var k = chave(d);
+      var itens = (ITENS[k] || []).filter(function (it) { return visivel(it.tipo); });
+      var cls = ['dia'];
+      if (d.getMonth() !== MES) cls.push('outro');
+      if (k === hoje) cls.push('hoje');
+      if (k === DIA_SEL) cls.push('sel');
+      var chips = itens.slice(0, 3).map(function (it) {
+        var t = TIPOS.find(function (x) { return x.id === it.tipo; });
+        return '<div class="ev ' + (t ? t.cls : 'e-evento') + '">' + E(it.titulo) + '</div>';
+      }).join('');
+      var mais = itens.length > 3 ? '<div style="font-size:10px;color:var(--mut)">+' + (itens.length - 3) + '</div>' : '';
+      html += '<div class="' + cls.join(' ') + '" data-k="' + k + '"><span class="num">' + d.getDate() + '</span>' + chips + mais + '</div>';
+    }
+    $('grade').innerHTML = html;
+    $('grade').querySelectorAll('[data-k]').forEach(function (el) {
+      el.addEventListener('click', function () { abrirDia(el.getAttribute('data-k')); });
+    });
+    if (DIA_SEL) abrirDia(DIA_SEL, true);
+  }
+
+  function abrirDia(k, silencioso) {
+    DIA_SEL = k;
+    var partes = k.split('-');
+    $('tituloDia').textContent = partes[2] + '/' + partes[1] + '/' + partes[0];
+    var itens = (ITENS[k] || []).filter(function (it) { return visivel(it.tipo); });
+    if (!itens.length) {
+      $('listaDia').className = 'vazio';
+      $('listaDia').textContent = 'Nada neste dia para você.';
+    } else {
+      $('listaDia').className = '';
+      $('listaDia').innerHTML = itens.map(function (it) {
+        var t = TIPOS.find(function (x) { return x.id === it.tipo; });
+        var cor = t ? t.cor : '#64748b';
+        var p = it.prop;
+        var ck = CHECKLIST[p.id] || { total: 0, pend: 0 };
+        var tag = !ck.total ? 'Sem checklist' : (ck.pend === 0 ? 'Checklist ok' : ck.pend + ' pendente(s)');
+        return '<div class="item" style="border-left-color:' + cor + '">' +
+          '<strong>' + E(it.titulo) + '</strong>' +
+          '<small>' + E(it.sub) + '</small>' +
+          '<small>' + E(tag) + '</small>' +
+          '<div class="acoes">' +
+            '<a class="pri" href="checklist.html?proposta=' + encodeURIComponent(p.id) + '">Checklist</a>' +
+          '</div></div>';
+      }).join('');
+    }
+    if (!silencioso) {
+      document.querySelectorAll('#grade .dia').forEach(function (el) {
+        el.classList.toggle('sel', el.getAttribute('data-k') === k);
+      });
+    }
+  }
+
+  $('btnPrev').addEventListener('click', function () { MES--; if (MES < 0) { MES = 11; ANO--; } carregarMes(); });
+  $('btnNext').addEventListener('click', function () { MES++; if (MES > 11) { MES = 0; ANO++; } carregarMes(); });
+  $('btnHoje').addEventListener('click', function () {
+    var h = new Date(); ANO = h.getFullYear(); MES = h.getMonth(); DIA_SEL = chave(h); carregarMes();
+  });
+
+  (async function init() {
+    var s = await SB.auth.getSession();
+    if (!(s.data && s.data.session)) { location.href = 'login.html'; return; }
+    var r = await SB.from('parceiros').select('id, nome_completo, role, status').eq('user_id', s.data.session.user.id).maybeSingle();
+    ME = r.data;
+    if (!ME) {
+      document.querySelector('main').innerHTML = '<div class="painel"><div class="vazio">Conta de parceiro não encontrada.</div></div>';
+      return;
+    }
+    var h = new Date(); ANO = h.getFullYear(); MES = h.getMonth(); DIA_SEL = chave(h);
+    montarFiltros();
+    await carregarMes();
+  })();
+})();
+</script>
+</body>
+</html>
