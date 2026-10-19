@@ -30,7 +30,7 @@
     *, *::before, *::after { box-sizing: border-box; }
 
     .area {
-      width: 100%; max-width: 1040px; margin: 0 auto; position: relative; z-index: 2;
+      width: 100%; max-width: 1120px; margin: 0 auto; position: relative; z-index: 2;
       /* --hdr-h é medido por JS a partir do menu fixo; 112px é o plano B */
       padding-top: calc(var(--hdr-h, 112px) + 32px);
       padding-left: max(18px, env(safe-area-inset-left)); padding-right: max(18px, env(safe-area-inset-right));
@@ -126,11 +126,28 @@
 
     .campo-linha { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; }
     label.cap { display: block; font-size: 10px; text-transform: uppercase; letter-spacing: .06em; color: var(--mut); margin: 12px 0 4px; }
+    /* Campos em vidro: translúcidos, no tom do site */
     input, select, textarea {
-      width: 100%; background: #030306; color: var(--body); border: 1px solid rgba(255, 255, 255, .12);
-      border-radius: 12px; padding: 11px 12px; font: inherit; font-size: 14px;
+      width: 100%; background: rgba(255, 255, 255, .06); color: var(--text);
+      border: 1px solid rgba(255, 255, 255, .16); border-radius: 14px; padding: 12px 14px;
+      font: inherit; font-size: 14px; -webkit-appearance: none; appearance: none;
+      backdrop-filter: blur(10px); -webkit-backdrop-filter: blur(10px);
+      transition: border-color .2s, background .2s, box-shadow .2s;
     }
-    input:focus, select:focus, textarea:focus { outline: none; border-color: rgba(168, 85, 247, .55); }
+    input::placeholder, textarea::placeholder { color: rgba(255, 255, 255, .38); }
+    input:focus, select:focus, textarea:focus {
+      outline: none; background: rgba(255, 255, 255, .1);
+      border-color: rgba(192, 132, 252, .65); box-shadow: 0 0 0 3px rgba(168, 85, 247, .18);
+    }
+    select option { background: #17122b; color: #fff; }
+    input[type="checkbox"] { -webkit-appearance: auto; appearance: auto; width: auto; padding: 0; background: none; border: 0; box-shadow: none; backdrop-filter: none; -webkit-backdrop-filter: none; accent-color: #a855f7; }
+    input[type="file"] { padding: 8px 10px; font-size: 13px; color: var(--mut); cursor: pointer; }
+    input[type="file"]::file-selector-button {
+      margin-right: 12px; padding: 8px 16px; border-radius: 999px; cursor: pointer;
+      border: 1px solid rgba(192, 132, 252, .5); background: rgba(168, 85, 247, .2); color: #fff;
+      font: inherit; font-size: 12px; font-weight: 700; letter-spacing: .04em; transition: background .2s;
+    }
+    input[type="file"]::file-selector-button:hover { background: rgba(168, 85, 247, .36); }
     .msg { font-size: 12px; min-height: 16px; margin-top: 8px; color: #fca5a5; }
     .msg.ok { color: var(--action); }
 
@@ -165,18 +182,56 @@
     .cal .hd { color: var(--mut); font-weight: 700; padding: 6px 0; }
     .cal .d { padding: 10px 0; border-radius: 12px; border: 1px solid transparent; color: var(--body); min-height: 44px; }
     .cal .d.muted { opacity: .3; }
-    .cal .d.evento { border-color: rgba(255, 0, 127, .35); background: rgba(255, 0, 127, .07); color: #ffb3d6; font-weight: 800; cursor: pointer; }
+    .cal .d.tem { border-color: rgba(var(--rgb), .5); background: rgba(var(--rgb), .14); color: #fff; font-weight: 800; cursor: pointer; }
+    .cal .d .dots { display: flex; gap: 3px; justify-content: center; margin-top: 4px; min-height: 6px; }
+    .cal .d .dots i { width: 6px; height: 6px; border-radius: 50%; display: block; }
+    .filtros .sw { width: 10px; height: 10px; border-radius: 3px; display: inline-block; }
     .cal .d.hoje { border-color: rgba(212, 175, 55, .5); }
     .cal .d.sel { outline: 2px solid var(--action); outline-offset: -2px; }
     .cal-nav { display: flex; align-items: center; justify-content: space-between; gap: 8px; margin-bottom: 12px; }
     .filtros { display: flex; flex-wrap: wrap; gap: 10px; margin: 6px 0 14px; font-size: 12px; }
     .filtros label { display: inline-flex; align-items: center; gap: 5px; cursor: pointer; color: var(--body); }
     .filtros input { width: auto; }
-    .dia-item { border: 1px solid var(--line); border-radius: 16px; padding: 12px; margin-bottom: 8px; border-left: 4px solid var(--purple); background: rgba(255, 255, 255, .025); }
+    .dia-item { border: 1px solid var(--line); border-radius: 16px; padding: 12px; margin-bottom: 8px; border-left: 4px solid #c084fc; background: rgba(255, 255, 255, .025); }
     .dia-item strong { display: block; margin-bottom: 2px; }
     .dia-item small { color: var(--mut); display: block; font-size: 12px; }
 
     /* Memórias */
+    /* Mini checklist (Início) */
+    .mk-topo { display: flex; justify-content: space-between; align-items: center; gap: 10px; margin-bottom: 6px; }
+    .mk-topo h2 { margin: 0 !important; }
+    .mk-topo .btn-s { margin-top: 0; padding: 7px 12px; font-size: 12px; white-space: nowrap; }
+    .mini-ck { display: flex; align-items: center; gap: 6px; overflow-x: auto; padding: 10px 2px 6px; scrollbar-width: none; }
+    .mini-ck::-webkit-scrollbar { display: none; }
+    .mk { flex: 0 0 auto; display: inline-flex; align-items: center; gap: 6px; padding: 6px 12px; border-radius: 999px; font-size: 12px; font-weight: 700; white-space: nowrap; border: 1px solid var(--line); background: rgba(255, 255, 255, .04); color: var(--mut); }
+    .mk.feita { border-color: rgba(0, 255, 102, .35); background: rgba(0, 255, 102, .1); color: var(--action); }
+    .mk.prox { border-color: rgba(192, 132, 252, .7); background: rgba(168, 85, 247, .2); color: #fff; box-shadow: 0 0 14px rgba(168, 85, 247, .25); }
+    .mk-seta { flex: 0 0 auto; color: rgba(255, 255, 255, .35); font-size: 16px; line-height: 1; }
+
+    /* Meu evento: 3 colunas no desktop, empilhado no celular */
+    .ck-grid { display: grid; grid-template-columns: minmax(0, 1fr) minmax(0, 1.1fr) minmax(0, .85fr); gap: 18px; align-items: start; }
+    .ck-col { display: flex; flex-direction: column; min-width: 0; }
+    .ck-col .box-full { margin-bottom: 18px; }
+    @media (max-width: 899px) {
+      .ck-grid { display: flex; flex-direction: column; gap: 0; }
+      .ck-col { display: contents; }
+      .o-resumo { order: 1; } .o-equipe { order: 2; } .o-linha { order: 3; } .o-obs { order: 4; } .o-avisos { order: 5; }
+    }
+    .resumo-evt .linha { display: block; padding: 7px 0; border: 0; }
+    .resumo-evt .rot { display: block; font-size: 11px; color: var(--mut); text-transform: uppercase; letter-spacing: .06em; margin-bottom: 2px; }
+    .resumo-evt .val { display: block; font-size: 15px; font-weight: 600; text-align: left; }
+    .eq-item { display: flex; align-items: center; gap: 12px; padding: 8px 0; }
+    .eq-foto { width: 46px; height: 46px; border-radius: 50%; flex: none; background: rgba(168, 85, 247, .18) center/cover no-repeat; border: 2px solid rgba(192, 132, 252, .45); display: flex; align-items: center; justify-content: center; font-weight: 800; color: #e9d5ff; }
+    .eq-item strong { display: block; font-size: 15px; line-height: 1.25; }
+    .eq-item small { display: block; margin-top: 2px; font-size: 12px; color: var(--mut); letter-spacing: .02em; }
+
+    /* Memórias: galeria */
+    .foto-grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 10px; }
+    .foto { aspect-ratio: 4 / 3; border-radius: 16px; border: 1px solid rgba(255, 255, 255, .12); display: flex; align-items: center; justify-content: center; color: rgba(255, 255, 255, .55); background: linear-gradient(135deg, rgba(168, 85, 247, .22), rgba(6, 182, 212, .12)); }
+    .foto:nth-child(1) { grid-column: span 2; grid-row: span 2; aspect-ratio: auto; }
+    .foto:nth-child(3n+2) { background: linear-gradient(135deg, rgba(255, 0, 127, .16), rgba(168, 85, 247, .14)); }
+    .foto svg { width: 28px; height: 28px; }
+    @media (max-width: 640px) { .foto-grid { grid-template-columns: repeat(2, 1fr); } .foto:nth-child(1) { grid-column: span 2; grid-row: auto; aspect-ratio: 16 / 9; } }
     .galeria-vazia { border: 1px dashed rgba(255, 255, 255, .14); border-radius: 18px; padding: 28px 18px; text-align: center; color: var(--mut); font-size: 14px; }
 
     /* Perfil */
@@ -185,9 +240,6 @@
 
     /* Notificações e modais */
     .sino { position: relative; }
-    .sino-menu { position: relative; overflow: visible !important; cursor: pointer; -webkit-appearance: none; appearance: none; padding: 0; flex: 0 0 auto; align-items: center; justify-content: center; -webkit-tap-highlight-color: transparent; }
-    .sino-menu svg { display: block; pointer-events: none; }
-    .sino-menu-badge { position: absolute; top: -5px; right: -5px; min-width: 18px; height: 18px; padding: 0 5px; border-radius: 999px; background: var(--pink); color: #fff; font-size: 11px; font-weight: 800; line-height: 1; display: none; align-items: center; justify-content: center; box-shadow: 0 0 0 2px #08080A; }
     .sino-badge { position: absolute; top: -6px; right: -6px; min-width: 18px; height: 18px; padding: 0 5px; border-radius: 999px; background: var(--pink); color: #fff; font-size: 11px; font-weight: 800; display: none; align-items: center; justify-content: center; }
     .modal-bg { position: fixed; inset: 0; z-index: 9999; background: rgba(0, 0, 0, .7); display: none; align-items: center; justify-content: center; padding: 16px; }
     .modal-bg.on { display: flex; }
@@ -252,8 +304,14 @@
           </div>
         </div>
 
+        <div class="box-full" id="cardMiniCk" style="display:none">
+          <div class="mk-topo"><h2>Checklist do evento</h2><button type="button" class="btn-s" id="btnVerCk">Ver checklist ›</button></div>
+          <div class="mini-ck" id="miniCk"></div>
+          <div class="pill" id="miniCkRes" style="margin-top:6px"></div>
+        </div>
+
         <div class="box-full">
-          <h2>Pedidos e pagamentos</h2>
+          <h2>Documentação e pagamento</h2>
           <div id="listaPedidos" class="vazio">Carregando…</div>
         </div>
 
@@ -272,20 +330,16 @@
         <div class="open">
           <p>A partir da assinatura do contrato, você acompanha aqui cada etapa do evento até o grande dia.</p>
         </div>
-
-        <div class="box-full i3" id="cardAvisos">
-          <h2>Avisos no celular</h2>
-          <p class="lead" style="font-size:14px;margin-bottom:4px">Receba no aparelho quando uma etapa do seu evento for confirmada.</p>
-          <button type="button" class="btn" id="btnAvisos">Ativar avisos</button>
-          <div class="msg" id="msgAvisos"></div>
-        </div>
-
-        <div class="box-full">
+        <div class="ck-grid">
+          <div class="ck-col">
+        <div class="box-full o-linha">
           <h2>Linha do tempo</h2>
           <div class="trilha" id="linhaTempo"><div class="vazio">Carregando…</div></div>
         </div>
 
-        <div class="box-full">
+          </div>
+          <div class="ck-col">
+        <div class="box-full o-obs">
           <h2>Instruções para o seu evento</h2>
           <div id="listaObs" class="vazio">Carregando…</div>
           <form id="formObs" style="margin-top:12px">
@@ -295,6 +349,25 @@
             <div class="msg" id="msgObs"></div>
           </form>
         </div>
+        <div class="box-full i3 o-avisos" id="cardAvisos">
+          <h2>Avisos no celular</h2>
+          <p class="lead" style="font-size:14px;margin-bottom:4px">Receba no aparelho quando uma etapa do seu evento for confirmada.</p>
+          <button type="button" class="btn" id="btnAvisos">Ativar avisos</button>
+          <div class="msg" id="msgAvisos"></div>
+        </div>
+
+          </div>
+          <div class="ck-col">
+        <div class="box-full o-resumo resumo-evt" id="cardResumoEvt">
+          <h2>Resumo do evento</h2>
+          <div id="resumoEvt" class="vazio">Carregando…</div>
+        </div>
+        <div class="box-full o-equipe" id="cardEquipe">
+          <h2>Equipe técnica</h2>
+          <div id="listaEquipe" class="vazio">Carregando…</div>
+        </div>
+          </div>
+        </div>
       </section>
 
       <!-- 2 · CALENDÁRIO -->
@@ -303,10 +376,10 @@
           <h2>Calendário do evento</h2>
           <p class="pill" id="calSub" style="margin:0 0 10px">Só as datas dos seus pedidos aparecem aqui.</p>
           <div class="filtros" id="calFiltros">
-            <label><input type="checkbox" data-filtro="evento" checked> Evento</label>
-            <label><input type="checkbox" data-filtro="contrato" checked> Contrato</label>
-            <label><input type="checkbox" data-filtro="pagamento" checked> Pagamentos</label>
-            <label><input type="checkbox" data-filtro="comprovante" checked> Comprovantes</label>
+            <label><input type="checkbox" data-filtro="evento" checked><i class="sw" style="background:#c084fc"></i> Evento</label>
+            <label><input type="checkbox" data-filtro="contrato" checked><i class="sw" style="background:#3b82f6"></i> Contrato</label>
+            <label><input type="checkbox" data-filtro="pagamento" checked><i class="sw" style="background:#86efac"></i> Pagamentos</label>
+            <label><input type="checkbox" data-filtro="comprovante" checked><i class="sw" style="background:#22c55e"></i> Comprovantes</label>
           </div>
           <div class="cal-nav">
             <button type="button" class="btn-s" id="calPrev" style="margin-top:0">‹</button>
@@ -340,7 +413,12 @@
         </div>
         <div class="box-full">
           <h2>Galeria</h2>
-          <div id="memGaleria" class="galeria-vazia">Ainda não há fotos publicadas para o seu evento.</div>
+          <div id="memGaleria">
+            <div class="foto-grid" aria-hidden="true">
+              <div class="foto"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><path d="M4 8h3l2-3h6l2 3h3v11H4z"/><circle cx="12" cy="13" r="3.5"/></svg></div><div class="foto"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><path d="M4 8h3l2-3h6l2 3h3v11H4z"/><circle cx="12" cy="13" r="3.5"/></svg></div><div class="foto"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><path d="M4 8h3l2-3h6l2 3h3v11H4z"/><circle cx="12" cy="13" r="3.5"/></svg></div><div class="foto"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><path d="M4 8h3l2-3h6l2 3h3v11H4z"/><circle cx="12" cy="13" r="3.5"/></svg></div><div class="foto"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><path d="M4 8h3l2-3h6l2 3h3v11H4z"/><circle cx="12" cy="13" r="3.5"/></svg></div><div class="foto"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><path d="M4 8h3l2-3h6l2 3h3v11H4z"/><circle cx="12" cy="13" r="3.5"/></svg></div>
+            </div>
+            <p class="pill" style="margin:12px 0 0;text-align:center">Fotos de exemplo · as fotos reais do seu evento aparecem aqui depois do grande dia.</p>
+          </div>
         </div>
       </section>
 
@@ -355,7 +433,7 @@
           <div class="avatar-wrap">
             <div class="avatar" id="avatarPreview"><span id="avatarPlaceholder">📷</span></div>
             <div style="flex:1;min-width:160px">
-              <input type="file" id="fAvatar" accept="image/png,image/jpeg,image/webp" style="font-size:12px">
+              <input type="file" id="fAvatar" accept="image/png,image/jpeg,image/webp">
               <p class="pill" style="margin:6px 0 4px">Formatos aceitos: JPG, PNG ou WebP até 5 MB.</p>
               <button type="button" class="btn-s" id="btnSalvarAvatar" style="display:none;margin-top:4px">Salvar foto</button>
               <div class="msg" id="msgAvatar"></div>
@@ -491,6 +569,13 @@
   var cropperInst = null;
   var calAno = null, calMes = null, calDiaSel = null;
   var _contagemTimer = null;
+  /* Cores da agenda do portal (evento = lilás) */
+  var COR_CAL = {
+    evento:      { hex: '#c084fc', rgb: '192,132,252' },
+    contrato:    { hex: '#3b82f6', rgb: '59,130,246' },
+    pagamento:   { hex: '#86efac', rgb: '134,239,172' },
+    comprovante: { hex: '#22c55e', rgb: '34,197,94' }
+  };
   var FILTROS_CAL = { evento: true, contrato: true, pagamento: true, comprovante: true };
   try {
     var _fc = JSON.parse(localStorage.getItem('432up_cli_cal_filtros') || '{}');
@@ -550,6 +635,7 @@
     var st = parseInt(sessionStorage.getItem('432_cli_tab') || '0', 10);
     if (!isNaN(st) && st > 0) goToAba(st);
   } catch (e) {}
+  if (/[?&]aba=perfil/.test(location.search || '')) goToAba(4);
   /* Header canônico: ?notif=1 abre o modal de notificações */
   if (/[?&]notif=1/.test(location.search || '')) {
     setTimeout(function () {
@@ -578,85 +664,26 @@
     if (h >= 40) document.documentElement.style.setProperty('--hdr-h', h + 'px');
   }
 
-  /* ===== Sino de notificações dentro do menu (ao lado do ícone de e-mail) ===== */
-  var SVG_SINO = '<svg viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M6 8a6 6 0 0 1 12 0c0 7 3 9 3 9H3s3-2 3-9"/><path d="M10.3 21a1.94 1.94 0 0 0 3.4 0"/></svg>';
+  /* ===== Integração com o menu oficial (partner-header.js) ===== */
   var _nNotif = 0;
   function atualizarBadgesMenu(n) {
     _nNotif = n || 0;
-    document.querySelectorAll('.sino-menu-badge').forEach(function (el) {
-      el.textContent = _nNotif > 9 ? '9+' : String(_nNotif);
-      el.style.display = _nNotif ? 'flex' : 'none';
-    });
+    if (typeof window.mnSetBadge === 'function') window.mnSetBadge(_nNotif);
   }
-  function iconeVisivel(el) {
-    var r = el.getBoundingClientRect();
-    return r.width >= 20 && r.width <= 72 && r.height >= 20 && r.height <= 72;
-  }
-  function acharEnvelopes() {
-    var achados = [];
-    var cand = [];
-    ['calc-header', 'mobile-menu'].forEach(function (id) {
-      var root = document.getElementById(id);
-      if (root) root.querySelectorAll('a, button, [role="button"]').forEach(function (el) {
-        if (el.hasAttribute('data-sino-menu') || !iconeVisivel(el)) return;
-        if (/^mailto:/i.test(el.getAttribute('href') || '')) return;
-        cand.push(el);
-      });
-    });
-    cand.forEach(function (el) {
-      var c = typeof el.className === 'string' ? el.className : '';
-      var s = [el.getAttribute('href'), el.getAttribute('aria-label'), el.getAttribute('title'), el.id, c, el.textContent].join(' ').toLowerCase();
-      if (/mail|mensag|inbox|✉|📧|📩/.test(s)) achados.push(el);
-    });
-    /* plano B: ícone redondo mais à direita do menu do topo */
-    if (!achados.length) {
-      var topo = cand.filter(function (el) { return document.getElementById('calc-header').contains(el); });
-      topo.sort(function (a, b) { return b.getBoundingClientRect().right - a.getBoundingClientRect().right; });
-      if (topo[0]) achados.push(topo[0]);
-    }
-    return achados;
-  }
-  function criarSino(ref) {
-    var cs = getComputedStyle(ref), r = ref.getBoundingClientRect();
-    var svg = ref.querySelector('svg');
-    var cor = cs.color;
-    if (svg) { var sc = getComputedStyle(svg); cor = (sc.stroke && sc.stroke !== 'none') ? sc.stroke : sc.color; }
-    var gap = parseFloat(getComputedStyle(ref.parentNode).columnGap) || 0;
-    var b = document.createElement('button');
-    b.type = 'button';
-    b.className = 'sino-menu';
-    b.setAttribute('data-sino-menu', '1');
-    b.setAttribute('aria-label', 'Notificações');
-    b.title = 'Notificações';
-    b.innerHTML = SVG_SINO + '<span class="sino-menu-badge"></span>';
-    b.style.cssText = 'display:inline-flex;width:' + r.width + 'px;height:' + r.height + 'px;' +
-      'border-radius:' + cs.borderRadius + ';background-color:' + cs.backgroundColor + ';background-image:' + cs.backgroundImage + ';' +
-      'border:' + cs.borderTopWidth + ' ' + cs.borderTopStyle + ' ' + cs.borderTopColor + ';box-shadow:' + cs.boxShadow + ';' +
-      'color:' + cor + ';margin-left:' + (gap ? 0 : 8) + 'px;';
-    b.addEventListener('click', function (e) {
-      e.preventDefault(); e.stopPropagation();
-      $('btnSino').click();
-    });
-    return b;
-  }
-  function montarSinos() {
-    acharEnvelopes().forEach(function (ref) {
-      var prox = ref.nextElementSibling;
-      if (prox && prox.hasAttribute('data-sino-menu')) return;
-      ref.insertAdjacentElement('afterend', criarSino(ref));
-    });
-    atualizarBadgesMenu(_nNotif);
-  }
+  window.addEventListener('432up:abrir-notif', function () { $('btnSino').click(); });
+  window.addEventListener('432up:ir-aba', function (e) {
+    var mapa = { inicio: 0, evento: 1, calendario: 2, memorias: 3, perfil: 4 };
+    var k = e && e.detail;
+    if (mapa.hasOwnProperty(k)) { goToAba(mapa[k]); try { window.scrollTo({ top: 0, behavior: 'smooth' }); } catch (x) {} }
+  });
   (function observarMenu() {
     var t = null;
-    function rodar() { clearTimeout(t); t = setTimeout(function () { ajustarTopo(); montarSinos(); }, 150); }
-    ['calc-header', 'mobile-menu'].forEach(function (id) {
-      var el = document.getElementById(id);
-      if (el && window.MutationObserver) new MutationObserver(rodar).observe(el, { childList: true, subtree: true });
-    });
+    function rodar() { clearTimeout(t); t = setTimeout(function () { ajustarTopo(); atualizarBadgesMenu(_nNotif); }, 150); }
+    var el = document.getElementById('calc-header');
+    if (el && window.MutationObserver) new MutationObserver(rodar).observe(el, { childList: true, subtree: true });
     window.addEventListener('resize', rodar);
     window.addEventListener('load', rodar);
-    [200, 800, 2000, 4000].forEach(function (ms) { setTimeout(rodar, ms); });
+    [200, 800, 2000].forEach(function (ms) { setTimeout(rodar, ms); });
     rodar();
   })();
 
@@ -746,7 +773,9 @@
         '<div class="pill" style="margin-top:6px">' + E(p.tipo_evento || '') + ' · ' + DATA(p.data_evento) + ' · ' + BRL(p.valor_total) + '</div>';
       if (cancelado) return '<div style="margin-bottom:12px">' + topo + '</div>';
       var acoes = '';
-      if (assinado) acoes += '<button type="button" class="btn-s" data-pdf="' + E(p.id) + '">Baixar contrato (PDF)</button> ';
+      var BASE_DOC = location.origin + '/B2B/';
+      acoes += '<a class="btn-s" target="_blank" rel="noopener" href="' + BASE_DOC + 'visualizar-contrato.html?id=' + encodeURIComponent(p.id) + '">' + (assinado ? 'Ver contrato' : 'Ver e assinar contrato') + '</a> ';
+      acoes += '<a class="btn-s" target="_blank" rel="noopener" href="' + BASE_DOC + 'visualizar-proposta.html?id=' + encodeURIComponent(p.id) + '">Ver proposta</a> ';
       acoes += '<button type="button" class="btn" data-cmp="' + E(p.id) + '">+ Enviar comprovante</button>';
       return '<div style="margin-bottom:18px;padding-bottom:14px;border-bottom:1px solid var(--line)">' +
         topo + '<div style="margin-top:12px">' + parcelas + '</div>' +
@@ -816,6 +845,8 @@
     });
   }
 
+  $('btnVerCk').addEventListener('click', function () { goToAba(1); try { window.scrollTo({ top: 0, behavior: 'smooth' }); } catch (e) {} });
+
   function renderCalendario() {
     var pedidos = (dados.propostas || []).filter(function (p) { return p.status !== 'cancelada' && p.data_evento; });
     var datas = {};
@@ -871,8 +902,12 @@
       var iso = dia.getFullYear() + '-' + String(dia.getMonth() + 1).padStart(2, '0') + '-' + String(dia.getDate()).padStart(2, '0');
       var fora = dia.getMonth() !== m;
       var tem = (datas[iso] || []).some(function (it) { return FILTROS_CAL[it.kind] !== false; });
-      var cls = 'd' + (fora ? ' muted' : '') + (tem ? ' evento' : '') + (iso === hojeStr ? ' hoje' : '') + (iso === calDiaSel ? ' sel' : '');
-      html += '<div class="' + cls + '" data-iso="' + iso + '">' + dia.getDate() + '</div>';
+      var tipos = ['evento', 'contrato', 'pagamento', 'comprovante'].filter(function (k) {
+        return FILTROS_CAL[k] !== false && (datas[iso] || []).some(function (it) { return it.kind === k; });
+      });
+      var cls = 'd' + (fora ? ' muted' : '') + (tem ? ' tem' : '') + (iso === hojeStr ? ' hoje' : '') + (iso === calDiaSel ? ' sel' : '');
+      html += '<div class="' + cls + '" data-iso="' + iso + '"' + (tipos.length ? ' style="--rgb:' + COR_CAL[tipos[0]].rgb + '"' : '') + '>' + dia.getDate() +
+        (tipos.length ? '<div class="dots">' + tipos.map(function (k) { return '<i style="background:' + COR_CAL[k].hex + '"></i>'; }).join('') + '</div>' : '') + '</div>';
     }
     $('calGrid').innerHTML = html;
     $('calGrid').querySelectorAll('[data-iso]').forEach(function (el) {
@@ -885,18 +920,18 @@
         box.innerHTML = lista.map(function (it) {
           var p = it.prop || it;
           if (it.kind === 'pagamento') {
-            return '<div class="dia-item" style="border-left-color:var(--action)"><strong>' + E(it.titulo) + '</strong><small>' + E(it.sub) + '</small>' +
+            return '<div class="dia-item" style="border-left-color:#86efac"><strong>' + E(it.titulo) + '</strong><small>' + E(it.sub) + '</small>' +
               '<div><button type="button" class="btn" style="margin-top:8px" data-open-cmp="' + E(p.id) + '">Enviar comprovante</button></div></div>';
           }
           if (it.kind === 'comprovante') {
             var c = it.comprovante || {};
             var link = c.arquivo_url ? ' · <a href="' + E(c.arquivo_url) + '" target="_blank" rel="noopener" style="color:var(--action)">Ver comprovante</a>' : '';
-            return '<div class="dia-item" style="border-left-color:var(--tech)"><strong>' + E(it.titulo) + '</strong><small>' + E(it.sub) + link + '</small>' +
+            return '<div class="dia-item" style="border-left-color:#22c55e"><strong>' + E(it.titulo) + '</strong><small>' + E(it.sub) + link + '</small>' +
               '<div><button type="button" class="btn-s" data-open-cmp="' + E(p.id) + '">Enviar outro</button></div></div>';
           }
           if (it.kind === 'contrato') {
-            return '<div class="dia-item" style="border-left-color:var(--purple)"><strong>' + E(it.titulo) + '</strong><small>' + E(it.sub) + '</small>' +
-              '<div><button type="button" class="btn-s" data-pdf="' + E(p.id) + '">Baixar contrato PDF</button></div></div>';
+            return '<div class="dia-item" style="border-left-color:#3b82f6"><strong>' + E(it.titulo) + '</strong><small>' + E(it.sub) + '</small>' +
+              '<div><a class="btn-s" target="_blank" rel="noopener" href="' + location.origin + '/B2B/visualizar-contrato.html?id=' + encodeURIComponent(p.id) + '">Ver contrato</a></div></div>';
           }
           var etapas = (dados.etapas || []).filter(function (e) { return e.proposta_id === p.id; });
           var pend = etapas.filter(function (e) { return e.situacao === 'pendente'; }).length;
@@ -1019,6 +1054,58 @@
       '<div class="linha"><span>Etapas do checklist</span><span class="pill">' +
         (etapas.length ? (etPend === 0 ? 'todas confirmadas' : etPend + ' pendente' + (etPend > 1 ? 's' : '')) : 'ainda sem etapas') +
       '</span></div>';
+    renderMiniCk(prox);
+  }
+
+  function etapasDe(p) {
+    return p ? (dados.etapas || []).filter(function (e) { return e.proposta_id === p.id; }) : [];
+  }
+  function renderMiniCk(p) {
+    var card = $('cardMiniCk');
+    var et = etapasDe(p);
+    if (!p || !p.assinado_em || !et.length) { card.style.display = 'none'; return; }
+    card.style.display = '';
+    var achouProx = false;
+    $('miniCk').innerHTML = et.map(function (e, i) {
+      var feita = e.situacao === 'concluida';
+      var cls = feita ? 'feita' : (!achouProx ? 'prox' : '');
+      if (!feita) achouProx = true;
+      return (i ? '<span class="mk-seta" aria-hidden="true">›</span>' : '') +
+        '<span class="mk ' + cls + '">' + (feita ? '✓ ' : '') + E(e.nome) + '</span>';
+    }).join('');
+    var ok = et.filter(function (e) { return e.situacao === 'concluida'; }).length;
+    $('miniCkRes').textContent = ok + ' de ' + et.length + ' etapas confirmadas';
+  }
+  function renderResumoEvento() {
+    var p = pedidoAtivo();
+    var box = $('resumoEvt');
+    if (!p) { box.innerHTML = '<div class="vazio">Quando houver um pedido, o resumo do evento aparece aqui.</div>'; return; }
+    var cli = (dados.cadastro && dados.cadastro.nome_razao) || '';
+    function l(r, v) { return v ? '<div class="linha"><span class="rot">' + r + '</span><span class="val">' + E(v) + '</span></div>' : ''; }
+    box.className = '';
+    box.innerHTML =
+      l('Evento', 'Pedido #' + p.numero) + l('Cliente', cli) + l('Tipo do evento', p.tipo_evento) +
+      l('Venue', p.local_evento) + l('Contacto', (dados.cadastro && dados.cadastro.email) || '') +
+      l('Data', p.data_evento ? DATA(p.data_evento) : '') +
+      l('Contrato', p.assinado_em ? 'Assinado em ' + DATA(p.assinado_em) : 'Aguardando assinatura');
+  }
+  function renderEquipe() {
+    var p = pedidoAtivo();
+    var box = $('listaEquipe');
+    var eq = (dados.equipe || []).filter(function (m) { return !m.proposta_id || !p || m.proposta_id === p.id; });
+    if (!eq.length) {
+      box.className = 'vazio';
+      box.textContent = 'A equipe técnica do seu evento aparece aqui assim que for confirmada.';
+      return;
+    }
+    box.className = '';
+    box.innerHTML = eq.map(function (m) {
+      var nome = m.nome || m.nome_completo || '';
+      var foto = m.avatar_url || m.foto_url || '';
+      return '<div class="eq-item"><div class="eq-foto"' + (foto ? ' style="background-image:url(\'' + E(foto) + '\')"' : '') + '>' +
+        (foto ? '' : E((nome.trim()[0] || '?').toUpperCase())) + '</div>' +
+        '<div style="min-width:0"><strong>' + E(nome) + '</strong>' + ((m.funcao || m.papel) ? '<small>' + E(m.funcao || m.papel) + '</small>' : '') + '</div></div>';
+    }).join('');
   }
 
   function renderAvatar() {
@@ -1034,6 +1121,8 @@
     renderPedidos();
     renderInicio();
     renderGuia();
+    renderResumoEvento();
+    renderEquipe();
     renderCalendario();
     renderAvatar();
   }
@@ -1068,8 +1157,10 @@
     e.preventDefault();
     var txt = $('obsNova').value.trim();
     if (!txt) return;
+    var ped = pedidoAtivo();
+    if (!ped) { $('msgObs').className = 'msg'; $('msgObs').textContent = 'Você ainda não tem um pedido ativo.'; return; }
     $('btnObs').disabled = true;
-    var r = await chamar('obs_adicionar', { texto: txt });
+    var r = await chamar('obs_adicionar', { texto: txt, proposta_id: ped.id });
     $('btnObs').disabled = false;
     if (r.erro) { $('msgObs').className = 'msg'; $('msgObs').textContent = r.erro; return; }
     $('obsNova').value = '';
