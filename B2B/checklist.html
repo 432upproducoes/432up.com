@@ -276,11 +276,23 @@
       error = r.error;
       idList = props.map(function (p) { return p.id; });
     } else {
-      // Parceiro: só eventos em que participa
-      // 1) propostas onde ele é o vendedor
-      // 2) comissões vinculadas a ele
-      // 3) agenda_reservas onde ele é o recurso
+      // Parceiro: eventos em que participa
+      // 1) Colaborador do projeto (projeto_colaboradores) — PRINCIPAL
+      // 2) Vendedor da proposta (propostas.parceiro_id)
+      // 3) Comissão vinculada
+      // 4) Reserva de agenda (recurso)
       var ids = new Set();
+      var fontes = [];
+
+      try {
+        var { data: cols, error: eCol } = await sb.from('projeto_colaboradores')
+          .select('proposta_id, nivel')
+          .eq('parceiro_id', parceiro.id);
+        if (eCol) console.warn('projeto_colaboradores', eCol.message);
+        (cols || []).forEach(function (c) {
+          if (c.proposta_id) { ids.add(c.proposta_id); fontes.push('colab:' + c.proposta_id); }
+        });
+      } catch (e1) { console.warn(e1); }
 
       var { data: minhas } = await sb.from('propostas')
         .select('id, numero, cliente_nome, tipo_evento, data_evento, horario_inicio, status')
@@ -302,7 +314,10 @@
 
       idList = Array.from(ids);
       if (!idList.length) {
-        el.innerHTML = '<div class="msg">Nenhum evento atribuído a você no momento.</div>';
+        el.innerHTML = '<div class="msg">Nenhum evento atribuído a você.<br><br>' +
+          '<span style="font-size:12px;opacity:.85">O administrador precisa adicionar você em ' +
+          '<strong>Admin → Projetos</strong> → abrir o evento → ' +
+          '<strong>Colaboradores do projeto</strong>.</span></div>';
         return;
       }
 
