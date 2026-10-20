@@ -255,6 +255,10 @@
                 <input type="date" id="fNascimento" class="w-full bg-slate-900/80 border border-white/20 rounded-xl px-4 py-2.5 text-sm text-white focus:border-cyan-400 focus:outline-none transition [color-scheme:dark]">
               </div>
               <div>
+                <label for="fRg" class="block text-xs uppercase tracking-wider text-slate-300 font-semibold mb-1.5">RG (documento de identidade)</label>
+                <input type="text" id="fRg" maxlength="20" placeholder="00.000.000-0" class="w-full bg-slate-900/80 border border-white/20 rounded-xl px-4 py-2.5 text-sm text-white focus:border-cyan-400 focus:outline-none transition">
+              </div>
+              <div>
                 <label for="fWhatsapp" class="block text-xs uppercase tracking-wider text-slate-300 font-semibold mb-1.5">WhatsApp *</label>
                 <input type="tel" id="fWhatsapp" name="tel" required placeholder="(11) 99999-9999" maxlength="15" autocomplete="tel" class="w-full bg-slate-900/80 border border-white/20 rounded-xl px-4 py-2.5 text-sm text-white focus:border-cyan-400 focus:outline-none transition">
               </div>
@@ -478,6 +482,15 @@
               <input type="checkbox" id="fTermos" required checked class="mt-1 w-4 h-4 rounded border-white/20 bg-slate-900 text-cyan-400 focus:ring-cyan-400 transition cursor-pointer">
               <span class="text-xs text-slate-300 leading-relaxed">
                 Declaro que concordo com os <strong class="text-white">Termos do Programa B2B Partner 432UP</strong>, regras de repasse de comissões/cachês e autorizo o tratamento dos dados cadastrais em conformidade com a <strong class="text-cyan-400">LGPD</strong>.
+              </span>
+            </label>
+          </div>
+
+          <div>
+            <label class="flex items-start gap-3 cursor-pointer">
+              <input type="checkbox" id="fCompartilhar" required class="mt-1 w-4 h-4 rounded border-white/20 bg-slate-900 text-cyan-400 focus:ring-cyan-400 transition cursor-pointer">
+              <span class="text-xs text-slate-300 leading-relaxed">
+                Autorizo, nos termos da <strong class="text-cyan-400">LGPD</strong>, o compartilhamento dos meus dados de identificação (nome completo, CPF, RG, data de nascimento e WhatsApp) com o contratante de cada evento em que eu for escalado, exclusivamente para organização, credenciamento e segurança do evento.
               </span>
             </label>
           </div>
@@ -963,7 +976,7 @@
       // ===== VITRINES (abas): vitrine 1 = cadastro; 2 e 3 = vitrines extras, mesma ficha =====
       var vitrineNum = parseInt(new URLSearchParams(window.location.search).get('vitrine') || '1', 10);
       if (!(vitrineNum >= 1 && vitrineNum <= 3)) vitrineNum = 1;
-      var IDENTIDADE_KEYS = ['nome_completo','empresa','whatsapp','instagram','cpf_cnpj','data_nascimento',
+      var IDENTIDADE_KEYS = ['nome_completo','empresa','whatsapp','instagram','cpf_cnpj','data_nascimento','rg','aceite_compartilhar_cliente','aceite_compartilhar_em',
         'cep','endereco','bairro','cidade','estado','tipo_pix','chave_pix','termos_aceitos','termos_aceitos_em','receber_email'];
 
       function prefixoMidia() {
@@ -1110,6 +1123,8 @@
 
         document.getElementById('fCpfCnpj').value = formatCpfCnpj(parceiro.cpf_cnpj || '');
         document.getElementById('fNascimento').value = parceiro.data_nascimento || '';
+        document.getElementById('fRg').value = parceiro.rg || '';
+        document.getElementById('fCompartilhar').checked = parceiro.aceite_compartilhar_cliente === true;
         document.getElementById('fCep').value = formatCep(parceiro.cep || '');
         document.getElementById('fEndereco').value = parceiro.endereco || '';
         document.getElementById('fBairro').value = parceiro.bairro || '';
@@ -1810,6 +1825,10 @@
           showAlert('Você precisa aceitar os termos do programa para continuar.', 'error');
           return;
         }
+        if (!document.getElementById('fCompartilhar').checked) {
+          showAlert('Para participar de eventos, é obrigatório autorizar o compartilhamento dos seus dados com o contratante.', 'error');
+          return;
+        }
 
         var perfilBaseId = document.getElementById('fPerfil').value;
         var especialidadeId = document.getElementById('fEspecialidade').value;
@@ -1853,6 +1872,9 @@
 
           cpf_cnpj: document.getElementById('fCpfCnpj').value.trim(),
           data_nascimento: document.getElementById('fNascimento').value || null,
+          rg: document.getElementById('fRg').value.trim(),
+          aceite_compartilhar_cliente: document.getElementById('fCompartilhar').checked,
+          aceite_compartilhar_em: document.getElementById('fCompartilhar').checked ? new Date().toISOString() : null,
           cep: document.getElementById('fCep').value.replace(/\D/g, ''),
           endereco: document.getElementById('fEndereco').value.trim(),
           bairro: document.getElementById('fBairro').value.trim(),
