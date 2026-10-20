@@ -1,45 +1,106 @@
 <!DOCTYPE html>
-<html lang="pt-BR">
+<html lang="pt-BR" class="h-full">
 <head>
-<meta charset="UTF-8">
-<meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>Espelho do cliente · 432UP Admin</title>
-<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
-<script src="../partner-config.js"></script>
-<style>
-  :root { --bg:#0b1020; --card:#131a2e; --line:rgba(255,255,255,.08); --txt:#e2e8f0; --mut:#94a3b8; --acc:#a3e635; --ouro:#c5a059; --ciano:#00f0ff; }
-  * { box-sizing:border-box; }
-  body { margin:0; font-family: system-ui, -apple-system, Segoe UI, Roboto, sans-serif; background:var(--bg); color:var(--txt); }
-  header { padding:14px 20px; border-bottom:1px solid var(--line); display:flex; justify-content:space-between; align-items:center; gap:12px; flex-wrap:wrap; }
-  h1 { font-size:17px; margin:0; }
-  h2 { font-size:12px; margin:0 0 10px; color:var(--ouro); text-transform:uppercase; letter-spacing:.06em; }
-  a { color:var(--ciano); text-decoration:none; }
-  main { max-width:760px; margin:0 auto; padding:16px 20px; }
-  .card { background:var(--card); border:1px solid var(--line); border-radius:12px; padding:14px; margin-bottom:14px; }
-  .item { display:flex; justify-content:space-between; gap:8px; align-items:center; padding:8px 0; border-bottom:1px solid var(--line); font-size:14px; flex-wrap:wrap; }
-  .mut { color:var(--mut); font-size:12px; }
-  .tag { font-size:10px; font-weight:800; padding:3px 8px; border-radius:999px; text-transform:uppercase; }
-  .t-ok { background:rgba(163,230,53,.15); color:#a3e635; }
-  .t-pend { background:rgba(250,204,21,.15); color:#facc15; }
-  .t-rec { background:rgba(248,113,113,.15); color:#fca5a5; }
-  .vivo { font-size:11px; color:var(--acc); }
-  .vazio { color:var(--mut); font-size:13px; }
-</style>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
+  <meta name="theme-color" content="#08080A">
+  <meta name="apple-mobile-web-app-capable" content="yes">
+  <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+  <title>Espelho do cliente · 432UP Admin</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="../../css/style.css">
+  <style>
+    :root {
+      --bg: #08080A;
+      --text: #FFFFFF;
+      --body: #E7E7EC;
+      --mut: #9A97B0;
+      --action: #00FF66;
+      --purple: #A855F7;
+      --pink: #FF007F;
+      --tech: #06B6D4;
+      --gold: #D4AF37;
+      --alert: #FF4D4D;
+      --line: rgba(255, 255, 255, 0.1);
+    }
+    body { background: var(--bg) !important; color: var(--text) !important; font-family: 'Inter', system-ui, sans-serif; }
+    *, *::before, *::after { box-sizing: border-box; }
+    .area {
+      width: 100%; max-width: 760px; margin: 0 auto; position: relative; z-index: 2;
+      padding-top: calc(var(--hdr-h, 112px) + 32px);
+      padding-left: max(18px, env(safe-area-inset-left));
+      padding-right: max(18px, env(safe-area-inset-right));
+      padding-bottom: calc(120px + env(safe-area-inset-bottom));
+    }
+    html, body { height: auto !important; min-height: 100%; }
+    body { overflow-y: visible !important; }
+    .eyebrow { font-size: .68rem; letter-spacing: .18em; text-transform: uppercase; font-weight: 700; opacity: .72; color: var(--gold); }
+    .titulo { font-size: clamp(1.5rem, 4vw, 2.2rem); line-height: 1.15; letter-spacing: -.03em; margin: 8px 0 6px; font-weight: 800; }
+    .mut { color: var(--mut); }
+    .box-full {
+      border-radius: 24px; padding: 22px; position: relative; overflow: visible; margin-bottom: 16px;
+      background: rgba(255, 255, 255, .045); border: 1px solid rgba(255, 255, 255, .14);
+      backdrop-filter: blur(24px); -webkit-backdrop-filter: blur(24px);
+    }
+    .box-full h2 {
+      font-size: .72rem; letter-spacing: .14em; text-transform: uppercase;
+      color: var(--gold); margin: 0 0 12px; font-weight: 800;
+    }
+    .item {
+      display: flex; justify-content: space-between; gap: 10px; align-items: center;
+      flex-wrap: wrap; padding: 10px 0; border-bottom: 1px solid var(--line); font-size: 14px;
+    }
+    .item:last-child { border-bottom: 0; }
+    .tag {
+      display: inline-block; font-size: 10px; font-weight: 800; padding: 4px 9px;
+      border-radius: 999px; text-transform: uppercase; letter-spacing: .04em;
+    }
+    .t-ok { background: rgba(0, 255, 102, .14); color: var(--action); }
+    .t-pend { background: rgba(212, 175, 55, .16); color: var(--gold); }
+    .t-rec { background: rgba(255, 77, 77, .15); color: var(--alert); }
+    .vivo { font-size: 12px; font-weight: 700; color: var(--action); }
+    .vivo.off { color: var(--mut); }
+    .vazio { color: var(--mut); font-size: 13px; padding: 6px 0; }
+    a.link-back {
+      display: inline-flex; align-items: center; gap: 6px; margin-top: 8px;
+      color: var(--tech); text-decoration: none; font-size: 14px; font-weight: 600;
+    }
+    a.link-back:hover { text-decoration: underline; }
+  </style>
 </head>
-<body>
-<header>
-  <h1 id="titulo">Espelho do cliente</h1>
-  <span class="vivo" id="vivo">● ao vivo</span>
-</header>
-<main>
-  <div class="card"><div id="resumo" class="mut">Carregando…</div></div>
-  <div class="card"><h2>Etapas</h2><div id="etapas"></div></div>
-  <div class="card"><h2>Comprovantes</h2><div id="comps"></div></div>
-  <div class="card"><h2>Instruções do cliente</h2><div id="obs"></div></div>
-  <p class="mut"><a href="projeto.html" id="voltar">← Voltar aos projetos</a></p>
-</main>
+<body class="h-full antialiased overflow-x-hidden">
 
-<script>
+  <canvas id="orbit-canvas"></canvas>
+  <div id="plasmaLayer" class="plasma-top-layer"></div>
+
+  <header id="calc-header"></header>
+  <div id="mobile-menu"></div>
+
+  <div class="flex flex-col min-h-screen relative z-10">
+    <main class="area">
+      <div style="display:flex;align-items:flex-start;justify-content:space-between;gap:12px;flex-wrap:wrap;margin-bottom:8px">
+        <div>
+          <span class="eyebrow">Admin · Espelho</span>
+          <h1 class="titulo" id="titulo">Espelho do cliente</h1>
+        </div>
+        <span class="vivo" id="vivo">● ao vivo</span>
+      </div>
+
+      <div class="box-full"><div id="resumo" class="mut">Carregando…</div></div>
+      <div class="box-full"><h2>Etapas</h2><div id="etapas"></div></div>
+      <div class="box-full"><h2>Comprovantes</h2><div id="comps"></div></div>
+      <div class="box-full"><h2>Instruções do cliente</h2><div id="obs"></div></div>
+      <p><a class="link-back" href="projeto.html" id="voltar">← Voltar aos projetos</a></p>
+    </main>
+  </div>
+
+  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+  <script src="../partner-config.js"></script>
+  <script src="../../script/script.js" defer></script>
+  <script src="../partner-header.js"></script>
+  <script>
 (function () {
   'use strict';
   var CFG = window.PARTNER_CFG;
@@ -90,7 +151,14 @@
       .on('postgres_changes', { event: '*', schema: 'public', table: 'evento_observacoes', filter: 'proposta_id=eq.' + ID }, carregarTudo)
       .on('postgres_changes', { event: '*', schema: 'public', table: 'contrato_comprovantes', filter: 'proposta_id=eq.' + ID }, carregarTudo)
       .subscribe(function (status) {
-        $('vivo').textContent = status === 'SUBSCRIBED' ? '● ao vivo' : '○ sem conexão ao vivo';
+        var el = $('vivo');
+        if (status === 'SUBSCRIBED') {
+          el.textContent = '● ao vivo';
+          el.classList.remove('off');
+        } else {
+          el.textContent = '○ sem conexão ao vivo';
+          el.classList.add('off');
+        }
       });
   }
 
@@ -103,17 +171,17 @@
     var ehAdmin = /^(admin|master)$/i.test(papel);
 
     if (!ehAdmin) {
-      document.querySelector('main').innerHTML = '<div class="card"><div class="vazio">Acesso restrito ao administrador.<br><br><span class="mut">Papel detectado: ' +
+      document.querySelector('main').innerHTML = '<div class="box-full"><div class="vazio">Acesso restrito ao administrador.<br><br><span class="mut">Papel detectado: ' +
         (papel || 'nenhum') + '. Faça login com uma conta admin/master.</span></div></div>';
       return;
     }
 
     if (!ID) {
-      document.querySelector('main').innerHTML = '<div class="card"><div class="vazio">' +
+      document.querySelector('main').innerHTML = '<div class="box-full"><div class="vazio">' +
         '<strong>Falta o ID do projeto na URL.</strong><br><br>' +
         'Abra pelo painel de projetos (link “Espelho do cliente”) ou use:<br>' +
-        '<code style="color:var(--ciano)">/B2B/admin/espelho.html?id=UUID_DA_PROPOSTA</code><br><br>' +
-        '<a href="projeto.html" style="color:var(--ciano)">← Ir para Projetos</a></div></div>';
+        '<code style="color:var(--tech)">/B2B/admin/espelho.html?id=UUID_DA_PROPOSTA</code><br><br>' +
+        '<a class="link-back" href="projeto.html">← Ir para Projetos</a></div></div>';
       return;
     }
 
@@ -122,6 +190,6 @@
     ligarTempoReal();
   })();
 })();
-</script>
+  </script>
 </body>
 </html>
