@@ -164,6 +164,37 @@
     /* Visão de não administrador: só leitura e sem informações de outros */
     .nao-admin .so-admin { display: none !important; }
     .nao-admin .campo { pointer-events: none; opacity: .85; }
+
+    /* Abas do projeto (organização sólida, visual canônico) */
+    .tabs-wrap {
+      border-radius: 24px; overflow: hidden; margin-bottom: 14px;
+      background: rgba(255,255,255,.045); border: 1px solid rgba(255,255,255,.14);
+      backdrop-filter: blur(24px); -webkit-backdrop-filter: blur(24px);
+    }
+    .tabs-bar {
+      display: flex; overflow-x: auto; -webkit-overflow-scrolling: touch;
+      scrollbar-width: none; border-bottom: 1px solid var(--line);
+      background: rgba(0,0,0,.22);
+    }
+    .tabs-bar::-webkit-scrollbar { display: none; }
+    .tab-btn {
+      flex: 0 0 auto; height: auto; padding: 14px 18px; border: 0; border-radius: 0;
+      background: transparent; color: var(--mut); font-size: 12px; font-weight: 800;
+      letter-spacing: .06em; text-transform: uppercase; white-space: nowrap;
+      border-bottom: 2px solid transparent; cursor: pointer;
+    }
+    .tab-btn:hover { color: var(--text); background: rgba(255,255,255,.04); border-color: transparent; }
+    .tab-btn.on {
+      color: var(--action);
+      border-bottom-color: var(--action);
+      background: rgba(0,255,102,.06);
+    }
+    .tab-panel { display: none; padding: 16px; }
+    .tab-panel.on { display: block; }
+    .tab-panel .box-full { background: rgba(255,255,255,.03); }
+    .box-full {
+      background: rgba(26, 18, 56, 0.45);
+    }
   </style>
 </head>
 <body class="h-full antialiased overflow-x-hidden">
@@ -218,92 +249,108 @@
               <div class="head-trio">
                 <div class="trio-cell"><div class="k">Data</div><div class="v" id="hData">—</div></div>
                 <div class="trio-cell"><div class="k">Horário</div><div class="v" id="hHorario">—</div></div>
-                <div class="trio-cell"><div class="k">Endereço do evento</div><div class="v" id="hEndereco">—</div></div>
+                <div class="trio-cell"><div class="k">Local do evento</div><div class="v" id="hEndereco">—</div></div>
               </div>
             </div>
 
-            <!-- Dados gerais (edição somente admin) -->
-            <div class="box-full">
-              <h2>Dados gerais</h2>
-              <div class="campos">
-                <div><label class="cap" for="fData">Data do evento</label><input class="campo" type="date" id="fData"></div>
-                <div><label class="cap" for="fStatus">Status</label>
-                  <select class="campo" id="fStatus">
-                    <option value="rascunho">Rascunho</option>
-                    <option value="hold">Hold 48h</option>
-                    <option value="enviada">Enviada</option>
-                    <option value="aprovada">Aprovada</option>
-                    <option value="adiada">Adiada</option>
-                    <option value="cancelada">Cancelada</option>
-                  </select>
+            <div class="tabs-wrap">
+              <div class="tabs-bar" role="tablist">
+                <button type="button" class="tab-btn on" data-tab="geral" role="tab">Geral &amp; Logística</button>
+                <button type="button" class="tab-btn" data-tab="checklist" role="tab">Checklist &amp; Instruções</button>
+                <button type="button" class="tab-btn" data-tab="financeiro" role="tab">Financeiro</button>
+                <button type="button" class="tab-btn" data-tab="agenda" role="tab">Agenda &amp; Datas</button>
+              </div>
+
+              <!-- ABA 1: GERAL & LOGÍSTICA -->
+              <div class="tab-panel on" id="tab-geral" role="tabpanel">
+                <div class="box-full">
+                  <h2>Dados gerais</h2>
+                  <div class="campos">
+                    <div><label class="cap" for="fData">Data do evento</label><input class="campo" type="date" id="fData"></div>
+                    <div><label class="cap" for="fStatus">Status</label>
+                      <select class="campo" id="fStatus">
+                        <option value="rascunho">Rascunho</option>
+                        <option value="hold">Hold 48h</option>
+                        <option value="enviada">Enviada</option>
+                        <option value="aprovada">Aprovada</option>
+                        <option value="adiada">Adiada</option>
+                        <option value="cancelada">Cancelada</option>
+                      </select>
+                    </div>
+                    <div><label class="cap" for="fIni">Horário início</label><input class="campo" type="time" id="fIni"></div>
+                    <div><label class="cap" for="fFim">Horário fim</label><input class="campo" type="time" id="fFim"></div>
+                    <div class="full"><label class="cap" for="fLocal">Nome do local (ex.: Sítio, African Garden…)</label><input class="campo" id="fLocal" placeholder="Nome do local da festa"></div>
+                  </div>
+                  <div class="row so-admin" style="margin-top:16px">
+                    <button class="primary" id="btnSalvar" type="button">Salvar</button>
+                    <span class="mut" id="holdInfo"></span>
+                  </div>
+                  <div class="msg" id="msgDados"></div>
                 </div>
-                <div><label class="cap" for="fIni">Horário início</label><input class="campo" type="time" id="fIni"></div>
-                <div><label class="cap" for="fFim">Horário fim</label><input class="campo" type="time" id="fFim"></div>
-                <div class="full"><label class="cap" for="fLocal">Nome do local</label><input class="campo" id="fLocal"></div>
+
+                <div class="box-full">
+                  <h2>Local</h2>
+                  <div id="localBox"><div class="vazio">Sem local informado.</div></div>
+                </div>
+
+                <div class="box-full">
+                  <h2>Equipe técnica</h2>
+                  <div class="row so-admin">
+                    <select class="campo" id="addParceiro" style="flex:1;min-width:200px;width:auto"></select>
+                    <select class="campo" id="addNivel" style="width:auto;min-width:200px">
+                      <option value="agenda">Só agenda</option>
+                      <option value="dados_sensiveis">Agenda + dados sensíveis</option>
+                    </select>
+                    <button class="primary" id="btnAddCol" type="button">Adicionar</button>
+                  </div>
+                  <div class="msg so-admin" id="msgCol"></div>
+                  <div id="listaCol"></div>
+                  <p class="so-admin" style="margin-top:14px"><a class="tech" id="linkEspelho" href="#">Abrir espelho do cliente →</a></p>
+                </div>
               </div>
-              <div class="row so-admin" style="margin-top:16px">
-                <button class="primary" id="btnSalvar" type="button">Salvar</button>
-                <span class="mut" id="holdInfo"></span>
+
+              <!-- ABA 2: CHECKLIST & INSTRUÇÕES -->
+              <div class="tab-panel" id="tab-checklist" role="tabpanel">
+                <div class="box-full">
+                  <h2>Resumo do checklist</h2>
+                  <div id="listaEtapas"></div>
+                </div>
+                <div class="box-full so-admin">
+                  <h2>Nova etapa do checklist</h2>
+                  <div class="campos" style="grid-template-columns: minmax(0,1fr) 160px; align-items:end">
+                    <div><label class="cap" for="novaEtapaNome">Nome da etapa</label><input class="campo" id="novaEtapaNome" placeholder="Ex.: Montagem" maxlength="120"></div>
+                    <div><label class="cap" for="novaEtapaHora">Hora</label><input class="campo" type="time" id="novaEtapaHora"></div>
+                  </div>
+                  <div class="row" style="margin-top:12px"><button class="primary" id="btnAddEtapa" type="button">Salvar etapa</button></div>
+                  <div class="msg" id="msgEtapa"></div>
+                </div>
+                <div class="box-full">
+                  <h2>Instruções / Observações</h2>
+                  <div id="listaObs"></div>
+                </div>
               </div>
-              <div class="msg" id="msgDados"></div>
-            </div>
 
-            <!-- Local com endereço completo e mapa -->
-            <div class="box-full">
-              <h2>Local</h2>
-              <div id="localBox"><div class="vazio">Sem local informado.</div></div>
-            </div>
-
-            <!-- Financeiro: admin vê tudo; vendedor vê a comissão; colaborador vê o cachê do dia -->
-            <div class="box-full">
-              <h2>Financeiro</h2>
-              <div id="finBox"></div>
-            </div>
-
-            <div class="box-full">
-              <h2>Agenda rápida</h2>
-              <div class="cal-nav">
-                <button type="button" class="btn-s" id="calPrev">‹</button>
-                <strong id="calTitulo" style="font-size:16px"></strong>
-                <button type="button" class="btn-s" id="calNext">›</button>
+              <!-- ABA 3: FINANCEIRO -->
+              <div class="tab-panel" id="tab-financeiro" role="tabpanel">
+                <div class="box-full">
+                  <h2>Financeiro</h2>
+                  <div id="finBox"></div>
+                </div>
               </div>
-              <div class="cal" id="calGrid"></div>
-              <div id="calDia" style="margin-top:14px"><div class="vazio">Toque em um dia com evento para ver o detalhe.</div></div>
-            </div>
 
-            <div class="box-full">
-              <h2>Resumo do checklist</h2>
-              <div id="listaEtapas"></div>
-            </div>
-
-            <div class="box-full">
-              <h2>Equipe técnica</h2>
-              <div class="row so-admin">
-                <select class="campo" id="addParceiro" style="flex:1;min-width:200px;width:auto"></select>
-                <select class="campo" id="addNivel" style="width:auto;min-width:200px">
-                  <option value="agenda">Só agenda</option>
-                  <option value="dados_sensiveis">Agenda + dados sensíveis</option>
-                </select>
-                <button class="primary" id="btnAddCol" type="button">Adicionar</button>
+              <!-- ABA 4: AGENDA -->
+              <div class="tab-panel" id="tab-agenda" role="tabpanel">
+                <div class="box-full">
+                  <h2>Agenda rápida</h2>
+                  <div class="cal-nav">
+                    <button type="button" class="btn-s" id="calPrev">‹</button>
+                    <strong id="calTitulo" style="font-size:16px"></strong>
+                    <button type="button" class="btn-s" id="calNext">›</button>
+                  </div>
+                  <div class="cal" id="calGrid"></div>
+                  <div id="calDia" style="margin-top:14px"><div class="vazio">Toque em um dia com evento para ver o detalhe.</div></div>
+                </div>
               </div>
-              <div class="msg so-admin" id="msgCol"></div>
-              <div id="listaCol"></div>
-              <p class="so-admin" style="margin-top:14px"><a class="tech" id="linkEspelho" href="#">Abrir espelho do cliente →</a></p>
-            </div>
-
-            <div class="box-full so-admin">
-              <h2>Nova etapa do checklist</h2>
-              <div class="campos" style="grid-template-columns: minmax(0,1fr) 160px; align-items:end">
-                <div><label class="cap" for="novaEtapaNome">Nome da etapa</label><input class="campo" id="novaEtapaNome" placeholder="Ex.: Montagem" maxlength="120"></div>
-                <div><label class="cap" for="novaEtapaHora">Hora</label><input class="campo" type="time" id="novaEtapaHora"></div>
-              </div>
-              <div class="row" style="margin-top:12px"><button class="primary" id="btnAddEtapa" type="button">Salvar etapa</button></div>
-              <div class="msg" id="msgEtapa"></div>
-            </div>
-
-            <div class="box-full">
-              <h2>Instruções</h2>
-              <div id="listaObs"></div>
             </div>
 
           </div>
@@ -570,9 +617,10 @@
   /* ===== Local: nome, endereço completo e mapa ===== */
   function renderLocal(p, end) {
     var box = $('localBox');
-    var nome = p.local_evento || '';
+    var nome = (p.local_evento || '').trim();
     if (!nome && !end.texto) { box.innerHTML = '<div class="vazio">Sem local informado.</div>'; return; }
-    var alvo = end.busca || nome;
+    /* Busca no mapa: nome do local + endereço (evita só a cidade genérica) */
+    var alvo = [nome, end.busca || end.texto].filter(Boolean).join(', ') || nome || end.texto;
     box.innerHTML =
       (nome ? '<div class="local-nome">' + E(nome) + '</div>' : '') +
       (end.texto ? '<div class="local-end">' + E(end.texto) + '</div>' : '') +
@@ -667,7 +715,9 @@
     $('hData').textContent = DATA(ATUAL.data_evento);
     $('hHorario').textContent = hIni && hFim ? hIni + ' às ' + hFim : (hIni || hFim || '—');
     var end = enderecoEvento(ATUAL);
-    $('hEndereco').textContent = end.texto || 'Não informado';
+    /* Local da festa = local_evento (ex.: African Garden). NÃO usar cidade do endereço (Barueri etc.) */
+    var nomeLocal = (ATUAL.local_evento || '').trim();
+    $('hEndereco').textContent = nomeLocal || end.texto || 'Não informado';
 
     $('fData').value = ATUAL.data_evento || '';
     $('fStatus').value = String(ATUAL.status || 'rascunho').toLowerCase();
@@ -920,8 +970,24 @@
     });
   }
 
+  /* ===== Abas ===== */
+  function switchTab(id) {
+    document.querySelectorAll('.tab-btn').forEach(function (b) {
+      b.classList.toggle('on', b.getAttribute('data-tab') === id);
+    });
+    document.querySelectorAll('.tab-panel').forEach(function (p) {
+      p.classList.toggle('on', p.id === 'tab-' + id);
+    });
+  }
+  document.querySelectorAll('.tab-btn').forEach(function (b) {
+    b.addEventListener('click', function () {
+      switchTab(b.getAttribute('data-tab'));
+    });
+  });
+
   init();
 })();
+
   </script>
 </body>
 </html>
