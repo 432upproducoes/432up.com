@@ -502,12 +502,39 @@
       .mn-badge[hidden] { display: none !important; }
       .mn-mail-hdr { display: none !important; }
 
+      /* Bandeja mobile canônica: … [cápsula/☰] [calendário] [envelope] [avatar] */
+      .mn-hdr-tray {
+        display: none; align-items: center; gap: 6px; flex: none; margin-left: 8px;
+        order: 20;
+      }
+      .mn-hdr-tray .mn-tray-ico { width: 36px; height: 36px; }
+      .mn-hdr-tray .mn-tray-av {
+        display: inline-flex; width: 36px; height: 36px; border-radius: 50%; overflow: hidden;
+        border: 2px solid rgba(0,240,255,.35); flex: none;
+      }
+      .mn-hdr-tray .mn-tray-av .b2b-avatar-img {
+        width: 100%; height: 100%; border-radius: 50%; background: rgba(255,255,255,.08) center/cover no-repeat;
+        display: flex; align-items: center; justify-content: center; font-size: 14px;
+      }
+      @media (max-width: 1024px) {
+        .mn-hdr-tray { display: inline-flex !important; }
+        .mn-mail-hdr { display: none !important; }
+        #calc-header.mn-ready {
+          display: flex !important;
+          flex-wrap: nowrap !important;
+          align-items: center !important;
+        }
+        #calc-header .mobile-hamburger { order: 15; margin-left: 4px !important; }
+        #calc-header > .mn-toggle-d { order: 10; }
+        #calc-header .logo-container { order: 1; }
+        /* Com toggle visível, hambúrguer some — bandeja (cal/envelope/avatar) permanece */
+      }
+
       /* ---------- Botão "ativar avisos" (só no app instalado) ---------- */
       .mn-push { display: none !important; align-items: center; justify-content: center;
         width: 34px; height: 34px; border-radius: 50%; border: 1px solid rgba(245,158,11,.5);
         background: rgba(245,158,11,.12); font-size: 16px; line-height: 1; cursor: pointer; flex: none; padding: 0; }
       .mn-push.on { display: inline-flex !important; }
-      @media (max-width: 1024px) { .mn-mail-hdr { display: inline-flex !important; margin-left: 8px; } }
 
       @media (prefers-reduced-motion: reduce) {
         #calc-header *, #calc-header, #mobile-menu *, #mn-float {
@@ -539,13 +566,20 @@
   var BELL_SVG = '<svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M6 8a6 6 0 0 1 12 0c0 7 3 9 3 9H3s3-2 3-9"/><path d="M10.3 21a1.94 1.94 0 0 0 3.4 0"/></svg>';
 
   function mailLinkHTML(cls, standalone) {
-    /* Cliente: sino de notificações da área do cliente (sem e-mail) */
+    /* Cliente: sino de notificações da área do cliente */
     if (onCliente || cachedIsCliente) {
       return '<a href="' + CLIENTE + 'index.html?notif=1" class="mn-mail mn-notif ' + cls + '" data-mn-notif="1"' +
         (standalone ? ' data-mn-user="1"' : '') + ' title="Notificações" aria-label="Notificações">' +
         BELL_SVG + '<span class="mn-badge" hidden></span></a>';
     }
-    var ativo = (!isSubdirAdmin && currentPath === 'e-mail.html') ? ' active' : '';
+    /* Parceiro: envelope = só notificações pendentes (não abre caixa de e-mail) */
+    if (!cachedIsAdmin) {
+      return '<a href="' + B2B + 'index.html?notif=1" class="mn-mail mn-notif ' + cls + '" data-mn-notif="1"' +
+        (standalone ? ' data-mn-user="1"' : '') + ' title="Notificações" aria-label="Notificações">' +
+        MAIL_SVG + '<span class="mn-badge" hidden></span></a>';
+    }
+    /* Admin: envelope ainda aponta para a caixa de e-mail do portal */
+    var ativo = (currentPath === 'e-mail.html') ? ' active' : '';
     return '<a href="' + B2B + 'e-mail.html" class="mn-mail ' + cls + ativo + '"' +
       (standalone ? ' data-mn-user="1"' : '') + ' title="E-mail" aria-label="E-mail">' +
       MAIL_SVG + '<span class="mn-badge" hidden></span></a>';
@@ -759,6 +793,7 @@
     if (!isLogged()) return '';
     var perfilHref = onCliente ? CLIENTE_PERFIL : (B2B + 'perfil.html');
     var perfilAtivo = onCliente ? '' : (!isSubdirAdmin && currentPath === 'perfil.html' ? ' active' : '');
+    /* Ordem canônica (esquerda → direita): calendário, envelope, avatar (extremo direito) */
     return '<div class="b2b-user-widget" data-mn-user="1">' +
       pushBtnHTML() +
       calLinkHTML('', false) +
@@ -767,6 +802,19 @@
         '<div data-partner-avatar class="b2b-avatar-img"></div>' +
       '</a>' +
       '<button type="button" id="btnLogoutDesk" title="Sair do Portal" class="mn-logout">🔒 Sair</button>' +
+    '</div>';
+  }
+
+  /* Bandeja compacta no header mobile: calendário | envelope | avatar (avatar no extremo direito) */
+  function hdrTrayHTML() {
+    if (!isLogged()) return '';
+    var perfilHref = onCliente ? CLIENTE_PERFIL : (B2B + 'perfil.html');
+    return '<div class="mn-hdr-tray" data-mn-user="1">' +
+      calLinkHTML('mn-tray-ico', true) +
+      mailLinkHTML('mn-tray-ico', true) +
+      '<a href="' + perfilHref + '" title="Meu Perfil" class="mn-tray-av"' + (onCliente ? ' data-mn-perfil="1"' : '') + '>' +
+        '<div data-partner-avatar class="b2b-avatar-img"></div>' +
+      '</a>' +
     '</div>';
   }
 
@@ -807,9 +855,9 @@
     }
     bindLogoutEvents();
 
-    /* Sino/envelope extra no header: só aparece no mobile (o widget fica oculto ali) */
+    /* Bandeja mobile: calendário + envelope + avatar (sempre visível no header) */
     var hdr = document.getElementById('calc-header');
-    if (hdr) hdr.insertAdjacentHTML('beforeend', mailLinkHTML('mn-mail-hdr', true));
+    if (hdr) hdr.insertAdjacentHTML('beforeend', hdrTrayHTML());
 
     fillUserParts();
     setMailBadge(mailCount);
@@ -1225,11 +1273,21 @@
         return;
       }
 
-      /* Cliente: sino abre o modal de notificações da própria página, sem recarregar */
-      if (onCliente && up(e, '[data-mn-notif]')) {
+      /* Envelope/sino de notificações: abre modal da página se existir; senão segue o href */
+      if (up(e, '[data-mn-notif]')) {
         e.preventDefault();
         closeMobile();
         window.dispatchEvent(new CustomEvent('432up:abrir-notif'));
+        /* Páginas sem listener podem usar ?notif=1 no painel */
+        if (!onCliente && !window.__mnNotifHandled) {
+          var a = up(e, 'a[href]');
+          if (a && a.getAttribute('href')) {
+            /* deixa o painel B2B tratar; se nada ouvir em 50ms, navega */
+            setTimeout(function () {
+              if (!window.__mnNotifHandled) location.href = a.getAttribute('href');
+            }, 80);
+          }
+        }
         return;
       }
       /* Cliente: avatar abre direto a aba Perfil */
@@ -1395,8 +1453,8 @@
       fillUserParts();
     });
     if (uid) {
-      /* E-mail e contador são do portal B2B; na área do cliente o sino usa as notificações da página */
-      if (!onCliente) startMail(uid);
+      /* Contador de e-mail só para admin; parceiro usa badge de notificações (mnSetBadge nas páginas) */
+      if (!onCliente && cachedIsAdmin) startMail(uid);
       initPush();
     }
   }
