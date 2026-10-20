@@ -219,7 +219,7 @@
       .ck-grid { display: flex; flex-direction: column; gap: 0; align-items: stretch; }
       .ck-col { display: contents; }
       .ck-grid .box-full { width: 100%; box-sizing: border-box; }
-      .o-resumo { order: 1; } .o-equipe { order: 2; } .o-linha { order: 3; } .o-obs { order: 4; } .o-avisos { order: 5; }
+      .o-resumo { order: 1; } .o-linha { order: 2; } .o-equipe { order: 3; } .o-obs { order: 4; } .o-avisos { order: 5; }
     }
     .resumo-evt .linha { display: block; padding: 7px 0; border: 0; }
     .resumo-evt .rot { display: block; font-size: 11px; color: var(--mut); text-transform: uppercase; letter-spacing: .06em; margin-bottom: 2px; }
@@ -263,6 +263,14 @@
       .cal { gap: 3px; }
       .cal .d { min-height: 38px; }
     }
+    /* ===== Ajustes: menu condensado grudado ao canônico ===== */
+    .tabs { position: sticky; top: var(--hdr-h, 112px); z-index: 30; margin: 0 -18px 12px; padding: 8px 18px; gap: 6px; background: rgba(8, 8, 10, .92); backdrop-filter: blur(18px); -webkit-backdrop-filter: blur(18px); border-bottom: 1px solid rgba(255, 255, 255, .08); }
+    .tab { padding: 6px 12px; font-size: 11px; }
+    .carrossel { display: flex; overflow-x: auto; scroll-snap-type: x mandatory; scrollbar-width: none; -webkit-overflow-scrolling: touch; touch-action: pan-x; overscroll-behavior: contain; }
+    .carrossel::-webkit-scrollbar { display: none; }
+    .carrossel > .slide { flex: 0 0 100%; min-width: 0; scroll-snap-align: start; }
+    .sec-lbl { font-size: 10px; letter-spacing: .16em; text-transform: uppercase; font-weight: 800; color: var(--tech); margin: 2px 0 8px; }
+    .sec-sep { height: 1px; background: var(--line); margin: 16px 0; }
   </style>
 </head>
 <body class="h-full antialiased overflow-x-hidden">
@@ -300,13 +308,8 @@
       <!-- 0 · INÍCIO -->
       <section class="panel on" id="p0" role="tabpanel">
         <div class="box-full i2" id="cardProximo">
-          <div class="hero-chips" id="heroChips"></div>
-          <h2>Próximo evento</h2>
-          <div id="proximoEvt" class="vazio">Carregando…</div>
-          <div id="contagemWrap" style="display:none;margin-top:16px">
-            <div class="eyebrow" style="color:var(--mut)">Faltam apenas</div>
-            <div id="contagem" class="hero-num" style="margin-top:4px">—</div>
-          </div>
+          <div class="carrossel" id="carrossel" data-noswipe></div>
+          <div class="slider-dots" id="carDots" style="display:none"></div>
         </div>
 
         <div class="box-full" id="cardMiniCk" style="display:none">
@@ -341,6 +344,12 @@
           <h2>Linha do tempo</h2>
           <div class="trilha" id="linhaTempo"><div class="vazio">Carregando…</div></div>
         </div>
+        <div class="box-full o-equipe" id="cardEquipe">
+          <h2>Equipe técnica</h2>
+          <div id="listaEquipe" class="vazio">Carregando…</div>
+          <button type="button" class="btn-s" id="btnListaEquipe" style="display:none">Montar lista para WhatsApp</button>
+          <div class="msg" id="msgEquipe"></div>
+        </div>
 
           </div>
           <div class="ck-col">
@@ -366,10 +375,6 @@
         <div class="box-full o-resumo resumo-evt" id="cardResumoEvt">
           <h2>Resumo do evento</h2>
           <div id="resumoEvt" class="vazio">Carregando…</div>
-        </div>
-        <div class="box-full o-equipe" id="cardEquipe">
-          <h2>Equipe técnica</h2>
-          <div id="listaEquipe" class="vazio">Carregando…</div>
         </div>
           </div>
         </div>
@@ -559,9 +564,18 @@
     try { return Number(n || 0).toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' }); }
     catch (e) { return 'R$ —'; }
   };
+  function parseDataLocal(d) {
+    if (!d) return null;
+    var s = String(d);
+    var m = s.match(/^(\d{4})-(\d{2})-(\d{2})(?:[T ]\d{2}:\d{2}(?::\d{2}(?:\.\d+)?)?)?$/);
+    if (m) return new Date(Number(m[1]), Number(m[2]) - 1, Number(m[3]), 12, 0, 0);
+    var x = new Date(s);
+    return isNaN(x.getTime()) ? null : x;
+  }
   var DATA = function (d) {
-    if (!d) return '—';
-    try { return new Date(d).toLocaleDateString('pt-BR'); } catch (e) { return '—'; }
+    var x = parseDataLocal(d);
+    if (!x) return '—';
+    try { return x.toLocaleDateString('pt-BR'); } catch (e) { return '—'; }
   };
   var ST = { pendente: 'Pendente', aprovado: 'Aprovado', recusado: 'Recusado', pago: 'Pago' };
   var ST_CLASSE = { pendente: 't-pend', aprovado: 't-ok', recusado: 't-rec', pago: 't-ok' };
@@ -845,11 +859,16 @@
       var BASE_DOC = location.origin + '/B2B/';
       acoes += '<a class="btn-s" target="_blank" rel="noopener" href="' + BASE_DOC + 'visualizar-contrato.html?id=' + encodeURIComponent(p.id) + '">' + (assinado ? 'Ver contrato' : 'Ver e assinar contrato') + '</a> ';
       acoes += '<a class="btn-s" target="_blank" rel="noopener" href="' + BASE_DOC + 'visualizar-proposta.html?id=' + encodeURIComponent(p.id) + '">Ver proposta</a> ';
-      acoes += '<button type="button" class="btn" data-cmp="' + E(p.id) + '">+ Enviar comprovante</button>';
+      var btnCmp = '<button type="button" class="btn" data-cmp="' + E(p.id) + '">+ Enviar comprovante</button>';
       return '<div style="margin-bottom:18px;padding-bottom:14px;border-bottom:1px solid var(--line)">' +
-        topo + '<div style="margin-top:12px">' + parcelas + '</div>' +
+        '<div class="sec-lbl">Proposta</div>' + topo +
+        '<div class="sec-sep"></div>' +
+        '<div class="sec-lbl">Documentos</div><div>' + acoes + '</div>' +
+        '<div class="sec-sep"></div>' +
+        '<div class="sec-lbl">Pagamentos</div>' +
+        '<div>' + parcelas + '</div>' +
         '<div style="margin-top:10px">' + lista + '</div>' +
-        '<div style="margin-top:8px">' + acoes + '</div></div>';
+        '<div style="margin-top:8px">' + btnCmp + '</div></div>';
     }).join('');
 
     el.querySelectorAll('[data-pdf]').forEach(function (b) {
@@ -1056,58 +1075,74 @@
     if (dados) renderCalendario();
   });
 
-  function renderInicio() {
-    var el = $('proximoEvt');
-    var wrap = $('contagemWrap');
-    var cont = $('contagem');
-    var chips = $('heroChips');
+  var _cdTimers = [];
+  function contagemTexto(el, iso) {
+    var alvo = parseDataLocal(iso);
+    if (!alvo) { el.textContent = '—'; return; }
+    var agora = Date.now();
+    var noon = alvo.getTime();
+    var meiaNoite = new Date(alvo.getFullYear(), alvo.getMonth(), alvo.getDate(), 0, 0, 0).getTime();
+    var diff = noon - agora;
+    if (diff <= 0) {
+      var passou = Math.floor((agora - noon) / 86400000);
+      el.textContent = passou <= 0 ? 'É hoje!' : ('Há ' + passou + ' dia' + (passou > 1 ? 's' : ''));
+      return;
+    }
+    var dias = Math.max(0, Math.floor((meiaNoite - agora) / 86400000));
+    var horas = Math.floor((diff % 86400000) / 3600000);
+    var mins = Math.floor((diff % 3600000) / 60000);
+    if (dias > 0) el.textContent = dias + 'd ' + horas + 'h ' + mins + 'm';
+    else if (horas > 0) el.textContent = horas + 'h ' + mins + 'm';
+    else el.textContent = mins + ' min';
+  }
 
+  function renderInicio() {
+    var car = $('carrossel');
+    var dots = $('carDots');
     var pedidos = (dados.propostas || []).filter(function (p) {
       return p.status !== 'cancelada' && p.data_evento;
     }).sort(function (a, b) { return String(a.data_evento).localeCompare(String(b.data_evento)); });
-
     var hoje = new Date(); hoje.setHours(0, 0, 0, 0);
-    var prox = null;
-    for (var i = 0; i < pedidos.length; i++) {
-      var d = new Date(String(pedidos[i].data_evento).slice(0, 10) + 'T12:00:00');
-      if (d >= hoje) { prox = pedidos[i]; break; }
-    }
-    if (!prox && pedidos.length) prox = pedidos[pedidos.length - 1];
+    var lista = pedidos.filter(function (p) {
+      var d = parseDataLocal(String(p.data_evento).slice(0, 10));
+      return d && d >= hoje;
+    });
+    if (!lista.length && pedidos.length) lista = pedidos.slice(-1);
+    car._lista = lista;
 
-    if (_contagemTimer) { clearInterval(_contagemTimer); _contagemTimer = null; }
+    _cdTimers.forEach(function (t) { clearInterval(t); });
+    _cdTimers = [];
 
-    if (!prox) {
-      el.innerHTML = '<div class="vazio">Nenhum evento com data marcada ainda.</div>';
-      chips.innerHTML = '';
-      wrap.style.display = 'none';
+    if (!lista.length) {
+      car.innerHTML = '<div class="slide vazio">Nenhum evento com data marcada ainda.</div>';
+      dots.style.display = 'none';
     } else {
-      var assinado = !!prox.assinado_em;
-      chips.innerHTML = '<span class="chip">Próximo evento</span>' +
-        (assinado ? '<span class="chip tec">Contrato assinado</span>' : '<span class="chip">Aguardando assinatura</span>');
-      el.innerHTML = '<p style="margin:0;font-size:16px"><strong>Pedido #' + E(prox.numero) + '</strong> · ' + E(prox.tipo_evento || 'Evento') + '</p>' +
-        '<div class="pill" style="margin-top:6px">' + DATA(prox.data_evento) +
-        (prox.valor_total != null ? ' · ' + BRL(prox.valor_total) : '') + '</div>';
+      car.innerHTML = lista.map(function (p) {
+        return '<div class="slide">' +
+          '<p style="margin:0;font-size:16px"><strong>Pedido #' + E(p.numero) + '</strong> · ' + E(p.tipo_evento || 'Evento') + '</p>' +
+          '<div class="pill" style="margin-top:6px">' + DATA(p.data_evento) +
+          (p.valor_total != null ? ' · ' + BRL(p.valor_total) : '') + '</div>' +
+          '<div style="margin-top:16px"><div class="eyebrow" style="color:var(--mut)">Faltam apenas</div>' +
+          '<div class="hero-num" style="margin-top:4px" data-cd="' + E(String(p.data_evento).slice(0, 10)) + '">—</div></div>' +
+          '</div>';
+      }).join('');
+      car.querySelectorAll('[data-cd]').forEach(function (el) {
+        var tick = function () { contagemTexto(el, el.getAttribute('data-cd')); };
+        tick();
+        _cdTimers.push(setInterval(tick, 30000));
+      });
+      dots.innerHTML = lista.map(function (p, i) { return '<i' + (i === 0 ? ' class="on"' : '') + '></i>'; }).join('');
+      dots.style.display = lista.length > 1 ? 'flex' : 'none';
+    }
 
-      var partes = String(prox.data_evento).slice(0, 10).split('-');
-      var alvo = new Date(Number(partes[0]), Number(partes[1]) - 1, Number(partes[2]), 12, 0, 0).getTime();
-      var tick = function () {
-        var diff = alvo - Date.now();
-        if (isNaN(alvo)) { cont.textContent = DATA(prox.data_evento); return; }
-        if (diff <= 0) {
-          var passou = Math.floor((Date.now() - alvo) / 86400000);
-          cont.textContent = passou <= 0 ? 'É hoje!' : ('Há ' + passou + ' dia' + (passou > 1 ? 's' : ''));
-          return;
-        }
-        var dias = Math.floor(diff / 86400000);
-        var horas = Math.floor((diff % 86400000) / 3600000);
-        var mins = Math.floor((diff % 3600000) / 60000);
-        if (dias > 0) cont.textContent = dias + 'd ' + horas + 'h ' + mins + 'm';
-        else if (horas > 0) cont.textContent = horas + 'h ' + mins + 'm';
-        else cont.textContent = mins + ' min';
-      };
-      tick();
-      wrap.style.display = 'block';
-      _contagemTimer = setInterval(tick, 30000);
+    if (!car._bound) {
+      car._bound = true;
+      car.addEventListener('scroll', function () {
+        var w = car.clientWidth || 1;
+        var i = Math.round(car.scrollLeft / w);
+        dots.querySelectorAll('i').forEach(function (d, k) { d.classList.toggle('on', k === i); });
+        if (car._lista && car._lista[i]) renderMiniCk(car._lista[i]);
+      }, { passive: true });
     }
 
     var total = (dados.propostas || []).length;
@@ -1123,7 +1158,7 @@
       '<div class="linha"><span>Etapas do checklist</span><span class="pill">' +
         (etapas.length ? (etPend === 0 ? 'todas confirmadas' : etPend + ' pendente' + (etPend > 1 ? 's' : '')) : 'ainda sem etapas') +
       '</span></div>';
-    renderMiniCk(prox);
+    renderMiniCk(lista.length ? lista[0] : null);
   }
 
   function etapasDe(p) {
@@ -1144,6 +1179,11 @@
     }).join('');
     var ok = et.filter(function (e) { return e.situacao === 'concluida'; }).length;
     $('miniCkRes').textContent = ok + ' de ' + et.length + ' etapas confirmadas';
+    var atual = $('miniCk').querySelector('.mk.prox');
+    if (atual) {
+      var cont = $('miniCk');
+      cont.scrollLeft = atual.getBoundingClientRect().left - cont.getBoundingClientRect().left + cont.scrollLeft - (cont.clientWidth - atual.offsetWidth) / 2;
+    }
   }
   function renderResumoEvento() {
     var p = pedidoAtivo();
@@ -1154,7 +1194,7 @@
     box.className = '';
     box.innerHTML =
       l('Evento', 'Pedido #' + p.numero) + l('Cliente', cli) + l('Tipo do evento', p.tipo_evento) +
-      l('Venue', p.local_evento) + l('Contacto', (dados.cadastro && dados.cadastro.email) || '') +
+      l('Local', p.local_evento) + l('Contato', (dados.cadastro && dados.cadastro.email) || '') +
       l('Data', p.data_evento ? DATA(p.data_evento) : '') +
       l('Contrato', p.assinado_em ? 'Assinado em ' + DATA(p.assinado_em) : 'Aguardando assinatura');
   }
@@ -1165,9 +1205,11 @@
     if (!eq.length) {
       box.className = 'vazio';
       box.textContent = 'A equipe técnica do seu evento aparece aqui assim que for confirmada.';
+      $('btnListaEquipe').style.display = 'none';
       return;
     }
     box.className = '';
+    $('btnListaEquipe').style.display = 'inline-block';
     box.innerHTML = eq.map(function (m) {
       var nome = m.nome || m.nome_completo || '';
       var foto = m.avatar_url || m.foto_url || '';
@@ -1176,6 +1218,34 @@
         '<div style="min-width:0"><strong>' + E(nome) + '</strong>' + ((m.funcao || m.papel) ? '<small>' + E(m.funcao || m.papel) + '</small>' : '') + '</div></div>';
     }).join('');
   }
+
+  function montarListaWhatsApp() {
+    var p = pedidoAtivo();
+    var msg = $('msgEquipe');
+    var eq = (dados.equipe || []).filter(function (m) { return !m.proposta_id || !p || m.proposta_id === p.id; });
+    msg.className = 'msg';
+    if (!eq.length) { msg.textContent = 'Nenhum integrante na equipe ainda.'; return; }
+    var c = dados.cadastro || {};
+    var tel = String(c.telefone || '').replace(/\D/g, '');
+    if (!tel) { msg.textContent = 'Telefone da cliente não cadastrado.'; return; }
+    if (tel.length <= 11) tel = '55' + tel;
+    var primeiro = (c.nome_razao || '').split(' ')[0];
+    var texto = 'Olá' + (primeiro ? ', *' + primeiro + '*' : '') + '! Segue a equipe técnica do seu evento' +
+      (p && p.data_evento ? ' (' + DATA(p.data_evento) + ')' : '') + ':\n\n';
+    eq.forEach(function (m) {
+      var nome = m.nome || m.nome_completo || '';
+      texto += '*' + nome + '*\n';
+      if (m.funcao || m.papel) texto += 'Função: ' + (m.funcao || m.papel) + '\n';
+      if (m.cpf) texto += 'CPF: ' + m.cpf + '\n';
+      if (m.rg) texto += 'RG: ' + m.rg + '\n';
+      if (m.data_nascimento) texto += 'Data de nascimento: ' + DATA(m.data_nascimento) + '\n';
+      texto += '\n';
+    });
+    window.open('https://wa.me/' + tel + '?text=' + encodeURIComponent(texto.trim()), '_blank');
+    msg.className = 'msg ok';
+    msg.textContent = 'WhatsApp aberto com a lista.';
+  }
+  $('btnListaEquipe').addEventListener('click', montarListaWhatsApp);
 
   function renderAvatar() {
     var url = (dados && (dados.avatar_url || (dados.cadastro && dados.cadastro.avatar_url))) || null;
