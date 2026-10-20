@@ -128,6 +128,7 @@
 
         <section id="detalhe">
           <div class="box-full" id="semSel"><div class="vazio">Escolha um projeto na lista.</div></div>
+
           <div id="conteudo" style="display:none">
 
             <div class="box-full">
@@ -156,8 +157,16 @@
             </div>
 
             <div class="box-full">
-              <h2>Dados do pedido</h2>
-              <div id="dadosPedido" class="mut"></div>
+              <h2>Agenda rápida · próximos eventos</h2>
+              <div id="agendaRapida"></div>
+            </div>
+
+            <div class="box-full">
+              <h2>Cliente e financeiro</h2>
+              <div class="grid2">
+                <div id="dadosPedido" class="mut"></div>
+                <div id="resumoFin"></div>
+              </div>
             </div>
 
             <div class="box-full">
@@ -223,11 +232,20 @@
   };
   var BRL = function (n) {
     try { return Number(n || 0).toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' }); }
-    catch (e) { return ''; }
+    catch (e) { return 'R$ —'; }
   };
+  var DATA = function (d) {
+    if (!d) return '—';
+    try { return new Date(String(d).slice(0, 10) + 'T12:00:00').toLocaleDateString('pt-BR'); }
+    catch (e) { return '—'; }
+  };
+  var HOJE = function () { return new Date().toISOString().slice(0, 10); };
 
   var ME = null, PROPS = [], ATUAL = null, PARCEIROS = [];
 
+  /* ===== Nomes e dados de parceiros =====
+     Equipe (exibida ao cliente): nome_artistico > nome_completo > email
+     Vendedor/financeiro (PIX, comissão): nome_completo > email  */
   function tempo(iso) {
     if (!iso) return '48H 00M';
     var d = new Date(iso) - new Date();
@@ -242,14 +260,18 @@
 
   function parceiroPorId(pid) {
     if (!pid) return null;
-    var lista = PARCEIROS || [];
     var s = String(pid);
-    return lista.find(function (x) { return String(x.id) === s || String(x.user_id) === s; }) || null;
+    return (PARCEIROS || []).find(function (x) { return String(x.id) === s || String(x.user_id) === s; }) || null;
   }
 
-  function nomeParceiro(p) {
+  function nomeEquipe(p) {
     if (!p) return '';
     return (p.nome_artistico || p.nome_completo || p.email || '').trim();
+  }
+
+  function nomeFinanceiro(p) {
+    if (!p) return '';
+    return (p.nome_completo || p.email || '').trim();
   }
 
   function fotoParceiro(p) {
@@ -265,7 +287,6 @@
     return labelNivel(nivel);
   }
 
-  /* Carrega a lista do select — mesmo filtro do HTML original que já funcionava */
   async function carregarParceirosBase() {
     var r = await SB.from('parceiros')
       .select('id, nome_completo, email, status')
@@ -273,7 +294,6 @@
       .order('nome_completo');
 
     if (r.error || !(r.data && r.data.length)) {
-      /* fallback sem filtro de status */
       r = await SB.from('parceiros')
         .select('id, nome_completo, email, status')
         .order('nome_completo');
@@ -281,7 +301,6 @@
 
     PARCEIROS = r.data || [];
 
-    /* tenta enriquecer com avatar / nome artístico (ignora se coluna não existir) */
     try {
       var ids = PARCEIROS.map(function (p) { return p.id; }).filter(Boolean);
       if (ids.length) {
@@ -293,22 +312,19 @@
           extra.data.forEach(function (e) { map[e.id] = e; });
           PARCEIROS = PARCEIROS.map(function (p) {
             var e = map[p.id];
-            if (!e) return p;
-            return Object.assign({}, p, e);
+            return e ? Object.assign({}, p, e) : p;
           });
         }
       }
-    } catch (e) { /* ok */ }
+    } catch (e) { /* colunas opcionais */ }
 
     $('addParceiro').innerHTML = PARCEIROS.length
       ? PARCEIROS.map(function (p) {
-          var nome = nomeParceiro(p) || p.id;
-          return '<option value="' + E(p.id) + '">' + E(nome) + '</option>';
+          return '<option value="' + E(p.id) + '">' + E(nomeEquipe(p) || p.id) + '</option>';
         }).join('')
       : '<option value="">Nenhum parceiro aprovado</option>';
   }
 
-  /* Resolve um parceiro que não está na lista (ex.: id gravado mas status mudou) */
   async function buscarParceiroDireto(pid) {
     if (!pid) return null;
     var r = await SB.from('parceiros')
@@ -318,22 +334,14 @@
     if (r.error || !r.data) {
       r = await SB.from('parceiros')
         .select('id, user_id, nome_completo, email, status')
-        .eq('id', pid)
-        .maybeSingle();
-    }
-    if ((r.error || !r.data)) {
-      r = await SB.from('parceiros')
-        .select('id, user_id, nome_completo, email, status')
         .eq('user_id', pid)
         .maybeSingle();
     }
-    if (r.data) {
-      PARCEIROS.push(r.data);
-      return r.data;
-    }
+    if (r.data) { PARCEIROS.push(r.data); return r.data; }
     return null;
   }
 
+  /* ===== Inicialização ===== */
   async function init() {
     var s = await SB.auth.getSession();
     if (!(s.data && s.data.session)) { location.href = '../login.html'; return; }
@@ -357,13 +365,17 @@
     if (qid) selecionar(qid);
   }
 
+  /* ===== Lista de projetos =====
+     Uma única consulta traz o pedido, o vendedor (parceiros) e os campos
+     financeiros usados pela página de comissões. */
   async function carregarLista() {
     var r = await SB.from('propostas')
-      .select('id, numero, cliente_nome, tipo_evento, data_evento, status, hold_expira_em, cancelada_em')
+      .select('*, parceiros:parceiros!parceiro_id(id, nome_completo, email, comissao_padrao_pct, tipo_pix, chave_pix)')
       .order('data_evento', { ascending: true })
       .limit(500);
     PROPS = r.data || [];
     desenharLista();
+    renderAgenda();
   }
 
   function desenharLista() {
@@ -374,7 +386,7 @@
     $('listaProj').innerHTML = lista.length ? lista.map(function (p) {
       return '<div class="proj ' + (ATUAL && ATUAL.id === p.id ? 'on' : '') + '" data-id="' + E(p.id) + '">' +
         '<strong>#' + E(p.numero) + '</strong> · ' + E(p.cliente_nome || '') + '<br>' +
-        '<small>' + E(p.tipo_evento || '') + ' · ' + E(p.data_evento || 'sem data') + ' · ' + E(p.status || '') + '</small></div>';
+        '<small>' + E(p.tipo_evento || '') + ' · ' + E(DATA(p.data_evento)) + ' · ' + E(p.status || '') + '</small></div>';
     }).join('') : '<div class="vazio">Nenhum projeto.</div>';
 
     document.querySelectorAll('#listaProj [data-id]').forEach(function (el) {
@@ -383,39 +395,96 @@
   }
   $('busca').addEventListener('input', desenharLista);
 
+  /* ===== Financeiro (mesma regra da página de comissões) ===== */
+  function calcFin(p) {
+    var valor = Number(p.valor_total || 0);
+    var pct = Number(p.comissao_pct_efetiva != null ? p.comissao_pct_efetiva
+      : (p.parceiros && p.parceiros.comissao_padrao_pct != null ? p.parceiros.comissao_padrao_pct : 10));
+    var total = (valor * pct) / 100;
+    var pago = Number(p.comissao_paga_valor || 0);
+    var saldo = Math.max(0, total - pago);
+    var status = p.comissao_status || (p.comissao_paga ? 'liquidado' : 'pendente');
+    if (saldo <= 0.01 && total > 0 && status !== 'cancelado') status = 'liquidado';
+    return {
+      valor: valor, pct: pct, total: total, pago: pago, saldo: saldo, status: status,
+      vendedor: nomeFinanceiro(p.parceiros) || ('Vendedor ID ' + p.parceiro_id)
+    };
+  }
+
+  var ROTULO_FIN = { pendente: 'Pendente', solicitado: 'Solicitado', parcial: 'Parcial', liquidado: 'Liquidado', cancelado: 'Cancelado' };
+
+  function renderFinanceiro(p) {
+    var box = $('resumoFin');
+    if (!p) { box.innerHTML = '<div class="vazio">—</div>'; return; }
+    var f = calcFin(p);
+    var cls = f.status === 'liquidado' ? 't-ok' : (f.status === 'cancelado' ? '' : 't-hold');
+    var estilo = f.status === 'cancelado' ? ' style="background:rgba(255,77,77,.15);color:var(--alert)"' : '';
+    box.innerHTML =
+      '<div class="item"><span>Valor do pedido</span><strong>' + BRL(f.valor) + '</strong></div>' +
+      '<div class="item"><span>Comissão (' + f.pct + '%)</span><strong style="color:var(--gold)">' + BRL(f.total) + '</strong></div>' +
+      '<div class="item"><span>Já repassado</span><span>' + BRL(f.pago) + '</span></div>' +
+      '<div class="item"><span>Saldo a repassar</span><span>' + BRL(f.saldo) + '</span></div>' +
+      '<div class="item"><span>Status do repasse</span><span class="tag ' + cls + '"' + estilo + '>' + E(ROTULO_FIN[f.status] || f.status) + '</span></div>' +
+      '<div class="item"><span>Vendedor</span><span>' + E(f.vendedor) + '</span></div>';
+  }
+
+  function renderDadosPedido(p) {
+    var box = $('dadosPedido');
+    if (!p) { box.innerHTML = ''; return; }
+    box.innerHTML =
+      '<div class="item"><span>Cliente</span><strong style="color:var(--body)">' + E(p.cliente_nome || '—') + '</strong></div>' +
+      '<div class="item"><span>Tipo de evento</span><span>' + E(p.tipo_evento || '—') + '</span></div>' +
+      '<div class="item"><span>Horário</span><span>' + E((p.horario_inicio || '').slice(0, 5) || '—') +
+        ' – ' + E((p.horario_final || '').slice(0, 5) || '—') + '</span></div>' +
+      '<div class="item"><span>Local</span><span>' + E(p.local_evento || '—') + '</span></div>' +
+      '<div class="item"><span>Contrato</span><span>' + (p.assinado_em ? 'Assinado em ' + DATA(p.assinado_em) : 'Não assinado') + '</span></div>';
+  }
+
+  /* ===== Agenda rápida: próximos eventos (clique abre o projeto) ===== */
+  function renderAgenda() {
+    var box = $('agendaRapida');
+    if (!box) return;
+    var hoje = HOJE();
+    var lista = PROPS.filter(function (p) {
+      return p.status !== 'cancelada' && p.data_evento && String(p.data_evento).slice(0, 10) >= hoje;
+    }).slice(0, 8);
+    box.innerHTML = lista.length ? lista.map(function (p) {
+      return '<div class="item" data-ag="' + E(p.id) + '" style="cursor:pointer">' +
+        '<span><strong>#' + E(p.numero) + '</strong> · ' + E(p.cliente_nome || '') +
+        '<br><small style="color:var(--mut)">' + E(p.tipo_evento || '') + '</small></span>' +
+        '<span class="tag ' + (p.status === 'hold' ? 't-hold' : 't-ok') + '">' + E(DATA(p.data_evento)) + '</span></div>';
+    }).join('') : '<div class="vazio">Nenhum evento futuro.</div>';
+
+    box.querySelectorAll('[data-ag]').forEach(function (el) {
+      el.addEventListener('click', function () { selecionar(el.getAttribute('data-ag')); });
+    });
+  }
+
+  /* ===== Seleção de projeto ===== */
   async function selecionar(id) {
-    ATUAL = PROPS.find(function (p) { return p.id === id; }) || null;
+    ATUAL = PROPS.find(function (p) { return String(p.id) === String(id); }) || null;
     if (!ATUAL) return;
-    history.replaceState(null, '', '?id=' + encodeURIComponent(id));
+    history.replaceState(null, '', '?id=' + encodeURIComponent(ATUAL.id));
     desenharLista();
     $('semSel').style.display = 'none';
     $('conteudo').style.display = 'block';
     $('tituloProj').textContent = 'Projeto #' + ATUAL.numero + ' · ' + (ATUAL.cliente_nome || '');
     $('fData').value = ATUAL.data_evento || '';
     $('fStatus').value = String(ATUAL.status || 'rascunho').toLowerCase();
+    $('fIni').value = (ATUAL.horario_inicio || '').slice(0, 5);
+    $('fFim').value = (ATUAL.horario_final || '').slice(0, 5);
+    $('fLocal').value = ATUAL.local_evento || '';
     $('msgDados').textContent = '';
-
-    var full = await SB.from('propostas')
-      .select('horario_inicio, horario_final, local_evento, valor_total, tipo_evento, cliente_nome, comissao_valor, assinado_em')
-      .eq('id', id)
-      .maybeSingle();
-    var d = full.data || {};
-    $('fIni').value = (d.horario_inicio || '').slice(0, 5);
-    $('fFim').value = (d.horario_final || '').slice(0, 5);
-    $('fLocal').value = d.local_evento || '';
-    $('dadosPedido').innerHTML =
-      'Tipo: ' + E(d.tipo_evento || '') +
-      ' · Valor: ' + BRL(d.valor_total) +
-      ' · Comissão: ' + BRL(d.comissao_valor) +
-      ' · Contrato: ' + (d.assinado_em ? 'assinado' : 'não assinado');
     $('holdInfo').textContent = ATUAL.status === 'hold' ? 'Hold · ' + tempo(ATUAL.hold_expira_em) : '';
+    $('linkEspelho').href = 'espelho.html?id=' + encodeURIComponent(ATUAL.id);
 
-    var le = document.getElementById('linkEspelho');
-    if (le) le.href = 'espelho.html?id=' + encodeURIComponent(ATUAL.id);
+    renderDadosPedido(ATUAL);
+    renderFinanceiro(ATUAL);
 
     await Promise.all([carregarColaboradores(), carregarEtapas(), carregarObs()]);
   }
 
+  /* ===== Salvar dados gerais ===== */
   $('btnSalvar').addEventListener('click', async function () {
     if (!ATUAL) return;
     var st = $('fStatus').value;
@@ -441,10 +510,12 @@
     }
     $('msgDados').className = 'msg ok';
     $('msgDados').textContent = 'Salvo.';
+    var id = ATUAL.id;
     await carregarLista();
-    selecionar(ATUAL.id);
+    selecionar(id);
   });
 
+  /* ===== Equipe técnica (projeto_colaboradores) ===== */
   async function carregarColaboradores() {
     if (!ATUAL) return;
     var box = $('listaCol');
@@ -467,22 +538,16 @@
       return;
     }
 
-    /* resolve cada parceiro que ainda não está no cache */
     for (var i = 0; i < l.length; i++) {
-      if (!parceiroPorId(l[i].parceiro_id)) {
-        await buscarParceiroDireto(l[i].parceiro_id);
-      }
+      if (!parceiroPorId(l[i].parceiro_id)) await buscarParceiroDireto(l[i].parceiro_id);
     }
 
     box.innerHTML = l.map(function (c) {
       var p = parceiroPorId(c.parceiro_id);
-      var nome = nomeParceiro(p);
+      var nome = nomeEquipe(p) || ('ID ' + String(c.parceiro_id || '').slice(0, 8));
       var foto = fotoParceiro(p);
       var funcao = funcaoParceiro(p, c.nivel);
-      var inicial = (nome || '?').charAt(0).toUpperCase();
-
-      /* se ainda sem nome, mostra trecho do id só para diagnóstico */
-      if (!nome) nome = 'ID ' + String(c.parceiro_id || '').slice(0, 8);
+      var inicial = nome.charAt(0).toUpperCase();
 
       return '<div class="eq-item">' +
         '<div class="eq-foto"' + (foto ? ' style="background-image:url(\'' + E(foto) + '\')"' : '') + '>' +
@@ -498,7 +563,7 @@
       '</div>';
     }).join('');
 
-    document.querySelectorAll('[data-rm-col]').forEach(function (b) {
+    box.querySelectorAll('[data-rm-col]').forEach(function (b) {
       b.addEventListener('click', async function () {
         if (!confirm('Remover este colaborador do projeto?')) return;
         await SB.from('projeto_colaboradores').delete().eq('id', b.getAttribute('data-rm-col'));
@@ -537,6 +602,7 @@
     await carregarColaboradores();
   });
 
+  /* ===== Checklist (evento_etapas) ===== */
   async function carregarEtapas() {
     if (!ATUAL) return;
     var r = await SB.from('evento_etapas')
@@ -548,7 +614,7 @@
     $('listaEtapas').innerHTML = l.length ? l.map(function (e) {
       var feita = e.situacao === 'concluida';
       return '<div class="item">' +
-        '<span>' + E(e.nome) + ' <span class="mut">' + E(e.hora || '') + '</span>' +
+        '<span>' + E(e.nome) + ' <span style="color:var(--mut)">' + E(e.hora || '') + '</span>' +
           (feita ? ' <span class="tag t-ok">feita</span>' : ' <span class="tag t-hold">pendente</span>') +
         '</span>' +
         '<span style="display:flex;gap:6px;flex-wrap:wrap">' +
@@ -560,7 +626,7 @@
       '</div>';
     }).join('') : '<div class="vazio">Sem etapas. Adicione a primeira acima.</div>';
 
-    document.querySelectorAll('[data-feita]').forEach(function (b) {
+    $('listaEtapas').querySelectorAll('[data-feita]').forEach(function (b) {
       b.addEventListener('click', async function () {
         await SB.from('evento_etapas').update({
           situacao: 'concluida',
@@ -570,17 +636,15 @@
         carregarEtapas();
       });
     });
-    document.querySelectorAll('[data-desfazer]').forEach(function (b) {
+    $('listaEtapas').querySelectorAll('[data-desfazer]').forEach(function (b) {
       b.addEventListener('click', async function () {
         await SB.from('evento_etapas').update({
-          situacao: 'pendente',
-          concluida_por: null,
-          concluida_em: null
+          situacao: 'pendente', concluida_por: null, concluida_em: null
         }).eq('id', b.getAttribute('data-desfazer'));
         carregarEtapas();
       });
     });
-    document.querySelectorAll('[data-rm-etapa]').forEach(function (b) {
+    $('listaEtapas').querySelectorAll('[data-rm-etapa]').forEach(function (b) {
       b.addEventListener('click', async function () {
         if (!confirm('Remover esta etapa do checklist?')) return;
         await SB.from('evento_etapas').delete().eq('id', b.getAttribute('data-rm-etapa'));
@@ -609,15 +673,10 @@
         .order('ordem', { ascending: false })
         .limit(1);
       var prox = 1;
-      if (ord.data && ord.data[0] && ord.data[0].ordem != null) {
-        prox = Number(ord.data[0].ordem) + 1;
-      }
+      if (ord.data && ord.data[0] && ord.data[0].ordem != null) prox = Number(ord.data[0].ordem) + 1;
+
       var r = await SB.from('evento_etapas').insert({
-        proposta_id: ATUAL.id,
-        nome: nome,
-        hora: hora,
-        situacao: 'pendente',
-        ordem: prox
+        proposta_id: ATUAL.id, nome: nome, hora: hora, situacao: 'pendente', ordem: prox
       });
       if (r.error) throw new Error(r.error.message || 'Falha ao adicionar');
       $('novaEtapaNome').value = '';
@@ -633,6 +692,7 @@
     }
   });
 
+  /* ===== Instruções (evento_observacoes) ===== */
   async function carregarObs() {
     if (!ATUAL) return;
     var r = await SB.from('evento_observacoes')
@@ -643,34 +703,12 @@
     var l = r.data || [];
     $('listaObs').innerHTML = l.length ? l.map(function (o) {
       return '<div class="item">' +
-        '<span>' + E(o.texto) + ' <span class="mut">(' + E(o.criado_por) + ')</span></span>' +
+        '<span>' + E(o.texto) + ' <span style="color:var(--mut)">(' + E(o.criado_por) + ')</span></span>' +
         '<button class="danger" data-obs="' + E(o.id) + '" type="button">Remover</button>' +
       '</div>';
     }).join('') : '<div class="vazio">Nenhuma instrução.</div>';
 
-    document.querySelectorAll('[data-obs]').forEach(function (b) {
-      b.addEventListener('click', async function () {
-        await SB.from('evento_observacoes')
-          .update({ removido_em: new Date().toISOString() })
-          .eq('id', b.getAttribute('data-obs'));
-        carregarObs();
-      });
-    });
-  }
-
-  init();
-})();
-  </script>
-</body>
-</html>
-
-      return '<div class="item">' +
-        '<span>' + E(o.texto) + ' <span class="mut">(' + E(o.criado_por) + ')</span></span>' +
-        '<button class="danger" data-obs="' + E(o.id) + '" type="button">Remover</button>' +
-      '</div>';
-    }).join('') : '<div class="vazio">Nenhuma instrução.</div>';
-
-    document.querySelectorAll('[data-obs]').forEach(function (b) {
+    $('listaObs').querySelectorAll('[data-obs]').forEach(function (b) {
       b.addEventListener('click', async function () {
         await SB.from('evento_observacoes')
           .update({ removido_em: new Date().toISOString() })
