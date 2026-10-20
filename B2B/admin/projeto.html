@@ -243,55 +243,95 @@
   function parceiroPorId(pid) {
     if (!pid) return null;
     var lista = PARCEIROS || [];
-    var p = lista.find(function (x) { return String(x.id) === String(pid); });
-    if (p) return p;
-    return lista.find(function (x) { return String(x.user_id) === String(pid); }) || null;
+    var s = String(pid);
+    return lista.find(function (x) { return String(x.id) === s || String(x.user_id) === s; }) || null;
   }
 
-  function nomeParceiro(p, fallback) {
-    if (!p) return fallback || '—';
-    return p.nome_artistico || p.nome_completo || p.email || fallback || '—';
+  function nomeParceiro(p) {
+    if (!p) return '';
+    return (p.nome_artistico || p.nome_completo || p.email || '').trim();
+  }
+
+  function fotoParceiro(p) {
+    if (!p) return '';
+    return p.avatar_url || p.foto_url || p.foto || '';
   }
 
   function funcaoParceiro(p, nivel) {
     if (p) {
-      var f = p.funcao || p.papel || p.especialidade || p.categoria || '';
+      var f = (p.funcao || p.papel || p.especialidade || p.categoria || p.role || '').trim();
       if (f) return f;
     }
     return labelNivel(nivel);
   }
 
-  function fotoParceiro(p) {
-    if (!p) return '';
-    return p.avatar_url || p.foto_url || p.foto || p.image_url || '';
-  }
+  /* Carrega a lista do select — mesmo filtro do HTML original que já funcionava */
+  async function carregarParceirosBase() {
+    var r = await SB.from('parceiros')
+      .select('id, nome_completo, email, status')
+      .eq('status', 'aprovado')
+      .order('nome_completo');
 
-  async function garantirParceiros(ids) {
-    var unicos = [];
-    (ids || []).forEach(function (id) {
-      if (id && unicos.indexOf(id) < 0) unicos.push(id);
-    });
-    var faltando = unicos.filter(function (id) { return !parceiroPorId(id); });
-    if (!faltando.length) return;
-
-    async function buscar(campo) {
-      var r = await SB.from('parceiros')
-        .select('id, user_id, nome_completo, nome_artistico, email, role, status, avatar_url, foto_url, funcao, papel, categoria, especialidade')
-        .in(campo, faltando);
-      if (r.error) {
-        r = await SB.from('parceiros')
-          .select('id, user_id, nome_completo, nome_artistico, email, role, status, avatar_url, foto_url')
-          .in(campo, faltando);
-      }
-      return r;
+    if (r.error || !(r.data && r.data.length)) {
+      /* fallback sem filtro de status */
+      r = await SB.from('parceiros')
+        .select('id, nome_completo, email, status')
+        .order('nome_completo');
     }
 
-    var r = await buscar('id');
-    if (!(r.data && r.data.length)) r = await buscar('user_id');
+    PARCEIROS = r.data || [];
 
-    (r.data || []).forEach(function (p) {
-      if (!parceiroPorId(p.id) && !parceiroPorId(p.user_id)) PARCEIROS.push(p);
-    });
+    /* tenta enriquecer com avatar / nome artístico (ignora se coluna não existir) */
+    try {
+      var ids = PARCEIROS.map(function (p) { return p.id; }).filter(Boolean);
+      if (ids.length) {
+        var extra = await SB.from('parceiros')
+          .select('id, nome_artistico, avatar_url, foto_url, funcao, papel, user_id')
+          .in('id', ids);
+        if (!extra.error && extra.data) {
+          var map = {};
+          extra.data.forEach(function (e) { map[e.id] = e; });
+          PARCEIROS = PARCEIROS.map(function (p) {
+            var e = map[p.id];
+            if (!e) return p;
+            return Object.assign({}, p, e);
+          });
+        }
+      }
+    } catch (e) { /* ok */ }
+
+    $('addParceiro').innerHTML = PARCEIROS.length
+      ? PARCEIROS.map(function (p) {
+          var nome = nomeParceiro(p) || p.id;
+          return '<option value="' + E(p.id) + '">' + E(nome) + '</option>';
+        }).join('')
+      : '<option value="">Nenhum parceiro aprovado</option>';
+  }
+
+  /* Resolve um parceiro que não está na lista (ex.: id gravado mas status mudou) */
+  async function buscarParceiroDireto(pid) {
+    if (!pid) return null;
+    var r = await SB.from('parceiros')
+      .select('id, user_id, nome_completo, nome_artistico, email, avatar_url, foto_url, funcao, papel, status')
+      .eq('id', pid)
+      .maybeSingle();
+    if (r.error || !r.data) {
+      r = await SB.from('parceiros')
+        .select('id, user_id, nome_completo, email, status')
+        .eq('id', pid)
+        .maybeSingle();
+    }
+    if ((r.error || !r.data)) {
+      r = await SB.from('parceiros')
+        .select('id, user_id, nome_completo, email, status')
+        .eq('user_id', pid)
+        .maybeSingle();
+    }
+    if (r.data) {
+      PARCEIROS.push(r.data);
+      return r.data;
+    }
+    return null;
   }
 
   async function init() {
@@ -311,21 +351,7 @@
       return;
     }
 
-    var pr = await SB.from('parceiros')
-      .select('id, user_id, nome_completo, nome_artistico, email, role, status, avatar_url, foto_url, funcao, papel, categoria, especialidade')
-      .order('nome_completo');
-    if (pr.error) {
-      pr = await SB.from('parceiros')
-        .select('id, user_id, nome_completo, nome_artistico, email, role, status, avatar_url, foto_url')
-        .order('nome_completo');
-    }
-    PARCEIROS = (pr.data || []).filter(function (p) { return p.status !== 'inativo'; });
-
-    $('addParceiro').innerHTML = PARCEIROS.map(function (p) {
-      var nome = p.nome_artistico || p.nome_completo || p.email || p.id;
-      return '<option value="' + E(p.id) + '">' + E(nome) + '</option>';
-    }).join('');
-
+    await carregarParceirosBase();
     await carregarLista();
     var qid = new URLSearchParams(location.search).get('id');
     if (qid) selecionar(qid);
@@ -441,18 +467,22 @@
       return;
     }
 
-    await garantirParceiros(l.map(function (c) { return c.parceiro_id; }));
+    /* resolve cada parceiro que ainda não está no cache */
+    for (var i = 0; i < l.length; i++) {
+      if (!parceiroPorId(l[i].parceiro_id)) {
+        await buscarParceiroDireto(l[i].parceiro_id);
+      }
+    }
 
-    /* Markup idêntico à área do cliente: .eq-item + .eq-foto + strong + small */
     box.innerHTML = l.map(function (c) {
       var p = parceiroPorId(c.parceiro_id);
-      var nome = nomeParceiro(p, null);
-      if (!p || nome === '—' || nome === c.parceiro_id) {
-        nome = nomeParceiro(p, 'Parceiro');
-      }
+      var nome = nomeParceiro(p);
       var foto = fotoParceiro(p);
-      var inicial = (String(nome).trim()[0] || '?').toUpperCase();
       var funcao = funcaoParceiro(p, c.nivel);
+      var inicial = (nome || '?').charAt(0).toUpperCase();
+
+      /* se ainda sem nome, mostra trecho do id só para diagnóstico */
+      if (!nome) nome = 'ID ' + String(c.parceiro_id || '').slice(0, 8);
 
       return '<div class="eq-item">' +
         '<div class="eq-foto"' + (foto ? ' style="background-image:url(\'' + E(foto) + '\')"' : '') + '>' +
@@ -470,6 +500,7 @@
 
     document.querySelectorAll('[data-rm-col]').forEach(function (b) {
       b.addEventListener('click', async function () {
+        if (!confirm('Remover este colaborador do projeto?')) return;
         await SB.from('projeto_colaboradores').delete().eq('id', b.getAttribute('data-rm-col'));
         carregarColaboradores();
       });
@@ -477,18 +508,28 @@
   }
 
   $('btnAddCol').addEventListener('click', async function () {
-    if (!ATUAL) return;
+    if (!ATUAL) {
+      $('msgCol').className = 'msg';
+      $('msgCol').textContent = 'Selecione um projeto à esquerda primeiro.';
+      return;
+    }
     var pid = $('addParceiro').value;
-    var nivel = $('addNivel').value;
-    if (!pid) return;
+    if (!pid) {
+      $('msgCol').className = 'msg';
+      $('msgCol').textContent = 'Escolha um parceiro.';
+      return;
+    }
     var r = await SB.from('projeto_colaboradores').insert({
       proposta_id: ATUAL.id,
       parceiro_id: pid,
-      nivel: nivel
-    });
+      nivel: $('addNivel').value,
+      criado_por: ME.id
+    }).select('id, parceiro_id, nivel');
+
     if (r.error) {
       $('msgCol').className = 'msg';
-      $('msgCol').textContent = r.error.message || 'Erro ao adicionar.';
+      $('msgCol').textContent = 'Não foi possível adicionar: ' + (r.error.message || 'já está no projeto?');
+      console.error(r.error);
       return;
     }
     $('msgCol').className = 'msg ok';
@@ -601,6 +642,28 @@
       .order('criado_em');
     var l = r.data || [];
     $('listaObs').innerHTML = l.length ? l.map(function (o) {
+      return '<div class="item">' +
+        '<span>' + E(o.texto) + ' <span class="mut">(' + E(o.criado_por) + ')</span></span>' +
+        '<button class="danger" data-obs="' + E(o.id) + '" type="button">Remover</button>' +
+      '</div>';
+    }).join('') : '<div class="vazio">Nenhuma instrução.</div>';
+
+    document.querySelectorAll('[data-obs]').forEach(function (b) {
+      b.addEventListener('click', async function () {
+        await SB.from('evento_observacoes')
+          .update({ removido_em: new Date().toISOString() })
+          .eq('id', b.getAttribute('data-obs'));
+        carregarObs();
+      });
+    });
+  }
+
+  init();
+})();
+  </script>
+</body>
+</html>
+
       return '<div class="item">' +
         '<span>' + E(o.texto) + ' <span class="mut">(' + E(o.criado_por) + ')</span></span>' +
         '<button class="danger" data-obs="' + E(o.id) + '" type="button">Remover</button>' +
