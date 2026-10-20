@@ -31,7 +31,13 @@
   /* Na página do cliente, admin/parceiro só valem se confirmados no banco (nunca pelo cache da sessão) */
   if (onCliente) { cachedIsAdmin = false; cachedIsParceiro = false; }
   var currentPath = pathName.split('/').pop() || 'index.html';
-  var pageArea = isSubdirAdmin ? 'admin' : (onCliente ? 'cliente' : (onSite ? 'site' : 'parceiro'));
+  /* Estar em /B2B/admin/ NÃO torna o usuário admin — só o role no banco.
+     Parceiro em agenda/projeto (pasta admin) continua na área parceiro. */
+  var pageArea = onCliente ? 'cliente' : (onSite ? 'site' : (isSubdirAdmin && cachedIsAdmin ? 'admin' : (isSubdirAdmin ? 'parceiro' : 'parceiro')));
+  if (isSubdirAdmin && cachedIsAdmin) pageArea = 'admin';
+  else if (onCliente) pageArea = 'cliente';
+  else if (onSite) pageArea = 'site';
+  else pageArea = 'parceiro';
   var areaAtual = pageArea;
   var CLIENTE = SITE + 'cliente/';
   /* Perfil do cliente: abre direto na aba Perfil da área do cliente */
@@ -53,12 +59,20 @@
       { label: 'Meu Painel', icon: '❖', href: B2B + 'index.html', file: 'index.html' },
       { label: '⚡ Nova Proposta', href: B2B + 'nova-proposta.html', file: 'nova-proposta.html', destaque: true },
       { label: 'Minhas Propostas', icon: '▤', href: B2B + 'propostas.html', file: 'propostas.html' },
+      { label: 'Agenda', icon: '📅', href: ADM + 'agenda.html', file: 'agenda.html' },
+      { label: 'Projetos', icon: '▦', href: ADM + 'projeto.html', file: 'projeto.html' },
+      { label: 'Checklist', icon: '✓', href: B2B + 'checklist.html', file: 'checklist.html' },
       { label: 'Novo Cliente', icon: '+', href: B2B + 'cadastro-cliente.html', file: 'cadastro-cliente.html' },
       { label: 'Comissões', icon: '$', href: B2B + 'comissoes.html', file: 'comissoes.html' },
       { label: 'Materiais', icon: '📁', href: B2B + 'materiais.html', file: 'materiais.html' }
     ],
 
     admin: [
+      { label: 'Operação', sub: [
+        { label: 'Agenda', href: ADM + 'agenda.html', file: 'agenda.html' },
+        { label: 'Projetos', href: ADM + 'projeto.html', file: 'projeto.html' },
+        { label: 'Checklist', href: B2B + 'checklist.html', file: 'checklist.html' }
+      ]},
       { label: 'Vendas', sub: [
         { label: 'Visão Geral Vendas', href: ADM + 'index.html', file: 'index.html' },
         { label: 'Baixa de Comissões', href: ADM + 'comissoes.html', file: 'comissoes.html' }
@@ -109,17 +123,19 @@
 
   function podeVer(area) {
     if (area === 'site') return true;
-    /* Página do cliente: só Home e Cliente, sem Parceiro nem Admin */
+    /* Página do cliente */
     if (onCliente) {
       if (area === 'cliente') return !cachedIsAdmin;
       if (area === 'parceiro') return cachedIsParceiro || cachedIsAdmin;
       if (area === 'admin') return cachedIsAdmin;
       return false;
     }
-    if (area === 'parceiro') return cachedLoggedIn || cachedIsAdmin || isSubdirAdmin;
-    if (area === 'admin') return cachedIsAdmin || isSubdirAdmin;
-    /* Admin NÃO vê toggle Cliente; só quem é cliente de fato */
-    if (area === 'cliente') return cachedIsCliente && !cachedIsAdmin && !isSubdirAdmin;
+    /* Parceiro logado (inclui páginas em /admin/ usadas pelo parceiro: agenda, projetos) */
+    if (area === 'parceiro') return cachedLoggedIn || cachedIsAdmin || cachedIsParceiro;
+    /* Admin: SOMENTE role real no banco/cache — nunca só por estar em /admin/ */
+    if (area === 'admin') return cachedIsAdmin;
+    /* Admin NÃO vê toggle Cliente */
+    if (area === 'cliente') return cachedIsCliente && !cachedIsAdmin;
     return false;
   }
 
@@ -133,7 +149,7 @@
   }
 
   function isLogged() {
-    return cachedLoggedIn || cachedIsAdmin || isSubdirAdmin;
+    return cachedLoggedIn || cachedIsAdmin || cachedIsParceiro;
   }
 
   /* ---------- 5. Montagem do HTML ---------- */
@@ -541,12 +557,12 @@
   var CAL_SVG = '<svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="3" y="4" width="18" height="18" rx="2"/><path d="M16 2v4M8 2v4M3 10h18"/></svg>';
 
   function calLinkHTML(cls, standalone) {
-    /* Calendário do colaborador/parceiro (lado do envelope) — anotado no menu */
+    /* Calendário unificado (pasta admin) — parceiro e admin usam a mesma agenda */
     if (onCliente) return '';
-    if (!(cachedLoggedIn || cachedIsParceiro || cachedIsAdmin || isSubdirAdmin)) return '';
-    var ativo = (!isSubdirAdmin && currentPath === 'agenda-parceiro.html') ? ' active' : '';
-    return '<a href="' + B2B + 'agenda-parceiro.html" class="mn-mail ' + cls + ativo + '"' +
-      (standalone ? ' data-mn-user="1"' : '') + ' title="Minha agenda" aria-label="Minha agenda">' +
+    if (!(cachedLoggedIn || cachedIsParceiro || cachedIsAdmin)) return '';
+    var ativo = (currentPath === 'agenda.html') ? ' active' : '';
+    return '<a href="' + ADM + 'agenda.html" class="mn-mail ' + cls + ativo + '"' +
+      (standalone ? ' data-mn-user="1"' : '') + ' title="Agenda" aria-label="Agenda">' +
       CAL_SVG + '</a>';
   }
 
@@ -758,7 +774,7 @@
   }
 
   function mobUserHTML() {
-    var master = isSubdirAdmin || cachedIsAdmin;
+    var master = cachedIsAdmin;
     var perfilMob = onCliente ? CLIENTE_PERFIL : (B2B + 'perfil.html');
     return '<div data-mn-user="1" class="mn-m-user">' +
       '<a href="' + perfilMob + '" class="mn-m-prof"' + (onCliente ? ' data-mn-perfil="1"' : '') + '>' +
@@ -780,7 +796,7 @@
   function refreshUserParts() {
     var stale = document.querySelectorAll('[data-mn-user]');
     for (var i = 0; i < stale.length; i++) stale[i].parentNode.removeChild(stale[i]);
-    userSig = (isLogged() ? '1' : '0') + '|' + (cachedIsAdmin || isSubdirAdmin ? '1' : '0');
+    userSig = (isLogged() ? '1' : '0') + '|' + (cachedIsAdmin ? '1' : '0');
     if (!isLogged()) return;
 
     var nav = document.querySelector('#calc-header .desktop-nav');
@@ -1336,7 +1352,7 @@
     /* Antes de montar o header, o estado fica só no cache */
     if (!rendered) return;
 
-    var novaSig = (isLogged() ? '1' : '0') + '|' + (cachedIsAdmin || isSubdirAdmin ? '1' : '0') + '|' + (cachedIsCliente ? '1' : '0');
+    var novaSig = (isLogged() ? '1' : '0') + '|' + (cachedIsAdmin ? '1' : '0') + '|' + (cachedIsCliente ? '1' : '0');
     if (novaSig !== userSig) refreshUserParts();
     applyLevel(true);
   };
