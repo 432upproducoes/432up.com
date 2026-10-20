@@ -50,7 +50,7 @@
     .proj.on { border-color: rgba(0,255,102,.45); background: rgba(0,255,102,.06); }
     .proj small { color: var(--mut); font-size: 12px; }
     .row { display: flex; gap: 8px; flex-wrap: wrap; align-items: center; margin-bottom: 8px; }
-    .row label, label.cap {
+    label.cap {
       font-size: 10px; color: var(--mut); text-transform: uppercase; letter-spacing: .06em;
       display: block; margin-bottom: 4px;
     }
@@ -65,7 +65,6 @@
     }
     .t-hold { background: rgba(212,175,55,.16); color: var(--gold); }
     .t-ok { background: rgba(0,255,102,.14); color: var(--action); }
-    .t-x { background: rgba(255,77,77,.15); color: var(--alert); }
     .msg { font-size: 12px; min-height: 16px; color: #fca5a5; margin-top: 6px; }
     .msg.ok { color: var(--action); }
     .vazio { color: var(--mut); font-size: 13px; padding: 6px 0; }
@@ -85,7 +84,7 @@
     a.tech { color: var(--tech); text-decoration: none; font-weight: 600; }
     a.tech:hover { text-decoration: underline; }
 
-    /* Equipe técnica — mesmo padrão da área do cliente */
+    /* Equipe técnica — idêntico à área do cliente */
     .eq-item { display: flex; align-items: center; gap: 12px; padding: 10px 0; border-bottom: 1px solid var(--line); }
     .eq-item:last-child { border-bottom: 0; }
     .eq-foto {
@@ -178,6 +177,18 @@
 
             <div class="box-full">
               <h2>Checklist</h2>
+              <div class="row" style="align-items:flex-end;margin-bottom:12px">
+                <div style="flex:1;min-width:140px">
+                  <label class="cap">Nova etapa</label>
+                  <input id="novaEtapaNome" placeholder="Ex.: Montagem" maxlength="120">
+                </div>
+                <div style="width:110px">
+                  <label class="cap">Hora</label>
+                  <input id="novaEtapaHora" type="time">
+                </div>
+                <button class="primary" id="btnAddEtapa" type="button">Adicionar</button>
+              </div>
+              <div class="msg" id="msgEtapa"></div>
               <div id="listaEtapas"></div>
             </div>
 
@@ -200,12 +211,21 @@
 (function () {
   'use strict';
   var CFG = window.PARTNER_CFG;
-  var SB = window.sbPartner || window.supabase.createClient(CFG.SB_URL, CFG.SB_KEY, { auth: { persistSession: true, autoRefreshToken: true } });
+  var SB = window.sbPartner || window.supabase.createClient(CFG.SB_URL, CFG.SB_KEY, {
+    auth: { persistSession: true, autoRefreshToken: true }
+  });
   window.sbPartner = SB;
 
   var $ = function (id) { return document.getElementById(id); };
-  var E = function (s) { return String(s == null ? '' : s).replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;'); };
-  var BRL = function (n) { try { return Number(n || 0).toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' }); } catch (e) { return ''; } };
+  var E = function (s) {
+    return String(s == null ? '' : s)
+      .replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;');
+  };
+  var BRL = function (n) {
+    try { return Number(n || 0).toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' }); }
+    catch (e) { return ''; }
+  };
+
   var ME = null, PROPS = [], ATUAL = null, PARCEIROS = [];
 
   function tempo(iso) {
@@ -216,33 +236,96 @@
     return (h < 10 ? '0' : '') + h + 'H ' + (m < 10 ? '0' : '') + m + 'M';
   }
 
-  function parceiroPorId(pid) {
-    return (PARCEIROS || []).find(function (x) { return x.id === pid; }) || null;
-  }
-
   function labelNivel(nivel) {
     return nivel === 'dados_sensiveis' ? 'Agenda + dados sensíveis' : 'Só agenda';
+  }
+
+  function parceiroPorId(pid) {
+    if (!pid) return null;
+    var lista = PARCEIROS || [];
+    var p = lista.find(function (x) { return String(x.id) === String(pid); });
+    if (p) return p;
+    return lista.find(function (x) { return String(x.user_id) === String(pid); }) || null;
+  }
+
+  function nomeParceiro(p, fallback) {
+    if (!p) return fallback || '—';
+    return p.nome_artistico || p.nome_completo || p.email || fallback || '—';
+  }
+
+  function funcaoParceiro(p, nivel) {
+    if (p) {
+      var f = p.funcao || p.papel || p.especialidade || p.categoria || '';
+      if (f) return f;
+    }
+    return labelNivel(nivel);
+  }
+
+  function fotoParceiro(p) {
+    if (!p) return '';
+    return p.avatar_url || p.foto_url || p.foto || p.image_url || '';
+  }
+
+  async function garantirParceiros(ids) {
+    var unicos = [];
+    (ids || []).forEach(function (id) {
+      if (id && unicos.indexOf(id) < 0) unicos.push(id);
+    });
+    var faltando = unicos.filter(function (id) { return !parceiroPorId(id); });
+    if (!faltando.length) return;
+
+    async function buscar(campo) {
+      var r = await SB.from('parceiros')
+        .select('id, user_id, nome_completo, nome_artistico, email, role, status, avatar_url, foto_url, funcao, papel, categoria, especialidade')
+        .in(campo, faltando);
+      if (r.error) {
+        r = await SB.from('parceiros')
+          .select('id, user_id, nome_completo, nome_artistico, email, role, status, avatar_url, foto_url')
+          .in(campo, faltando);
+      }
+      return r;
+    }
+
+    var r = await buscar('id');
+    if (!(r.data && r.data.length)) r = await buscar('user_id');
+
+    (r.data || []).forEach(function (p) {
+      if (!parceiroPorId(p.id) && !parceiroPorId(p.user_id)) PARCEIROS.push(p);
+    });
   }
 
   async function init() {
     var s = await SB.auth.getSession();
     if (!(s.data && s.data.session)) { location.href = '../login.html'; return; }
-    var r = await SB.from('parceiros').select('id, nome_completo, role, status, nivel').eq('user_id', s.data.session.user.id).maybeSingle();
+
+    var r = await SB.from('parceiros')
+      .select('id, nome_completo, role, status, nivel')
+      .eq('user_id', s.data.session.user.id)
+      .maybeSingle();
     ME = r.data;
     if (!ME) { location.href = '../login.html'; return; }
+
     var papel = String(ME.role || ME.nivel || '').toLowerCase().trim();
     if (!/^(admin|master)$/i.test(papel)) {
       document.querySelector('main').innerHTML = '<div class="box-full"><div class="vazio">Acesso restrito ao administrador.</div></div>';
       return;
     }
+
     var pr = await SB.from('parceiros')
-      .select('id, nome_completo, nome_artistico, email, role, status, avatar_url, foto_url')
+      .select('id, user_id, nome_completo, nome_artistico, email, role, status, avatar_url, foto_url, funcao, papel, categoria, especialidade')
       .order('nome_completo');
+    if (pr.error) {
+      pr = await SB.from('parceiros')
+        .select('id, user_id, nome_completo, nome_artistico, email, role, status, avatar_url, foto_url')
+        .order('nome_completo');
+    }
     PARCEIROS = (pr.data || []).filter(function (p) { return p.status !== 'inativo'; });
+
     $('addParceiro').innerHTML = PARCEIROS.map(function (p) {
       var nome = p.nome_artistico || p.nome_completo || p.email || p.id;
       return '<option value="' + E(p.id) + '">' + E(nome) + '</option>';
     }).join('');
+
     await carregarLista();
     var qid = new URLSearchParams(location.search).get('id');
     if (qid) selecionar(qid);
@@ -251,7 +334,8 @@
   async function carregarLista() {
     var r = await SB.from('propostas')
       .select('id, numero, cliente_nome, tipo_evento, data_evento, status, hold_expira_em, cancelada_em')
-      .order('data_evento', { ascending: true }).limit(500);
+      .order('data_evento', { ascending: true })
+      .limit(500);
     PROPS = r.data || [];
     desenharLista();
   }
@@ -266,6 +350,7 @@
         '<strong>#' + E(p.numero) + '</strong> · ' + E(p.cliente_nome || '') + '<br>' +
         '<small>' + E(p.tipo_evento || '') + ' · ' + E(p.data_evento || 'sem data') + ' · ' + E(p.status || '') + '</small></div>';
     }).join('') : '<div class="vazio">Nenhum projeto.</div>';
+
     document.querySelectorAll('#listaProj [data-id]').forEach(function (el) {
       el.addEventListener('click', function () { selecionar(el.getAttribute('data-id')); });
     });
@@ -283,16 +368,25 @@
     $('fData').value = ATUAL.data_evento || '';
     $('fStatus').value = String(ATUAL.status || 'rascunho').toLowerCase();
     $('msgDados').textContent = '';
-    var full = await SB.from('propostas').select('horario_inicio, horario_final, local_evento, valor_total, tipo_evento, cliente_nome, comissao_valor, assinado_em').eq('id', id).maybeSingle();
+
+    var full = await SB.from('propostas')
+      .select('horario_inicio, horario_final, local_evento, valor_total, tipo_evento, cliente_nome, comissao_valor, assinado_em')
+      .eq('id', id)
+      .maybeSingle();
     var d = full.data || {};
     $('fIni').value = (d.horario_inicio || '').slice(0, 5);
     $('fFim').value = (d.horario_final || '').slice(0, 5);
     $('fLocal').value = d.local_evento || '';
-    $('dadosPedido').innerHTML = 'Tipo: ' + E(d.tipo_evento || '') + ' · Valor: ' + BRL(d.valor_total) +
-      ' · Comissão: ' + BRL(d.comissao_valor) + ' · Contrato: ' + (d.assinado_em ? 'assinado' : 'não assinado');
+    $('dadosPedido').innerHTML =
+      'Tipo: ' + E(d.tipo_evento || '') +
+      ' · Valor: ' + BRL(d.valor_total) +
+      ' · Comissão: ' + BRL(d.comissao_valor) +
+      ' · Contrato: ' + (d.assinado_em ? 'assinado' : 'não assinado');
     $('holdInfo').textContent = ATUAL.status === 'hold' ? 'Hold · ' + tempo(ATUAL.hold_expira_em) : '';
+
     var le = document.getElementById('linkEspelho');
     if (le) le.href = 'espelho.html?id=' + encodeURIComponent(ATUAL.id);
+
     await Promise.all([carregarColaboradores(), carregarEtapas(), carregarObs()]);
   }
 
@@ -307,12 +401,20 @@
       local_evento: $('fLocal').value || null
     };
     if (st === 'hold' && ATUAL.status !== 'hold') {
-      var h = new Date(); h.setHours(h.getHours() + 48); patch.hold_expira_em = h.toISOString();
+      var h = new Date();
+      h.setHours(h.getHours() + 48);
+      patch.hold_expira_em = h.toISOString();
     }
     if (st !== 'hold') patch.hold_expira_em = null;
+
     var r = await SB.from('propostas').update(patch).eq('id', ATUAL.id);
-    if (r.error) { $('msgDados').className = 'msg'; $('msgDados').textContent = 'Não foi possível salvar.'; return; }
-    $('msgDados').className = 'msg ok'; $('msgDados').textContent = 'Salvo.';
+    if (r.error) {
+      $('msgDados').className = 'msg';
+      $('msgDados').textContent = 'Não foi possível salvar.';
+      return;
+    }
+    $('msgDados').className = 'msg ok';
+    $('msgDados').textContent = 'Salvo.';
     await carregarLista();
     selecionar(ATUAL.id);
   });
@@ -339,18 +441,31 @@
       return;
     }
 
+    await garantirParceiros(l.map(function (c) { return c.parceiro_id; }));
+
+    /* Markup idêntico à área do cliente: .eq-item + .eq-foto + strong + small */
     box.innerHTML = l.map(function (c) {
       var p = parceiroPorId(c.parceiro_id);
-      var nome = p ? (p.nome_artistico || p.nome_completo || p.email || c.parceiro_id) : (c.parceiro_id || '—');
-      var foto = p ? (p.avatar_url || p.foto_url || '') : '';
+      var nome = nomeParceiro(p, null);
+      if (!p || nome === '—' || nome === c.parceiro_id) {
+        nome = nomeParceiro(p, 'Parceiro');
+      }
+      var foto = fotoParceiro(p);
       var inicial = (String(nome).trim()[0] || '?').toUpperCase();
-      var funcao = labelNivel(c.nivel);
+      var funcao = funcaoParceiro(p, c.nivel);
+
       return '<div class="eq-item">' +
         '<div class="eq-foto"' + (foto ? ' style="background-image:url(\'' + E(foto) + '\')"' : '') + '>' +
-        (foto ? '' : E(inicial)) + '</div>' +
-        '<div style="min-width:0"><strong>' + E(nome) + '</strong><small>' + E(funcao) + '</small></div>' +
-        '<div class="eq-acoes"><button class="danger" data-rm-col="' + E(c.id) + '" type="button">Remover</button></div>' +
-        '</div>';
+          (foto ? '' : E(inicial)) +
+        '</div>' +
+        '<div style="min-width:0">' +
+          '<strong>' + E(nome) + '</strong>' +
+          '<small>' + E(funcao) + '</small>' +
+        '</div>' +
+        '<div class="eq-acoes">' +
+          '<button class="danger" data-rm-col="' + E(c.id) + '" type="button">Remover</button>' +
+        '</div>' +
+      '</div>';
     }).join('');
 
     document.querySelectorAll('[data-rm-col]').forEach(function (b) {
@@ -366,7 +481,11 @@
     var pid = $('addParceiro').value;
     var nivel = $('addNivel').value;
     if (!pid) return;
-    var r = await SB.from('projeto_colaboradores').insert({ proposta_id: ATUAL.id, parceiro_id: pid, nivel: nivel });
+    var r = await SB.from('projeto_colaboradores').insert({
+      proposta_id: ATUAL.id,
+      parceiro_id: pid,
+      nivel: nivel
+    });
     if (r.error) {
       $('msgCol').className = 'msg';
       $('msgCol').textContent = r.error.message || 'Erro ao adicionar.';
@@ -378,40 +497,121 @@
   });
 
   async function carregarEtapas() {
-    var r = await SB.from('evento_etapas').select('id, nome, hora, situacao, concluida_por, concluida_em, ordem').eq('proposta_id', ATUAL.id).order('ordem');
+    if (!ATUAL) return;
+    var r = await SB.from('evento_etapas')
+      .select('id, nome, hora, situacao, concluida_por, concluida_em, ordem')
+      .eq('proposta_id', ATUAL.id)
+      .order('ordem');
     var l = r.data || [];
+
     $('listaEtapas').innerHTML = l.length ? l.map(function (e) {
       var feita = e.situacao === 'concluida';
-      return '<div class="item"><span>' + E(e.nome) + ' <span class="mut">' + E(e.hora || '') + '</span>' +
-        (feita ? ' <span class="tag t-ok">feita</span>' : ' <span class="tag t-hold">pendente</span>') + '</span>' +
-        '<span>' + (feita
-          ? '<button data-desfazer="' + E(e.id) + '" type="button">Desfazer</button>'
-          : '<button class="primary" data-feita="' + E(e.id) + '" type="button">Marcar feita</button>') + '</span></div>';
-    }).join('') : '<div class="vazio">Sem etapas.</div>';
+      return '<div class="item">' +
+        '<span>' + E(e.nome) + ' <span class="mut">' + E(e.hora || '') + '</span>' +
+          (feita ? ' <span class="tag t-ok">feita</span>' : ' <span class="tag t-hold">pendente</span>') +
+        '</span>' +
+        '<span style="display:flex;gap:6px;flex-wrap:wrap">' +
+          (feita
+            ? '<button data-desfazer="' + E(e.id) + '" type="button">Desfazer</button>'
+            : '<button class="primary" data-feita="' + E(e.id) + '" type="button">Marcar feita</button>') +
+          '<button class="danger" data-rm-etapa="' + E(e.id) + '" type="button">Remover</button>' +
+        '</span>' +
+      '</div>';
+    }).join('') : '<div class="vazio">Sem etapas. Adicione a primeira acima.</div>';
+
     document.querySelectorAll('[data-feita]').forEach(function (b) {
       b.addEventListener('click', async function () {
-        await SB.from('evento_etapas').update({ situacao: 'concluida', concluida_por: ME.nome_completo, concluida_em: new Date().toISOString() }).eq('id', b.getAttribute('data-feita'));
+        await SB.from('evento_etapas').update({
+          situacao: 'concluida',
+          concluida_por: ME.nome_completo,
+          concluida_em: new Date().toISOString()
+        }).eq('id', b.getAttribute('data-feita'));
         carregarEtapas();
       });
     });
     document.querySelectorAll('[data-desfazer]').forEach(function (b) {
       b.addEventListener('click', async function () {
-        await SB.from('evento_etapas').update({ situacao: 'pendente', concluida_por: null, concluida_em: null }).eq('id', b.getAttribute('data-desfazer'));
+        await SB.from('evento_etapas').update({
+          situacao: 'pendente',
+          concluida_por: null,
+          concluida_em: null
+        }).eq('id', b.getAttribute('data-desfazer'));
+        carregarEtapas();
+      });
+    });
+    document.querySelectorAll('[data-rm-etapa]').forEach(function (b) {
+      b.addEventListener('click', async function () {
+        if (!confirm('Remover esta etapa do checklist?')) return;
+        await SB.from('evento_etapas').delete().eq('id', b.getAttribute('data-rm-etapa'));
         carregarEtapas();
       });
     });
   }
 
+  $('btnAddEtapa').addEventListener('click', async function () {
+    if (!ATUAL) return;
+    var nome = ($('novaEtapaNome').value || '').trim();
+    var hora = ($('novaEtapaHora').value || '').trim() || null;
+    var msg = $('msgEtapa');
+    if (!nome) {
+      msg.className = 'msg';
+      msg.textContent = 'Informe o nome da etapa.';
+      return;
+    }
+    $('btnAddEtapa').disabled = true;
+    msg.className = 'msg';
+    msg.textContent = 'Salvando…';
+    try {
+      var ord = await SB.from('evento_etapas')
+        .select('ordem')
+        .eq('proposta_id', ATUAL.id)
+        .order('ordem', { ascending: false })
+        .limit(1);
+      var prox = 1;
+      if (ord.data && ord.data[0] && ord.data[0].ordem != null) {
+        prox = Number(ord.data[0].ordem) + 1;
+      }
+      var r = await SB.from('evento_etapas').insert({
+        proposta_id: ATUAL.id,
+        nome: nome,
+        hora: hora,
+        situacao: 'pendente',
+        ordem: prox
+      });
+      if (r.error) throw new Error(r.error.message || 'Falha ao adicionar');
+      $('novaEtapaNome').value = '';
+      $('novaEtapaHora').value = '';
+      msg.className = 'msg ok';
+      msg.textContent = 'Etapa adicionada.';
+      await carregarEtapas();
+    } catch (err) {
+      msg.className = 'msg';
+      msg.textContent = err.message || 'Erro ao adicionar etapa.';
+    } finally {
+      $('btnAddEtapa').disabled = false;
+    }
+  });
+
   async function carregarObs() {
-    var r = await SB.from('evento_observacoes').select('id, texto, criado_por').eq('proposta_id', ATUAL.id).is('removido_em', null).order('criado_em');
+    if (!ATUAL) return;
+    var r = await SB.from('evento_observacoes')
+      .select('id, texto, criado_por')
+      .eq('proposta_id', ATUAL.id)
+      .is('removido_em', null)
+      .order('criado_em');
     var l = r.data || [];
     $('listaObs').innerHTML = l.length ? l.map(function (o) {
-      return '<div class="item"><span>' + E(o.texto) + ' <span class="mut">(' + E(o.criado_por) + ')</span></span>' +
-        '<button class="danger" data-obs="' + E(o.id) + '" type="button">Remover</button></div>';
+      return '<div class="item">' +
+        '<span>' + E(o.texto) + ' <span class="mut">(' + E(o.criado_por) + ')</span></span>' +
+        '<button class="danger" data-obs="' + E(o.id) + '" type="button">Remover</button>' +
+      '</div>';
     }).join('') : '<div class="vazio">Nenhuma instrução.</div>';
+
     document.querySelectorAll('[data-obs]').forEach(function (b) {
       b.addEventListener('click', async function () {
-        await SB.from('evento_observacoes').update({ removido_em: new Date().toISOString() }).eq('id', b.getAttribute('data-obs'));
+        await SB.from('evento_observacoes')
+          .update({ removido_em: new Date().toISOString() })
+          .eq('id', b.getAttribute('data-obs'));
         carregarObs();
       });
     });
