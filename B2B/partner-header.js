@@ -34,6 +34,8 @@
   var pageArea = isSubdirAdmin ? 'admin' : (onCliente ? 'cliente' : (onSite ? 'site' : 'parceiro'));
   var areaAtual = pageArea;
   var CLIENTE = SITE + 'cliente/';
+  /* Perfil do cliente: abre direto na aba Perfil da área do cliente */
+  var CLIENTE_PERFIL = CLIENTE + 'index.html?aba=perfil';
 
   /* ---------- 3. MAPA DOS MENUS (edite aqui) ---------- */
   var MENUS = {
@@ -476,7 +478,7 @@
         margin-bottom: 16px; padding-bottom: 12px; border-bottom: 1px solid rgba(0,240,255,.2); }
       .mn-m-prof { display: flex; align-items: center; gap: 12px; text-decoration: none; min-width: 0; }
 
-      /* ---------- Envelope de e-mail + contador ---------- */
+      /* ---------- Envelope de e-mail / sino de notificações + contador ---------- */
       .mn-mail { position: relative; display: inline-flex !important; align-items: center; justify-content: center;
         width: 34px; height: 34px; border-radius: 50%; color: #8da2b5; text-decoration: none; flex: none;
         transition: color .2s, background .2s; }
@@ -521,14 +523,14 @@
   var ICON_URL = '/imagens/logo512x512.png';
 
   var MAIL_SVG = '<svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="3" y="5" width="18" height="14" rx="2"/><path d="m3 7 9 6 9-6"/></svg>';
+  var BELL_SVG = '<svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M6 8a6 6 0 0 1 12 0c0 7 3 9 3 9H3s3-2 3-9"/><path d="M10.3 21a1.94 1.94 0 0 0 3.4 0"/></svg>';
 
   function mailLinkHTML(cls, standalone) {
-    /* Cliente: envelope abre notificações da área do cliente */
+    /* Cliente: sino de notificações da área do cliente (sem e-mail) */
     if (onCliente || cachedIsCliente) {
-      var ativoC = (onCliente && (location.search.indexOf('notif=1') >= 0 || currentPath === 'index.html')) ? ' active' : '';
-      return '<a href="' + CLIENTE + 'index.html?notif=1" class="mn-mail ' + cls + ativoC + '"' +
+      return '<a href="' + CLIENTE + 'index.html?notif=1" class="mn-mail mn-notif ' + cls + '" data-mn-notif="1"' +
         (standalone ? ' data-mn-user="1"' : '') + ' title="Notificações" aria-label="Notificações">' +
-        MAIL_SVG + '<span class="mn-badge" hidden></span></a>';
+        BELL_SVG + '<span class="mn-badge" hidden></span></a>';
     }
     var ativo = (!isSubdirAdmin && currentPath === 'e-mail.html') ? ' active' : '';
     return '<a href="' + B2B + 'e-mail.html" class="mn-mail ' + cls + ativo + '"' +
@@ -586,6 +588,8 @@
       }
     }
   }
+  /* A área do cliente usa isto para mostrar o número de notificações não lidas no sino */
+  window.mnSetBadge = function (n) { setMailBadge(Number(n) || 0); };
 
   /* Mesma regra da pasta "Caixa de Entrada" do e-mail.html */
   function refreshMailCount() {
@@ -680,7 +684,8 @@
   }
 
   function refreshPushUI() {
-    var show = pushOK() && Notification.permission === 'default' && isLogged();
+    /* Cliente tem o próprio "Ativar avisos" dentro da página; aqui não duplica */
+    var show = pushOK() && !onCliente && Notification.permission === 'default' && isLogged();
     var bs = document.querySelectorAll('.mn-push');
     for (var i = 0; i < bs.length; i++) bs[i].classList.toggle('on', show);
   }
@@ -739,13 +744,13 @@
 
   function userWidgetHTML() {
     if (!isLogged()) return '';
-    var perfilHref = onCliente ? (CLIENTE + 'index.html') : (B2B + 'perfil.html');
+    var perfilHref = onCliente ? CLIENTE_PERFIL : (B2B + 'perfil.html');
     var perfilAtivo = onCliente ? '' : (!isSubdirAdmin && currentPath === 'perfil.html' ? ' active' : '');
     return '<div class="b2b-user-widget" data-mn-user="1">' +
       pushBtnHTML() +
       calLinkHTML('', false) +
       mailLinkHTML('', false) +
-      '<a href="' + perfilHref + '" title="Meu Perfil" class="b2b-avatar-link' + perfilAtivo + '">' +
+      '<a href="' + perfilHref + '" title="Meu Perfil" class="b2b-avatar-link' + perfilAtivo + '"' + (onCliente ? ' data-mn-perfil="1"' : '') + '>' +
         '<div data-partner-avatar class="b2b-avatar-img"></div>' +
       '</a>' +
       '<button type="button" id="btnLogoutDesk" title="Sair do Portal" class="mn-logout">🔒 Sair</button>' +
@@ -754,8 +759,9 @@
 
   function mobUserHTML() {
     var master = isSubdirAdmin || cachedIsAdmin;
+    var perfilMob = onCliente ? CLIENTE_PERFIL : (B2B + 'perfil.html');
     return '<div data-mn-user="1" class="mn-m-user">' +
-      '<a href="' + B2B + 'perfil.html" class="mn-m-prof">' +
+      '<a href="' + perfilMob + '" class="mn-m-prof"' + (onCliente ? ' data-mn-perfil="1"' : '') + '>' +
         '<div data-partner-avatar class="mn-m-av"></div>' +
         '<div style="text-align:left;">' +
           '<span data-partner-nome style="display:block;font-size:.9rem;font-weight:700;color:#fff;">—</span>' +
@@ -788,7 +794,7 @@
     }
     bindLogoutEvents();
 
-    /* Envelope extra no header: só aparece no mobile (o widget fica oculto ali) */
+    /* Sino/envelope extra no header: só aparece no mobile (o widget fica oculto ali) */
     var hdr = document.getElementById('calc-header');
     if (hdr) hdr.insertAdjacentHTML('beforeend', mailLinkHTML('mn-mail-hdr', true));
 
@@ -1206,6 +1212,21 @@
         return;
       }
 
+      /* Cliente: sino abre o modal de notificações da própria página, sem recarregar */
+      if (onCliente && up(e, '[data-mn-notif]')) {
+        e.preventDefault();
+        closeMobile();
+        window.dispatchEvent(new CustomEvent('432up:abrir-notif'));
+        return;
+      }
+      /* Cliente: avatar abre direto a aba Perfil */
+      if (onCliente && up(e, '[data-mn-perfil]')) {
+        e.preventDefault();
+        closeMobile();
+        window.dispatchEvent(new CustomEvent('432up:ir-aba', { detail: 'perfil' }));
+        return;
+      }
+
       var tab = up(e, '.mn-tab');
       if (tab) {
         var wrap = up(e, '.mn-toggle');
@@ -1361,7 +1382,8 @@
       fillUserParts();
     });
     if (uid) {
-      startMail(uid);
+      /* E-mail e contador são do portal B2B; na área do cliente o sino usa as notificações da página */
+      if (!onCliente) startMail(uid);
       initPush();
     }
   }
