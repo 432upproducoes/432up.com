@@ -93,11 +93,13 @@
       background: rgba(6,182,212,.12); box-shadow: 0 0 18px rgba(6,182,212,.14);
     }
     .panel { display: none; }
-    .panel.on { display: block; animation: entraLado .38s cubic-bezier(.25,.8,.25,1) backwards; }
-    @keyframes entraLado {
-      from { opacity: 0; transform: translateX(28px); }
-      to { opacity: 1; transform: none; }
-    }
+    .panel.on { display: block; }
+    /* Slider: durante o arraste/clique, o painel vizinho entra deslizando junto */
+    .panel.slide-vz { display: block !important; position: absolute; margin: 0; pointer-events: none; }
+    .panel.slide-vz, .panel.on.slide-mov { will-change: transform; }
+    .slider-dots { display: flex; justify-content: center; gap: 7px; margin: -8px 0 16px; }
+    .slider-dots i { width: 7px; height: 7px; border-radius: 999px; background: rgba(255, 255, 255, .22); transition: width .3s cubic-bezier(.25,.8,.25,1), background .3s; }
+    .slider-dots i.on { width: 22px; background: var(--tech); box-shadow: 0 0 10px rgba(6, 182, 212, .5); }
     /* Sino/Sair ficam no header/hambúrguer canônico; IDs permanecem no DOM para o JS */
     .cli-top-actions { display: none !important; }
 
@@ -201,7 +203,8 @@
     .mk-topo { display: flex; justify-content: space-between; align-items: center; gap: 10px; margin-bottom: 6px; }
     .mk-topo h2 { margin: 0 !important; }
     .mk-topo .btn-s { margin-top: 0; padding: 7px 12px; font-size: 12px; white-space: nowrap; }
-    .mini-ck { display: flex; align-items: center; gap: 6px; overflow-x: auto; padding: 10px 2px 6px; scrollbar-width: none; }
+    /* Só o checklist rola aqui: gesto horizontal fica na faixa e a página não se mexe */
+    .mini-ck { display: flex; align-items: center; gap: 6px; overflow-x: auto; padding: 16px 2px 14px; scrollbar-width: none; touch-action: pan-x; overscroll-behavior: contain; -webkit-overflow-scrolling: touch; }
     .mini-ck::-webkit-scrollbar { display: none; }
     .mk { flex: 0 0 auto; display: inline-flex; align-items: center; gap: 6px; padding: 6px 12px; border-radius: 999px; font-size: 12px; font-weight: 700; white-space: nowrap; border: 1px solid var(--line); background: rgba(255, 255, 255, .04); color: var(--mut); }
     .mk.feita { border-color: rgba(0, 255, 102, .35); background: rgba(0, 255, 102, .1); color: var(--action); }
@@ -211,10 +214,11 @@
     /* Meu evento: 3 colunas no desktop, empilhado no celular */
     .ck-grid { display: grid; grid-template-columns: minmax(0, 1fr) minmax(0, 1.1fr) minmax(0, .85fr); gap: 18px; align-items: start; }
     .ck-col { display: flex; flex-direction: column; min-width: 0; }
-    .ck-col .box-full { margin-bottom: 18px; }
+    .ck-col .box-full { margin-bottom: 18px; width: 100%; box-sizing: border-box; }
     @media (max-width: 899px) {
-      .ck-grid { display: flex; flex-direction: column; gap: 0; }
+      .ck-grid { display: flex; flex-direction: column; gap: 0; align-items: stretch; }
       .ck-col { display: contents; }
+      .ck-grid .box-full { width: 100%; box-sizing: border-box; }
       .o-resumo { order: 1; } .o-equipe { order: 2; } .o-linha { order: 3; } .o-obs { order: 4; } .o-avisos { order: 5; }
     }
     .resumo-evt .linha { display: block; padding: 7px 0; border: 0; }
@@ -291,6 +295,7 @@
         <button type="button" class="tab" data-i="3" role="tab">Memórias</button>
         <button type="button" class="tab" data-i="4" role="tab">Perfil</button>
       </nav>
+      <div class="slider-dots" id="sliderDots" aria-hidden="true"><i class="on"></i><i></i><i></i><i></i><i></i></div>
 
       <!-- 0 · INÍCIO -->
       <section class="panel on" id="p0" role="tabpanel">
@@ -582,54 +587,118 @@
     Object.keys(FILTROS_CAL).forEach(function (k) { if (typeof _fc[k] === 'boolean') FILTROS_CAL[k] = _fc[k]; });
   } catch (e) {}
 
-  /* Navegação por abas (mesma lógica do original) + swipe lateral */
+  /* Navegação por abas como slider de verdade: o conteúdo acompanha o dedo e o clique desliza */
   var idxAba = 0;
-  function goToAba(i) {
-    i = Math.max(0, Math.min(4, i | 0));
-    idxAba = i;
+  var PANELS = Array.prototype.slice.call(document.querySelectorAll('.panel'));
+  var SLIDE_GAP = 24, slideBusy = false;
+
+  function marcarTab(i) {
     document.querySelectorAll('.tab').forEach(function (b) {
-      var on = Number(b.getAttribute('data-i')) === i;
-      b.classList.toggle('on', on);
+      b.classList.toggle('on', Number(b.getAttribute('data-i')) === i);
     });
-    document.querySelectorAll('.panel').forEach(function (p, idx) {
-      p.classList.toggle('on', idx === i);
-    });
+    document.querySelectorAll('#sliderDots i').forEach(function (d, k) { d.classList.toggle('on', k === i); });
     var tabAtiva = document.querySelector('.tab[data-i="' + i + '"]');
     if (tabAtiva && tabAtiva.scrollIntoView) {
       try { tabAtiva.scrollIntoView({ behavior: 'smooth', inline: 'center', block: 'nearest' }); } catch (e) {}
     }
+  }
+  function goToAba(i) {
+    i = Math.max(0, Math.min(4, i | 0));
+    idxAba = i;
+    marcarTab(i);
+    PANELS.forEach(function (p, idx) { p.classList.toggle('on', idx === i); });
     try { sessionStorage.setItem('432_cli_tab', String(i)); } catch (e) {}
   }
+  function posVizinho(from, to) {
+    to.classList.add('slide-vz');
+    to.style.top = from.offsetTop + 'px';
+    to.style.left = from.offsetLeft + 'px';
+    to.style.width = from.offsetWidth + 'px';
+  }
+  function limparSlide(p) {
+    p.classList.remove('slide-vz', 'slide-mov');
+    p.style.top = p.style.left = p.style.width = p.style.transform = p.style.transition = '';
+  }
+  function terminarSlide(from, to, commit, i, dir, w) {
+    slideBusy = true;
+    var t = 'transform .36s cubic-bezier(.25,.8,.25,1)';
+    from.style.transition = t;
+    if (to) to.style.transition = t;
+    void from.offsetWidth;
+    from.style.transform = 'translateX(' + (commit ? -dir * (w + SLIDE_GAP) : 0) + 'px)';
+    if (to) to.style.transform = 'translateX(' + (commit ? 0 : dir * (w + SLIDE_GAP)) + 'px)';
+    setTimeout(function () {
+      if (commit) goToAba(i);
+      limparSlide(from);
+      if (to) limparSlide(to);
+      slideBusy = false;
+    }, 380);
+  }
+  /* clique na aba (ou botão): o painel desliza para dentro */
+  function slideTo(i) {
+    i = Math.max(0, Math.min(4, i | 0));
+    if (slideBusy || i === idxAba) return;
+    var from = PANELS[idxAba], to = PANELS[i];
+    var dir = i > idxAba ? 1 : -1, w = from.offsetWidth;
+    marcarTab(i);
+    from.classList.add('slide-mov');
+    posVizinho(from, to);
+    to.style.transform = 'translateX(' + (dir * (w + SLIDE_GAP)) + 'px)';
+    terminarSlide(from, to, true, i, dir, w);
+  }
   document.querySelectorAll('.tab').forEach(function (btn) {
-    btn.addEventListener('click', function () {
-      goToAba(Number(btn.getAttribute('data-i')));
-    });
+    btn.addEventListener('click', function () { slideTo(Number(btn.getAttribute('data-i'))); });
   });
-  /* Swipe horizontal entre abas (não interfere com scroll vertical dos painéis) */
+
+  /* Arrastar para o lado: o conteúdo acompanha o dedo (não interfere com scroll vertical) */
   (function () {
     var main = document.querySelector('main.area');
     if (!main) return;
-    var sx = 0, sy = 0, dx = 0, active = false, locked = false;
+    var NO_SWIPE = 'input, textarea, select, .tabs, .mini-ck, .slider, .modal-bg, canvas, [data-noswipe]';
+    var d = null;
+
     main.addEventListener('touchstart', function (e) {
-      if (e.touches.length !== 1) return;
-      sx = e.touches[0].clientX; sy = e.touches[0].clientY; dx = 0; active = true; locked = false;
+      if (slideBusy || e.touches.length !== 1) return;
+      if (e.target.closest && e.target.closest(NO_SWIPE)) return;
+      d = { x: e.touches[0].clientX, y: e.touches[0].clientY, t: Date.now(), raw: 0, mode: null,
+            from: PANELS[idxAba], to: null, dir: 0, w: 0 };
     }, { passive: true });
+
     main.addEventListener('touchmove', function (e) {
-      if (!active || e.touches.length !== 1) return;
-      var mx = e.touches[0].clientX - sx, my = e.touches[0].clientY - sy;
-      if (!locked) {
-        if (Math.abs(my) > Math.abs(mx) && Math.abs(my) > 10) { active = false; return; }
-        if (Math.abs(mx) > 12) locked = true;
+      if (!d || e.touches.length !== 1) return;
+      var mx = e.touches[0].clientX - d.x, my = e.touches[0].clientY - d.y;
+      if (d.mode === null) {
+        if (Math.abs(my) > 10 && Math.abs(my) > Math.abs(mx)) { d = null; return; }
+        if (Math.abs(mx) > 10 && Math.abs(mx) > Math.abs(my) * 1.2) {
+          d.mode = 'h'; d.w = d.from.offsetWidth; d.from.classList.add('slide-mov');
+        } else return;
       }
-      if (locked) dx = mx;
-    }, { passive: true });
-    main.addEventListener('touchend', function () {
-      if (!active) return;
-      active = false;
-      if (Math.abs(dx) < 56) return;
-      if (dx < 0) goToAba(idxAba + 1);
-      else goToAba(idxAba - 1);
-    });
+      if (e.cancelable) e.preventDefault();
+      d.raw = mx;
+      var dir = mx < 0 ? 1 : -1, alvo = idxAba + dir, fora = alvo < 0 || alvo > 4;
+      if (fora) {
+        if (d.to) { limparSlide(d.to); d.to = null; d.dir = 0; }
+        d.from.style.transform = 'translateX(' + (mx * 0.25) + 'px)';
+        return;
+      }
+      if (d.dir !== dir) {
+        if (d.to) limparSlide(d.to);
+        d.to = PANELS[alvo]; d.dir = dir;
+        posVizinho(d.from, d.to);
+      }
+      d.from.style.transform = 'translateX(' + mx + 'px)';
+      d.to.style.transform = 'translateX(' + (mx + dir * (d.w + SLIDE_GAP)) + 'px)';
+    }, { passive: false });
+
+    function soltar(cancelado) {
+      var x = d; d = null;
+      if (!x || x.mode !== 'h') return;
+      var vel = Math.abs(x.raw) / Math.max(1, Date.now() - x.t);
+      var vai = !cancelado && x.to && (Math.abs(x.raw) > x.w * 0.25 || (vel > 0.5 && Math.abs(x.raw) > 40));
+      terminarSlide(x.from, x.to, !!vai, idxAba + x.dir, x.dir, x.w);
+    }
+    main.addEventListener('touchend', function () { soltar(false); });
+    main.addEventListener('touchcancel', function () { soltar(true); });
   })();
   try {
     var st = parseInt(sessionStorage.getItem('432_cli_tab') || '0', 10);
@@ -674,7 +743,7 @@
   window.addEventListener('432up:ir-aba', function (e) {
     var mapa = { inicio: 0, evento: 1, calendario: 2, memorias: 3, perfil: 4 };
     var k = e && e.detail;
-    if (mapa.hasOwnProperty(k)) { goToAba(mapa[k]); try { window.scrollTo({ top: 0, behavior: 'smooth' }); } catch (x) {} }
+    if (mapa.hasOwnProperty(k)) { slideTo(mapa[k]); try { window.scrollTo({ top: 0, behavior: 'smooth' }); } catch (x) {} }
   });
   (function observarMenu() {
     var t = null;
@@ -845,7 +914,7 @@
     });
   }
 
-  $('btnVerCk').addEventListener('click', function () { goToAba(1); try { window.scrollTo({ top: 0, behavior: 'smooth' }); } catch (e) {} });
+  $('btnVerCk').addEventListener('click', function () { slideTo(1); try { window.scrollTo({ top: 0, behavior: 'smooth' }); } catch (e) {} });
 
   function renderCalendario() {
     var pedidos = (dados.propostas || []).filter(function (p) { return p.status !== 'cancelada' && p.data_evento; });
