@@ -65,6 +65,7 @@
     }
     .t-hold { background: rgba(212,175,55,.16); color: var(--gold); }
     .t-ok { background: rgba(0,255,102,.14); color: var(--action); }
+    .t-rec { background: rgba(255,77,77,.15); color: var(--alert); }
     .msg { font-size: 12px; min-height: 16px; color: #fca5a5; margin-top: 6px; }
     .msg.ok { color: var(--action); }
     .vazio { color: var(--mut); font-size: 13px; padding: 6px 0; }
@@ -97,6 +98,42 @@
     .eq-item strong { display: block; font-size: 15px; line-height: 1.25; }
     .eq-item small { display: block; margin-top: 2px; font-size: 12px; color: var(--mut); letter-spacing: .02em; }
     .eq-item .eq-acoes { margin-left: auto; flex-shrink: 0; }
+
+    /* ===== CSS do calendário e botões, copiado do index do cliente ===== */
+    .btn-s {
+      display: inline-flex; align-items: center; justify-content: center;
+      margin-top: 8px; padding: 9px 14px; border-radius: 12px; border: 1px solid rgba(255, 255, 255, .18);
+      background: transparent; color: var(--text); font-size: 13px; cursor: pointer; text-decoration: none; width: auto;
+    }
+    .pill { font-size: 12px; color: var(--mut); }
+    .cal { display: grid; grid-template-columns: repeat(7, 1fr); gap: 4px; font-size: 11px; text-align: center; }
+    .cal .hd { color: var(--mut); font-weight: 700; padding: 6px 0; }
+    .cal .d { padding: 10px 0; border-radius: 12px; border: 1px solid transparent; color: var(--body); min-height: 44px; }
+    .cal .d.muted { opacity: .3; }
+    .cal .d.tem { border-color: rgba(var(--rgb), .5); background: rgba(var(--rgb), .14); color: #fff; font-weight: 800; cursor: pointer; }
+    .cal .d .dots { display: flex; gap: 3px; justify-content: center; margin-top: 4px; min-height: 6px; }
+    .cal .d .dots i { width: 6px; height: 6px; border-radius: 50%; display: block; }
+    .cal .d.hoje { border-color: rgba(212, 175, 55, .5); }
+    .cal .d.sel { outline: 2px solid var(--action); outline-offset: -2px; }
+    .cal-nav { display: flex; align-items: center; justify-content: space-between; gap: 8px; margin-bottom: 12px; }
+    .dia-item { border: 1px solid var(--line); border-radius: 16px; padding: 12px; margin-bottom: 8px; border-left: 4px solid #c084fc; background: rgba(255, 255, 255, .025); cursor: pointer; }
+    .dia-item strong { display: block; margin-bottom: 2px; }
+    .dia-item small { color: var(--mut); display: block; font-size: 12px; }
+
+    /* ===== Topo (KPIs), tabelas e mapa — estrutura do print ===== */
+    .kpis { display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 12px; margin-bottom: 16px; }
+    @media (max-width: 900px) { .kpis { grid-template-columns: repeat(2, minmax(0, 1fr)); } }
+    .kpi { border-radius: 20px; padding: 16px; background: rgba(255,255,255,.045); border: 1px solid rgba(255,255,255,.14); }
+    .kpi .k { font-size: 10px; letter-spacing: .08em; text-transform: uppercase; color: var(--mut); font-weight: 700; }
+    .kpi .v { font-size: 22px; font-weight: 800; margin-top: 4px; }
+    .kpi .v small { font-size: 12px; font-weight: 600; color: var(--mut); display: block; margin-top: 2px; }
+    .tbl { width: 100%; border-collapse: collapse; font-size: 13px; }
+    .tbl th { text-align: left; font-size: 10px; text-transform: uppercase; letter-spacing: .06em; color: var(--mut); font-weight: 700; padding: 8px 6px; border-bottom: 1px solid var(--line); }
+    .tbl td { padding: 10px 6px; border-bottom: 1px solid var(--line); vertical-align: middle; }
+    .tbl tr:last-child td { border-bottom: 0; }
+    .tbl .r { text-align: right; }
+    .tbl .eq-foto { width: 36px; height: 36px; font-size: 13px; }
+    .mapa { width: 100%; height: 200px; border: 0; border-radius: 16px; margin-top: 10px; }
   </style>
 </head>
 <body class="h-full antialiased overflow-x-hidden">
@@ -117,22 +154,32 @@
         <a class="tech" href="agenda.html">Agenda →</a>
       </div>
 
+      <!-- KPIs (topo do print) -->
+      <div class="kpis">
+        <div class="kpi"><div class="k">Projetos ativos</div><div class="v" id="kpiAtivos">0</div></div>
+        <div class="kpi"><div class="k">Checklists pendentes</div><div class="v" id="kpiPend">0</div></div>
+        <div class="kpi"><div class="k">Resumo financeiro (mês)</div><div class="v"><span id="kpiRec">R$ 0,00</span><small>Receb.</small></div><div class="v" style="font-size:16px;margin-top:6px"><span id="kpiCom">R$ 0,00</span><small>Comis.</small></div></div>
+        <div class="kpi"><div class="k">Equipe total</div><div class="v" id="kpiEq">0</div></div>
+      </div>
+
       <div class="layout">
+        <!-- Lista de projetos (esquerda) -->
         <aside>
           <div class="box-full">
-            <h2>Projetos</h2>
+            <h2>Lista de projetos</h2>
             <input id="busca" placeholder="Buscar nº ou cliente" style="margin-bottom:10px">
             <div id="listaProj"><div class="vazio">Carregando…</div></div>
           </div>
         </aside>
 
+        <!-- Centro: dados, agenda, local, checklist, equipe, nova etapa -->
         <section id="detalhe">
           <div class="box-full" id="semSel"><div class="vazio">Escolha um projeto na lista.</div></div>
 
           <div id="conteudo" style="display:none">
 
             <div class="box-full">
-              <h2 id="tituloProj">Projeto</h2>
+              <h2 id="tituloProj">Dados gerais do projeto</h2>
               <div class="grid2">
                 <div><label class="cap">Data do evento</label><input type="date" id="fData"></div>
                 <div><label class="cap">Status</label>
@@ -145,28 +192,42 @@
                     <option value="cancelada">Cancelada</option>
                   </select>
                 </div>
-                <div><label class="cap">Início</label><input type="time" id="fIni"></div>
-                <div><label class="cap">Fim</label><input type="time" id="fFim"></div>
+                <div><label class="cap">Horário início</label><input type="time" id="fIni"></div>
+                <div><label class="cap">Horário fim</label><input type="time" id="fFim"></div>
                 <div style="grid-column:1/-1"><label class="cap">Local</label><input id="fLocal"></div>
               </div>
+
+              <div class="grid2" style="margin-top:14px">
+                <div id="dadosPedido"></div>
+                <div id="resumoFin"></div>
+              </div>
+
               <div class="row" style="margin-top:12px">
-                <button class="primary" id="btnSalvar" type="button">Salvar alterações</button>
+                <button class="primary" id="btnSalvar" type="button">Salvar</button>
                 <span class="mut" id="holdInfo"></span>
               </div>
               <div class="msg" id="msgDados"></div>
             </div>
 
             <div class="box-full">
-              <h2>Agenda rápida · próximos eventos</h2>
-              <div id="agendaRapida"></div>
+              <h2>Agenda rápida</h2>
+              <div class="cal-nav">
+                <button type="button" class="btn-s" id="calPrev" style="margin-top:0">‹</button>
+                <strong id="calTitulo" style="font-size:15px"></strong>
+                <button type="button" class="btn-s" id="calNext" style="margin-top:0">›</button>
+              </div>
+              <div class="cal" id="calGrid"></div>
+              <div id="calDia" style="margin-top:14px"><div class="vazio">Toque em um dia com evento para ver o detalhe.</div></div>
             </div>
 
             <div class="box-full">
-              <h2>Cliente e financeiro</h2>
-              <div class="grid2">
-                <div id="dadosPedido" class="mut"></div>
-                <div id="resumoFin"></div>
-              </div>
+              <h2>Local</h2>
+              <div id="localBox"><div class="vazio">Sem local informado.</div></div>
+            </div>
+
+            <div class="box-full">
+              <h2>Resumo do checklist do projeto</h2>
+              <div id="listaEtapas"></div>
             </div>
 
             <div class="box-full">
@@ -185,20 +246,19 @@
             </div>
 
             <div class="box-full">
-              <h2>Checklist</h2>
-              <div class="row" style="align-items:flex-end;margin-bottom:12px">
+              <h2>Nova etapa do checklist</h2>
+              <div class="row" style="align-items:flex-end">
                 <div style="flex:1;min-width:140px">
-                  <label class="cap">Nova etapa</label>
+                  <label class="cap">Nome da etapa</label>
                   <input id="novaEtapaNome" placeholder="Ex.: Montagem" maxlength="120">
                 </div>
-                <div style="width:110px">
+                <div style="width:130px">
                   <label class="cap">Hora</label>
                   <input id="novaEtapaHora" type="time">
                 </div>
-                <button class="primary" id="btnAddEtapa" type="button">Adicionar</button>
+                <button class="primary" id="btnAddEtapa" type="button">Salvar</button>
               </div>
               <div class="msg" id="msgEtapa"></div>
-              <div id="listaEtapas"></div>
             </div>
 
             <div class="box-full">
@@ -239,106 +299,29 @@
     try { return new Date(String(d).slice(0, 10) + 'T12:00:00').toLocaleDateString('pt-BR'); }
     catch (e) { return '—'; }
   };
-  var HOJE = function () { return new Date().toISOString().slice(0, 10); };
+  var ISO = function (d) {
+    return d.getFullYear() + '-' + String(d.getMonth() + 1).padStart(2, '0') + '-' + String(d.getDate()).padStart(2, '0');
+  };
+  var MESES = ['janeiro','fevereiro','março','abril','maio','junho','julho','agosto','setembro','outubro','novembro','dezembro'];
 
   var ME = null, PROPS = [], ATUAL = null, PARCEIROS = [];
+  var CAL = { ano: null, mes: null, sel: null };
 
-  /* ===== Nomes e dados de parceiros =====
-     Equipe (exibida ao cliente): nome_artistico > nome_completo > email
-     Vendedor/financeiro (PIX, comissão): nome_completo > email  */
+  /* Mesmos campos que o index do cliente usa para a equipe:
+     foto   = avatar_url || foto_url
+     função = funcao || papel
+     nome   = nome_artistico || nome_completo (o nome que o cliente vê) */
+  function nomeEquipe(p) { return p ? (p.nome_artistico || p.nome_completo || p.email || '').trim() : ''; }
+  function fotoEquipe(p) { return p ? (p.avatar_url || p.foto_url || '') : ''; }
+  function funcaoEquipe(p) { return p ? (p.funcao || p.papel || '') : ''; }
+  function nomeFinanceiro(p) { return p ? (p.nome_completo || p.email || '').trim() : ''; }
+
   function tempo(iso) {
     if (!iso) return '48H 00M';
     var d = new Date(iso) - new Date();
     if (d <= 0) return 'EXPIRADO';
     var h = Math.floor(d / 3600000), m = Math.floor((d % 3600000) / 60000);
     return (h < 10 ? '0' : '') + h + 'H ' + (m < 10 ? '0' : '') + m + 'M';
-  }
-
-  function labelNivel(nivel) {
-    return nivel === 'dados_sensiveis' ? 'Agenda + dados sensíveis' : 'Só agenda';
-  }
-
-  function parceiroPorId(pid) {
-    if (!pid) return null;
-    var s = String(pid);
-    return (PARCEIROS || []).find(function (x) { return String(x.id) === s || String(x.user_id) === s; }) || null;
-  }
-
-  function nomeEquipe(p) {
-    if (!p) return '';
-    return (p.nome_artistico || p.nome_completo || p.email || '').trim();
-  }
-
-  function nomeFinanceiro(p) {
-    if (!p) return '';
-    return (p.nome_completo || p.email || '').trim();
-  }
-
-  function fotoParceiro(p) {
-    if (!p) return '';
-    return p.avatar_url || p.foto_url || p.foto || '';
-  }
-
-  function funcaoParceiro(p, nivel) {
-    if (p) {
-      var f = (p.funcao || p.papel || p.especialidade || p.categoria || p.role || '').trim();
-      if (f) return f;
-    }
-    return labelNivel(nivel);
-  }
-
-  async function carregarParceirosBase() {
-    var r = await SB.from('parceiros')
-      .select('id, nome_completo, email, status')
-      .eq('status', 'aprovado')
-      .order('nome_completo');
-
-    if (r.error || !(r.data && r.data.length)) {
-      r = await SB.from('parceiros')
-        .select('id, nome_completo, email, status')
-        .order('nome_completo');
-    }
-
-    PARCEIROS = r.data || [];
-
-    try {
-      var ids = PARCEIROS.map(function (p) { return p.id; }).filter(Boolean);
-      if (ids.length) {
-        var extra = await SB.from('parceiros')
-          .select('id, nome_artistico, avatar_url, foto_url, funcao, papel, user_id')
-          .in('id', ids);
-        if (!extra.error && extra.data) {
-          var map = {};
-          extra.data.forEach(function (e) { map[e.id] = e; });
-          PARCEIROS = PARCEIROS.map(function (p) {
-            var e = map[p.id];
-            return e ? Object.assign({}, p, e) : p;
-          });
-        }
-      }
-    } catch (e) { /* colunas opcionais */ }
-
-    $('addParceiro').innerHTML = PARCEIROS.length
-      ? PARCEIROS.map(function (p) {
-          return '<option value="' + E(p.id) + '">' + E(nomeEquipe(p) || p.id) + '</option>';
-        }).join('')
-      : '<option value="">Nenhum parceiro aprovado</option>';
-  }
-
-  async function buscarParceiroDireto(pid) {
-    if (!pid) return null;
-    var r = await SB.from('parceiros')
-      .select('id, user_id, nome_completo, nome_artistico, email, avatar_url, foto_url, funcao, papel, status')
-      .eq('id', pid)
-      .maybeSingle();
-    if (r.error || !r.data) {
-      r = await SB.from('parceiros')
-        .select('id, user_id, nome_completo, email, status')
-        .eq('user_id', pid)
-        .maybeSingle();
-    }
-    if (r.data) { PARCEIROS.push(r.data); return r.data; }
-    return null;
   }
 
   /* ===== Inicialização ===== */
@@ -361,13 +344,29 @@
 
     await carregarParceirosBase();
     await carregarLista();
+    await carregarKpis();
     var qid = new URLSearchParams(location.search).get('id');
     if (qid) selecionar(qid);
   }
 
-  /* ===== Lista de projetos =====
-     Uma única consulta traz o pedido, o vendedor (parceiros) e os campos
-     financeiros usados pela página de comissões. */
+  /* Parceiros disponíveis para adicionar à equipe */
+  async function carregarParceirosBase() {
+    var r = await SB.from('parceiros')
+      .select('id, nome_completo, nome_artistico, email, status')
+      .eq('status', 'aprovado')
+      .order('nome_completo');
+    if (r.error || !(r.data && r.data.length)) {
+      r = await SB.from('parceiros').select('id, nome_completo, nome_artistico, email, status').order('nome_completo');
+    }
+    PARCEIROS = r.data || [];
+    $('addParceiro').innerHTML = PARCEIROS.length
+      ? PARCEIROS.map(function (p) {
+          return '<option value="' + E(p.id) + '">' + E(nomeEquipe(p) || p.id) + '</option>';
+        }).join('')
+      : '<option value="">Nenhum parceiro aprovado</option>';
+  }
+
+  /* ===== Lista de projetos ===== */
   async function carregarLista() {
     var r = await SB.from('propostas')
       .select('*, parceiros:parceiros!parceiro_id(id, nome_completo, email, comissao_padrao_pct, tipo_pix, chave_pix)')
@@ -375,7 +374,7 @@
       .limit(500);
     PROPS = r.data || [];
     desenharLista();
-    renderAgenda();
+    renderCal();
   }
 
   function desenharLista() {
@@ -386,14 +385,41 @@
     $('listaProj').innerHTML = lista.length ? lista.map(function (p) {
       return '<div class="proj ' + (ATUAL && ATUAL.id === p.id ? 'on' : '') + '" data-id="' + E(p.id) + '">' +
         '<strong>#' + E(p.numero) + '</strong> · ' + E(p.cliente_nome || '') + '<br>' +
-        '<small>' + E(p.tipo_evento || '') + ' · ' + E(DATA(p.data_evento)) + ' · ' + E(p.status || '') + '</small></div>';
+        '<small>' + E(p.tipo_evento || '') + '</small><br>' +
+        '<span class="tag ' + (p.status === 'hold' ? 't-hold' : (p.status === 'cancelada' ? 't-rec' : 't-ok')) + '">' + E(p.status || '') + '</span> ' +
+        '<small>Data: ' + E(DATA(p.data_evento)) + '</small></div>';
     }).join('') : '<div class="vazio">Nenhum projeto.</div>';
 
-    document.querySelectorAll('#listaProj [data-id]').forEach(function (el) {
+    $('listaProj').querySelectorAll('[data-id]').forEach(function (el) {
       el.addEventListener('click', function () { selecionar(el.getAttribute('data-id')); });
     });
   }
   $('busca').addEventListener('input', desenharLista);
+
+  /* ===== KPIs ===== */
+  async function carregarKpis() {
+    var ativos = PROPS.filter(function (p) { return p.status !== 'cancelada'; });
+    $('kpiAtivos').textContent = ativos.length;
+
+    var agora = new Date();
+    var doMes = ativos.filter(function (p) {
+      if (!p.data_evento) return false;
+      var d = new Date(String(p.data_evento).slice(0, 10) + 'T12:00:00');
+      return d.getMonth() === agora.getMonth() && d.getFullYear() === agora.getFullYear();
+    });
+    var receb = doMes.reduce(function (s, p) { return s + Number(p.valor_total || 0); }, 0);
+    var comis = doMes.reduce(function (s, p) { return s + calcFin(p).total; }, 0);
+    $('kpiRec').textContent = BRL(receb);
+    $('kpiCom').textContent = BRL(comis);
+
+    var pend = await SB.from('evento_etapas').select('id', { count: 'exact', head: true }).eq('situacao', 'pendente');
+    $('kpiPend').textContent = pend.count || 0;
+
+    var eq = await SB.from('projeto_colaboradores').select('parceiro_id');
+    var unicos = {};
+    (eq.data || []).forEach(function (x) { unicos[x.parceiro_id] = true; });
+    $('kpiEq').textContent = Object.keys(unicos).length;
+  }
 
   /* ===== Financeiro (mesma regra da página de comissões) ===== */
   function calcFin(p) {
@@ -405,26 +431,22 @@
     var saldo = Math.max(0, total - pago);
     var status = p.comissao_status || (p.comissao_paga ? 'liquidado' : 'pendente');
     if (saldo <= 0.01 && total > 0 && status !== 'cancelado') status = 'liquidado';
-    return {
-      valor: valor, pct: pct, total: total, pago: pago, saldo: saldo, status: status,
-      vendedor: nomeFinanceiro(p.parceiros) || ('Vendedor ID ' + p.parceiro_id)
-    };
+    return { valor: valor, pct: pct, total: total, pago: pago, saldo: saldo, status: status,
+             vendedor: nomeFinanceiro(p.parceiros) || ('Vendedor ID ' + p.parceiro_id) };
   }
-
   var ROTULO_FIN = { pendente: 'Pendente', solicitado: 'Solicitado', parcial: 'Parcial', liquidado: 'Liquidado', cancelado: 'Cancelado' };
 
   function renderFinanceiro(p) {
     var box = $('resumoFin');
-    if (!p) { box.innerHTML = '<div class="vazio">—</div>'; return; }
+    if (!p) { box.innerHTML = ''; return; }
     var f = calcFin(p);
-    var cls = f.status === 'liquidado' ? 't-ok' : (f.status === 'cancelado' ? '' : 't-hold');
-    var estilo = f.status === 'cancelado' ? ' style="background:rgba(255,77,77,.15);color:var(--alert)"' : '';
+    var cls = f.status === 'liquidado' ? 't-ok' : (f.status === 'cancelado' ? 't-rec' : 't-hold');
     box.innerHTML =
       '<div class="item"><span>Valor do pedido</span><strong>' + BRL(f.valor) + '</strong></div>' +
       '<div class="item"><span>Comissão (' + f.pct + '%)</span><strong style="color:var(--gold)">' + BRL(f.total) + '</strong></div>' +
       '<div class="item"><span>Já repassado</span><span>' + BRL(f.pago) + '</span></div>' +
       '<div class="item"><span>Saldo a repassar</span><span>' + BRL(f.saldo) + '</span></div>' +
-      '<div class="item"><span>Status do repasse</span><span class="tag ' + cls + '"' + estilo + '>' + E(ROTULO_FIN[f.status] || f.status) + '</span></div>' +
+      '<div class="item"><span>Repasse</span><span class="tag ' + cls + '">' + E(ROTULO_FIN[f.status] || f.status) + '</span></div>' +
       '<div class="item"><span>Vendedor</span><span>' + E(f.vendedor) + '</span></div>';
   }
 
@@ -432,32 +454,89 @@
     var box = $('dadosPedido');
     if (!p) { box.innerHTML = ''; return; }
     box.innerHTML =
-      '<div class="item"><span>Cliente</span><strong style="color:var(--body)">' + E(p.cliente_nome || '—') + '</strong></div>' +
+      '<div class="item"><span>Cliente</span><strong>' + E(p.cliente_nome || '—') + '</strong></div>' +
       '<div class="item"><span>Tipo de evento</span><span>' + E(p.tipo_evento || '—') + '</span></div>' +
-      '<div class="item"><span>Horário</span><span>' + E((p.horario_inicio || '').slice(0, 5) || '—') +
-        ' – ' + E((p.horario_final || '').slice(0, 5) || '—') + '</span></div>' +
-      '<div class="item"><span>Local</span><span>' + E(p.local_evento || '—') + '</span></div>' +
-      '<div class="item"><span>Contrato</span><span>' + (p.assinado_em ? 'Assinado em ' + DATA(p.assinado_em) : 'Não assinado') + '</span></div>';
+      '<div class="item"><span>Contrato</span><span class="tag ' + (p.assinado_em ? 't-ok' : 't-hold') + '">' +
+        (p.assinado_em ? 'Assinado · ' + E(DATA(p.assinado_em)) : 'Não assinado') + '</span></div>';
   }
 
-  /* ===== Agenda rápida: próximos eventos (clique abre o projeto) ===== */
-  function renderAgenda() {
-    var box = $('agendaRapida');
-    if (!box) return;
-    var hoje = HOJE();
-    var lista = PROPS.filter(function (p) {
-      return p.status !== 'cancelada' && p.data_evento && String(p.data_evento).slice(0, 10) >= hoje;
-    }).slice(0, 8);
-    box.innerHTML = lista.length ? lista.map(function (p) {
-      return '<div class="item" data-ag="' + E(p.id) + '" style="cursor:pointer">' +
-        '<span><strong>#' + E(p.numero) + '</strong> · ' + E(p.cliente_nome || '') +
-        '<br><small style="color:var(--mut)">' + E(p.tipo_evento || '') + '</small></span>' +
-        '<span class="tag ' + (p.status === 'hold' ? 't-hold' : 't-ok') + '">' + E(DATA(p.data_evento)) + '</span></div>';
-    }).join('') : '<div class="vazio">Nenhum evento futuro.</div>';
+  /* ===== Agenda rápida (calendário replicado do index do cliente) ===== */
+  function renderCal() {
+    var agora = new Date();
+    if (CAL.ano == null) { CAL.ano = agora.getFullYear(); CAL.mes = agora.getMonth(); }
+    var y = CAL.ano, m = CAL.mes;
+    $('calTitulo').textContent = MESES[m] + ' ' + y;
 
+    var datas = {};
+    PROPS.filter(function (p) { return p.status !== 'cancelada' && p.data_evento; }).forEach(function (p) {
+      var k = String(p.data_evento).slice(0, 10);
+      (datas[k] = datas[k] || []).push(p);
+    });
+
+    var primeiro = new Date(y, m, 1);
+    var inicio = new Date(y, m, 1 - primeiro.getDay());
+    var hoje = ISO(agora);
+    var html = ['Dom', 'Seg', 'Ter', 'Qua', 'Qui', 'Sex', 'Sáb'].map(function (h) {
+      return '<div class="hd">' + h + '</div>';
+    }).join('');
+
+    for (var i = 0; i < 42; i++) {
+      var dia = new Date(inicio);
+      dia.setDate(inicio.getDate() + i);
+      var iso = ISO(dia);
+      var fora = dia.getMonth() !== m;
+      var tem = !!datas[iso];
+      var cls = 'd' + (fora ? ' muted' : '') + (tem ? ' tem' : '') + (iso === hoje ? ' hoje' : '') + (iso === CAL.sel ? ' sel' : '');
+      html += '<div class="' + cls + '" data-iso="' + iso + '"' + (tem ? ' style="--rgb:192,132,252"' : '') + '>' + dia.getDate() +
+        (tem ? '<div class="dots"><i style="background:#c084fc"></i></div>' : '') + '</div>';
+    }
+    $('calGrid').innerHTML = html;
+
+    $('calGrid').querySelectorAll('[data-iso]').forEach(function (el) {
+      el.addEventListener('click', function () {
+        var iso2 = el.getAttribute('data-iso');
+        if (!datas[iso2]) return;
+        CAL.sel = iso2;
+        renderCal();
+        renderDia(datas[iso2]);
+      });
+    });
+
+    if (CAL.sel && datas[CAL.sel]) renderDia(datas[CAL.sel]);
+  }
+
+  function renderDia(lista) {
+    var box = $('calDia');
+    box.innerHTML = lista.map(function (p) {
+      return '<div class="dia-item" data-ag="' + E(p.id) + '">' +
+        '<strong>#' + E(p.numero) + ' · ' + E(p.cliente_nome || '') + '</strong>' +
+        '<small>' + E(p.tipo_evento || '') + ' · ' + E(p.local_evento || 'Local a definir') + '</small>' +
+        '<small>' + E(p.status || '') + '</small></div>';
+    }).join('');
     box.querySelectorAll('[data-ag]').forEach(function (el) {
       el.addEventListener('click', function () { selecionar(el.getAttribute('data-ag')); });
     });
+  }
+
+  $('calPrev').addEventListener('click', function () {
+    CAL.mes--; if (CAL.mes < 0) { CAL.mes = 11; CAL.ano--; }
+    renderCal();
+  });
+  $('calNext').addEventListener('click', function () {
+    CAL.mes++; if (CAL.mes > 11) { CAL.mes = 0; CAL.ano++; }
+    renderCal();
+  });
+
+  /* ===== Local com mapa ===== */
+  function renderLocal(p) {
+    var box = $('localBox');
+    if (!p || !p.local_evento) { box.innerHTML = '<div class="vazio">Sem local informado.</div>'; return; }
+    box.innerHTML =
+      '<strong style="font-size:15px">' + E(p.local_evento) + '</strong>' +
+      '<div class="pill" style="margin-top:4px">Horário: ' + E((p.horario_inicio || '').slice(0, 5) || '—') +
+        ' – ' + E((p.horario_final || '').slice(0, 5) || '—') + '</div>' +
+      '<iframe class="mapa" loading="lazy" referrerpolicy="no-referrer-when-downgrade" title="Mapa do local" ' +
+        'src="https://www.google.com/maps?q=' + encodeURIComponent(p.local_evento) + '&output=embed"></iframe>';
   }
 
   /* ===== Seleção de projeto ===== */
@@ -480,8 +559,9 @@
 
     renderDadosPedido(ATUAL);
     renderFinanceiro(ATUAL);
+    renderLocal(ATUAL);
 
-    await Promise.all([carregarColaboradores(), carregarEtapas(), carregarObs()]);
+    await Promise.all([carregarEquipe(), carregarEtapas(), carregarObs()]);
   }
 
   /* ===== Salvar dados gerais ===== */
@@ -496,8 +576,7 @@
       local_evento: $('fLocal').value || null
     };
     if (st === 'hold' && ATUAL.status !== 'hold') {
-      var h = new Date();
-      h.setHours(h.getHours() + 48);
+      var h = new Date(); h.setHours(h.getHours() + 48);
       patch.hold_expira_em = h.toISOString();
     }
     if (st !== 'hold') patch.hold_expira_em = null;
@@ -512,17 +591,18 @@
     $('msgDados').textContent = 'Salvo.';
     var id = ATUAL.id;
     await carregarLista();
+    await carregarKpis();
     selecionar(id);
   });
 
-  /* ===== Equipe técnica (projeto_colaboradores) ===== */
-  async function carregarColaboradores() {
+  /* ===== Equipe técnica (projeto_colaboradores + parceiros) ===== */
+  async function carregarEquipe() {
     if (!ATUAL) return;
     var box = $('listaCol');
     box.innerHTML = '<div class="vazio">Carregando equipe…</div>';
 
     var r = await SB.from('projeto_colaboradores')
-      .select('id, nivel, parceiro_id, criado_em')
+      .select('id, nivel, parceiro_id, criado_em, parceiros:parceiros!parceiro_id(id, nome_completo, nome_artistico, avatar_url, foto_url, funcao, papel, telefone)')
       .eq('proposta_id', ATUAL.id)
       .order('criado_em', { ascending: true });
 
@@ -531,43 +611,38 @@
       console.error('projeto_colaboradores', r.error);
       return;
     }
-
     var l = r.data || [];
     if (!l.length) {
       box.innerHTML = '<div class="vazio">Nenhum colaborador ainda. Use o seletor acima e clique em Adicionar.</div>';
       return;
     }
 
-    for (var i = 0; i < l.length; i++) {
-      if (!parceiroPorId(l[i].parceiro_id)) await buscarParceiroDireto(l[i].parceiro_id);
-    }
-
-    box.innerHTML = l.map(function (c) {
-      var p = parceiroPorId(c.parceiro_id);
-      var nome = nomeEquipe(p) || ('ID ' + String(c.parceiro_id || '').slice(0, 8));
-      var foto = fotoParceiro(p);
-      var funcao = funcaoParceiro(p, c.nivel);
-      var inicial = nome.charAt(0).toUpperCase();
-
-      return '<div class="eq-item">' +
-        '<div class="eq-foto"' + (foto ? ' style="background-image:url(\'' + E(foto) + '\')"' : '') + '>' +
-          (foto ? '' : E(inicial)) +
-        '</div>' +
-        '<div style="min-width:0">' +
-          '<strong>' + E(nome) + '</strong>' +
-          '<small>' + E(funcao) + '</small>' +
-        '</div>' +
-        '<div class="eq-acoes">' +
-          '<button class="danger" data-rm-col="' + E(c.id) + '" type="button">Remover</button>' +
-        '</div>' +
-      '</div>';
-    }).join('');
+    box.innerHTML = '<table class="tbl"><thead><tr>' +
+      '<th>Nome</th><th>Papel</th><th>Celular</th><th class="r">Ações</th></tr></thead><tbody>' +
+      l.map(function (c) {
+        var p = c.parceiros || {};
+        var nome = nomeEquipe(p) || ('ID ' + String(c.parceiro_id || '').slice(0, 8));
+        var foto = fotoEquipe(p);
+        var funcao = funcaoEquipe(p) || '—';
+        return '<tr>' +
+          '<td><div style="display:flex;align-items:center;gap:10px">' +
+            '<div class="eq-foto"' + (foto ? ' style="background-image:url(\'' + E(foto) + '\')"' : '') + '>' +
+              (foto ? '' : E(nome.charAt(0).toUpperCase())) +
+            '</div>' +
+            '<strong>' + E(nome) + '</strong>' +
+          '</div></td>' +
+          '<td>' + E(funcao) + '</td>' +
+          '<td>' + E(p.telefone || '—') + '</td>' +
+          '<td class="r"><button class="danger" data-rm-col="' + E(c.id) + '" type="button">Remover</button></td>' +
+        '</tr>';
+      }).join('') + '</tbody></table>';
 
     box.querySelectorAll('[data-rm-col]').forEach(function (b) {
       b.addEventListener('click', async function () {
         if (!confirm('Remover este colaborador do projeto?')) return;
         await SB.from('projeto_colaboradores').delete().eq('id', b.getAttribute('data-rm-col'));
-        carregarColaboradores();
+        carregarEquipe();
+        carregarKpis();
       });
     });
   }
@@ -585,10 +660,7 @@
       return;
     }
     var r = await SB.from('projeto_colaboradores').insert({
-      proposta_id: ATUAL.id,
-      parceiro_id: pid,
-      nivel: $('addNivel').value,
-      criado_por: ME.id
+      proposta_id: ATUAL.id, parceiro_id: pid, nivel: $('addNivel').value, criado_por: ME.id
     }).select('id, parceiro_id, nivel');
 
     if (r.error) {
@@ -599,7 +671,8 @@
     }
     $('msgCol').className = 'msg ok';
     $('msgCol').textContent = 'Adicionado.';
-    await carregarColaboradores();
+    await carregarEquipe();
+    await carregarKpis();
   });
 
   /* ===== Checklist (evento_etapas) ===== */
@@ -610,45 +683,51 @@
       .eq('proposta_id', ATUAL.id)
       .order('ordem');
     var l = r.data || [];
+    var box = $('listaEtapas');
 
-    $('listaEtapas').innerHTML = l.length ? l.map(function (e) {
-      var feita = e.situacao === 'concluida';
-      return '<div class="item">' +
-        '<span>' + E(e.nome) + ' <span style="color:var(--mut)">' + E(e.hora || '') + '</span>' +
-          (feita ? ' <span class="tag t-ok">feita</span>' : ' <span class="tag t-hold">pendente</span>') +
-        '</span>' +
-        '<span style="display:flex;gap:6px;flex-wrap:wrap">' +
-          (feita
-            ? '<button data-desfazer="' + E(e.id) + '" type="button">Desfazer</button>'
-            : '<button class="primary" data-feita="' + E(e.id) + '" type="button">Marcar feita</button>') +
-          '<button class="danger" data-rm-etapa="' + E(e.id) + '" type="button">Remover</button>' +
-        '</span>' +
-      '</div>';
-    }).join('') : '<div class="vazio">Sem etapas. Adicione a primeira acima.</div>';
+    if (!l.length) { box.innerHTML = '<div class="vazio">Sem etapas. Adicione a primeira abaixo.</div>'; return; }
 
-    $('listaEtapas').querySelectorAll('[data-feita]').forEach(function (b) {
+    box.innerHTML = '<table class="tbl"><thead><tr>' +
+      '<th>Etapa</th><th>Status</th><th>Responsável</th><th>Hora</th><th class="r">Ações</th></tr></thead><tbody>' +
+      l.map(function (e) {
+        var feita = e.situacao === 'concluida';
+        return '<tr>' +
+          '<td><strong>' + E(e.nome) + '</strong></td>' +
+          '<td><span class="tag ' + (feita ? 't-ok' : 't-hold') + '">' + (feita ? 'Concluída' : 'Pendente') + '</span></td>' +
+          '<td>' + E(e.concluida_por || '—') + '</td>' +
+          '<td>' + E(e.hora || '—') + '</td>' +
+          '<td class="r" style="white-space:nowrap">' +
+            (feita
+              ? '<button data-desfazer="' + E(e.id) + '" type="button">Desfazer</button> '
+              : '<button class="primary" data-feita="' + E(e.id) + '" type="button">Marcar feita</button> ') +
+            '<button class="danger" data-rm-etapa="' + E(e.id) + '" type="button">Remover</button>' +
+          '</td></tr>';
+      }).join('') + '</tbody></table>';
+
+    box.querySelectorAll('[data-feita]').forEach(function (b) {
       b.addEventListener('click', async function () {
         await SB.from('evento_etapas').update({
-          situacao: 'concluida',
-          concluida_por: ME.nome_completo,
-          concluida_em: new Date().toISOString()
+          situacao: 'concluida', concluida_por: ME.nome_completo, concluida_em: new Date().toISOString()
         }).eq('id', b.getAttribute('data-feita'));
         carregarEtapas();
+        carregarKpis();
       });
     });
-    $('listaEtapas').querySelectorAll('[data-desfazer]').forEach(function (b) {
+    box.querySelectorAll('[data-desfazer]').forEach(function (b) {
       b.addEventListener('click', async function () {
         await SB.from('evento_etapas').update({
           situacao: 'pendente', concluida_por: null, concluida_em: null
         }).eq('id', b.getAttribute('data-desfazer'));
         carregarEtapas();
+        carregarKpis();
       });
     });
-    $('listaEtapas').querySelectorAll('[data-rm-etapa]').forEach(function (b) {
+    box.querySelectorAll('[data-rm-etapa]').forEach(function (b) {
       b.addEventListener('click', async function () {
         if (!confirm('Remover esta etapa do checklist?')) return;
         await SB.from('evento_etapas').delete().eq('id', b.getAttribute('data-rm-etapa'));
         carregarEtapas();
+        carregarKpis();
       });
     });
   }
@@ -668,10 +747,8 @@
     msg.textContent = 'Salvando…';
     try {
       var ord = await SB.from('evento_etapas')
-        .select('ordem')
-        .eq('proposta_id', ATUAL.id)
-        .order('ordem', { ascending: false })
-        .limit(1);
+        .select('ordem').eq('proposta_id', ATUAL.id)
+        .order('ordem', { ascending: false }).limit(1);
       var prox = 1;
       if (ord.data && ord.data[0] && ord.data[0].ordem != null) prox = Number(ord.data[0].ordem) + 1;
 
@@ -684,6 +761,7 @@
       msg.className = 'msg ok';
       msg.textContent = 'Etapa adicionada.';
       await carregarEtapas();
+      await carregarKpis();
     } catch (err) {
       msg.className = 'msg';
       msg.textContent = err.message || 'Erro ao adicionar etapa.';
@@ -701,14 +779,15 @@
       .is('removido_em', null)
       .order('criado_em');
     var l = r.data || [];
-    $('listaObs').innerHTML = l.length ? l.map(function (o) {
+    var box = $('listaObs');
+    box.innerHTML = l.length ? l.map(function (o) {
       return '<div class="item">' +
-        '<span>' + E(o.texto) + ' <span style="color:var(--mut)">(' + E(o.criado_por) + ')</span></span>' +
+        '<span>' + E(o.texto) + ' <span class="mut">(' + E(o.criado_por) + ')</span></span>' +
         '<button class="danger" data-obs="' + E(o.id) + '" type="button">Remover</button>' +
       '</div>';
     }).join('') : '<div class="vazio">Nenhuma instrução.</div>';
 
-    $('listaObs').querySelectorAll('[data-obs]').forEach(function (b) {
+    box.querySelectorAll('[data-obs]').forEach(function (b) {
       b.addEventListener('click', async function () {
         await SB.from('evento_observacoes')
           .update({ removido_em: new Date().toISOString() })
