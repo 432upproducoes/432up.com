@@ -22,13 +22,20 @@
     *, *::before, *::after { box-sizing: border-box; }
     .area {
       width: 100%; max-width: 1120px; margin: 0 auto; position: relative; z-index: 2;
-      padding-top: calc(var(--hdr-h, 112px) + 28px);
-      padding-left: max(18px, env(safe-area-inset-left));
-      padding-right: max(18px, env(safe-area-inset-right));
-      padding-bottom: calc(120px + env(safe-area-inset-bottom));
+      padding-top: calc(var(--hdr-h, 112px) + 20px);
+      padding-left: max(12px, env(safe-area-inset-left));
+      padding-right: max(12px, env(safe-area-inset-right));
+      padding-bottom: calc(100px + env(safe-area-inset-bottom));
+      box-sizing: border-box;
+      overflow-x: hidden;
+      min-width: 0;
     }
-    html, body { height: auto !important; min-height: 100%; }
+    html, body { height: auto !important; min-height: 100%; max-width: 100%; overflow-x: hidden !important; }
     body { overflow-y: visible !important; }
+    .flex, .layout, section, aside, .box-full, .tabs-wrap, .kpis, .head-trio, .campos {
+      max-width: 100%; min-width: 0; box-sizing: border-box;
+    }
+    img, iframe, video, .mapa { max-width: 100% !important; }
     .eyebrow { font-size: .68rem; letter-spacing: .18em; text-transform: uppercase; font-weight: 700; opacity: .72; color: var(--gold); }
     .titulo { font-size: clamp(1.5rem, 4vw, 2.2rem); line-height: 1.15; letter-spacing: -.03em; margin: 8px 0 14px; font-weight: 800; }
     .mut { color: var(--mut); }
@@ -50,18 +57,27 @@
     .lista-proj { display: flex; flex-direction: column; gap: 8px; margin-top: 10px; max-height: 70vh; overflow-y: auto; }
 
     /* Mobile: barra "projeto atual" + drawer da lista (mesma dinâmica do esboço) */
+    .topo-pagina { align-items: center; }
+    .btn-trocar-topo {
+      display: inline-flex; align-items: center; gap: 8px; height: 40px; padding: 0 14px;
+      border-radius: 12px; cursor: pointer; flex-shrink: 0;
+      background: rgba(0,255,102,.1); border: 1px solid rgba(0,255,102,.35); color: var(--action);
+      font: inherit; font-size: 12px; font-weight: 800;
+    }
+    .btn-trocar-topo .ico-lista { font-size: 16px; line-height: 1; }
+    @media (max-width: 600px) {
+      .btn-trocar-topo .txt-trocar { display: none; }
+      .btn-trocar-topo { width: 42px; padding: 0; justify-content: center; }
+    }
+    /* Chip discreto do projeto atual (mobile) — sem segundo botão */
     .mob-proj-bar {
-      display: none; align-items: center; justify-content: space-between; gap: 10px;
-      margin: 0 0 12px; padding: 12px 14px; border-radius: 16px;
+      display: none; align-items: center; gap: 10px;
+      margin: 0 0 12px; padding: 10px 12px; border-radius: 14px;
       background: rgba(88, 28, 135, 0.28); border: 1px solid rgba(255,255,255,.12);
     }
     .mob-proj-bar .lbl { font-size: 10px; font-weight: 800; letter-spacing: .08em; text-transform: uppercase; color: var(--gold); }
-    .mob-proj-bar .nome { font-size: 14px; font-weight: 800; color: var(--text); margin-top: 2px; max-width: 58vw; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
-    .mob-proj-bar .btn-trocar {
-      flex-shrink: 0; height: 36px; padding: 0 12px; border-radius: 12px;
-      background: rgba(0,255,102,.12); border: 1px solid rgba(0,255,102,.4); color: var(--action);
-      font: inherit; font-size: 12px; font-weight: 800; cursor: pointer;
-    }
+    .mob-proj-bar .nome { font-size: 13px; font-weight: 800; color: var(--text); margin-top: 2px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+    .mob-proj-bar .btn-trocar { display: none; }
     .aside-backdrop {
       display: none; position: fixed; inset: 0; z-index: 40;
       background: rgba(0,0,0,.65); backdrop-filter: blur(4px);
@@ -70,13 +86,15 @@
     @media (max-width: 1023px) {
       .mob-proj-bar { display: flex; }
       .layout > aside {
-        display: none; position: fixed; inset: 0; z-index: 50;
-        padding: max(16px, env(safe-area-inset-top)) 14px 14px;
-        background: rgba(8,8,10,.96); overflow-y: auto;
+        display: none; position: fixed; left: 0; right: 0; top: 0; bottom: 0; z-index: 50;
+        padding: max(12px, env(safe-area-inset-top)) 12px 12px;
+        background: rgba(0,0,0,.55); overflow-y: auto;
+        box-sizing: border-box;
       }
       .layout > aside.drawer-on { display: block; }
       .layout > aside .box-full {
-        max-height: none; position: relative;
+        max-height: none; position: relative; max-width: 420px; margin: 0 auto;
+        width: 100%; box-sizing: border-box;
       }
       .drawer-close {
         display: flex; align-items: center; justify-content: space-between;
@@ -175,7 +193,8 @@
     /* Mapa */
     .local-nome { font-size: 17px; font-weight: 700; }
     .local-end { font-size: 14px; color: var(--body); margin-top: 4px; line-height: 1.45; overflow-wrap: anywhere; }
-    .mapa { width: 100%; height: 260px; border: 0; border-radius: 16px; margin-top: 14px; }
+    .mapa { width: 100%; max-width: 100%; height: 220px; border: 0; border-radius: 16px; margin-top: 14px; display: block; }
+    @media (max-width: 600px) { .mapa { height: 180px; } }
 
     /* Calendário (mesmo CSS do index do cliente) */
     .btn-s {
@@ -198,9 +217,19 @@
     .dia-item small { color: var(--mut); display: block; font-size: 12px; }
 
     /* KPIs (somente admin) */
-    .kpis { display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 12px; margin-bottom: 16px; }
-    @media (max-width: 900px) { .kpis { grid-template-columns: repeat(2, minmax(0, 1fr)); } }
-    .kpi { border-radius: 20px; padding: 16px; background: rgba(255,255,255,.045); border: 1px solid rgba(255,255,255,.14); }
+    .kpis {
+      display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 10px; margin-bottom: 14px;
+      width: 100%; max-width: 100%;
+    }
+    @media (max-width: 900px) {
+      .kpis {
+        display: flex; flex-wrap: nowrap; overflow-x: auto; -webkit-overflow-scrolling: touch;
+        gap: 10px; padding-bottom: 4px; scrollbar-width: none;
+      }
+      .kpis::-webkit-scrollbar { display: none; }
+      .kpi { min-width: 160px; flex: 0 0 auto; }
+    }
+    .kpi { border-radius: 18px; padding: 14px; background: rgba(255,255,255,.045); border: 1px solid rgba(255,255,255,.14); box-sizing: border-box; }
     .kpi .k { font-size: 10px; letter-spacing: .08em; text-transform: uppercase; color: var(--mut); font-weight: 700; }
     .kpi .v { font-size: 22px; font-weight: 800; margin-top: 4px; }
     .kpi .v small { font-size: 12px; font-weight: 600; color: var(--mut); display: block; margin-top: 2px; }
@@ -253,10 +282,14 @@
     <main class="area">
 
       <div class="topo-pagina">
-        <div>
+        <div style="min-width:0">
           <span class="eyebrow">Projetos</span>
-          <h1 class="titulo">Projetos</h1>
+          <h1 class="titulo" style="margin-bottom:0">Projetos</h1>
         </div>
+        <button type="button" class="btn-trocar-topo" id="btnTrocarProj" title="Trocar evento" aria-label="Trocar evento">
+          <span class="ico-lista" aria-hidden="true">☰</span>
+          <span class="txt-trocar">Trocar evento</span>
+        </button>
       </div>
 
       <div class="kpis so-admin">
@@ -267,11 +300,10 @@
       </div>
 
       <div class="mob-proj-bar" id="mobProjBar">
-        <div style="min-width:0">
+        <div style="min-width:0;flex:1">
           <div class="lbl">Projeto atual</div>
           <div class="nome" id="mobProjNome">Escolha um projeto</div>
         </div>
-        <button type="button" class="btn-trocar" id="btnTrocarProj">Trocar evento</button>
       </div>
 
       <div class="aside-backdrop" id="asideBackdrop" aria-hidden="true"></div>
