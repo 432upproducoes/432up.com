@@ -1233,12 +1233,16 @@
     var texto = 'Olá' + (primeiro ? ', *' + primeiro + '*' : '') + '! Segue a equipe técnica do seu evento' +
       (p && p.data_evento ? ' (' + DATA(p.data_evento) + ')' : '') + ':\n\n';
     eq.forEach(function (m) {
-      var nome = m.nome || m.nome_completo || '';
+      var nome = m.nome_completo || m.nome || '';
+      var doc = String(m.cpf_cnpj || m.cpf || '');
+      var digitos = doc.replace(/\D/g, '');
       texto += '*' + nome + '*\n';
       if (m.funcao || m.papel) texto += 'Função: ' + (m.funcao || m.papel) + '\n';
-      if (m.cpf) texto += 'CPF: ' + m.cpf + '\n';
+      if (doc) texto += (digitos.length === 14 ? 'CNPJ: ' : 'CPF: ') + doc + '\n';
       if (m.rg) texto += 'RG: ' + m.rg + '\n';
       if (m.data_nascimento) texto += 'Data de nascimento: ' + DATA(m.data_nascimento) + '\n';
+      var fone = String(m.whatsapp || m.telefone || '').replace(/\D/g, '');
+      if (fone) texto += 'WhatsApp: ' + fone + '\n';
       texto += '\n';
     });
     window.open('https://wa.me/' + tel + '?text=' + encodeURIComponent(texto.trim()), '_blank');
