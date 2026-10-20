@@ -110,11 +110,22 @@
     @media (min-width: 901px) {
       .dia { aspect-ratio: auto; min-height: 90px; }
     }
-    .dia:hover { border-color: rgba(0, 255, 102, .4); }
+    .dia:hover { border-color: rgba(212, 175, 55, .45); }
     .dia.outro { opacity: .4; }
     .dia.hoje { outline: 2px solid var(--gold); outline-offset: -2px; }
     .dia.hoje .num { color: var(--gold); font-weight: 800; }
-    .dia.sel { border-color: rgba(0, 255, 102, .55); background: rgba(0, 255, 102, .06); }
+    /* Seleção no mesmo dourado do "hoje" — intuitivo */
+    .dia.sel {
+      border-color: rgba(212, 175, 55, .65);
+      background: rgba(212, 175, 55, .12);
+      outline: 2px solid var(--gold);
+      outline-offset: -2px;
+    }
+    .dia.sel .num { color: var(--gold); font-weight: 800; }
+    #calSwipe {
+      touch-action: pan-y;
+      user-select: none;
+    }
     .num { font-size: 12px; font-weight: 700; color: var(--mut); }
     .ev {
       font-size: 11px; line-height: 1.25; padding: 2px 5px; border-radius: 5px;
@@ -303,7 +314,7 @@
       <div class="filtros" id="filtros" aria-label="Filtros da agenda"></div>
 
       <div class="agenda-grid">
-        <section class="box-full" style="padding:14px">
+        <section class="box-full" style="padding:14px" id="calSwipe">
           <div class="grid" id="cabec"></div>
           <div class="grid" id="grade" style="margin-top:6px"></div>
         </section>
@@ -372,6 +383,9 @@
   var ANO, MES, DIA_SEL = null;
   var ITENS = {};   // 'YYYY-MM-DD' -> [item]
   var CHECKLIST = {}; // proposta_id -> { total, pend, ok }
+  var ME = null;           // registro parceiros do usuário logado
+  var IS_ADMIN = false;    // admin | master
+  var ME_PROP_IDS = null;  // Set de proposta_id visíveis (null = todas, admin)
 
   var $ = function (id) { return document.getElementById(id); };
   var E = function (s) {
@@ -448,6 +462,12 @@
       .is('cancelada_em', null);
 
     var props = rProp.data || [];
+
+    /* Parceiro: só propostas em que participa (vendedor ou colaborador) */
+    if (ME_PROP_IDS) {
+      props = props.filter(function (p) { return ME_PROP_IDS.has(p.id); });
+    }
+
     var idsProp = [];
 
     props.forEach(function (p) {
@@ -709,16 +729,17 @@
     if (DIA_SEL) abrirDia(DIA_SEL, true);
   }
 
+  var MESES_ABREV = ['JAN','FEV','MAR','ABR','MAI','JUN','JUL','AGO','SET','OUT','NOV','DEZ'];
+
   function rotuloDiaBtn(k) {
     var hoje = chave(new Date());
-    if (!k || k === hoje) return 'Hoje';
-    var p = String(k).split('-');
+    var p = String(k || hoje).split('-');
     if (p.length < 3) return 'Hoje';
-    /* dia/mês — se for outro ano, inclui o ano */
-    var y = Number(p[0]), m = Number(p[1]), d = Number(p[2]);
-    var agora = new Date();
-    if (y !== agora.getFullYear()) return d + '/' + m + '/' + y;
-    return d + '/' + m;
+    var y = Number(p[0]), m = Number(p[1]) - 1, d = Number(p[2]);
+    var abrev = MESES_ABREV[m] || '';
+    if (!k || k === hoje) return 'Hoje/' + abrev;
+    if (y !== new Date().getFullYear()) return d + '/' + abrev + '/' + y;
+    return d + '/' + abrev;
   }
 
   function atualizarBtnDia() {
@@ -784,16 +805,30 @@
           else if (p.comissao_status) tags += '<span class="tag">' + E(p.comissao_status) + '</span>';
           if (p.status) tags += '<span class="tag">' + E(p.status) + '</span>';
 
-          acoes =
-            '<div class="acoes">' +
-              '<a class="pri" href="projeto.html?id=' + encodeURIComponent(p.id) + '">Abrir ficha</a>' +
-              '<a href="../checklist.html?proposta=' + encodeURIComponent(p.id) + '">Checklist</a>' +
-            '</div>';
+          if (IS_ADMIN) {
+            acoes =
+              '<div class="acoes">' +
+                '<a class="pri" href="projeto.html?id=' + encodeURIComponent(p.id) + '">Abrir ficha</a>' +
+                '<a href="../checklist.html?proposta=' + encodeURIComponent(p.id) + '">Checklist</a>' +
+              '</div>';
+          } else {
+            acoes =
+              '<div class="acoes">' +
+                '<a class="pri" href="../checklist.html?proposta=' + encodeURIComponent(p.id) + '">Checklist</a>' +
+              '</div>';
+          }
         } else if (p && (it.tipo === 'hold' || it.tipo === 'contrato' || it.tipo === 'comissao' || it.tipo === 'recebimento' || it.tipo === 'aprovado')) {
-          acoes =
-            '<div class="acoes">' +
-              '<a class="pri" href="projeto.html?id=' + encodeURIComponent(p.id) + '">Abrir ficha</a>' +
-            '</div>';
+          if (IS_ADMIN) {
+            acoes =
+              '<div class="acoes">' +
+                '<a class="pri" href="projeto.html?id=' + encodeURIComponent(p.id) + '">Abrir ficha</a>' +
+              '</div>';
+          } else {
+            acoes =
+              '<div class="acoes">' +
+                '<a class="pri" href="../checklist.html?proposta=' + encodeURIComponent(p.id) + '">Checklist</a>' +
+              '</div>';
+          }
         }
 
         return '<div class="item" style="border-left-color:' + cor + '" data-tipo="' + E(it.tipo) + '" data-id="' + E(it.id) + '">' +
@@ -813,14 +848,49 @@
   }
 
   /* ---------- Navegação ---------- */
-  $('btnPrev').addEventListener('click', function () {
+  function mesAnterior() {
     MES--; if (MES < 0) { MES = 11; ANO--; }
     carregarMes();
-  });
-  $('btnNext').addEventListener('click', function () {
+  }
+  function mesProximo() {
     MES++; if (MES > 11) { MES = 0; ANO++; }
     carregarMes();
-  });
+  }
+  $('btnPrev').addEventListener('click', mesAnterior);
+  $('btnNext').addEventListener('click', mesProximo);
+
+  /* Rolagem/swipe lateral no calendário → troca o mês */
+  (function bindSwipeCal() {
+    var el = document.getElementById('calSwipe');
+    if (!el) return;
+    var x0 = 0, y0 = 0, tracking = false, axis = null;
+    el.addEventListener('touchstart', function (ev) {
+      if (!ev.touches || !ev.touches[0]) return;
+      x0 = ev.touches[0].clientX;
+      y0 = ev.touches[0].clientY;
+      tracking = true;
+      axis = null;
+    }, { passive: true });
+    el.addEventListener('touchmove', function (ev) {
+      if (!tracking || !ev.touches || !ev.touches[0]) return;
+      var dx = ev.touches[0].clientX - x0;
+      var dy = ev.touches[0].clientY - y0;
+      if (axis === null && (Math.abs(dx) > 8 || Math.abs(dy) > 8)) {
+        axis = Math.abs(dx) > Math.abs(dy) ? 'x' : 'y';
+      }
+    }, { passive: true });
+    el.addEventListener('touchend', function (ev) {
+      if (!tracking) return;
+      tracking = false;
+      if (axis !== 'x') return;
+      var t = (ev.changedTouches && ev.changedTouches[0]) || null;
+      if (!t) return;
+      var dx = t.clientX - x0;
+      if (Math.abs(dx) < 50) return;
+      if (dx < 0) mesProximo();
+      else mesAnterior();
+    }, { passive: true });
+  })();
   function irParaHoje() {
     var h = new Date();
     ANO = h.getFullYear(); MES = h.getMonth();
@@ -832,14 +902,45 @@
   $('tituloMes').addEventListener('click', irParaHoje);
 
   /* ---------- Init ---------- */
+  async function carregarEscopoParceiro() {
+    ME_PROP_IDS = null;
+    if (IS_ADMIN) return;
+    if (!ME || !ME.id) { ME_PROP_IDS = new Set(); return; }
+
+    var ids = new Set();
+    var cols = await SB.from('projeto_colaboradores').select('proposta_id').eq('parceiro_id', ME.id);
+    (cols.data || []).forEach(function (c) { if (c.proposta_id) ids.add(c.proposta_id); });
+
+    var minhas = await SB.from('propostas').select('id').eq('parceiro_id', ME.id).is('cancelada_em', null);
+    (minhas.data || []).forEach(function (p) { if (p.id) ids.add(p.id); });
+
+    ME_PROP_IDS = ids;
+  }
+
   (async function init() {
     var s = await SB.auth.getSession();
     if (!(s.data && s.data.session)) { location.href = '../login.html'; return; }
-    var r = await SB.from('parceiros').select('role').eq('user_id', s.data.session.user.id).maybeSingle();
-    if (!r.data || !/^(admin|master)$/i.test(String(r.data.role || '').trim())) {
-      document.querySelector('main').innerHTML = '<div class="painel"><div class="vazio">Acesso restrito ao administrador.</div></div>';
+
+    var r = await SB.from('parceiros')
+      .select('id, nome_completo, nome_artistico, role, nivel, status')
+      .eq('user_id', s.data.session.user.id)
+      .maybeSingle();
+
+    if (!r.data) {
+      document.querySelector('main').innerHTML = '<div class="box-full"><div class="vazio">Parceiro não encontrado. Faça login no painel B2B.</div></div>';
       return;
     }
+
+    ME = r.data;
+    var papel = String(ME.role || ME.nivel || '').toLowerCase().trim();
+    IS_ADMIN = /^(admin|master)$/i.test(papel);
+
+    /* Atualiza eyebrow: Admin ou Parceiro */
+    var eye = document.querySelector('.eyebrow');
+    if (eye) eye.textContent = IS_ADMIN ? 'Admin' : 'Parceiro';
+
+    await carregarEscopoParceiro();
+
     var hoje = new Date();
     ANO = hoje.getFullYear();
     MES = hoje.getMonth();
