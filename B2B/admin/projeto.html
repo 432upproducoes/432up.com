@@ -311,9 +311,24 @@
      foto   = avatar_url || foto_url
      função = funcao || papel
      nome   = nome_artistico || nome_completo (o nome que o cliente vê) */
-  function nomeEquipe(p) { return p ? (p.nome_artistico || p.nome_completo || p.email || '').trim() : ''; }
-  function fotoEquipe(p) { return p ? (p.avatar_url || p.foto_url || '') : ''; }
-  function funcaoEquipe(p) { return p ? (p.funcao || p.papel || '') : ''; }
+  var TAXONOMIA = {};
+  var LEGADO = { agencia_corporativa: 'Agência', cerimonialista: 'Cerimonialista', hotelaria_espaco: 'Hotelaria / Espaço', produtor_independente: 'Produtor' };
+  function nomeEquipe(p) { return p ? (p.nome_completo || p.email || '').trim() : ''; }
+  function fotoEquipe(p) { return p ? (p.avatar_url || '') : ''; }
+  function funcaoEquipe(pa) {
+    var item = pa && pa.perfil_parceiro_id ? TAXONOMIA[pa.perfil_parceiro_id] : null;
+    if (item) {
+      if (item.pai_id && TAXONOMIA[item.pai_id]) return TAXONOMIA[item.pai_id].nome + ' · ' + item.nome;
+      return item.nome;
+    }
+    if (pa && pa.perfil === 'outro' && (pa.categoria_artistica || pa.especialidade_artistica)) return 'Artista';
+    return (pa && LEGADO[pa.perfil]) || '';
+  }
+  async function carregarTaxonomia() {
+    var r = await SB.from('perfis_parceiros').select('id, nome, pai_id');
+    TAXONOMIA = {};
+    (r.data || []).forEach(function (t) { TAXONOMIA[t.id] = t; });
+  }
   function nomeFinanceiro(p) { return p ? (p.nome_completo || p.email || '').trim() : ''; }
 
   function tempo(iso) {
@@ -342,6 +357,7 @@
       return;
     }
 
+    await carregarTaxonomia();
     await carregarParceirosBase();
     await carregarLista();
     await carregarKpis();
@@ -352,11 +368,11 @@
   /* Parceiros disponíveis para adicionar à equipe */
   async function carregarParceirosBase() {
     var r = await SB.from('parceiros')
-      .select('id, nome_completo, nome_artistico, email, status')
+      .select('id, nome_completo, email, status')
       .eq('status', 'aprovado')
       .order('nome_completo');
     if (r.error || !(r.data && r.data.length)) {
-      r = await SB.from('parceiros').select('id, nome_completo, nome_artistico, email, status').order('nome_completo');
+      r = await SB.from('parceiros').select('id, nome_completo, email, status').order('nome_completo');
     }
     PARCEIROS = r.data || [];
     $('addParceiro').innerHTML = PARCEIROS.length
@@ -602,7 +618,7 @@
     box.innerHTML = '<div class="vazio">Carregando equipe…</div>';
 
     var r = await SB.from('projeto_colaboradores')
-      .select('id, nivel, parceiro_id, criado_em, parceiros:parceiros!parceiro_id(id, nome_completo, nome_artistico, avatar_url, foto_url, funcao, papel, telefone)')
+      .select('id, nivel, parceiro_id, criado_em, parceiros:parceiros!parceiro_id(id, nome_completo, avatar_url, perfil, perfil_parceiro_id, categoria_artistica, especialidade_artistica)')
       .eq('proposta_id', ATUAL.id)
       .order('criado_em', { ascending: true });
 
