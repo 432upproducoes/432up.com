@@ -1,236 +1,202 @@
 <!DOCTYPE html>
-<html lang="pt-BR">
+<html lang="pt-BR" class="h-full">
 <head>
-<meta charset="UTF-8">
-<meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
-<title>Projetos · 432UP Admin</title>
-<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
-<script src="../partner-config.js"></script>
-<style>
-:root{
-  --aurora-primary:#00FF66; --aurora-accent:#FF007F; --gold:#D4AF37; --purple:#A855F7;
-  --tech:#06B6D4; --red:#FF4D4D; --text-body:#E7E7EC;
-  --acc:#00FF66; --ouro:#D4AF37; --ciano:#06B6D4; --txt:#FFFFFF;
-  --mut:rgba(231,231,236,.62); --line:rgba(255,255,255,.12); --card:rgba(255,255,255,.045);
-}
-*{box-sizing:border-box}
-html,body{margin:0;min-height:100%}
-body{background:#08080A;color:#fff;font-family:system-ui,-apple-system,"Segoe UI",Roboto,sans-serif;-webkit-font-smoothing:antialiased;overflow-x:hidden}
-#orbit-canvas{position:fixed;inset:0;width:100%;height:100%;z-index:0;pointer-events:none}
-.plasma-top-layer{position:fixed;inset:0;z-index:1;pointer-events:none}
-
-/* Tudo da página fica dentro de .pg — o menu global (injetado) não é tocado */
-.pg{position:relative;z-index:2}
-.pg a{color:var(--ciano);text-decoration:none}
-.pg header{width:min(1180px,calc(100% - 32px));margin:0 auto;padding:118px 0 22px;display:flex;justify-content:space-between;align-items:flex-end;gap:14px;flex-wrap:wrap;border:0;background:none}
-.pg .hd-title{display:flex;flex-direction:column}
-.pg .kicker{font-size:.68rem;letter-spacing:.18em;text-transform:uppercase;font-weight:700;color:var(--aurora-primary);opacity:.8;margin-bottom:10px}
-.pg h1{font-size:clamp(2rem,5vw,3.6rem);letter-spacing:-.045em;line-height:1;margin:0;font-weight:800}
-.pg h2{font-size:.68rem;letter-spacing:.18em;text-transform:uppercase;font-weight:700;color:var(--gold);margin:0 0 14px}
-.pg .vivo{font-size:.68rem;letter-spacing:.14em;text-transform:uppercase;color:var(--aurora-primary);font-weight:700}
-.pg .link{font-size:13px;margin-left:4px}
-
-.pg button,.pg select,.pg input,.pg textarea{font:inherit;color:#fff;background:rgba(255,255,255,.055);border:1px solid rgba(255,255,255,.18);padding:9px 16px;border-radius:999px;backdrop-filter:blur(16px);-webkit-backdrop-filter:blur(16px);transition:.3s ease;min-height:40px}
-.pg button{cursor:pointer}
-.pg button:hover{border-color:rgba(255,255,255,.38);background:rgba(255,255,255,.1)}
-.pg button.primary{background:var(--aurora-primary);color:#08080A;border-color:var(--aurora-primary);font-weight:700;box-shadow:0 0 28px rgba(0,255,102,.18)}
-.pg button.danger{color:#FF9AB8;border-color:rgba(255,0,127,.35)}
-.pg button:disabled{opacity:.5;cursor:default}
-.pg input,.pg select,.pg textarea{border-radius:14px;padding:10px 14px;background:rgba(0,0,0,.28)}
-.pg input[type=checkbox]{accent-color:var(--aurora-primary);width:15px;height:15px;min-height:0;padding:0;border-radius:4px;background:none;border:0;backdrop-filter:none}
-.pg select option{background:#0c0c10;color:#fff}
-
-.pg .card,.pg .painel{background:rgba(255,255,255,.045);border:1px solid rgba(255,255,255,.14);border-radius:24px;padding:clamp(20px,3vw,30px);margin-bottom:14px;backdrop-filter:blur(24px);-webkit-backdrop-filter:blur(24px);box-shadow:0 0 50px rgba(168,85,247,.055)}
-.pg .painel{align-self:start}
-.pg .mut{color:var(--mut);font-size:12px}
-.pg .vazio{color:var(--mut);font-size:13px;padding:6px 0}
-.pg .msg{font-size:12px;min-height:16px;color:#FF9AB8;margin-top:8px}
-.pg .msg.ok{color:var(--aurora-primary)}
-
-.pg .tag{display:inline-block;font-size:.6rem;font-weight:700;letter-spacing:.12em;text-transform:uppercase;padding:4px 10px;border-radius:999px;border:1px solid rgba(255,255,255,.14);background:rgba(255,255,255,.05);color:rgba(255,255,255,.72)}
-.pg .t-ok,.pg .tag.ok{color:var(--aurora-primary);border-color:rgba(0,255,102,.35);background:rgba(0,255,102,.08)}
-.pg .t-pend,.pg .t-hold,.pg .tag.pend{color:var(--gold);border-color:rgba(212,175,55,.35);background:rgba(212,175,55,.08)}
-.pg .t-rec,.pg .t-x{color:var(--aurora-accent);border-color:rgba(255,0,127,.35);background:rgba(255,0,127,.07)}
-
-.pg .item{display:flex;justify-content:space-between;gap:10px;align-items:center;padding:12px 0;border-bottom:1px solid rgba(255,255,255,.08);font-size:14px;flex-wrap:wrap}
-.pg .item:last-child{border-bottom:0}
-.pg .row{display:flex;gap:8px;flex-wrap:wrap;align-items:center;margin-bottom:10px}
-.pg .row label,.pg .grid2 label{font-size:.6rem;letter-spacing:.16em;text-transform:uppercase;color:var(--mut);display:block;margin-bottom:6px;font-weight:700}
-.pg .grid2{display:grid;grid-template-columns:1fr 1fr;gap:12px}
-
-/* ===== Projeto ===== */
-body.pg-projeto .pg main{width:min(1180px,calc(100% - 32px));margin:0 auto;display:grid;grid-template-columns:300px minmax(0,1fr);gap:16px;padding:0 0 60px}
-.pg .proj{padding:12px 14px;border:1px solid rgba(255,255,255,.1);border-radius:16px;margin-bottom:8px;cursor:pointer;background:rgba(255,255,255,.03);transition:.3s ease}
-.pg .proj:hover{border-color:rgba(255,255,255,.3)}
-.pg .proj.on{border-color:var(--aurora-primary);background:rgba(0,255,102,.06)}
-.pg .proj small{color:var(--mut);font-size:12px}
-.pg input#busca{width:100%;margin-bottom:12px}
-
-/* ===== Agenda ===== */
-.pg .filtros{width:min(1180px,calc(100% - 32px));margin:0 auto 10px;display:flex;flex-wrap:wrap;gap:8px 12px;align-items:center;padding:12px 18px;border-radius:999px;border:1px solid rgba(255,255,255,.12);background:rgba(10,8,20,.6);backdrop-filter:blur(20px);-webkit-backdrop-filter:blur(20px);font-size:12px}
-.pg .filtros .lbl{color:var(--mut);margin-right:4px;font-weight:700;letter-spacing:.12em;text-transform:uppercase;font-size:.6rem}
-.pg .tog{display:inline-flex;align-items:center;gap:6px;cursor:pointer;user-select:none;padding:5px 10px;border-radius:999px;border:1px solid transparent;color:var(--text-body)}
-.pg .tog:hover{border-color:rgba(255,255,255,.2)}
-.pg .tog.off{opacity:.4}
-.pg .tog .dot{width:9px;height:9px;border-radius:3px;display:inline-block;flex-shrink:0}
-.pg .legenda{width:min(1180px,calc(100% - 32px));margin:0 auto 12px;display:flex;flex-wrap:wrap;gap:10px;font-size:11px;color:var(--mut);padding:0 6px}
-.pg .legenda span{display:inline-flex;align-items:center;gap:5px}
-.pg .legenda i{width:9px;height:9px;border-radius:3px;display:inline-block}
-body.pg-agenda .pg main{width:min(1180px,calc(100% - 32px));margin:0 auto;display:grid;grid-template-columns:minmax(0,1fr) 340px;gap:16px;padding:0 0 60px}
-.pg .grid{display:grid;grid-template-columns:repeat(7,minmax(0,1fr));gap:8px}
-.pg .dow{font-size:.6rem;letter-spacing:.16em;text-transform:uppercase;color:var(--mut);text-align:center;padding:6px 0;font-weight:700}
-.pg .dia{background:rgba(255,255,255,.03);border:1px solid rgba(255,255,255,.09);border-radius:16px;min-height:96px;padding:8px;cursor:pointer;display:flex;flex-direction:column;gap:4px;overflow:hidden;transition:.3s ease}
-.pg .dia:hover{border-color:rgba(0,255,102,.45)}
-.pg .dia.outro{opacity:.3}
-.pg .dia.hoje{outline:1px solid var(--aurora-primary);outline-offset:-1px}
-.pg .dia.sel{border-color:var(--aurora-primary);background:rgba(0,255,102,.06)}
-.pg .num{font-size:12px;font-weight:700;color:var(--mut)}
-.pg .ev{font-size:11px;line-height:1.25;padding:3px 6px;border-radius:8px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;font-weight:600}
-.pg .mais{font-size:10px;color:var(--mut);padding-left:2px}
-.pg .e-evento{background:rgba(0,240,255,.16);color:#7FF6FF}
-.pg .e-hold{background:rgba(249,115,22,.18);color:#FDBA74}
-.pg .e-contrato{background:rgba(37,99,235,.22);color:#93C5FD}
-.pg .e-aprovado{background:rgba(34,197,94,.18);color:#86EFAC}
-.pg .e-comissao{background:rgba(21,128,61,.25);color:#BBF7D0}
-.pg .e-recebimento{background:rgba(134,239,172,.13);color:#DCFCE7}
-.pg .e-lead{background:rgba(250,204,21,.16);color:#FDE68A}
-.pg .e-bloqueio{background:rgba(100,116,139,.25);color:#CBD5E1}
-body.pg-agenda .pg .item{display:block;border:1px solid rgba(255,255,255,.1);border-left:4px solid var(--line);border-radius:18px;padding:14px 16px;margin-bottom:10px;background:rgba(255,255,255,.035);cursor:pointer;transition:.3s ease}
-body.pg-agenda .pg .item:hover{background:rgba(255,255,255,.07)}
-body.pg-agenda .pg .item strong{display:block;margin-bottom:2px}
-body.pg-agenda .pg .item small{color:var(--mut);display:block;margin-top:2px;font-size:12px}
-body.pg-agenda .pg .item .tags{display:flex;flex-wrap:wrap;gap:6px;margin-top:8px}
-body.pg-agenda .pg .item .tag{font-size:.55rem;padding:3px 8px}
-.pg .acoes{display:flex;gap:6px;flex-wrap:wrap;margin-top:10px}
-.pg .acoes a,.pg .acoes button{font-size:12px;padding:7px 14px;border-radius:999px;border:1px solid rgba(255,255,255,.18);background:rgba(255,255,255,.055);color:#fff;min-height:0}
-.pg .acoes a.pri{background:var(--aurora-primary);color:#08080A;border-color:var(--aurora-primary);font-weight:700}
-
-/* ===== Espelho ===== */
-body.pg-espelho .pg main{width:min(760px,calc(100% - 32px));margin:0 auto;padding:0 0 60px}
-
-/* Rodapé */
-.pg .site-foot{width:min(1180px,calc(100% - 32px));margin:24px auto 0;padding:18px 0 28px;display:flex;justify-content:space-between;gap:12px;flex-wrap:wrap;border-top:1px solid rgba(255,255,255,.08);font-size:.72rem;opacity:.7}
-.pg .site-foot span:last-child{color:var(--aurora-primary);opacity:.8}
-
-@media(max-width:900px){
-  body.pg-agenda .pg main,body.pg-projeto .pg main{grid-template-columns:1fr}
-}
-@media(max-width:620px){
-  .pg header{padding-top:110px}
-  .pg .grid2{grid-template-columns:1fr}
-  .pg .dia{min-height:72px;padding:6px}
-  .pg .ev{font-size:10px}
-  .pg .grid,.pg .dow{gap:4px}
-}
-@media(prefers-reduced-motion:reduce){*,*:before,*:after{transition-duration:.001ms!important;animation-duration:.001ms!important}}
-
-/* ===== Dados do projeto + Equipe técnica (referência do Checklist) ===== */
-.pg .eq-data{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:14px}
-.pg .eq-data strong{display:block;font-size:14px;color:#fff;margin-top:2px}
-.pg .eq-row{display:flex;align-items:center;gap:12px;padding:12px 0;border-bottom:1px solid rgba(255,255,255,.08)}
-.pg .eq-row:last-child{border-bottom:0}
-.pg .eq-av{width:44px;height:44px;border-radius:50%;object-fit:cover;flex:none;border:1px solid rgba(0,240,255,.45);background:rgba(0,240,255,.08);display:flex;align-items:center;justify-content:center;font-size:18px;overflow:hidden}
-.pg .eq-txt{flex:1;min-width:0;display:flex;flex-direction:column}
-.pg .eq-role{font-size:12px;color:var(--mut);display:block}
-.pg .eq-name{font-size:14px;font-weight:700;color:#fff}
-@media(max-width:620px){.pg .eq-data{grid-template-columns:1fr}}
-
-</style>
-<script src="https://www.432up.com/script/script.js" defer></script>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
+  <meta name="theme-color" content="#08080A">
+  <meta name="apple-mobile-web-app-capable" content="yes">
+  <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+  <title>Projetos · 432UP Admin</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="../../css/style.css">
+  <style>
+    :root {
+      --bg: #08080A;
+      --text: #FFFFFF;
+      --body: #E7E7EC;
+      --mut: #9A97B0;
+      --action: #00FF66;
+      --purple: #A855F7;
+      --pink: #FF007F;
+      --tech: #06B6D4;
+      --gold: #D4AF37;
+      --alert: #FF4D4D;
+      --line: rgba(255, 255, 255, 0.1);
+    }
+    body { background: var(--bg) !important; color: var(--text) !important; font-family: 'Inter', system-ui, sans-serif; }
+    *, *::before, *::after { box-sizing: border-box; }
+    .area {
+      width: 100%; max-width: 1120px; margin: 0 auto; position: relative; z-index: 2;
+      padding-top: calc(var(--hdr-h, 112px) + 28px);
+      padding-left: max(18px, env(safe-area-inset-left));
+      padding-right: max(18px, env(safe-area-inset-right));
+      padding-bottom: calc(120px + env(safe-area-inset-bottom));
+    }
+    html, body { height: auto !important; min-height: 100%; }
+    body { overflow-y: visible !important; }
+    .eyebrow { font-size: .68rem; letter-spacing: .18em; text-transform: uppercase; font-weight: 700; opacity: .72; color: var(--gold); }
+    .titulo { font-size: clamp(1.5rem, 4vw, 2.2rem); line-height: 1.15; letter-spacing: -.03em; margin: 8px 0 14px; font-weight: 800; }
+    .mut { color: var(--mut); }
+    .box-full {
+      border-radius: 24px; padding: 20px; position: relative; overflow: visible; margin-bottom: 14px;
+      background: rgba(255, 255, 255, .045); border: 1px solid rgba(255, 255, 255, .14);
+      backdrop-filter: blur(24px); -webkit-backdrop-filter: blur(24px);
+    }
+    .box-full h2 {
+      font-size: .72rem; letter-spacing: .14em; text-transform: uppercase;
+      color: var(--gold); margin: 0 0 12px; font-weight: 800;
+    }
+    .layout {
+      display: grid; grid-template-columns: 300px minmax(0, 1fr); gap: 16px; align-items: start;
+    }
+    @media (max-width: 900px) { .layout { grid-template-columns: 1fr; } }
+    .proj {
+      padding: 12px; border: 1px solid var(--line); border-radius: 14px; margin-bottom: 8px;
+      cursor: pointer; transition: border-color .2s, background .2s;
+      background: rgba(255,255,255,.03);
+    }
+    .proj:hover { border-color: rgba(168, 85, 247, .4); }
+    .proj.on { border-color: rgba(0, 255, 102, .45); background: rgba(0, 255, 102, .06); }
+    .proj small { color: var(--mut); font-size: 12px; }
+    .row { display: flex; gap: 8px; flex-wrap: wrap; align-items: center; margin-bottom: 8px; }
+    .row label { font-size: 10px; color: var(--mut); text-transform: uppercase; letter-spacing: .06em; display: block; margin-bottom: 4px; }
+    .item {
+      display: flex; justify-content: space-between; gap: 8px; align-items: center;
+      flex-wrap: wrap; padding: 10px 0; border-bottom: 1px solid var(--line); font-size: 14px;
+    }
+    .item:last-child { border-bottom: 0; }
+    .tag {
+      display: inline-block; font-size: 10px; font-weight: 800; padding: 3px 8px;
+      border-radius: 999px; text-transform: uppercase; letter-spacing: .04em;
+    }
+    .t-hold { background: rgba(212, 175, 55, .16); color: var(--gold); }
+    .t-ok { background: rgba(0, 255, 102, .14); color: var(--action); }
+    .t-x { background: rgba(255, 77, 77, .15); color: var(--alert); }
+    .msg { font-size: 12px; min-height: 16px; color: #fca5a5; margin-top: 6px; }
+    .msg.ok { color: var(--action); }
+    .vazio { color: var(--mut); font-size: 13px; padding: 6px 0; }
+    .grid2 { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; }
+    @media (max-width: 600px) { .grid2 { grid-template-columns: 1fr; } }
+    input, select, textarea, button {
+      font: inherit; color: var(--text);
+      background: rgba(255, 255, 255, .06); border: 1px solid rgba(255, 255, 255, .16);
+      border-radius: 12px; padding: 10px 12px;
+    }
+    input, select { width: 100%; }
+    button { cursor: pointer; transition: border-color .2s, background .2s; }
+    button:hover { border-color: rgba(0, 255, 102, .5); }
+    button.primary {
+      background: var(--action); color: #04120a; border-color: var(--action);
+      font-weight: 800;
+    }
+    button.danger { color: #fca5a5; border-color: rgba(255, 77, 77, .4); background: rgba(255, 77, 77, .08); }
+    button:disabled { opacity: .5; cursor: default; }
+    a.tech { color: var(--tech); text-decoration: none; font-weight: 600; }
+    a.tech:hover { text-decoration: underline; }
+    .top-nav { display: flex; gap: 12px; flex-wrap: wrap; margin-bottom: 8px; }
+  </style>
 </head>
-<body class="pg-projeto">
-<canvas id="orbit-canvas"></canvas>
-<div id="plasmaLayer" class="plasma-top-layer"></div>
-<header id="calc-header"></header>
-<div id="mobile-menu"></div>
-<div class="pg"><header>
-  <div class="hd-title"><span class="kicker">432UP! Produções · Admin</span><h1>Projetos · administração</h1></div>
-  <div class="row" style="margin:0">
-    <a href="agenda.html" style="color:var(--ciano);text-decoration:none">Agenda →</a>
-  </div>
-</header>
-<main>
-  <aside>
-    <div class="card">
-      <h2>Projetos</h2>
-      <input id="busca" placeholder="Buscar nº ou cliente" style="width:100%;margin-bottom:10px">
-      <div id="listaProj"><div class="vazio">Carregando…</div></div>
-    </div>
-  </aside>
+<body class="h-full antialiased overflow-x-hidden">
 
-  <section id="detalhe">
-    <div class="card" id="semSel"><div class="vazio">Escolha um projeto na lista.</div></div>
-    <div id="conteudo" style="display:none">
+  <canvas id="orbit-canvas"></canvas>
+  <div id="plasmaLayer" class="plasma-top-layer"></div>
 
-      <div class="card">
-        <h2 id="tituloProj">Projeto</h2>
-        <div class="grid2">
-          <div><label>Data do evento</label><input type="date" id="fData"></div>
-          <div><label>Status</label>
-            <select id="fStatus">
-              <option value="rascunho">Rascunho</option>
-              <option value="hold">Hold 48h</option>
-              <option value="enviada">Enviada</option>
-              <option value="aprovada">Aprovada</option>
-              <option value="adiada">Adiada</option>
-              <option value="cancelada">Cancelada</option>
-            </select>
+  <header id="calc-header"></header>
+  <div id="mobile-menu"></div>
+
+  <div class="flex flex-col min-h-screen relative z-10">
+    <main class="area">
+      <div style="display:flex;align-items:flex-start;justify-content:space-between;gap:12px;flex-wrap:wrap">
+        <div>
+          <span class="eyebrow">Admin</span>
+          <h1 class="titulo">Projetos</h1>
+        </div>
+        <div class="top-nav">
+          <a class="tech" href="agenda.html">Agenda →</a>
+        </div>
+      </div>
+
+      <div class="layout">
+        <aside>
+          <div class="box-full">
+            <h2>Projetos</h2>
+            <input id="busca" placeholder="Buscar nº ou cliente" style="margin-bottom:10px">
+            <div id="listaProj"><div class="vazio">Carregando…</div></div>
           </div>
-          <div><label>Início</label><input type="time" id="fIni"></div>
-          <div><label>Fim</label><input type="time" id="fFim"></div>
-          <div style="grid-column:1/-1"><label>Local</label><input id="fLocal" style="width:100%"></div>
-        </div>
-        <div class="row" style="margin-top:10px">
-          <button class="primary" id="btnSalvar">Salvar alterações</button>
-          <span class="mut" id="holdInfo"></span>
-        </div>
-        <div class="msg" id="msgDados"></div>
+        </aside>
+
+        <section id="detalhe">
+          <div class="box-full" id="semSel"><div class="vazio">Escolha um projeto na lista.</div></div>
+          <div id="conteudo" style="display:none">
+
+            <div class="box-full">
+              <h2 id="tituloProj">Projeto</h2>
+              <div class="grid2">
+                <div><label>Data do evento</label><input type="date" id="fData"></div>
+                <div><label>Status</label>
+                  <select id="fStatus">
+                    <option value="rascunho">Rascunho</option>
+                    <option value="hold">Hold 48h</option>
+                    <option value="enviada">Enviada</option>
+                    <option value="aprovada">Aprovada</option>
+                    <option value="adiada">Adiada</option>
+                    <option value="cancelada">Cancelada</option>
+                  </select>
+                </div>
+                <div><label>Início</label><input type="time" id="fIni"></div>
+                <div><label>Fim</label><input type="time" id="fFim"></div>
+                <div style="grid-column:1/-1"><label>Local</label><input id="fLocal"></div>
+              </div>
+              <div class="row" style="margin-top:12px">
+                <button class="primary" id="btnSalvar" type="button">Salvar alterações</button>
+                <span class="mut" id="holdInfo"></span>
+              </div>
+              <div class="msg" id="msgDados"></div>
+            </div>
+
+            <div class="box-full">
+              <h2>Dados do pedido</h2>
+              <div id="dadosPedido" class="mut"></div>
+            </div>
+
+            <div class="box-full">
+              <h2>Colaboradores do projeto</h2>
+              <div class="row">
+                <select id="addParceiro" style="min-width:200px;flex:1"></select>
+                <select id="addNivel" style="width:auto">
+                  <option value="agenda">Só agenda</option>
+                  <option value="dados_sensiveis">Agenda + dados sensíveis</option>
+                </select>
+                <button class="primary" id="btnAddCol" type="button">Adicionar</button>
+              </div>
+              <div class="msg" id="msgCol"></div>
+              <div id="listaCol"></div>
+              <p class="mut" style="margin-top:12px"><a class="tech" id="linkEspelho" href="#">Abrir espelho do cliente →</a></p>
+            </div>
+
+            <div class="box-full">
+              <h2>Checklist</h2>
+              <div id="listaEtapas"></div>
+            </div>
+
+            <div class="box-full">
+              <h2>Instruções</h2>
+              <div id="listaObs"></div>
+            </div>
+
+          </div>
+        </section>
       </div>
+    </main>
+  </div>
 
-      <div class="card">
-        <h2>Dados do pedido</h2>
-        <div id="dadosPedido" class="mut"></div>
-      </div>
-
-      <div class="card">
-        <h2>Dados do projeto</h2>
-        <div class="eq-data">
-          <div><span class="eq-role">Cliente</span><strong id="dpCliente">—</strong></div>
-          <div><span class="eq-role">Tipo do evento</span><strong id="dpTipo">—</strong></div>
-          <div><span class="eq-role">Local</span><strong id="dpLocal">—</strong></div>
-        </div>
-      </div>
-
-      <div class="card">
-        <h2>Equipe técnica</h2>
-        <div class="row">
-          <select id="addParceiro" style="min-width:200px"></select>
-          <select id="addNivel">
-            <option value="agenda">Só agenda</option>
-            <option value="dados_sensiveis">Agenda + dados sensíveis</option>
-          </select>
-          <button class="primary" id="btnAddCol">Adicionar</button>
-        </div>
-        <div class="msg" id="msgCol"></div>
-        <div id="listaCol"></div>
-        <p class="mut" style="margin-top:10px"><a id="linkEspelho" href="#" style="color:var(--ciano)">Abrir espelho do cliente →</a></p>
-      </div>
-
-      <div class="card">
-        <h2>Checklist</h2>
-        <div id="listaEtapas"></div>
-      </div>
-
-      <div class="card">
-        <h2>Instruções</h2>
-        <div id="listaObs"></div>
-      </div>
-
-    </div>
-  </section>
-</main>
-
-<script>
+  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+  <script src="../partner-config.js"></script>
+  <script src="../../script/script.js" defer></script>
+  <script src="../partner-header.js"></script>
+  <script>
 (function () {
   'use strict';
   var CFG = window.PARTNER_CFG;
@@ -240,7 +206,7 @@ body.pg-espelho .pg main{width:min(760px,calc(100% - 32px));margin:0 auto;paddin
   var $ = function (id) { return document.getElementById(id); };
   var E = function (s) { return String(s == null ? '' : s).replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;'); };
   var BRL = function (n) { try { return Number(n || 0).toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' }); } catch (e) { return ''; } };
-  var ME = null, PROPS = [], ATUAL = null, PARCEIROS = [], TAXONOMIA = [];
+  var ME = null, PROPS = [], ATUAL = null, PARCEIROS = [];
 
   function tempo(iso) {
     if (!iso) return '48H 00M';
@@ -253,20 +219,22 @@ body.pg-espelho .pg main{width:min(760px,calc(100% - 32px));margin:0 auto;paddin
   async function init() {
     var s = await SB.auth.getSession();
     if (!(s.data && s.data.session)) { location.href = '../login.html'; return; }
-    var r = await SB.from('parceiros').select('id, nome_completo, role, status').eq('user_id', s.data.session.user.id).maybeSingle();
+    var r = await SB.from('parceiros').select('id, nome_completo, role, status, nivel').eq('user_id', s.data.session.user.id).maybeSingle();
     ME = r.data;
-    if (!ME || !/^(admin|master)$/i.test(String(ME.role || '').trim())) {
-      document.querySelector('main').innerHTML = '<div class="card"><div class="vazio">Acesso restrito ao administrador.</div></div>';
+    if (!ME) { location.href = '../login.html'; return; }
+    var papel = String(ME.role || ME.nivel || '').toLowerCase().trim();
+    if (!/^(admin|master)$/i.test(papel)) {
+      document.querySelector('main').innerHTML = '<div class="box-full"><div class="vazio">Acesso restrito ao administrador.</div></div>';
       return;
     }
-    var p = await SB.from('parceiros').select('id, nome_completo, email, avatar_url, nome_artistico, perfil, perfil_parceiro_id, categoria_artistica, especialidade_artistica').eq('status', 'aprovado').order('nome_completo');
-    PARCEIROS = p.data || [];
-    var tx = await SB.from('perfis_parceiros').select('id, nome, pai_id');
-    TAXONOMIA = tx.data || [];
-    $('addParceiro').innerHTML = PARCEIROS.map(function (v) { return '<option value="' + v.id + '">' + E(v.nome_completo || v.email) + '</option>'; }).join('');
+    var pr = await SB.from('parceiros').select('id, nome_completo, email, role, status').order('nome_completo');
+    PARCEIROS = (pr.data || []).filter(function (p) { return p.status !== 'inativo'; });
+    $('addParceiro').innerHTML = PARCEIROS.map(function (p) {
+      return '<option value="' + E(p.id) + '">' + E(p.nome_completo || p.email) + '</option>';
+    }).join('');
     await carregarLista();
-    var q = new URLSearchParams(location.search).get('id');
-    if (q) selecionar(q);
+    var qid = new URLSearchParams(location.search).get('id');
+    if (qid) selecionar(qid);
   }
 
   async function carregarLista() {
@@ -309,14 +277,11 @@ body.pg-espelho .pg main{width:min(760px,calc(100% - 32px));margin:0 auto;paddin
     $('fIni').value = (d.horario_inicio || '').slice(0, 5);
     $('fFim').value = (d.horario_final || '').slice(0, 5);
     $('fLocal').value = d.local_evento || '';
-    $('dpCliente').textContent = ATUAL.cliente_nome || '—';
-    $('dpTipo').textContent = ATUAL.tipo_evento || '—';
-    $('dpLocal').textContent = d.local_evento || '—';
     $('dadosPedido').innerHTML = 'Tipo: ' + E(d.tipo_evento || '') + ' · Valor: ' + BRL(d.valor_total) +
       ' · Comissão: ' + BRL(d.comissao_valor) + ' · Contrato: ' + (d.assinado_em ? 'assinado' : 'não assinado');
     $('holdInfo').textContent = ATUAL.status === 'hold' ? 'Hold · ' + tempo(ATUAL.hold_expira_em) : '';
-    var le = document.getElementById("linkEspelho");
-    if (le) le.href = "espelho.html?id=" + encodeURIComponent(ATUAL.id);
+    var le = document.getElementById('linkEspelho');
+    if (le) le.href = 'espelho.html?id=' + encodeURIComponent(ATUAL.id);
     await Promise.all([carregarColaboradores(), carregarEtapas(), carregarObs()]);
   }
 
@@ -346,27 +311,11 @@ body.pg-espelho .pg main{width:min(760px,calc(100% - 32px));margin:0 auto;paddin
     return p ? (p.nome_completo || p.email || pid) : (pid || '—');
   }
 
-  function funcaoParceiro(pa) {
-    if (!pa) return '';
-    var item = pa.perfil_parceiro_id ? TAXONOMIA.find(function (t) { return t.id === pa.perfil_parceiro_id; }) : null;
-    if (item) {
-      if (item.pai_id) {
-        var pai = TAXONOMIA.find(function (t) { return t.id === item.pai_id; });
-        return (pai ? pai.nome + ' · ' : '') + item.nome;
-      }
-      return item.nome;
-    }
-    if (pa.perfil === 'outro' && (pa.categoria_artistica || pa.especialidade_artistica)) return 'Artista';
-    var inv = { agencia_corporativa: 'Agência', cerimonialista: 'Cerimonialista', hotelaria_espaco: 'Hotelaria / Espaço', produtor_independente: 'Produtor' };
-    return inv[pa.perfil] || '';
-  }
-
   async function carregarColaboradores() {
     if (!ATUAL) return;
     var box = $('listaCol');
     box.innerHTML = '<div class="vazio">Carregando colaboradores…</div>';
 
-    // Sem embed (evita falha de FK no PostgREST); nomes vêm da lista PARCEIROS
     var r = await SB.from('projeto_colaboradores')
       .select('id, nivel, parceiro_id, criado_em')
       .eq('proposta_id', ATUAL.id)
@@ -385,54 +334,30 @@ body.pg-espelho .pg main{width:min(760px,calc(100% - 32px));margin:0 auto;paddin
     }
 
     box.innerHTML = l.map(function (c) {
-      var pa = (PARCEIROS || []).find(function (x) { return x.id === c.parceiro_id; }) || {};
       var nome = nomeParceiroPorId(c.parceiro_id);
-      var avatar = pa.avatar_url
-        ? '<img class="eq-av" src="' + E(pa.avatar_url) + '" alt="">'
-        : '<span class="eq-av">👤</span>';
-      var papel = funcaoParceiro(pa);
-      return '<div class="eq-row">' + avatar +
-        '<div class="eq-txt">' + (papel ? '<span class="eq-role">' + E(papel) + '</span>' : '') +
-        '<strong class="eq-name">' + E(nome) + '</strong></div>' +
-        '<button type="button" class="danger" data-rem="' + E(c.id) + '">Remover</button></div>';
+      return '<div class="item">' +
+        '<span><strong>' + E(nome) + '</strong><br><span class="mut">' +
+        (c.nivel === 'dados_sensiveis' ? 'agenda + dados sensíveis' : 'só agenda') +
+        '</span></span>' +
+        '<button class="danger" data-rm-col="' + E(c.id) + '" type="button">Remover</button></div>';
     }).join('');
-
-    box.querySelectorAll('[data-rem]').forEach(function (b) {
+    document.querySelectorAll('[data-rm-col]').forEach(function (b) {
       b.addEventListener('click', async function () {
-        if (!confirm('Remover este colaborador do projeto?')) return;
-        var del = await SB.from('projeto_colaboradores').delete().eq('id', b.getAttribute('data-rem'));
-        if (del.error) {
-          alert('Não foi possível remover: ' + del.error.message);
-          return;
-        }
+        await SB.from('projeto_colaboradores').delete().eq('id', b.getAttribute('data-rm-col'));
         carregarColaboradores();
       });
     });
   }
 
   $('btnAddCol').addEventListener('click', async function () {
-    if (!ATUAL) {
-      $('msgCol').className = 'msg';
-      $('msgCol').textContent = 'Selecione um projeto à esquerda primeiro.';
-      return;
-    }
+    if (!ATUAL) return;
     var pid = $('addParceiro').value;
-    if (!pid) {
-      $('msgCol').className = 'msg';
-      $('msgCol').textContent = 'Escolha um parceiro.';
-      return;
-    }
-    var r = await SB.from('projeto_colaboradores').insert({
-      proposta_id: ATUAL.id,
-      parceiro_id: pid,
-      nivel: $('addNivel').value,
-      criado_por: ME.id
-    }).select('id, parceiro_id, nivel');
-
+    var nivel = $('addNivel').value;
+    if (!pid) return;
+    var r = await SB.from('projeto_colaboradores').insert({ proposta_id: ATUAL.id, parceiro_id: pid, nivel: nivel });
     if (r.error) {
       $('msgCol').className = 'msg';
-      $('msgCol').textContent = 'Não foi possível adicionar: ' + (r.error.message || 'já está no projeto?');
-      console.error(r.error);
+      $('msgCol').textContent = r.error.message || 'Erro ao adicionar.';
       return;
     }
     $('msgCol').className = 'msg ok';
@@ -448,8 +373,8 @@ body.pg-espelho .pg main{width:min(760px,calc(100% - 32px));margin:0 auto;paddin
       return '<div class="item"><span>' + E(e.nome) + ' <span class="mut">' + E(e.hora || '') + '</span>' +
         (feita ? ' <span class="tag t-ok">feita</span>' : ' <span class="tag t-hold">pendente</span>') + '</span>' +
         '<span>' + (feita
-          ? '<button data-desfazer="' + E(e.id) + '">Desfazer</button>'
-          : '<button class="primary" data-feita="' + E(e.id) + '">Marcar feita</button>') + '</span></div>';
+          ? '<button data-desfazer="' + E(e.id) + '" type="button">Desfazer</button>'
+          : '<button class="primary" data-feita="' + E(e.id) + '" type="button">Marcar feita</button>') + '</span></div>';
     }).join('') : '<div class="vazio">Sem etapas.</div>';
     document.querySelectorAll('[data-feita]').forEach(function (b) {
       b.addEventListener('click', async function () {
@@ -470,7 +395,7 @@ body.pg-espelho .pg main{width:min(760px,calc(100% - 32px));margin:0 auto;paddin
     var l = r.data || [];
     $('listaObs').innerHTML = l.length ? l.map(function (o) {
       return '<div class="item"><span>' + E(o.texto) + ' <span class="mut">(' + E(o.criado_por) + ')</span></span>' +
-        '<button class="danger" data-obs="' + E(o.id) + '">Remover</button></div>';
+        '<button class="danger" data-obs="' + E(o.id) + '" type="button">Remover</button></div>';
     }).join('') : '<div class="vazio">Nenhuma instrução.</div>';
     document.querySelectorAll('[data-obs]').forEach(function (b) {
       b.addEventListener('click', async function () {
@@ -482,9 +407,6 @@ body.pg-espelho .pg main{width:min(760px,calc(100% - 32px));margin:0 auto;paddin
 
   init();
 })();
-</script>
-<footer class="site-foot"><span>© 2026 432UP! Produções</span><span>Arquitetura de Atmosferas</span></footer>
-</div>
-<script src="https://www.432up.com/B2B/partner-header.js"></script>
+  </script>
 </body>
 </html>
