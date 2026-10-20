@@ -264,7 +264,7 @@
       .cal .d { min-height: 38px; }
     }
     /* ===== Ajustes: menu condensado grudado ao canônico ===== */
-    .tabs { z-index: 30; margin: 0 -18px 12px; padding: 8px 18px; gap: 6px; background: rgba(8, 8, 10, .92); backdrop-filter: blur(18px); -webkit-backdrop-filter: blur(18px); border-bottom: 1px solid rgba(255, 255, 255, .08); }
+    .tabs { z-index: 30; margin: 0 -18px 12px; padding: 8px 18px; gap: 6px; background: transparent; border-bottom: 1px solid rgba(0, 240, 255, .18); }
     .tab { padding: 6px 12px; font-size: 11px; }
     .tabs.fixo { position: fixed; left: 0; right: 0; margin: 0; border-radius: 0; padding-left: max(18px, calc((100% - 1120px) / 2 + 18px)); padding-right: max(18px, calc((100% - 1120px) / 2 + 18px)); }
     .carrossel { display: flex; overflow-x: auto; scroll-snap-type: x mandatory; scrollbar-width: none; -webkit-overflow-scrolling: touch; touch-action: pan-x; overscroll-behavior: contain; }
@@ -740,6 +740,29 @@
       var h = document.getElementById('calc-header');
       return h ? Math.max(0, Math.round(h.getBoundingClientRect().bottom)) : 0;
     }
+    /* Copia a mesma pele translúcida do menu canônico (fundo, blur e borda) */
+    function aplicarPele() {
+      var h = document.getElementById('calc-header');
+      if (!h || !window.getComputedStyle) return;
+      var camada = h.querySelector('.mn-bg-l[data-t="cyan"]');
+      var csH = getComputedStyle(h);
+      var csC = camada ? getComputedStyle(camada) : null;
+      var img = csC && csC.backgroundImage !== 'none' ? csC.backgroundImage : csH.backgroundImage;
+      var cor = csC && csC.backgroundColor !== 'rgba(0, 0, 0, 0)' ? csC.backgroundColor : csH.backgroundColor;
+      nav.style.backgroundImage = img && img !== 'none' ? img : 'linear-gradient(180deg, rgba(0, 240, 255, 0.06) 0%, rgba(8, 12, 18, 0.7) 100%)';
+      nav.style.backgroundColor = cor && cor !== 'rgba(0, 0, 0, 0)' ? cor : 'transparent';
+      var blur = csH.backdropFilter && csH.backdropFilter !== 'none' ? csH.backdropFilter : 'blur(24px)';
+      nav.style.backdropFilter = blur;
+      nav.style.webkitBackdropFilter = blur;
+      nav.style.borderBottomColor = csH.borderBottomColor || 'rgba(0, 240, 255, 0.18)';
+    }
+    function limparPele() {
+      nav.style.backgroundImage = '';
+      nav.style.backgroundColor = '';
+      nav.style.backdropFilter = '';
+      nav.style.webkitBackdropFilter = '';
+      nav.style.borderBottomColor = '';
+    }
     function atualizar() {
       var hb = alturaCabecalho();
       if (!nav.classList.contains('fixo')) base = nav.offsetHeight;
@@ -748,10 +771,12 @@
         wrap.style.height = base + 'px';
         nav.classList.add('fixo');
         nav.style.top = hb + 'px';
+        aplicarPele();
       } else {
         nav.classList.remove('fixo');
         nav.style.top = '';
         wrap.style.height = '';
+        limparPele();
       }
     }
     window.addEventListener('scroll', atualizar, { passive: true });
