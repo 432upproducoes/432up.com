@@ -59,9 +59,6 @@
       { label: 'Meu Painel', icon: '❖', href: B2B + 'index.html', file: 'index.html' },
       { label: '⚡ Nova Proposta', href: B2B + 'nova-proposta.html', file: 'nova-proposta.html', destaque: true },
       { label: 'Minhas Propostas', icon: '▤', href: B2B + 'propostas.html', file: 'propostas.html' },
-      { label: 'Agenda', icon: '📅', href: ADM + 'agenda.html', file: 'agenda.html' },
-      { label: 'Projetos', icon: '▦', href: ADM + 'projeto.html', file: 'projeto.html' },
-      { label: 'Checklist', icon: '✓', href: B2B + 'checklist.html', file: 'checklist.html' },
       { label: 'Novo Cliente', icon: '+', href: B2B + 'cadastro-cliente.html', file: 'cadastro-cliente.html' },
       { label: 'Comissões', icon: '$', href: B2B + 'comissoes.html', file: 'comissoes.html' },
       { label: 'Materiais', icon: '📁', href: B2B + 'materiais.html', file: 'materiais.html' }
