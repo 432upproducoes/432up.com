@@ -365,18 +365,33 @@
       initSliders(lt);
     }
 
-    var { data: obs } = await SB.from('evento_observacoes')
-      .select('id, texto, criado_por')
-      .eq('proposta_id', ATUAL.id)
-      .is('removido_em', null)
-      .order('criado_em');
+    /* Observações: parceiro e admin veem as mesmas instruções do evento */
     var lo = $('listaObs');
-    if (!(obs && obs.length)) lo.innerHTML = '<div class="msg" style="padding:8px 0;text-align:left">Nenhuma observação ainda.</div>';
-    else lo.innerHTML = obs.map(function (o) {
-      return '<div class="obs">' + E(o.texto) +
-        (o.criado_por ? ' <em style="color:var(--action);font-size:11px">(' + E(o.criado_por) + ')</em>' : '') +
-        '</div>';
-    }).join('');
+    lo.innerHTML = '<div class="msg" style="padding:8px 0;text-align:left">Carregando observações…</div>';
+    var obsRes = await SB.from('evento_observacoes')
+      .select('id, texto, criado_por, removido_em')
+      .eq('proposta_id', ATUAL.id)
+      .order('criado_em');
+    if (obsRes.error) {
+      console.error('evento_observacoes', obsRes.error);
+      /* fallback sem filtro de removido_em */
+      obsRes = await SB.from('evento_observacoes')
+        .select('id, texto, criado_por')
+        .eq('proposta_id', ATUAL.id)
+        .order('criado_em');
+    }
+    var obs = (obsRes.data || []).filter(function (o) { return !o.removido_em; });
+    if (obsRes.error) {
+      lo.innerHTML = '<div class="msg err" style="padding:8px 0;text-align:left">Não foi possível carregar observações.</div>';
+    } else if (!obs.length) {
+      lo.innerHTML = '<div class="msg" style="padding:8px 0;text-align:left">Nenhuma observação ainda.</div>';
+    } else {
+      lo.innerHTML = obs.map(function (o) {
+        return '<div class="obs">' + E(o.texto) +
+          (o.criado_por ? ' <em style="color:var(--action);font-size:11px">(' + E(o.criado_por) + ')</em>' : '') +
+          '</div>';
+      }).join('');
+    }
   }
 
   function initSliders(root) {
