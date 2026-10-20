@@ -52,7 +52,6 @@
       font-size: .72rem; letter-spacing: .14em; text-transform: uppercase;
       color: var(--gold); margin: 0 0 10px; font-weight: 800;
     }
-    .nav-row { display: flex; gap: 8px; align-items: center; flex-wrap: wrap; }
     button, .btn-s {
       font: inherit; color: var(--text);
       background: rgba(255,255,255,.06); border: 1px solid rgba(255,255,255,.16);
@@ -62,24 +61,38 @@
     a.tech { color: var(--tech); text-decoration: none; font-size: 13px; font-weight: 600; }
     a.tech:hover { text-decoration: underline; }
 
-    .filtros {
-      display: flex; flex-wrap: wrap; gap: 8px 12px; padding: 10px 4px 14px;
-      font-size: 12px; align-items: center;
+    .topo-agenda {
+      display: flex; align-items: flex-start; justify-content: space-between;
+      gap: 12px; flex-wrap: wrap; margin-bottom: 8px;
     }
-    .filtros .lbl { color: var(--mut); margin-right: 4px; font-weight: 600; }
+    .nav-row { display: flex; gap: 6px; align-items: center; flex-shrink: 0; }
+    .nav-row button {
+      min-width: 40px; padding: 8px 12px; font-weight: 700;
+    }
+
+    /* Cápsulas de filtro: uma linha, rolagem horizontal */
+    .filtros {
+      display: flex; flex-wrap: nowrap; gap: 8px; padding: 6px 0 14px;
+      font-size: 12px; align-items: center;
+      overflow-x: auto; -webkit-overflow-scrolling: touch;
+      scrollbar-width: none; touch-action: pan-x;
+      margin: 0 -4px; padding-left: 4px; padding-right: 4px;
+    }
+    .filtros::-webkit-scrollbar { display: none; }
+    .filtros .lbl { display: none; } /* rótulo "Mostrar:" dispensável com cápsulas */
     .tog {
+      flex: 0 0 auto;
       display: inline-flex; align-items: center; gap: 6px; cursor: pointer;
-      user-select: none; padding: 5px 10px; border-radius: 999px;
+      user-select: none; padding: 7px 12px; border-radius: 999px;
       border: 1px solid var(--line); background: rgba(255,255,255,.03);
+      white-space: nowrap;
     }
     .tog:hover { border-color: rgba(255,255,255,.22); }
     .tog input { accent-color: var(--action); width: 14px; height: 14px; cursor: pointer; }
     .tog .dot { width: 10px; height: 10px; border-radius: 3px; display: inline-block; flex-shrink: 0; }
     .tog.off { opacity: .45; }
 
-    .legenda { display: flex; flex-wrap: wrap; gap: 10px; padding: 0 4px 12px; font-size: 11px; color: var(--mut); }
-    .legenda span { display: inline-flex; align-items: center; gap: 5px; }
-    .legenda i { width: 10px; height: 10px; border-radius: 3px; display: inline-block; }
+    .legenda { display: none !important; }
 
     .agenda-grid {
       display: grid; grid-template-columns: minmax(0, 1fr) 320px; gap: 14px;
@@ -90,8 +103,12 @@
     .dow { font-size: 11px; text-transform: uppercase; color: var(--mut); text-align: center; padding: 4px 0; font-weight: 700; }
     .dia {
       background: rgba(255,255,255,.03); border: 1px solid var(--line); border-radius: 12px;
-      min-height: 90px; padding: 6px; cursor: pointer; display: flex; flex-direction: column; gap: 3px; overflow: hidden;
+      aspect-ratio: 1; min-height: 0; padding: 6px; cursor: pointer;
+      display: flex; flex-direction: column; gap: 2px; overflow: hidden;
       transition: border-color .15s, background .15s;
+    }
+    @media (min-width: 901px) {
+      .dia { aspect-ratio: auto; min-height: 90px; }
     }
     .dia:hover { border-color: rgba(0, 255, 102, .4); }
     .dia.outro { opacity: .35; }
@@ -147,31 +164,26 @@
 
   <div class="flex flex-col min-h-screen relative z-10">
     <main class="area">
-      <div style="display:flex;align-items:flex-start;justify-content:space-between;gap:12px;flex-wrap:wrap;margin-bottom:4px">
+      <div class="topo-agenda">
         <div>
           <span class="eyebrow">Admin</span>
           <h1 class="titulo" id="tituloMes">Agenda</h1>
         </div>
         <div class="nav-row">
-          <button type="button" id="btnPrev">‹</button>
+          <button type="button" id="btnPrev" aria-label="Mês anterior">‹</button>
           <button type="button" id="btnHoje">Hoje</button>
-          <button type="button" id="btnNext">›</button>
-          <a class="tech" href="projeto.html">Projetos →</a>
-          <a class="tech" href="../checklist.html">Checklist →</a>
+          <button type="button" id="btnNext" aria-label="Próximo mês">›</button>
         </div>
       </div>
 
-      <div class="filtros" id="filtros">
-        <span class="lbl">Mostrar:</span>
-      </div>
-      <div class="legenda" id="legenda"></div>
+      <div class="filtros" id="filtros" aria-label="Filtros da agenda"></div>
 
       <div class="agenda-grid">
         <section class="box-full" style="padding:14px">
           <div class="grid" id="cabec"></div>
           <div class="grid" id="grade" style="margin-top:6px"></div>
         </section>
-        <aside class="box-full">
+        <aside class="box-full" id="painelDia">
           <h2 id="tituloDia">Selecione um dia</h2>
           <div id="listaDia" class="vazio">Clique em um dia para ver os itens.</div>
         </aside>
@@ -288,9 +300,6 @@
     });
 
     // Legenda compacta
-    $('legenda').innerHTML = TIPOS.map(function (t) {
-      return '<span><i style="background:' + t.cor + '"></i>' + E(t.label) + '</span>';
-    }).join('');
   }
 
   function visivel(tipo) {
@@ -513,6 +522,24 @@
     DIA_SEL = k;
     var partes = k.split('-');
     $('tituloDia').textContent = partes[2] + '/' + partes[1] + '/' + partes[0];
+
+    /* Destaca o dia selecionado na grade */
+    document.querySelectorAll('#grade .dia').forEach(function (el) {
+      if (el.getAttribute('data-k') === k) el.classList.add('sel');
+      else el.classList.remove('sel');
+    });
+
+    /* No clique do usuário, rola suavemente até o painel do dia */
+    if (!silencioso) {
+      var painel = document.getElementById('painelDia');
+      if (painel) {
+        try {
+          painel.scrollIntoView({ behavior: 'smooth', block: 'start' });
+        } catch (e) {
+          painel.scrollIntoView(true);
+        }
+      }
+    }
 
     var todos = ITENS[k] || [];
     var itens = todos.filter(function (it) { return visivel(it.tipo); });
