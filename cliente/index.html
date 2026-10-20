@@ -264,8 +264,9 @@
       .cal .d { min-height: 38px; }
     }
     /* ===== Ajustes: menu condensado grudado ao canônico ===== */
-    .tabs { position: sticky; top: var(--hdr-h, 112px); z-index: 30; margin: 0 -18px 12px; padding: 8px 18px; gap: 6px; background: rgba(8, 8, 10, .92); backdrop-filter: blur(18px); -webkit-backdrop-filter: blur(18px); border-bottom: 1px solid rgba(255, 255, 255, .08); }
+    .tabs { z-index: 30; margin: 0 -18px 12px; padding: 8px 18px; gap: 6px; background: rgba(8, 8, 10, .92); backdrop-filter: blur(18px); -webkit-backdrop-filter: blur(18px); border-bottom: 1px solid rgba(255, 255, 255, .08); }
     .tab { padding: 6px 12px; font-size: 11px; }
+    .tabs.fixo { position: fixed; left: 0; right: 0; margin: 0; border-radius: 0; padding-left: max(18px, calc((100% - 1120px) / 2 + 18px)); padding-right: max(18px, calc((100% - 1120px) / 2 + 18px)); }
     .carrossel { display: flex; overflow-x: auto; scroll-snap-type: x mandatory; scrollbar-width: none; -webkit-overflow-scrolling: touch; touch-action: pan-x; overscroll-behavior: contain; }
     .carrossel::-webkit-scrollbar { display: none; }
     .carrossel > .slide { flex: 0 0 100%; min-width: 0; scroll-snap-align: start; }
@@ -296,6 +297,7 @@
         </div>
       </div>
 
+      <div id="tabsWrap">
       <nav class="tabs" role="tablist" aria-label="Área do cliente">
         <button type="button" class="tab on" data-i="0" role="tab">Início</button>
         <button type="button" class="tab" data-i="1" role="tab">Meu evento</button>
@@ -303,6 +305,7 @@
         <button type="button" class="tab" data-i="3" role="tab">Memórias</button>
         <button type="button" class="tab" data-i="4" role="tab">Perfil</button>
       </nav>
+      </div>
       <div class="slider-dots" id="sliderDots" aria-hidden="true"><i class="on"></i><i></i><i></i><i></i><i></i></div>
 
       <!-- 0 · INÍCIO -->
@@ -726,6 +729,38 @@
       if (m) m.classList.add('on');
     }, 600);
   }
+
+  /* ===== Menu condensado: gruda logo abaixo do menu canônico (fixo) ===== */
+  (function () {
+    var nav = document.querySelector('#tabsWrap .tabs');
+    var wrap = document.getElementById('tabsWrap');
+    if (!nav || !wrap) return;
+    var base = 0;
+    function alturaCabecalho() {
+      var h = document.getElementById('calc-header');
+      return h ? Math.max(0, Math.round(h.getBoundingClientRect().bottom)) : 0;
+    }
+    function atualizar() {
+      var hb = alturaCabecalho();
+      if (!nav.classList.contains('fixo')) base = nav.offsetHeight;
+      var passou = wrap.getBoundingClientRect().top <= hb;
+      if (passou && hb > 0) {
+        wrap.style.height = base + 'px';
+        nav.classList.add('fixo');
+        nav.style.top = hb + 'px';
+      } else {
+        nav.classList.remove('fixo');
+        nav.style.top = '';
+        wrap.style.height = '';
+      }
+    }
+    window.addEventListener('scroll', atualizar, { passive: true });
+    window.addEventListener('resize', atualizar);
+    window.addEventListener('load', atualizar);
+    window.addEventListener('pageshow', atualizar);
+    [300, 1000, 2500].forEach(function (ms) { setTimeout(atualizar, ms); });
+    atualizar();
+  })();
 
   /* ===== Espaço sob o menu fixo ===== */
   function alturaMenu() {
