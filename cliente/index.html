@@ -193,7 +193,9 @@
     .cal-nav { display: flex; align-items: center; justify-content: space-between; gap: 8px; margin-bottom: 12px; }
     .filtros { display: flex; flex-wrap: wrap; gap: 10px; margin: 6px 0 14px; font-size: 12px; }
     .filtros label { display: inline-flex; align-items: center; gap: 5px; cursor: pointer; color: var(--body); }
-    .filtros input { width: auto; }
+    .filtros input { position: absolute; opacity: 0; width: 0; height: 0; pointer-events: none; }
+    .filtros label { position: relative; padding: 7px 14px; border-radius: 999px; border: 1px solid var(--cor); background: var(--cor); color: #04120a; font-weight: 700; font-size: 12px; letter-spacing: .02em; box-shadow: 0 0 14px color-mix(in srgb, var(--cor) 35%, transparent); transition: opacity .2s, box-shadow .2s, background .2s; user-select: none; }
+    .filtros label.off { background: transparent; color: var(--mut); box-shadow: none; opacity: .55; }
     .dia-item { border: 1px solid var(--line); border-radius: 16px; padding: 12px; margin-bottom: 8px; border-left: 4px solid #c084fc; background: rgba(255, 255, 255, .025); }
     .dia-item strong { display: block; margin-bottom: 2px; }
     .dia-item small { color: var(--mut); display: block; font-size: 12px; }
@@ -389,10 +391,10 @@
           <h2>Calendário do evento</h2>
           <p class="pill" id="calSub" style="margin:0 0 10px">Só as datas dos seus pedidos aparecem aqui.</p>
           <div class="filtros" id="calFiltros">
-            <label><input type="checkbox" data-filtro="evento" checked><i class="sw" style="background:#c084fc"></i> Evento</label>
-            <label><input type="checkbox" data-filtro="contrato" checked><i class="sw" style="background:#3b82f6"></i> Contrato</label>
-            <label><input type="checkbox" data-filtro="pagamento" checked><i class="sw" style="background:#86efac"></i> Pagamentos</label>
-            <label><input type="checkbox" data-filtro="comprovante" checked><i class="sw" style="background:#22c55e"></i> Comprovantes</label>
+            <label style="--cor:#c084fc"><input type="checkbox" data-filtro="evento" checked>Evento</label>
+            <label style="--cor:#3b82f6"><input type="checkbox" data-filtro="contrato" checked>Contrato</label>
+            <label style="--cor:#86efac"><input type="checkbox" data-filtro="pagamento" checked>Pagamentos</label>
+            <label style="--cor:#22c55e"><input type="checkbox" data-filtro="comprovante" checked>Comprovantes</label>
           </div>
           <div class="cal-nav">
             <button type="button" class="btn-s" id="calPrev" style="margin-top:0">‹</button>
@@ -1118,7 +1120,10 @@
     box.querySelectorAll('input[data-filtro]').forEach(function (inp) {
       var id = inp.getAttribute('data-filtro');
       inp.checked = FILTROS_CAL[id] !== false;
+      var lab = inp.closest('label');
+      if (lab) lab.classList.toggle('off', !inp.checked);
       inp.addEventListener('change', function () {
+        if (lab) lab.classList.toggle('off', !inp.checked);
         FILTROS_CAL[id] = inp.checked;
         try { localStorage.setItem('432up_cli_cal_filtros', JSON.stringify(FILTROS_CAL)); } catch (e) {}
         if (dados) renderCalendario();
@@ -1293,10 +1298,11 @@
     var texto = 'Olá' + (primeiro ? ', *' + primeiro + '*' : '') + '! Segue a equipe técnica do seu evento' +
       (p && p.data_evento ? ' (' + DATA(p.data_evento) + ')' : '') + ':\n\n';
     eq.forEach(function (m) {
-      var nome = m.nome_completo || m.nome || '';
+      var nome = m.nome || m.nome_completo || '';
       var doc = String(m.cpf_cnpj || m.cpf || '');
       var digitos = doc.replace(/\D/g, '');
       texto += '*' + nome + '*\n';
+      if (m.nome_completo && m.nome_completo !== nome) texto += 'Nome completo (documento): ' + m.nome_completo + '\n';
       if (m.funcao || m.papel) texto += 'Função: ' + (m.funcao || m.papel) + '\n';
       if (doc) texto += (digitos.length === 14 ? 'CNPJ: ' : 'CPF: ') + doc + '\n';
       if (m.rg) texto += 'RG: ' + m.rg + '\n';
