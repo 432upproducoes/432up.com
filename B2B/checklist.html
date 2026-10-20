@@ -1,172 +1,201 @@
 <!DOCTYPE html>
-<html lang="pt-BR">
+<html lang="pt-BR" class="h-full">
 <head>
-<meta charset="UTF-8">
-<meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
-<title>Checklist · 432UP</title>
-<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
-<script src="partner-config.js"></script>
-<style>
-  :root {
-    --bg: #0b1020; --line: rgba(255,255,255,.08);
-    --txt: #e2e8f0; --mut: #94a3b8; --acc: #a3e635; --ouro: #c5a059; --ciano: #00f0ff;
-  }
-  * { box-sizing: border-box; }
-  body {
-    margin: 0; font-family: system-ui, -apple-system, Segoe UI, Roboto, sans-serif;
-    background: var(--bg); color: var(--txt); min-height: 100dvh;
-  }
-  header {
-    padding: 14px 16px; border-bottom: 1px solid var(--line);
-    display: flex; justify-content: space-between; align-items: center; gap: 10px; flex-wrap: wrap;
-  }
-  h1 { font-size: 17px; margin: 0; }
-  a.link { color: var(--ciano); text-decoration: none; font-size: 13px; }
-  main { max-width: 560px; margin: 0 auto; padding: 16px; padding-bottom: 40px; }
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
+  <meta name="theme-color" content="#08080A">
+  <meta name="apple-mobile-web-app-capable" content="yes">
+  <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+  <title>Checklist · 432UP</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="../css/style.css">
+  <style>
+    :root {
+      --bg: #08080A; --text: #FFFFFF; --body: #E7E7EC; --mut: #9A97B0;
+      --action: #00FF66; --purple: #A855F7; --pink: #FF007F; --tech: #06B6D4;
+      --gold: #D4AF37; --alert: #FF4D4D; --line: rgba(255,255,255,.1);
+    }
+    body { background: var(--bg) !important; color: var(--text) !important; font-family: 'Inter', system-ui, sans-serif; }
+    *, *::before, *::after { box-sizing: border-box; }
+    .area {
+      width: 100%; max-width: 560px; margin: 0 auto; position: relative; z-index: 2;
+      padding-top: calc(var(--hdr-h, 112px) + 28px);
+      padding-left: max(18px, env(safe-area-inset-left));
+      padding-right: max(18px, env(safe-area-inset-right));
+      padding-bottom: calc(120px + env(safe-area-inset-bottom));
+    }
+    html, body { height: auto !important; min-height: 100%; }
+    body { overflow-y: visible !important; }
+    .eyebrow { font-size: .68rem; letter-spacing: .18em; text-transform: uppercase; font-weight: 700; opacity: .72; color: var(--gold); }
+    .titulo { font-size: clamp(1.6rem, 4vw, 2.2rem); line-height: 1.1; letter-spacing: -.03em; margin: 8px 0 14px; font-weight: 800; }
+    .mut { color: var(--mut); }
+    .box-full {
+      border-radius: 24px; padding: 20px; margin-bottom: 14px;
+      background: rgba(255,255,255,.045); border: 1px solid rgba(255,255,255,.14);
+      backdrop-filter: blur(24px); -webkit-backdrop-filter: blur(24px);
+    }
+    .box-full h2 {
+      font-size: .72rem; letter-spacing: .14em; text-transform: uppercase;
+      color: var(--gold); margin: 0 0 12px; font-weight: 800;
+    }
+    a.tech { color: var(--tech); text-decoration: none; font-size: 13px; font-weight: 600; }
+    a.tech:hover { text-decoration: underline; }
+    .lista-eventos { display: flex; flex-direction: column; gap: 10px; }
+    .evt {
+      display: block; width: 100%; text-align: left; padding: 16px; border-radius: 18px;
+      border: 1px solid var(--line); background: rgba(255,255,255,.04); color: var(--text);
+      font: inherit; cursor: pointer; transition: border-color .2s, background .2s;
+    }
+    .evt:active, .evt:hover { border-color: rgba(0,255,102,.4); background: rgba(0,255,102,.06); }
+    .evt .tit { font-weight: 700; font-size: 15px; margin-bottom: 4px; }
+    .evt .meta { font-size: 12px; color: var(--mut); }
+    #painel { display: none; }
+    #painel.visivel { display: block; }
+    .topo { display: flex; justify-content: space-between; align-items: flex-start; gap: 10px; margin-bottom: 14px; }
+    .topo strong { display: block; font-size: 17px; font-weight: 800; }
+    .btn-voltar {
+      flex-shrink: 0; padding: 10px 14px; border-radius: 12px; border: 1px solid var(--line);
+      background: rgba(255,255,255,.04); color: var(--mut); font: inherit; font-size: 13px; font-weight: 600; cursor: pointer;
+    }
+    .btn-voltar:hover { border-color: rgba(255,255,255,.25); color: var(--text); }
+    .status-bar { display: flex; gap: 8px; flex-wrap: wrap; margin-bottom: 14px; font-size: 12px; }
+    .status-bar span {
+      padding: 5px 11px; border-radius: 999px; background: rgba(255,255,255,.05); color: var(--mut); font-weight: 600;
+    }
+    .status-bar .ok { background: rgba(0,255,102,.14); color: var(--action); }
 
-  .lista-eventos { display: flex; flex-direction: column; gap: 10px; }
-  .evt {
-    display: block; width: 100%; text-align: left; padding: 16px; border-radius: 14px;
-    border: 1px solid var(--line); background: rgba(255,255,255,.03); color: var(--txt);
-    font: inherit; cursor: pointer;
-  }
-  .evt:active { border-color: var(--acc); background: rgba(163,230,53,.08); }
-  .evt .tit { font-weight: 700; font-size: 15px; margin-bottom: 4px; }
-  .evt .meta { font-size: 12px; color: var(--mut); }
-  .evt .badge {
-    display: inline-block; margin-top: 8px; padding: 3px 9px; border-radius: 999px;
-    font-size: 11px; font-weight: 700; background: rgba(163,230,53,.15); color: var(--acc);
-  }
-  .evt .badge.pend { background: rgba(250,204,21,.12); color: #facc15; }
+    .linha-tempo { position: relative; padding-left: 22px; }
+    .linha-tempo::before {
+      content: ""; position: absolute; left: 6px; top: 8px; bottom: 8px; width: 2px;
+      background: linear-gradient(var(--gold), rgba(212,175,55,.12));
+    }
+    .etapa {
+      position: relative; padding: 14px 14px 14px 16px; margin-bottom: 10px;
+      border-radius: 18px; border: 1px solid var(--line); background: rgba(255,255,255,.03);
+    }
+    .etapa::before {
+      content: ""; position: absolute; left: -18px; top: 22px; width: 12px; height: 12px;
+      border-radius: 50%; background: var(--bg); border: 2px solid var(--purple);
+    }
+    .etapa.feita { opacity: .8; border-color: rgba(0,255,102,.28); background: rgba(0,255,102,.05); }
+    .etapa.feita::before { background: var(--action); border-color: var(--action); }
+    .etapa.feita .nome {
+      color: var(--mut); text-decoration: line-through; text-decoration-color: rgba(255,255,255,.3);
+    }
+    .etapa .nome { font-size: 15px; font-weight: 700; }
+    .etapa .hora { font-size: 12px; color: var(--mut); margin-top: 3px; }
+    .tag-ok {
+      display: inline-block; margin-top: 8px; font-size: 11px; font-weight: 800;
+      color: var(--action); background: rgba(0,255,102,.12); padding: 3px 9px; border-radius: 999px;
+    }
+    .slider {
+      position: relative; height: 52px; border-radius: 999px; margin-top: 10px; overflow: hidden;
+      background: rgba(0,255,102,.06); border: 1px solid rgba(0,255,102,.3);
+      user-select: none; touch-action: none;
+    }
+    .slider-fill { position: absolute; left: 0; top: 0; bottom: 0; width: 0; background: rgba(0,255,102,.18); }
+    .slider-knob {
+      position: absolute; left: 3px; top: 3px; width: 46px; height: 46px; border-radius: 50%;
+      background: var(--action); color: #04120a; font-weight: 900; font-size: 22px;
+      display: flex; align-items: center; justify-content: center; cursor: grab;
+      box-shadow: 0 4px 14px rgba(0,255,102,.3); transform: translateX(0);
+    }
+    .slider-txt {
+      position: absolute; inset: 0; display: flex; align-items: center; justify-content: center;
+      font-size: 12px; font-weight: 700; color: var(--mut); padding-left: 48px; pointer-events: none;
+    }
+    .slider.done { border-color: rgba(255,255,255,.18); background: rgba(255,255,255,.03); }
+    .slider.done .slider-knob { background: #3f3f46; color: var(--mut); cursor: default; box-shadow: none; }
 
-  #painel { display: none; }
-  #painel.visivel { display: block; }
-  .topo {
-    display: flex; justify-content: space-between; align-items: flex-start; gap: 10px; margin-bottom: 14px;
-  }
-  .topo strong { display: block; font-size: 16px; }
-  .btn-voltar {
-    flex-shrink: 0; padding: 10px 12px; border-radius: 12px; border: 1px solid var(--line);
-    background: transparent; color: var(--mut); font: inherit; font-size: 13px; font-weight: 600; cursor: pointer;
-  }
+    .obs { padding: 10px 0; border-bottom: 1px solid var(--line); font-size: 14px; }
+    .obs:last-child { border-bottom: 0; }
+    .msg { text-align: center; padding: 24px 12px; color: var(--mut); font-size: 14px; line-height: 1.5; }
+    .msg.err { color: #fca5a5; }
 
-  /* === Mesmo visual/slider que funcionava no cliente === */
-  .linha-tempo { position: relative; padding-left: 22px; }
-  .linha-tempo::before {
-    content: ""; position: absolute; left: 6px; top: 6px; bottom: 6px; width: 2px;
-    background: linear-gradient(var(--ouro), rgba(197, 160, 89, 0.1));
-  }
-  .etapa {
-    position: relative; padding: 14px 14px 14px 16px; margin-bottom: 10px;
-    border-radius: 14px; border: 1px solid var(--line); background: rgba(14, 18, 28, 0.55);
-  }
-  .etapa::before {
-    content: ""; position: absolute; left: -17px; top: 22px; width: 12px; height: 12px;
-    border-radius: 50%; background: #0b1020; border: 2px solid rgba(0, 240, 255, 0.5);
-    box-shadow: 0 0 10px rgba(0, 240, 255, 0.28);
-  }
-  .etapa.feita {
-    opacity: 0.75; border-color: rgba(163, 230, 53, 0.22); background: rgba(163, 230, 53, 0.05);
-  }
-  .etapa.feita::before { background: #a3e635; border-color: #a3e635; box-shadow: none; }
-  .etapa.feita .nome {
-    color: #94a3b8; text-decoration: line-through; text-decoration-color: rgba(148,163,184,.45);
-  }
-  .etapa .nome { font-size: 15px; font-weight: 700; color: #e2e8f0; }
-  .etapa .hora { font-size: 12px; color: var(--mut); margin-top: 3px; }
-  .tag-ok {
-    display: inline-block; margin-top: 6px; font-size: 11px; font-weight: 800;
-    color: #a3e635; background: rgba(163,230,53,.12); padding: 3px 8px; border-radius: 999px;
-  }
-  .slider {
-    position: relative; height: 52px; border-radius: 999px; margin-top: 10px; overflow: hidden;
-    background: rgba(0, 240, 255, 0.06); border: 1px solid rgba(0, 240, 255, 0.35);
-    user-select: none; touch-action: none;
-  }
-  .slider-fill { position: absolute; left: 0; top: 0; bottom: 0; width: 0; background: rgba(0, 240, 255, 0.2); }
-  .slider-knob {
-    position: absolute; left: 3px; top: 3px; width: 46px; height: 46px; border-radius: 50%;
-    background: #00f0ff; color: #0b1020; font-weight: 900; font-size: 22px;
-    display: flex; align-items: center; justify-content: center; cursor: grab;
-    box-shadow: 0 4px 14px rgba(0, 240, 255, 0.35); transform: translateX(0);
-  }
-  .slider-txt {
-    position: absolute; inset: 0; display: flex; align-items: center; justify-content: center;
-    font-size: 12px; font-weight: 600; color: var(--mut); padding-left: 48px; pointer-events: none;
-  }
-  .slider.done { border-color: rgba(163, 230, 53, 0.45); background: rgba(163, 230, 53, 0.06); }
-  .slider.done .slider-knob { background: #64748b; cursor: default; box-shadow: none; }
-
-  .obs-box { margin-top: 18px; padding-top: 14px; border-top: 1px solid var(--line); }
-  .obs-box h2 { font-size: 12px; color: var(--ouro); text-transform: uppercase; letter-spacing: .06em; margin: 0 0 10px; }
-  .obs { padding: 9px 0; border-bottom: 1px solid rgba(255,255,255,.06); font-size: 14px; }
-  .msg { text-align: center; padding: 28px 16px; color: var(--mut); font-size: 14px; line-height: 1.5; }
-  .msg.err { color: #fca5a5; }
-  .status-bar { display: flex; gap: 8px; flex-wrap: wrap; margin-bottom: 14px; font-size: 12px; }
-  .status-bar span { padding: 5px 10px; border-radius: 999px; background: rgba(255,255,255,.05); color: var(--mut); }
-  .status-bar .ok { background: rgba(163,230,53,.15); color: var(--acc); }
-
-  .modal-bg {
-    position: fixed; inset: 0; z-index: 80; background: rgba(0,0,0,.65);
-    display: none; align-items: center; justify-content: center; padding: 16px;
-  }
-  .modal-bg.on { display: flex; }
-  .modal-box {
-    width: 100%; max-width: 360px; background: #0e121c; border: 1px solid var(--line);
-    border-radius: 16px; padding: 20px;
-  }
-  .modal-box h2 { margin: 0 0 8px; font-size: 16px; color: #e2e8f0; }
-  .modal-box p { margin: 0 0 16px; font-size: 14px; color: var(--mut); line-height: 1.45; }
-  .modal-acoes { display: flex; gap: 8px; flex-wrap: wrap; }
-  .modal-acoes button {
-    flex: 1; min-width: 120px; font: inherit; padding: 12px 14px; border-radius: 12px;
-    border: 1px solid var(--line); background: #0f1628; color: var(--txt); cursor: pointer; font-weight: 700;
-  }
-  .modal-acoes button.sim {
-    background: var(--acc); color: #0b1020; border-color: var(--acc);
-  }
-</style>
+    .modal-bg {
+      position: fixed; inset: 0; z-index: 9999; background: rgba(0,0,0,.7);
+      display: none; align-items: center; justify-content: center; padding: 16px;
+    }
+    .modal-bg.on { display: flex; }
+    .modal-box {
+      width: 100%; max-width: 380px; background: #0c0c12; border: 1px solid rgba(168,85,247,.28);
+      border-radius: 22px; padding: 22px;
+    }
+    .modal-box h2 { margin: 0 0 8px; font-size: 16px; font-weight: 800; color: var(--text); }
+    .modal-box p { margin: 0 0 16px; font-size: 14px; color: var(--mut); line-height: 1.45; }
+    .modal-acoes { display: flex; gap: 8px; flex-wrap: wrap; }
+    .modal-acoes button {
+      flex: 1; min-width: 120px; font: inherit; padding: 13px 14px; border-radius: 14px;
+      border: 1px solid var(--line); background: rgba(255,255,255,.06); color: var(--text);
+      cursor: pointer; font-weight: 700;
+    }
+    .modal-acoes button.sim {
+      background: var(--action); color: #04120a; border-color: var(--action); font-weight: 800;
+    }
+  </style>
 </head>
-<body>
-<header>
-  <h1>Checklist</h1>
-  <a class="link" href="agenda-parceiro.html">Minha agenda →</a>
-</header>
-<main>
-  <section id="listaWrap">
-    <p class="msg" id="msgLista" style="padding:8px 0 16px">Carregando seus eventos…</p>
-    <div class="lista-eventos" id="listaEventos"></div>
-  </section>
+<body class="h-full antialiased overflow-x-hidden">
 
-  <section id="painel">
-    <div class="topo">
-      <div>
-        <strong id="tituloEvt">Evento</strong>
-        <span id="metaEvt" style="font-size:12px;color:var(--mut)"></span>
+  <canvas id="orbit-canvas"></canvas>
+  <div id="plasmaLayer" class="plasma-top-layer"></div>
+
+  <header id="calc-header"></header>
+  <div id="mobile-menu"></div>
+
+  <div class="flex flex-col min-h-screen relative z-10">
+    <main class="area">
+      <div style="display:flex;align-items:flex-start;justify-content:space-between;gap:12px;flex-wrap:wrap;margin-bottom:6px">
+        <div>
+          <span class="eyebrow">Parceiro</span>
+          <h1 class="titulo">Checklist</h1>
+        </div>
+        <a class="tech" href="agenda-parceiro.html">Minha agenda →</a>
       </div>
-      <button type="button" class="btn-voltar" id="btnVoltar">← Eventos</button>
-    </div>
-    <div class="status-bar" id="statusBar"></div>
-    <div class="linha-tempo" id="linhaTempo"></div>
-    <div class="obs-box">
-      <h2>Observações</h2>
-      <div id="listaObs" class="msg" style="padding:8px 0">—</div>
-    </div>
-  </section>
-</main>
 
-<div class="modal-bg" id="modalConfirma" role="dialog" aria-modal="true" aria-label="Confirmar etapa">
-  <div class="modal-box">
-    <h2>Concluir etapa?</h2>
-    <p id="txtConfirma">Essa ação não pode ser desfeita. Deseja marcar esta etapa como concluída?</p>
-    <div class="modal-acoes">
-      <button type="button" id="btnConfNao">Não</button>
-      <button type="button" class="sim" id="btnConfSim">Sim, concluir</button>
+      <section id="listaWrap">
+        <p class="msg" id="msgLista" style="padding:8px 0 16px;text-align:left">Carregando seus eventos…</p>
+        <div class="lista-eventos" id="listaEventos"></div>
+      </section>
+
+      <section id="painel">
+        <div class="topo">
+          <div>
+            <strong id="tituloEvt">Evento</strong>
+            <span id="metaEvt" class="mut" style="font-size:13px"></span>
+          </div>
+          <button type="button" class="btn-voltar" id="btnVoltar">← Eventos</button>
+        </div>
+        <div class="status-bar" id="statusBar"></div>
+        <div class="box-full" style="padding:18px">
+          <h2>Linha do tempo</h2>
+          <div class="linha-tempo" id="linhaTempo"></div>
+        </div>
+        <div class="box-full">
+          <h2>Observações</h2>
+          <div id="listaObs" class="msg" style="padding:8px 0;text-align:left">—</div>
+        </div>
+      </section>
+    </main>
+  </div>
+
+  <div class="modal-bg" id="modalConfirma" role="dialog" aria-modal="true" aria-label="Confirmar etapa">
+    <div class="modal-box">
+      <h2>Concluir etapa?</h2>
+      <p id="txtConfirma">Essa ação não pode ser desfeita. Deseja marcar esta etapa como concluída?</p>
+      <div class="modal-acoes">
+        <button type="button" id="btnConfNao">Não</button>
+        <button type="button" class="sim" id="btnConfSim">Sim, concluir</button>
+      </div>
     </div>
   </div>
-</div>
 
-<script>
+  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+  <script src="partner-config.js"></script>
+  <script src="../script/script.js" defer></script>
+  <script src="partner-header.js"></script>
+  <script>
 (function () {
   'use strict';
   var CFG = window.PARTNER_CFG;
@@ -314,7 +343,6 @@
         '<span style="font-size:12px;opacity:.9">Se o admin vê etapas neste projeto, rode o SQL de correção da policy ' +
         '(arquivo <strong>SQL-fix-etapas-colab.sql</strong> no pacote) e recarregue.</span></div>';
     } else {
-      /* Mesmo markup/slider do cliente */
       lt.innerHTML = lista.map(function (e) {
         var feita = e.situacao === 'concluida';
         return '<div class="etapa ' + (feita ? 'feita' : '') + '">' +
@@ -337,15 +365,14 @@
       .is('removido_em', null)
       .order('criado_em');
     var lo = $('listaObs');
-    if (!(obs && obs.length)) lo.innerHTML = '<div class="msg" style="padding:8px 0">Nenhuma observação ainda.</div>';
+    if (!(obs && obs.length)) lo.innerHTML = '<div class="msg" style="padding:8px 0;text-align:left">Nenhuma observação ainda.</div>';
     else lo.innerHTML = obs.map(function (o) {
       return '<div class="obs">' + E(o.texto) +
-        (o.criado_por ? ' <em style="color:#a3e635;font-size:11px">(' + E(o.criado_por) + ')</em>' : '') +
+        (o.criado_por ? ' <em style="color:var(--action);font-size:11px">(' + E(o.criado_por) + ')</em>' : '') +
         '</div>';
     }).join('');
   }
 
-  /* Slider idêntico ao que funcionava no cliente */
   function initSliders(root) {
     root.querySelectorAll('.slider').forEach(function (s) {
       var knob = s.querySelector('.slider-knob');
@@ -367,7 +394,6 @@
         if (!dragging) return;
         dragging = false; knob.style.cursor = 'grab';
         if (max > 0 && cur / max >= 0.9) {
-          // Volta o slider e pede confirmação — só conclui se a pessoa disser sim
           apply(0);
           pedirConfirmacao(s.getAttribute('data-etapa'), s);
         } else apply(0);
@@ -415,7 +441,6 @@
 
   $('btnConfNao').addEventListener('click', function () {
     if (_pendenteSlider) {
-      // garante slider zerado
       try {
         var kn = _pendenteSlider.querySelector('.slider-knob');
         var fl = _pendenteSlider.querySelector('.slider-fill');
@@ -436,9 +461,7 @@
   });
 
   $('modalConfirma').addEventListener('click', function (e) {
-    if (e.target === $('modalConfirma')) {
-      $('btnConfNao').click();
-    }
+    if (e.target === $('modalConfirma')) $('btnConfNao').click();
   });
 
   async function concluir(etapaId) {
@@ -462,6 +485,6 @@
 
   carregarLista();
 })();
-</script>
+  </script>
 </body>
 </html>
