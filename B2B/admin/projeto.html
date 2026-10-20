@@ -48,6 +48,50 @@
     .layout { display: grid; grid-template-columns: 300px minmax(0,1fr); gap: 16px; align-items: start; }
     @media (max-width: 1023px) { .layout { grid-template-columns: 1fr; } }
     .lista-proj { display: flex; flex-direction: column; gap: 8px; margin-top: 10px; max-height: 70vh; overflow-y: auto; }
+
+    /* Mobile: barra "projeto atual" + drawer da lista (mesma dinâmica do esboço) */
+    .mob-proj-bar {
+      display: none; align-items: center; justify-content: space-between; gap: 10px;
+      margin: 0 0 12px; padding: 12px 14px; border-radius: 16px;
+      background: rgba(88, 28, 135, 0.28); border: 1px solid rgba(255,255,255,.12);
+    }
+    .mob-proj-bar .lbl { font-size: 10px; font-weight: 800; letter-spacing: .08em; text-transform: uppercase; color: var(--gold); }
+    .mob-proj-bar .nome { font-size: 14px; font-weight: 800; color: var(--text); margin-top: 2px; max-width: 58vw; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+    .mob-proj-bar .btn-trocar {
+      flex-shrink: 0; height: 36px; padding: 0 12px; border-radius: 12px;
+      background: rgba(0,255,102,.12); border: 1px solid rgba(0,255,102,.4); color: var(--action);
+      font: inherit; font-size: 12px; font-weight: 800; cursor: pointer;
+    }
+    .aside-backdrop {
+      display: none; position: fixed; inset: 0; z-index: 40;
+      background: rgba(0,0,0,.65); backdrop-filter: blur(4px);
+    }
+    .aside-backdrop.on { display: block; }
+    @media (max-width: 1023px) {
+      .mob-proj-bar { display: flex; }
+      .layout > aside {
+        display: none; position: fixed; inset: 0; z-index: 50;
+        padding: max(16px, env(safe-area-inset-top)) 14px 14px;
+        background: rgba(8,8,10,.96); overflow-y: auto;
+      }
+      .layout > aside.drawer-on { display: block; }
+      .layout > aside .box-full {
+        max-height: none; position: relative;
+      }
+      .drawer-close {
+        display: flex; align-items: center; justify-content: space-between;
+        margin-bottom: 10px; padding-bottom: 10px; border-bottom: 1px solid var(--line);
+      }
+      .drawer-close strong { font-size: 15px; }
+      .drawer-close button {
+        height: 36px; width: 36px; padding: 0; border-radius: 10px;
+        font-size: 18px; line-height: 1;
+      }
+      .lista-proj { max-height: none; }
+    }
+    @media (min-width: 1024px) {
+      .drawer-close { display: none; }
+    }
     .proj {
       padding: 12px 14px; border: 1px solid var(--line); border-radius: 14px;
       cursor: pointer; transition: border-color .2s, background .2s; background: rgba(255,255,255,.03);
@@ -222,10 +266,24 @@
         <div class="kpi"><div class="k">Equipe total</div><div class="v" id="kpiEq">0</div></div>
       </div>
 
+      <div class="mob-proj-bar" id="mobProjBar">
+        <div style="min-width:0">
+          <div class="lbl">Projeto atual</div>
+          <div class="nome" id="mobProjNome">Escolha um projeto</div>
+        </div>
+        <button type="button" class="btn-trocar" id="btnTrocarProj">Trocar evento</button>
+      </div>
+
+      <div class="aside-backdrop" id="asideBackdrop" aria-hidden="true"></div>
+
       <div class="layout">
 
-        <aside>
+        <aside id="projectDrawer">
           <div class="box-full">
+            <div class="drawer-close">
+              <strong>Selecionar projeto</strong>
+              <button type="button" id="btnFecharDrawer" aria-label="Fechar">×</button>
+            </div>
             <h2 id="tituloLista">Lista de projetos</h2>
             <input class="campo" id="busca" placeholder="Buscar nº ou cliente">
             <div id="listaProj" class="lista-proj"><div class="vazio">Carregando…</div></div>
@@ -305,7 +363,7 @@
                   </div>
                   <div class="msg so-admin" id="msgCol"></div>
                   <div id="listaCol"></div>
-                  <p class="so-admin" style="margin-top:14px"><a class="tech" id="linkEspelho" href="#">Abrir espelho do cliente →</a></p>
+                  
                 </div>
               </div>
 
@@ -455,11 +513,12 @@
     if (!(s.data && s.data.session)) { location.href = '../login.html'; return; }
 
     var r = await SB.from('parceiros')
-      .select('id, nome_completo, role, status, nivel')
+      .select('id, nome_completo, role, status, nivel, user_id')
       .eq('user_id', s.data.session.user.id)
       .maybeSingle();
     ME = r.data;
     if (!ME) { location.href = '../login.html'; return; }
+    ME.user_id = ME.user_id || s.data.session.user.id;
 
     var papel = String(ME.role || ME.nivel || '').toLowerCase().trim();
     ADMIN = /^(admin|master)$/.test(papel);
@@ -493,21 +552,50 @@
   }
 
   /* ===== Lista de projetos =====
-     Admin vê todos. Demais parceiros veem só os projetos em que são vendedores ou colaboradores. */
+     Admin: todos.
+     Demais: vendedor (propostas.parceiro_id) OU colaborador do dia (projeto_colaboradores) —
+     DJ, motorista, montador, cantor, qualquer cargo na taxonomia. */
   async function carregarLista() {
-    var r = await SB.from('propostas')
-      .select('*, parceiros:parceiros!parceiro_id(id, nome_completo, email, comissao_padrao_pct, tipo_pix, chave_pix)')
-      .order('data_evento', { ascending: true })
-      .limit(500);
-    var todas = r.data || [];
+    var sel = '*, parceiros:parceiros!parceiro_id(id, nome_completo, email, comissao_padrao_pct, tipo_pix, chave_pix)';
 
     if (ADMIN) {
-      PROPS = todas;
+      var r = await SB.from('propostas').select(sel).order('data_evento', { ascending: true }).limit(500);
+      PROPS = r.data || [];
     } else {
+      var ids = {};
+
+      /* 1) Como vendedor atribuído */
+      var minhas = await SB.from('propostas').select('id').eq('parceiro_id', ME.id);
+      (minhas.data || []).forEach(function (p) { if (p.id) ids[p.id] = true; });
+
+      /* 2) Como colaborador do dia (qualquer cargo) */
       var c = await SB.from('projeto_colaboradores').select('proposta_id').eq('parceiro_id', ME.id);
-      var meus = {};
-      (c.data || []).forEach(function (x) { meus[x.proposta_id] = true; });
-      PROPS = todas.filter(function (p) { return p.parceiro_id === ME.id || meus[p.id]; });
+      if (c.error) console.error('projeto_colaboradores', c.error);
+      (c.data || []).forEach(function (x) { if (x.proposta_id) ids[x.proposta_id] = true; });
+
+      /* Fallback: se a coluna for user_id em vez de parceiro_id */
+      if (!c.data || !c.data.length) {
+        try {
+          var c2 = await SB.from('projeto_colaboradores').select('proposta_id').eq('user_id', ME.user_id || ME.id);
+          (c2.data || []).forEach(function (x) { if (x.proposta_id) ids[x.proposta_id] = true; });
+        } catch (e) {}
+      }
+
+      var listaIds = Object.keys(ids);
+      if (!listaIds.length) {
+        PROPS = [];
+      } else {
+        /* Busca explícita por id — funciona com policy que libera colaborador */
+        var r2 = await SB.from('propostas').select(sel).in('id', listaIds).order('data_evento', { ascending: true });
+        if (r2.error) {
+          console.error('propostas.in', r2.error);
+          /* Fallback: tenta lista geral e filtra no cliente */
+          var r3 = await SB.from('propostas').select(sel).order('data_evento', { ascending: true }).limit(500);
+          PROPS = (r3.data || []).filter(function (p) { return ids[p.id]; });
+        } else {
+          PROPS = r2.data || [];
+        }
+      }
     }
 
     await carregarClientes();
@@ -707,6 +795,9 @@
     var nomeEv = ATUAL.nome_evento || ATUAL.tipo_evento || 'Evento';
     $('nomeEvento').textContent = nomeEv;
     $('tituloProj').textContent = 'Projeto #' + ATUAL.numero + ' · ' + (ATUAL.cliente_nome || '');
+    var mobNome = $('mobProjNome');
+    if (mobNome) mobNome.textContent = '#' + ATUAL.numero + ' · ' + (ATUAL.cliente_nome || nomeEv);
+    fecharDrawer();
     var tag = $('tagStatus');
     tag.textContent = ROTULO_STATUS[ATUAL.status] || ATUAL.status || '';
     tag.className = 'tag ' + (ATUAL.status === 'hold' ? 't-hold' : (ATUAL.status === 'cancelada' ? 't-rec' : 't-ok'));
@@ -726,8 +817,7 @@
     $('fLocal').value = ATUAL.local_evento || '';
     $('msgDados').textContent = '';
     $('holdInfo').textContent = ATUAL.status === 'hold' ? 'Hold · ' + tempo(ATUAL.hold_expira_em) : '';
-    $('linkEspelho').href = 'espelho.html?id=' + encodeURIComponent(ATUAL.id);
-
+    
     renderLocal(ATUAL, end);
     renderCal();
 
@@ -969,6 +1059,26 @@
       });
     });
   }
+
+  /* ===== Drawer mobile ===== */
+  function abrirDrawer() {
+    var d = $('projectDrawer');
+    var b = $('asideBackdrop');
+    if (d) d.classList.add('drawer-on');
+    if (b) { b.classList.add('on'); b.setAttribute('aria-hidden', 'false'); }
+  }
+  function fecharDrawer() {
+    var d = $('projectDrawer');
+    var b = $('asideBackdrop');
+    if (d) d.classList.remove('drawer-on');
+    if (b) { b.classList.remove('on'); b.setAttribute('aria-hidden', 'true'); }
+  }
+  var btnTrocar = $('btnTrocarProj');
+  if (btnTrocar) btnTrocar.addEventListener('click', abrirDrawer);
+  var btnFechar = $('btnFecharDrawer');
+  if (btnFechar) btnFechar.addEventListener('click', fecharDrawer);
+  var bd = $('asideBackdrop');
+  if (bd) bd.addEventListener('click', fecharDrawer);
 
   /* ===== Abas ===== */
   function switchTab(id) {
