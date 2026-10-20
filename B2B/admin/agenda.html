@@ -354,7 +354,7 @@
     { id: 'hold',        label: 'Holding',            cls: 'e-hold',        cor: '#f97316' },
     { id: 'contrato',    label: 'Contratos',          cls: 'e-contrato',    cor: '#2563eb' },
     { id: 'aprovado',    label: 'Aprovados / depósito', cls: 'e-aprovado',  cor: '#22c55e' },
-    { id: 'comissao',    label: 'Comissões a pagar',  cls: 'e-comissao',    cor: '#15803d' },
+    { id: 'comissao',    label: 'Comissão / liberação', cls: 'e-comissao',  cor: '#15803d' },
     { id: 'recebimento', label: 'Recebimentos',       cls: 'e-recebimento', cor: '#86efac' },
     { id: 'lead',        label: 'Leads (data)',        cls: 'e-lead',        cor: '#facc15' },
     { id: 'bloqueio',    label: 'Bloqueios / indispon.', cls: 'e-bloqueio', cor: '#64748b' }
@@ -396,6 +396,26 @@
     return d.getFullYear() + '-' + String(d.getMonth()+1).padStart(2,'0') + '-' + String(d.getDate()).padStart(2,'0');
   }
   function chaveData(s) { return s ? String(s).slice(0, 10) : null; }
+  /* 3 dias úteis após a data (sábado/domingo não contam) */
+  function maisTresUteis(iso) {
+    var base = chaveData(iso);
+    if (!base) return null;
+    var d = new Date(base + 'T12:00:00');
+    var n = 0;
+    while (n < 3) {
+      d.setDate(d.getDate() + 1);
+      var wd = d.getDay();
+      if (wd !== 0 && wd !== 6) n++;
+    }
+    return chave(d);
+  }
+  function ehVendedorProp(p) {
+    return !!(ME && p && String(p.parceiro_id) === String(ME.id));
+  }
+  function comissaoLiberada(p) {
+    var st = String(p.comissao_status || '').toLowerCase().trim();
+    return st === 'liberado' || st === 'liberada' || st === 'liberado_parcial';
+  }
   function tempo(iso) {
     if (!iso) return '';
     try {
@@ -519,8 +539,8 @@
         }
       }
 
-      // Comissão solicitada (aguardando pagamento)
-      if (p.comissao_solicitada_valor > 0 && p.comissao_solicitada_data) {
+      // Comissão solicitada — só admin ou vendedor do projeto (não colaborador puro)
+      if ((IS_ADMIN || ehVendedorProp(p)) && p.comissao_solicitada_valor > 0 && p.comissao_solicitada_data) {
         var dcom = chaveData(p.comissao_solicitada_data);
         if (dcom && dcom >= ini && dcom <= fim && !p.comissao_paga) {
           add(dcom, {
@@ -533,19 +553,49 @@
         }
       }
 
-      // Recebimentos do cliente (pagamento_agenda JSON)
+      // Recebimentos do contrato (pagamento_agenda) — SÓ admin e vendedor do projeto
       var pa = p.pagamento_agenda || {};
-      [['entrada', pa.data_entrada, pa.status_entrada], ['saldo', pa.data_saldo, pa.status_saldo]].forEach(function (row) {
-        var dia = chaveData(row[1]);
-        if (!dia || dia < ini || dia > fim || row[2] === 'pago') return;
-        add(dia, {
-          tipo: 'recebimento',
-          id: p.id,
-          titulo: (p.cliente_nome || 'Cliente') + ' · ' + row[0],
-          sub: '#' + p.numero + ' · pendente',
-          prop: p
+      if (IS_ADMIN || ehVendedorProp(p)) {
+        [['entrada', pa.data_entrada, pa.status_entrada], ['saldo', pa.data_saldo, pa.status_saldo]].forEach(function (row) {
+          var dia = chaveData(row[1]);
+          if (!dia || dia < ini || dia > fim || row[2] === 'pago') return;
+          add(dia, {
+            tipo: 'recebimento',
+            id: p.id,
+            titulo: (p.cliente_nome || 'Cliente') + ' · ' + row[0],
+            sub: '#' + p.numero + ' · pendente',
+            prop: p
+          });
         });
-      });
+      }
+
+      /* Previsão de liberação da comissão (3 dias úteis após cada parcela paga)
+         Visível para vendedor e colaborador do projeto quando status da comissão = liberado */
+      if (comissaoLiberada(p) && !p.comissao_paga) {
+        var parcelas = [
+          ['entrada', pa.data_entrada, pa.status_entrada],
+          ['saldo', pa.data_saldo, pa.status_saldo]
+        ];
+        /* também aceita array genérico se existir */
+        if (Array.isArray(pa.parcelas)) {
+          pa.parcelas.forEach(function (par, i) {
+            parcelas.push(['parcela ' + (i + 1), par.data || par.data_pagamento, par.status]);
+          });
+        }
+        parcelas.forEach(function (row) {
+          var st = String(row[2] || '').toLowerCase();
+          if (st !== 'pago' && st !== 'pago' && st !== 'liquidado' && st !== 'recebido') return;
+          var prev = maisTresUteis(row[1]);
+          if (!prev || prev < ini || prev > fim) return;
+          add(prev, {
+            tipo: 'comissao',
+            id: p.id,
+            titulo: 'Liberação comissão · #' + p.numero,
+            sub: 'Previsão · 3 dias úteis após ' + row[0] + (row[1] ? ' (' + chaveData(row[1]) + ')' : ''),
+            prop: p
+          });
+        });
+      }
     });
 
     // 2. Comprovantes aprovados → marca “aprovado” no dia do evento (ou da aprovação)
