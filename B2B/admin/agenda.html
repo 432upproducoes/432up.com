@@ -160,7 +160,28 @@
     /* Navegação do mês estilo iPhone: ‹ Outubro 2026 › */
     .mes-nav {
       display: flex; align-items: center; justify-content: space-between;
-      gap: 8px; margin-bottom: 10px;
+      gap: 10px; margin-bottom: 10px; flex-wrap: wrap;
+    }
+    /* Desktop: Agenda + mês + Hoje na mesma linha */
+    @media (min-width: 901px) {
+      .topo-agenda { display: none; } /* título sobe para a linha do mês */
+      .mes-nav {
+        flex-wrap: nowrap;
+        margin-top: 4px;
+      }
+      .mes-nav .agenda-tit {
+        display: block;
+        font-size: clamp(1.4rem, 3.5vw, 2rem);
+        font-weight: 800;
+        letter-spacing: -.03em;
+        margin: 0;
+        line-height: 1.15;
+      }
+      .mes-nav .mes-ctrl { margin-left: 12px; }
+      .mes-nav .btn-hoje { margin-left: auto; }
+    }
+    @media (max-width: 900px) {
+      .mes-nav .agenda-tit { display: none; }
     }
     .mes-nav .mes-ctrl {
       display: inline-flex; align-items: center; gap: 2px;
@@ -265,6 +286,7 @@
       </div>
 
       <div class="mes-nav">
+        <h1 class="agenda-tit">Agenda</h1>
         <div class="mes-ctrl">
           <button type="button" id="btnPrev" aria-label="Mês anterior">‹</button>
           <button type="button" id="tituloMes" title="Ir para o mês de hoje">Outubro 2026</button>
@@ -640,6 +662,7 @@
 
   function desenhar() {
     $('tituloMes').textContent = MESES[MES] + ' ' + ANO;
+    atualizarBtnDia();
 
     $('cabec').innerHTML = DIAS.map(function (d) { return '<div class="dow">' + d + '</div>'; }).join('');
 
@@ -686,10 +709,32 @@
     if (DIA_SEL) abrirDia(DIA_SEL, true);
   }
 
+  function rotuloDiaBtn(k) {
+    var hoje = chave(new Date());
+    if (!k || k === hoje) return 'Hoje';
+    var p = String(k).split('-');
+    if (p.length < 3) return 'Hoje';
+    /* dia/mês — se for outro ano, inclui o ano */
+    var y = Number(p[0]), m = Number(p[1]), d = Number(p[2]);
+    var agora = new Date();
+    if (y !== agora.getFullYear()) return d + '/' + m + '/' + y;
+    return d + '/' + m;
+  }
+
+  function atualizarBtnDia() {
+    var btn = $('btnHoje');
+    if (!btn) return;
+    btn.textContent = rotuloDiaBtn(DIA_SEL);
+    btn.title = (DIA_SEL && DIA_SEL !== chave(new Date()))
+      ? 'Voltar para hoje'
+      : 'Ir para hoje';
+  }
+
   function abrirDia(k, silencioso) {
     DIA_SEL = k;
     var partes = k.split('-');
     $('tituloDia').textContent = partes[2] + '/' + partes[1] + '/' + partes[0];
+    atualizarBtnDia();
 
     /* Destaca o dia selecionado na grade */
     document.querySelectorAll('#grade .dia').forEach(function (el) {
