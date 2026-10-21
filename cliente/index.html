@@ -205,9 +205,23 @@
     .cal .d.hoje { border-color: rgba(212, 175, 55, .5); }
     .cal .d.sel { outline: 2px solid var(--action); outline-offset: -2px; }
     .cal-nav { display: flex; align-items: center; justify-content: space-between; gap: 8px; margin-bottom: 12px; }
-    .filtros { display: flex; flex-wrap: wrap; gap: 10px; margin: 6px 0 14px; font-size: 12px; }
-    .filtros label { display: inline-flex; align-items: center; gap: 5px; cursor: pointer; color: var(--body); }
-    .filtros input { width: auto; }
+    /* Legenda do calendário: cada cápsula é o próprio filtro (ligada / desligada) */
+    .filtros { display: flex; flex-wrap: nowrap; gap: 8px; margin: 6px -26px 14px; padding: 2px 26px 4px; overflow-x: auto; scroll-snap-type: x proximity; scrollbar-width: none; -webkit-overflow-scrolling: touch; }
+    .filtros::-webkit-scrollbar { display: none; }
+    .leg {
+      flex: 0 0 auto; scroll-snap-align: start;
+      display: inline-flex; align-items: center; gap: 7px;
+      padding: 7px 13px; border-radius: 999px; cursor: pointer;
+      font: inherit; font-size: 12px; font-weight: 700; color: var(--mut); white-space: nowrap;
+      background: rgba(255, 255, 255, .03); border: 1px solid var(--line);
+      transition: background .2s, border-color .2s, color .2s, opacity .2s;
+      -webkit-tap-highlight-color: transparent;
+    }
+    .leg .sw { width: 9px; height: 9px; border-radius: 999px; background: var(--c); flex: none; }
+    .leg.on { color: var(--text); border-color: var(--c); background: color-mix(in srgb, var(--c) 16%, transparent); }
+    .leg:not(.on) { opacity: .5; }
+    .leg:focus-visible { outline: 2px solid var(--c); outline-offset: 2px; }
+    @media (max-width: 640px) { .filtros { margin: 6px -18px 14px; padding: 2px 18px 4px; } }
     .dia-item { border: 1px solid var(--line); border-radius: 16px; padding: 12px; margin-bottom: 8px; border-left: 4px solid #c084fc; background: rgba(255, 255, 255, .025); }
     .dia-item strong { display: block; margin-bottom: 2px; }
     .dia-item small { color: var(--mut); display: block; font-size: 12px; }
@@ -282,8 +296,14 @@
     .btn-verde { display: inline-flex; align-items: center; justify-content: center; padding: 9px 14px; border-radius: 12px; border: 0; background: var(--action); color: #04120a; font-size: 13px; font-weight: 800; text-decoration: none; cursor: pointer; }
     .pedido-cmp { width: 100%; margin-top: 0; padding: 11px 16px; border-radius: 14px; border-color: rgba(212, 175, 55, .6); background: rgba(212, 175, 55, .14); color: var(--gold); }
     .pedido-cmp:hover { background: rgba(212, 175, 55, .24); }
-    .sec-lbl { font-size: 10px; letter-spacing: .16em; text-transform: uppercase; font-weight: 800; color: var(--gold); margin: 2px 0 8px; }
-    .sec-sep { height: 1px; background: rgba(212, 175, 55, .18); margin: 16px 0; }
+    .sec-lbl { font-size: 10px; letter-spacing: .16em; text-transform: uppercase; font-weight: 800; color: var(--gold); margin: 0 0 6px; }
+    .sec-sep { height: 1px; background: rgba(212, 175, 55, .18); margin: 10px 0; }
+    /* Dentro do card de pedido, as linhas ficam mais juntas */
+    .pedido-card .dl-row { padding: 6px 0; }
+    .pedido-card .dl-row .rot { margin-bottom: 1px; }
+    .pedido-card .sec-lbl + div { margin-top: 0; }
+    .pedido-card .sec-lbl + .pedido-acoes { margin-top: 0; }
+    @media (max-width: 640px) { .pedido-card { padding: 14px; } }
 
     .avatar-wrap { display: flex; align-items: center; gap: 14px; flex-wrap: wrap; margin-bottom: 6px; }
     .avatar { width: 76px; height: 76px; border-radius: 50%; border: 2px solid rgba(168, 85, 247, .45); background: #0b0b10 center/cover no-repeat; display: flex; align-items: center; justify-content: center; font-size: 26px; color: var(--mut); overflow: hidden; flex-shrink: 0; }
@@ -422,11 +442,11 @@
         <div class="box-full">
           <h2>Calendário do evento</h2>
           <p class="pill" id="calSub" style="margin:0 0 10px">Só as datas dos seus pedidos aparecem aqui.</p>
-          <div class="filtros" id="calFiltros">
-            <label><input type="checkbox" data-filtro="evento" checked><i class="sw" style="background:#c084fc"></i> Evento</label>
-            <label><input type="checkbox" data-filtro="contrato" checked><i class="sw" style="background:#3b82f6"></i> Contrato</label>
-            <label><input type="checkbox" data-filtro="pagamento" checked><i class="sw" style="background:#D4AF37"></i> Pagamentos</label>
-            <label><input type="checkbox" data-filtro="comprovante" checked><i class="sw" style="background:#F5D061"></i> Comprovantes</label>
+          <div class="filtros" id="calFiltros" role="group" aria-label="Filtrar calendário">
+            <button type="button" class="leg" data-filtro="evento" aria-pressed="true" style="--c:#c084fc"><i class="sw"></i>Evento</button>
+            <button type="button" class="leg" data-filtro="contrato" aria-pressed="true" style="--c:#3b82f6"><i class="sw"></i>Contrato</button>
+            <button type="button" class="leg" data-filtro="pagamento" aria-pressed="true" style="--c:#D4AF37"><i class="sw"></i>Pagamentos</button>
+            <button type="button" class="leg" data-filtro="comprovante" aria-pressed="true" style="--c:#F5D061"><i class="sw"></i>Comprovantes</button>
           </div>
           <div class="cal-nav">
             <button type="button" class="btn-s" id="calPrev" style="margin-top:0">‹</button>
@@ -1189,11 +1209,17 @@
   (function bindCalFiltros() {
     var box = $('calFiltros');
     if (!box) return;
-    box.querySelectorAll('input[data-filtro]').forEach(function (inp) {
-      var id = inp.getAttribute('data-filtro');
-      inp.checked = FILTROS_CAL[id] !== false;
-      inp.addEventListener('change', function () {
-        FILTROS_CAL[id] = inp.checked;
+    function pintar(b, id) {
+      var on = FILTROS_CAL[id] !== false;
+      b.classList.toggle('on', on);
+      b.setAttribute('aria-pressed', on ? 'true' : 'false');
+    }
+    box.querySelectorAll('button[data-filtro]').forEach(function (b) {
+      var id = b.getAttribute('data-filtro');
+      pintar(b, id);
+      b.addEventListener('click', function () {
+        FILTROS_CAL[id] = FILTROS_CAL[id] === false;
+        pintar(b, id);
         try { localStorage.setItem('432up_cli_cal_filtros', JSON.stringify(FILTROS_CAL)); } catch (e) {}
         if (dados) renderCalendario();
       });
