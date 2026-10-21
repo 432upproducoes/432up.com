@@ -1,0 +1,1318 @@
+<!DOCTYPE html>
+<html lang="pt-BR" class="h-full">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
+  <meta name="theme-color" content="#08080A">
+  <meta name="apple-mobile-web-app-capable" content="yes">
+  <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+  <title>Projetos · 432UP Admin</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="../../css/style.css">
+  <style>
+    :root {
+      --bg: #08080A; --text: #FFFFFF; --body: #E7E7EC; --mut: #9A97B0;
+      --action: #00FF66; --purple: #A855F7; --pink: #FF007F; --tech: #06B6D4;
+      --gold: #D4AF37; --alert: #FF4D4D; --line: rgba(255,255,255,.1);
+      --campo-h: 52px;
+    }
+    body { background: var(--bg) !important; color: var(--text) !important; font-family: 'Inter', system-ui, sans-serif; }
+    *, *::before, *::after { box-sizing: border-box; }
+    .area {
+      width: 100%; max-width: 1120px; margin: 0 auto; position: relative; z-index: 2;
+      padding-top: calc(var(--hdr-h, 112px) + 20px);
+      padding-left: max(12px, env(safe-area-inset-left));
+      padding-right: max(12px, env(safe-area-inset-right));
+      padding-bottom: calc(100px + env(safe-area-inset-bottom));
+      box-sizing: border-box;
+      overflow-x: hidden;
+      min-width: 0;
+    }
+    html, body { height: auto !important; min-height: 100%; max-width: 100%; overflow-x: hidden !important; }
+    body { overflow-y: visible !important; }
+    .flex, .layout, section, aside, .box-full, .tabs-wrap, .kpis, .head-trio, .campos {
+      max-width: 100%; min-width: 0; box-sizing: border-box;
+    }
+    img, iframe, video, .mapa { max-width: 100% !important; }
+    .eyebrow { font-size: .68rem; letter-spacing: .18em; text-transform: uppercase; font-weight: 700; opacity: .72; color: var(--gold); }
+    .titulo { font-size: clamp(1.5rem, 4vw, 2.2rem); line-height: 1.15; letter-spacing: -.03em; margin: 8px 0 14px; font-weight: 800; }
+    .mut { color: var(--mut); }
+    .pill { font-size: 12px; color: var(--mut); }
+    .box-full {
+      border-radius: 24px; padding: 20px; margin-bottom: 14px;
+      background: rgba(255,255,255,.045); border: 1px solid rgba(255,255,255,.14);
+      backdrop-filter: blur(24px); -webkit-backdrop-filter: blur(24px);
+    }
+    .box-full h2 {
+      font-size: .72rem; letter-spacing: .14em; text-transform: uppercase;
+      color: var(--gold); margin: 0 0 12px; font-weight: 800;
+    }
+    .topo-pagina { display: flex; align-items: flex-start; justify-content: space-between; gap: 12px; flex-wrap: wrap; }
+
+    /* Layout: lista à esquerda, detalhe à direita; empilha em telas menores */
+    .layout { display: grid; grid-template-columns: 300px minmax(0,1fr); gap: 16px; align-items: start; }
+    @media (max-width: 1023px) { .layout { grid-template-columns: 1fr; } }
+    .lista-proj { display: flex; flex-direction: column; gap: 8px; margin-top: 10px; max-height: 70vh; overflow-y: auto; }
+
+    /* Mobile: barra "projeto atual" + drawer da lista (mesma dinâmica do esboço) */
+    .topo-pagina { align-items: center; }
+    .btn-trocar-topo {
+      display: inline-flex; align-items: center; gap: 8px; height: 40px; padding: 0 14px;
+      border-radius: 12px; cursor: pointer; flex-shrink: 0;
+      background: rgba(0,255,102,.1); border: 1px solid rgba(0,255,102,.35); color: var(--action);
+      font: inherit; font-size: 12px; font-weight: 800;
+    }
+    .btn-trocar-topo .ico-lista { font-size: 16px; line-height: 1; }
+    @media (max-width: 600px) {
+      .btn-trocar-topo .txt-trocar { display: none; }
+      .btn-trocar-topo { width: 42px; padding: 0; justify-content: center; }
+    }
+    /* Chip discreto do projeto atual (mobile) — sem segundo botão */
+    .mob-proj-bar {
+      display: none; align-items: center; gap: 10px;
+      margin: 0 0 12px; padding: 10px 12px; border-radius: 14px;
+      background: rgba(88, 28, 135, 0.28); border: 1px solid rgba(255,255,255,.12);
+    }
+    .mob-proj-bar .lbl { font-size: 10px; font-weight: 800; letter-spacing: .08em; text-transform: uppercase; color: var(--gold); }
+    .mob-proj-bar .nome { font-size: 13px; font-weight: 800; color: var(--text); margin-top: 2px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+    .mob-proj-bar .btn-trocar { display: none; }
+    .aside-backdrop {
+      display: none; position: fixed; inset: 0; z-index: 40;
+      background: rgba(0,0,0,.65); backdrop-filter: blur(4px);
+    }
+    .aside-backdrop.on { display: block; }
+    @media (max-width: 1023px) {
+      .mob-proj-bar { display: flex; }
+      .layout > aside {
+        display: none; position: fixed; left: 0; right: 0; top: 0; bottom: 0; z-index: 50;
+        padding: max(12px, env(safe-area-inset-top)) 12px 12px;
+        background: rgba(0,0,0,.55); overflow-y: auto;
+        box-sizing: border-box;
+      }
+      .layout > aside.drawer-on { display: block; }
+      .layout > aside .box-full {
+        max-height: none; position: relative; max-width: 420px; margin: 0 auto;
+        width: 100%; box-sizing: border-box;
+      }
+      .drawer-close {
+        display: flex; align-items: center; justify-content: space-between;
+        margin-bottom: 10px; padding-bottom: 10px; border-bottom: 1px solid var(--line);
+      }
+      .drawer-close strong { font-size: 15px; }
+      .drawer-close button {
+        height: 36px; width: 36px; padding: 0; border-radius: 10px;
+        font-size: 18px; line-height: 1;
+      }
+      .lista-proj { max-height: none; }
+    }
+    @media (min-width: 1024px) {
+      .drawer-close { display: none; }
+    }
+    .proj {
+      padding: 12px 14px; border: 1px solid var(--line); border-radius: 14px;
+      cursor: pointer; transition: border-color .2s, background .2s; background: rgba(255,255,255,.03);
+    }
+    .proj:hover { border-color: rgba(168,85,247,.4); }
+    .proj.on { border-color: rgba(0,255,102,.45); background: rgba(0,255,102,.06); }
+    .proj small { color: var(--mut); font-size: 12px; display: block; margin-top: 2px; }
+
+    /* Campos: todos com a mesma altura e largura */
+    label.cap {
+      font-size: 10px; color: var(--mut); text-transform: uppercase; letter-spacing: .06em;
+      display: block; margin-bottom: 6px;
+    }
+    .campo {
+      width: 100%; height: var(--campo-h); padding: 0 14px; font: inherit; font-size: 15px; color: var(--text);
+      background: rgba(255,255,255,.06); border: 1px solid rgba(255,255,255,.16); border-radius: 14px;
+      -webkit-appearance: none; appearance: none; line-height: normal; min-width: 0;
+    }
+    select.campo { -webkit-appearance: menulist; appearance: auto; }
+    input.campo[type="date"], input.campo[type="time"] { text-align: left; }
+    .campos { display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 14px; }
+    .campos .full { grid-column: 1 / -1; }
+    @media (max-width: 1023px) { .campos { grid-template-columns: repeat(2, minmax(0, 1fr)); } }
+    @media (max-width: 600px) { .campos { grid-template-columns: 1fr; gap: 12px; } }
+
+    .row { display: flex; gap: 8px; flex-wrap: wrap; align-items: center; margin-bottom: 8px; }
+    button, a.btn-acao {
+      font: inherit; color: var(--text); height: 42px; padding: 0 16px; border-radius: 12px; cursor: pointer;
+      background: rgba(255,255,255,.06); border: 1px solid rgba(255,255,255,.16); transition: border-color .2s, background .2s;
+      display: inline-flex; align-items: center; justify-content: center; text-decoration: none;
+    }
+    button:hover { border-color: rgba(0,255,102,.5); }
+    button.primary { background: var(--action); color: #04120a; border-color: var(--action); font-weight: 800; }
+    button.danger { color: #fca5a5; border-color: rgba(255,77,77,.4); background: rgba(255,77,77,.08); }
+    button:disabled { opacity: .5; cursor: default; }
+    a.tech { color: var(--tech); text-decoration: none; font-weight: 600; }
+    a.tech:hover { text-decoration: underline; }
+    .msg { font-size: 12px; min-height: 16px; color: #fca5a5; margin-top: 6px; }
+    .msg.ok { color: var(--action); }
+    .vazio { color: var(--mut); font-size: 13px; padding: 6px 0; }
+
+    /* Cabeçalho do projeto: título + três blocos (data, horário, endereço) */
+    .cab-proj { display: flex; align-items: flex-start; justify-content: space-between; gap: 12px; flex-wrap: wrap; margin-bottom: 14px; }
+    .proj-titulo { font-size: clamp(1.15rem, 2.6vw, 1.5rem); font-weight: 800; letter-spacing: -.02em; margin-top: 4px; }
+    .head-trio { display: grid; grid-template-columns: 1fr 1fr 1.6fr; gap: 12px; }
+    @media (max-width: 600px) { .head-trio { grid-template-columns: 1fr; } }
+    .trio-cell { border: 1px solid var(--line); border-radius: 16px; padding: 12px 14px; background: rgba(255,255,255,.03); min-width: 0; }
+    .trio-cell .k { font-size: 10px; text-transform: uppercase; letter-spacing: .06em; color: var(--mut); font-weight: 700; }
+    .trio-cell .v { font-size: 15px; font-weight: 600; margin-top: 4px; line-height: 1.4; overflow-wrap: anywhere; }
+
+    /* Listas (financeiro, checklist, instruções) */
+    .item {
+      display: flex; justify-content: space-between; gap: 10px; align-items: center;
+      flex-wrap: wrap; padding: 12px 0; border-bottom: 1px solid var(--line); font-size: 14px;
+    }
+    .item:last-child { border-bottom: 0; }
+    .item > span:first-child { min-width: 0; }
+    .item .acoes { display: flex; gap: 6px; flex-wrap: wrap; }
+    .tag {
+      display: inline-block; font-size: 10px; font-weight: 800; padding: 4px 9px;
+      border-radius: 999px; text-transform: uppercase; letter-spacing: .04em;
+    }
+    .t-hold { background: rgba(212,175,55,.16); color: var(--gold); }
+    .t-ok { background: rgba(0,255,102,.14); color: var(--action); }
+    .t-rec { background: rgba(255,77,77,.15); color: var(--alert); }
+
+    /* Equipe técnica — mesmo modelo da área do cliente */
+    .eq-item { display: flex; align-items: center; gap: 12px; padding: 10px 0; border-bottom: 1px solid var(--line); }
+    .eq-item:last-child { border-bottom: 0; }
+    .eq-foto {
+      width: 46px; height: 46px; border-radius: 50%; flex: none;
+      background: rgba(168,85,247,.18) center/cover no-repeat;
+      border: 2px solid rgba(192,132,252,.45);
+      display: flex; align-items: center; justify-content: center;
+      font-weight: 800; color: #e9d5ff; font-size: 15px;
+    }
+    .eq-item strong { display: block; font-size: 15px; line-height: 1.25; }
+    .eq-item small { display: block; margin-top: 2px; font-size: 12px; color: var(--mut); letter-spacing: .02em; }
+    .eq-item .eq-acoes { margin-left: auto; flex-shrink: 0; }
+
+    /* Mapa */
+    .local-nome { font-size: 17px; font-weight: 700; }
+    .local-end { font-size: 14px; color: var(--body); margin-top: 4px; line-height: 1.45; overflow-wrap: anywhere; }
+    .mapa { width: 100%; max-width: 100%; height: 220px; border: 0; border-radius: 16px; margin-top: 14px; display: block; }
+    @media (max-width: 600px) { .mapa { height: 180px; } }
+
+    /* Calendário (mesmo CSS do index do cliente) */
+    .btn-s {
+      display: inline-flex; align-items: center; justify-content: center; height: 42px; padding: 0 14px;
+      border-radius: 12px; border: 1px solid rgba(255,255,255,.18); background: transparent;
+      color: var(--text); font-size: 15px; cursor: pointer; width: auto;
+    }
+    .cal { display: grid; grid-template-columns: repeat(7, 1fr); gap: 4px; font-size: 11px; text-align: center; }
+    .cal .hd { color: var(--mut); font-weight: 700; padding: 6px 0; }
+    .cal .d { padding: 10px 0; border-radius: 12px; border: 1px solid transparent; color: var(--body); min-height: 44px; }
+    .cal .d.muted { opacity: .3; }
+    .cal .d.tem { border-color: rgba(var(--rgb), .5); background: rgba(var(--rgb), .14); color: #fff; font-weight: 800; cursor: pointer; }
+    .cal .d .dots { display: flex; gap: 3px; justify-content: center; margin-top: 4px; min-height: 6px; }
+    .cal .d .dots i { width: 6px; height: 6px; border-radius: 50%; display: block; }
+    .filtros .sw { width: 10px; height: 10px; border-radius: 3px; display: inline-block; }
+    .cal .d.hoje { border-color: rgba(212, 175, 55, .5); }
+    .cal .d.sel { outline: 2px solid var(--action); outline-offset: -2px; }
+    .cal-nav { display: flex; align-items: center; justify-content: space-between; gap: 8px; margin-bottom: 12px; }
+    /* Legenda do calendário: cada cápsula é o próprio filtro (ligada / desligada) */
+    .filtros { display: flex; flex-wrap: nowrap; gap: 8px; margin: 6px -26px 14px; padding: 2px 26px 4px; overflow-x: auto; scroll-snap-type: x proximity; scrollbar-width: none; -webkit-overflow-scrolling: touch; }
+    .filtros::-webkit-scrollbar { display: none; }
+    .filtros { touch-action: pan-x; overscroll-behavior: contain; }
+    .leg {
+      flex: 0 0 auto; scroll-snap-align: start;
+      display: inline-flex; align-items: center; gap: 7px;
+      padding: 7px 13px; border-radius: 999px; cursor: pointer;
+      font: inherit; font-size: 12px; font-weight: 700; color: var(--mut); white-space: nowrap;
+      background: rgba(255, 255, 255, .03); border: 1px solid var(--line);
+      transition: background .2s, border-color .2s, color .2s, opacity .2s;
+      -webkit-tap-highlight-color: transparent;
+    }
+    .leg .sw { width: 9px; height: 9px; border-radius: 999px; background: var(--c); flex: none; }
+    .leg.on { color: var(--text); border-color: var(--c); background: color-mix(in srgb, var(--c) 16%, transparent); }
+    .leg:not(.on) { opacity: .5; }
+    .leg:focus-visible { outline: 2px solid var(--c); outline-offset: 2px; }
+    @media (max-width: 640px) { .filtros { margin: 6px -18px 14px; padding: 2px 18px 4px; } }
+    .dia-item { border: 1px solid var(--line); border-radius: 16px; padding: 12px; margin-bottom: 8px; border-left: 4px solid #c084fc; background: rgba(255, 255, 255, .025); cursor: pointer; }
+    .dia-item strong { display: block; margin-bottom: 2px; }
+    .dia-item small { color: var(--mut); display: block; font-size: 12px; }
+
+    /* KPIs (somente admin) */
+    .kpis {
+      display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 10px; margin-bottom: 14px;
+      width: 100%; max-width: 100%;
+    }
+    @media (max-width: 900px) {
+      .kpis {
+        display: flex; flex-wrap: nowrap; overflow-x: auto; -webkit-overflow-scrolling: touch;
+        gap: 10px; padding-bottom: 4px; scrollbar-width: none;
+      }
+      .kpis::-webkit-scrollbar { display: none; }
+      .kpi { min-width: 160px; flex: 0 0 auto; }
+    }
+    .kpi { border-radius: 18px; padding: 14px; background: rgba(255,255,255,.045); border: 1px solid rgba(255,255,255,.14); box-sizing: border-box; }
+    .kpi .k { font-size: 10px; letter-spacing: .08em; text-transform: uppercase; color: var(--mut); font-weight: 700; }
+    .kpi .v { font-size: 22px; font-weight: 800; margin-top: 4px; }
+    .kpi .v small { font-size: 12px; font-weight: 600; color: var(--mut); display: block; margin-top: 2px; }
+
+    /* Visão de não administrador: só leitura e sem informações de outros */
+    .nao-admin .so-admin { display: none !important; }
+    .nao-admin .campo { pointer-events: none; opacity: .85; }
+
+    /* Abas do projeto (organização sólida, visual canônico) */
+    .tabs-wrap {
+      border-radius: 24px; overflow: hidden; margin-bottom: 14px;
+      background: rgba(255,255,255,.045); border: 1px solid rgba(255,255,255,.14);
+      backdrop-filter: blur(24px); -webkit-backdrop-filter: blur(24px);
+    }
+    .tabs-bar {
+      display: flex; overflow-x: auto; -webkit-overflow-scrolling: touch;
+      scrollbar-width: none; border-bottom: 1px solid var(--line);
+      background: rgba(0,0,0,.22);
+    }
+    .tabs-bar::-webkit-scrollbar { display: none; }
+    .tab-btn {
+      flex: 0 0 auto; height: auto; padding: 14px 18px; border: 0; border-radius: 0;
+      background: transparent; color: var(--mut); font-size: 12px; font-weight: 800;
+      letter-spacing: .06em; text-transform: uppercase; white-space: nowrap;
+      border-bottom: 2px solid transparent; cursor: pointer;
+    }
+    .tab-btn:hover { color: var(--text); background: rgba(255,255,255,.04); border-color: transparent; }
+    .tab-btn.on {
+      color: var(--action);
+      border-bottom-color: var(--action);
+      background: rgba(0,255,102,.06);
+    }
+    .tab-panel { display: none; padding: 16px; }
+    .tab-panel.on { display: block; }
+    .tab-panel .box-full { background: rgba(255,255,255,.03); }
+    .box-full {
+      background: rgba(26, 18, 56, 0.45);
+    }
+  </style>
+</head>
+<body class="h-full antialiased overflow-x-hidden">
+
+  <canvas id="orbit-canvas"></canvas>
+  <div id="plasmaLayer" class="plasma-top-layer"></div>
+
+  <header id="calc-header"></header>
+  <div id="mobile-menu"></div>
+
+  <div class="flex flex-col min-h-screen relative z-10">
+    <main class="area">
+
+      <div class="topo-pagina">
+        <div style="min-width:0">
+          <span class="eyebrow">Projetos</span>
+          <h1 class="titulo" style="margin-bottom:0">Projetos</h1>
+        </div>
+        <button type="button" class="btn-trocar-topo" id="btnTrocarProj" title="Trocar evento" aria-label="Trocar evento">
+          <span class="ico-lista" aria-hidden="true">☰</span>
+          <span class="txt-trocar">Trocar evento</span>
+        </button>
+      </div>
+
+      <div class="kpis so-admin">
+        <div class="kpi"><div class="k">Projetos ativos</div><div class="v" id="kpiAtivos">0</div></div>
+        <div class="kpi"><div class="k">Checklists pendentes</div><div class="v" id="kpiPend">0</div></div>
+        <div class="kpi"><div class="k">Resumo do mês</div><div class="v"><span id="kpiRec">R$ 0,00</span><small>Receb.</small></div><div class="v" style="font-size:16px;margin-top:6px"><span id="kpiCom">R$ 0,00</span><small>Comis.</small></div></div>
+        <div class="kpi"><div class="k">Equipe total</div><div class="v" id="kpiEq">0</div></div>
+      </div>
+
+      <div class="mob-proj-bar" id="mobProjBar">
+        <div style="min-width:0;flex:1">
+          <div class="lbl">Projeto atual</div>
+          <div class="nome" id="mobProjNome">Escolha um projeto</div>
+        </div>
+      </div>
+
+      <div class="aside-backdrop" id="asideBackdrop" aria-hidden="true"></div>
+
+      <div class="layout">
+
+        <aside id="projectDrawer">
+          <div class="box-full">
+            <div class="drawer-close">
+              <strong>Selecionar projeto</strong>
+              <button type="button" id="btnFecharDrawer" aria-label="Fechar">×</button>
+            </div>
+            <h2 id="tituloLista">Lista de projetos</h2>
+            <input class="campo" id="busca" placeholder="Buscar nº ou cliente">
+            <div id="listaProj" class="lista-proj"><div class="vazio">Carregando…</div></div>
+          </div>
+        </aside>
+
+        <section id="detalhe">
+          <div class="box-full" id="semSel"><div class="vazio">Escolha um projeto na lista.</div></div>
+
+          <div id="conteudo" style="display:none">
+
+            <!-- Cabeçalho: título, status e três blocos (data, horário, endereço) -->
+            <div class="box-full">
+              <div class="cab-proj">
+                <div>
+                  <span class="eyebrow" id="nomeEvento"></span>
+                  <h2 class="proj-titulo" id="tituloProj"></h2>
+                </div>
+                <span class="tag" id="tagStatus"></span>
+              </div>
+              <div class="head-trio">
+                <div class="trio-cell"><div class="k">Data</div><div class="v" id="hData">—</div></div>
+                <div class="trio-cell"><div class="k">Horário</div><div class="v" id="hHorario">—</div></div>
+                <div class="trio-cell"><div class="k">Local do evento</div><div class="v" id="hEndereco">—</div></div>
+              </div>
+            </div>
+
+            <div class="tabs-wrap">
+              <div class="tabs-bar" role="tablist">
+                <button type="button" class="tab-btn on" data-tab="geral" role="tab">Geral &amp; Logística</button>
+                <button type="button" class="tab-btn" data-tab="checklist" role="tab">Checklist &amp; Instruções</button>
+                <button type="button" class="tab-btn" data-tab="financeiro" role="tab">Financeiro</button>
+                <button type="button" class="tab-btn" data-tab="agenda" role="tab">Agenda &amp; Datas</button>
+              </div>
+
+              <!-- ABA 1: GERAL & LOGÍSTICA -->
+              <div class="tab-panel on" id="tab-geral" role="tabpanel">
+                <div class="box-full">
+                  <h2>Dados gerais</h2>
+                  <div class="campos">
+                    <div><label class="cap" for="fData">Data do evento</label><input class="campo" type="date" id="fData"></div>
+                    <div><label class="cap" for="fStatus">Status</label>
+                      <select class="campo" id="fStatus">
+                        <option value="rascunho">Rascunho</option>
+                        <option value="hold">Hold 48h</option>
+                        <option value="enviada">Enviada</option>
+                        <option value="aprovada">Aprovada</option>
+                        <option value="adiada">Adiada</option>
+                        <option value="cancelada">Cancelada</option>
+                      </select>
+                    </div>
+                    <div><label class="cap" for="fIni">Horário início</label><input class="campo" type="time" id="fIni"></div>
+                    <div><label class="cap" for="fFim">Horário fim</label><input class="campo" type="time" id="fFim"></div>
+                    <div class="full"><label class="cap" for="fLocal">Nome do local (ex.: Sítio, African Garden…)</label><input class="campo" id="fLocal" placeholder="Nome do local da festa"></div>
+                  </div>
+                  <div class="row so-admin" style="margin-top:16px">
+                    <button class="primary" id="btnSalvar" type="button">Salvar</button>
+                    <span class="mut" id="holdInfo"></span>
+                  </div>
+                  <div class="msg" id="msgDados"></div>
+                </div>
+
+                <div class="box-full">
+                  <h2>Local</h2>
+                  <div id="localBox"><div class="vazio">Sem local informado.</div></div>
+                </div>
+
+                <div class="box-full">
+                  <h2>Equipe técnica</h2>
+                  <div class="row so-admin">
+                    <select class="campo" id="addParceiro" style="flex:1;min-width:200px;width:auto"></select>
+                    <select class="campo" id="addNivel" style="width:auto;min-width:200px">
+                      <option value="agenda">Só agenda</option>
+                      <option value="dados_sensiveis">Agenda + dados sensíveis</option>
+                    </select>
+                    <button class="primary" id="btnAddCol" type="button">Adicionar</button>
+                  </div>
+                  <div class="msg so-admin" id="msgCol"></div>
+                  <div id="listaCol"></div>
+                  
+                </div>
+              </div>
+
+              <!-- ABA 2: CHECKLIST & INSTRUÇÕES -->
+              <div class="tab-panel" id="tab-checklist" role="tabpanel">
+                <div class="box-full">
+                  <h2>Resumo do checklist</h2>
+                  <div id="listaEtapas"></div>
+                </div>
+                <div class="box-full so-admin">
+                  <h2>Nova etapa do checklist</h2>
+                  <div class="campos" style="grid-template-columns: minmax(0,1fr) 160px; align-items:end">
+                    <div><label class="cap" for="novaEtapaNome">Nome da etapa</label><input class="campo" id="novaEtapaNome" placeholder="Ex.: Montagem" maxlength="120"></div>
+                    <div><label class="cap" for="novaEtapaHora">Hora</label><input class="campo" type="time" id="novaEtapaHora"></div>
+                  </div>
+                  <div class="row" style="margin-top:12px"><button class="primary" id="btnAddEtapa" type="button">Salvar etapa</button></div>
+                  <div class="msg" id="msgEtapa"></div>
+                </div>
+                <div class="box-full">
+                  <h2>Instruções / Observações</h2>
+                  <div id="listaObs"></div>
+                </div>
+              </div>
+
+              <!-- ABA 3: FINANCEIRO -->
+              <div class="tab-panel" id="tab-financeiro" role="tabpanel">
+                <div class="box-full">
+                  <h2>Financeiro</h2>
+                  <div id="finBox"></div>
+                </div>
+              </div>
+
+              <!-- ABA 4: AGENDA -->
+              <div class="tab-panel" id="tab-agenda" role="tabpanel">
+                <div class="box-full">
+                  <h2>Agenda do evento</h2>
+                  <div class="filtros" id="calFiltros" data-noswipe role="group" aria-label="Filtrar calendário">
+                    <button type="button" class="leg on" data-filtro="evento" aria-pressed="true" style="--c:#c084fc"><i class="sw"></i>Evento</button>
+                    <button type="button" class="leg on" data-filtro="hold" aria-pressed="true" style="--c:#f97316"><i class="sw"></i>Hold</button>
+                    <button type="button" class="leg on" data-filtro="contrato" aria-pressed="true" style="--c:#3b82f6"><i class="sw"></i>Contrato</button>
+                    <button type="button" class="leg on" data-filtro="pagamento" aria-pressed="true" style="--c:#D4AF37"><i class="sw"></i>Pagamentos</button>
+                    <button type="button" class="leg on" data-filtro="comissao" aria-pressed="true" style="--c:#15803d"><i class="sw"></i>Comissão</button>
+                    <button type="button" class="leg on" data-filtro="comprovante" aria-pressed="true" style="--c:#F5D061"><i class="sw"></i>Comprovantes</button>
+                    <button type="button" class="leg on" data-filtro="reserva" aria-pressed="true" style="--c:#64748b"><i class="sw"></i>Reservas</button>
+                  </div>
+                  <div class="cal-nav">
+                    <button type="button" class="btn-s" id="calPrev">‹</button>
+                    <strong id="calTitulo" style="font-size:15px"></strong>
+                    <button type="button" class="btn-s" id="calNext">›</button>
+                  </div>
+                  <div class="cal" id="calGrid"></div>
+                  <div id="calDia" style="margin-top:14px"><div class="vazio">Toque em um dia com evento para ver o detalhe.</div></div>
+                </div>
+              </div>
+            </div>
+
+          </div>
+        </section>
+      </div>
+    </main>
+  </div>
+
+  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+  <script src="../partner-config.js"></script>
+  <script src="../../script/script.js" defer></script>
+  <script src="../partner-header.js"></script>
+  <script>
+(function () {
+  'use strict';
+  var CFG = window.PARTNER_CFG;
+  var SB = window.sbPartner || window.supabase.createClient(CFG.SB_URL, CFG.SB_KEY, {
+    auth: { persistSession: true, autoRefreshToken: true }
+  });
+  window.sbPartner = SB;
+
+  /* Coluna de cachê por colaborador em projeto_colaboradores.
+     Preencher com o nome exato da coluna quando existir; enquanto for null, o cachê aparece como "a definir". */
+  var COLUNA_CACHE = null;
+
+  var $ = function (id) { return document.getElementById(id); };
+  var E = function (s) {
+    return String(s == null ? '' : s)
+      .replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;');
+  };
+  var BRL = function (n) {
+    try { return Number(n || 0).toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' }); }
+    catch (e) { return 'R$ —'; }
+  };
+  var DATA = function (d) {
+    if (!d) return '—';
+    try { return new Date(String(d).slice(0, 10) + 'T12:00:00').toLocaleDateString('pt-BR'); }
+    catch (e) { return '—'; }
+  };
+  var HORA = function (h) { return h ? String(h).slice(0, 5) : ''; };
+  var ISO = function (d) {
+    return d.getFullYear() + '-' + String(d.getMonth() + 1).padStart(2, '0') + '-' + String(d.getDate()).padStart(2, '0');
+  };
+  var MESES = ['janeiro','fevereiro','março','abril','maio','junho','julho','agosto','setembro','outubro','novembro','dezembro'];
+  var ROTULO_STATUS = { rascunho: 'Rascunho', hold: 'Hold 48h', enviada: 'Enviada', aprovada: 'Aprovada', adiada: 'Adiada', cancelada: 'Cancelada' };
+  var ROTULO_FIN = { pendente: 'Pendente', solicitado: 'Solicitado', parcial: 'Parcial', liquidado: 'Liquidado', cancelado: 'Cancelado' };
+
+  /* Vindo do pop-up da agenda: ?data=AAAA-MM-DD&dia=id1,id2 (lista dos eventos do dia) */
+  var DIA_INICIAL = (function () {
+    var q = new URLSearchParams(location.search);
+    return { data: q.get('data'), dia: (q.get('dia') || '').split(',').filter(Boolean) };
+  })();
+
+  var ME = null, ADMIN = false, PROPS = [], CLIENTES = {}, ATUAL = null, PARCEIROS = [];
+  var TAXONOMIA = {}, CAL = { ano: null, mes: null, sel: null };
+  var LEGADO = { agencia_corporativa: 'Agência', cerimonialista: 'Cerimonialista', hotelaria_espaco: 'Hotelaria / Espaço', produtor_independente: 'Produtor' };
+
+  /* Mesma regra da área do cliente (cliente-area):
+     nome = nome_completo · foto = avatar_url · função = taxonomia (perfil_parceiro_id) ou perfil legado */
+  function nomeEquipe(p) { return p ? (p.nome_completo || p.email || '').trim() : ''; }
+  function fotoEquipe(p) { return p ? (p.avatar_url || '') : ''; }
+  function funcaoEquipe(pa) {
+    var item = pa && pa.perfil_parceiro_id ? TAXONOMIA[pa.perfil_parceiro_id] : null;
+    if (item) {
+      if (item.pai_id && TAXONOMIA[item.pai_id]) return TAXONOMIA[item.pai_id].nome + ' · ' + item.nome;
+      return item.nome;
+    }
+    if (pa && pa.perfil === 'outro' && (pa.categoria_artistica || pa.especialidade_artistica)) return 'Artista';
+    return (pa && LEGADO[pa.perfil]) || '';
+  }
+  function nomeFinanceiro(p) { return p ? (p.nome_completo || p.email || '').trim() : ''; }
+
+  function tempo(iso) {
+    if (!iso) return '48H 00M';
+    var d = new Date(iso) - new Date();
+    if (d <= 0) return 'EXPIRADO';
+    var h = Math.floor(d / 3600000), m = Math.floor((d % 3600000) / 60000);
+    return (h < 10 ? '0' : '') + h + 'H ' + (m < 10 ? '0' : '') + m + 'M';
+  }
+
+  /* ===== Endereço do evento: mesma regra do contrato =====
+     Se evento_endereco_igual_cliente === true, usa o endereço do cliente; senão, o endereço do evento. */
+  function montarEndereco(e) {
+    var linha1 = [e.logradouro, e.numero, e.complemento].filter(Boolean).join(', ');
+    var cidadeUf = e.cidade && e.uf ? e.cidade + '/' + e.uf : (e.cidade || e.uf || '');
+    var linha2 = [e.bairro, cidadeUf, e.cep ? 'CEP ' + e.cep : ''].filter(Boolean).join(' - ');
+    return [linha1, linha2].filter(Boolean).join(' - ');
+  }
+  function enderecoEvento(p) {
+    var src = p.evento_endereco_igual_cliente === true
+      ? (CLIENTES[p.cliente_id] || {})
+      : { logradouro: p.evento_logradouro, numero: p.evento_numero, complemento: p.evento_complemento,
+          bairro: p.evento_bairro, cidade: p.evento_cidade, uf: p.evento_uf, cep: p.evento_cep };
+    var texto = montarEndereco(src);
+    var busca = [
+      [src.logradouro, src.numero].filter(Boolean).join(', '),
+      src.bairro,
+      src.cidade && src.uf ? src.cidade + ' - ' + src.uf : (src.cidade || src.uf || ''),
+      src.cep,
+      'Brasil'
+    ].filter(Boolean).join(', ');
+    return { texto: texto, busca: texto ? busca : '' };
+  }
+
+  /* ===== Inicialização ===== */
+  async function init() {
+    var s = await SB.auth.getSession();
+    if (!(s.data && s.data.session)) { location.href = '../login.html'; return; }
+
+    var r = await SB.from('parceiros')
+      .select('id, nome_completo, role, status, nivel, user_id')
+      .eq('user_id', s.data.session.user.id)
+      .maybeSingle();
+    ME = r.data;
+    if (!ME) { location.href = '../login.html'; return; }
+    ME.user_id = ME.user_id || s.data.session.user.id;
+
+    var papel = String(ME.role || ME.nivel || '').toLowerCase().trim();
+    ADMIN = /^(admin|master)$/.test(papel);
+    document.body.classList.toggle('nao-admin', !ADMIN);
+    $('tituloLista').textContent = ADMIN ? 'Lista de projetos' : 'Projetos que estou envolvido';
+
+    await carregarTaxonomia();
+    if (ADMIN) await carregarParceirosBase();
+    await carregarLista();
+    if (ADMIN) await carregarKpis();
+
+    var qid = new URLSearchParams(location.search).get('id');
+    if (qid) selecionar(qid);
+  }
+
+  async function carregarTaxonomia() {
+    var r = await SB.from('perfis_parceiros').select('id, nome, pai_id');
+    TAXONOMIA = {};
+    (r.data || []).forEach(function (t) { TAXONOMIA[t.id] = t; });
+  }
+
+  async function carregarParceirosBase() {
+    var r = await SB.from('parceiros').select('id, nome_completo, email, status').eq('status', 'aprovado').order('nome_completo');
+    if (r.error || !(r.data && r.data.length)) {
+      r = await SB.from('parceiros').select('id, nome_completo, email, status').order('nome_completo');
+    }
+    PARCEIROS = r.data || [];
+    $('addParceiro').innerHTML = PARCEIROS.length
+      ? PARCEIROS.map(function (p) { return '<option value="' + E(p.id) + '">' + E(nomeEquipe(p) || p.id) + '</option>'; }).join('')
+      : '<option value="">Nenhum parceiro aprovado</option>';
+  }
+
+  /* ===== Lista de projetos =====
+     Admin: todos.
+     Demais: vendedor (propostas.parceiro_id) OU colaborador do dia (projeto_colaboradores) —
+     DJ, motorista, montador, cantor, qualquer cargo na taxonomia. */
+  async function carregarLista() {
+    var sel = '*, parceiros:parceiros!parceiro_id(id, nome_completo, email, comissao_padrao_pct, tipo_pix, chave_pix)';
+
+    if (ADMIN) {
+      var r = await SB.from('propostas').select(sel).order('data_evento', { ascending: true }).limit(500);
+      PROPS = r.data || [];
+    } else {
+      var ids = {};
+
+      /* 1) Como vendedor atribuído */
+      var minhas = await SB.from('propostas').select('id').eq('parceiro_id', ME.id);
+      (minhas.data || []).forEach(function (p) { if (p.id) ids[p.id] = true; });
+
+      /* 2) Como colaborador do dia (qualquer cargo) */
+      var c = await SB.from('projeto_colaboradores').select('proposta_id').eq('parceiro_id', ME.id);
+      if (c.error) console.error('projeto_colaboradores', c.error);
+      (c.data || []).forEach(function (x) { if (x.proposta_id) ids[x.proposta_id] = true; });
+
+      /* Fallback: se a coluna for user_id em vez de parceiro_id */
+      if (!c.data || !c.data.length) {
+        try {
+          var c2 = await SB.from('projeto_colaboradores').select('proposta_id').eq('user_id', ME.user_id || ME.id);
+          (c2.data || []).forEach(function (x) { if (x.proposta_id) ids[x.proposta_id] = true; });
+        } catch (e) {}
+      }
+
+      var listaIds = Object.keys(ids);
+      if (!listaIds.length) {
+        PROPS = [];
+      } else {
+        /* Busca explícita por id — funciona com policy que libera colaborador */
+        var r2 = await SB.from('propostas').select(sel).in('id', listaIds).order('data_evento', { ascending: true });
+        if (r2.error) {
+          console.error('propostas.in', r2.error);
+          /* Fallback: tenta lista geral e filtra no cliente */
+          var r3 = await SB.from('propostas').select(sel).order('data_evento', { ascending: true }).limit(500);
+          PROPS = (r3.data || []).filter(function (p) { return ids[p.id]; });
+        } else {
+          PROPS = r2.data || [];
+        }
+      }
+    }
+
+    await carregarClientes();
+    desenharLista();
+    renderCal();
+  }
+
+  async function carregarClientes() {
+    CLIENTES = {};
+    var ids = [];
+    PROPS.forEach(function (p) { if (p.cliente_id && ids.indexOf(p.cliente_id) < 0) ids.push(p.cliente_id); });
+    if (!ids.length) return;
+    var r = await SB.from('co_clientes').select('id, logradouro, numero, complemento, bairro, cidade, uf, cep').in('id', ids);
+    (r.data || []).forEach(function (c) { CLIENTES[c.id] = c; });
+  }
+
+  function desenharLista() {
+    var t = ($('busca').value || '').toLowerCase().trim();
+    var lista = PROPS.filter(function (p) {
+      return !t || String(p.numero).indexOf(t) >= 0 || String(p.cliente_nome || '').toLowerCase().indexOf(t) >= 0;
+    });
+    $('listaProj').innerHTML = lista.length ? lista.map(function (p) {
+      var st = p.status || '';
+      var cls = st === 'hold' ? 't-hold' : (st === 'cancelada' ? 't-rec' : 't-ok');
+      return '<div class="proj ' + (ATUAL && ATUAL.id === p.id ? 'on' : '') + '" data-id="' + E(p.id) + '">' +
+        '<strong>#' + E(p.numero) + '</strong> · ' + E(p.cliente_nome || '') +
+        '<small>' + E(p.nome_evento || p.tipo_evento || '') + '</small>' +
+        '<div style="margin-top:6px;display:flex;gap:8px;align-items:center;flex-wrap:wrap">' +
+          '<span class="tag ' + cls + '">' + E(ROTULO_STATUS[st] || st) + '</span>' +
+          '<small style="margin:0">' + E(DATA(p.data_evento)) + '</small></div></div>';
+    }).join('') : '<div class="vazio">Nenhum projeto.</div>';
+
+    $('listaProj').querySelectorAll('[data-id]').forEach(function (el) {
+      el.addEventListener('click', function () { selecionar(el.getAttribute('data-id')); });
+    });
+  }
+  $('busca').addEventListener('input', desenharLista);
+
+  /* ===== KPIs (somente admin) ===== */
+  async function carregarKpis() {
+    var ativos = PROPS.filter(function (p) { return p.status !== 'cancelada'; });
+    $('kpiAtivos').textContent = ativos.length;
+
+    var agora = new Date();
+    var doMes = ativos.filter(function (p) {
+      if (!p.data_evento) return false;
+      var d = new Date(String(p.data_evento).slice(0, 10) + 'T12:00:00');
+      return d.getMonth() === agora.getMonth() && d.getFullYear() === agora.getFullYear();
+    });
+    var receb = doMes.reduce(function (s, p) { return s + Number(p.valor_total || 0); }, 0);
+    var comis = doMes.reduce(function (s, p) { return s + calcFin(p).total; }, 0);
+    $('kpiRec').textContent = BRL(receb);
+    $('kpiCom').textContent = BRL(comis);
+
+    var pend = await SB.from('evento_etapas').select('id', { count: 'exact', head: true }).eq('situacao', 'pendente');
+    $('kpiPend').textContent = pend.count || 0;
+
+    var eq = await SB.from('projeto_colaboradores').select('parceiro_id');
+    var unicos = {};
+    (eq.data || []).forEach(function (x) { unicos[x.parceiro_id] = true; });
+    $('kpiEq').textContent = Object.keys(unicos).length;
+  }
+
+  /* ===== Financeiro (mesma regra da página de comissões) ===== */
+  function calcFin(p) {
+    var valor = Number(p.valor_total || 0);
+    var pct = Number(p.comissao_pct_efetiva != null ? p.comissao_pct_efetiva
+      : (p.parceiros && p.parceiros.comissao_padrao_pct != null ? p.parceiros.comissao_padrao_pct : 10));
+    var total = (valor * pct) / 100;
+    var pago = Number(p.comissao_paga_valor || 0);
+    var saldo = Math.max(0, total - pago);
+    var status = p.comissao_status || (p.comissao_paga ? 'liquidado' : 'pendente');
+    if (saldo <= 0.01 && total > 0 && status !== 'cancelado') status = 'liquidado';
+    return { valor: valor, pct: pct, total: total, pago: pago, saldo: saldo, status: status,
+             vendedor: nomeFinanceiro(p.parceiros) || ('Vendedor ID ' + p.parceiro_id) };
+  }
+
+  /* Admin: tudo. Vendedor: a própria comissão. Colaborador: o cachê do dia. Nada mais. */
+  function renderFinanceiro(p, meuColab) {
+    var box = $('finBox');
+    if (ADMIN) {
+      var f = calcFin(p);
+      var cls = f.status === 'liquidado' ? 't-ok' : (f.status === 'cancelado' ? 't-rec' : 't-hold');
+      box.innerHTML =
+        '<div class="item"><span>Valor do pedido</span><strong>' + BRL(f.valor) + '</strong></div>' +
+        '<div class="item"><span>Comissão (' + f.pct + '%)</span><strong style="color:var(--gold)">' + BRL(f.total) + '</strong></div>' +
+        '<div class="item"><span>Já repassado</span><span>' + BRL(f.pago) + '</span></div>' +
+        '<div class="item"><span>Saldo a repassar</span><span>' + BRL(f.saldo) + '</span></div>' +
+        '<div class="item"><span>Repasse</span><span class="tag ' + cls + '">' + E(ROTULO_FIN[f.status] || f.status) + '</span></div>' +
+        '<div class="item"><span>Vendedor</span><span>' + E(f.vendedor) + '</span></div>';
+      return;
+    }
+
+    var linhas = [];
+    if (p.parceiro_id === ME.id) {
+      var fv = calcFin(p);
+      linhas.push('<div class="item"><span>Sua comissão (' + fv.pct + '%)</span><strong style="color:var(--gold)">' + BRL(fv.total) + '</strong></div>');
+    }
+    if (meuColab) {
+      var cache = COLUNA_CACHE && meuColab[COLUNA_CACHE] != null ? BRL(meuColab[COLUNA_CACHE]) : 'a definir';
+      linhas.push('<div class="item"><span>Seu cachê do dia</span><strong style="color:var(--gold)">' + E(cache) + '</strong></div>');
+    }
+    box.innerHTML = linhas.length ? linhas.join('')
+      : '<div class="vazio">Nenhuma informação financeira disponível para você neste projeto.</div>';
+  }
+
+  /* ===== Local: nome, endereço completo e mapa ===== */
+  function renderLocal(p, end) {
+    var box = $('localBox');
+    var nome = (p.local_evento || '').trim();
+    if (!nome && !end.texto) { box.innerHTML = '<div class="vazio">Sem local informado.</div>'; return; }
+    /* Busca no mapa: nome do local + endereço (evita só a cidade genérica) */
+    var alvo = [nome, end.busca || end.texto].filter(Boolean).join(', ') || nome || end.texto;
+    box.innerHTML =
+      (nome ? '<div class="local-nome">' + E(nome) + '</div>' : '') +
+      (end.texto ? '<div class="local-end">' + E(end.texto) + '</div>' : '') +
+      '<iframe class="mapa" loading="lazy" referrerpolicy="no-referrer-when-downgrade" title="Mapa do local" ' +
+        'src="https://www.google.com/maps?q=' + encodeURIComponent(alvo) + '&output=embed"></iframe>';
+  }
+
+  /* ===== Agenda do evento (somente o projeto aberto) ===== */
+  var CAL_COR = { evento: '#c084fc', hold: '#f97316', contrato: '#3b82f6', pagamento: '#D4AF37', comissao: '#15803d', comprovante: '#F5D061', reserva: '#64748b' };
+  var FILTROS_CAL = { evento: true, hold: true, contrato: true, pagamento: true, comissao: true, comprovante: true, reserva: true };
+  var CAL_ITENS = {}, CAL_BIND = false;
+
+  function calChave(s) { return s ? String(s).slice(0, 10) : null; }
+  function calMaisTresUteis(iso) {
+    var d = new Date(iso + 'T12:00:00'), n = 0;
+    while (n < 3) { d.setDate(d.getDate() + 1); var wd = d.getDay(); if (wd !== 0 && wd !== 6) n++; }
+    return ISO(d);
+  }
+
+  async function carregarAgendaEvento(p) {
+    CAL_ITENS = {};
+    CAL.sel = null;
+    if (!p) return;
+    if (p.data_evento) {
+      var dd = new Date(calChave(p.data_evento) + 'T12:00:00');
+      CAL.ano = dd.getFullYear(); CAL.mes = dd.getMonth();
+    }
+    function add(k, it) { if (!k) return; (CAL_ITENS[k] = CAL_ITENS[k] || []).push(it); }
+
+    var pa = p.pagamento_agenda || {};
+    if (typeof pa === 'string') { try { pa = JSON.parse(pa); } catch (e) { pa = {}; } }
+
+    add(calChave(p.data_evento), { kind: 'evento', titulo: 'Dia do evento · #' + p.numero, sub: p.tipo_evento || '' });
+    if (ADMIN && p.status === 'hold') add(calChave(p.hold_expira_em), { kind: 'hold', titulo: 'Hold expira · #' + p.numero, sub: 'Prazo de 48h' });
+    if (p.assinado_em) add(calChave(p.assinado_em), { kind: 'contrato', titulo: 'Contrato assinado · #' + p.numero, sub: 'Documento formalizado' });
+
+    var linhas = [
+      ['Entrada', pa.data_entrada, pa.status_entrada],
+      ['Saldo', pa.data_saldo, pa.status_saldo],
+      ['Parcela', pa.data_parcela, pa.status_parcela]
+    ];
+    if (Array.isArray(pa.parcelas)) pa.parcelas.forEach(function (par, i) { linhas.push(['Parcela ' + (i + 1), par.data || par.data_pagamento, par.status]); });
+    linhas.forEach(function (row) {
+      var d = calChave(row[1]); if (!d) return;
+      var st = String(row[2] || 'pendente').toLowerCase();
+      var pago = ['pago', 'liquidado', 'recebido'].indexOf(st) >= 0;
+      add(d, { kind: 'pagamento', titulo: row[0] + ' · #' + p.numero, sub: pago ? 'Já pago' : 'Pagamento previsto' });
+      if (pago && !p.comissao_paga) {
+        add(calMaisTresUteis(d), { kind: 'comissao', titulo: 'Liberação de comissão · #' + p.numero, sub: 'Previsão · 3 dias úteis após ' + row[0].toLowerCase() });
+      }
+    });
+
+    if (ADMIN) {
+      try {
+        var rc = await SB.from('contrato_comprovantes').select('tipo, status, data_pagamento').eq('proposta_id', p.id);
+        (rc.data || []).forEach(function (c) {
+          add(calChave(c.data_pagamento), { kind: 'comprovante', titulo: (ROTULO_CMP[c.tipo] || 'Comprovante') + ' · #' + p.numero, sub: c.status || 'enviado' });
+        });
+      } catch (e) {}
+    }
+
+    try {
+      var rr = await SB.from('agenda_reservas').select('tipo, data_inicio, data_fim, observacao').eq('proposta_id', p.id);
+      (rr.data || []).forEach(function (r) {
+        if (!r.data_inicio) return;
+        var a = new Date(calChave(r.data_inicio) + 'T12:00:00');
+        var b = new Date(calChave(r.data_fim || r.data_inicio) + 'T12:00:00');
+        for (var d = new Date(a); d <= b; d.setDate(d.getDate() + 1)) {
+          add(ISO(d), { kind: 'reserva', titulo: (r.tipo || 'Reserva') + (r.observacao ? ' · ' + r.observacao : ''), sub: 'Período reservado' });
+        }
+      });
+    } catch (e) {}
+
+    CAL_ITENS_PRONTO = true;
+  }
+  var CAL_ITENS_PRONTO = false;
+
+  function bindCalFiltros() {
+    if (CAL_BIND) return;
+    CAL_BIND = true;
+    document.querySelectorAll('#calFiltros button[data-filtro]').forEach(function (b) {
+      b.addEventListener('click', function () {
+        var id = b.getAttribute('data-filtro');
+        FILTROS_CAL[id] = FILTROS_CAL[id] === false;
+        renderCal();
+      });
+    });
+  }
+
+  function renderCal() {
+    bindCalFiltros();
+    var agora = new Date();
+    if (CAL.ano == null) { CAL.ano = agora.getFullYear(); CAL.mes = agora.getMonth(); }
+    var y = CAL.ano, m = CAL.mes;
+    $('calTitulo').textContent = MESES[m] + ' ' + y;
+
+    document.querySelectorAll('#calFiltros button[data-filtro]').forEach(function (b) {
+      var id = b.getAttribute('data-filtro');
+      var on = FILTROS_CAL[id] !== false;
+      b.hidden = !ADMIN && (id === 'hold' || id === 'comprovante');
+      b.classList.toggle('on', on);
+      b.setAttribute('aria-pressed', on ? 'true' : 'false');
+    });
+
+    var visiveis = {};
+    Object.keys(CAL_ITENS).forEach(function (k) {
+      var v = CAL_ITENS[k].filter(function (it) { return FILTROS_CAL[it.kind] !== false; });
+      if (v.length) visiveis[k] = v;
+    });
+
+    var primeiro = new Date(y, m, 1);
+    var inicio = new Date(y, m, 1 - primeiro.getDay());
+    var hoje = ISO(agora);
+    var html = ['Dom', 'Seg', 'Ter', 'Qua', 'Qui', 'Sex', 'Sáb'].map(function (h) {
+      return '<div class="hd">' + h + '</div>';
+    }).join('');
+
+    for (var i = 0; i < 42; i++) {
+      var dia = new Date(inicio);
+      dia.setDate(inicio.getDate() + i);
+      var iso = ISO(dia);
+      var fora = dia.getMonth() !== m;
+      var lista = visiveis[iso] || [];
+      var tem = lista.length > 0;
+      var cls = 'd' + (fora ? ' muted' : '') + (tem ? ' tem' : '') + (iso === hoje ? ' hoje' : '') + (iso === CAL.sel ? ' sel' : '');
+      var kinds = [];
+      lista.forEach(function (it) { if (kinds.indexOf(it.kind) < 0) kinds.push(it.kind); });
+      var dots = tem ? '<div class="dots">' + kinds.slice(0, 4).map(function (k) { return '<i style="background:' + CAL_COR[k] + '"></i>'; }).join('') + '</div>' : '';
+      html += '<div class="' + cls + '" data-iso="' + iso + '"' + (tem ? ' style="--rgb:192,132,252"' : '') + '>' + dia.getDate() + dots + '</div>';
+    }
+    $('calGrid').innerHTML = html;
+
+    $('calGrid').querySelectorAll('[data-iso]').forEach(function (el) {
+      el.addEventListener('click', function () {
+        var k = el.getAttribute('data-iso');
+        if (!visiveis[k]) return;
+        CAL.sel = k;
+        renderCal();
+      });
+    });
+
+    renderDia(CAL.sel ? visiveis[CAL.sel] : null);
+  }
+
+  function renderDia(lista) {
+    if (!lista || !lista.length) {
+      $('calDia').innerHTML = '<div class="vazio">' + (ATUAL ? 'Toque em um dia marcado para ver o detalhe.' : 'Selecione um projeto.') + '</div>';
+      return;
+    }
+    $('calDia').innerHTML = lista.map(function (it) {
+      return '<div class="dia-item" style="border-left-color:' + CAL_COR[it.kind] + '"><strong>' + E(it.titulo) + '</strong><small>' + E(it.sub || '') + '</small></div>';
+    }).join('');
+  }
+
+  $('calPrev').addEventListener('click', function () {
+    CAL.mes--; if (CAL.mes < 0) { CAL.mes = 11; CAL.ano--; }
+    renderCal();
+  });
+  $('calNext').addEventListener('click', function () {
+    CAL.mes++; if (CAL.mes > 11) { CAL.mes = 0; CAL.ano++; }
+    renderCal();
+  });
+
+  /* ===== Eventos do dia ao lado do projeto (só os que já estão em PROPS, ou seja, visíveis ao usuário) ===== */
+  function diaEsc(s) {
+    return String(s == null ? '' : s).replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;');
+  }
+  function renderDiaPanel() {
+    if (!DIA_INICIAL.data || DIA_INICIAL.dia.length < 2) return;
+    var evs = DIA_INICIAL.dia.map(function (id) {
+      return PROPS.find(function (p) { return String(p.id) === String(id); }) || null;
+    }).filter(Boolean);
+    if (evs.length < 2) return;
+
+    var conteudo = $('conteudo');
+    if (!document.getElementById('diaWrap')) {
+      var st = document.createElement('style');
+      st.textContent =
+        '.dia-wrap{display:grid;grid-template-columns:minmax(0,1fr) 260px;gap:16px;align-items:start}' +
+        '.dia-wrap>*{min-width:0}' +
+        '@media (max-width:900px){.dia-wrap{grid-template-columns:minmax(0,1fr)}}' +
+        '.dia-panel{position:sticky;top:96px;padding:14px;border-radius:16px;background:rgba(255,255,255,.04);border:1px solid rgba(255,255,255,.1)}' +
+        '.dia-panel h3{margin:0 0 10px;font-size:12px;font-weight:800;letter-spacing:.06em;text-transform:uppercase;color:#F5D061}' +
+        '.dia-panel a{display:block;padding:9px 11px;margin-bottom:6px;border-radius:12px;text-decoration:none;color:inherit;border:1px solid rgba(255,255,255,.08);background:rgba(255,255,255,.03)}' +
+        '.dia-panel a:hover{border-color:rgba(255,255,255,.2)}' +
+        '.dia-panel a.cur{border-color:#F5D061;background:rgba(245,208,97,.1)}' +
+        '.dia-panel a b{display:block;font-size:13px}' +
+        '.dia-panel a small{display:block;opacity:.6;font-size:11px;margin-top:2px}';
+      document.head.appendChild(st);
+      var wrap = document.createElement('div');
+      wrap.id = 'diaWrap';
+      wrap.className = 'dia-wrap';
+      conteudo.parentNode.insertBefore(wrap, conteudo);
+      wrap.appendChild(conteudo);
+      var side = document.createElement('aside');
+      side.id = 'diaPanel';
+      side.className = 'dia-panel';
+      wrap.appendChild(side);
+    }
+
+    var p = DIA_INICIAL.data.split('-');
+    var ids = DIA_INICIAL.dia.join(',');
+    $('diaPanel').innerHTML =
+      '<h3>Eventos de ' + p[2] + '/' + p[1] + '/' + p[0] + '</h3>' +
+      evs.map(function (e) {
+        var cur = ATUAL && String(e.id) === String(ATUAL.id);
+        var hora = e.horario_inicio ? String(e.horario_inicio).slice(0, 5) + ' · ' : '';
+        return '<a href="projeto.html?id=' + encodeURIComponent(e.id) + '&data=' + encodeURIComponent(DIA_INICIAL.data) + '&dia=' + encodeURIComponent(ids) + '"' + (cur ? ' class="cur"' : '') + '>' +
+          '<b>' + diaEsc(e.cliente_nome || ('#' + e.numero)) + '</b>' +
+          '<small>' + diaEsc(hora + (e.tipo_evento || '')) + '</small></a>';
+      }).join('');
+  }
+
+  /* ===== Seleção de projeto ===== */
+  async function selecionar(id) {
+    ATUAL = PROPS.find(function (p) { return String(p.id) === String(id); }) || null;
+    if (!ATUAL) return;
+    history.replaceState(null, '', '?id=' + encodeURIComponent(ATUAL.id) +
+      (DIA_INICIAL.data ? '&data=' + encodeURIComponent(DIA_INICIAL.data) : '') +
+      (DIA_INICIAL.dia.length ? '&dia=' + encodeURIComponent(DIA_INICIAL.dia.join(',')) : ''));
+    renderDiaPanel();
+    desenharLista();
+
+    $('semSel').style.display = 'none';
+    $('conteudo').style.display = 'block';
+
+    var nomeEv = ATUAL.nome_evento || ATUAL.tipo_evento || 'Evento';
+    $('nomeEvento').textContent = nomeEv;
+    $('tituloProj').textContent = 'Projeto #' + ATUAL.numero + ' · ' + (ATUAL.cliente_nome || '');
+    var mobNome = $('mobProjNome');
+    if (mobNome) mobNome.textContent = '#' + ATUAL.numero + ' · ' + (ATUAL.cliente_nome || nomeEv);
+    fecharDrawer();
+    var tag = $('tagStatus');
+    tag.textContent = ROTULO_STATUS[ATUAL.status] || ATUAL.status || '';
+    tag.className = 'tag ' + (ATUAL.status === 'hold' ? 't-hold' : (ATUAL.status === 'cancelada' ? 't-rec' : 't-ok'));
+
+    var hIni = HORA(ATUAL.horario_inicio), hFim = HORA(ATUAL.horario_final);
+    $('hData').textContent = DATA(ATUAL.data_evento);
+    $('hHorario').textContent = hIni && hFim ? hIni + ' às ' + hFim : (hIni || hFim || '—');
+    var end = enderecoEvento(ATUAL);
+    /* Local da festa = local_evento (ex.: African Garden). NÃO usar cidade do endereço (Barueri etc.) */
+    var nomeLocal = (ATUAL.local_evento || '').trim();
+    $('hEndereco').textContent = nomeLocal || end.texto || 'Não informado';
+
+    $('fData').value = ATUAL.data_evento || '';
+    $('fStatus').value = String(ATUAL.status || 'rascunho').toLowerCase();
+    $('fIni').value = HORA(ATUAL.horario_inicio);
+    $('fFim').value = HORA(ATUAL.horario_final);
+    $('fLocal').value = ATUAL.local_evento || '';
+    $('msgDados').textContent = '';
+    $('holdInfo').textContent = ATUAL.status === 'hold' ? 'Hold · ' + tempo(ATUAL.hold_expira_em) : '';
+    
+    renderLocal(ATUAL, end);
+    await carregarAgendaEvento(ATUAL);
+    renderCal();
+    /* Vindo do pop-up da agenda (?data=...): abre a aba Agenda & Datas */
+    if (new URLSearchParams(location.search).get('data')) {
+      var tabAg = document.querySelector('.tab-btn[data-tab="agenda"]');
+      if (tabAg) tabAg.click();
+    }
+
+    var equipe = await carregarEquipe();
+    var meuColab = !ADMIN ? (equipe.find(function (c) { return c.parceiro_id === ME.id; }) || null) : null;
+    renderFinanceiro(ATUAL, meuColab);
+
+    await Promise.all([carregarEtapas(), carregarObs()]);
+  }
+
+  /* ===== Salvar dados gerais (somente admin) ===== */
+  $('btnSalvar').addEventListener('click', async function () {
+    if (!ADMIN || !ATUAL) return;
+    var st = $('fStatus').value;
+    var patch = {
+      data_evento: $('fData').value || null,
+      status: st,
+      horario_inicio: $('fIni').value || null,
+      horario_final: $('fFim').value || null,
+      local_evento: $('fLocal').value || null
+    };
+    if (st === 'hold' && ATUAL.status !== 'hold') {
+      var h = new Date(); h.setHours(h.getHours() + 48);
+      patch.hold_expira_em = h.toISOString();
+    }
+    if (st !== 'hold') patch.hold_expira_em = null;
+
+    var r = await SB.from('propostas').update(patch).eq('id', ATUAL.id);
+    if (r.error) {
+      $('msgDados').className = 'msg';
+      $('msgDados').textContent = 'Não foi possível salvar.';
+      return;
+    }
+    $('msgDados').className = 'msg ok';
+    $('msgDados').textContent = 'Salvo.';
+    var id = ATUAL.id;
+    await carregarLista();
+    if (ADMIN) await carregarKpis();
+    selecionar(id);
+  });
+
+  /* ===== Equipe técnica (mesma regra da área do cliente) ===== */
+  async function carregarEquipe() {
+    var box = $('listaCol');
+    if (!ATUAL) return [];
+    box.innerHTML = '<div class="vazio">Carregando equipe…</div>';
+
+    var campos = 'id, nivel, parceiro_id, criado_em, parceiros:parceiros!parceiro_id(id, nome_completo, avatar_url, perfil, perfil_parceiro_id, categoria_artistica, especialidade_artistica)';
+    if (COLUNA_CACHE) campos += ', ' + COLUNA_CACHE;
+
+    var r = await SB.from('projeto_colaboradores')
+      .select(campos)
+      .eq('proposta_id', ATUAL.id)
+      .order('criado_em', { ascending: true });
+
+    if (r.error) {
+      box.innerHTML = '<div class="vazio" style="color:#fca5a5">Erro ao listar: ' + E(r.error.message) + '</div>';
+      console.error('projeto_colaboradores', r.error);
+      return [];
+    }
+    var l = r.data || [];
+    if (!l.length) {
+      box.innerHTML = '<div class="vazio">Nenhum colaborador neste projeto ainda.</div>';
+      return l;
+    }
+
+    box.innerHTML = l.map(function (c) {
+      var p = c.parceiros || {};
+      var nome = nomeEquipe(p) || ('ID ' + String(c.parceiro_id || '').slice(0, 8));
+      var foto = fotoEquipe(p);
+      var funcao = funcaoEquipe(p) || '—';
+      return '<div class="eq-item">' +
+        '<div class="eq-foto"' + (foto ? ' style="background-image:url(\'' + E(foto) + '\')"' : '') + '>' +
+          (foto ? '' : E(nome.charAt(0).toUpperCase())) +
+        '</div>' +
+        '<div style="min-width:0"><strong>' + E(nome) + '</strong><small>' + E(funcao) + '</small></div>' +
+        (ADMIN ? '<div class="eq-acoes"><button class="danger" data-rm-col="' + E(c.id) + '" type="button">Remover</button></div>' : '') +
+      '</div>';
+    }).join('');
+
+    box.querySelectorAll('[data-rm-col]').forEach(function (b) {
+      b.addEventListener('click', async function () {
+        if (!confirm('Remover este colaborador do projeto?')) return;
+        await SB.from('projeto_colaboradores').delete().eq('id', b.getAttribute('data-rm-col'));
+        selecionar(ATUAL.id);
+      });
+    });
+    return l;
+  }
+
+  $('btnAddCol').addEventListener('click', async function () {
+    if (!ADMIN) return;
+    if (!ATUAL) {
+      $('msgCol').className = 'msg';
+      $('msgCol').textContent = 'Selecione um projeto à esquerda primeiro.';
+      return;
+    }
+    var pid = $('addParceiro').value;
+    if (!pid) {
+      $('msgCol').className = 'msg';
+      $('msgCol').textContent = 'Escolha um parceiro.';
+      return;
+    }
+    var r = await SB.from('projeto_colaboradores').insert({
+      proposta_id: ATUAL.id, parceiro_id: pid, nivel: $('addNivel').value, criado_por: ME.id
+    }).select('id, parceiro_id, nivel');
+
+    if (r.error) {
+      $('msgCol').className = 'msg';
+      $('msgCol').textContent = 'Não foi possível adicionar: ' + (r.error.message || 'já está no projeto?');
+      console.error(r.error);
+      return;
+    }
+    $('msgCol').className = 'msg ok';
+    $('msgCol').textContent = 'Adicionado.';
+    selecionar(ATUAL.id);
+    if (ADMIN) carregarKpis();
+  });
+
+  /* ===== Checklist (evento_etapas) ===== */
+  async function carregarEtapas() {
+    if (!ATUAL) return;
+    var r = await SB.from('evento_etapas')
+      .select('id, nome, hora, situacao, concluida_por, concluida_em, ordem')
+      .eq('proposta_id', ATUAL.id)
+      .order('ordem');
+    var l = r.data || [];
+    var box = $('listaEtapas');
+
+    if (!l.length) { box.innerHTML = '<div class="vazio">Sem etapas cadastradas.</div>'; return; }
+
+    box.innerHTML = l.map(function (e) {
+      var feita = e.situacao === 'concluida';
+      var acoes = '';
+      if (ADMIN) {
+        acoes = '<span class="acoes">' +
+          (feita
+            ? '<button data-desfazer="' + E(e.id) + '" type="button">Desfazer</button>'
+            : '<button class="primary" data-feita="' + E(e.id) + '" type="button">Marcar feita</button>') +
+          '<button class="danger" data-rm-etapa="' + E(e.id) + '" type="button">Remover</button></span>';
+      }
+      return '<div class="item">' +
+        '<span><strong>' + E(e.nome) + '</strong> ' +
+          (HORA(e.hora) ? '<span class="pill">' + E(HORA(e.hora)) + '</span> ' : '') +
+          '<span class="tag ' + (feita ? 't-ok' : 't-hold') + '">' + (feita ? 'Concluída' : 'Pendente') + '</span>' +
+          (feita && e.concluida_por ? ' <span class="pill">por ' + E(e.concluida_por) + '</span>' : '') +
+        '</span>' + acoes +
+      '</div>';
+    }).join('');
+
+    box.querySelectorAll('[data-feita]').forEach(function (b) {
+      b.addEventListener('click', async function () {
+        await SB.from('evento_etapas').update({
+          situacao: 'concluida', concluida_por: ME.nome_completo, concluida_em: new Date().toISOString()
+        }).eq('id', b.getAttribute('data-feita'));
+        carregarEtapas();
+        if (ADMIN) carregarKpis();
+      });
+    });
+    box.querySelectorAll('[data-desfazer]').forEach(function (b) {
+      b.addEventListener('click', async function () {
+        await SB.from('evento_etapas').update({
+          situacao: 'pendente', concluida_por: null, concluida_em: null
+        }).eq('id', b.getAttribute('data-desfazer'));
+        carregarEtapas();
+        if (ADMIN) carregarKpis();
+      });
+    });
+    box.querySelectorAll('[data-rm-etapa]').forEach(function (b) {
+      b.addEventListener('click', async function () {
+        if (!confirm('Remover esta etapa do checklist?')) return;
+        await SB.from('evento_etapas').delete().eq('id', b.getAttribute('data-rm-etapa'));
+        carregarEtapas();
+        if (ADMIN) carregarKpis();
+      });
+    });
+  }
+
+  $('btnAddEtapa').addEventListener('click', async function () {
+    if (!ADMIN || !ATUAL) return;
+    var nome = ($('novaEtapaNome').value || '').trim();
+    var hora = ($('novaEtapaHora').value || '').trim() || null;
+    var msg = $('msgEtapa');
+    if (!nome) {
+      msg.className = 'msg';
+      msg.textContent = 'Informe o nome da etapa.';
+      return;
+    }
+    $('btnAddEtapa').disabled = true;
+    msg.className = 'msg';
+    msg.textContent = 'Salvando…';
+    try {
+      var ord = await SB.from('evento_etapas')
+        .select('ordem').eq('proposta_id', ATUAL.id)
+        .order('ordem', { ascending: false }).limit(1);
+      var prox = 1;
+      if (ord.data && ord.data[0] && ord.data[0].ordem != null) prox = Number(ord.data[0].ordem) + 1;
+
+      var r = await SB.from('evento_etapas').insert({
+        proposta_id: ATUAL.id, nome: nome, hora: hora, situacao: 'pendente', ordem: prox
+      });
+      if (r.error) throw new Error(r.error.message || 'Falha ao adicionar');
+      $('novaEtapaNome').value = '';
+      $('novaEtapaHora').value = '';
+      msg.className = 'msg ok';
+      msg.textContent = 'Etapa adicionada.';
+      await carregarEtapas();
+      if (ADMIN) carregarKpis();
+    } catch (err) {
+      msg.className = 'msg';
+      msg.textContent = err.message || 'Erro ao adicionar etapa.';
+    } finally {
+      $('btnAddEtapa').disabled = false;
+    }
+  });
+
+  /* ===== Instruções (evento_observacoes) ===== */
+  async function carregarObs() {
+    if (!ATUAL) return;
+    var r = await SB.from('evento_observacoes')
+      .select('id, texto, criado_por')
+      .eq('proposta_id', ATUAL.id)
+      .is('removido_em', null)
+      .order('criado_em');
+    var l = r.data || [];
+    var box = $('listaObs');
+    box.innerHTML = l.length ? l.map(function (o) {
+      return '<div class="item"><span>' + E(o.texto) + ' <span class="pill">(' + E(o.criado_por) + ')</span></span>' +
+        (ADMIN ? '<span class="acoes"><button class="danger" data-obs="' + E(o.id) + '" type="button">Remover</button></span>' : '') +
+      '</div>';
+    }).join('') : '<div class="vazio">Nenhuma instrução.</div>';
+
+    box.querySelectorAll('[data-obs]').forEach(function (b) {
+      b.addEventListener('click', async function () {
+        await SB.from('evento_observacoes')
+          .update({ removido_em: new Date().toISOString() })
+          .eq('id', b.getAttribute('data-obs'));
+        carregarObs();
+      });
+    });
+  }
+
+  /* ===== Drawer mobile ===== */
+  function abrirDrawer() {
+    var d = $('projectDrawer');
+    var b = $('asideBackdrop');
+    if (d) d.classList.add('drawer-on');
+    if (b) { b.classList.add('on'); b.setAttribute('aria-hidden', 'false'); }
+  }
+  function fecharDrawer() {
+    var d = $('projectDrawer');
+    var b = $('asideBackdrop');
+    if (d) d.classList.remove('drawer-on');
+    if (b) { b.classList.remove('on'); b.setAttribute('aria-hidden', 'true'); }
+  }
+  var btnTrocar = $('btnTrocarProj');
+  if (btnTrocar) btnTrocar.addEventListener('click', abrirDrawer);
+  var btnFechar = $('btnFecharDrawer');
+  if (btnFechar) btnFechar.addEventListener('click', fecharDrawer);
+  var bd = $('asideBackdrop');
+  if (bd) bd.addEventListener('click', fecharDrawer);
+
+  /* ===== Abas ===== */
+  function switchTab(id) {
+    document.querySelectorAll('.tab-btn').forEach(function (b) {
+      b.classList.toggle('on', b.getAttribute('data-tab') === id);
+    });
+    document.querySelectorAll('.tab-panel').forEach(function (p) {
+      p.classList.toggle('on', p.id === 'tab-' + id);
+    });
+  }
+  document.querySelectorAll('.tab-btn').forEach(function (b) {
+    b.addEventListener('click', function () {
+      switchTab(b.getAttribute('data-tab'));
+    });
+  });
+
+  init();
+})();
+
+  </script>
+</body>
+</html>
