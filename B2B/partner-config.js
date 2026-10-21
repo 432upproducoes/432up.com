@@ -80,6 +80,8 @@ function partnerRequireAuth(opts) {
           }
         }
 
+        /* Área de parceiro/admin carregou com sessão válida: lembra o destino para a próxima abertura */
+        try { localStorage.setItem('432up_rota', 'index.html'); } catch (e) {}
         return parceiro;
       });
   }).catch(function (err) {

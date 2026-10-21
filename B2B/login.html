@@ -4,6 +4,26 @@
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
   <title>432UP Partner | Acesso Restrito</title>
+  <script>
+  /* Entrada direta: se já há sessão salva e a área do usuário já carregou antes neste aparelho,
+     vai direto para ela (antes de a tela de login aparecer). Um pulo por abertura do app; sair do
+     portal remove a sessão, então este atalho deixa de valer sozinho. */
+  (function () {
+    try {
+      if (/erro=|logout/.test(location.search || '')) return;
+      if (sessionStorage.getItem('432up_auto_rota') === '1') return;
+      var destino = localStorage.getItem('432up_rota');
+      if (!destino) return;
+      var temSessao = false;
+      for (var i = 0; i < localStorage.length; i++) {
+        if (/^sb-.+-auth-token$/.test(localStorage.key(i))) { temSessao = true; break; }
+      }
+      if (!temSessao) return;
+      sessionStorage.setItem('432up_auto_rota', '1');
+      location.replace(destino);
+    } catch (e) {}
+  })();
+  </script>
   <link rel="stylesheet" href="../css/style.css">
   <script src="https://cdn.tailwindcss.com"></script>
   <style>
