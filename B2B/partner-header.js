@@ -1255,11 +1255,15 @@
             sessionStorage.removeItem('432up_is_admin');
             sessionStorage.removeItem('432up_is_cliente');
             sessionStorage.removeItem('432up_is_parceiro');
+            sessionStorage.removeItem('432up_login_done');
+            sessionStorage.removeItem('432up_auto_rota');
+            localStorage.removeItem('432up_rota');
           } catch (err) {}
           function go() {
             if (onSite) window.location.replace(SITE + 'index.html');
-            else if (typeof partnerLogout === 'function') partnerLogout(e);
-            else window.location.replace(B2B + 'login.html');
+            /* Na área do cliente não usa o partnerLogout (que tinha caminho relativo): vai direto ao login absoluto */
+            else if (!onCliente && typeof partnerLogout === 'function') partnerLogout(e);
+            else window.location.replace(B2B + 'login.html?saiu=1');
           }
           if (typeof sbPartner !== 'undefined' && sbPartner.auth) {
             Promise.resolve(removePush())
