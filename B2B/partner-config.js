@@ -8,7 +8,9 @@ var PARTNER_CFG = {
   SB_KEY: 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InBhZXRrc3BiZmVqdGpqa25ncWVqIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzA5MDU2OTgsImV4cCI6MjA4NjQ4MTY5OH0.IiYweZ2g3bP7b0o7VvBW5LLb6d1oHtSNFUZlVkIsdsA',
   AVATAR_BUCKET: 'avatares-parceiros',
   MATERIAIS_BUCKET: 'materiais-parceiros',
-  WHATSAPP_SUPORTE: ''
+  WHATSAPP_SUPORTE: '',
+  /* Chave PÚBLICA VAPID (a privada fica só no Supabase). Sem ela o sininho do cliente nunca aparece. */
+  VAPID_PUBLIC_KEY: 'BM6ILzfra83ovE2AOg_xIW7_YioGcj6E0EkPKgVZI944NVoPhBHoJaIMZuZMOvD0hp4YTqq9GxiXor5VB3N4m-Y'
 };
 
 var sbPartner = supabase.createClient(PARTNER_CFG.SB_URL, PARTNER_CFG.SB_KEY);

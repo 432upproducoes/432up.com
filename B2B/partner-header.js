@@ -149,6 +149,12 @@
     return cachedLoggedIn || cachedIsAdmin || cachedIsParceiro;
   }
 
+  /* Cliente “puro”: logado só como cliente (mesmo navegando no site ou nas páginas do portal).
+     Esse usuário nunca vê agenda nem caixa de e-mail do parceiro, e o perfil dele é o da área cliente. */
+  function clienteSo() {
+    return !!cachedIsCliente && !cachedIsAdmin && !cachedIsParceiro;
+  }
+
   /* ---------- 5. Montagem do HTML ---------- */
   var CARET = '<svg class="mn-caret" width="10" height="10" viewBox="0 0 10 10" aria-hidden="true" focusable="false" style="width:10px;height:10px;flex:none;">' +
     '<path d="M3.5 1.5 7 5l-3.5 3.5" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"/></svg>';
@@ -516,6 +522,12 @@
         width: 100%; height: 100%; border-radius: 50%; background: rgba(255,255,255,.08) center/cover no-repeat;
         display: flex; align-items: center; justify-content: center; font-size: 14px;
       }
+      /* Só um círculo: a foto ocupa o anel inteiro, sem a borda/tamanho do avatar do desktop
+         (o estilo global .b2b-avatar-img usa !important e fixava 30px, criando uma bolinha dentro da bolinha) */
+      #calc-header .mn-hdr-tray .mn-tray-av .b2b-avatar-img {
+        width: 100% !important; height: 100% !important; border: 0 !important;
+        box-shadow: none !important; border-radius: 50% !important; flex-shrink: 0 !important;
+      }
       @media (max-width: 1024px) {
         .mn-hdr-tray { display: inline-flex !important; }
         .mn-mail-hdr { display: none !important; }
@@ -550,7 +562,8 @@
         box-shadow: 0 8px 20px rgba(0,0,0,.5), 0 0 16px rgba(251,191,36,.5); }
       #mn-bell .mn-bell-btn svg { width: 22px; height: 22px; }
       #mn-bell .mn-bell-tip { position: absolute; right: 54px; top: 20px; display: flex; align-items: center; gap: 8px;
-        white-space: nowrap; padding: 8px 10px 8px 12px; border-radius: 12px; pointer-events: auto;
+        width: max-content; max-width: min(240px, calc(100vw - 100px)); line-height: 1.3;
+        padding: 8px 10px 8px 12px; border-radius: 12px; pointer-events: auto;
         font-size: 12.5px; font-weight: 700; color: #1a1205; background: #fbbf24;
         box-shadow: 0 8px 20px rgba(0,0,0,.45); }
       #mn-bell .mn-bell-tip::after { content: ''; position: absolute; right: -6px; top: 50%; margin-top: -6px;
@@ -618,8 +631,8 @@
   var CAL_SVG = '<svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="3" y="4" width="18" height="18" rx="2"/><path d="M16 2v4M8 2v4M3 10h18"/></svg>';
 
   function calLinkHTML(cls, standalone) {
-    /* Calendário unificado (pasta admin) — parceiro e admin usam a mesma agenda */
-    if (onCliente) return '';
+    /* Calendário unificado (pasta admin) — parceiro e admin usam a mesma agenda; cliente não tem agenda aqui */
+    if (onCliente || clienteSo()) return '';
     if (!(cachedLoggedIn || cachedIsParceiro || cachedIsAdmin)) return '';
     var ativo = (currentPath === 'agenda.html') ? ' active' : '';
     return '<a href="' + ADM + 'agenda.html" class="mn-mail ' + cls + ativo + '"' +
@@ -772,8 +785,10 @@
   window.mnSetPushPendente = function (v) { bellPendCli = !!v; refreshBell(); };
 
   function bellPending() {
-    if (!isLogged() || !pushSupported() || Notification.permission !== 'default') return false;
+    if (!isLogged() || !pushSupported()) return false;
+    /* Cliente: a própria página decide (pedido vinculado + chave + permissão ainda não dada) */
     if (onCliente) return bellPendCli;
+    if (Notification.permission !== 'default') return false;
     if (!onSite) return true;
     return cachedIsParceiro || cachedIsAdmin;
   }
@@ -799,7 +814,7 @@
       el = document.createElement('div');
       el.id = 'mn-bell';
       el.innerHTML =
-        '<div class="mn-bell-tip"' + (bellTipOff() ? ' hidden' : '') + '><span>Libere no sininho</span>' +
+        '<div class="mn-bell-tip"' + (bellTipOff() ? ' hidden' : '') + '><span>Libere e receba notificações no sininho</span>' +
           '<button type="button" class="mn-bell-x" aria-label="Fechar aviso">✕</button></div>' +
         '<div class="mn-bell-swing"><span class="mn-bell-str"></span>' +
           '<button type="button" class="mn-bell-btn" title="Ativar notificações" aria-label="Ativar notificações">' + BELL_SVG + '</button></div>';
@@ -872,7 +887,7 @@
 
   function userWidgetHTML() {
     if (!isLogged()) return '';
-    var perfilHref = onCliente ? CLIENTE_PERFIL : (B2B + 'perfil.html');
+    var perfilHref = (onCliente || clienteSo()) ? CLIENTE_PERFIL : (B2B + 'perfil.html');
     var perfilAtivo = onCliente ? '' : (!isSubdirAdmin && currentPath === 'perfil.html' ? ' active' : '');
     /* Ordem canônica (esquerda → direita): calendário, envelope, avatar (extremo direito) */
     return '<div class="b2b-user-widget" data-mn-user="1">' +
@@ -889,7 +904,7 @@
   /* Bandeja compacta no header mobile: calendário | envelope | avatar (avatar no extremo direito) */
   function hdrTrayHTML() {
     if (!isLogged()) return '';
-    var perfilHref = onCliente ? CLIENTE_PERFIL : (B2B + 'perfil.html');
+    var perfilHref = (onCliente || clienteSo()) ? CLIENTE_PERFIL : (B2B + 'perfil.html');
     return '<div class="mn-hdr-tray" data-mn-user="1">' +
       calLinkHTML('mn-tray-ico', true) +
       mailLinkHTML('mn-tray-ico', true) +
@@ -901,7 +916,7 @@
 
   function mobUserHTML() {
     var master = cachedIsAdmin;
-    var perfilMob = onCliente ? CLIENTE_PERFIL : (B2B + 'perfil.html');
+    var perfilMob = (onCliente || clienteSo()) ? CLIENTE_PERFIL : (B2B + 'perfil.html');
     return '<div data-mn-user="1" class="mn-m-user">' +
       '<a href="' + perfilMob + '" class="mn-m-prof"' + (onCliente ? ' data-mn-perfil="1"' : '') + '>' +
         '<div data-partner-avatar class="mn-m-av"></div>' +
@@ -1128,6 +1143,11 @@
   function setArea(area, opts) {
     opts = opts || {};
     if (!podeVer(area)) return;
+    /* Cápsula Cliente não tem submenu: leva direto à área do cliente */
+    if (area === 'cliente' && !onCliente) {
+      window.location.href = CLIENTE + 'index.html';
+      return;
+    }
     var mudou = area !== areaAtual;
     areaAtual = area;
     lastSig = [podeVer('parceiro'), podeVer('admin'), areaAtual].join('|');
