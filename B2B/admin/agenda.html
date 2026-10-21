@@ -279,7 +279,41 @@
     }
     .item .acoes a.pri { background: var(--action); color: #04120a; border-color: var(--action); font-weight: 700; }
     .vazio { color: var(--mut); font-size: 13px; padding: 6px 0; }
-  </style>
+      .cal { display: grid; grid-template-columns: repeat(7, 1fr); gap: 4px; font-size: 11px; text-align: center; }
+    .cal .hd { color: var(--mut); font-weight: 700; padding: 6px 0; }
+    .cal .d { padding: 10px 0; border-radius: 12px; border: 1px solid transparent; color: var(--body); min-height: 44px; }
+    .cal .d.muted { opacity: .3; }
+    .cal .d.tem { border-color: rgba(var(--rgb), .5); background: rgba(var(--rgb), .14); color: #fff; font-weight: 800; cursor: pointer; }
+    .cal .d .dots { display: flex; gap: 3px; justify-content: center; margin-top: 4px; min-height: 6px; }
+    .cal .d .dots i { width: 6px; height: 6px; border-radius: 50%; display: block; }
+    .filtros .sw { width: 10px; height: 10px; border-radius: 3px; display: inline-block; }
+    .cal .d.hoje { border-color: rgba(212, 175, 55, .5); }
+    .cal .d.sel { outline: 2px solid var(--action); outline-offset: -2px; }
+    .cal-nav { display: flex; align-items: center; justify-content: space-between; gap: 8px; margin-bottom: 12px; }
+    /* Legenda do calendário: cada cápsula é o próprio filtro (ligada / desligada) */
+    .filtros { display: flex; flex-wrap: nowrap; gap: 8px; margin: 6px -26px 14px; padding: 2px 26px 4px; overflow-x: auto; scroll-snap-type: x proximity; scrollbar-width: none; -webkit-overflow-scrolling: touch; }
+    .filtros::-webkit-scrollbar { display: none; }
+    .filtros { touch-action: pan-x; overscroll-behavior: contain; }
+    .leg {
+      flex: 0 0 auto; scroll-snap-align: start;
+      display: inline-flex; align-items: center; gap: 7px;
+      padding: 7px 13px; border-radius: 999px; cursor: pointer;
+      font: inherit; font-size: 12px; font-weight: 700; color: var(--mut); white-space: nowrap;
+      background: rgba(255, 255, 255, .03); border: 1px solid var(--line);
+      transition: background .2s, border-color .2s, color .2s, opacity .2s;
+      -webkit-tap-highlight-color: transparent;
+    }
+    .leg .sw { width: 9px; height: 9px; border-radius: 999px; background: var(--c); flex: none; }
+    .leg.on { color: var(--text); border-color: var(--c); background: color-mix(in srgb, var(--c) 16%, transparent); }
+    .leg:not(.on) { opacity: .5; }
+    .leg:focus-visible { outline: 2px solid var(--c); outline-offset: 2px; }
+    @media (max-width: 640px) { .filtros { margin: 6px -18px 14px; padding: 2px 18px 4px; } }
+    .btn-s {
+      display: inline-flex; align-items: center; justify-content: center; height: 42px; padding: 0 14px;
+      border-radius: 12px; border: 1px solid rgba(255,255,255,.18); background: transparent;
+      color: var(--text); font-size: 15px; cursor: pointer; width: auto;
+    }
+</style>
 </head>
 <body class="h-full antialiased overflow-x-hidden">
 
@@ -306,7 +340,7 @@
       </div>
 
       <div class="agenda-grid">
-        <section class="box-full" style="padding:14px" id="calSwipe">
+        <section class="box-full" id="calSwipe">
           <div class="filtros" id="filtros" aria-label="Filtros da agenda"></div>
           <div class="cal-nav">
             <button type="button" class="btn-s" id="btnPrev" aria-label="Mês anterior" style="margin-top:0">‹</button>
@@ -314,8 +348,8 @@
             <button type="button" class="btn-s" id="btnNext" aria-label="Próximo mês" style="margin-top:0">›</button>
           </div>
           <div style="text-align:right;margin:-4px 0 8px"><button type="button" class="btn-hoje" id="btnHoje">Hoje</button></div>
-          <div class="grid" id="cabec"></div>
-          <div class="grid" id="grade" style="margin-top:6px"></div>
+          <div class="cal" id="cabec"></div>
+          <div class="cal" id="grade" style="margin-top:6px"></div>
         </section>
         <aside class="box-full" id="painelDia">
           <h2 id="tituloDia">Selecione um dia</h2>
@@ -728,7 +762,7 @@
     $('tituloMes').textContent = MESES[MES] + ' ' + ANO;
     atualizarBtnDia();
 
-    $('cabec').innerHTML = DIAS.map(function (d) { return '<div class="dow">' + d + '</div>'; }).join('');
+    $('cabec').innerHTML = DIAS.map(function (d) { return '<div class="hd">' + d + '</div>'; }).join('');
 
     var grade = $('grade');
     var primeiro = new Date(ANO, MES, 1);
@@ -742,29 +776,18 @@
       var k = chave(d);
       var todos = ITENS[k] || [];
       var itens = todos.filter(function (it) { return visivel(it.tipo); });
-      var cls = ['dia'];
-      if (d.getMonth() !== MES) cls.push('outro');
+      var cls = ['d'];
+      if (d.getMonth() !== MES) cls.push('muted');
+      if (itens.length) cls.push('tem');
       if (k === hoje) cls.push('hoje');
       if (k === DIA_SEL) cls.push('sel');
-
-      var chips = itens.slice(0, 3).map(function (it) {
-        var t = TIPOS.find(function (x) { return x.id === it.tipo; });
-        var c = t ? t.cls : 'e-evento';
-        return '<div class="ev ' + c + '">' + E(it.titulo) + '</div>';
-      }).join('');
-      var mais = itens.length > 3 ? '<div class="mais">+' + (itens.length - 3) + '</div>' : '';
-      /* Bolinhas de cor (mobile); tipos únicos até 4 */
       var tiposVistos = [];
-      itens.forEach(function (it) {
-        if (tiposVistos.indexOf(it.tipo) < 0) tiposVistos.push(it.tipo);
-      });
-      var marks = tiposVistos.slice(0, 4).map(function (tp) {
-        return '<i class="m-' + tp + '"></i>';
-      }).join('');
-
-      html += '<div class="' + cls.join(' ') + '" data-k="' + k + '">' +
-        '<span class="num">' + d.getDate() + '</span>' + chips + mais +
-        (marks ? '<div class="marks">' + marks + '</div>' : '') + '</div>';
+      itens.forEach(function (it) { if (tiposVistos.indexOf(it.tipo) < 0) tiposVistos.push(it.tipo); });
+      var dots = tiposVistos.length ? '<div class="dots">' + tiposVistos.slice(0, 4).map(function (tp) {
+        var t = TIPOS.find(function (x) { return x.id === tp; });
+        return '<i style="background:' + (t ? t.cor : '#c084fc') + '"></i>';
+      }).join('') + '</div>' : '';
+      html += '<div class="' + cls.join(' ') + '" data-k="' + k + '"' + (itens.length ? ' style="--rgb:192,132,252"' : '') + '>' + d.getDate() + dots + '</div>';
     }
     grade.innerHTML = html;
     grade.querySelectorAll('[data-k]').forEach(function (el) {
@@ -802,7 +825,7 @@
     atualizarBtnDia();
 
     /* Destaca o dia selecionado na grade */
-    document.querySelectorAll('#grade .dia').forEach(function (el) {
+    document.querySelectorAll('#grade .d').forEach(function (el) {
       if (el.getAttribute('data-k') === k) el.classList.add('sel');
       else el.classList.remove('sel');
     });
@@ -887,7 +910,7 @@
     }
 
     if (!silencioso) {
-      document.querySelectorAll('#grade .dia').forEach(function (el) {
+      document.querySelectorAll('#grade .d').forEach(function (el) {
         el.classList.toggle('sel', el.getAttribute('data-k') === k);
       });
     }
