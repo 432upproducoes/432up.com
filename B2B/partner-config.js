@@ -95,9 +95,17 @@ function partnerRequireAuth(opts) {
 
 /* ── Helper: logout padrão ── */
 function partnerLogout() {
-  sbPartner.auth.signOut().then(function () {
-    window.location.href = 'login.html';
-  });
+  /* Caminho absoluto: a página pode estar em /cliente/, e um 'login.html' relativo
+     virava /cliente/login.html (cai na home com o menu de cliente logado). */
+  var irLogin = function () {
+    window.location.replace((window.location.origin || '') + '/B2B/login.html?saiu=1');
+  };
+  try {
+    localStorage.removeItem('432up_rota');
+    sessionStorage.removeItem('432up_login_done');
+    sessionStorage.removeItem('432up_auto_rota');
+  } catch (e) {}
+  sbPartner.auth.signOut().then(irLogin, irLogin);
 }
 
 /* ── Helper: preenche nome + avatar na sidebar e gerencia menus do Admin (BLINDADO) ── */
