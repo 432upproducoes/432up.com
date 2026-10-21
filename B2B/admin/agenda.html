@@ -80,17 +80,19 @@
     }
     .filtros::-webkit-scrollbar { display: none; }
     .filtros .lbl { display: none; } /* rótulo "Mostrar:" dispensável com cápsulas */
-    .tog {
-      flex: 0 0 auto;
-      display: inline-flex; align-items: center; gap: 6px; cursor: pointer;
-      user-select: none; padding: 7px 12px; border-radius: 999px;
-      border: 1px solid var(--line); background: rgba(255,255,255,.03);
-      white-space: nowrap;
+    .leg {
+      flex: 0 0 auto; scroll-snap-align: start;
+      display: inline-flex; align-items: center; gap: 7px;
+      padding: 7px 13px; border-radius: 999px; cursor: pointer;
+      font: inherit; font-size: 12px; font-weight: 700; color: var(--mut); white-space: nowrap;
+      background: rgba(255, 255, 255, .03); border: 1px solid var(--line);
+      transition: background .2s, border-color .2s, color .2s, opacity .2s;
+      -webkit-tap-highlight-color: transparent;
     }
-    .tog:hover { border-color: rgba(255,255,255,.22); }
-    .tog input { accent-color: var(--action); width: 14px; height: 14px; cursor: pointer; }
-    .tog .dot { width: 10px; height: 10px; border-radius: 3px; display: inline-block; flex-shrink: 0; }
-    .tog.off { opacity: .45; }
+    .leg .sw { width: 9px; height: 9px; border-radius: 999px; background: var(--c); flex: none; }
+    .leg.on { color: var(--text); border-color: var(--c); background: color-mix(in srgb, var(--c) 16%, transparent); }
+    .leg:not(.on) { opacity: .5; }
+    .leg:focus-visible { outline: 2px solid var(--c); outline-offset: 2px; }
 
     .legenda { display: none !important; }
 
@@ -296,25 +298,22 @@
         </div>
       </div>
 
-      <div class="mes-nav">
-        <h1 class="agenda-tit">Agenda</h1>
-        <div class="mes-ctrl">
-          <button type="button" id="btnPrev" aria-label="Mês anterior">‹</button>
-          <button type="button" id="tituloMes" title="Ir para o mês de hoje">Outubro 2026</button>
-          <button type="button" id="btnNext" aria-label="Próximo mês">›</button>
-        </div>
-        <button type="button" class="btn-hoje" id="btnHoje">Hoje</button>
-      </div>
+      <h1 class="agenda-tit" style="display:block">Agenda</h1>
 
-      <div class="prox-wrap">
+      <div class="prox-wrap" id="proxWrap" style="display:none">
         <div class="prox-label">Próximos eventos</div>
         <div class="prox-scroll" id="proxScroll"><div class="prox-vazio">Carregando…</div></div>
       </div>
 
-      <div class="filtros" id="filtros" aria-label="Filtros da agenda"></div>
-
       <div class="agenda-grid">
         <section class="box-full" style="padding:14px" id="calSwipe">
+          <div class="filtros" id="filtros" aria-label="Filtros da agenda"></div>
+          <div class="cal-nav">
+            <button type="button" class="btn-s" id="btnPrev" aria-label="Mês anterior" style="margin-top:0">‹</button>
+            <strong id="tituloMes" title="Ir para o mês de hoje" style="font-size:15px;cursor:pointer">Outubro 2026</strong>
+            <button type="button" class="btn-s" id="btnNext" aria-label="Próximo mês" style="margin-top:0">›</button>
+          </div>
+          <div style="text-align:right;margin:-4px 0 8px"><button type="button" class="btn-hoje" id="btnHoje">Hoje</button></div>
           <div class="grid" id="cabec"></div>
           <div class="grid" id="grade" style="margin-top:6px"></div>
         </section>
@@ -435,30 +434,23 @@
   /* ---------- UI dos toggles ---------- */
   function montarFiltros() {
     var box = $('filtros');
-    var html = '<span class="lbl">Mostrar:</span>';
-    TIPOS.forEach(function (t) {
+    box.innerHTML = TIPOS.map(function (t) {
       var on = FILTROS[t.id] !== false;
-      html += '<label class="tog' + (on ? '' : ' off') + '" data-id="' + t.id + '">' +
-        '<input type="checkbox" ' + (on ? 'checked' : '') + '>' +
-        '<i class="dot" style="background:' + t.cor + '"></i>' +
-        E(t.label) +
-        '</label>';
-    });
-    box.innerHTML = html;
-    box.querySelectorAll('.tog').forEach(function (lab) {
-      var id = lab.getAttribute('data-id');
-      var inp = lab.querySelector('input');
-      inp.addEventListener('change', function () {
-        FILTROS[id] = inp.checked;
-        lab.classList.toggle('off', !inp.checked);
+      return '<button type="button" class="leg' + (on ? ' on' : '') + '" data-filtro="' + t.id + '" aria-pressed="' + (on ? 'true' : 'false') + '" style="--c:' + t.cor + '"><i class="sw"></i>' + E(t.label) + '</button>';
+    }).join('');
+    box.querySelectorAll('button[data-filtro]').forEach(function (b) {
+      b.addEventListener('click', function () {
+        var id = b.getAttribute('data-filtro');
+        FILTROS[id] = FILTROS[id] === false;
+        var on = FILTROS[id] !== false;
+        b.classList.toggle('on', on);
+        b.setAttribute('aria-pressed', on ? 'true' : 'false');
         salvarFiltros();
         desenhar();
         renderProximos();
         if (DIA_SEL) abrirDia(DIA_SEL, true);
       });
     });
-
-    // Legenda compacta
   }
 
   function visivel(tipo) {
@@ -602,13 +594,13 @@
     if (idsProp.length) {
       try {
         var { data: comps } = await SB.from('contrato_comprovantes')
-          .select('proposta_id, status, aprovado_em')
+          .select('proposta_id, status, aprovado_em, data_pagamento')
           .in('proposta_id', idsProp)
           .eq('status', 'aprovado');
         (comps || []).forEach(function (c) {
           var p = props.find(function (x) { return x.id === c.proposta_id; });
           if (!p) return;
-          var dia = chaveData(c.aprovado_em) || chaveData(p.data_evento);
+          var dia = chaveData(c.data_pagamento);
           if (dia && dia >= ini && dia <= fim) {
             add(dia, {
               tipo: 'aprovado',
@@ -694,8 +686,10 @@
       return String(a.data).localeCompare(String(b.data));
     });
 
+    var wrapP = document.getElementById('proxWrap');
+    if (wrapP) wrapP.style.display = lista.length ? '' : 'none';
     if (!lista.length) {
-      box.innerHTML = '<div class="prox-vazio">Nenhum próximo evento nos filtros atuais.</div>';
+      box.innerHTML = '';
       return;
     }
 
