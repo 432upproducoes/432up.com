@@ -511,22 +511,22 @@
       /* Menu textual rolável; ícones e avatar permanecem ancorados à direita. */
       #calc-header { position: relative !important; }
       #calc-header .desktop-nav { overflow: hidden !important; }
-      #calc-header .mn-items { flex: 1 1 auto !important; min-width: 0 !important; max-width: 100%; overflow-x: auto !important; overflow-y: hidden !important; scrollbar-width: none; -webkit-overflow-scrolling: touch; -webkit-mask-image: linear-gradient(to right, #000 0%, #000 78%, transparent 100%); mask-image: linear-gradient(to right, #000 0%, #000 78%, transparent 100%); }
+      #calc-header .mn-items { position: relative !important; z-index: 1 !important; flex: 1 1 auto !important; min-width: 0 !important; max-width: 100%; overflow-x: auto !important; overflow-y: hidden !important; scrollbar-width: none; -webkit-overflow-scrolling: touch; -webkit-mask-image: linear-gradient(to right, #000 0%, #000 88%, transparent 100%); mask-image: linear-gradient(to right, #000 0%, #000 88%, transparent 100%); }
       #calc-header .mn-items::-webkit-scrollbar { display: none; }
-      #calc-header .b2b-user-widget { position: absolute !important; right: max(12px, env(safe-area-inset-right)) !important; top: 50% !important; transform: translateY(-50%) !important; z-index: 12 !important; display: flex !important; align-items: center !important; gap: 6px !important; flex: none !important; white-space: nowrap !important; }
+      #calc-header .b2b-user-widget { position: absolute !important; right: max(12px, env(safe-area-inset-right)) !important; top: 50% !important; transform: translateY(-50%) !important; z-index: 30 !important; display: flex !important; align-items: center !important; gap: 6px !important; flex: none !important; white-space: nowrap !important; }
       #calc-header .desktop-nav { padding-right: 0 !important; }
 
       /* Pop-up de agenda: vidro conectado ao ícone do header. */
-      #mn-agenda-popover { position: fixed; z-index: 2147483000; width: min(440px, calc(100vw - 16px)); height: min(700px, 78vh); display: none; overflow: visible; border-radius: 20px; background: rgba(12,14,22,.80); border: 1px solid rgba(255,255,255,.20); box-shadow: 0 18px 60px rgba(0,0,0,.48), inset 0 1px 0 rgba(255,255,255,.10); backdrop-filter: blur(30px) saturate(145%); -webkit-backdrop-filter: blur(30px) saturate(145%); transform-origin: top right; animation: mnAgendaIn .22s cubic-bezier(.22,1,.36,1); }
+      #mn-agenda-popover { position: fixed; z-index: 2147483000; width: min(440px, calc(100vw - 16px)); height: min(700px, 78vh); display: none; overflow: visible; border-radius: 20px; background: rgba(18,12,0,.70); border: 1px solid rgba(245,158,11,.34); box-shadow: 0 18px 60px rgba(0,0,0,.48), inset 0 1px 0 rgba(255,191,64,.13), 0 0 24px rgba(245,158,11,.06); backdrop-filter: blur(30px) saturate(145%); -webkit-backdrop-filter: blur(30px) saturate(145%); transform-origin: top right; animation: mnAgendaIn .22s cubic-bezier(.22,1,.36,1); }
       #mn-agenda-popover.on { display: block; }
-      #mn-agenda-popover::before { content: ''; position: absolute; top: -7px; right: var(--mn-agenda-arrow, 28px); width: 13px; height: 13px; transform: rotate(45deg); background: rgba(12,14,22,.88); border-left: 1px solid rgba(255,255,255,.20); border-top: 1px solid rgba(255,255,255,.20); }
+      #mn-agenda-popover::before { content: ''; position: absolute; top: -7px; right: var(--mn-agenda-arrow, 28px); width: 13px; height: 13px; transform: rotate(45deg); background: rgba(18,12,0,.88); border-left: 1px solid rgba(245,158,11,.34); border-top: 1px solid rgba(245,158,11,.34); }
       #mn-agenda-popover iframe { position: relative; z-index: 1; width: 100%; height: 100%; display: block; border: 0; border-radius: inherit; background: transparent; }
       #mn-agenda-backdrop { position: fixed; inset: 0; z-index: 2147482999; display: none; background: transparent; }
       #mn-agenda-backdrop.on { display: block; }
-      #mn-agenda-popover[data-theme="admin"] { background: rgba(28,19,5,.84); border-color: rgba(245,158,11,.32); }
+      #mn-agenda-popover[data-theme="admin"] { background: rgba(30,20,3,.72); border-color: rgba(245,158,11,.42); box-shadow: 0 18px 60px rgba(0,0,0,.48), inset 0 1px 0 rgba(255,191,64,.15), 0 0 26px rgba(245,158,11,.08); }
       #mn-agenda-popover[data-theme="amber"] { background: rgba(28,18,34,.82); border-color: rgba(192,132,252,.28); }
       #mn-agenda-popover[data-theme="cyan"] { background: rgba(5,20,28,.82); border-color: rgba(6,182,212,.30); }
-      #mn-agenda-popover[data-theme="admin"]::before { background: rgba(28,19,5,.90); border-color: rgba(245,158,11,.32); }
+      #mn-agenda-popover[data-theme="admin"]::before { background: rgba(30,20,3,.86); border-color: rgba(245,158,11,.42); }
       #mn-agenda-popover[data-theme="amber"]::before { background: rgba(28,18,34,.90); border-color: rgba(192,132,252,.28); }
       #mn-agenda-popover[data-theme="cyan"]::before { background: rgba(5,20,28,.90); border-color: rgba(6,182,212,.30); }
       @keyframes mnAgendaIn { from { opacity: 0; transform: translateY(-5px) scale(.985); } to { opacity: 1; transform: translateY(0) scale(1); } }
@@ -1417,7 +1417,8 @@
     agendaPopover.style.top = top + 'px';
     agendaPopover.style.width = width + 'px';
     agendaPopover.style.height = height + 'px';
-    agendaPopover.style.setProperty('--mn-agenda-arrow', Math.max(16, Math.min(width - 28, r.left + r.width / 2 - left - 6)) + 'px');
+    var anchorCenter = r.left + r.width / 2 - left;
+    agendaPopover.style.setProperty('--mn-agenda-arrow', Math.max(16, Math.min(width - 28, width - anchorCenter - 7)) + 'px');
   }
 
   function openAgendaPopover(anchor) {
