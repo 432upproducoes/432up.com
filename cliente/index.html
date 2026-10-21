@@ -211,9 +211,11 @@
     .mk.prox { border-color: rgba(192, 132, 252, .7); background: rgba(168, 85, 247, .2); color: #fff; box-shadow: 0 0 14px rgba(168, 85, 247, .25); }
     .mk-seta { flex: 0 0 auto; color: rgba(255, 255, 255, .35); font-size: 16px; line-height: 1; }
 
-    /* Meu evento: 3 colunas no desktop, empilhado no celular */
-    .ck-grid { display: grid; grid-template-columns: minmax(0, 1fr) minmax(0, 1.1fr) minmax(0, .85fr); gap: 18px; align-items: start; }
-    .ck-col { display: flex; flex-direction: column; min-width: 0; }
+    /* Meu evento: no desktop, resumo e equipe à esquerda, checklist à direita; no celular, empilhado */
+    .ck-grid { display: grid; grid-template-columns: minmax(0, 1fr) minmax(0, 1fr); grid-template-areas: "resumo linha" "equipe linha" "obs avisos"; gap: 18px; align-items: start; }
+    .ck-col { display: contents; min-width: 0; }
+    .o-resumo { grid-area: resumo; } .o-equipe { grid-area: equipe; } .o-linha { grid-area: linha; } .o-obs { grid-area: obs; } .o-avisos { grid-area: avisos; }
+    .etapa .conf { display: block; margin-top: 6px; font-size: 12px; color: var(--mut); }
     .ck-col .box-full { margin-bottom: 18px; width: 100%; box-sizing: border-box; }
     @media (max-width: 899px) {
       .ck-grid { display: flex; flex-direction: column; gap: 0; align-items: stretch; }
@@ -597,6 +599,14 @@
     var x = new Date(s);
     return isNaN(x.getTime()) ? null : x;
   }
+  /* Data e hora de quando a equipe confirmou a etapa (fuso do aparelho) */
+  var DATA_HORA = function (iso) {
+    var x = new Date(iso);
+    if (isNaN(x.getTime())) return '—';
+    try {
+      return x.toLocaleDateString('pt-BR') + ' às ' + x.toLocaleTimeString('pt-BR', { hour: '2-digit', minute: '2-digit' });
+    } catch (e) { return '—'; }
+  };
   var DATA = function (d) {
     var x = parseDataLocal(d);
     if (!x) return '—';
@@ -1027,7 +1037,9 @@
         return '<div class="etapa ' + (feita ? 'feita' : '') + '">' +
           '<div class="nome">' + E(e.nome) + '</div>' +
           '<div class="hora">' + (e.hora ? E(e.hora) : 'Horário a confirmar') + '</div>' +
-          (feita ? '<span class="ok">✓ Confirmada pela equipe</span>' : '<span class="aguarda">Aguardando equipe</span>') +
+          (feita
+            ? '<span class="ok">✓ Confirmada pela equipe</span>' + (e.concluida_em ? '<span class="conf">Em ' + DATA_HORA(e.concluida_em) + (e.concluida_por ? ' por ' + E(e.concluida_por) : '') + '</span>' : '')
+            : '<span class="aguarda">Aguardando equipe</span>') +
           '</div>';
       }).join('');
     }
@@ -1312,7 +1324,7 @@
       l('Evento', 'Pedido #' + p.numero) + l('Cliente', cli) + l('Tipo do evento', p.tipo_evento) +
       l('Local', p.local_evento) + l('Contato', (dados.cadastro && dados.cadastro.email) || '') +
       l('Data', p.data_evento ? DATA(p.data_evento) : '') +
-      l('Contrato', p.assinado_em ? 'Assinado em ' + DATA(p.assinado_em) : 'Aguardando assinatura');
+      '<div class="linha"><span class="rot">Contrato</span><span class="tag ' + (p.assinado_em ? 't-ok' : 't-pend') + '">' + (p.assinado_em ? 'Assinado' : 'Aguardando assinatura') + '</span></div>';
   }
   function renderEquipe() {
     var p = pedidoAtivo();
@@ -1544,11 +1556,12 @@
 
   $('btnSair').addEventListener('click', async function () {
     try {
-      ['432up_login_done', '432up_is_logged', '432up_is_cliente', '432up_is_admin', '432up_is_parceiro', '432up_cli_redirect']
+      ['432up_login_done', '432up_is_logged', '432up_is_cliente', '432up_is_admin', '432up_is_parceiro', '432up_cli_redirect', '432up_auto_rota']
         .forEach(function (k) { sessionStorage.removeItem(k); });
+      localStorage.removeItem('432up_rota');
     } catch (e) {}
     try { await SB.auth.signOut(); } catch (e) {}
-    location.href = '../B2B/login.html';
+    location.href = '../B2B/login.html?saiu=1';
   });
 
   function initSliders(root) {
