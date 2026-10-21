@@ -590,20 +590,8 @@
     await carregarLista();
     if (ADMIN) await carregarKpis();
 
-    var paramsProjeto = new URLSearchParams(location.search);
-    var qid = paramsProjeto.get('id');
-    var dataOrigemAgenda = paramsProjeto.get('data');
-    var veioDaAgenda = paramsProjeto.get('origem') === 'agenda';
-    if (veioDaAgenda && dataOrigemAgenda) {
-      document.documentElement.setAttribute('data-origem-agenda', dataOrigemAgenda);
-    }
-    if (qid) {
-      await selecionar(qid);
-      if (veioDaAgenda) {
-        var tabAgendaOrigem = document.querySelector('.tab-btn[data-tab="agenda"]');
-        if (tabAgendaOrigem) tabAgendaOrigem.click();
-      }
-    }
+    var qid = new URLSearchParams(location.search).get('id');
+    if (qid) selecionar(qid);
   }
 
   async function carregarTaxonomia() {
@@ -948,9 +936,7 @@
   async function selecionar(id) {
     ATUAL = PROPS.find(function (p) { return String(p.id) === String(id); }) || null;
     if (!ATUAL) return;
-    var paramsUrlProjeto = new URLSearchParams(location.search);
-    paramsUrlProjeto.set('id', ATUAL.id);
-    history.replaceState(null, '', '?' + paramsUrlProjeto.toString());
+    history.replaceState(null, '', '?id=' + encodeURIComponent(ATUAL.id));
     desenharLista();
 
     $('semSel').style.display = 'none';
@@ -985,6 +971,11 @@
     renderLocal(ATUAL, end);
     await carregarAgendaEvento(ATUAL);
     renderCal();
+    /* Vindo do pop-up da agenda (?data=...): abre a aba Agenda & Datas */
+    if (new URLSearchParams(location.search).get('data')) {
+      var tabAg = document.querySelector('.tab-btn[data-tab="agenda"]');
+      if (tabAg) tabAg.click();
+    }
 
     var equipe = await carregarEquipe();
     var meuColab = !ADMIN ? (equipe.find(function (c) { return c.parceiro_id === ME.id; }) || null) : null;
