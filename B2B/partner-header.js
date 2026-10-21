@@ -902,12 +902,13 @@
     st.id = 'mn-cal-css';
     st.textContent = [
       '#mn-cal-pop{position:fixed;z-index:2147483200;width:min(94vw,400px);max-height:calc(100vh - 24px);overflow-y:auto;overscroll-behavior:contain;-webkit-overflow-scrolling:touch;touch-action:pan-y;',
-      'box-sizing:border-box;padding:10px;border-radius:24px;display:none;background:rgba(10,15,24,.78);backdrop-filter:blur(22px);-webkit-backdrop-filter:blur(22px);',
+      'box-sizing:border-box;padding:10px;border-radius:24px;display:none;background:rgba(255,255,255,.07);backdrop-filter:blur(18px) saturate(140%);-webkit-backdrop-filter:blur(18px) saturate(140%);text-shadow:0 1px 2px rgba(0,0,0,.35);',
       'border:1px solid rgba(0,240,255,.3);box-shadow:0 22px 56px rgba(0,0,0,.6);color:#e2e8f0;font-size:13px;line-height:1.35;font-family:inherit;',
       '--mut:#94a3b8;--line:rgba(255,255,255,.14);--text:#f1f5f9}',
       '#mn-cal-pop.on{display:block;animation:mnPanelIn .22s cubic-bezier(.22,1,.36,1)}',
-      '#mn-cal-pop.mn-theme-admin{border-color:rgba(245,158,11,.45)}',
-      '#mn-cal-pop.mn-theme-amber{border-color:rgba(168,85,247,.45)}',
+      '#mn-cal-pop.mn-theme-cyan{background:linear-gradient(rgba(0,240,255,.12),rgba(0,240,255,.12)),rgba(255,255,255,.06);border-color:rgba(0,240,255,.4)}',
+      '#mn-cal-pop.mn-theme-admin{background:linear-gradient(rgba(245,158,11,.14),rgba(245,158,11,.14)),rgba(255,255,255,.06);border-color:rgba(245,158,11,.45)}',
+      '#mn-cal-pop.mn-theme-amber{background:linear-gradient(rgba(168,85,247,.14),rgba(168,85,247,.14)),rgba(255,255,255,.06);border-color:rgba(168,85,247,.45)}',
       '#mn-cal-pop .mc-stack{display:flex;flex-direction:column;gap:10px}',
       '#mn-cal-pop .mc-card{background:rgba(255,255,255,.035);border:1px solid rgba(255,255,255,.1);border-radius:18px;padding:12px}',
       '#mn-cal-pop .mc-nav{display:flex;align-items:center;gap:8px;margin-bottom:12px}',
@@ -1004,14 +1005,62 @@
     calPop.style.top = (r.bottom + 10) + 'px';
   }
 
+  /* ----- Cache por sessão (abertura instantânea) -----
+     Guarda só o mês visível (título, data, tipo, id, sub), por usuário. Some ao fechar a aba.
+     Ao abrir, desenha do cache na hora e atualiza com os dados reais em seguida. */
+  var calCurSrc = null;
+  var CAL_FILTROS_KEY = '432up_agenda_filtros_v1';
+
+  function calReadFiltros() {
+    try { return JSON.parse(localStorage.getItem(CAL_FILTROS_KEY) || '{}') || {}; } catch (e) { return {}; }
+  }
+  function calWriteFiltros(f) {
+    try { localStorage.setItem(CAL_FILTROS_KEY, JSON.stringify(f)); } catch (e) {}
+  }
+  function calCacheKey() {
+    var uid = lastParceiro && lastParceiro.id;
+    if (!uid || !calState) return null;
+    return 'mn_cal_v1|' + uid + '|' + calState.ano + '-' + calState.mes;
+  }
+  function calCacheGet(key) {
+    if (!key) return null;
+    try { return JSON.parse(sessionStorage.getItem(key)) || null; } catch (e) { return null; }
+  }
+  function calCacheSet(key, val) {
+    if (!key) return;
+    try { sessionStorage.setItem(key, JSON.stringify(val)); } catch (e) {}
+  }
+  function calSrcFromCache(c) {
+    return {
+      tipos: c.tipos,
+      visivelTipo: function (id) { return calReadFiltros()[id] !== false; },
+      itensDoDia: function (k) {
+        var f = calReadFiltros();
+        return (c.dias[k] || []).filter(function (it) { return f[it.tipo] !== false; });
+      },
+      setFiltro: function (id, on) {
+        var f = calReadFiltros(); f[id] = !!on; calWriteFiltros(f);
+        if (calAh) calAh.setFiltro(id, on);
+      }
+    };
+  }
+
   function calRefresh() {
+    var key = calCacheKey();
+    var c = calCacheGet(key);
+    if (c) { calCurSrc = calSrcFromCache(c); calRender(calCurSrc); }
     calBridge().then(function (ah) {
       if (!ah) {
-        calPop.innerHTML = '<div class="mc-vazio">Agenda indisponível agora. <a href="' + ADM + 'agenda.html" style="color:inherit">Abrir agenda</a></div>';
+        if (!c) calPop.innerHTML = '<div class="mc-vazio">Agenda indisponível agora. <a href="' + ADM + 'agenda.html" style="color:inherit">Abrir agenda</a></div>';
         return;
       }
-      return calQueued(function () { return ah.ensureMes(calState.ano, calState.mes); })
-        .then(function () { calRender(ah); });
+      var alvo = { ano: calState.ano, mes: calState.mes };
+      return calQueued(function () { return ah.ensureMes(alvo.ano, alvo.mes); }).then(function () {
+        if (calCacheKey() !== key) return;
+        calCacheSet(key, { tipos: ah.tipos, dias: ah.snapshot() });
+        calCurSrc = ah;
+        calRender(ah);
+      });
     });
   }
 
@@ -1067,6 +1116,7 @@
 
     var pd = st.sel.split('-');
     var dataBR = pd[2] + '/' + pd[1] + '/' + pd[0];
+    var calSY = calPop.scrollTop, calUl = calPop.querySelector('.mc-lista'), calSL = calUl ? calUl.scrollTop : 0;
     calPop.innerHTML =
       '<div class="mc-stack">' +
         '<div class="mc-card">' +
@@ -1087,6 +1137,8 @@
           '<ul class="mc-lista">' + lista + '</ul>' +
         '</div>' +
       '</div>';
+    calPop.scrollTop = calSY;
+    var calUlN = calPop.querySelector('.mc-lista'); if (calUlN) calUlN.scrollTop = calSL;
   }
 
   function calOpen(anchor) {
@@ -1110,11 +1162,11 @@
           calState.sel = calState.ano + '-' + calPad(calState.mes + 1) + '-01';
           return calRefresh();
         }
-        if (acao === 'day') { calState.sel = b.getAttribute('data-k'); return calBridge().then(function (ah) { if (ah) calRender(ah); }); }
-        if (acao === 'f' && calAh) {
+        if (acao === 'day') { calState.sel = b.getAttribute('data-k'); if (calCurSrc) calRender(calCurSrc); return; }
+        if (acao === 'f' && calCurSrc) {
           var id = b.getAttribute('data-id');
-          calAh.setFiltro(id, !calAh.visivelTipo(id));
-          calRender(calAh);
+          calCurSrc.setFiltro(id, !calCurSrc.visivelTipo(id));
+          calRender(calCurSrc);
         }
       });
     }
@@ -1196,6 +1248,8 @@
   }
 
   function scheduleFit() {
+    var hdrP = document.getElementById('calc-header');
+    if (!IN_FRAME && !calFrameEl && hdrP && hdrP.querySelector('[data-mn-cal]')) calBridge();
     if (fitQueued) return;
     fitQueued = true;
     requestAnimationFrame(fitCapsule);
@@ -1228,7 +1282,8 @@
         if (e.target.closest && e.target.closest('.mn-tab')) { cap.classList.remove('mn-cap-open'); return; }
         if (!(e.target.closest && e.target.closest('.mn-cap-btn, .mn-toggle-d'))) cap.classList.remove('mn-cap-open');
       }
-      if (calPop && calPop.classList.contains('on') && !(e.target.closest && e.target.closest('#mn-cal-pop'))) calClose();
+      var dentroCal = calPop && (calPop.contains(e.target) || (e.composedPath && e.composedPath().indexOf(calPop) >= 0));
+      if (calPop && calPop.classList.contains('on') && !dentroCal) calClose();
     }, false);
     document.addEventListener('keydown', function (e) { if (e.key === 'Escape') calClose(); });
   }
