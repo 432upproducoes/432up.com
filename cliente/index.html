@@ -1766,10 +1766,31 @@
     try {
       var sess = await SB.auth.getSession();
       var uid = sess.data.session.user.id;
-      var url = await uploadParaR2(uid + '/avatar-cliente.webp', novoAvatarBlob);
+      var token = sess.data.session.access_token;
+      /* Foto antiga (para apagar depois que a nova estiver salva) */
+      var antigaUrl = (dados && (dados.avatar_url || (dados.cadastro && dados.cadastro.avatar_url))) || '';
+      /* Nome novo a cada troca: a URL muda e o navegador não reaproveita a foto antiga do cache */
+      var nomeNovo = uid + '/avatar-cliente-' + Date.now() + '.webp';
+      var url = await uploadParaR2(nomeNovo, novoAvatarBlob);
       if (!url) throw new Error('URL do upload não retornada');
-      try { await SB.from('portal_clientes').update({ avatar_url: url }).eq('user_id', uid); } catch (e1) {}
-      try { await SB.functions.invoke('cliente-area', { body: { acao: 'avatar_salvar', avatar_url: url } }); } catch (e2) {}
+      /* Gravação do perfil feita pelo servidor (a tabela não aceita UPDATE direto do cliente).
+         Se falhar, NÃO diz que atualizou e NÃO apaga a foto antiga. */
+      var salvo = await SB.functions.invoke('cliente-area', { body: { acao: 'avatar_salvar', avatar_url: url } });
+      if (salvo.error || !salvo.data || !salvo.data.ok) {
+        throw new Error((salvo.data && salvo.data.erro) || 'Não foi possível salvar a foto no seu perfil. Tente novamente.');
+      }
+      if (dados) { dados.avatar_url = url; if (dados.cadastro) dados.cadastro.avatar_url = url; }
+      /* Só depois de salvar a nova: apaga a foto antiga do mesmo cliente (nunca a que acabou de subir) */
+      try {
+        var marca = 'media.432up.com/';
+        var caminhoAntigo = antigaUrl.indexOf(marca) !== -1 ? antigaUrl.split(marca)[1].split('?')[0] : '';
+        if (caminhoAntigo && caminhoAntigo.indexOf(uid + '/') === 0 && caminhoAntigo !== nomeNovo) {
+          await fetch(R2_UPLOAD_URL + '?path=' + encodeURIComponent(caminhoAntigo), {
+            method: 'DELETE',
+            headers: { 'Authorization': 'Bearer ' + token }
+          });
+        }
+      } catch (e3) {}
       $('avatarPreview').style.backgroundImage = 'url(' + url + ')';
       novoAvatarBlob = null;
       btn.style.display = 'none';
