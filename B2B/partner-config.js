@@ -38,11 +38,25 @@ function partnerRequireAuth(opts) {
       .single()
       .then(function (r) {
         if (r.error || !r.data) {
-          console.error('[432UP Partner] Parceiro não encontrado:', r.error);
-          sbPartner.auth.signOut().then(function () {
-            window.location.href = 'login.html?erro=sem_cadastro';
-          });
-          return Promise.reject('parceiro não encontrado');
+          /* Conta de cliente (sem linha em parceiros): NÃO desloga — manda para a área do cliente, que mantém a sessão */
+          return sbPartner.from('portal_clientes').select('id').eq('user_id', session.user.id).maybeSingle()
+            .then(function (pc) {
+              var emailCli = String(session.user.email || '').toLowerCase();
+              if (pc && pc.data) return { data: pc.data };
+              if (!emailCli) return { data: null };
+              return sbPartner.from('portal_clientes').select('id').eq('email', emailCli).maybeSingle();
+            })
+            .then(function (pc2) {
+              if (pc2 && pc2.data) {
+                window.location.href = '../cliente/index.html';
+                return Promise.reject('cliente');
+              }
+              console.error('[432UP Partner] Parceiro não encontrado:', r.error);
+              sbPartner.auth.signOut().then(function () {
+                window.location.href = 'login.html?erro=sem_cadastro';
+              });
+              return Promise.reject('parceiro não encontrado');
+            });
         }
         var parceiro = r.data;
         if (parceiro.status === 'pendente' && !opts.allowPendente) {
@@ -70,7 +84,7 @@ function partnerRequireAuth(opts) {
       });
   }).catch(function (err) {
     console.error('[432UP Partner] Erro na verificação de auth:', err);
-    if (err !== 'sem sessão' && err !== 'pendente de aprovação' && err !== 'acesso negado' && err !== 'requer admin' && err !== 'parceiro não encontrado') {
+    if (err !== 'sem sessão' && err !== 'pendente de aprovação' && err !== 'acesso negado' && err !== 'requer admin' && err !== 'parceiro não encontrado' && err !== 'cliente') {
       window.location.href = 'login.html';
     }
     return Promise.reject(err);
