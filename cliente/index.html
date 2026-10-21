@@ -1334,6 +1334,8 @@
     dados = await chamar('dados');
     if (dados.erro) { $('listaPedidos').textContent = dados.erro; return; }
     render();
+    atualizarSinoAvisos();
+    sincronizarAvisos();
   }
 
   $('formCadastro').addEventListener('submit', async function (e) {
@@ -1381,11 +1383,77 @@
     return out;
   }
 
-  async function ativarAvisos() {
+  /* Avisa o menu (partner-header.js) se o sino pendurado deve aparecer:
+     app instalado + permissão ainda não decidida + pedido vinculado + chave configurada.
+     Não exige contrato assinado: qualquer cliente com acesso à área pode receber avisos. */
+  function pedidoParaAvisos() {
+    var lista = (dados && dados.propostas) || [];
+    return lista.find(function (p) { return p.status !== 'cancelada' && p.assinado_em; }) ||
+      lista.find(function (p) { return p.status !== 'cancelada'; }) || null;
+  }
+  function atualizarSinoAvisos() {
+    var ok = false;
+    try {
+      var pedido = pedidoParaAvisos();
+      var chave = ((typeof CFG !== 'undefined' && (CFG.VAPID_PUBLIC_KEY || CFG.VAPID_PUBLIC)) || '').trim();
+      var instalado = (window.matchMedia && window.matchMedia('(display-mode: standalone)').matches) || window.navigator.standalone === true;
+      ok = !!(pedido && chave && instalado && 'Notification' in window && 'PushManager' in window &&
+        'serviceWorker' in navigator && Notification.permission === 'default');
+    } catch (e) { ok = false; }
+    if (typeof window.mnSetPushPendente === 'function') window.mnSetPushPendente(ok);
+  }
+  window.addEventListener('432up:ativar-avisos', function () { ativarAvisos(true); });
+
+  /* Service worker do cliente (/cliente/sw.js); se ele não existir no servidor, usa o do portal (/B2B/sw.js).
+     Espera o worker ativar pela própria inscrição (navigator.serviceWorker.ready não serve se o escopo não cobre esta página). */
+  function swAtivo(reg) {
+    return new Promise(function (ok) {
+      var sw = reg.installing || reg.waiting || reg.active;
+      if (!sw || sw.state === 'activated') return ok();
+      var t = setTimeout(ok, 8000);
+      sw.addEventListener('statechange', function () {
+        if (sw.state === 'activated') { clearTimeout(t); ok(); }
+      });
+    });
+  }
+  async function registrarSW() {
+    var reg;
+    try {
+      reg = await navigator.serviceWorker.register('/cliente/sw.js', { scope: '/cliente/' });
+    } catch (e) {
+      reg = await navigator.serviceWorker.register('/B2B/sw.js', { scope: '/B2B/' });
+    }
+    await swAtivo(reg);
+    return reg;
+  }
+
+  /* Quem já liberou os avisos: reafirma, sem perguntar nada, o vínculo do aparelho com o pedido
+     (cobre o caso de o contrato ser assinado depois ou de mudar o pedido principal) */
+  async function sincronizarAvisos() {
+    try {
+      if (!('Notification' in window) || Notification.permission !== 'granted') return;
+      if (!('serviceWorker' in navigator) || !('PushManager' in window)) return;
+      var pedido = pedidoParaAvisos();
+      if (!pedido) return;
+      var reg = (await navigator.serviceWorker.getRegistration('/cliente/')) || (await navigator.serviceWorker.getRegistration('/B2B/'));
+      if (!reg) return;
+      var sub = await reg.pushManager.getSubscription();
+      if (!sub) return;
+      var marca = '432up_push_sync_' + pedido.id + (pedido.assinado_em ? '_s' : '');
+      if (sessionStorage.getItem(marca) === '1') return;
+      var j = sub.toJSON();
+      var r = await SB.functions.invoke('registrar-push-cliente', {
+        body: { proposta_id: pedido.id, subscription: { endpoint: j.endpoint, keys: j.keys } }
+      });
+      if (!(r.error || (r.data && r.data.erro))) sessionStorage.setItem(marca, '1');
+    } catch (e) {}
+  }
+
+  async function ativarAvisos(doSino) {
     var m = $('msgAvisos');
     m.className = 'msg';
-    var pedido = (dados.propostas || []).find(function (p) { return p.status !== 'cancelada' && p.assinado_em; });
-    if (!pedido) { m.textContent = 'Ative os avisos depois que o contrato estiver assinado.'; return; }
+    var pedido = pedidoParaAvisos();
+    if (!pedido) { m.textContent = 'Ainda não há um pedido vinculado ao seu acesso para ativar os avisos.'; if (doSino === true) alert(m.textContent); return; }
     var VAPID_PUBLIC = (CFG.VAPID_PUBLIC_KEY || CFG.VAPID_PUBLIC || '').trim();
     if (!VAPID_PUBLIC) { m.textContent = 'Avisos ainda não configurados neste ambiente.'; return; }
     if (!('serviceWorker' in navigator) || !('PushManager' in window)) {
@@ -1396,9 +1464,8 @@
     m.textContent = 'Ativando…';
     try {
       var perm = await Notification.requestPermission();
-      if (perm !== 'granted') { m.textContent = 'Permissão negada.'; $('btnAvisos').disabled = false; return; }
-      var reg = await navigator.serviceWorker.register('/cliente/sw.js', { scope: '/cliente/' });
-      await navigator.serviceWorker.ready;
+      if (perm !== 'granted') { m.textContent = 'Permissão negada.'; $('btnAvisos').disabled = false; atualizarSinoAvisos(); return; }
+      var reg = await registrarSW();
       var sub = await reg.pushManager.getSubscription() ||
         await reg.pushManager.subscribe({ userVisibleOnly: true, applicationServerKey: b64ToU8(VAPID_PUBLIC) });
       var j = sub.toJSON();
@@ -1409,16 +1476,19 @@
       m.className = 'msg ok';
       m.textContent = 'Avisos ativados neste aparelho.';
       $('btnAvisos').style.display = 'none';
+      atualizarSinoAvisos();
     } catch (err) {
       m.textContent = err.message || 'Não foi possível ativar os avisos.';
       $('btnAvisos').disabled = false;
+      if (doSino === true) alert(m.textContent);
+      atualizarSinoAvisos();
     }
   }
-  $('btnAvisos').addEventListener('click', ativarAvisos);
+  $('btnAvisos').addEventListener('click', function () { ativarAvisos(false); });
 
   $('btnSair').addEventListener('click', async function () {
     try {
-      ['432up_login_done', '432up_is_logged', '432up_is_cliente', '432up_is_admin', '432up_cli_redirect']
+      ['432up_login_done', '432up_is_logged', '432up_is_cliente', '432up_is_admin', '432up_is_parceiro', '432up_cli_redirect']
         .forEach(function (k) { sessionStorage.removeItem(k); });
     } catch (e) {}
     try { await SB.auth.signOut(); } catch (e) {}
