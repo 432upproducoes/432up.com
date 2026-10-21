@@ -1,8 +1,9 @@
-/* 432UP Partner · service worker (push + bolinha no ícone + instalação no Chrome)
-   Subir em: https://www.432up.com/B2B/sw.js */
+/* 432UP Cliente · service worker (push de avisos da área do cliente)
+   Subir em: https://www.432up.com/cliente/sw.js
+   ATENÇÃO: se esse arquivo já existe no servidor, NÃO sobrescreva — confira o que ele faz primeiro. */
 
 var ICON = 'https://www.432up.com/imagens/logo512x512.png';
-var URL_EMAIL = '/B2B/e-mail.html';
+var URL_CLIENTE = '/cliente/index.html?notif=1';
 
 self.addEventListener('install', function () {
   self.skipWaiting();
@@ -12,12 +13,6 @@ self.addEventListener('activate', function (event) {
   event.waitUntil(self.clients.claim());
 });
 
-/* O Chrome exige um handler de fetch para oferecer "Instalar app".
-   Tudo vai direto para a rede, sem cache, para não mostrar e-mail desatualizado. */
-self.addEventListener('fetch', function (event) {
-  event.respondWith(fetch(event.request));
-});
-
 /* O iOS exige mostrar uma notificação a cada push (push silencioso é revogado) */
 self.addEventListener('push', function (event) {
   var data = {};
@@ -25,13 +20,13 @@ self.addEventListener('push', function (event) {
 
   var count = typeof data.count === 'number' ? data.count : null;
   var tarefas = [
-    self.registration.showNotification(data.title || 'Novo e-mail', {
+    self.registration.showNotification(data.title || 'Aviso 432UP', {
       body: data.body || '',
       icon: ICON,
       badge: ICON,
-      tag: data.tag || 'novo-email',
+      tag: data.tag || 'aviso-cliente',
       renotify: true,
-      data: { url: data.url || URL_EMAIL }
+      data: { url: data.url || URL_CLIENTE }
     })
   ];
 
@@ -45,10 +40,10 @@ self.addEventListener('push', function (event) {
   })));
 });
 
-/* Toque na notificação: abre (ou volta para) o app na caixa de e-mail */
+/* Toque na notificação: volta para o app na área do cliente */
 self.addEventListener('notificationclick', function (event) {
   event.notification.close();
-  var alvo = new URL((event.notification.data && event.notification.data.url) || URL_EMAIL, self.location.origin).href;
+  var alvo = new URL((event.notification.data && event.notification.data.url) || URL_CLIENTE, self.location.origin).href;
 
   event.waitUntil(
     self.clients.matchAll({ type: 'window', includeUncontrolled: true }).then(function (lista) {
