@@ -901,40 +901,44 @@
     var st = document.createElement('style');
     st.id = 'mn-cal-css';
     st.textContent = [
-      '#mn-cal-pop{position:fixed;z-index:2147483200;width:min(94vw,380px);max-height:min(80vh,680px);overflow-y:auto;overscroll-behavior:contain;-webkit-overflow-scrolling:touch;',
-      'padding:14px;border-radius:20px;display:none;box-sizing:border-box;',
-      'background:rgba(10,18,28,.78);backdrop-filter:blur(20px);-webkit-backdrop-filter:blur(20px);',
-      'border:1px solid rgba(0,240,255,.28);box-shadow:0 20px 50px rgba(0,0,0,.6);color:#e2e8f0;font-size:13px;line-height:1.35;font-family:inherit}',
+      '#mn-cal-pop{position:fixed;z-index:2147483200;width:min(94vw,400px);max-height:calc(100vh - 24px);overflow-y:auto;overscroll-behavior:contain;-webkit-overflow-scrolling:touch;touch-action:pan-y;',
+      'box-sizing:border-box;padding:10px;border-radius:24px;display:none;background:rgba(10,15,24,.78);backdrop-filter:blur(22px);-webkit-backdrop-filter:blur(22px);',
+      'border:1px solid rgba(0,240,255,.3);box-shadow:0 22px 56px rgba(0,0,0,.6);color:#e2e8f0;font-size:13px;line-height:1.35;font-family:inherit;',
+      '--mut:#94a3b8;--line:rgba(255,255,255,.14);--text:#f1f5f9}',
       '#mn-cal-pop.on{display:block;animation:mnPanelIn .22s cubic-bezier(.22,1,.36,1)}',
-      '#mn-cal-pop.mn-theme-admin{border-color:rgba(245,158,11,.4)}',
-      '#mn-cal-pop.mn-theme-amber{border-color:rgba(168,85,247,.4)}',
-      '#mn-cal-pop .mc-top{display:flex;align-items:center;gap:6px;margin-bottom:10px}',
-      '#mn-cal-pop .mc-top b{flex:1;font-size:14px;font-weight:700;text-transform:capitalize}',
-      '#mn-cal-pop .mc-btn{background:rgba(255,255,255,.05);border:1px solid rgba(255,255,255,.14);color:inherit;border-radius:12px;height:32px;min-width:32px;padding:0 9px;cursor:pointer;font:inherit;font-size:12px;display:inline-flex;align-items:center;justify-content:center;text-decoration:none}',
-      '#mn-cal-pop .mc-btn.hoje{color:#F5D061;border-color:rgba(245,208,97,.4)}',
-      '#mn-cal-pop .mc-grid{display:grid;grid-template-columns:repeat(7,1fr);gap:4px;text-align:center}',
-      '#mn-cal-pop .mc-dow{font-size:10px;opacity:.55;padding:2px 0;text-transform:lowercase}',
-      '#mn-cal-pop .mc-d{position:relative;min-height:38px;border-radius:12px;background:transparent;border:1px solid transparent;color:inherit;cursor:pointer;font:inherit;font-size:12px;padding:0}',
-      '#mn-cal-pop .mc-d.out{opacity:.28}',
-      '#mn-cal-pop .mc-d.has{background:rgba(255,255,255,.07);border-color:rgba(255,255,255,.12)}',
-      '#mn-cal-pop .mc-d.sel{border-color:#22c55e;box-shadow:0 0 0 1px #22c55e inset,0 0 10px rgba(34,197,94,.35)}',
-      '#mn-cal-pop .mc-d.hoje b{color:#22d3ee}',
-      '#mn-cal-pop .mc-dots{position:absolute;left:0;right:0;bottom:3px;display:flex;justify-content:center;gap:2px}',
-      '#mn-cal-pop .mc-dots i{width:4px;height:4px;border-radius:50%}',
-      '#mn-cal-pop{--mut:#94a3b8;--line:rgba(255,255,255,.14);--text:#f1f5f9}',
-      '#mn-cal-pop .filtros{display:flex;flex-wrap:nowrap;gap:8px;width:100%;max-width:100%;min-width:0;margin:12px 0 12px;padding:2px 0 8px;overflow-x:auto;overflow-y:hidden;-webkit-overflow-scrolling:touch;scrollbar-width:none;touch-action:pan-x;overscroll-behavior-x:contain}',
+      '#mn-cal-pop.mn-theme-admin{border-color:rgba(245,158,11,.45)}',
+      '#mn-cal-pop.mn-theme-amber{border-color:rgba(168,85,247,.45)}',
+      '#mn-cal-pop .mc-stack{display:flex;flex-direction:column;gap:10px}',
+      '#mn-cal-pop .mc-card{background:rgba(255,255,255,.035);border:1px solid rgba(255,255,255,.1);border-radius:18px;padding:12px}',
+      '#mn-cal-pop .mc-nav{display:flex;align-items:center;gap:8px;margin-bottom:12px}',
+      '#mn-cal-pop .mc-nav b{flex:1;text-align:center;font-size:14px;font-weight:700;text-transform:lowercase}',
+      '#mn-cal-pop .mc-btn{height:36px;min-width:36px;padding:0 10px;display:inline-flex;align-items:center;justify-content:center;background:transparent;border:1px solid rgba(255,255,255,.16);border-radius:12px;color:inherit;font:inherit;font-size:14px;cursor:pointer;text-decoration:none;box-sizing:border-box}',
+      '#mn-cal-pop .mc-btn.hoje{color:#F5D061;border-color:rgba(245,208,97,.45);font-weight:700;font-size:12px;white-space:nowrap}',
+      '#mn-cal-pop .filtros{display:flex;flex-wrap:nowrap;gap:8px;width:100%;max-width:100%;min-width:0;margin:0 0 12px;padding:2px 0 8px;overflow-x:auto;overflow-y:hidden;-webkit-overflow-scrolling:touch;scrollbar-width:none;touch-action:pan-x;overscroll-behavior-x:contain}',
       '#mn-cal-pop .filtros::-webkit-scrollbar{display:none}',
       '#mn-cal-pop .leg{flex:0 0 auto;display:inline-flex;align-items:center;gap:7px;padding:7px 13px;border-radius:999px;cursor:pointer;font:inherit;font-size:12px;font-weight:700;color:var(--mut);white-space:nowrap;background:rgba(255,255,255,.03);border:1px solid var(--line);transition:background .2s,border-color .2s,color .2s,opacity .2s;-webkit-tap-highlight-color:transparent}',
       '#mn-cal-pop .leg .sw{width:9px;height:9px;border-radius:999px;background:var(--c);flex:none}',
       '#mn-cal-pop .leg.on{color:var(--text);border-color:var(--c);background:color-mix(in srgb,var(--c) 16%,transparent)}',
       '#mn-cal-pop .leg:not(.on){opacity:.5}',
-      '#mn-cal-pop .mc-dia{font-size:12px;font-weight:700;margin:4px 0 6px;color:#F5D061}',
-      '#mn-cal-pop .mc-lista{max-height:calc(2.5 * 3.4em);overflow-y:auto;overscroll-behavior:contain;margin:0;padding:0;list-style:none;-webkit-overflow-scrolling:touch}',
-      '#mn-cal-pop .mc-lista li{display:flex;align-items:center;gap:10px;padding:8px 10px;margin-bottom:6px;border-radius:12px;background:rgba(255,255,255,.05);border:1px solid rgba(255,255,255,.08)}',
-      '#mn-cal-pop .mc-lista i{flex:none;width:8px;height:8px;border-radius:50%}',
-      '#mn-cal-pop .mc-lista a{color:inherit;font-weight:600;text-decoration:none}',
+      '#mn-cal-pop .mc-grid{display:grid;grid-template-columns:repeat(7,minmax(0,1fr));gap:6px;text-align:center}',
+      '#mn-cal-pop .mc-dow{font-size:11px;font-weight:700;color:var(--mut);padding:4px 0}',
+      '#mn-cal-pop .mc-d{min-height:46px;min-width:0;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:4px;padding:6px 0;border-radius:12px;border:1px solid transparent;background:transparent;color:#e2e8f0;font:inherit;font-size:12px;cursor:pointer}',
+      '#mn-cal-pop .mc-d.muted{opacity:.3}',
+      '#mn-cal-pop .mc-d.has{background:rgba(var(--rgb),.14);border-color:rgba(var(--rgb),.5);color:#fff;font-weight:800}',
+      '#mn-cal-pop .mc-d.hoje{border-color:rgba(212,175,55,.5)}',
+      '#mn-cal-pop .mc-d.sel{outline:2px solid #22c55e;outline-offset:-2px}',
+      '#mn-cal-pop .mc-dots{display:flex;gap:3px;justify-content:center;min-height:6px}',
+      '#mn-cal-pop .mc-dots i{width:6px;height:6px;border-radius:50%;display:block}',
+      '#mn-cal-pop .mc-info-t{font-size:14px;font-weight:800;color:#fff;margin:0 0 8px}',
+      '#mn-cal-pop .mc-info-d{font-size:13px;font-weight:800;color:#fff;margin:0 0 6px}',
+      '#mn-cal-pop .mc-info-d a{color:inherit;text-decoration:none}',
+      '#mn-cal-pop .mc-lista{max-height:calc(2.5 * 3.4em);overflow-y:auto;overscroll-behavior:contain;touch-action:pan-y;-webkit-overflow-scrolling:touch;margin:0;padding:0 4px 0 0;list-style:none}',
+      '#mn-cal-pop .mc-lista li{display:flex;gap:10px;align-items:flex-start;padding:8px 0;border-bottom:1px solid rgba(255,255,255,.07)}',
+      '#mn-cal-pop .mc-lista li:last-child{border-bottom:0}',
+      '#mn-cal-pop .mc-lista i{flex:none;width:9px;height:9px;border-radius:50%;margin-top:5px}',
+      '#mn-cal-pop .mc-lista a,#mn-cal-pop .mc-lista span.nm{color:#fff;font-weight:700;text-decoration:none}',
       '#mn-cal-pop .mc-lista a:hover{text-decoration:underline}',
-      '#mn-cal-pop .mc-lista small{display:block;opacity:.6;font-size:11px}',
+      '#mn-cal-pop .mc-lista small{display:block;opacity:.6;font-size:11px;margin-top:2px}',
       '#mn-cal-pop .mc-vazio{opacity:.6;padding:6px 4px}',
       '#mn-cal-frame{position:absolute;width:0;height:0;border:0;visibility:hidden}',
       /* Header: texto rola e some por trás da área fixa; avatar fica sempre à direita */
@@ -1011,15 +1015,25 @@
     });
   }
 
+  function calRgb(hex) {
+    var h = String(hex || '#64748b').replace('#', '');
+    if (h.length === 3) h = h.split('').map(function (c) { return c + c; }).join('');
+    var n = parseInt(h, 16) || 0;
+    return ((n >> 16) & 255) + ',' + ((n >> 8) & 255) + ',' + (n & 255);
+  }
+
   function calRender(ah) {
     var st = calState;
     var MESES = ['janeiro','fevereiro','março','abril','maio','junho','julho','agosto','setembro','outubro','novembro','dezembro'];
-    var DOW = ['dom','seg','ter','qua','qui','sex','sáb'];
+    var MESES_ABR = ['JAN','FEV','MAR','ABR','MAI','JUN','JUL','AGO','SET','OUT','NOV','DEZ'];
+    var DOW = ['seg','ter','qua','qui','sex','sáb','dom'];
     var primeiro = new Date(st.ano, st.mes, 1);
+    var offset = (primeiro.getDay() + 6) % 7;
     var diasMes = new Date(st.ano, st.mes + 1, 0).getDate();
-    var hojeK = calKey(new Date());
+    var hoje = new Date();
+    var hojeK = calKey(hoje);
     var grade = '';
-    for (var i = 0; i < primeiro.getDay(); i++) grade += '<span></span>';
+    for (var i = 0; i < offset; i++) grade += '<span></span>';
     for (var d = 1; d <= diasMes; d++) {
       var k = st.ano + '-' + calPad(st.mes + 1) + '-' + calPad(d);
       var itensK = ah.itensDoDia(k);
@@ -1027,11 +1041,13 @@
       itensK.forEach(function (it) {
         var t = ah.tipos.filter(function (x) { return x.id === it.tipo; })[0];
         var c = t ? t.cor : '#64748b';
-        if (cores.indexOf(c) < 0 && cores.length < 3) cores.push(c);
+        if (cores.indexOf(c) < 0) cores.push(c);
       });
-      var dots = cores.length ? '<span class="mc-dots">' + cores.map(function (c) { return '<i style="background:' + c + '"></i>'; }).join('') + '</span>' : '';
-      grade += '<button type="button" class="mc-d' + (itensK.length ? ' has' : '') + (k === st.sel ? ' sel' : '') + (k === hojeK ? ' hoje' : '') +
-        '" data-mc="day" data-k="' + k + '"><b>' + d + '</b>' + dots + '</button>';
+      var dots = cores.slice(0, 4).map(function (c) { return '<i style="background:' + c + '"></i>'; }).join('');
+      var rgb = cores.length ? calRgb(cores[0]) : '255,255,255';
+      grade += '<button type="button" class="mc-d' + (itensK.length ? ' has' : '') + (k === st.sel ? ' sel' : '') + (k === hojeK && !itensK.length ? ' hoje' : '') +
+        '" style="--rgb:' + rgb + '" data-mc="day" data-k="' + k + '">' + d +
+        '<span class="mc-dots">' + dots + '</span></button>';
     }
     var pills = ah.tipos.map(function (t) {
       var on = ah.visivelTipo(t.id);
@@ -1039,30 +1055,38 @@
     }).join('');
 
     var itens = ah.itensDoDia(st.sel);
+    var idsDia = itens.filter(function (x) { return x.tipo === 'evento' && x.id; }).map(function (x) { return x.id; });
     var lista = itens.length ? itens.map(function (it) {
       var t = ah.tipos.filter(function (x) { return x.id === it.tipo; })[0];
       var cor = t ? t.cor : '#64748b';
-      var idsDia = itens.filter(function (x) { return x.tipo === 'evento' && x.id; }).map(function (x) { return x.id; });
       var nome = (it.tipo === 'evento' && it.id)
         ? '<a href="' + ADM + 'projeto.html?id=' + encodeURIComponent(it.id) + '&data=' + encodeURIComponent(st.sel) + '&dia=' + encodeURIComponent(idsDia.join(',')) + '">' + calEsc(it.titulo) + '</a>'
-        : '<span>' + calEsc(it.titulo) + '</span>';
+        : '<span class="nm">' + calEsc(it.titulo) + '</span>';
       return '<li><i style="background:' + cor + '"></i><div>' + nome + (it.sub ? '<small>' + calEsc(it.sub) + '</small>' : '') + '</div></li>';
-    }).join('') : '<li class="mc-vazio" style="background:none;border:0">Nada neste dia com os filtros atuais.</li>';
+    }).join('') : '<li class="mc-vazio" style="border:0">Nada neste dia com os filtros atuais.</li>';
 
     var pd = st.sel.split('-');
-    var dow = DOW[new Date(pd[0], pd[1] - 1, pd[2]).getDay()];
+    var dataBR = pd[2] + '/' + pd[1] + '/' + pd[0];
     calPop.innerHTML =
-      '<div class="mc-top"><b>' + MESES[st.mes] + ' ' + st.ano + '</b>' +
-        '<button type="button" class="mc-btn hoje" data-mc="hoje">Hoje</button>' +
-        '<button type="button" class="mc-btn" data-mc="prev" aria-label="Mês anterior">‹</button>' +
-        '<button type="button" class="mc-btn" data-mc="next" aria-label="Próximo mês">›</button>' +
-        '<a class="mc-btn" href="' + ADM + 'agenda.html?data=' + encodeURIComponent(st.sel) + '" title="Ampliar agenda" aria-label="Ampliar agenda">⤢</a>' +
-        '<button type="button" class="mc-btn" data-mc="close" aria-label="Fechar">✕</button>' +
-      '</div>' +
-      '<div class="mc-grid">' + DOW.map(function (x) { return '<span class="mc-dow">' + x + '</span>'; }).join('') + grade + '</div>' +
-      '<div class="filtros">' + pills + '</div>' +
-      '<div class="mc-dia">' + dow + ', ' + pd[2] + '/' + pd[1] + '/' + pd[0] + '</div>' +
-      '<ul class="mc-lista">' + lista + '</ul>';
+      '<div class="mc-stack">' +
+        '<div class="mc-card">' +
+          '<div class="mc-nav">' +
+            '<button type="button" class="mc-btn" data-mc="prev" aria-label="Mês anterior">‹</button>' +
+            '<b>' + MESES[st.mes] + ' ' + st.ano + '</b>' +
+            '<button type="button" class="mc-btn" data-mc="next" aria-label="Próximo mês">›</button>' +
+            '<button type="button" class="mc-btn hoje" data-mc="hoje">Hoje/' + MESES_ABR[hoje.getMonth()] + '</button>' +
+            '<a class="mc-btn" href="' + ADM + 'agenda.html?data=' + encodeURIComponent(st.sel) + '" title="Ampliar agenda" aria-label="Ampliar agenda">⤢</a>' +
+            '<button type="button" class="mc-btn" data-mc="close" aria-label="Fechar">✕</button>' +
+          '</div>' +
+          '<div class="filtros">' + pills + '</div>' +
+          '<div class="mc-grid">' + DOW.map(function (x) { return '<span class="mc-dow">' + x + '</span>'; }).join('') + grade + '</div>' +
+        '</div>' +
+        '<div class="mc-card">' +
+          '<p class="mc-info-t">Event Information</p>' +
+          '<p class="mc-info-d"><a href="' + ADM + 'agenda.html?data=' + encodeURIComponent(st.sel) + '" title="Abrir este dia na agenda">' + dataBR + '</a></p>' +
+          '<ul class="mc-lista">' + lista + '</ul>' +
+        '</div>' +
+      '</div>';
   }
 
   function calOpen(anchor) {
