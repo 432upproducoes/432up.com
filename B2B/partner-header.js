@@ -508,6 +508,29 @@
       .mn-badge[hidden] { display: none !important; }
       .mn-mail-hdr { display: none !important; }
 
+      /* Menu textual rolável; ícones e avatar permanecem ancorados à direita. */
+      #calc-header { position: relative !important; }
+      #calc-header .desktop-nav { overflow: hidden !important; }
+      #calc-header .mn-items { position: relative !important; z-index: 1 !important; flex: 1 1 auto !important; min-width: 0 !important; max-width: 100%; overflow-x: auto !important; overflow-y: hidden !important; scrollbar-width: none; -webkit-overflow-scrolling: touch; -webkit-mask-image: linear-gradient(to right, #000 0%, #000 88%, transparent 100%); mask-image: linear-gradient(to right, #000 0%, #000 88%, transparent 100%); }
+      #calc-header .mn-items::-webkit-scrollbar { display: none; }
+      #calc-header .b2b-user-widget { position: absolute !important; right: max(12px, env(safe-area-inset-right)) !important; top: 50% !important; transform: translateY(-50%) !important; z-index: 30 !important; display: flex !important; align-items: center !important; gap: 6px !important; flex: none !important; white-space: nowrap !important; }
+      #calc-header .desktop-nav { padding-right: 0 !important; }
+
+      /* Pop-up de agenda: vidro conectado ao ícone do header. */
+      #mn-agenda-popover { position: fixed; z-index: 2147483000; width: min(440px, calc(100vw - 16px)); height: min(700px, 78vh); display: none; overflow: visible; border-radius: 20px; background: rgba(18,12,0,.70); border: 1px solid rgba(245,158,11,.34); box-shadow: 0 18px 60px rgba(0,0,0,.48), inset 0 1px 0 rgba(255,191,64,.13), 0 0 24px rgba(245,158,11,.06); backdrop-filter: blur(30px) saturate(145%); -webkit-backdrop-filter: blur(30px) saturate(145%); transform-origin: top right; animation: mnAgendaIn .22s cubic-bezier(.22,1,.36,1); }
+      #mn-agenda-popover.on { display: block; }
+      #mn-agenda-popover::before { content: ''; position: absolute; top: -7px; right: var(--mn-agenda-arrow, 28px); width: 13px; height: 13px; transform: rotate(45deg); background: rgba(18,12,0,.88); border-left: 1px solid rgba(245,158,11,.34); border-top: 1px solid rgba(245,158,11,.34); }
+      #mn-agenda-popover iframe { position: relative; z-index: 1; width: 100%; height: 100%; display: block; border: 0; border-radius: inherit; background: transparent; }
+      #mn-agenda-backdrop { position: fixed; inset: 0; z-index: 2147482999; display: none; background: transparent; }
+      #mn-agenda-backdrop.on { display: block; }
+      #mn-agenda-popover[data-theme="admin"] { background: rgba(30,20,3,.72); border-color: rgba(245,158,11,.42); box-shadow: 0 18px 60px rgba(0,0,0,.48), inset 0 1px 0 rgba(255,191,64,.15), 0 0 26px rgba(245,158,11,.08); }
+      #mn-agenda-popover[data-theme="amber"] { background: rgba(28,18,34,.82); border-color: rgba(192,132,252,.28); }
+      #mn-agenda-popover[data-theme="cyan"] { background: rgba(5,20,28,.82); border-color: rgba(6,182,212,.30); }
+      #mn-agenda-popover[data-theme="admin"]::before { background: rgba(30,20,3,.86); border-color: rgba(245,158,11,.42); }
+      #mn-agenda-popover[data-theme="amber"]::before { background: rgba(28,18,34,.90); border-color: rgba(192,132,252,.28); }
+      #mn-agenda-popover[data-theme="cyan"]::before { background: rgba(5,20,28,.90); border-color: rgba(6,182,212,.30); }
+      @keyframes mnAgendaIn { from { opacity: 0; transform: translateY(-5px) scale(.985); } to { opacity: 1; transform: translateY(0) scale(1); } }
+
       /* Bandeja mobile canônica: … [cápsula/☰] [calendário] [envelope] [avatar] */
       .mn-hdr-tray {
         display: none; align-items: center; gap: 6px; flex: none; margin-left: 8px;
@@ -532,12 +555,14 @@
         box-shadow: none !important; border-radius: 50% !important; flex-shrink: 0 !important;
       }
       @media (max-width: 1024px) {
-        .mn-hdr-tray { display: inline-flex !important; }
+        .mn-hdr-tray { display: inline-flex !important; position: absolute !important; right: max(8px, env(safe-area-inset-right)) !important; top: 50% !important; transform: translateY(-50%) !important; margin-left: 0 !important; z-index: 40 !important; }
         .mn-mail-hdr { display: none !important; }
         #calc-header.mn-ready {
           display: flex !important;
           flex-wrap: nowrap !important;
           align-items: center !important;
+          padding-right: 142px !important;
+          padding-left: max(10px, env(safe-area-inset-left)) !important;
         }
         #calc-header .mobile-hamburger { order: 15; margin-left: 4px !important; }
         #calc-header > .mn-toggle-d { order: 10; }
@@ -638,8 +663,8 @@
     if (onCliente || clienteSo()) return '';
     if (!(cachedLoggedIn || cachedIsParceiro || cachedIsAdmin)) return '';
     var ativo = (currentPath === 'agenda.html') ? ' active' : '';
-    return '<a href="' + ADM + 'agenda.html" class="mn-mail ' + cls + ativo + '"' +
-      (standalone ? ' data-mn-user="1"' : '') + ' title="Agenda" aria-label="Agenda" data-mn-cal="1">' +
+    return '<a href="' + ADM + 'agenda.html" class="mn-mail mn-calendar-trigger ' + cls + ativo + '"' +
+      (standalone ? ' data-mn-user="1"' : '') + ' title="Abrir agenda" aria-label="Agenda" aria-haspopup="dialog" aria-expanded="false">' +
       CAL_SVG + '</a>';
   }
 
@@ -886,406 +911,6 @@
       });
     }).catch(function () {});
     return Promise.race([work, new Promise(function (r) { setTimeout(r, 2500); })]);
-  }
-
-
-  /* ===== Agenda flutuante: pop-up de vidro ligado ao ícone de agenda =====
-     Dados e regras ficam só em admin/agenda.html; o pop-up lê esse arquivo por um iframe
-     oculto (AgendaHeader). Assim nenhuma regra é duplicada. */
-  var IN_FRAME = window.self !== window.top;
-  var calPop = null, calFrameEl = null, calBridgePromise = null, calAh = null, calQueue = Promise.resolve();
-  var calState = null, capFullW = 0, fitQueued = false;
-
-  function calCss() {
-    if (document.getElementById('mn-cal-css')) return;
-    var st = document.createElement('style');
-    st.id = 'mn-cal-css';
-    st.textContent = [
-      '#mn-cal-pop{position:fixed;z-index:2147483200;width:min(94vw,400px);max-height:calc(100vh - 24px);overflow-y:auto;overscroll-behavior:contain;-webkit-overflow-scrolling:touch;touch-action:pan-y;',
-      'box-sizing:border-box;padding:10px;border-radius:24px;display:none;background:rgba(255,255,255,.07);backdrop-filter:blur(18px) saturate(140%);-webkit-backdrop-filter:blur(18px) saturate(140%);text-shadow:0 1px 2px rgba(0,0,0,.35);',
-      'border:1px solid rgba(0,240,255,.3);box-shadow:0 22px 56px rgba(0,0,0,.6);color:#e2e8f0;font-size:13px;line-height:1.35;font-family:inherit;',
-      '--mut:#94a3b8;--line:rgba(255,255,255,.14);--text:#f1f5f9}',
-      '#mn-cal-pop.on{display:block;animation:mnPanelIn .22s cubic-bezier(.22,1,.36,1)}',
-      '#mn-cal-pop.mn-theme-cyan{background:linear-gradient(rgba(0,240,255,.12),rgba(0,240,255,.12)),rgba(255,255,255,.06);border-color:rgba(0,240,255,.4)}',
-      '#mn-cal-pop.mn-theme-admin{background:linear-gradient(rgba(245,158,11,.14),rgba(245,158,11,.14)),rgba(255,255,255,.06);border-color:rgba(245,158,11,.45)}',
-      '#mn-cal-pop.mn-theme-amber{background:linear-gradient(rgba(168,85,247,.14),rgba(168,85,247,.14)),rgba(255,255,255,.06);border-color:rgba(168,85,247,.45)}',
-      '#mn-cal-pop .mc-stack{display:flex;flex-direction:column;gap:10px}',
-      '#mn-cal-pop .mc-card{background:rgba(255,255,255,.035);border:1px solid rgba(255,255,255,.1);border-radius:18px;padding:12px}',
-      '#mn-cal-pop .mc-nav{display:flex;align-items:center;gap:8px;margin-bottom:12px}',
-      '#mn-cal-pop .mc-nav b{flex:1;text-align:center;font-size:14px;font-weight:700;text-transform:lowercase}',
-      '#mn-cal-pop .mc-btn{height:36px;min-width:36px;padding:0 10px;display:inline-flex;align-items:center;justify-content:center;background:transparent;border:1px solid rgba(255,255,255,.16);border-radius:12px;color:inherit;font:inherit;font-size:14px;cursor:pointer;text-decoration:none;box-sizing:border-box}',
-      '#mn-cal-pop .mc-btn.hoje{color:#F5D061;border-color:rgba(245,208,97,.45);font-weight:700;font-size:12px;white-space:nowrap}',
-      '#mn-cal-pop .filtros{display:flex;flex-wrap:nowrap;gap:8px;width:100%;max-width:100%;min-width:0;margin:0 0 12px;padding:2px 0 8px;overflow-x:auto;overflow-y:hidden;-webkit-overflow-scrolling:touch;scrollbar-width:none;touch-action:pan-x;overscroll-behavior-x:contain}',
-      '#mn-cal-pop .filtros::-webkit-scrollbar{display:none}',
-      '#mn-cal-pop .leg{flex:0 0 auto;display:inline-flex;align-items:center;gap:7px;padding:7px 13px;border-radius:999px;cursor:pointer;font:inherit;font-size:12px;font-weight:700;color:var(--mut);white-space:nowrap;background:rgba(255,255,255,.03);border:1px solid var(--line);transition:background .2s,border-color .2s,color .2s,opacity .2s;-webkit-tap-highlight-color:transparent}',
-      '#mn-cal-pop .leg .sw{width:9px;height:9px;border-radius:999px;background:var(--c);flex:none}',
-      '#mn-cal-pop .leg.on{color:var(--text);border-color:var(--c);background:color-mix(in srgb,var(--c) 16%,transparent)}',
-      '#mn-cal-pop .leg:not(.on){opacity:.5}',
-      '#mn-cal-pop .mc-grid{display:grid;grid-template-columns:repeat(7,minmax(0,1fr));gap:6px;text-align:center}',
-      '#mn-cal-pop .mc-dow{font-size:11px;font-weight:700;color:var(--mut);padding:4px 0}',
-      '#mn-cal-pop .mc-d{min-height:46px;min-width:0;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:4px;padding:6px 0;border-radius:12px;border:1px solid transparent;background:transparent;color:#e2e8f0;font:inherit;font-size:12px;cursor:pointer}',
-      '#mn-cal-pop .mc-d.muted{opacity:.3}',
-      '#mn-cal-pop .mc-d.has{background:rgba(var(--rgb),.14);border-color:rgba(var(--rgb),.5);color:#fff;font-weight:800}',
-      '#mn-cal-pop .mc-d.hoje{border-color:rgba(212,175,55,.5)}',
-      '#mn-cal-pop .mc-d.sel{outline:2px solid #22c55e;outline-offset:-2px}',
-      '#mn-cal-pop .mc-dots{display:flex;gap:3px;justify-content:center;min-height:6px}',
-      '#mn-cal-pop .mc-dots i{width:6px;height:6px;border-radius:50%;display:block}',
-      '#mn-cal-pop .mc-info-t{font-size:14px;font-weight:800;color:#fff;margin:0 0 8px}',
-      '#mn-cal-pop .mc-info-d{font-size:13px;font-weight:800;color:#fff;margin:0 0 6px}',
-      '#mn-cal-pop .mc-info-d a{color:inherit;text-decoration:none}',
-      '#mn-cal-pop .mc-lista{max-height:calc(2.5 * 3.4em);overflow-y:auto;overscroll-behavior:contain;touch-action:pan-y;-webkit-overflow-scrolling:touch;margin:0;padding:0 4px 0 0;list-style:none}',
-      '#mn-cal-pop .mc-lista li{display:flex;gap:10px;align-items:flex-start;padding:8px 0;border-bottom:1px solid rgba(255,255,255,.07)}',
-      '#mn-cal-pop .mc-lista li:last-child{border-bottom:0}',
-      '#mn-cal-pop .mc-lista i{flex:none;width:9px;height:9px;border-radius:50%;margin-top:5px}',
-      '#mn-cal-pop .mc-lista a,#mn-cal-pop .mc-lista span.nm{color:#fff;font-weight:700;text-decoration:none}',
-      '#mn-cal-pop .mc-lista a:hover{text-decoration:underline}',
-      '#mn-cal-pop .mc-lista small{display:block;opacity:.6;font-size:11px;margin-top:2px}',
-      '#mn-cal-pop .mc-vazio{opacity:.6;padding:6px 4px}',
-      '#mn-cal-frame{position:absolute;width:0;height:0;border:0;visibility:hidden}',
-      /* Header: texto rola e some por trás da área fixa; avatar fica sempre à direita */
-      '@media (min-width:1025px){',
-      '  #calc-header .mn-items{flex:1 1 0 !important;min-width:0 !important;overflow-x:auto !important;overflow-y:hidden !important;',
-      '    scrollbar-width:none;-ms-overflow-style:none;margin-left:0 !important;',
-      '    -webkit-mask-image:linear-gradient(to right,#000 calc(100% - 56px),transparent);mask-image:linear-gradient(to right,#000 calc(100% - 56px),transparent);}',
-      '  #calc-header .mn-items::-webkit-scrollbar{display:none}',
-      '}',
-      '#calc-header .desktop-nav > .b2b-user-widget{flex:none !important;margin-left:auto !important;position:relative;z-index:2;display:flex !important;align-items:center;gap:8px}',
-      '#calc-header .b2b-user-widget > #btnLogoutDesk{order:-1}',
-      /* Cápsula compactada em hambúrguer quando não cabe */
-      '#calc-header .mn-cap-btn{display:none}',
-      '#calc-header.mn-cap-collapsed .mn-cap-btn{display:inline-flex;align-items:center;gap:6px;height:36px;padding:0 12px;border-radius:999px;',
-      '  border:1px solid rgba(0,240,255,.35);background:rgba(10,18,28,.6);color:#00f0ff;font-size:12px;font-weight:600;line-height:1;font-family:inherit;cursor:pointer;flex:none;order:10;margin-left:6px}',
-      '#calc-header .mn-cap-btn[data-area="site"]{color:#c5a059;border-color:rgba(197,160,89,.45)}',
-      '#calc-header .mn-cap-btn[data-area="admin"]{color:#f59e0b;border-color:rgba(245,158,11,.45)}',
-      '#calc-header.mn-cap-collapsed > .mn-toggle-d{display:none !important}',
-      '#calc-header.mn-cap-collapsed > .mn-toggle-d.mn-cap-open{display:inline-flex !important;position:fixed;top:calc(var(--mn-hdr-bottom,72px) + 8px);left:50%;transform:translateX(-50%);',
-      '  z-index:2147483150;max-width:calc(100vw - 16px);overflow:visible;margin:0 !important;opacity:1;visibility:visible;max-width:calc(100vw - 16px)}'
-    ].join('\n');
-    document.head.appendChild(st);
-  }
-
-  function calBridge() {
-    if (calBridgePromise) return calBridgePromise;
-    if (!calFrameEl) {
-      calFrameEl = document.createElement('iframe');
-      calFrameEl.id = 'mn-cal-frame';
-      calFrameEl.setAttribute('aria-hidden', 'true');
-      calFrameEl.src = ADM + 'agenda.html';
-      document.body.appendChild(calFrameEl);
-    }
-    calBridgePromise = new Promise(function (resolve) {
-      var t0 = Date.now();
-      (function poll() {
-        var w = calFrameEl && calFrameEl.contentWindow;
-        var ah = w && w.AgendaHeader;
-        if (ah && ah.ready) { calAh = ah; return resolve(ah); }
-        if (Date.now() - t0 > 15000) { calBridgePromise = null; return resolve(null); }
-        setTimeout(poll, 150);
-      })();
-    });
-    return calBridgePromise;
-  }
-
-  function calQueued(fn) {
-    calQueue = calQueue.then(fn, fn).catch(function () {});
-    return calQueue;
-  }
-
-  function calPad(n) { return (n < 10 ? '0' : '') + n; }
-  function calKey(d) { return d.getFullYear() + '-' + calPad(d.getMonth() + 1) + '-' + calPad(d.getDate()); }
-  function calEsc(s) {
-    return String(s == null ? '' : s).replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;');
-  }
-
-  function calPlace(anchor) {
-    var r = anchor.getBoundingClientRect();
-    var w = Math.min(window.innerWidth * 0.94, 380);
-    var left = Math.max(8, Math.min(r.right - w, window.innerWidth - w - 8));
-    calPop.style.left = left + 'px';
-    calPop.style.top = (r.bottom + 10) + 'px';
-  }
-
-  /* ----- Cache por sessão (abertura instantânea) -----
-     Guarda só o mês visível (título, data, tipo, id, sub), por usuário. Some ao fechar a aba.
-     Ao abrir, desenha do cache na hora e atualiza com os dados reais em seguida. */
-  var calCurSrc = null;
-  var CAL_FILTROS_KEY = '432up_agenda_filtros_v1';
-
-  function calReadFiltros() {
-    try { return JSON.parse(localStorage.getItem(CAL_FILTROS_KEY) || '{}') || {}; } catch (e) { return {}; }
-  }
-  function calWriteFiltros(f) {
-    try { localStorage.setItem(CAL_FILTROS_KEY, JSON.stringify(f)); } catch (e) {}
-  }
-  function calCacheKey() {
-    var uid = lastParceiro && lastParceiro.id;
-    if (!uid || !calState) return null;
-    return 'mn_cal_v1|' + uid + '|' + calState.ano + '-' + calState.mes;
-  }
-  function calCacheGet(key) {
-    if (!key) return null;
-    try { return JSON.parse(sessionStorage.getItem(key)) || null; } catch (e) { return null; }
-  }
-  function calCacheSet(key, val) {
-    if (!key) return;
-    try { sessionStorage.setItem(key, JSON.stringify(val)); } catch (e) {}
-  }
-  function calSrcFromCache(c) {
-    return {
-      tipos: c.tipos,
-      visivelTipo: function (id) { return calReadFiltros()[id] !== false; },
-      itensDoDia: function (k) {
-        var f = calReadFiltros();
-        return (c.dias[k] || []).filter(function (it) { return f[it.tipo] !== false; });
-      },
-      setFiltro: function (id, on) {
-        var f = calReadFiltros(); f[id] = !!on; calWriteFiltros(f);
-        if (calAh) calAh.setFiltro(id, on);
-      }
-    };
-  }
-
-  function calRefresh() {
-    var key = calCacheKey();
-    var c = calCacheGet(key);
-    if (c) { calCurSrc = calSrcFromCache(c); calRender(calCurSrc); }
-    calBridge().then(function (ah) {
-      if (!ah) {
-        if (!c) calPop.innerHTML = '<div class="mc-vazio">Agenda indisponível agora. <a href="' + ADM + 'agenda.html" style="color:inherit">Abrir agenda</a></div>';
-        return;
-      }
-      var alvo = { ano: calState.ano, mes: calState.mes };
-      return calQueued(function () { return ah.ensureMes(alvo.ano, alvo.mes); }).then(function () {
-        if (calCacheKey() !== key) return;
-        calCacheSet(key, { tipos: ah.tipos, dias: ah.snapshot() });
-        calCurSrc = ah;
-        calRender(ah);
-      });
-    });
-  }
-
-  function calRgb(hex) {
-    var h = String(hex || '#64748b').replace('#', '');
-    if (h.length === 3) h = h.split('').map(function (c) { return c + c; }).join('');
-    var n = parseInt(h, 16) || 0;
-    return ((n >> 16) & 255) + ',' + ((n >> 8) & 255) + ',' + (n & 255);
-  }
-
-  function calRender(ah) {
-    var st = calState;
-    var MESES = ['janeiro','fevereiro','março','abril','maio','junho','julho','agosto','setembro','outubro','novembro','dezembro'];
-    var MESES_ABR = ['JAN','FEV','MAR','ABR','MAI','JUN','JUL','AGO','SET','OUT','NOV','DEZ'];
-    var DOW = ['seg','ter','qua','qui','sex','sáb','dom'];
-    var primeiro = new Date(st.ano, st.mes, 1);
-    var offset = (primeiro.getDay() + 6) % 7;
-    var diasMes = new Date(st.ano, st.mes + 1, 0).getDate();
-    var hoje = new Date();
-    var hojeK = calKey(hoje);
-    var grade = '';
-    for (var i = 0; i < offset; i++) grade += '<span></span>';
-    for (var d = 1; d <= diasMes; d++) {
-      var k = st.ano + '-' + calPad(st.mes + 1) + '-' + calPad(d);
-      var itensK = ah.itensDoDia(k);
-      var cores = [];
-      itensK.forEach(function (it) {
-        var t = ah.tipos.filter(function (x) { return x.id === it.tipo; })[0];
-        var c = t ? t.cor : '#64748b';
-        if (cores.indexOf(c) < 0) cores.push(c);
-      });
-      var dots = cores.slice(0, 4).map(function (c) { return '<i style="background:' + c + '"></i>'; }).join('');
-      var rgb = cores.length ? calRgb(cores[0]) : '255,255,255';
-      grade += '<button type="button" class="mc-d' + (itensK.length ? ' has' : '') + (k === st.sel ? ' sel' : '') + (k === hojeK && !itensK.length ? ' hoje' : '') +
-        '" style="--rgb:' + rgb + '" data-mc="day" data-k="' + k + '">' + d +
-        '<span class="mc-dots">' + dots + '</span></button>';
-    }
-    var pills = ah.tipos.map(function (t) {
-      var on = ah.visivelTipo(t.id);
-      return '<button type="button" class="leg' + (on ? ' on' : '') + '" data-mc="f" data-id="' + t.id + '" aria-pressed="' + (on ? 'true' : 'false') + '" style="--c:' + t.cor + '"><i class="sw"></i>' + calEsc(t.label) + '</button>';
-    }).join('');
-
-    var itens = ah.itensDoDia(st.sel);
-    var idsDia = itens.filter(function (x) { return x.tipo === 'evento' && x.id; }).map(function (x) { return x.id; });
-    var lista = itens.length ? itens.map(function (it) {
-      var t = ah.tipos.filter(function (x) { return x.id === it.tipo; })[0];
-      var cor = t ? t.cor : '#64748b';
-      var nome = (it.tipo === 'evento' && it.id)
-        ? '<a href="' + ADM + 'projeto.html?id=' + encodeURIComponent(it.id) + '&data=' + encodeURIComponent(st.sel) + '&dia=' + encodeURIComponent(idsDia.join(',')) + '">' + calEsc(it.titulo) + '</a>'
-        : '<span class="nm">' + calEsc(it.titulo) + '</span>';
-      return '<li><i style="background:' + cor + '"></i><div>' + nome + (it.sub ? '<small>' + calEsc(it.sub) + '</small>' : '') + '</div></li>';
-    }).join('') : '<li class="mc-vazio" style="border:0">Nada neste dia com os filtros atuais.</li>';
-
-    var pd = st.sel.split('-');
-    var dataBR = pd[2] + '/' + pd[1] + '/' + pd[0];
-    var calSY = calPop.scrollTop, calUl = calPop.querySelector('.mc-lista'), calSL = calUl ? calUl.scrollTop : 0;
-    calPop.innerHTML =
-      '<div class="mc-stack">' +
-        '<div class="mc-card">' +
-          '<div class="mc-nav">' +
-            '<button type="button" class="mc-btn" data-mc="prev" aria-label="Mês anterior">‹</button>' +
-            '<b>' + MESES[st.mes] + ' ' + st.ano + '</b>' +
-            '<button type="button" class="mc-btn" data-mc="next" aria-label="Próximo mês">›</button>' +
-            '<button type="button" class="mc-btn hoje" data-mc="hoje">Hoje/' + MESES_ABR[hoje.getMonth()] + '</button>' +
-            '<a class="mc-btn" href="' + ADM + 'agenda.html?data=' + encodeURIComponent(st.sel) + '" title="Ampliar agenda" aria-label="Ampliar agenda">⤢</a>' +
-            '<button type="button" class="mc-btn" data-mc="close" aria-label="Fechar">✕</button>' +
-          '</div>' +
-          '<div class="filtros">' + pills + '</div>' +
-          '<div class="mc-grid">' + DOW.map(function (x) { return '<span class="mc-dow">' + x + '</span>'; }).join('') + grade + '</div>' +
-        '</div>' +
-        '<div class="mc-card">' +
-          '<p class="mc-info-t">Event Information</p>' +
-          '<p class="mc-info-d"><a href="' + ADM + 'agenda.html?data=' + encodeURIComponent(st.sel) + '" title="Abrir este dia na agenda">' + dataBR + '</a></p>' +
-          '<ul class="mc-lista">' + lista + '</ul>' +
-        '</div>' +
-      '</div>';
-    calPop.scrollTop = calSY;
-    var calUlN = calPop.querySelector('.mc-lista'); if (calUlN) calUlN.scrollTop = calSL;
-  }
-
-  function calOpen(anchor) {
-    calCss();
-    if (!calPop) {
-      calPop = document.createElement('div');
-      calPop.id = 'mn-cal-pop';
-      calPop.setAttribute('role', 'dialog');
-      calPop.setAttribute('aria-label', 'Agenda');
-      document.body.appendChild(calPop);
-      calPop.addEventListener('click', function (e) {
-        var b = e.target.closest && e.target.closest('[data-mc]');
-        if (!b) return;
-        var acao = b.getAttribute('data-mc');
-        if (acao === 'close') return calClose();
-        if (acao === 'hoje') { var h = new Date(); calState.ano = h.getFullYear(); calState.mes = h.getMonth(); calState.sel = calKey(h); return calRefresh(); }
-        if (acao === 'prev' || acao === 'next') {
-          var m = calState.mes + (acao === 'next' ? 1 : -1);
-          calState.ano += m < 0 ? -1 : (m > 11 ? 1 : 0);
-          calState.mes = (m + 12) % 12;
-          calState.sel = calState.ano + '-' + calPad(calState.mes + 1) + '-01';
-          return calRefresh();
-        }
-        if (acao === 'day') { calState.sel = b.getAttribute('data-k'); if (calCurSrc) calRender(calCurSrc); return; }
-        if (acao === 'f' && calCurSrc) {
-          var id = b.getAttribute('data-id');
-          calCurSrc.setFiltro(id, !calCurSrc.visivelTipo(id));
-          calRender(calCurSrc);
-        }
-      });
-    }
-    if (!calState) {
-      var hh = new Date();
-      calState = { ano: hh.getFullYear(), mes: hh.getMonth(), sel: calKey(hh) };
-    }
-    calPop.className = 'on ' + themeClass();
-    calPlace(anchor);
-    calPop.innerHTML = '<div class="mc-vazio">Carregando agenda…</div>';
-    calRefresh();
-  }
-
-  function calClose() { if (calPop) calPop.classList.remove('on'); }
-
-  /* ----- Cápsula de áreas: vira hambúrguer quando não cabe no header ----- */
-  function capBtnLabel(cap) {
-    var ativo = cap.querySelector('.mn-tab[aria-pressed="true"]');
-    return ativo ? ativo.textContent.trim() : areaAtual;
-  }
-
-  function ensureCapBtn(hdr, cap) {
-    var btn = hdr.querySelector(':scope > .mn-cap-btn');
-    if (!btn) {
-      btn = document.createElement('button');
-      btn.type = 'button';
-      btn.className = 'mn-cap-btn';
-      btn.setAttribute('aria-label', 'Escolher área');
-      btn.setAttribute('aria-expanded', 'false');
-      cap.parentNode.insertBefore(btn, cap);
-      btn.addEventListener('click', function (e) {
-        e.stopPropagation();
-        var aberto = cap.classList.toggle('mn-cap-open');
-        btn.setAttribute('aria-expanded', aberto ? 'true' : 'false');
-      });
-    }
-    btn.setAttribute('data-area', areaAtual);
-    btn.textContent = '☰ ' + capBtnLabel(cap);
-    return btn;
-  }
-
-  function fitCapsule() {
-    fitQueued = false;
-    var hdr = document.getElementById('calc-header');
-    if (!hdr || !hdr.classList.contains('mn-ready')) return;
-    var cap = hdr.querySelector(':scope > .mn-toggle-d');
-    if (!cap) return;
-    var btn = ensureCapBtn(hdr, cap);
-    var collapsed = hdr.classList.contains('mn-cap-collapsed');
-
-    if (cap.hasAttribute('data-hidden')) {
-      hdr.classList.remove('mn-cap-collapsed');
-      cap.classList.remove('mn-cap-open');
-      return;
-    }
-    if (!collapsed) capFullW = cap.offsetWidth || capFullW;
-
-    var logo = hdr.querySelector('.logo-container');
-    var lw = logo ? logo.offsetWidth : 0;
-    var extras = 0;
-    hdr.querySelectorAll('.mn-hdr-tray, .b2b-user-widget, .mobile-hamburger').forEach(function (el) {
-      if (window.getComputedStyle(el).display !== 'none') extras += el.offsetWidth;
-    });
-    var cs = window.getComputedStyle(hdr);
-    var avail = hdr.clientWidth - (parseFloat(cs.paddingLeft) || 0) - (parseFloat(cs.paddingRight) || 0);
-    var precisa = lw + capFullW + extras + 150 + 16;
-    var deveRecolher = precisa > avail;
-
-    if (deveRecolher && !collapsed) {
-      hdr.classList.add('mn-cap-collapsed');
-    } else if (!deveRecolher && collapsed) {
-      hdr.classList.remove('mn-cap-collapsed');
-      cap.classList.remove('mn-cap-open');
-      btn.setAttribute('aria-expanded', 'false');
-    }
-    if (hdr.classList.contains('mn-cap-collapsed')) {
-      hdr.style.setProperty('--mn-hdr-bottom', hdr.getBoundingClientRect().bottom + 'px');
-    }
-  }
-
-  function scheduleFit() {
-    var hdrP = document.getElementById('calc-header');
-    if (!IN_FRAME && !calFrameEl && hdrP && hdrP.querySelector('[data-mn-cal]')) calBridge();
-    if (fitQueued) return;
-    fitQueued = true;
-    requestAnimationFrame(fitCapsule);
-  }
-
-  function bindFit() {
-    var hdr = document.getElementById('calc-header');
-    if (!hdr) { setTimeout(bindFit, 300); return; }
-    if (hdr.__fitBound) return;
-    hdr.__fitBound = true;
-    if (window.ResizeObserver) new ResizeObserver(scheduleFit).observe(hdr);
-    new MutationObserver(scheduleFit).observe(hdr, { childList: true, subtree: true });
-    window.addEventListener('resize', scheduleFit);
-    scheduleFit();
-  }
-
-  if (!IN_FRAME) {
-    calCss();
-    bindFit();
-    document.addEventListener('click', function (e) {
-      var a = e.target.closest && e.target.closest('[data-mn-cal]');
-      if (a) {
-        e.preventDefault();
-        if (calPop && calPop.classList.contains('on')) calClose(); else calOpen(a);
-        return;
-      }
-      var hdr = document.getElementById('calc-header');
-      var cap = hdr && hdr.querySelector(':scope > .mn-toggle-d');
-      if (cap && cap.classList.contains('mn-cap-open')) {
-        if (e.target.closest && e.target.closest('.mn-tab')) { cap.classList.remove('mn-cap-open'); return; }
-        if (!(e.target.closest && e.target.closest('.mn-cap-btn, .mn-toggle-d'))) cap.classList.remove('mn-cap-open');
-      }
-      var dentroCal = calPop && (calPop.contains(e.target) || (e.composedPath && e.composedPath().indexOf(calPop) >= 0));
-      if (calPop && calPop.classList.contains('on') && !dentroCal) calClose();
-    }, false);
-    document.addEventListener('keydown', function (e) { if (e.key === 'Escape') calClose(); });
   }
 
   function userWidgetHTML() {
@@ -1770,6 +1395,61 @@
     }, true);
   }
 
+  var agendaPopover = null;
+  var agendaBackdrop = null;
+  var agendaAnchor = null;
+
+  function closeAgendaPopover() {
+    if (agendaPopover) agendaPopover.classList.remove('on');
+    if (agendaBackdrop) agendaBackdrop.classList.remove('on');
+    if (agendaAnchor) agendaAnchor.setAttribute('aria-expanded', 'false');
+    agendaAnchor = null;
+  }
+
+  function positionAgendaPopover(anchor) {
+    if (!agendaPopover || !anchor) return;
+    var r = anchor.getBoundingClientRect();
+    var width = Math.min(440, window.innerWidth - 16);
+    var height = Math.min(700, window.innerHeight * .78);
+    var left = Math.max(8, Math.min(window.innerWidth - width - 8, r.left + r.width / 2 - width / 2));
+    var top = Math.max(8, Math.min(window.innerHeight - height - 8, r.bottom - 1));
+    agendaPopover.style.left = left + 'px';
+    agendaPopover.style.top = top + 'px';
+    agendaPopover.style.width = width + 'px';
+    agendaPopover.style.height = height + 'px';
+    var anchorCenter = r.left + r.width / 2 - left;
+    agendaPopover.style.setProperty('--mn-agenda-arrow', Math.max(16, Math.min(width - 28, width - anchorCenter - 7)) + 'px');
+  }
+
+  function openAgendaPopover(anchor) {
+    if (!isLogged() || onCliente || clienteSo()) return;
+    if (!agendaPopover) {
+      agendaBackdrop = document.createElement('div');
+      agendaBackdrop.id = 'mn-agenda-backdrop';
+      agendaPopover = document.createElement('div');
+      agendaPopover.id = 'mn-agenda-popover';
+      agendaPopover.setAttribute('role', 'dialog');
+      agendaPopover.setAttribute('aria-label', 'Agenda');
+      agendaPopover.innerHTML = '<iframe title="Agenda 432UP" loading="eager" src="' + ADM + 'agenda.html?popup=1"></iframe>';
+      document.body.appendChild(agendaBackdrop);
+      document.body.appendChild(agendaPopover);
+      agendaBackdrop.addEventListener('click', closeAgendaPopover);
+      agendaPopover.addEventListener('click', function (e) { e.stopPropagation(); });
+    }
+    if (agendaPopover.classList.contains('on') && agendaAnchor === anchor) {
+      closeAgendaPopover();
+      return;
+    }
+    agendaAnchor = anchor;
+    agendaAnchor.setAttribute('aria-expanded', 'true');
+    var header = document.getElementById('calc-header');
+    var theme = header && header.classList.contains('mn-theme-admin') ? 'admin' : (header && header.classList.contains('mn-theme-amber') ? 'amber' : 'cyan');
+    agendaPopover.setAttribute('data-theme', theme);
+    agendaBackdrop.classList.add('on');
+    agendaPopover.classList.add('on');
+    positionAgendaPopover(anchor);
+  }
+
   var eventsBound = false;
   function bindEvents() {
     bindLogoutEvents();
@@ -1779,6 +1459,14 @@
     bindDrag();
 
     document.addEventListener('click', function (e) {
+      var calendarTrigger = up(e, 'a.mn-calendar-trigger');
+      if (calendarTrigger) {
+        e.preventDefault();
+        e.stopPropagation();
+        closeMobile();
+        openAgendaPopover(calendarTrigger);
+        return;
+      }
       if (up(e, '#mn-bell .mn-bell-x')) {
         try { sessionStorage.setItem('432up_bell_tip_off', '1'); } catch (err) {}
         var tip = document.querySelector('#mn-bell .mn-bell-tip');
@@ -1900,7 +1588,10 @@
     window.addEventListener('resize', function () {
       closePanel();
       layoutAll(false);
+      if (agendaPopover && agendaPopover.classList.contains('on')) positionAgendaPopover(agendaAnchor);
     });
+    window.addEventListener('scroll', function () { if (agendaPopover && agendaPopover.classList.contains('on')) positionAgendaPopover(agendaAnchor); }, true);
+    document.addEventListener('keydown', function (e) { if (e.key === 'Escape') closeAgendaPopover(); });
   }
 
   /* ---------- 9. API global ---------- */
@@ -2040,5 +1731,102 @@
   } else {
     renderHeader();
     syncAuth();
+  }
+})();
+
+
+/* ===== Aviso de instalação do app (só no reader/header) =====
+   Visitante sem o app: botão Instalar (Android) ou passo a passo (iPhone).
+   Quem já tem o app: lembrete para acessar por ele. Não aparece dentro das telas embutidas (iframe). */
+(function () {
+  'use strict';
+  if (window.self !== window.top) return;
+
+  var KEY_FECHADO = '432up_instalar_fechado_em';
+  var KEY_INSTALADO = '432up_app_instalado';
+  var ESPERA_MS = 5 * 60 * 1000;
+  var promptDiferido = null, box = null;
+
+  function standalone() {
+    return (window.matchMedia && window.matchMedia('(display-mode: standalone)').matches) || window.navigator.standalone === true;
+  }
+  function ios() {
+    var ua = window.navigator.userAgent || '';
+    return /iphone|ipad|ipod/i.test(ua) || (/Macintosh/i.test(ua) && navigator.maxTouchPoints > 1);
+  }
+  function fechadoRecente() {
+    try { var t = parseInt(sessionStorage.getItem(KEY_FECHADO), 10); return !!t && (Date.now() - t) < ESPERA_MS; } catch (e) { return false; }
+  }
+  function instalado() {
+    try { return localStorage.getItem(KEY_INSTALADO) === '1'; } catch (e) { return false; }
+  }
+  function fechar() {
+    try { sessionStorage.setItem(KEY_FECHADO, String(Date.now())); } catch (e) {}
+    if (!box) return;
+    box.classList.remove('on');
+    var b = box; box = null;
+    setTimeout(function () { if (b.parentNode) b.parentNode.removeChild(b); }, 350);
+  }
+
+  if (standalone()) return;
+
+  var css = '' +
+    '#mn-instalar{position:fixed;left:50%;bottom:18px;transform:translateX(-50%);z-index:2147483100;width:min(92vw,400px);box-sizing:border-box;padding:14px 16px;border-radius:18px;' +
+    'background:rgba(10,18,28,.62);backdrop-filter:blur(20px) saturate(140%);-webkit-backdrop-filter:blur(20px) saturate(140%);' +
+    'border:1px solid rgba(0,240,255,.35);box-shadow:0 14px 40px rgba(0,0,0,.45);color:#e2e8f0;font:14px/1.4 system-ui,-apple-system,sans-serif;opacity:0;transition:opacity .35s ease}' +
+    '#mn-instalar.on{opacity:1}' +
+    '#mn-instalar h4{margin:0 0 4px;font-size:15px;font-weight:700;color:#fff}' +
+    '#mn-instalar p{margin:0 0 10px;opacity:.85}' +
+    '#mn-instalar ol{margin:0 0 10px;padding-left:18px;opacity:.9}' +
+    '#mn-instalar .mi-btns{display:flex;gap:8px;justify-content:flex-end}' +
+    '#mn-instalar button{cursor:pointer;border-radius:12px;padding:8px 14px;font:inherit;border:1px solid rgba(255,255,255,.2);background:transparent;color:#e2e8f0}' +
+    '#mn-instalar .mi-ok{background:#00f0ff;color:#0a0f16;border-color:transparent;font-weight:700}';
+  var st = document.createElement('style');
+  st.textContent = css;
+  document.head.appendChild(st);
+
+  function mostrar(titulo, corpo, comInstalar) {
+    box = document.createElement('div');
+    box.id = 'mn-instalar';
+    box.setAttribute('role', 'dialog');
+    box.setAttribute('aria-label', titulo);
+    box.innerHTML = '<h4>' + titulo + '</h4>' + corpo +
+      '<div class="mi-btns">' + (comInstalar ? '<button type="button" class="mi-ok">Instalar</button>' : '') +
+      '<button type="button" class="mi-x">Agora não</button></div>';
+    document.body.appendChild(box);
+    box.querySelector('.mi-x').addEventListener('click', fechar);
+    if (comInstalar) box.querySelector('.mi-ok').addEventListener('click', function () {
+      if (!promptDiferido) return;
+      promptDiferido.prompt();
+      promptDiferido.userChoice.then(function () { promptDiferido = null; fechar(); });
+    });
+    requestAnimationFrame(function () { box && box.classList.add('on'); });
+  }
+
+  window.addEventListener('appinstalled', function () {
+    try { localStorage.setItem(KEY_INSTALADO, '1'); } catch (e) {}
+    fechar();
+  });
+
+  /* Android / Chrome */
+  window.addEventListener('beforeinstallprompt', function (e) {
+    e.preventDefault();
+    promptDiferido = e;
+    if (instalado() || fechadoRecente() || box) return;
+    mostrar('Instale o app 432UP!', '<p>Acompanhe o seu evento em tempo real, direto no celular.</p>', true);
+  });
+
+  /* iPhone / iPad: passo a passo (não existe botão de instalação no iOS) */
+  if (ios() && !instalado() && !fechadoRecente()) {
+    mostrar('Instale o app 432UP!',
+      '<p>Acompanhe o seu evento em tempo real:</p>' +
+      '<ol><li>Toque em <b>Compartilhar</b> (quadrado com seta)</li>' +
+      '<li>Role e toque em <b>Adicionar à Tela de Início</b></li>' +
+      '<li>Toque em <b>Adicionar</b></li></ol>', false);
+  }
+
+  /* Já instalado: lembrete para usar o app */
+  if (instalado() && !fechadoRecente()) {
+    mostrar('Acesse pelo seu app', '<p>Para uma experiência melhor, abra o 432UP! pelo aplicativo instalado.</p>', false);
   }
 })();
