@@ -238,7 +238,27 @@
     @media (max-width: 640px) { .foto-grid { grid-template-columns: repeat(2, 1fr); } .foto:nth-child(1) { grid-column: span 2; grid-row: auto; aspect-ratio: 16 / 9; } }
     .galeria-vazia { border: 1px dashed rgba(255, 255, 255, .14); border-radius: 18px; padding: 28px 18px; text-align: center; color: var(--mut); font-size: 14px; }
 
-    /* Perfil */
+    /* Perfil (visual do esboço, com as cores já usadas no site) */
+    .perfil-hero { display: flex; flex-direction: column; align-items: center; gap: 10px; padding: 6px 0 18px; text-align: center; }
+    .perfil-foto { position: relative; width: 116px; height: 116px; border-radius: 50%; cursor: pointer; box-shadow: 0 0 22px rgba(6, 182, 212, .35); margin-bottom: 8px; }
+    .perfil-foto .avatar { width: 100%; height: 100%; border-color: var(--tech); font-size: 30px; }
+    .perfil-foto-cta { position: absolute; left: 50%; bottom: -10px; transform: translateX(-50%); white-space: nowrap; font-size: 11px; font-weight: 800; letter-spacing: .04em; padding: 5px 12px; border-radius: 999px; background: #0b0b10; color: var(--tech); border: 1px solid rgba(6, 182, 212, .5); }
+    .perfil-file { display: none; }
+    .perfil-dica { font-size: 12px; color: var(--mut); margin: 0 0 14px; }
+    #formCadastro input[readonly] { background: transparent; border: 0; border-bottom: 1px solid var(--line); border-radius: 0; padding: 8px 0; color: var(--body); backdrop-filter: none; -webkit-backdrop-filter: none; cursor: default; }
+    #formCadastro .btn-s { width: 100%; margin-top: 14px; padding: 13px 16px; border-radius: 14px; }
+    #formCadastro .btn:disabled { opacity: .45; }
+
+    /* Documentação e pagamento: um card por proposta */
+    .pedido-card { border: 1px solid rgba(6, 182, 212, .4); border-radius: 18px; padding: 16px; margin-bottom: 14px; background: rgba(255, 255, 255, .025); box-shadow: 0 0 18px rgba(6, 182, 212, .12); }
+    .pedido-topo { display: flex; justify-content: space-between; gap: 10px; align-items: flex-start; flex-wrap: wrap; }
+    .pedido-titulo { font-size: 10px; letter-spacing: .14em; text-transform: uppercase; color: var(--gold); font-weight: 800; }
+    .pedido-tags { display: flex; flex-wrap: wrap; gap: 6px; justify-content: flex-end; }
+    .pedido-acoes { display: flex; flex-wrap: wrap; gap: 8px; }
+    .pedido-acoes .btn-s, .pedido-acoes .btn-verde { margin-top: 0; }
+    .btn-verde { display: inline-flex; align-items: center; justify-content: center; padding: 9px 14px; border-radius: 12px; border: 0; background: var(--action); color: #04120a; font-size: 13px; font-weight: 800; text-decoration: none; cursor: pointer; }
+    .pedido-cmp { width: 100%; margin-top: 0; padding: 11px 16px; border-radius: 14px; border-color: rgba(6, 182, 212, .5); color: var(--tech); }
+
     .avatar-wrap { display: flex; align-items: center; gap: 14px; flex-wrap: wrap; margin-bottom: 6px; }
     .avatar { width: 76px; height: 76px; border-radius: 50%; border: 2px solid rgba(168, 85, 247, .45); background: #0b0b10 center/cover no-repeat; display: flex; align-items: center; justify-content: center; font-size: 26px; color: var(--mut); overflow: hidden; flex-shrink: 0; }
 
@@ -442,18 +462,19 @@
         </div>
 
         <div class="box-full" id="formCadastroWrap">
-          <h2>Seu avatar</h2>
-          <div class="avatar-wrap">
-            <div class="avatar" id="avatarPreview"><span id="avatarPlaceholder">📷</span></div>
-            <div style="flex:1;min-width:160px">
-              <input type="file" id="fAvatar" accept="image/png,image/jpeg,image/webp">
-              <p class="pill" style="margin:6px 0 4px">Formatos aceitos: JPG, PNG ou WebP até 5 MB.</p>
-              <button type="button" class="btn-s" id="btnSalvarAvatar" style="display:none;margin-top:4px">Salvar foto</button>
-              <div class="msg" id="msgAvatar"></div>
-            </div>
+          <div class="perfil-hero">
+            <label class="perfil-foto" for="fAvatar" title="Alterar foto">
+              <div class="avatar" id="avatarPreview"><span id="avatarPlaceholder">📷</span></div>
+              <span class="perfil-foto-cta">Alterar Foto</span>
+            </label>
+            <input type="file" id="fAvatar" class="perfil-file" accept="image/png,image/jpeg,image/webp">
+            <p class="pill" style="margin:0">Formatos aceitos: JPG, PNG ou WebP até 5 MB.</p>
+            <button type="button" class="btn-s" id="btnSalvarAvatar" style="display:none;margin-top:4px">Salvar foto</button>
+            <div class="msg" id="msgAvatar"></div>
           </div>
 
-          <h2 style="margin-top:20px">Seus dados</h2>
+          <h2>Seus dados</h2>
+          <p class="perfil-dica" id="perfilDica">Toque em Editar Dados para alterar suas informações.</p>
           <form id="formCadastro">
             <label class="cap" for="c_nome">Nome completo / razão social</label>
             <input id="c_nome" autocomplete="name">
@@ -475,7 +496,8 @@
               <div><label class="cap" for="c_bairro">Bairro</label><input id="c_bairro"></div>
               <div><label class="cap" for="c_cidade">Cidade</label><input id="c_cidade"></div>
             </div>
-            <button class="btn" type="submit" id="btnCadastro">Salvar meus dados</button>
+            <button type="button" class="btn-s" id="btnEditarDados">Editar Dados</button>
+            <button class="btn" type="submit" id="btnCadastro" disabled>Salvar Meus Dados</button>
             <div class="msg" id="msgCadastro"></div>
           </form>
         </div>
@@ -867,7 +889,28 @@
     $('c_comp').value = c.complemento || '';
     $('c_bairro').value = c.bairro || '';
     $('c_cidade').value = c.cidade || '';
+    setEdicao(false);
   }
+
+  /* Dados em modo leitura até tocar em "Editar Dados" */
+  var editandoCadastro = false;
+  function setEdicao(on) {
+    editandoCadastro = !!on;
+    var f = $('formCadastro');
+    if (!f) return;
+    f.classList.toggle('editando', editandoCadastro);
+    f.querySelectorAll('input').forEach(function (i) { i.readOnly = !editandoCadastro; });
+    $('btnEditarDados').textContent = editandoCadastro ? 'Cancelar edição' : 'Editar Dados';
+    $('btnCadastro').disabled = !editandoCadastro;
+    $('perfilDica').textContent = editandoCadastro
+      ? 'Edite os campos e toque em Salvar Meus Dados.'
+      : 'Toque em Editar Dados para alterar suas informações.';
+  }
+  $('btnEditarDados').addEventListener('click', function () {
+    if (editandoCadastro) { renderCadastro(); return; }
+    setEdicao(true);
+    $('c_nome').focus();
+  });
 
   function agendaDe(p) {
     var pa = p.pagamento_agenda || {};
@@ -911,24 +954,37 @@
           (st === 'recusado' && c.motivo_recusa ? '<div style="color:var(--alert);font-size:11px;margin-top:4px">Motivo: ' + E(c.motivo_recusa) + '. Exclua e envie de novo.</div>' : '') +
           '</div>';
       }).join('') || '<div class="vazio">Nenhum comprovante enviado ainda.</div>';
-      var topo = '<div style="display:flex;justify-content:space-between;gap:8px;flex-wrap:wrap;align-items:center"><strong>Pedido #' + E(p.numero) + '</strong>' +
-        (cancelado ? '<span class="tag t-rec">Cancelado</span>' : assinado ? '<span class="tag t-ok">Contrato assinado</span>' : '<span class="tag t-pend">Aguardando assinatura</span>') + '</div>' +
-        '<div class="pill" style="margin-top:6px">' + E(p.tipo_evento || '') + ' · ' + DATA(p.data_evento) + ' · ' + BRL(p.valor_total) + '</div>';
-      if (cancelado) return '<div style="margin-bottom:12px">' + topo + '</div>';
-      var acoes = '';
+      /* Pendências desta proposta: contrato, pagamento e comprovante */
+      var pagPend = [['Sinal', pa.data_entrada, pa.status_entrada], ['Parcela', pa.data_parcela, pa.status_parcela], ['Saldo', pa.data_saldo, pa.status_saldo]]
+        .some(function (r) { return r[1] && r[2] !== 'pago'; });
+      var cmpPend = comps.some(function (c) { return !(c.confirmado || c.status === 'aprovado' || c.status === 'pago' || c.status === 'recusado'); });
+      var tags = '';
+      if (cancelado) tags = '<span class="tag t-rec">Cancelado</span>';
+      else {
+        tags += assinado ? '<span class="tag t-ok">Contrato assinado</span>' : '<span class="tag t-pend">Aguardando assinatura</span>';
+        if (pagPend) tags += '<span class="tag t-pend">Pagamento pendente</span>';
+        if (cmpPend) tags += '<span class="tag t-pend">Comprovante em análise</span>';
+        if (assinado && !pagPend && !cmpPend) tags += '<span class="tag t-ok">Em dia</span>';
+      }
+      var topo = '<div class="pedido-topo"><div>' +
+        '<div class="pedido-titulo">Proposta / Pedido #' + E(p.numero) + '</div>' +
+        '<div class="pill" style="margin-top:4px">' + E(p.tipo_evento || '') + ' · ' + DATA(p.data_evento) + ' · ' + BRL(p.valor_total) + '</div>' +
+        '</div><div class="pedido-tags">' + tags + '</div></div>';
+      if (cancelado) return '<div class="pedido-card">' + topo + '</div>';
       var BASE_DOC = location.origin + '/B2B/';
-      acoes += '<a class="btn-s" target="_blank" rel="noopener" href="' + BASE_DOC + 'visualizar-contrato.html?id=' + encodeURIComponent(p.id) + '">' + (assinado ? 'Ver contrato' : 'Ver e assinar contrato') + '</a> ';
-      acoes += '<a class="btn-s" target="_blank" rel="noopener" href="' + BASE_DOC + 'visualizar-proposta.html?id=' + encodeURIComponent(p.id) + '">Ver proposta</a> ';
-      var btnCmp = '<button type="button" class="btn" data-cmp="' + E(p.id) + '">+ Enviar comprovante</button>';
-      return '<div style="margin-bottom:18px;padding-bottom:14px;border-bottom:1px solid var(--line)">' +
-        '<div class="sec-lbl">Proposta</div>' + topo +
+      var linkContrato = '<a class="' + (assinado ? 'btn-s' : 'btn-verde') + '" target="_blank" rel="noopener" href="' + BASE_DOC + 'visualizar-contrato.html?id=' + encodeURIComponent(p.id) + '">' + (assinado ? 'Ver contrato' : 'Ver e assinar contrato') + '</a>';
+      var linkProposta = '<a class="btn-s" target="_blank" rel="noopener" href="' + BASE_DOC + 'visualizar-proposta.html?id=' + encodeURIComponent(p.id) + '">Ver proposta</a>';
+      var btnCmp = '<button type="button" class="btn-s pedido-cmp" data-cmp="' + E(p.id) + '">+ Enviar comprovante</button>';
+      return '<div class="pedido-card">' + topo +
         '<div class="sec-sep"></div>' +
-        '<div class="sec-lbl">Documentos</div><div>' + acoes + '</div>' +
+        '<div class="sec-lbl">Documentos</div><div class="pedido-acoes">' + linkContrato + linkProposta + '</div>' +
         '<div class="sec-sep"></div>' +
         '<div class="sec-lbl">Pagamentos</div>' +
-        '<div>' + parcelas + '</div>' +
-        '<div style="margin-top:10px">' + lista + '</div>' +
-        '<div style="margin-top:8px">' + btnCmp + '</div></div>';
+        '<div>' + (parcelas || '<div class="vazio">Sem parcelas agendadas.</div>') + '</div>' +
+        '<div class="sec-sep"></div>' +
+        '<div class="sec-lbl">Comprovantes</div>' +
+        '<div>' + lista + '</div>' +
+        '<div style="margin-top:12px">' + btnCmp + '</div></div>';
     }).join('');
 
     el.querySelectorAll('[data-pdf]').forEach(function (b) {
