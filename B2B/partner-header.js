@@ -11,6 +11,7 @@
     cachedIsAdmin = sessionStorage.getItem('432up_is_admin') === 'true';
     cachedLoggedIn = sessionStorage.getItem('432up_is_logged') === 'true' || cachedIsAdmin;
     cachedIsCliente = sessionStorage.getItem('432up_is_cliente') === 'true';
+    cachedIsParceiro = sessionStorage.getItem('432up_is_parceiro') === 'true';
   } catch (e) {
     cachedIsAdmin = false;
     cachedLoggedIn = false;
@@ -128,7 +129,8 @@
       return false;
     }
     /* Parceiro logado (inclui páginas em /admin/ usadas pelo parceiro: agenda, projetos) */
-    if (area === 'parceiro') return cachedLoggedIn || cachedIsAdmin || cachedIsParceiro;
+    /* Home (site): cliente logado NÃO vê a aba Parceiro — só parceiro aprovado ou admin */
+    if (area === 'parceiro') return onSite ? (cachedIsParceiro || cachedIsAdmin) : (cachedLoggedIn || cachedIsAdmin || cachedIsParceiro);
     /* Admin: SOMENTE role real no banco/cache — nunca só por estar em /admin/ */
     if (area === 'admin') return cachedIsAdmin;
     /* Admin NÃO vê toggle Cliente */
@@ -536,7 +538,37 @@
         background: rgba(245,158,11,.12); font-size: 16px; line-height: 1; cursor: pointer; flex: none; padding: 0; }
       .mn-push.on { display: inline-flex !important; }
 
+      /* ---------- Sino pendurado sob a barra (ativar avisos) ---------- */
+      #mn-bell { position: fixed; z-index: 2147482000; right: 14px; top: 0; display: none;
+        flex-direction: column; align-items: center; pointer-events: none; }
+      #mn-bell.on { display: flex; }
+      #mn-bell.mn-bell-hide { display: none !important; }
+      #mn-bell .mn-bell-swing { display: flex; flex-direction: column; align-items: center;
+        transform-origin: 50% 0; animation: mnBellSwing 2.6s ease-in-out infinite; pointer-events: auto; }
+      #mn-bell .mn-bell-str { width: 2px; height: 12px; background: linear-gradient(#8da2b5, #fbbf24); }
+      #mn-bell .mn-bell-btn { display: inline-flex; align-items: center; justify-content: center;
+        width: 42px; height: 42px; padding: 0; border-radius: 50%; cursor: pointer; color: #fbbf24;
+        border: 1px solid rgba(251,191,36,.75); background: radial-gradient(circle at 35% 30%, rgba(251,191,36,.35), rgba(10,15,22,.92));
+        box-shadow: 0 8px 20px rgba(0,0,0,.5), 0 0 16px rgba(251,191,36,.5); }
+      #mn-bell .mn-bell-btn svg { width: 22px; height: 22px; }
+      #mn-bell .mn-bell-tip { position: absolute; right: 54px; top: 20px; display: flex; align-items: center; gap: 8px;
+        white-space: nowrap; padding: 8px 10px 8px 12px; border-radius: 12px; pointer-events: auto;
+        font-size: 12.5px; font-weight: 700; color: #1a1205; background: #fbbf24;
+        box-shadow: 0 8px 20px rgba(0,0,0,.45); }
+      #mn-bell .mn-bell-tip::after { content: ''; position: absolute; right: -6px; top: 50%; margin-top: -6px;
+        border-left: 7px solid #fbbf24; border-top: 6px solid transparent; border-bottom: 6px solid transparent; }
+      #mn-bell .mn-bell-tip[hidden] { display: none !important; }
+      #mn-bell .mn-bell-x { border: 0; background: rgba(0,0,0,.15); color: #1a1205; width: 18px; height: 18px;
+        border-radius: 50%; font-size: 11px; line-height: 18px; padding: 0; cursor: pointer; }
+      @keyframes mnBellSwing {
+        0%, 100% { transform: rotate(0deg); }
+        8% { transform: rotate(22deg); } 22% { transform: rotate(-18deg); }
+        36% { transform: rotate(13deg); } 50% { transform: rotate(-8deg); }
+        64% { transform: rotate(4deg); } 78% { transform: rotate(0deg); }
+      }
+
       @media (prefers-reduced-motion: reduce) {
+        #mn-bell, #mn-bell * { animation-duration: .01ms !important; }
         #calc-header *, #calc-header, #mobile-menu *, #mn-float {
           transition-duration: .01ms !important;
           animation-duration: .01ms !important;
@@ -727,14 +759,64 @@
   }
 
   function pushBtnHTML() {
-    return '<button type="button" class="mn-push" title="Ativar avisos de novos e-mails" aria-label="Ativar avisos de novos e-mails">🔔</button>';
+    /* O botão de avisos agora é o sino pendurado sob a barra (#mn-bell) */
+    return '';
+  }
+
+  /* Suporte a push neste aparelho (app instalado), em qualquer área — inclusive a home */
+  function pushSupported() {
+    return !!(VAPID_PUBLIC && VAPID_PUBLIC.indexOf('COLE_AQUI') !== 0 &&
+      'serviceWorker' in navigator && 'PushManager' in window && 'Notification' in window && isStandalone());
+  }
+
+  /* Cliente: a página avisa quando já dá para ativar (contrato assinado) */
+  var bellPendCli = false;
+  window.mnSetPushPendente = function (v) { bellPendCli = !!v; refreshBell(); };
+
+  function bellPending() {
+    if (!isLogged() || !pushSupported() || Notification.permission !== 'default') return false;
+    if (onCliente) return bellPendCli;
+    if (!onSite) return true;
+    return cachedIsParceiro || cachedIsAdmin;
+  }
+
+  function bellTipOff() {
+    try { return sessionStorage.getItem('432up_bell_tip_off') === '1'; } catch (e) { return false; }
+  }
+
+  function bellPlace() {
+    var el = document.getElementById('mn-bell');
+    if (!el) return;
+    var h = document.getElementById('calc-header');
+    var m = document.getElementById('mobile-menu');
+    var top = h ? Math.max(Math.round(h.getBoundingClientRect().bottom) - 2, 0) : 64;
+    el.style.top = top + 'px';
+    el.classList.toggle('mn-bell-hide', !!(m && m.classList.contains('active')));
+  }
+
+  function refreshBell() {
+    var el = document.getElementById('mn-bell');
+    if (!bellPending()) { if (el) el.classList.remove('on'); return; }
+    if (!el) {
+      el = document.createElement('div');
+      el.id = 'mn-bell';
+      el.innerHTML =
+        '<div class="mn-bell-tip"' + (bellTipOff() ? ' hidden' : '') + '><span>Libere no sininho</span>' +
+          '<button type="button" class="mn-bell-x" aria-label="Fechar aviso">✕</button></div>' +
+        '<div class="mn-bell-swing"><span class="mn-bell-str"></span>' +
+          '<button type="button" class="mn-bell-btn" title="Ativar notificações" aria-label="Ativar notificações">' + BELL_SVG + '</button></div>';
+      document.body.appendChild(el);
+      window.addEventListener('scroll', bellPlace, { passive: true });
+      window.addEventListener('resize', bellPlace);
+    }
+    el.classList.add('on');
+    bellPlace();
   }
 
   function refreshPushUI() {
-    /* Cliente tem o próprio "Ativar avisos" dentro da página; aqui não duplica */
-    var show = pushOK() && !onCliente && Notification.permission === 'default' && isLogged();
     var bs = document.querySelectorAll('.mn-push');
-    for (var i = 0; i < bs.length; i++) bs[i].classList.toggle('on', show);
+    for (var i = 0; i < bs.length; i++) bs[i].classList.remove('on');
+    refreshBell();
   }
 
   /* Registra o service worker e grava o aparelho no Supabase */
@@ -760,13 +842,14 @@
 
   function initPush() {
     if (!pushOK()) return;
-    if (Notification.permission === 'granted') syncPush();
+    /* Cliente registra o aparelho pelo fluxo próprio da página (registrar-push-cliente) */
+    if (!onCliente && Notification.permission === 'granted') syncPush();
     refreshPushUI();
   }
 
   /* iOS exige que a permissão seja pedida a partir de um toque */
   function askPush() {
-    if (!pushOK()) return;
+    if (!pushSupported()) return;
     Notification.requestPermission().then(function (p) {
       if (p === 'granted') syncPush();
       refreshPushUI();
@@ -1125,6 +1208,7 @@
     m.classList.add('active');
     m.setAttribute('aria-hidden', 'false');
     layoutAll(false);
+    bellPlace();
   }
 
   function closeMobile() {
@@ -1133,6 +1217,7 @@
       m.classList.remove('active');
       m.setAttribute('aria-hidden', 'true');
     }
+    bellPlace();
   }
 
   function bindLogoutEvents() {
@@ -1151,6 +1236,7 @@
             sessionStorage.removeItem('432up_is_logged');
             sessionStorage.removeItem('432up_is_admin');
             sessionStorage.removeItem('432up_is_cliente');
+            sessionStorage.removeItem('432up_is_parceiro');
           } catch (err) {}
           function go() {
             if (onSite) window.location.replace(SITE + 'index.html');
@@ -1268,6 +1354,18 @@
     bindDrag();
 
     document.addEventListener('click', function (e) {
+      if (up(e, '#mn-bell .mn-bell-x')) {
+        try { sessionStorage.setItem('432up_bell_tip_off', '1'); } catch (err) {}
+        var tip = document.querySelector('#mn-bell .mn-bell-tip');
+        if (tip) tip.hidden = true;
+        return;
+      }
+      if (up(e, '#mn-bell .mn-bell-btn')) {
+        /* Cliente: a página registra o aparelho; demais áreas: registro do portal */
+        if (onCliente) window.dispatchEvent(new CustomEvent('432up:ativar-avisos'));
+        else askPush();
+        return;
+      }
       if (up(e, '.mn-push')) {
         askPush();
         return;
@@ -1387,6 +1485,7 @@
     var on = m.classList.toggle('active');
     m.setAttribute('aria-hidden', on ? 'false' : 'true');
     if (on) layoutAll(false);
+    bellPlace();
   };
 
   window.updateAuthState = function (opts) {
@@ -1410,6 +1509,7 @@
     var novaSig = (isLogged() ? '1' : '0') + '|' + (cachedIsAdmin ? '1' : '0') + '|' + (cachedIsCliente ? '1' : '0');
     if (novaSig !== userSig) refreshUserParts();
     applyLevel(true);
+    refreshBell();
   };
 
   window.updateAdminState = function (isAdmin) {
@@ -1430,6 +1530,7 @@
     lastParceiro = parceiro || null;
     /* Na página do cliente, aba Parceiro só para cadastro de parceiro aprovado */
     cachedIsParceiro = !!parceiro && parceiro.role !== 'client' && parceiro.status === 'aprovado';
+    try { sessionStorage.setItem('432up_is_parceiro', cachedIsParceiro ? 'true' : 'false'); } catch (e) {}
     var uid = parceiro && parceiro.user_id;
     var base = { loggedIn: !!parceiro, isAdmin: isAdminParceiro(parceiro) };
     if (!uid || typeof sbPartner === 'undefined') {
