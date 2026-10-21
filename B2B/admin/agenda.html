@@ -37,14 +37,17 @@
       padding-left: max(14px, env(safe-area-inset-left));
       padding-right: max(14px, env(safe-area-inset-right));
       padding-bottom: calc(100px + env(safe-area-inset-bottom));
+      overflow-x: clip;
     }
     html, body { height: auto !important; min-height: 100%; }
     body { overflow-y: visible !important; }
     .eyebrow { font-size: .68rem; letter-spacing: .18em; text-transform: uppercase; font-weight: 700; opacity: .72; color: var(--gold); }
-    .titulo { font-size: clamp(1.4rem, 3.5vw, 2rem); line-height: 1.15; letter-spacing: -.03em; margin: 6px 0 12px; font-weight: 800; text-transform: capitalize; }
     .mut { color: var(--mut); }
     .box-full {
-      border-radius: 20px; padding: 16px; position: relative; overflow: visible; margin-bottom: 12px;
+      border-radius: 20px; padding: 16px; position: relative;
+      overflow: hidden; /* nada vaza do card */
+      min-width: 0; max-width: 100%;
+      margin-bottom: 12px;
       background: rgba(255, 255, 255, .045); border: 1px solid rgba(255, 255, 255, .14);
       backdrop-filter: blur(24px); -webkit-backdrop-filter: blur(24px);
     }
@@ -61,27 +64,21 @@
     a.tech { color: var(--tech); text-decoration: none; font-size: 13px; font-weight: 600; }
     a.tech:hover { text-decoration: underline; }
 
-    .topo-agenda {
-      display: flex; align-items: flex-start; justify-content: space-between;
-      gap: 12px; flex-wrap: wrap; margin-bottom: 8px;
-    }
-    .nav-row { display: flex; gap: 6px; align-items: center; flex-shrink: 0; }
-    .nav-row button {
-      min-width: 40px; padding: 8px 12px; font-weight: 700;
-    }
+    /* Título: no mobile o header já injeta "Admin / Agenda", então o nosso some (evita duplicar) */
+    @media (max-width: 900px) { #agendaTitulo { display: none !important; } }
 
-    /* Cápsulas de filtro: uma linha, rolagem horizontal */
+    /* ---------- Cápsulas de filtro: UMA definição, sempre dentro do card ---------- */
     .filtros {
-      display: flex; flex-wrap: nowrap; gap: 8px; padding: 6px 0 14px;
-      font-size: 12px; align-items: center;
-      overflow-x: auto; -webkit-overflow-scrolling: touch;
-      scrollbar-width: none; touch-action: pan-x;
-      margin: 0 -4px; padding-left: 4px; padding-right: 4px;
+      display: flex; flex-wrap: nowrap; gap: 8px;
+      width: 100%; max-width: 100%; min-width: 0;
+      margin: 0 0 12px; padding: 2px 0 8px;
+      overflow-x: auto; overflow-y: hidden;
+      -webkit-overflow-scrolling: touch; scrollbar-width: none;
+      touch-action: pan-x; overscroll-behavior-x: contain;
     }
     .filtros::-webkit-scrollbar { display: none; }
-    .filtros .lbl { display: none; } /* rótulo "Mostrar:" dispensável com cápsulas */
     .leg {
-      flex: 0 0 auto; scroll-snap-align: start;
+      flex: 0 0 auto;
       display: inline-flex; align-items: center; gap: 7px;
       padding: 7px 13px; border-radius: 999px; cursor: pointer;
       font: inherit; font-size: 12px; font-weight: 700; color: var(--mut); white-space: nowrap;
@@ -94,142 +91,51 @@
     .leg:not(.on) { opacity: .5; }
     .leg:focus-visible { outline: 2px solid var(--c); outline-offset: 2px; }
 
-    .legenda { display: none !important; }
-
     .agenda-grid {
       display: grid; grid-template-columns: minmax(0, 1fr) 320px; gap: 14px;
     }
-    @media (max-width: 900px) { .agenda-grid { grid-template-columns: 1fr; } }
+    .agenda-grid > * { min-width: 0; }
+    @media (max-width: 900px) { .agenda-grid { grid-template-columns: minmax(0, 1fr); } }
 
-    .grid { display: grid; grid-template-columns: repeat(7, minmax(0, 1fr)); gap: 5px; }
-    .dow { font-size: 11px; text-transform: uppercase; color: var(--mut); text-align: center; padding: 4px 0; font-weight: 700; }
-    .dia {
-      background: rgba(255,255,255,.03); border: 1px solid var(--line); border-radius: 12px;
-      aspect-ratio: 1; min-height: 0; padding: 6px; cursor: pointer;
-      display: flex; flex-direction: column; gap: 2px; overflow: hidden;
-      transition: border-color .15s, background .15s;
+    /* ---------- Calendário ---------- */
+    .cal { display: grid; grid-template-columns: repeat(7, minmax(0, 1fr)); gap: 4px; font-size: 11px; text-align: center; }
+    .cal .hd { color: var(--mut); font-weight: 700; padding: 6px 0; }
+    .cal .d { padding: 10px 0; border-radius: 12px; border: 1px solid transparent; color: var(--body); min-height: 44px; min-width: 0; overflow: hidden; }
+    .cal .d.muted { opacity: .3; }
+    .cal .d.tem { border-color: rgba(var(--rgb), .5); background: rgba(var(--rgb), .14); color: #fff; font-weight: 800; cursor: pointer; }
+    .cal .d .dots { display: flex; gap: 3px; justify-content: center; margin-top: 4px; min-height: 6px; }
+    .cal .d .dots i { width: 6px; height: 6px; border-radius: 50%; display: block; }
+    .cal .d.hoje { border-color: rgba(212, 175, 55, .5); }
+    .cal .d.sel { outline: 2px solid var(--action); outline-offset: -2px; }
+    .cal-nav { display: flex; align-items: center; justify-content: space-between; gap: 8px; margin-bottom: 12px; min-width: 0; }
+    .btn-s {
+      display: inline-flex; align-items: center; justify-content: center; height: 42px; padding: 0 14px;
+      border-radius: 12px; border: 1px solid rgba(255,255,255,.18); background: transparent;
+      color: var(--text); font-size: 15px; cursor: pointer; width: auto;
     }
-    @media (min-width: 901px) {
-      .dia { aspect-ratio: auto; min-height: 90px; }
-    }
-    .dia:hover { border-color: rgba(212, 175, 55, .45); }
-    .dia.outro { opacity: .4; }
-    .dia.hoje { outline: 2px solid var(--gold); outline-offset: -2px; }
-    .dia.hoje .num { color: var(--gold); font-weight: 800; }
-    /* Seleção no mesmo dourado do "hoje" — intuitivo */
-    .dia.sel {
-      border-color: rgba(212, 175, 55, .65);
-      background: rgba(212, 175, 55, .12);
-      outline: 2px solid var(--gold);
-      outline-offset: -2px;
-    }
-    .dia.sel .num { color: var(--gold); font-weight: 800; }
-    #calSwipe {
-      touch-action: pan-y;
-      user-select: none;
-    }
-    .num { font-size: 12px; font-weight: 700; color: var(--mut); }
-    .ev {
-      font-size: 11px; line-height: 1.25; padding: 2px 5px; border-radius: 5px;
-      white-space: nowrap; overflow: hidden; text-overflow: ellipsis; font-weight: 600;
-    }
-    .mais { font-size: 10px; color: var(--mut); padding-left: 2px; }
-    .marks { display: flex; gap: 3px; flex-wrap: wrap; margin-top: auto; padding-top: 2px; min-height: 6px; }
-    .marks i {
-      display: block; width: 7px; height: 7px; border-radius: 50%;
-      box-shadow: 0 0 0 1px rgba(0,0,0,.35);
-    }
-
-    .e-evento { background: rgba(192, 132, 252, .18); color: #e9d5ff; }
-    .e-hold { background: rgba(249, 115, 22, .2); color: var(--laranja); }
-    .e-contrato { background: rgba(59, 130, 246, .22); color: #93c5fd; }
-    .e-aprovado { background: rgba(245, 208, 97, .16); color: #F5D061; }
-    .e-comissao { background: rgba(21, 128, 61, .25); color: #86efac; }
-    .e-recebimento { background: rgba(212, 175, 55, .16); color: #E8C96A; }
-    .e-lead { background: rgba(250, 204, 21, .16); color: var(--amb); }
-    .e-bloqueio { background: rgba(100, 116, 139, .22); color: #94a3b8; }
-
-    /* Mobile: marcadores sólidos bem visíveis (bolinhas), sem texto minúsculo */
-    @media (max-width: 900px) {
-      .dia { padding: 5px 4px; }
-      .num { font-size: 13px; color: #d4d4d8; }
-      .dia.outro .num { color: #71717a; }
-      .ev { display: none; } /* texto some no mobile; usa bolinhas */
-      .mais { display: none; }
-      .marks i { width: 8px; height: 8px; }
-      .m-evento { background: #22d3ee; }
-      .m-hold { background: #fb923c; }
-      .m-contrato { background: #60a5fa; }
-      .m-aprovado { background: #4ade80; }
-      .m-comissao { background: #86efac; }
-      .m-recebimento { background: #bbf7d0; }
-      .m-lead { background: #facc15; }
-      .m-bloqueio { background: #94a3b8; }
-    }
-    @media (min-width: 901px) {
-      .marks { display: none; } /* desktop usa chips de texto */
-    }
-
-    /* Navegação do mês estilo iPhone: ‹ Outubro 2026 › */
-    .mes-nav {
-      display: flex; align-items: center; justify-content: space-between;
-      gap: 10px; margin-bottom: 10px; flex-wrap: wrap;
-    }
-    /* Desktop: Agenda + mês + Hoje na mesma linha */
-    @media (min-width: 901px) {
-      .topo-agenda { display: none; } /* título sobe para a linha do mês */
-      .mes-nav {
-        flex-wrap: nowrap;
-        margin-top: 4px;
-      }
-      .mes-nav .agenda-tit {
-        display: block;
-        font-size: clamp(1.4rem, 3.5vw, 2rem);
-        font-weight: 800;
-        letter-spacing: -.03em;
-        margin: 0;
-        line-height: 1.15;
-      }
-      .mes-nav .mes-ctrl { margin-left: 12px; }
-      .mes-nav .btn-hoje { margin-left: auto; }
-    }
-    @media (max-width: 900px) {
-      .mes-nav .agenda-tit { display: none; }
-    }
-    .mes-nav .mes-ctrl {
-      display: inline-flex; align-items: center; gap: 2px;
-      background: rgba(255,255,255,.05); border: 1px solid var(--line);
-      border-radius: 14px; padding: 2px;
-    }
-    .mes-nav .mes-ctrl button {
-      border: 0; background: transparent; padding: 8px 12px;
-      font-weight: 700; min-width: 36px;
-    }
-    .mes-nav .mes-ctrl button:hover { background: rgba(255,255,255,.08); border-radius: 12px; }
-    .mes-nav #tituloMes {
-      border: 0; background: transparent; padding: 8px 10px;
-      font-size: 15px; font-weight: 800; color: var(--text);
-      text-transform: capitalize; cursor: pointer; letter-spacing: -.02em;
-      white-space: nowrap;
-    }
-    .mes-nav #tituloMes:hover { color: var(--gold); }
-    .mes-nav .btn-hoje {
+    .btn-hoje {
       flex-shrink: 0; padding: 8px 14px; font-weight: 700;
       border-radius: 12px; border: 1px solid rgba(212,175,55,.4);
       background: rgba(212,175,55,.12); color: var(--gold);
     }
+    #calSwipe { touch-action: pan-y; user-select: none; }
+    @media (max-width: 640px) {
+      .cal { gap: 3px; }
+      .cal .d { min-height: 38px; }
+    }
 
-    /* Faixa horizontal: próximos eventos */
-    .prox-wrap { margin: 0 0 12px; }
+    /* ---------- Próximos eventos ---------- */
+    .prox-wrap { margin: 0 0 12px; min-width: 0; max-width: 100%; }
     .prox-label {
       font-size: .68rem; letter-spacing: .12em; text-transform: uppercase;
       font-weight: 700; color: var(--gold); opacity: .8; margin: 0 0 8px; padding-left: 2px;
     }
     .prox-scroll {
       display: flex; flex-wrap: nowrap; gap: 8px;
+      width: 100%; max-width: 100%; min-width: 0;
       overflow-x: auto; -webkit-overflow-scrolling: touch;
-      scrollbar-width: none; touch-action: pan-x;
-      padding: 2px 2px 6px; margin: 0 -2px;
+      scrollbar-width: none; touch-action: pan-x; overscroll-behavior-x: contain;
+      padding: 2px 0 6px; margin: 0;
     }
     .prox-scroll::-webkit-scrollbar { display: none; }
     .prox-chip {
@@ -243,24 +149,17 @@
     .prox-chip:hover, .prox-chip:active {
       border-color: rgba(0,255,102,.4); background: rgba(0,255,102,.06);
     }
-    .prox-chip .px-data {
-      font-size: 11px; font-weight: 800; color: var(--tech);
-      letter-spacing: .02em;
-    }
-    .prox-chip .px-tit {
-      font-size: 13px; font-weight: 700; line-height: 1.25;
-      white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
-    }
-    .prox-chip .px-sub {
-      font-size: 11px; color: var(--mut);
-      white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
-    }
+    .prox-chip .px-data { font-size: 11px; font-weight: 800; color: var(--tech); letter-spacing: .02em; }
+    .prox-chip .px-tit { font-size: 13px; font-weight: 700; line-height: 1.25; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+    .prox-chip .px-sub { font-size: 11px; color: var(--mut); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
     .prox-vazio { font-size: 12px; color: var(--mut); padding: 6px 2px; }
 
+    /* ---------- Painel do dia ---------- */
     .item {
       border: 1px solid var(--line); border-radius: 12px; padding: 10px 12px; margin-bottom: 8px;
       font-size: 13px; cursor: pointer; border-left: 4px solid var(--line);
       transition: border-color .15s, background .15s; background: rgba(255,255,255,.02);
+      min-width: 0; overflow-wrap: anywhere;
     }
     .item:hover { background: rgba(255,255,255,.04); }
     .item strong { display: block; margin-bottom: 2px; }
@@ -279,55 +178,7 @@
     }
     .item .acoes a.pri { background: var(--action); color: #04120a; border-color: var(--action); font-weight: 700; }
     .vazio { color: var(--mut); font-size: 13px; padding: 6px 0; }
-      .cal { display: grid; grid-template-columns: repeat(7, 1fr); gap: 4px; font-size: 11px; text-align: center; }
-    .cal .hd { color: var(--mut); font-weight: 700; padding: 6px 0; }
-    .cal .d { padding: 10px 0; border-radius: 12px; border: 1px solid transparent; color: var(--body); min-height: 44px; }
-    .cal .d.muted { opacity: .3; }
-    .cal .d.tem { border-color: rgba(var(--rgb), .5); background: rgba(var(--rgb), .14); color: #fff; font-weight: 800; cursor: pointer; }
-    .cal .d .dots { display: flex; gap: 3px; justify-content: center; margin-top: 4px; min-height: 6px; }
-    .cal .d .dots i { width: 6px; height: 6px; border-radius: 50%; display: block; }
-    .filtros .sw { width: 10px; height: 10px; border-radius: 3px; display: inline-block; }
-    .cal .d.hoje { border-color: rgba(212, 175, 55, .5); }
-    .cal .d.sel { outline: 2px solid var(--action); outline-offset: -2px; }
-    .cal-nav { display: flex; align-items: center; justify-content: space-between; gap: 8px; margin-bottom: 12px; }
-    /* Legenda do calendário: cada cápsula é o próprio filtro (ligada / desligada) */
-    .filtros { display: flex; flex-wrap: nowrap; gap: 8px; margin: 6px -26px 14px; padding: 2px 26px 4px; overflow-x: auto; scroll-snap-type: x proximity; scrollbar-width: none; -webkit-overflow-scrolling: touch; }
-    .filtros::-webkit-scrollbar { display: none; }
-    .filtros { touch-action: pan-x; overscroll-behavior: contain; }
-    .leg {
-      flex: 0 0 auto; scroll-snap-align: start;
-      display: inline-flex; align-items: center; gap: 7px;
-      padding: 7px 13px; border-radius: 999px; cursor: pointer;
-      font: inherit; font-size: 12px; font-weight: 700; color: var(--mut); white-space: nowrap;
-      background: rgba(255, 255, 255, .03); border: 1px solid var(--line);
-      transition: background .2s, border-color .2s, color .2s, opacity .2s;
-      -webkit-tap-highlight-color: transparent;
-    }
-    .leg .sw { width: 9px; height: 9px; border-radius: 999px; background: var(--c); flex: none; }
-    .leg.on { color: var(--text); border-color: var(--c); background: color-mix(in srgb, var(--c) 16%, transparent); }
-    .leg:not(.on) { opacity: .5; }
-    .leg:focus-visible { outline: 2px solid var(--c); outline-offset: 2px; }
-    @media (max-width: 640px) { .filtros { margin: 6px -18px 14px; padding: 2px 18px 4px; } }
-    .btn-s {
-      display: inline-flex; align-items: center; justify-content: center; height: 42px; padding: 0 14px;
-      border-radius: 12px; border: 1px solid rgba(255,255,255,.18); background: transparent;
-      color: var(--text); font-size: 15px; cursor: pointer; width: auto;
-    }
-    @media (max-width: 640px) {
-      .cal { gap: 3px; }
-      .cal .d { min-height: 38px; }
-    }
-    /* Responsivo: nada da grade ou das cápsulas vaza do card */
-    .agenda-grid > *, #calSwipe { min-width: 0; }
-    #calSwipe .filtros { min-width: 0; max-width: 100%; }
-    #calSwipe .cal { grid-template-columns: repeat(7, minmax(0, 1fr)); }
-    #calSwipe .cal .d { min-width: 0; overflow: hidden; }
-    /* Nada da página pode ultrapassar a largura da tela */
-    main.area, main.area > *, .prox-wrap, #proxScroll { min-width: 0; max-width: 100%; box-sizing: border-box; }
-    #calSwipe .cal-nav { min-width: 0; }
-    /* Cápsulas de filtro dentro do card, sem vazar para fora */
-    #calSwipe .filtros { margin: 0 !important; padding: 4px 2px 12px !important; max-width: 100%; box-sizing: border-box; }
-</style>
+  </style>
 </head>
 <body class="h-full antialiased overflow-x-hidden">
 
@@ -339,7 +190,7 @@
 
   <div class="flex flex-col min-h-screen relative z-10">
     <main class="area">
-      <h1 class="agenda-tit" style="display:block">Agenda</h1>
+      <h1 class="agenda-tit" id="agendaTitulo">Agenda</h1>
 
       <div class="prox-wrap" id="proxWrap" style="display:none">
         <div class="prox-label">Próximos eventos</div>
@@ -388,7 +239,6 @@
   var DIAS = ['seg','ter','qua','qui','sex','sáb','dom'];
   var CACHE_KEY = '432up_agenda_filtros_v1';
 
-  /* Tipos e toggles — padrão: todos ligados */
   var TIPOS = [
     { id: 'evento',      label: 'Eventos',            cls: 'e-evento',      cor: '#c084fc' },
     { id: 'hold',        label: 'Holding',            cls: 'e-hold',        cor: '#f97316' },
@@ -421,11 +271,12 @@
 
   var FILTROS = carregarFiltros();
   var ANO, MES, DIA_SEL = null;
-  var ITENS = {};   // 'YYYY-MM-DD' -> [item]
+  var ITENS = {};     // 'YYYY-MM-DD' -> [item]
   var CHECKLIST = {}; // proposta_id -> { total, pend, ok }
-  var ME = null;           // registro parceiros do usuário logado
-  var IS_ADMIN = false;    // admin | master
-  var ME_PROP_IDS = null;  // Set de proposta_id visíveis (null = todas, admin)
+  var PROXIMOS = [];  // eventos com DATA CONFIRMADA (independe do mês exibido)
+  var ME = null;
+  var IS_ADMIN = false;
+  var ME_PROP_IDS = null;
 
   var $ = function (id) { return document.getElementById(id); };
   var E = function (s) {
@@ -436,7 +287,6 @@
     return d.getFullYear() + '-' + String(d.getMonth()+1).padStart(2,'0') + '-' + String(d.getDate()).padStart(2,'0');
   }
   function chaveData(s) { return s ? String(s).slice(0, 10) : null; }
-  /* 3 dias úteis após a data (sábado/domingo não contam) */
   function maisTresUteis(iso) {
     var base = chaveData(iso);
     if (!base) return null;
@@ -472,6 +322,22 @@
     return p.nome_artistico || p.nome_completo || '';
   }
 
+  /* Evita "Agenda" duplicada: se o header já mostra um título visível, esconde o nosso */
+  function dedupeTitulo() {
+    var meu = $('agendaTitulo');
+    if (!meu) return;
+    var outros = document.querySelectorAll('main h1, main h2.titulo, main .titulo, #page-title, .page-title, .pg-title');
+    var achou = false;
+    outros.forEach(function (el) {
+      if (el === meu || el.contains(meu)) return;
+      if (el.closest('.box-full')) return;
+      if ((el.textContent || '').trim().toLowerCase() !== 'agenda') return;
+      var r = el.getBoundingClientRect();
+      if (r.width > 0 && r.height > 0) achou = true;
+    });
+    meu.style.display = achou ? 'none' : '';
+  }
+
   /* ---------- UI dos toggles ---------- */
   function montarFiltros() {
     var box = $('filtros');
@@ -488,7 +354,6 @@
         b.setAttribute('aria-pressed', on ? 'true' : 'false');
         salvarFiltros();
         desenhar();
-        renderProximos();
         if (DIA_SEL) abrirDia(DIA_SEL, true);
       });
     });
@@ -498,17 +363,59 @@
     return FILTROS[tipo] !== false;
   }
 
-  /* ---------- Carga de dados ---------- */
+  /* ---------- Próximos eventos: SÓ data confirmada ----------
+     Confirmada = depósito/comprovante aprovado OU entrada marcada como paga.
+     Independe do mês que está aberto no calendário. */
+  async function carregarProximos() {
+    PROXIMOS = [];
+    var hojeK = chave(new Date());
+    var r = await SB.from('propostas')
+      .select('id, numero, cliente_nome, tipo_evento, data_evento, horario_inicio, status, pagamento_agenda, parceiro_id, parceiros:parceiros!parceiro_id(nome_completo, nome_artistico)')
+      .gte('data_evento', hojeK)
+      .is('cancelada_em', null)
+      .order('data_evento', { ascending: true })
+      .limit(200);
+    var props = r.data || [];
+    if (ME_PROP_IDS) props = props.filter(function (p) { return ME_PROP_IDS.has(p.id); });
+    if (!props.length) return;
+
+    var aprov = {};
+    try {
+      var rc = await SB.from('contrato_comprovantes')
+        .select('proposta_id')
+        .in('proposta_id', props.map(function (p) { return p.id; }))
+        .eq('status', 'aprovado');
+      (rc.data || []).forEach(function (c) { aprov[c.proposta_id] = true; });
+    } catch (e) {}
+
+    props.forEach(function (p) {
+      var pa = p.pagamento_agenda || {};
+      var entradaPaga = String(pa.status_entrada || '').toLowerCase() === 'pago';
+      if (!aprov[p.id] && !entradaPaga) return; // data não confirmada
+      var de = chaveData(p.data_evento);
+      if (!de || de < hojeK) return;
+      var vend = nomeParceiro(p.parceiros);
+      PROXIMOS.push({
+        tipo: 'evento',
+        id: p.id,
+        titulo: p.cliente_nome || ('#' + p.numero),
+        sub: (p.horario_inicio ? String(p.horario_inicio).slice(0,5) + ' · ' : '') + (p.tipo_evento || '') + (vend ? ' · ' + vend : ''),
+        prop: p,
+        data: de,
+        hora: p.horario_inicio ? String(p.horario_inicio).slice(0,5) : ''
+      });
+    });
+  }
+
+  /* ---------- Carga de dados do mês ---------- */
   async function carregarMes() {
     ITENS = {};
     CHECKLIST = {};
-    PROXIMOS = [];
     var primeiro = new Date(ANO, MES, 1);
     var ultimo = new Date(ANO, MES + 1, 0);
     var ini = chave(primeiro);
     var fim = chave(ultimo);
 
-    // 1. Propostas (eventos, holds, contratos)
     var rProp = await SB.from('propostas')
       .select('id, numero, cliente_nome, tipo_evento, data_evento, horario_inicio, status, hold_expira_em, assinado_em, cancelada_em, comissao_status, comissao_paga, comissao_valor, comissao_solicitada_valor, comissao_solicitada_data, pagamento_agenda, parceiro_id, parceiros:parceiros!parceiro_id(nome_completo, nome_artistico)')
       .or('data_evento.gte.' + ini + ',hold_expira_em.gte.' + ini + ',assinado_em.gte.' + ini + ',comissao_solicitada_data.gte.' + ini)
@@ -516,7 +423,6 @@
 
     var props = rProp.data || [];
 
-    /* Parceiro: só propostas em que participa (vendedor ou colaborador) */
     if (ME_PROP_IDS) {
       props = props.filter(function (p) { return ME_PROP_IDS.has(p.id); });
     }
@@ -527,24 +433,18 @@
       idsProp.push(p.id);
       var vend = nomeParceiro(p.parceiros);
 
-      // Evento principal
       var de = chaveData(p.data_evento);
-      if (de) {
-        var evItem = {
+      if (de && de >= ini && de <= fim) {
+        add(de, {
           tipo: 'evento',
           id: p.id,
           titulo: p.cliente_nome || ('#' + p.numero),
           sub: (p.horario_inicio ? String(p.horario_inicio).slice(0,5) + ' · ' : '') + (p.tipo_evento || '') + (vend ? ' · ' + vend : ''),
           prop: p,
           data: de
-        };
-        if (de >= ini && de <= fim) add(de, evItem);
-        /* faixa de próximos: qualquer data >= hoje */
-        var hojeK = chave(new Date());
-        if (de >= hojeK && p.status === 'aprovada') PROXIMOS.push(evItem);
+        });
       }
 
-      // Holding
       if (p.hold_expira_em && !p.assinado_em) {
         var dh = chaveData(p.hold_expira_em);
         if (dh && dh >= ini && dh <= fim) {
@@ -558,7 +458,6 @@
         }
       }
 
-      // Contrato assinado (no dia da assinatura)
       if (p.assinado_em) {
         var dc = chaveData(p.assinado_em);
         if (dc && dc >= ini && dc <= fim) {
@@ -572,7 +471,6 @@
         }
       }
 
-      // Comissão solicitada — só admin ou vendedor do projeto (não colaborador puro)
       if ((IS_ADMIN || ehVendedorProp(p)) && p.comissao_solicitada_valor > 0 && p.comissao_solicitada_data) {
         var dcom = chaveData(p.comissao_solicitada_data);
         if (dcom && dcom >= ini && dcom <= fim && !p.comissao_paga) {
@@ -586,7 +484,6 @@
         }
       }
 
-      // Recebimentos do contrato (pagamento_agenda) — SÓ admin e vendedor do projeto
       var pa = p.pagamento_agenda || {};
       if (IS_ADMIN || ehVendedorProp(p)) {
         [['entrada', pa.data_entrada, pa.status_entrada], ['saldo', pa.data_saldo, pa.status_saldo]].forEach(function (row) {
@@ -602,14 +499,11 @@
         });
       }
 
-      /* Previsão de liberação da comissão (3 dias úteis após cada parcela paga)
-         Visível para vendedor e colaborador do projeto quando status da comissão = liberado */
       if (comissaoLiberada(p) && !p.comissao_paga) {
         var parcelas = [
           ['entrada', pa.data_entrada, pa.status_entrada],
           ['saldo', pa.data_saldo, pa.status_saldo]
         ];
-        /* também aceita array genérico se existir */
         if (Array.isArray(pa.parcelas)) {
           pa.parcelas.forEach(function (par, i) {
             parcelas.push(['parcela ' + (i + 1), par.data || par.data_pagamento, par.status]);
@@ -617,7 +511,7 @@
         }
         parcelas.forEach(function (row) {
           var st = String(row[2] || '').toLowerCase();
-          if (st !== 'pago' && st !== 'pago' && st !== 'liquidado' && st !== 'recebido') return;
+          if (st !== 'pago' && st !== 'liquidado' && st !== 'recebido') return;
           var prev = maisTresUteis(row[1]);
           if (!prev || prev < ini || prev > fim) return;
           add(prev, {
@@ -631,7 +525,6 @@
       }
     });
 
-    // 2. Comprovantes aprovados → marca “aprovado” no dia do evento (ou da aprovação)
     if (idsProp.length) {
       try {
         var { data: comps } = await SB.from('contrato_comprovantes')
@@ -655,7 +548,6 @@
       } catch (e) {}
     }
 
-    // 3. Bloqueios / indisponibilidades (agenda_reservas)
     try {
       var { data: res } = await SB.from('agenda_reservas')
         .select('id, tipo, proposta_id, data_inicio, data_fim, observacao, recurso:parceiros!recurso_id(nome_completo, nome_artistico)')
@@ -678,7 +570,6 @@
       });
     } catch (e) {}
 
-    // 4. Leads (se a tabela existir)
     try {
       var { data: leads } = await SB.from('co_leads')
         .select('id, nome, data_evento')
@@ -691,11 +582,8 @@
           sub: 'Pediu esta data'
         });
       });
-    } catch (e) {
-      // tabela pode não existir ou ter outro nome — ignora
-    }
+    } catch (e) {}
 
-    // 5. Checklist dos eventos do mês (uma query só)
     if (idsProp.length) {
       try {
         var { data: etapas } = await SB.from('evento_etapas')
@@ -711,23 +599,20 @@
     }
 
     desenhar();
-    renderProximos();
   }
 
   /* ---------- Desenho ---------- */
-  var PROXIMOS = []; /* lista global de próximos eventos (tipo evento) */
-
   function renderProximos() {
     var box = $('proxScroll');
     if (!box) return;
     var hoje = chave(new Date());
     var lista = (PROXIMOS || []).filter(function (it) {
-      return it.data >= hoje && it.tipo === 'evento';
+      return it.data >= hoje;
     }).sort(function (a, b) {
-      return String(a.data).localeCompare(String(b.data));
-    });
+      return String(a.data + (a.hora || '')).localeCompare(String(b.data + (b.hora || '')));
+    }).slice(0, 20);
 
-    var wrapP = document.getElementById('proxWrap');
+    var wrapP = $('proxWrap');
     if (wrapP) wrapP.style.display = lista.length ? '' : 'none';
     if (!lista.length) {
       box.innerHTML = '';
@@ -773,7 +658,7 @@
 
     var grade = $('grade');
     var primeiro = new Date(ANO, MES, 1);
-    var offset = (primeiro.getDay() + 6) % 7; // segunda = 0
+    var offset = (primeiro.getDay() + 6) % 7;
     var inicio = new Date(primeiro); inicio.setDate(1 - offset);
     var hoje = chave(new Date());
     var html = '';
@@ -831,15 +716,13 @@
     $('tituloDia').textContent = partes[2] + '/' + partes[1] + '/' + partes[0];
     atualizarBtnDia();
 
-    /* Destaca o dia selecionado na grade */
     document.querySelectorAll('#grade .d').forEach(function (el) {
       if (el.getAttribute('data-k') === k) el.classList.add('sel');
       else el.classList.remove('sel');
     });
 
-    /* No clique do usuário, rola suavemente até o painel do dia */
     if (!silencioso) {
-      var painel = document.getElementById('painelDia');
+      var painel = $('painelDia');
       if (painel) {
         try {
           painel.scrollIntoView({ behavior: 'smooth', block: 'start' });
@@ -879,32 +762,16 @@
           else if (p.comissao_status) tags += '<span class="tag">' + E(p.comissao_status) + '</span>';
           if (p.status) tags += '<span class="tag">' + E(p.status) + '</span>';
 
-          if (IS_ADMIN) {
-            acoes =
-              '<div class="acoes">' +
-                '<a class="pri" href="projeto.html?id=' + encodeURIComponent(p.id) + '">Abrir ficha</a>' +
-                '<a href="../checklist.html?proposta=' + encodeURIComponent(p.id) + '">Checklist</a>' +
-              '</div>';
-          } else {
-            /* Parceiro: checklist + dados operacionais do evento (sem valores sensíveis) */
-            acoes =
-              '<div class="acoes">' +
-                '<a class="pri" href="projeto.html?id=' + encodeURIComponent(p.id) + '">Dados do evento</a>' +
-                '<a href="../checklist.html?proposta=' + encodeURIComponent(p.id) + '">Checklist</a>' +
-              '</div>';
-          }
+          acoes =
+            '<div class="acoes">' +
+              '<a class="pri" href="projeto.html?id=' + encodeURIComponent(p.id) + '">' + (IS_ADMIN ? 'Abrir ficha' : 'Dados do evento') + '</a>' +
+              '<a href="../checklist.html?proposta=' + encodeURIComponent(p.id) + '">Checklist</a>' +
+            '</div>';
         } else if (p && (it.tipo === 'hold' || it.tipo === 'contrato' || it.tipo === 'comissao' || it.tipo === 'recebimento' || it.tipo === 'aprovado')) {
-          if (IS_ADMIN) {
-            acoes =
-              '<div class="acoes">' +
-                '<a class="pri" href="projeto.html?id=' + encodeURIComponent(p.id) + '">Abrir ficha</a>' +
-              '</div>';
-          } else {
-            acoes =
-              '<div class="acoes">' +
-                '<a class="pri" href="projeto.html?id=' + encodeURIComponent(p.id) + '">Dados do evento</a>' +
-              '</div>';
-          }
+          acoes =
+            '<div class="acoes">' +
+              '<a class="pri" href="projeto.html?id=' + encodeURIComponent(p.id) + '">' + (IS_ADMIN ? 'Abrir ficha' : 'Dados do evento') + '</a>' +
+            '</div>';
         }
 
         return '<div class="item" style="border-left-color:' + cor + '" data-tipo="' + E(it.tipo) + '" data-id="' + E(it.id) + '">' +
@@ -914,12 +781,6 @@
           acoes +
           '</div>';
       }).join('');
-    }
-
-    if (!silencioso) {
-      document.querySelectorAll('#grade .d').forEach(function (el) {
-        el.classList.toggle('sel', el.getAttribute('data-k') === k);
-      });
     }
   }
 
@@ -935,13 +796,14 @@
   $('btnPrev').addEventListener('click', mesAnterior);
   $('btnNext').addEventListener('click', mesProximo);
 
-  /* Rolagem/swipe lateral no calendário → troca o mês */
   (function bindSwipeCal() {
-    var el = document.getElementById('calSwipe');
+    var el = $('calSwipe');
     if (!el) return;
     var x0 = 0, y0 = 0, tracking = false, axis = null;
     el.addEventListener('touchstart', function (ev) {
       if (!ev.touches || !ev.touches[0]) return;
+      /* swipe nas cápsulas rola as cápsulas, não troca o mês */
+      if (ev.target.closest && ev.target.closest('#filtros')) { tracking = false; return; }
       x0 = ev.touches[0].clientX;
       y0 = ev.touches[0].clientY;
       tracking = true;
@@ -974,7 +836,6 @@
     carregarMes();
   }
   $('btnHoje').addEventListener('click', irParaHoje);
-  /* Toque no nome do mês → volta para o mês/dia de hoje (padrão iPhone) */
   $('tituloMes').addEventListener('click', irParaHoje);
 
   /* ---------- Init ---------- */
@@ -1011,7 +872,6 @@
     var papel = String(ME.role || ME.nivel || '').toLowerCase().trim();
     IS_ADMIN = /^(admin|master)$/i.test(papel);
 
-    /* Atualiza eyebrow: Admin ou Parceiro */
     var eye = document.querySelector('.eyebrow');
     if (eye) eye.textContent = IS_ADMIN ? 'Admin' : 'Parceiro';
 
@@ -1022,11 +882,17 @@
     MES = hoje.getMonth();
     DIA_SEL = chave(hoje);
     montarFiltros();
-    await carregarMes();
+    await Promise.all([carregarMes(), carregarProximos()]);
+    renderProximos();
+
+    dedupeTitulo();
+    setTimeout(dedupeTitulo, 600);
+    setTimeout(dedupeTitulo, 1800);
+    window.addEventListener('resize', dedupeTitulo);
+
     setInterval(function () { if (document.visibilityState === 'visible') desenhar(); }, 30000);
   })();
 })();
-
   </script>
 </body>
 </html>
