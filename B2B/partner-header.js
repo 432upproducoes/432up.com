@@ -890,56 +890,69 @@
 
 
   /* ===== Agenda flutuante: pop-up de vidro ligado ao ícone de agenda =====
-     Os dados e as regras de acesso ficam só em admin/agenda.html: o pop-up lê esse
-     mesmo arquivo por um iframe oculto (AgendaHeader), sem duplicar regra nenhuma. */
+     Dados e regras ficam só em admin/agenda.html; o pop-up lê esse arquivo por um iframe
+     oculto (AgendaHeader). Assim nenhuma regra é duplicada. */
   var IN_FRAME = window.self !== window.top;
   var calPop = null, calFrameEl = null, calBridgePromise = null, calAh = null, calQueue = Promise.resolve();
-  var calState = null;
+  var calState = null, capFullW = 0, fitQueued = false;
 
   function calCss() {
     if (document.getElementById('mn-cal-css')) return;
     var st = document.createElement('style');
     st.id = 'mn-cal-css';
     st.textContent = [
-      '#mn-cal-pop{position:fixed;z-index:2147483200;width:min(92vw,340px);padding:12px;border-radius:14px;display:none;',
-      'background:rgba(10,18,28,.72);backdrop-filter:blur(18px);-webkit-backdrop-filter:blur(18px);',
-      'border:1px solid rgba(0,240,255,.28);box-shadow:0 20px 50px rgba(0,0,0,.55);color:#e2e8f0;font-size:13px;line-height:1.35;font-family:inherit}',
+      '#mn-cal-pop{position:fixed;z-index:2147483200;width:min(94vw,380px);max-height:min(80vh,680px);overflow-y:auto;overscroll-behavior:contain;-webkit-overflow-scrolling:touch;',
+      'padding:14px;border-radius:20px;display:none;box-sizing:border-box;',
+      'background:rgba(10,18,28,.78);backdrop-filter:blur(20px);-webkit-backdrop-filter:blur(20px);',
+      'border:1px solid rgba(0,240,255,.28);box-shadow:0 20px 50px rgba(0,0,0,.6);color:#e2e8f0;font-size:13px;line-height:1.35;font-family:inherit}',
       '#mn-cal-pop.on{display:block;animation:mnPanelIn .22s cubic-bezier(.22,1,.36,1)}',
       '#mn-cal-pop.mn-theme-admin{border-color:rgba(245,158,11,.4)}',
       '#mn-cal-pop.mn-theme-amber{border-color:rgba(168,85,247,.4)}',
-      '#mn-cal-pop .mc-top{display:flex;align-items:center;justify-content:space-between;gap:8px;margin-bottom:8px}',
-      '#mn-cal-pop .mc-top b{font-size:12px;letter-spacing:.06em;text-transform:uppercase}',
-      '#mn-cal-pop .mc-acts{display:flex;gap:6px;align-items:center}',
-      '#mn-cal-pop button,#mn-cal-pop .mc-exp{background:transparent;border:1px solid rgba(255,255,255,.15);color:inherit;border-radius:8px;padding:3px 8px;cursor:pointer;font:inherit;text-decoration:none;display:inline-flex;align-items:center}',
-      '#mn-cal-pop .mc-grid{display:grid;grid-template-columns:repeat(7,1fr);gap:3px;text-align:center}',
-      '#mn-cal-pop .mc-dow{font-size:10px;opacity:.6;padding:2px 0}',
-      '#mn-cal-pop .mc-d{position:relative;padding:6px 0;border-radius:8px;background:transparent;border:0;color:inherit;cursor:pointer;font:inherit}',
-      '#mn-cal-pop .mc-d.out{opacity:.3}',
-      '#mn-cal-pop .mc-d.hoje{outline:1px solid rgba(0,240,255,.5)}',
-      '#mn-cal-pop .mc-d.sel{background:rgba(0,240,255,.2)}',
-      '#mn-cal-pop .mc-d i{position:absolute;left:50%;bottom:2px;width:4px;height:4px;margin-left:-2px;border-radius:50%;background:#c084fc}',
-      '#mn-cal-pop .mc-filtros{display:flex;flex-wrap:wrap;gap:4px;margin:10px 0 8px}',
-      '#mn-cal-pop .mc-f{font-size:11px;padding:3px 7px;opacity:.45}',
-      '#mn-cal-pop .mc-f.on{opacity:1}',
-      '#mn-cal-pop .mc-f i{display:inline-block;width:7px;height:7px;border-radius:50%;margin-right:4px;background:var(--c)}',
-      '#mn-cal-pop .mc-dia{font-size:12px;font-weight:600;margin:6px 0 4px;opacity:.9}',
-      '#mn-cal-pop .mc-lista{max-height:calc(2.5 * 3.2em);overflow-y:auto;margin:0;padding:0;list-style:none}',
-      '#mn-cal-pop .mc-lista li{display:flex;align-items:center;gap:8px;padding:6px 4px;line-height:1.3;border-radius:6px}',
-      '#mn-cal-pop .mc-lista li:hover{background:rgba(255,255,255,.05)}',
+      '#mn-cal-pop .mc-top{display:flex;align-items:center;gap:6px;margin-bottom:10px}',
+      '#mn-cal-pop .mc-top b{flex:1;font-size:14px;font-weight:700;text-transform:capitalize}',
+      '#mn-cal-pop .mc-btn{background:rgba(255,255,255,.05);border:1px solid rgba(255,255,255,.14);color:inherit;border-radius:12px;height:32px;min-width:32px;padding:0 9px;cursor:pointer;font:inherit;font-size:12px;display:inline-flex;align-items:center;justify-content:center;text-decoration:none}',
+      '#mn-cal-pop .mc-btn.hoje{color:#F5D061;border-color:rgba(245,208,97,.4)}',
+      '#mn-cal-pop .mc-grid{display:grid;grid-template-columns:repeat(7,1fr);gap:4px;text-align:center}',
+      '#mn-cal-pop .mc-dow{font-size:10px;opacity:.55;padding:2px 0;text-transform:lowercase}',
+      '#mn-cal-pop .mc-d{position:relative;min-height:38px;border-radius:12px;background:transparent;border:1px solid transparent;color:inherit;cursor:pointer;font:inherit;font-size:12px;padding:0}',
+      '#mn-cal-pop .mc-d.out{opacity:.28}',
+      '#mn-cal-pop .mc-d.has{background:rgba(255,255,255,.07);border-color:rgba(255,255,255,.12)}',
+      '#mn-cal-pop .mc-d.sel{border-color:#22c55e;box-shadow:0 0 0 1px #22c55e inset,0 0 10px rgba(34,197,94,.35)}',
+      '#mn-cal-pop .mc-d.hoje b{color:#22d3ee}',
+      '#mn-cal-pop .mc-dots{position:absolute;left:0;right:0;bottom:3px;display:flex;justify-content:center;gap:2px}',
+      '#mn-cal-pop .mc-dots i{width:4px;height:4px;border-radius:50%}',
+      '#mn-cal-pop .mc-pills{display:flex;gap:6px;overflow-x:auto;overscroll-behavior-x:contain;margin:12px -2px 10px;padding:2px;scrollbar-width:none;-ms-overflow-style:none}',
+      '#mn-cal-pop .mc-pills::-webkit-scrollbar{display:none}',
+      '#mn-cal-pop .mc-pill{flex:none;white-space:nowrap;display:inline-flex;align-items:center;gap:6px;border-radius:999px;border:1px solid var(--c);background:transparent;color:inherit;padding:5px 10px;font:inherit;font-size:11px;cursor:pointer;opacity:.45}',
+      '#mn-cal-pop .mc-pill.on{opacity:1;background:rgba(255,255,255,.06)}',
+      '#mn-cal-pop .mc-pill i{width:7px;height:7px;border-radius:50%;background:var(--c)}',
+      '#mn-cal-pop .mc-dia{font-size:12px;font-weight:700;margin:4px 0 6px;color:#F5D061}',
+      '#mn-cal-pop .mc-lista{max-height:calc(2.5 * 3.4em);overflow-y:auto;overscroll-behavior:contain;margin:0;padding:0;list-style:none;-webkit-overflow-scrolling:touch}',
+      '#mn-cal-pop .mc-lista li{display:flex;align-items:center;gap:10px;padding:8px 10px;margin-bottom:6px;border-radius:12px;background:rgba(255,255,255,.05);border:1px solid rgba(255,255,255,.08)}',
       '#mn-cal-pop .mc-lista i{flex:none;width:8px;height:8px;border-radius:50%}',
       '#mn-cal-pop .mc-lista a{color:inherit;font-weight:600;text-decoration:none}',
       '#mn-cal-pop .mc-lista a:hover{text-decoration:underline}',
       '#mn-cal-pop .mc-lista small{display:block;opacity:.6;font-size:11px}',
       '#mn-cal-pop .mc-vazio{opacity:.6;padding:6px 4px}',
       '#mn-cal-frame{position:absolute;width:0;height:0;border:0;visibility:hidden}',
-      /* Header: texto rola e some por trás da área fixa (avatar à direita, ícones logo à esquerda) */
+      /* Header: texto rola e some por trás da área fixa; avatar fica sempre à direita */
       '@media (min-width:1025px){',
       '  #calc-header .mn-items{flex:1 1 0 !important;min-width:0 !important;overflow-x:auto !important;overflow-y:hidden !important;',
       '    scrollbar-width:none;-ms-overflow-style:none;margin-left:0 !important;',
       '    -webkit-mask-image:linear-gradient(to right,#000 calc(100% - 56px),transparent);mask-image:linear-gradient(to right,#000 calc(100% - 56px),transparent);}',
       '  #calc-header .mn-items::-webkit-scrollbar{display:none}',
-      '  #calc-header .desktop-nav > .b2b-user-widget{flex:none !important;margin-left:auto !important;position:relative;z-index:2;}',
-      '}'
+      '}',
+      '#calc-header .desktop-nav > .b2b-user-widget{flex:none !important;margin-left:auto !important;position:relative;z-index:2;display:flex !important;align-items:center;gap:8px}',
+      '#calc-header .b2b-user-widget > #btnLogoutDesk{order:-1}',
+      /* Cápsula compactada em hambúrguer quando não cabe */
+      '#calc-header .mn-cap-btn{display:none}',
+      '#calc-header.mn-cap-collapsed .mn-cap-btn{display:inline-flex;align-items:center;gap:6px;height:36px;padding:0 12px;border-radius:999px;',
+      '  border:1px solid rgba(0,240,255,.35);background:rgba(10,18,28,.6);color:#00f0ff;font-size:12px;font-weight:600;line-height:1;font-family:inherit;cursor:pointer;flex:none;order:10;margin-left:6px}',
+      '#calc-header .mn-cap-btn[data-area="site"]{color:#c5a059;border-color:rgba(197,160,89,.45)}',
+      '#calc-header .mn-cap-btn[data-area="admin"]{color:#f59e0b;border-color:rgba(245,158,11,.45)}',
+      '#calc-header.mn-cap-collapsed > .mn-toggle-d{display:none !important}',
+      '#calc-header.mn-cap-collapsed > .mn-toggle-d.mn-cap-open{display:inline-flex !important;position:fixed;top:calc(var(--mn-hdr-bottom,72px) + 8px);left:50%;transform:translateX(-50%);',
+      '  z-index:2147483150;max-width:calc(100vw - 16px);overflow:visible;margin:0 !important;opacity:1;visibility:visible;max-width:calc(100vw - 16px)}'
     ].join('\n');
     document.head.appendChild(st);
   }
@@ -979,7 +992,7 @@
 
   function calPlace(anchor) {
     var r = anchor.getBoundingClientRect();
-    var w = Math.min(window.innerWidth * 0.92, 340);
+    var w = Math.min(window.innerWidth * 0.94, 380);
     var left = Math.max(8, Math.min(r.right - w, window.innerWidth - w - 8));
     calPop.style.left = left + 'px';
     calPop.style.top = (r.bottom + 10) + 'px';
@@ -999,7 +1012,7 @@
   function calRender(ah) {
     var st = calState;
     var MESES = ['janeiro','fevereiro','março','abril','maio','junho','julho','agosto','setembro','outubro','novembro','dezembro'];
-    var DOW = ['D','S','T','Q','Q','S','S'];
+    var DOW = ['dom','seg','ter','qua','qui','sex','sáb'];
     var primeiro = new Date(st.ano, st.mes, 1);
     var diasMes = new Date(st.ano, st.mes + 1, 0).getDate();
     var hojeK = calKey(new Date());
@@ -1007,13 +1020,20 @@
     for (var i = 0; i < primeiro.getDay(); i++) grade += '<span></span>';
     for (var d = 1; d <= diasMes; d++) {
       var k = st.ano + '-' + calPad(st.mes + 1) + '-' + calPad(d);
-      var tem = ah.itensDoDia(k).length > 0;
-      grade += '<button type="button" class="mc-d' + (k === st.sel ? ' sel' : '') + (k === hojeK ? ' hoje' : '') +
-        '" data-mc="day" data-k="' + k + '">' + d + (tem ? '<i></i>' : '') + '</button>';
+      var itensK = ah.itensDoDia(k);
+      var cores = [];
+      itensK.forEach(function (it) {
+        var t = ah.tipos.filter(function (x) { return x.id === it.tipo; })[0];
+        var c = t ? t.cor : '#64748b';
+        if (cores.indexOf(c) < 0 && cores.length < 3) cores.push(c);
+      });
+      var dots = cores.length ? '<span class="mc-dots">' + cores.map(function (c) { return '<i style="background:' + c + '"></i>'; }).join('') + '</span>' : '';
+      grade += '<button type="button" class="mc-d' + (itensK.length ? ' has' : '') + (k === st.sel ? ' sel' : '') + (k === hojeK ? ' hoje' : '') +
+        '" data-mc="day" data-k="' + k + '"><b>' + d + '</b>' + dots + '</button>';
     }
-    var filtros = ah.tipos.map(function (t) {
+    var pills = ah.tipos.map(function (t) {
       var on = ah.visivelTipo(t.id);
-      return '<button type="button" class="mc-f' + (on ? ' on' : '') + '" data-mc="f" data-id="' + t.id + '" aria-pressed="' + on + '" style="--c:' + t.cor + '"><i></i>' + calEsc(t.label) + '</button>';
+      return '<button type="button" class="mc-pill' + (on ? ' on' : '') + '" data-mc="f" data-id="' + t.id + '" aria-pressed="' + on + '" style="--c:' + t.cor + '"><i></i>' + calEsc(t.label) + '</button>';
     }).join('');
 
     var itens = ah.itensDoDia(st.sel);
@@ -1024,20 +1044,21 @@
         ? '<a href="' + ADM + 'projeto.html?id=' + encodeURIComponent(it.id) + '&data=' + encodeURIComponent(st.sel) + '">' + calEsc(it.titulo) + '</a>'
         : '<span>' + calEsc(it.titulo) + '</span>';
       return '<li><i style="background:' + cor + '"></i><div>' + nome + (it.sub ? '<small>' + calEsc(it.sub) + '</small>' : '') + '</div></li>';
-    }).join('') : '<li class="mc-vazio">Nada neste dia com os filtros atuais.</li>';
+    }).join('') : '<li class="mc-vazio" style="background:none;border:0">Nada neste dia com os filtros atuais.</li>';
 
     var pd = st.sel.split('-');
+    var dow = DOW[new Date(pd[0], pd[1] - 1, pd[2]).getDay()];
     calPop.innerHTML =
       '<div class="mc-top"><b>' + MESES[st.mes] + ' ' + st.ano + '</b>' +
-        '<div class="mc-acts">' +
-          '<button type="button" data-mc="prev" aria-label="Mês anterior">‹</button>' +
-          '<button type="button" data-mc="next" aria-label="Próximo mês">›</button>' +
-          '<a class="mc-exp" href="' + ADM + 'agenda.html?data=' + encodeURIComponent(st.sel) + '" title="Ampliar agenda" aria-label="Ampliar agenda">⤢</a>' +
-          '<button type="button" data-mc="close" aria-label="Fechar">✕</button>' +
-        '</div></div>' +
+        '<button type="button" class="mc-btn hoje" data-mc="hoje">Hoje</button>' +
+        '<button type="button" class="mc-btn" data-mc="prev" aria-label="Mês anterior">‹</button>' +
+        '<button type="button" class="mc-btn" data-mc="next" aria-label="Próximo mês">›</button>' +
+        '<a class="mc-btn" href="' + ADM + 'agenda.html?data=' + encodeURIComponent(st.sel) + '" title="Ampliar agenda" aria-label="Ampliar agenda">⤢</a>' +
+        '<button type="button" class="mc-btn" data-mc="close" aria-label="Fechar">✕</button>' +
+      '</div>' +
       '<div class="mc-grid">' + DOW.map(function (x) { return '<span class="mc-dow">' + x + '</span>'; }).join('') + grade + '</div>' +
-      '<div class="mc-filtros">' + filtros + '</div>' +
-      '<div class="mc-dia">' + pd[2] + '/' + pd[1] + '/' + pd[0] + '</div>' +
+      '<div class="mc-pills">' + pills + '</div>' +
+      '<div class="mc-dia">' + dow + ', ' + pd[2] + '/' + pd[1] + '/' + pd[0] + '</div>' +
       '<ul class="mc-lista">' + lista + '</ul>';
   }
 
@@ -1054,6 +1075,7 @@
         if (!b) return;
         var acao = b.getAttribute('data-mc');
         if (acao === 'close') return calClose();
+        if (acao === 'hoje') { var h = new Date(); calState.ano = h.getFullYear(); calState.mes = h.getMonth(); calState.sel = calKey(h); return calRefresh(); }
         if (acao === 'prev' || acao === 'next') {
           var m = calState.mes + (acao === 'next' ? 1 : -1);
           calState.ano += m < 0 ? -1 : (m > 11 ? 1 : 0);
@@ -1070,8 +1092,8 @@
       });
     }
     if (!calState) {
-      var h = new Date();
-      calState = { ano: h.getFullYear(), mes: h.getMonth(), sel: calKey(h) };
+      var hh = new Date();
+      calState = { ano: hh.getFullYear(), mes: hh.getMonth(), sel: calKey(hh) };
     }
     calPop.className = 'on ' + themeClass();
     calPlace(anchor);
@@ -1081,15 +1103,103 @@
 
   function calClose() { if (calPop) calPop.classList.remove('on'); }
 
-  if (!IN_FRAME) calCss();
+  /* ----- Cápsula de áreas: vira hambúrguer quando não cabe no header ----- */
+  function capBtnLabel(cap) {
+    var ativo = cap.querySelector('.mn-tab[aria-pressed="true"]');
+    return ativo ? ativo.textContent.trim() : areaAtual;
+  }
+
+  function ensureCapBtn(hdr, cap) {
+    var btn = hdr.querySelector(':scope > .mn-cap-btn');
+    if (!btn) {
+      btn = document.createElement('button');
+      btn.type = 'button';
+      btn.className = 'mn-cap-btn';
+      btn.setAttribute('aria-label', 'Escolher área');
+      btn.setAttribute('aria-expanded', 'false');
+      cap.parentNode.insertBefore(btn, cap);
+      btn.addEventListener('click', function (e) {
+        e.stopPropagation();
+        var aberto = cap.classList.toggle('mn-cap-open');
+        btn.setAttribute('aria-expanded', aberto ? 'true' : 'false');
+      });
+    }
+    btn.setAttribute('data-area', areaAtual);
+    btn.textContent = '☰ ' + capBtnLabel(cap);
+    return btn;
+  }
+
+  function fitCapsule() {
+    fitQueued = false;
+    var hdr = document.getElementById('calc-header');
+    if (!hdr || !hdr.classList.contains('mn-ready')) return;
+    var cap = hdr.querySelector(':scope > .mn-toggle-d');
+    if (!cap) return;
+    var btn = ensureCapBtn(hdr, cap);
+    var collapsed = hdr.classList.contains('mn-cap-collapsed');
+
+    if (cap.hasAttribute('data-hidden')) {
+      hdr.classList.remove('mn-cap-collapsed');
+      cap.classList.remove('mn-cap-open');
+      return;
+    }
+    if (!collapsed) capFullW = cap.offsetWidth || capFullW;
+
+    var logo = hdr.querySelector('.logo-container');
+    var lw = logo ? logo.offsetWidth : 0;
+    var extras = 0;
+    hdr.querySelectorAll('.mn-hdr-tray, .b2b-user-widget, .mobile-hamburger').forEach(function (el) {
+      if (window.getComputedStyle(el).display !== 'none') extras += el.offsetWidth;
+    });
+    var cs = window.getComputedStyle(hdr);
+    var avail = hdr.clientWidth - (parseFloat(cs.paddingLeft) || 0) - (parseFloat(cs.paddingRight) || 0);
+    var precisa = lw + capFullW + extras + 150 + 16;
+    var deveRecolher = precisa > avail;
+
+    if (deveRecolher && !collapsed) {
+      hdr.classList.add('mn-cap-collapsed');
+    } else if (!deveRecolher && collapsed) {
+      hdr.classList.remove('mn-cap-collapsed');
+      cap.classList.remove('mn-cap-open');
+      btn.setAttribute('aria-expanded', 'false');
+    }
+    if (hdr.classList.contains('mn-cap-collapsed')) {
+      hdr.style.setProperty('--mn-hdr-bottom', hdr.getBoundingClientRect().bottom + 'px');
+    }
+  }
+
+  function scheduleFit() {
+    if (fitQueued) return;
+    fitQueued = true;
+    requestAnimationFrame(fitCapsule);
+  }
+
+  function bindFit() {
+    var hdr = document.getElementById('calc-header');
+    if (!hdr) { setTimeout(bindFit, 300); return; }
+    if (hdr.__fitBound) return;
+    hdr.__fitBound = true;
+    if (window.ResizeObserver) new ResizeObserver(scheduleFit).observe(hdr);
+    new MutationObserver(scheduleFit).observe(hdr, { childList: true, subtree: true });
+    window.addEventListener('resize', scheduleFit);
+    scheduleFit();
+  }
 
   if (!IN_FRAME) {
+    calCss();
+    bindFit();
     document.addEventListener('click', function (e) {
       var a = e.target.closest && e.target.closest('[data-mn-cal]');
       if (a) {
         e.preventDefault();
         if (calPop && calPop.classList.contains('on')) calClose(); else calOpen(a);
         return;
+      }
+      var hdr = document.getElementById('calc-header');
+      var cap = hdr && hdr.querySelector(':scope > .mn-toggle-d');
+      if (cap && cap.classList.contains('mn-cap-open')) {
+        if (e.target.closest && e.target.closest('.mn-tab')) { cap.classList.remove('mn-cap-open'); return; }
+        if (!(e.target.closest && e.target.closest('.mn-cap-btn, .mn-toggle-d'))) cap.classList.remove('mn-cap-open');
       }
       if (calPop && calPop.classList.contains('on') && !(e.target.closest && e.target.closest('#mn-cal-pop'))) calClose();
     }, false);
