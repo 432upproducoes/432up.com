@@ -97,10 +97,8 @@
       { label: 'Studio', href: ADM + 'studio.html', file: 'studio.html' }
     ],
 
-    cliente: [
-      { label: 'Minha diária', icon: '◉', href: CLIENTE + 'index.html', file: 'index.html' },
-      { label: 'Convite / acesso', href: CLIENTE + 'convite.html', file: 'convite.html' }
-    ]
+    /* Área do cliente: só a barra de menu, sem links (as abas ficam dentro da própria página) */
+    cliente: []
   };
 
   var TABS = [
