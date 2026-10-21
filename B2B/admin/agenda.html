@@ -313,6 +313,10 @@
       border-radius: 12px; border: 1px solid rgba(255,255,255,.18); background: transparent;
       color: var(--text); font-size: 15px; cursor: pointer; width: auto;
     }
+    @media (max-width: 640px) {
+      .cal { gap: 3px; }
+      .cal .d { min-height: 38px; }
+    }
 </style>
 </head>
 <body class="h-full antialiased overflow-x-hidden">
@@ -344,10 +348,10 @@
           <div class="filtros" id="filtros" aria-label="Filtros da agenda"></div>
           <div class="cal-nav">
             <button type="button" class="btn-s" id="btnPrev" aria-label="Mês anterior" style="margin-top:0">‹</button>
-            <strong id="tituloMes" title="Ir para o mês de hoje" style="font-size:15px;cursor:pointer">Outubro 2026</strong>
+            <strong id="tituloMes" title="Ir para o mês de hoje" style="font-size:15px;cursor:pointer;flex:1;text-align:center">Outubro 2026</strong>
             <button type="button" class="btn-s" id="btnNext" aria-label="Próximo mês" style="margin-top:0">›</button>
+            <button type="button" class="btn-hoje" id="btnHoje" style="margin-left:8px">Hoje</button>
           </div>
-          <div style="text-align:right;margin:-4px 0 8px"><button type="button" class="btn-hoje" id="btnHoje">Hoje</button></div>
           <div class="cal" id="cabec"></div>
           <div class="cal" id="grade" style="margin-top:6px"></div>
         </section>
@@ -715,7 +719,7 @@
     if (!box) return;
     var hoje = chave(new Date());
     var lista = (PROXIMOS || []).filter(function (it) {
-      return it.data >= hoje && visivel(it.tipo);
+      return it.data >= hoje && it.tipo === 'evento';
     }).sort(function (a, b) {
       return String(a.data).localeCompare(String(b.data));
     });
