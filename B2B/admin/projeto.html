@@ -590,8 +590,20 @@
     await carregarLista();
     if (ADMIN) await carregarKpis();
 
-    var qid = new URLSearchParams(location.search).get('id');
-    if (qid) selecionar(qid);
+    var paramsProjeto = new URLSearchParams(location.search);
+    var qid = paramsProjeto.get('id');
+    var dataOrigemAgenda = paramsProjeto.get('data');
+    var veioDaAgenda = paramsProjeto.get('origem') === 'agenda';
+    if (veioDaAgenda && dataOrigemAgenda) {
+      document.documentElement.setAttribute('data-origem-agenda', dataOrigemAgenda);
+    }
+    if (qid) {
+      await selecionar(qid);
+      if (veioDaAgenda) {
+        var tabAgendaOrigem = document.querySelector('.tab-btn[data-tab="agenda"]');
+        if (tabAgendaOrigem) tabAgendaOrigem.click();
+      }
+    }
   }
 
   async function carregarTaxonomia() {
@@ -936,7 +948,9 @@
   async function selecionar(id) {
     ATUAL = PROPS.find(function (p) { return String(p.id) === String(id); }) || null;
     if (!ATUAL) return;
-    history.replaceState(null, '', '?id=' + encodeURIComponent(ATUAL.id));
+    var paramsUrlProjeto = new URLSearchParams(location.search);
+    paramsUrlProjeto.set('id', ATUAL.id);
+    history.replaceState(null, '', '?' + paramsUrlProjeto.toString());
     desenharLista();
 
     $('semSel').style.display = 'none';
