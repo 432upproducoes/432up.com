@@ -193,9 +193,7 @@
     .cal-nav { display: flex; align-items: center; justify-content: space-between; gap: 8px; margin-bottom: 12px; }
     .filtros { display: flex; flex-wrap: wrap; gap: 10px; margin: 6px 0 14px; font-size: 12px; }
     .filtros label { display: inline-flex; align-items: center; gap: 5px; cursor: pointer; color: var(--body); }
-    .filtros input { position: absolute; opacity: 0; width: 0; height: 0; pointer-events: none; }
-    .filtros label { position: relative; padding: 7px 14px; border-radius: 999px; border: 1px solid var(--cor); background: var(--cor); color: #04120a; font-weight: 700; font-size: 12px; letter-spacing: .02em; box-shadow: 0 0 14px color-mix(in srgb, var(--cor) 35%, transparent); transition: opacity .2s, box-shadow .2s, background .2s; user-select: none; }
-    .filtros label.off { background: transparent; color: var(--mut); box-shadow: none; opacity: .55; }
+    .filtros input { width: auto; }
     .dia-item { border: 1px solid var(--line); border-radius: 16px; padding: 12px; margin-bottom: 8px; border-left: 4px solid #c084fc; background: rgba(255, 255, 255, .025); }
     .dia-item strong { display: block; margin-bottom: 2px; }
     .dia-item small { color: var(--mut); display: block; font-size: 12px; }
@@ -221,7 +219,7 @@
       .ck-grid { display: flex; flex-direction: column; gap: 0; align-items: stretch; }
       .ck-col { display: contents; }
       .ck-grid .box-full { width: 100%; box-sizing: border-box; }
-      .o-resumo { order: 1; } .o-linha { order: 2; } .o-equipe { order: 3; } .o-obs { order: 4; } .o-avisos { order: 5; }
+      .o-resumo { order: 1; } .o-equipe { order: 2; } .o-linha { order: 3; } .o-obs { order: 4; } .o-avisos { order: 5; }
     }
     .resumo-evt .linha { display: block; padding: 7px 0; border: 0; }
     .resumo-evt .rot { display: block; font-size: 11px; color: var(--mut); text-transform: uppercase; letter-spacing: .06em; margin-bottom: 2px; }
@@ -265,15 +263,6 @@
       .cal { gap: 3px; }
       .cal .d { min-height: 38px; }
     }
-    /* ===== Ajustes: menu condensado grudado ao canônico ===== */
-    .tabs { z-index: 30; margin: 0 -18px 12px; padding: 8px 18px; gap: 6px; background: transparent; border-bottom: 1px solid rgba(0, 240, 255, .18); }
-    .tab { padding: 6px 12px; font-size: 11px; }
-    .tabs.fixo { position: fixed; left: 0; right: 0; margin: 0; border-radius: 0; padding-left: max(18px, calc((100% - 1120px) / 2 + 18px)); padding-right: max(18px, calc((100% - 1120px) / 2 + 18px)); }
-    .carrossel { display: flex; overflow-x: auto; scroll-snap-type: x mandatory; scrollbar-width: none; -webkit-overflow-scrolling: touch; touch-action: pan-x; overscroll-behavior: contain; }
-    .carrossel::-webkit-scrollbar { display: none; }
-    .carrossel > .slide { flex: 0 0 100%; min-width: 0; scroll-snap-align: start; }
-    .sec-lbl { font-size: 10px; letter-spacing: .16em; text-transform: uppercase; font-weight: 800; color: var(--tech); margin: 2px 0 8px; }
-    .sec-sep { height: 1px; background: var(--line); margin: 16px 0; }
   </style>
 </head>
 <body class="h-full antialiased overflow-x-hidden">
@@ -299,7 +288,6 @@
         </div>
       </div>
 
-      <div id="tabsWrap">
       <nav class="tabs" role="tablist" aria-label="Área do cliente">
         <button type="button" class="tab on" data-i="0" role="tab">Início</button>
         <button type="button" class="tab" data-i="1" role="tab">Meu evento</button>
@@ -307,14 +295,18 @@
         <button type="button" class="tab" data-i="3" role="tab">Memórias</button>
         <button type="button" class="tab" data-i="4" role="tab">Perfil</button>
       </nav>
-      </div>
       <div class="slider-dots" id="sliderDots" aria-hidden="true"><i class="on"></i><i></i><i></i><i></i><i></i></div>
 
       <!-- 0 · INÍCIO -->
       <section class="panel on" id="p0" role="tabpanel">
         <div class="box-full i2" id="cardProximo">
-          <div class="carrossel" id="carrossel" data-noswipe></div>
-          <div class="slider-dots" id="carDots" style="display:none"></div>
+          <div class="hero-chips" id="heroChips"></div>
+          <h2>Próximo evento</h2>
+          <div id="proximoEvt" class="vazio">Carregando…</div>
+          <div id="contagemWrap" style="display:none;margin-top:16px">
+            <div class="eyebrow" style="color:var(--mut)">Faltam apenas</div>
+            <div id="contagem" class="hero-num" style="margin-top:4px">—</div>
+          </div>
         </div>
 
         <div class="box-full" id="cardMiniCk" style="display:none">
@@ -349,12 +341,6 @@
           <h2>Linha do tempo</h2>
           <div class="trilha" id="linhaTempo"><div class="vazio">Carregando…</div></div>
         </div>
-        <div class="box-full o-equipe" id="cardEquipe">
-          <h2>Equipe técnica</h2>
-          <div id="listaEquipe" class="vazio">Carregando…</div>
-          <button type="button" class="btn-s" id="btnListaEquipe" style="display:none">Montar lista para WhatsApp</button>
-          <div class="msg" id="msgEquipe"></div>
-        </div>
 
           </div>
           <div class="ck-col">
@@ -381,6 +367,10 @@
           <h2>Resumo do evento</h2>
           <div id="resumoEvt" class="vazio">Carregando…</div>
         </div>
+        <div class="box-full o-equipe" id="cardEquipe">
+          <h2>Equipe técnica</h2>
+          <div id="listaEquipe" class="vazio">Carregando…</div>
+        </div>
           </div>
         </div>
       </section>
@@ -391,10 +381,10 @@
           <h2>Calendário do evento</h2>
           <p class="pill" id="calSub" style="margin:0 0 10px">Só as datas dos seus pedidos aparecem aqui.</p>
           <div class="filtros" id="calFiltros">
-            <label style="--cor:#c084fc"><input type="checkbox" data-filtro="evento" checked>Evento</label>
-            <label style="--cor:#3b82f6"><input type="checkbox" data-filtro="contrato" checked>Contrato</label>
-            <label style="--cor:#86efac"><input type="checkbox" data-filtro="pagamento" checked>Pagamentos</label>
-            <label style="--cor:#22c55e"><input type="checkbox" data-filtro="comprovante" checked>Comprovantes</label>
+            <label><input type="checkbox" data-filtro="evento" checked><i class="sw" style="background:#c084fc"></i> Evento</label>
+            <label><input type="checkbox" data-filtro="contrato" checked><i class="sw" style="background:#3b82f6"></i> Contrato</label>
+            <label><input type="checkbox" data-filtro="pagamento" checked><i class="sw" style="background:#86efac"></i> Pagamentos</label>
+            <label><input type="checkbox" data-filtro="comprovante" checked><i class="sw" style="background:#22c55e"></i> Comprovantes</label>
           </div>
           <div class="cal-nav">
             <button type="button" class="btn-s" id="calPrev" style="margin-top:0">‹</button>
@@ -569,18 +559,9 @@
     try { return Number(n || 0).toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' }); }
     catch (e) { return 'R$ —'; }
   };
-  function parseDataLocal(d) {
-    if (!d) return null;
-    var s = String(d);
-    var m = s.match(/^(\d{4})-(\d{2})-(\d{2})(?:[T ]\d{2}:\d{2}(?::\d{2}(?:\.\d+)?)?)?$/);
-    if (m) return new Date(Number(m[1]), Number(m[2]) - 1, Number(m[3]), 12, 0, 0);
-    var x = new Date(s);
-    return isNaN(x.getTime()) ? null : x;
-  }
   var DATA = function (d) {
-    var x = parseDataLocal(d);
-    if (!x) return '—';
-    try { return x.toLocaleDateString('pt-BR'); } catch (e) { return '—'; }
+    if (!d) return '—';
+    try { return new Date(d).toLocaleDateString('pt-BR'); } catch (e) { return '—'; }
   };
   var ST = { pendente: 'Pendente', aprovado: 'Aprovado', recusado: 'Recusado', pago: 'Pago' };
   var ST_CLASSE = { pendente: 't-pend', aprovado: 't-ok', recusado: 't-rec', pago: 't-ok' };
@@ -732,63 +713,6 @@
     }, 600);
   }
 
-  /* ===== Menu condensado: gruda logo abaixo do menu canônico (fixo) ===== */
-  (function () {
-    var nav = document.querySelector('#tabsWrap .tabs');
-    var wrap = document.getElementById('tabsWrap');
-    if (!nav || !wrap) return;
-    var base = 0;
-    function alturaCabecalho() {
-      var h = document.getElementById('calc-header');
-      return h ? Math.max(0, Math.round(h.getBoundingClientRect().bottom)) : 0;
-    }
-    /* Copia a mesma pele translúcida do menu canônico (fundo, blur e borda) */
-    function aplicarPele() {
-      var h = document.getElementById('calc-header');
-      if (!h || !window.getComputedStyle) return;
-      var camada = h.querySelector('.mn-bg-l[data-t="cyan"]');
-      var csH = getComputedStyle(h);
-      var csC = camada ? getComputedStyle(camada) : null;
-      var img = csC && csC.backgroundImage !== 'none' ? csC.backgroundImage : csH.backgroundImage;
-      var cor = csC && csC.backgroundColor !== 'rgba(0, 0, 0, 0)' ? csC.backgroundColor : csH.backgroundColor;
-      nav.style.backgroundImage = img && img !== 'none' ? img : 'linear-gradient(180deg, rgba(0, 240, 255, 0.06) 0%, rgba(8, 12, 18, 0.7) 100%)';
-      nav.style.backgroundColor = cor && cor !== 'rgba(0, 0, 0, 0)' ? cor : 'transparent';
-      var blur = csH.backdropFilter && csH.backdropFilter !== 'none' ? csH.backdropFilter : 'blur(24px)';
-      nav.style.backdropFilter = blur;
-      nav.style.webkitBackdropFilter = blur;
-      nav.style.borderBottomColor = csH.borderBottomColor || 'rgba(0, 240, 255, 0.18)';
-    }
-    function limparPele() {
-      nav.style.backgroundImage = '';
-      nav.style.backgroundColor = '';
-      nav.style.backdropFilter = '';
-      nav.style.webkitBackdropFilter = '';
-      nav.style.borderBottomColor = '';
-    }
-    function atualizar() {
-      var hb = alturaCabecalho();
-      if (!nav.classList.contains('fixo')) base = nav.offsetHeight;
-      var passou = wrap.getBoundingClientRect().top <= hb;
-      if (passou && hb > 0) {
-        wrap.style.height = base + 'px';
-        nav.classList.add('fixo');
-        nav.style.top = hb + 'px';
-        aplicarPele();
-      } else {
-        nav.classList.remove('fixo');
-        nav.style.top = '';
-        wrap.style.height = '';
-        limparPele();
-      }
-    }
-    window.addEventListener('scroll', atualizar, { passive: true });
-    window.addEventListener('resize', atualizar);
-    window.addEventListener('load', atualizar);
-    window.addEventListener('pageshow', atualizar);
-    [300, 1000, 2500].forEach(function (ms) { setTimeout(atualizar, ms); });
-    atualizar();
-  })();
-
   /* ===== Espaço sob o menu fixo ===== */
   function alturaMenu() {
     var h = document.getElementById('calc-header');
@@ -921,16 +845,11 @@
       var BASE_DOC = location.origin + '/B2B/';
       acoes += '<a class="btn-s" target="_blank" rel="noopener" href="' + BASE_DOC + 'visualizar-contrato.html?id=' + encodeURIComponent(p.id) + '">' + (assinado ? 'Ver contrato' : 'Ver e assinar contrato') + '</a> ';
       acoes += '<a class="btn-s" target="_blank" rel="noopener" href="' + BASE_DOC + 'visualizar-proposta.html?id=' + encodeURIComponent(p.id) + '">Ver proposta</a> ';
-      var btnCmp = '<button type="button" class="btn" data-cmp="' + E(p.id) + '">+ Enviar comprovante</button>';
+      acoes += '<button type="button" class="btn" data-cmp="' + E(p.id) + '">+ Enviar comprovante</button>';
       return '<div style="margin-bottom:18px;padding-bottom:14px;border-bottom:1px solid var(--line)">' +
-        '<div class="sec-lbl">Proposta</div>' + topo +
-        '<div class="sec-sep"></div>' +
-        '<div class="sec-lbl">Documentos</div><div>' + acoes + '</div>' +
-        '<div class="sec-sep"></div>' +
-        '<div class="sec-lbl">Pagamentos</div>' +
-        '<div>' + parcelas + '</div>' +
+        topo + '<div style="margin-top:12px">' + parcelas + '</div>' +
         '<div style="margin-top:10px">' + lista + '</div>' +
-        '<div style="margin-top:8px">' + btnCmp + '</div></div>';
+        '<div style="margin-top:8px">' + acoes + '</div></div>';
     }).join('');
 
     el.querySelectorAll('[data-pdf]').forEach(function (b) {
@@ -1120,10 +1039,7 @@
     box.querySelectorAll('input[data-filtro]').forEach(function (inp) {
       var id = inp.getAttribute('data-filtro');
       inp.checked = FILTROS_CAL[id] !== false;
-      var lab = inp.closest('label');
-      if (lab) lab.classList.toggle('off', !inp.checked);
       inp.addEventListener('change', function () {
-        if (lab) lab.classList.toggle('off', !inp.checked);
         FILTROS_CAL[id] = inp.checked;
         try { localStorage.setItem('432up_cli_cal_filtros', JSON.stringify(FILTROS_CAL)); } catch (e) {}
         if (dados) renderCalendario();
@@ -1140,74 +1056,58 @@
     if (dados) renderCalendario();
   });
 
-  var _cdTimers = [];
-  function contagemTexto(el, iso) {
-    var alvo = parseDataLocal(iso);
-    if (!alvo) { el.textContent = '—'; return; }
-    var agora = Date.now();
-    var noon = alvo.getTime();
-    var meiaNoite = new Date(alvo.getFullYear(), alvo.getMonth(), alvo.getDate(), 0, 0, 0).getTime();
-    var diff = noon - agora;
-    if (diff <= 0) {
-      var passou = Math.floor((agora - noon) / 86400000);
-      el.textContent = passou <= 0 ? 'É hoje!' : ('Há ' + passou + ' dia' + (passou > 1 ? 's' : ''));
-      return;
-    }
-    var dias = Math.max(0, Math.floor((meiaNoite - agora) / 86400000));
-    var horas = Math.floor((diff % 86400000) / 3600000);
-    var mins = Math.floor((diff % 3600000) / 60000);
-    if (dias > 0) el.textContent = dias + 'd ' + horas + 'h ' + mins + 'm';
-    else if (horas > 0) el.textContent = horas + 'h ' + mins + 'm';
-    else el.textContent = mins + ' min';
-  }
-
   function renderInicio() {
-    var car = $('carrossel');
-    var dots = $('carDots');
+    var el = $('proximoEvt');
+    var wrap = $('contagemWrap');
+    var cont = $('contagem');
+    var chips = $('heroChips');
+
     var pedidos = (dados.propostas || []).filter(function (p) {
       return p.status !== 'cancelada' && p.data_evento;
     }).sort(function (a, b) { return String(a.data_evento).localeCompare(String(b.data_evento)); });
+
     var hoje = new Date(); hoje.setHours(0, 0, 0, 0);
-    var lista = pedidos.filter(function (p) {
-      var d = parseDataLocal(String(p.data_evento).slice(0, 10));
-      return d && d >= hoje;
-    });
-    if (!lista.length && pedidos.length) lista = pedidos.slice(-1);
-    car._lista = lista;
-
-    _cdTimers.forEach(function (t) { clearInterval(t); });
-    _cdTimers = [];
-
-    if (!lista.length) {
-      car.innerHTML = '<div class="slide vazio">Nenhum evento com data marcada ainda.</div>';
-      dots.style.display = 'none';
-    } else {
-      car.innerHTML = lista.map(function (p) {
-        return '<div class="slide">' +
-          '<p style="margin:0;font-size:16px"><strong>Pedido #' + E(p.numero) + '</strong> · ' + E(p.tipo_evento || 'Evento') + '</p>' +
-          '<div class="pill" style="margin-top:6px">' + DATA(p.data_evento) +
-          (p.valor_total != null ? ' · ' + BRL(p.valor_total) : '') + '</div>' +
-          '<div style="margin-top:16px"><div class="eyebrow" style="color:var(--mut)">Faltam apenas</div>' +
-          '<div class="hero-num" style="margin-top:4px" data-cd="' + E(String(p.data_evento).slice(0, 10)) + '">—</div></div>' +
-          '</div>';
-      }).join('');
-      car.querySelectorAll('[data-cd]').forEach(function (el) {
-        var tick = function () { contagemTexto(el, el.getAttribute('data-cd')); };
-        tick();
-        _cdTimers.push(setInterval(tick, 30000));
-      });
-      dots.innerHTML = lista.map(function (p, i) { return '<i' + (i === 0 ? ' class="on"' : '') + '></i>'; }).join('');
-      dots.style.display = lista.length > 1 ? 'flex' : 'none';
+    var prox = null;
+    for (var i = 0; i < pedidos.length; i++) {
+      var d = new Date(String(pedidos[i].data_evento).slice(0, 10) + 'T12:00:00');
+      if (d >= hoje) { prox = pedidos[i]; break; }
     }
+    if (!prox && pedidos.length) prox = pedidos[pedidos.length - 1];
 
-    if (!car._bound) {
-      car._bound = true;
-      car.addEventListener('scroll', function () {
-        var w = car.clientWidth || 1;
-        var i = Math.round(car.scrollLeft / w);
-        dots.querySelectorAll('i').forEach(function (d, k) { d.classList.toggle('on', k === i); });
-        if (car._lista && car._lista[i]) renderMiniCk(car._lista[i]);
-      }, { passive: true });
+    if (_contagemTimer) { clearInterval(_contagemTimer); _contagemTimer = null; }
+
+    if (!prox) {
+      el.innerHTML = '<div class="vazio">Nenhum evento com data marcada ainda.</div>';
+      chips.innerHTML = '';
+      wrap.style.display = 'none';
+    } else {
+      var assinado = !!prox.assinado_em;
+      chips.innerHTML = '<span class="chip">Próximo evento</span>' +
+        (assinado ? '<span class="chip tec">Contrato assinado</span>' : '<span class="chip">Aguardando assinatura</span>');
+      el.innerHTML = '<p style="margin:0;font-size:16px"><strong>Pedido #' + E(prox.numero) + '</strong> · ' + E(prox.tipo_evento || 'Evento') + '</p>' +
+        '<div class="pill" style="margin-top:6px">' + DATA(prox.data_evento) +
+        (prox.valor_total != null ? ' · ' + BRL(prox.valor_total) : '') + '</div>';
+
+      var partes = String(prox.data_evento).slice(0, 10).split('-');
+      var alvo = new Date(Number(partes[0]), Number(partes[1]) - 1, Number(partes[2]), 12, 0, 0).getTime();
+      var tick = function () {
+        var diff = alvo - Date.now();
+        if (isNaN(alvo)) { cont.textContent = DATA(prox.data_evento); return; }
+        if (diff <= 0) {
+          var passou = Math.floor((Date.now() - alvo) / 86400000);
+          cont.textContent = passou <= 0 ? 'É hoje!' : ('Há ' + passou + ' dia' + (passou > 1 ? 's' : ''));
+          return;
+        }
+        var dias = Math.floor(diff / 86400000);
+        var horas = Math.floor((diff % 86400000) / 3600000);
+        var mins = Math.floor((diff % 3600000) / 60000);
+        if (dias > 0) cont.textContent = dias + 'd ' + horas + 'h ' + mins + 'm';
+        else if (horas > 0) cont.textContent = horas + 'h ' + mins + 'm';
+        else cont.textContent = mins + ' min';
+      };
+      tick();
+      wrap.style.display = 'block';
+      _contagemTimer = setInterval(tick, 30000);
     }
 
     var total = (dados.propostas || []).length;
@@ -1223,7 +1123,7 @@
       '<div class="linha"><span>Etapas do checklist</span><span class="pill">' +
         (etapas.length ? (etPend === 0 ? 'todas confirmadas' : etPend + ' pendente' + (etPend > 1 ? 's' : '')) : 'ainda sem etapas') +
       '</span></div>';
-    renderMiniCk(lista.length ? lista[0] : null);
+    renderMiniCk(prox);
   }
 
   function etapasDe(p) {
@@ -1244,11 +1144,6 @@
     }).join('');
     var ok = et.filter(function (e) { return e.situacao === 'concluida'; }).length;
     $('miniCkRes').textContent = ok + ' de ' + et.length + ' etapas confirmadas';
-    var atual = $('miniCk').querySelector('.mk.prox');
-    if (atual) {
-      var cont = $('miniCk');
-      cont.scrollLeft = atual.getBoundingClientRect().left - cont.getBoundingClientRect().left + cont.scrollLeft - (cont.clientWidth - atual.offsetWidth) / 2;
-    }
   }
   function renderResumoEvento() {
     var p = pedidoAtivo();
@@ -1259,7 +1154,7 @@
     box.className = '';
     box.innerHTML =
       l('Evento', 'Pedido #' + p.numero) + l('Cliente', cli) + l('Tipo do evento', p.tipo_evento) +
-      l('Local', p.local_evento) + l('Contato', (dados.cadastro && dados.cadastro.email) || '') +
+      l('Venue', p.local_evento) + l('Contacto', (dados.cadastro && dados.cadastro.email) || '') +
       l('Data', p.data_evento ? DATA(p.data_evento) : '') +
       l('Contrato', p.assinado_em ? 'Assinado em ' + DATA(p.assinado_em) : 'Aguardando assinatura');
   }
@@ -1270,11 +1165,9 @@
     if (!eq.length) {
       box.className = 'vazio';
       box.textContent = 'A equipe técnica do seu evento aparece aqui assim que for confirmada.';
-      $('btnListaEquipe').style.display = 'none';
       return;
     }
     box.className = '';
-    $('btnListaEquipe').style.display = 'inline-block';
     box.innerHTML = eq.map(function (m) {
       var nome = m.nome || m.nome_completo || '';
       var foto = m.avatar_url || m.foto_url || '';
@@ -1283,39 +1176,6 @@
         '<div style="min-width:0"><strong>' + E(nome) + '</strong>' + ((m.funcao || m.papel) ? '<small>' + E(m.funcao || m.papel) + '</small>' : '') + '</div></div>';
     }).join('');
   }
-
-  function montarListaWhatsApp() {
-    var p = pedidoAtivo();
-    var msg = $('msgEquipe');
-    var eq = (dados.equipe || []).filter(function (m) { return !m.proposta_id || !p || m.proposta_id === p.id; });
-    msg.className = 'msg';
-    if (!eq.length) { msg.textContent = 'Nenhum integrante na equipe ainda.'; return; }
-    var c = dados.cadastro || {};
-    var tel = String(c.telefone || '').replace(/\D/g, '');
-    if (!tel) { msg.textContent = 'Telefone da cliente não cadastrado.'; return; }
-    if (tel.length <= 11) tel = '55' + tel;
-    var primeiro = (c.nome_razao || '').split(' ')[0];
-    var texto = 'Olá' + (primeiro ? ', *' + primeiro + '*' : '') + '! Segue a equipe técnica do seu evento' +
-      (p && p.data_evento ? ' (' + DATA(p.data_evento) + ')' : '') + ':\n\n';
-    eq.forEach(function (m) {
-      var nome = m.nome || m.nome_completo || '';
-      var doc = String(m.cpf_cnpj || m.cpf || '');
-      var digitos = doc.replace(/\D/g, '');
-      texto += '*' + nome + '*\n';
-      if (m.nome_completo && m.nome_completo !== nome) texto += 'Nome completo (documento): ' + m.nome_completo + '\n';
-      if (m.funcao || m.papel) texto += 'Função: ' + (m.funcao || m.papel) + '\n';
-      if (doc) texto += (digitos.length === 14 ? 'CNPJ: ' : 'CPF: ') + doc + '\n';
-      if (m.rg) texto += 'RG: ' + m.rg + '\n';
-      if (m.data_nascimento) texto += 'Data de nascimento: ' + DATA(m.data_nascimento) + '\n';
-      var fone = String(m.whatsapp || m.telefone || '').replace(/\D/g, '');
-      if (fone) texto += 'WhatsApp: ' + fone + '\n';
-      texto += '\n';
-    });
-    window.open('https://wa.me/' + tel + '?text=' + encodeURIComponent(texto.trim()), '_blank');
-    msg.className = 'msg ok';
-    msg.textContent = 'WhatsApp aberto com a lista.';
-  }
-  $('btnListaEquipe').addEventListener('click', montarListaWhatsApp);
 
   function renderAvatar() {
     var url = (dados && (dados.avatar_url || (dados.cadastro && dados.cadastro.avatar_url))) || null;
@@ -1340,6 +1200,8 @@
     dados = await chamar('dados');
     if (dados.erro) { $('listaPedidos').textContent = dados.erro; return; }
     render();
+    atualizarSinoAvisos();
+    sincronizarAvisos();
   }
 
   $('formCadastro').addEventListener('submit', async function (e) {
@@ -1387,11 +1249,77 @@
     return out;
   }
 
-  async function ativarAvisos() {
+  /* Avisa o menu (partner-header.js) se o sino pendurado deve aparecer:
+     app instalado + permissão ainda não decidida + pedido vinculado + chave configurada.
+     Não exige contrato assinado: qualquer cliente com acesso à área pode receber avisos. */
+  function pedidoParaAvisos() {
+    var lista = (dados && dados.propostas) || [];
+    return lista.find(function (p) { return p.status !== 'cancelada' && p.assinado_em; }) ||
+      lista.find(function (p) { return p.status !== 'cancelada'; }) || null;
+  }
+  function atualizarSinoAvisos() {
+    var ok = false;
+    try {
+      var pedido = pedidoParaAvisos();
+      var chave = ((typeof CFG !== 'undefined' && (CFG.VAPID_PUBLIC_KEY || CFG.VAPID_PUBLIC)) || '').trim();
+      var instalado = (window.matchMedia && window.matchMedia('(display-mode: standalone)').matches) || window.navigator.standalone === true;
+      ok = !!(pedido && chave && instalado && 'Notification' in window && 'PushManager' in window &&
+        'serviceWorker' in navigator && Notification.permission === 'default');
+    } catch (e) { ok = false; }
+    if (typeof window.mnSetPushPendente === 'function') window.mnSetPushPendente(ok);
+  }
+  window.addEventListener('432up:ativar-avisos', function () { ativarAvisos(true); });
+
+  /* Service worker do cliente (/cliente/sw.js); se ele não existir no servidor, usa o do portal (/B2B/sw.js).
+     Espera o worker ativar pela própria inscrição (navigator.serviceWorker.ready não serve se o escopo não cobre esta página). */
+  function swAtivo(reg) {
+    return new Promise(function (ok) {
+      var sw = reg.installing || reg.waiting || reg.active;
+      if (!sw || sw.state === 'activated') return ok();
+      var t = setTimeout(ok, 8000);
+      sw.addEventListener('statechange', function () {
+        if (sw.state === 'activated') { clearTimeout(t); ok(); }
+      });
+    });
+  }
+  async function registrarSW() {
+    var reg;
+    try {
+      reg = await navigator.serviceWorker.register('/cliente/sw.js', { scope: '/cliente/' });
+    } catch (e) {
+      reg = await navigator.serviceWorker.register('/B2B/sw.js', { scope: '/B2B/' });
+    }
+    await swAtivo(reg);
+    return reg;
+  }
+
+  /* Quem já liberou os avisos: reafirma, sem perguntar nada, o vínculo do aparelho com o pedido
+     (cobre o caso de o contrato ser assinado depois ou de mudar o pedido principal) */
+  async function sincronizarAvisos() {
+    try {
+      if (!('Notification' in window) || Notification.permission !== 'granted') return;
+      if (!('serviceWorker' in navigator) || !('PushManager' in window)) return;
+      var pedido = pedidoParaAvisos();
+      if (!pedido) return;
+      var reg = (await navigator.serviceWorker.getRegistration('/cliente/')) || (await navigator.serviceWorker.getRegistration('/B2B/'));
+      if (!reg) return;
+      var sub = await reg.pushManager.getSubscription();
+      if (!sub) return;
+      var marca = '432up_push_sync_' + pedido.id + (pedido.assinado_em ? '_s' : '');
+      if (sessionStorage.getItem(marca) === '1') return;
+      var j = sub.toJSON();
+      var r = await SB.functions.invoke('registrar-push-cliente', {
+        body: { proposta_id: pedido.id, subscription: { endpoint: j.endpoint, keys: j.keys } }
+      });
+      if (!(r.error || (r.data && r.data.erro))) sessionStorage.setItem(marca, '1');
+    } catch (e) {}
+  }
+
+  async function ativarAvisos(doSino) {
     var m = $('msgAvisos');
     m.className = 'msg';
-    var pedido = (dados.propostas || []).find(function (p) { return p.status !== 'cancelada' && p.assinado_em; });
-    if (!pedido) { m.textContent = 'Ative os avisos depois que o contrato estiver assinado.'; return; }
+    var pedido = pedidoParaAvisos();
+    if (!pedido) { m.textContent = 'Ainda não há um pedido vinculado ao seu acesso para ativar os avisos.'; if (doSino === true) alert(m.textContent); return; }
     var VAPID_PUBLIC = (CFG.VAPID_PUBLIC_KEY || CFG.VAPID_PUBLIC || '').trim();
     if (!VAPID_PUBLIC) { m.textContent = 'Avisos ainda não configurados neste ambiente.'; return; }
     if (!('serviceWorker' in navigator) || !('PushManager' in window)) {
@@ -1402,9 +1330,8 @@
     m.textContent = 'Ativando…';
     try {
       var perm = await Notification.requestPermission();
-      if (perm !== 'granted') { m.textContent = 'Permissão negada.'; $('btnAvisos').disabled = false; return; }
-      var reg = await navigator.serviceWorker.register('/cliente/sw.js', { scope: '/cliente/' });
-      await navigator.serviceWorker.ready;
+      if (perm !== 'granted') { m.textContent = 'Permissão negada.'; $('btnAvisos').disabled = false; atualizarSinoAvisos(); return; }
+      var reg = await registrarSW();
       var sub = await reg.pushManager.getSubscription() ||
         await reg.pushManager.subscribe({ userVisibleOnly: true, applicationServerKey: b64ToU8(VAPID_PUBLIC) });
       var j = sub.toJSON();
@@ -1415,16 +1342,19 @@
       m.className = 'msg ok';
       m.textContent = 'Avisos ativados neste aparelho.';
       $('btnAvisos').style.display = 'none';
+      atualizarSinoAvisos();
     } catch (err) {
       m.textContent = err.message || 'Não foi possível ativar os avisos.';
       $('btnAvisos').disabled = false;
+      if (doSino === true) alert(m.textContent);
+      atualizarSinoAvisos();
     }
   }
-  $('btnAvisos').addEventListener('click', ativarAvisos);
+  $('btnAvisos').addEventListener('click', function () { ativarAvisos(false); });
 
   $('btnSair').addEventListener('click', async function () {
     try {
-      ['432up_login_done', '432up_is_logged', '432up_is_cliente', '432up_is_admin', '432up_cli_redirect']
+      ['432up_login_done', '432up_is_logged', '432up_is_cliente', '432up_is_admin', '432up_is_parceiro', '432up_cli_redirect']
         .forEach(function (k) { sessionStorage.removeItem(k); });
     } catch (e) {}
     try { await SB.auth.signOut(); } catch (e) {}
