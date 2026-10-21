@@ -202,16 +202,35 @@
       border-radius: 12px; border: 1px solid rgba(255,255,255,.18); background: transparent;
       color: var(--text); font-size: 15px; cursor: pointer; width: auto;
     }
-    .cal { display: grid; grid-template-columns: repeat(7, 1fr); gap: 4px; font-size: 12px; text-align: center; }
+    .cal { display: grid; grid-template-columns: repeat(7, 1fr); gap: 4px; font-size: 11px; text-align: center; }
     .cal .hd { color: var(--mut); font-weight: 700; padding: 6px 0; }
-    .cal .d { padding: 10px 0; border-radius: 12px; border: 1px solid transparent; color: var(--body); min-height: 46px; }
+    .cal .d { padding: 10px 0; border-radius: 12px; border: 1px solid transparent; color: var(--body); min-height: 44px; }
     .cal .d.muted { opacity: .3; }
     .cal .d.tem { border-color: rgba(var(--rgb), .5); background: rgba(var(--rgb), .14); color: #fff; font-weight: 800; cursor: pointer; }
     .cal .d .dots { display: flex; gap: 3px; justify-content: center; margin-top: 4px; min-height: 6px; }
     .cal .d .dots i { width: 6px; height: 6px; border-radius: 50%; display: block; }
+    .filtros .sw { width: 10px; height: 10px; border-radius: 3px; display: inline-block; }
     .cal .d.hoje { border-color: rgba(212, 175, 55, .5); }
     .cal .d.sel { outline: 2px solid var(--action); outline-offset: -2px; }
     .cal-nav { display: flex; align-items: center; justify-content: space-between; gap: 8px; margin-bottom: 12px; }
+    /* Legenda do calendário: cada cápsula é o próprio filtro (ligada / desligada) */
+    .filtros { display: flex; flex-wrap: nowrap; gap: 8px; margin: 6px -26px 14px; padding: 2px 26px 4px; overflow-x: auto; scroll-snap-type: x proximity; scrollbar-width: none; -webkit-overflow-scrolling: touch; }
+    .filtros::-webkit-scrollbar { display: none; }
+    .filtros { touch-action: pan-x; overscroll-behavior: contain; }
+    .leg {
+      flex: 0 0 auto; scroll-snap-align: start;
+      display: inline-flex; align-items: center; gap: 7px;
+      padding: 7px 13px; border-radius: 999px; cursor: pointer;
+      font: inherit; font-size: 12px; font-weight: 700; color: var(--mut); white-space: nowrap;
+      background: rgba(255, 255, 255, .03); border: 1px solid var(--line);
+      transition: background .2s, border-color .2s, color .2s, opacity .2s;
+      -webkit-tap-highlight-color: transparent;
+    }
+    .leg .sw { width: 9px; height: 9px; border-radius: 999px; background: var(--c); flex: none; }
+    .leg.on { color: var(--text); border-color: var(--c); background: color-mix(in srgb, var(--c) 16%, transparent); }
+    .leg:not(.on) { opacity: .5; }
+    .leg:focus-visible { outline: 2px solid var(--c); outline-offset: 2px; }
+    @media (max-width: 640px) { .filtros { margin: 6px -18px 14px; padding: 2px 18px 4px; } }
     .dia-item { border: 1px solid var(--line); border-radius: 16px; padding: 12px; margin-bottom: 8px; border-left: 4px solid #c084fc; background: rgba(255, 255, 255, .025); cursor: pointer; }
     .dia-item strong { display: block; margin-bottom: 2px; }
     .dia-item small { color: var(--mut); display: block; font-size: 12px; }
@@ -431,10 +450,19 @@
               <!-- ABA 4: AGENDA -->
               <div class="tab-panel" id="tab-agenda" role="tabpanel">
                 <div class="box-full">
-                  <h2>Agenda rápida</h2>
+                  <h2>Agenda do evento</h2>
+                  <div class="filtros" id="calFiltros" data-noswipe role="group" aria-label="Filtrar calendário">
+                    <button type="button" class="leg on" data-filtro="evento" aria-pressed="true" style="--c:#c084fc"><i class="sw"></i>Evento</button>
+                    <button type="button" class="leg on" data-filtro="hold" aria-pressed="true" style="--c:#f97316"><i class="sw"></i>Hold</button>
+                    <button type="button" class="leg on" data-filtro="contrato" aria-pressed="true" style="--c:#3b82f6"><i class="sw"></i>Contrato</button>
+                    <button type="button" class="leg on" data-filtro="pagamento" aria-pressed="true" style="--c:#D4AF37"><i class="sw"></i>Pagamentos</button>
+                    <button type="button" class="leg on" data-filtro="comissao" aria-pressed="true" style="--c:#15803d"><i class="sw"></i>Comissão</button>
+                    <button type="button" class="leg on" data-filtro="comprovante" aria-pressed="true" style="--c:#F5D061"><i class="sw"></i>Comprovantes</button>
+                    <button type="button" class="leg on" data-filtro="reserva" aria-pressed="true" style="--c:#64748b"><i class="sw"></i>Reservas</button>
+                  </div>
                   <div class="cal-nav">
                     <button type="button" class="btn-s" id="calPrev">‹</button>
-                    <strong id="calTitulo" style="font-size:16px"></strong>
+                    <strong id="calTitulo" style="font-size:15px"></strong>
                     <button type="button" class="btn-s" id="calNext">›</button>
                   </div>
                   <div class="cal" id="calGrid"></div>
@@ -748,17 +776,107 @@
         'src="https://www.google.com/maps?q=' + encodeURIComponent(alvo) + '&output=embed"></iframe>';
   }
 
-  /* ===== Agenda rápida ===== */
+  /* ===== Agenda do evento (somente o projeto aberto) ===== */
+  var CAL_COR = { evento: '#c084fc', hold: '#f97316', contrato: '#3b82f6', pagamento: '#D4AF37', comissao: '#15803d', comprovante: '#F5D061', reserva: '#64748b' };
+  var FILTROS_CAL = { evento: true, hold: true, contrato: true, pagamento: true, comissao: true, comprovante: true, reserva: true };
+  var CAL_ITENS = {}, CAL_BIND = false;
+
+  function calChave(s) { return s ? String(s).slice(0, 10) : null; }
+  function calMaisTresUteis(iso) {
+    var d = new Date(iso + 'T12:00:00'), n = 0;
+    while (n < 3) { d.setDate(d.getDate() + 1); var wd = d.getDay(); if (wd !== 0 && wd !== 6) n++; }
+    return ISO(d);
+  }
+
+  async function carregarAgendaEvento(p) {
+    CAL_ITENS = {};
+    CAL.sel = null;
+    if (!p) return;
+    if (p.data_evento) {
+      var dd = new Date(calChave(p.data_evento) + 'T12:00:00');
+      CAL.ano = dd.getFullYear(); CAL.mes = dd.getMonth();
+    }
+    function add(k, it) { if (!k) return; (CAL_ITENS[k] = CAL_ITENS[k] || []).push(it); }
+
+    var pa = p.pagamento_agenda || {};
+    if (typeof pa === 'string') { try { pa = JSON.parse(pa); } catch (e) { pa = {}; } }
+
+    add(calChave(p.data_evento), { kind: 'evento', titulo: 'Dia do evento · #' + p.numero, sub: p.tipo_evento || '' });
+    if (ADMIN && p.status === 'hold') add(calChave(p.hold_expira_em), { kind: 'hold', titulo: 'Hold expira · #' + p.numero, sub: 'Prazo de 48h' });
+    if (p.assinado_em) add(calChave(p.assinado_em), { kind: 'contrato', titulo: 'Contrato assinado · #' + p.numero, sub: 'Documento formalizado' });
+
+    var linhas = [
+      ['Entrada', pa.data_entrada, pa.status_entrada],
+      ['Saldo', pa.data_saldo, pa.status_saldo],
+      ['Parcela', pa.data_parcela, pa.status_parcela]
+    ];
+    if (Array.isArray(pa.parcelas)) pa.parcelas.forEach(function (par, i) { linhas.push(['Parcela ' + (i + 1), par.data || par.data_pagamento, par.status]); });
+    linhas.forEach(function (row) {
+      var d = calChave(row[1]); if (!d) return;
+      var st = String(row[2] || 'pendente').toLowerCase();
+      var pago = ['pago', 'liquidado', 'recebido'].indexOf(st) >= 0;
+      add(d, { kind: 'pagamento', titulo: row[0] + ' · #' + p.numero, sub: pago ? 'Já pago' : 'Pagamento previsto' });
+      if (pago && !p.comissao_paga) {
+        add(calMaisTresUteis(d), { kind: 'comissao', titulo: 'Liberação de comissão · #' + p.numero, sub: 'Previsão · 3 dias úteis após ' + row[0].toLowerCase() });
+      }
+    });
+
+    if (ADMIN) {
+      try {
+        var rc = await SB.from('contrato_comprovantes').select('tipo, status, data_pagamento').eq('proposta_id', p.id);
+        (rc.data || []).forEach(function (c) {
+          add(calChave(c.data_pagamento), { kind: 'comprovante', titulo: (ROTULO_CMP[c.tipo] || 'Comprovante') + ' · #' + p.numero, sub: c.status || 'enviado' });
+        });
+      } catch (e) {}
+    }
+
+    try {
+      var rr = await SB.from('agenda_reservas').select('tipo, data_inicio, data_fim, observacao').eq('proposta_id', p.id);
+      (rr.data || []).forEach(function (r) {
+        if (!r.data_inicio) return;
+        var a = new Date(calChave(r.data_inicio) + 'T12:00:00');
+        var b = new Date(calChave(r.data_fim || r.data_inicio) + 'T12:00:00');
+        for (var d = new Date(a); d <= b; d.setDate(d.getDate() + 1)) {
+          add(ISO(d), { kind: 'reserva', titulo: (r.tipo || 'Reserva') + (r.observacao ? ' · ' + r.observacao : ''), sub: 'Período reservado' });
+        }
+      });
+    } catch (e) {}
+
+    CAL_ITENS_PRONTO = true;
+  }
+  var CAL_ITENS_PRONTO = false;
+
+  function bindCalFiltros() {
+    if (CAL_BIND) return;
+    CAL_BIND = true;
+    document.querySelectorAll('#calFiltros button[data-filtro]').forEach(function (b) {
+      b.addEventListener('click', function () {
+        var id = b.getAttribute('data-filtro');
+        FILTROS_CAL[id] = FILTROS_CAL[id] === false;
+        renderCal();
+      });
+    });
+  }
+
   function renderCal() {
+    bindCalFiltros();
     var agora = new Date();
     if (CAL.ano == null) { CAL.ano = agora.getFullYear(); CAL.mes = agora.getMonth(); }
     var y = CAL.ano, m = CAL.mes;
     $('calTitulo').textContent = MESES[m] + ' ' + y;
 
-    var datas = {};
-    PROPS.filter(function (p) { return p.status !== 'cancelada' && p.data_evento; }).forEach(function (p) {
-      var k = String(p.data_evento).slice(0, 10);
-      (datas[k] = datas[k] || []).push(p);
+    document.querySelectorAll('#calFiltros button[data-filtro]').forEach(function (b) {
+      var id = b.getAttribute('data-filtro');
+      var on = FILTROS_CAL[id] !== false;
+      b.hidden = !ADMIN && (id === 'hold' || id === 'comprovante');
+      b.classList.toggle('on', on);
+      b.setAttribute('aria-pressed', on ? 'true' : 'false');
+    });
+
+    var visiveis = {};
+    Object.keys(CAL_ITENS).forEach(function (k) {
+      var v = CAL_ITENS[k].filter(function (it) { return FILTROS_CAL[it.kind] !== false; });
+      if (v.length) visiveis[k] = v;
     });
 
     var primeiro = new Date(y, m, 1);
@@ -773,36 +891,36 @@
       dia.setDate(inicio.getDate() + i);
       var iso = ISO(dia);
       var fora = dia.getMonth() !== m;
-      var tem = !!datas[iso];
+      var lista = visiveis[iso] || [];
+      var tem = lista.length > 0;
       var cls = 'd' + (fora ? ' muted' : '') + (tem ? ' tem' : '') + (iso === hoje ? ' hoje' : '') + (iso === CAL.sel ? ' sel' : '');
-      html += '<div class="' + cls + '" data-iso="' + iso + '"' + (tem ? ' style="--rgb:192,132,252"' : '') + '>' + dia.getDate() +
-        (tem ? '<div class="dots"><i style="background:#c084fc"></i></div>' : '') + '</div>';
+      var kinds = [];
+      lista.forEach(function (it) { if (kinds.indexOf(it.kind) < 0) kinds.push(it.kind); });
+      var dots = tem ? '<div class="dots">' + kinds.slice(0, 4).map(function (k) { return '<i style="background:' + CAL_COR[k] + '"></i>'; }).join('') + '</div>' : '';
+      html += '<div class="' + cls + '" data-iso="' + iso + '"' + (tem ? ' style="--rgb:192,132,252"' : '') + '>' + dia.getDate() + dots + '</div>';
     }
     $('calGrid').innerHTML = html;
 
     $('calGrid').querySelectorAll('[data-iso]').forEach(function (el) {
       el.addEventListener('click', function () {
-        var iso2 = el.getAttribute('data-iso');
-        if (!datas[iso2]) return;
-        CAL.sel = iso2;
+        var k = el.getAttribute('data-iso');
+        if (!visiveis[k]) return;
+        CAL.sel = k;
         renderCal();
-        renderDia(datas[iso2]);
       });
     });
 
-    if (CAL.sel && datas[CAL.sel]) renderDia(datas[CAL.sel]);
+    renderDia(CAL.sel ? visiveis[CAL.sel] : null);
   }
 
   function renderDia(lista) {
-    $('calDia').innerHTML = lista.map(function (p) {
-      return '<div class="dia-item" data-ag="' + E(p.id) + '">' +
-        '<strong>#' + E(p.numero) + ' · ' + E(p.cliente_nome || '') + '</strong>' +
-        '<small>' + E(p.nome_evento || p.tipo_evento || '') + ' · ' + E(p.local_evento || 'Local a definir') + '</small>' +
-        '<small>' + E(ROTULO_STATUS[p.status] || p.status || '') + '</small></div>';
+    if (!lista || !lista.length) {
+      $('calDia').innerHTML = '<div class="vazio">' + (ATUAL ? 'Toque em um dia marcado para ver o detalhe.' : 'Selecione um projeto.') + '</div>';
+      return;
+    }
+    $('calDia').innerHTML = lista.map(function (it) {
+      return '<div class="dia-item" style="border-left-color:' + CAL_COR[it.kind] + '"><strong>' + E(it.titulo) + '</strong><small>' + E(it.sub || '') + '</small></div>';
     }).join('');
-    $('calDia').querySelectorAll('[data-ag]').forEach(function (el) {
-      el.addEventListener('click', function () { selecionar(el.getAttribute('data-ag')); });
-    });
   }
 
   $('calPrev').addEventListener('click', function () {
@@ -851,6 +969,7 @@
     $('holdInfo').textContent = ATUAL.status === 'hold' ? 'Hold · ' + tempo(ATUAL.hold_expira_em) : '';
     
     renderLocal(ATUAL, end);
+    await carregarAgendaEvento(ATUAL);
     renderCal();
 
     var equipe = await carregarEquipe();
