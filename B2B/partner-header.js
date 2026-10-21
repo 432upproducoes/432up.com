@@ -921,11 +921,13 @@
       '#mn-cal-pop .mc-d.hoje b{color:#22d3ee}',
       '#mn-cal-pop .mc-dots{position:absolute;left:0;right:0;bottom:3px;display:flex;justify-content:center;gap:2px}',
       '#mn-cal-pop .mc-dots i{width:4px;height:4px;border-radius:50%}',
-      '#mn-cal-pop .mc-pills{display:flex;gap:6px;overflow-x:auto;overscroll-behavior-x:contain;margin:12px -2px 10px;padding:2px;scrollbar-width:none;-ms-overflow-style:none}',
-      '#mn-cal-pop .mc-pills::-webkit-scrollbar{display:none}',
-      '#mn-cal-pop .mc-pill{flex:none;white-space:nowrap;display:inline-flex;align-items:center;gap:6px;border-radius:999px;border:1px solid var(--c);background:transparent;color:inherit;padding:5px 10px;font:inherit;font-size:11px;cursor:pointer;opacity:.45}',
-      '#mn-cal-pop .mc-pill.on{opacity:1;background:rgba(255,255,255,.06)}',
-      '#mn-cal-pop .mc-pill i{width:7px;height:7px;border-radius:50%;background:var(--c)}',
+      '#mn-cal-pop{--mut:#94a3b8;--line:rgba(255,255,255,.14);--text:#f1f5f9}',
+      '#mn-cal-pop .filtros{display:flex;flex-wrap:nowrap;gap:8px;width:100%;max-width:100%;min-width:0;margin:12px 0 12px;padding:2px 0 8px;overflow-x:auto;overflow-y:hidden;-webkit-overflow-scrolling:touch;scrollbar-width:none;touch-action:pan-x;overscroll-behavior-x:contain}',
+      '#mn-cal-pop .filtros::-webkit-scrollbar{display:none}',
+      '#mn-cal-pop .leg{flex:0 0 auto;display:inline-flex;align-items:center;gap:7px;padding:7px 13px;border-radius:999px;cursor:pointer;font:inherit;font-size:12px;font-weight:700;color:var(--mut);white-space:nowrap;background:rgba(255,255,255,.03);border:1px solid var(--line);transition:background .2s,border-color .2s,color .2s,opacity .2s;-webkit-tap-highlight-color:transparent}',
+      '#mn-cal-pop .leg .sw{width:9px;height:9px;border-radius:999px;background:var(--c);flex:none}',
+      '#mn-cal-pop .leg.on{color:var(--text);border-color:var(--c);background:color-mix(in srgb,var(--c) 16%,transparent)}',
+      '#mn-cal-pop .leg:not(.on){opacity:.5}',
       '#mn-cal-pop .mc-dia{font-size:12px;font-weight:700;margin:4px 0 6px;color:#F5D061}',
       '#mn-cal-pop .mc-lista{max-height:calc(2.5 * 3.4em);overflow-y:auto;overscroll-behavior:contain;margin:0;padding:0;list-style:none;-webkit-overflow-scrolling:touch}',
       '#mn-cal-pop .mc-lista li{display:flex;align-items:center;gap:10px;padding:8px 10px;margin-bottom:6px;border-radius:12px;background:rgba(255,255,255,.05);border:1px solid rgba(255,255,255,.08)}',
@@ -1033,15 +1035,16 @@
     }
     var pills = ah.tipos.map(function (t) {
       var on = ah.visivelTipo(t.id);
-      return '<button type="button" class="mc-pill' + (on ? ' on' : '') + '" data-mc="f" data-id="' + t.id + '" aria-pressed="' + on + '" style="--c:' + t.cor + '"><i></i>' + calEsc(t.label) + '</button>';
+      return '<button type="button" class="leg' + (on ? ' on' : '') + '" data-mc="f" data-id="' + t.id + '" aria-pressed="' + (on ? 'true' : 'false') + '" style="--c:' + t.cor + '"><i class="sw"></i>' + calEsc(t.label) + '</button>';
     }).join('');
 
     var itens = ah.itensDoDia(st.sel);
     var lista = itens.length ? itens.map(function (it) {
       var t = ah.tipos.filter(function (x) { return x.id === it.tipo; })[0];
       var cor = t ? t.cor : '#64748b';
+      var idsDia = itens.filter(function (x) { return x.tipo === 'evento' && x.id; }).map(function (x) { return x.id; });
       var nome = (it.tipo === 'evento' && it.id)
-        ? '<a href="' + ADM + 'projeto.html?id=' + encodeURIComponent(it.id) + '&data=' + encodeURIComponent(st.sel) + '">' + calEsc(it.titulo) + '</a>'
+        ? '<a href="' + ADM + 'projeto.html?id=' + encodeURIComponent(it.id) + '&data=' + encodeURIComponent(st.sel) + '&dia=' + encodeURIComponent(idsDia.join(',')) + '">' + calEsc(it.titulo) + '</a>'
         : '<span>' + calEsc(it.titulo) + '</span>';
       return '<li><i style="background:' + cor + '"></i><div>' + nome + (it.sub ? '<small>' + calEsc(it.sub) + '</small>' : '') + '</div></li>';
     }).join('') : '<li class="mc-vazio" style="background:none;border:0">Nada neste dia com os filtros atuais.</li>';
@@ -1057,7 +1060,7 @@
         '<button type="button" class="mc-btn" data-mc="close" aria-label="Fechar">✕</button>' +
       '</div>' +
       '<div class="mc-grid">' + DOW.map(function (x) { return '<span class="mc-dow">' + x + '</span>'; }).join('') + grade + '</div>' +
-      '<div class="mc-pills">' + pills + '</div>' +
+      '<div class="filtros">' + pills + '</div>' +
       '<div class="mc-dia">' + dow + ', ' + pd[2] + '/' + pd[1] + '/' + pd[0] + '</div>' +
       '<ul class="mc-lista">' + lista + '</ul>';
   }
