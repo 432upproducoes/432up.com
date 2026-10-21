@@ -508,6 +508,29 @@
       .mn-badge[hidden] { display: none !important; }
       .mn-mail-hdr { display: none !important; }
 
+      /* Menu textual rolável; ícones e avatar permanecem ancorados à direita. */
+      #calc-header { position: relative !important; }
+      #calc-header .desktop-nav { overflow: hidden !important; }
+      #calc-header .mn-items { flex: 1 1 auto !important; min-width: 0 !important; max-width: 100%; overflow-x: auto !important; overflow-y: hidden !important; scrollbar-width: none; -webkit-overflow-scrolling: touch; -webkit-mask-image: linear-gradient(to right, #000 0%, #000 78%, transparent 100%); mask-image: linear-gradient(to right, #000 0%, #000 78%, transparent 100%); }
+      #calc-header .mn-items::-webkit-scrollbar { display: none; }
+      #calc-header .b2b-user-widget { position: absolute !important; right: max(12px, env(safe-area-inset-right)) !important; top: 50% !important; transform: translateY(-50%) !important; z-index: 12 !important; display: flex !important; align-items: center !important; gap: 6px !important; flex: none !important; white-space: nowrap !important; }
+      #calc-header .desktop-nav { padding-right: 0 !important; }
+
+      /* Pop-up de agenda: vidro conectado ao ícone do header. */
+      #mn-agenda-popover { position: fixed; z-index: 2147483000; width: min(440px, calc(100vw - 16px)); height: min(700px, 78vh); display: none; overflow: visible; border-radius: 20px; background: rgba(12,14,22,.80); border: 1px solid rgba(255,255,255,.20); box-shadow: 0 18px 60px rgba(0,0,0,.48), inset 0 1px 0 rgba(255,255,255,.10); backdrop-filter: blur(30px) saturate(145%); -webkit-backdrop-filter: blur(30px) saturate(145%); transform-origin: top right; animation: mnAgendaIn .22s cubic-bezier(.22,1,.36,1); }
+      #mn-agenda-popover.on { display: block; }
+      #mn-agenda-popover::before { content: ''; position: absolute; top: -7px; right: var(--mn-agenda-arrow, 28px); width: 13px; height: 13px; transform: rotate(45deg); background: rgba(12,14,22,.88); border-left: 1px solid rgba(255,255,255,.20); border-top: 1px solid rgba(255,255,255,.20); }
+      #mn-agenda-popover iframe { position: relative; z-index: 1; width: 100%; height: 100%; display: block; border: 0; border-radius: inherit; background: transparent; }
+      #mn-agenda-backdrop { position: fixed; inset: 0; z-index: 2147482999; display: none; background: transparent; }
+      #mn-agenda-backdrop.on { display: block; }
+      #mn-agenda-popover[data-theme="admin"] { background: rgba(28,19,5,.84); border-color: rgba(245,158,11,.32); }
+      #mn-agenda-popover[data-theme="amber"] { background: rgba(28,18,34,.82); border-color: rgba(192,132,252,.28); }
+      #mn-agenda-popover[data-theme="cyan"] { background: rgba(5,20,28,.82); border-color: rgba(6,182,212,.30); }
+      #mn-agenda-popover[data-theme="admin"]::before { background: rgba(28,19,5,.90); border-color: rgba(245,158,11,.32); }
+      #mn-agenda-popover[data-theme="amber"]::before { background: rgba(28,18,34,.90); border-color: rgba(192,132,252,.28); }
+      #mn-agenda-popover[data-theme="cyan"]::before { background: rgba(5,20,28,.90); border-color: rgba(6,182,212,.30); }
+      @keyframes mnAgendaIn { from { opacity: 0; transform: translateY(-5px) scale(.985); } to { opacity: 1; transform: translateY(0) scale(1); } }
+
       /* Bandeja mobile canônica: … [cápsula/☰] [calendário] [envelope] [avatar] */
       .mn-hdr-tray {
         display: none; align-items: center; gap: 6px; flex: none; margin-left: 8px;
@@ -532,12 +555,14 @@
         box-shadow: none !important; border-radius: 50% !important; flex-shrink: 0 !important;
       }
       @media (max-width: 1024px) {
-        .mn-hdr-tray { display: inline-flex !important; }
+        .mn-hdr-tray { display: inline-flex !important; position: absolute !important; right: max(8px, env(safe-area-inset-right)) !important; top: 50% !important; transform: translateY(-50%) !important; margin-left: 0 !important; z-index: 40 !important; }
         .mn-mail-hdr { display: none !important; }
         #calc-header.mn-ready {
           display: flex !important;
           flex-wrap: nowrap !important;
           align-items: center !important;
+          padding-right: 142px !important;
+          padding-left: max(10px, env(safe-area-inset-left)) !important;
         }
         #calc-header .mobile-hamburger { order: 15; margin-left: 4px !important; }
         #calc-header > .mn-toggle-d { order: 10; }
@@ -638,8 +663,8 @@
     if (onCliente || clienteSo()) return '';
     if (!(cachedLoggedIn || cachedIsParceiro || cachedIsAdmin)) return '';
     var ativo = (currentPath === 'agenda.html') ? ' active' : '';
-    return '<a href="' + ADM + 'agenda.html" class="mn-mail ' + cls + ativo + '"' +
-      (standalone ? ' data-mn-user="1"' : '') + ' title="Agenda" aria-label="Agenda">' +
+    return '<a href="' + ADM + 'agenda.html" class="mn-mail mn-calendar-trigger ' + cls + ativo + '"' +
+      (standalone ? ' data-mn-user="1"' : '') + ' title="Abrir agenda" aria-label="Agenda" aria-haspopup="dialog" aria-expanded="false">' +
       CAL_SVG + '</a>';
   }
 
@@ -1370,6 +1395,60 @@
     }, true);
   }
 
+  var agendaPopover = null;
+  var agendaBackdrop = null;
+  var agendaAnchor = null;
+
+  function closeAgendaPopover() {
+    if (agendaPopover) agendaPopover.classList.remove('on');
+    if (agendaBackdrop) agendaBackdrop.classList.remove('on');
+    if (agendaAnchor) agendaAnchor.setAttribute('aria-expanded', 'false');
+    agendaAnchor = null;
+  }
+
+  function positionAgendaPopover(anchor) {
+    if (!agendaPopover || !anchor) return;
+    var r = anchor.getBoundingClientRect();
+    var width = Math.min(440, window.innerWidth - 16);
+    var height = Math.min(700, window.innerHeight * .78);
+    var left = Math.max(8, Math.min(window.innerWidth - width - 8, r.left + r.width / 2 - width / 2));
+    var top = Math.max(8, Math.min(window.innerHeight - height - 8, r.bottom - 1));
+    agendaPopover.style.left = left + 'px';
+    agendaPopover.style.top = top + 'px';
+    agendaPopover.style.width = width + 'px';
+    agendaPopover.style.height = height + 'px';
+    agendaPopover.style.setProperty('--mn-agenda-arrow', Math.max(16, Math.min(width - 28, r.left + r.width / 2 - left - 6)) + 'px');
+  }
+
+  function openAgendaPopover(anchor) {
+    if (!isLogged() || onCliente || clienteSo()) return;
+    if (!agendaPopover) {
+      agendaBackdrop = document.createElement('div');
+      agendaBackdrop.id = 'mn-agenda-backdrop';
+      agendaPopover = document.createElement('div');
+      agendaPopover.id = 'mn-agenda-popover';
+      agendaPopover.setAttribute('role', 'dialog');
+      agendaPopover.setAttribute('aria-label', 'Agenda');
+      agendaPopover.innerHTML = '<iframe title="Agenda 432UP" loading="eager" src="' + ADM + 'agenda.html?popup=1"></iframe>';
+      document.body.appendChild(agendaBackdrop);
+      document.body.appendChild(agendaPopover);
+      agendaBackdrop.addEventListener('click', closeAgendaPopover);
+      agendaPopover.addEventListener('click', function (e) { e.stopPropagation(); });
+    }
+    if (agendaPopover.classList.contains('on') && agendaAnchor === anchor) {
+      closeAgendaPopover();
+      return;
+    }
+    agendaAnchor = anchor;
+    agendaAnchor.setAttribute('aria-expanded', 'true');
+    var header = document.getElementById('calc-header');
+    var theme = header && header.classList.contains('mn-theme-admin') ? 'admin' : (header && header.classList.contains('mn-theme-amber') ? 'amber' : 'cyan');
+    agendaPopover.setAttribute('data-theme', theme);
+    agendaBackdrop.classList.add('on');
+    agendaPopover.classList.add('on');
+    positionAgendaPopover(anchor);
+  }
+
   var eventsBound = false;
   function bindEvents() {
     bindLogoutEvents();
@@ -1379,6 +1458,14 @@
     bindDrag();
 
     document.addEventListener('click', function (e) {
+      var calendarTrigger = up(e, 'a.mn-calendar-trigger');
+      if (calendarTrigger) {
+        e.preventDefault();
+        e.stopPropagation();
+        closeMobile();
+        openAgendaPopover(calendarTrigger);
+        return;
+      }
       if (up(e, '#mn-bell .mn-bell-x')) {
         try { sessionStorage.setItem('432up_bell_tip_off', '1'); } catch (err) {}
         var tip = document.querySelector('#mn-bell .mn-bell-tip');
@@ -1500,7 +1587,10 @@
     window.addEventListener('resize', function () {
       closePanel();
       layoutAll(false);
+      if (agendaPopover && agendaPopover.classList.contains('on')) positionAgendaPopover(agendaAnchor);
     });
+    window.addEventListener('scroll', function () { if (agendaPopover && agendaPopover.classList.contains('on')) positionAgendaPopover(agendaAnchor); }, true);
+    document.addEventListener('keydown', function (e) { if (e.key === 'Escape') closeAgendaPopover(); });
   }
 
   /* ---------- 9. API global ---------- */
