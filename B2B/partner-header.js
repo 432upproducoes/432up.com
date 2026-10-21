@@ -512,6 +512,9 @@
       .mn-hdr-tray {
         display: none; align-items: center; gap: 6px; flex: none; margin-left: 8px;
         order: 20;
+        /* A camada de fundo (.mn-bg) é posicionada com z-index 0 e pintaria por cima da bandeja
+           (escurecendo calendário, envelope/sino e avatar). Elevar a bandeja corrige. */
+        position: relative; z-index: 1;
       }
       .mn-hdr-tray .mn-tray-ico { width: 36px; height: 36px; }
       .mn-hdr-tray .mn-tray-av {
