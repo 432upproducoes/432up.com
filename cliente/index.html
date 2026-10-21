@@ -226,6 +226,11 @@
     .resumo-evt .linha { display: block; padding: 7px 0; border: 0; }
     .resumo-evt .rot { display: block; font-size: 11px; color: var(--mut); text-transform: uppercase; letter-spacing: .06em; margin-bottom: 2px; }
     .resumo-evt .val { display: block; font-size: 15px; font-weight: 600; text-align: left; }
+    .resumo-titulo { color: var(--gold); font-size: 13px; font-weight: 800; letter-spacing: .12em; text-transform: uppercase; margin: 0 0 8px; }
+    .resumo-grid { display: grid; grid-template-columns: minmax(0, 1fr) minmax(0, 1fr); column-gap: 22px; }
+    .resumo-grid .linha { padding: 9px 0; border-bottom: 1px solid var(--line); min-width: 0; }
+    .resumo-grid .val { overflow-wrap: anywhere; }
+    @media (max-width: 560px) { .resumo-grid { grid-template-columns: minmax(0, 1fr); } }
     .eq-item { display: flex; align-items: center; gap: 12px; padding: 8px 0; }
     .eq-foto { width: 46px; height: 46px; border-radius: 50%; flex: none; background: rgba(168, 85, 247, .18) center/cover no-repeat; border: 2px solid rgba(192, 132, 252, .45); display: flex; align-items: center; justify-content: center; font-weight: 800; color: #e9d5ff; }
     .eq-item strong { display: block; font-size: 15px; line-height: 1.25; }
@@ -398,7 +403,7 @@
           </div>
           <div class="ck-col">
         <div class="box-full o-resumo resumo-evt" id="cardResumoEvt">
-          <h2>Resumo do evento</h2>
+          <div class="resumo-titulo" id="resumoTitulo">Resumo do pedido</div>
           <div id="resumoEvt" class="vazio">Carregando…</div>
         </div>
           </div>
@@ -1316,12 +1321,19 @@
   function renderResumoEvento() {
     var p = pedidoAtivo();
     var box = $('resumoEvt');
-    if (!p) { box.innerHTML = '<div class="vazio">Quando houver um pedido, o resumo do evento aparece aqui.</div>'; return; }
+    var tit = $('resumoTitulo');
+    if (!p) {
+      tit.textContent = 'Resumo do pedido';
+      box.className = '';
+      box.innerHTML = '<div class="vazio">Quando houver um pedido, o resumo do evento aparece aqui.</div>';
+      return;
+    }
+    tit.textContent = 'Resumo do pedido #' + p.numero;
     var cli = (dados.cadastro && dados.cadastro.nome_razao) || '';
     function l(r, v) { return v ? '<div class="linha"><span class="rot">' + r + '</span><span class="val">' + E(v) + '</span></div>' : ''; }
-    box.className = '';
+    box.className = 'resumo-grid';
     box.innerHTML =
-      l('Evento', 'Pedido #' + p.numero) + l('Cliente', cli) + l('Tipo do evento', p.tipo_evento) +
+      l('Cliente', cli) + l('Tipo', p.tipo_evento) +
       l('Local', p.local_evento) + l('Contato', (dados.cadastro && dados.cadastro.email) || '') +
       l('Data', p.data_evento ? DATA(p.data_evento) : '') +
       '<div class="linha"><span class="rot">Contrato</span><span class="tag ' + (p.assinado_em ? 't-ok' : 't-pend') + '">' + (p.assinado_em ? 'Assinado' : 'Aguardando assinatura') + '</span></div>';
