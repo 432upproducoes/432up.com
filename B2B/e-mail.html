@@ -367,6 +367,36 @@
       overflow-x: auto;
     }
 
+  
+    /* Preview limitado: ações sempre visíveis; texto completo na tela cheia */
+    .bloco-preview {
+      max-height: min(280px, 38vh);
+      overflow: hidden;
+      position: relative;
+      min-height: 80px;
+    }
+    @media (max-width: 1023px) {
+      .bloco-preview {
+        max-height: min(220px, 32vh);
+      }
+    }
+    .bloco-preview::after {
+      content: '';
+      position: absolute;
+      left: 0; right: 0; bottom: 0;
+      height: 36px;
+      pointer-events: none;
+      background: linear-gradient(to bottom, transparent, rgba(20, 12, 40, 0.85));
+    }
+    /* No modal de tela cheia o corpo não tem limite */
+    .modal-cartao .bloco-modal {
+      max-height: none !important;
+      overflow: visible !important;
+    }
+    .modal-cartao .bloco-modal::after {
+      display: none !important;
+    }
+
   </style>
 </head>
 <body class="h-full antialiased overflow-x-hidden">
@@ -1089,7 +1119,7 @@
           </div>
           <span class="text-[11px] text-[#CBD5E1] font-mono shrink-0">${esc(formatarDataHora(dataRef(m)))}</span>
         </div>
-        <div class="bloco-modal min-h-[140px]">${m.corpo_html ? sanitizarHtml(m.corpo_html) : esc(m.corpo_texto || '')}</div>
+        <div class="bloco-modal bloco-preview">${m.corpo_html ? sanitizarHtml(m.corpo_html) : esc(m.corpo_texto || '')}</div>
         ${anexosHtml}
         ${acoes}
       </div>`;
