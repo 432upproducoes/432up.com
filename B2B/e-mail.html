@@ -114,6 +114,7 @@
       box-shadow: 0 0 8px var(--ciano);
     }
     .cartao-email.nao-lida { border-left: 3px solid var(--ciano); }
+    .cartao-email.selecionado { outline: 2px solid var(--ciano); background: rgba(0,229,255,0.12); }
 
     .aba {
       padding: 6px 12px;
@@ -451,6 +452,18 @@
           </div>
         </div>
 
+        <div id="barra-lote" class="hidden flex flex-wrap items-center gap-1.5 px-2 py-1.5 mb-1 rounded-xl bg-white/10 border border-white/15">
+          <span id="lote-contagem" class="text-xs text-white/80 mr-1"></span>
+          <button onclick="acaoLote('lida')" class="btn-vidro text-[11px] px-2.5 py-1 rounded-full">Lida</button>
+          <button onclick="acaoLote('naolida')" class="btn-vidro text-[11px] px-2.5 py-1 rounded-full">Não lida</button>
+          <button onclick="acaoLote('importante')" class="btn-vidro text-[11px] px-2.5 py-1 rounded-full">★ Importante</button>
+          <button onclick="acaoLote('arquivo')" class="btn-vidro text-[11px] px-2.5 py-1 rounded-full">Arquivar</button>
+          <select id="lote-mover" onchange="acaoLoteMover(this)" class="btn-vidro text-[11px] px-2 py-1 rounded-full" aria-label="Mover selecionadas">
+            <option value="">Mover para…</option>
+          </select>
+          <button onclick="acaoLote('lixeira')" class="botao-lixeira text-[11px] px-2.5 py-1 rounded-full">Lixeira</button>
+          <button onclick="limparSelecao()" class="btn-vidro text-[11px] px-2.5 py-1 rounded-full" title="Limpar seleção">✕</button>
+        </div>
         <div id="lista-emails" class="vidro p-2 flex-1 overflow-y-auto space-y-2 min-h-0"></div>
       </section>
 
@@ -608,6 +621,7 @@
     modo: 'leitura',
     telaCheia: false,
     anexosComposer: [],
+    selecionados: new Set(),  // multi-seleção
     rascunhoEditandoId: null,
     rascunhoTimer: null,
     ultimaAcao: null,
@@ -747,9 +761,24 @@
         <span class="flex items-center gap-1.5">${totalHtml}${badge}${delBtn}</span>
       </li>`;
     }).join('');
+
+    // Atualiza opções do seletor de lote
+    const selLote = document.getElementById('lote-mover');
+    if (selLote) {
+      const opts = [
+        { v: 'sistema:entrada', n: 'Caixa de Entrada' },
+        { v: 'sistema:arquivo', n: 'Arquivo' },
+        { v: 'sistema:spam', n: 'Spam' },
+        ...estado.pastasCustom.map(p => ({ v: 'custom:' + p.id, n: p.nome }))
+      ];
+      selLote.innerHTML = '<option value="">Mover para…</option>' +
+        opts.map(o => `<option value="${esc(o.v)}">${esc(o.n)}</option>`).join('');
+    }
   }
 
   function trocarPasta(pasta) {
+    estado.selecionados.clear();
+    atualizarBarraLote();
     estado.pasta = pasta;
     const lista = filtrar(mensagensDaPasta(pasta));
     estado.ativoId = lista.length ? lista[0].id : null;
@@ -855,6 +884,7 @@
     }
     box.innerHTML = lista.map(m => {
       const ativo = m.id === estado.ativoId ? 'ativo' : '';
+      const selecionado = estado.selecionados.has(m.id) ? 'selecionado' : '';
       const naoLida = (m.direcao === 'recebida' && !m.lida) ? 'nao-lida' : '';
       const peso = naoLida ? 'font-bold' : '';
       const estrela = m.importante
@@ -863,7 +893,7 @@
       const anexoIcon = (m.email_anexos || []).length ? '<span class="text-[10px] text-white/50">📎</span>' : '';
       const statusHtml = m.direcao === 'enviada' ? badgeStatus(m.status_envio) : '';
       const acao = m.direcao === 'rascunho' ? `abrirRascunho('${m.id}')` : `selecionarEmail('${m.id}')`;
-      return `<div class="cartao-email ${ativo} ${naoLida}" draggable="${m.direcao !== 'rascunho'}" ondragstart="iniciarArraste(event,'${m.id}')" onclick="${acao}">
+      return `<div class="cartao-email ${ativo} ${selecionado} ${naoLida}" draggable="${m.direcao !== 'rascunho'}" ondragstart="iniciarArraste(event,'${m.id}')" onclick="${acao}">
         <div class="flex items-start justify-between gap-2">
           <div class="min-w-0 flex-1">
             <div class="flex items-center gap-1.5 ${peso}">
@@ -891,15 +921,110 @@
 
   async function selecionarEmail(id) {
     estado.rascunhoEditandoId = null;
+    const jaSelecionado = estado.selecionados.has(id);
+    const eraAtivo = estado.ativoId === id;
+
+    if (jaSelecionado && eraAtivo) {
+      // Segundo clique no que está sendo visualizado: desmarca todos e deixa só este
+      estado.selecionados.clear();
+      estado.selecionados.add(id);
+    } else if (!jaSelecionado) {
+      // Primeiro toque em célula nova: adiciona à seleção
+      estado.selecionados.add(id);
+    }
+    // Se já estava selecionado mas não era o ativo: só visualiza (não desmarca)
+
     estado.ativoId = id;
     const m = encontrarEmail(id);
     if (m && m.direcao === 'recebida' && !m.lida) {
       await atualizarCampos(id, { lida: true }, true);
     }
     renderizarLista();
+    atualizarBarraLote();
     trocarModo('leitura');
     renderizarLeitura();
     definirTelaMobile('reader');
+  }
+
+  function limparSelecao() {
+    estado.selecionados.clear();
+    renderizarLista();
+    atualizarBarraLote();
+  }
+
+  function atualizarBarraLote() {
+    const barra = document.getElementById('barra-lote');
+    const cont = document.getElementById('lote-contagem');
+    if (!barra) return;
+    const n = estado.selecionados.size;
+    if (n > 0) {
+      barra.classList.remove('hidden');
+      if (cont) cont.textContent = n + ' selecionada' + (n > 1 ? 's' : '');
+    } else {
+      barra.classList.add('hidden');
+    }
+  }
+
+  async function acaoLote(tipo) {
+    const ids = [...estado.selecionados];
+    if (!ids.length) return;
+    if (tipo === 'lida') {
+      await atualizarLote(ids, { lida: true });
+      mostrarAviso(ids.length + ' marcada(s) como lida.');
+    } else if (tipo === 'naolida') {
+      await atualizarLote(ids, { lida: false });
+      mostrarAviso(ids.length + ' marcada(s) como não lida.');
+    } else if (tipo === 'importante') {
+      await atualizarLote(ids, { importante: true });
+      mostrarAviso(ids.length + ' marcada(s) como importante.');
+    } else if (tipo === 'arquivo') {
+      await atualizarLote(ids, { pasta_sistema: 'arquivo', pasta_id: null, excluida_em: null });
+      mostrarAviso(ids.length + ' arquivada(s).');
+    } else if (tipo === 'lixeira') {
+      const agora = new Date().toISOString();
+      await atualizarLote(ids, { excluida_em: agora });
+      mostrarAviso(ids.length + ' movida(s) para a lixeira.');
+    }
+    estado.selecionados.clear();
+    estado.ativoId = null;
+    atualizarBarraLote();
+    await carregarTudo(true);
+  }
+
+  async function acaoLoteMover(select) {
+    const val = select.value;
+    if (!val) return;
+    const [tipo, ...resto] = val.split(':');
+    const destId = resto.join(':');
+    const ids = [...estado.selecionados];
+    if (!ids.length) { select.value = ''; return; }
+    const patch = tipo === 'custom'
+      ? { pasta_id: destId, pasta_sistema: 'entrada', excluida_em: null }
+      : { pasta_sistema: destId, pasta_id: null, excluida_em: null };
+    await atualizarLote(ids, patch);
+    mostrarAviso(ids.length + ' movida(s).');
+    estado.selecionados.clear();
+    estado.ativoId = null;
+    select.value = '';
+    atualizarBarraLote();
+    await carregarTudo(true);
+  }
+
+  async function atualizarLote(ids, campos) {
+    const { error } = await sb.from('email_mensagens')
+      .update({ ...campos, atualizado_em: new Date().toISOString() })
+      .in('id', ids);
+    if (error) {
+      console.error('[lote]', error);
+      mostrarAviso('Falha na ação em lote: ' + error.message, true);
+      return false;
+    }
+    // Atualiza estado local
+    ids.forEach(id => {
+      const m = encontrarEmail(id);
+      if (m) Object.assign(m, campos);
+    });
+    return true;
   }
 
   async function alternarImportante(id) {
@@ -1034,7 +1159,14 @@
   function encaminhar() {
     const m = encontrarEmail(estado.ativoId);
     if (!m) return;
-    const anexos = (m.email_anexos || []).map(a => ({ id: a.id, nome: a.nome, tamanho: a.tamanho_bytes, tipo: a.tipo, file: null }));
+    const anexos = (m.email_anexos || []).map(a => ({
+      id: a.id,
+      nome: a.nome,
+      tamanho: a.tamanho_bytes,
+      tipo: a.tipo,
+      r2_chave: a.r2_chave || null,
+      file: null
+    }));
     preencherComposer({
       assunto: (m.assunto || '').startsWith('Enc:') ? m.assunto : 'Enc: ' + (m.assunto || ''),
       corpoHtml: `<br><br><hr style="border-color:rgba(255,255,255,0.2)"><p class="text-xs text-white/50">---------- Mensagem encaminhada ----------<br>De: ${esc(m.de_endereco || '')}<br>Data: ${esc(formatarDataHora(dataRef(m)))}<br>Assunto: ${esc(m.assunto)}</p><div>${m.corpo_html ? sanitizarHtml(m.corpo_html) : esc(m.corpo_texto || '')}</div>`,
@@ -1282,8 +1414,10 @@ function esvaziarLixeira() {
     const erroEmail = validarEmails(d.para) || (d.cc.length ? validarEmails(d.cc) : null);
     if (erroEmail) { mostrarAviso(erroEmail, true); return; }
     if (!d.corpo_texto) { mostrarAviso('Escreva o conteúdo do e-mail antes de enviar.', true); return; }
-    if (estado.anexosComposer.some(a => !a.file)) {
-      mostrarAviso('Um ou mais anexos encaminhados não estão disponíveis nesta sessão. Anexe os arquivos novamente.', true);
+    // Aceita anexo com File local OU com r2_chave (encaminhado)
+    const semFonte = estado.anexosComposer.filter(a => !a.file && !a.r2_chave);
+    if (semFonte.length) {
+      mostrarAviso('Um ou mais anexos não têm arquivo. Remova-os ou anexe novamente.', true);
       return;
     }
     if (!EMAIL_API_ENDPOINT) {
@@ -1296,11 +1430,21 @@ function esvaziarLixeira() {
     clearTimeout(estado.rascunhoTimer);
     if (btn) { btn.disabled = true; btn.textContent = 'Enviando…'; }
     try {
-      const anexos = await Promise.all(estado.anexosComposer.map(async a => ({
-        filename: a.nome,
-        content: await arquivoBase64(a.file),
-        contentType: a.tipo || 'application/octet-stream'
-      })));
+      const anexos = await Promise.all(estado.anexosComposer.map(async a => {
+        let content;
+        if (a.file) {
+          content = await arquivoBase64(a.file);
+        } else if (a.r2_chave) {
+          content = await baixarAnexoBase64(a.r2_chave);
+        } else {
+          throw new Error('Anexo sem fonte: ' + a.nome);
+        }
+        return {
+          filename: a.nome,
+          content,
+          contentType: a.tipo || 'application/octet-stream'
+        };
+      }));
       const payload = {
         to: d.para,
         cc: d.cc,
@@ -1501,7 +1645,7 @@ function esvaziarLixeira() {
   }
 
   function removerAnexo(id) {
-    estado.anexosComposer = estado.anexosComposer.filter(a => a.id !== id);
+    estado.anexosComposer = estado.anexosComposer.filter(a => String(a.id) !== String(id));
     renderizarAnexos();
   }
 
@@ -1515,7 +1659,7 @@ function esvaziarLixeira() {
       const preview = a.previewUrl
         ? `<img src="${a.previewUrl}" class="preview-anexo" alt="">`
         : `<div class="w-10 h-10 rounded bg-white/10 flex items-center justify-center text-[10px] font-bold">${esc((a.nome.split('.').pop() || 'file').toUpperCase())}</div>`;
-      const aviso = a.file ? '' : '<div class="text-[10px] text-yellow-300">reanexar para enviar</div>';
+      const aviso = a.file ? '' : (a.r2_chave ? '<div class="text-[10px] text-cyan-300">do e-mail original</div>' : '<div class="text-[10px] text-yellow-300">sem arquivo</div>');
       return `<div class="flex items-center gap-2 bg-white/10 rounded-xl px-2 py-1.5 max-w-[200px]">
         ${preview}
         <div class="min-w-0 flex-1">
@@ -1523,7 +1667,7 @@ function esvaziarLixeira() {
           <div class="text-[10px] text-white/40">${formatBytes(a.tamanho)}</div>
           ${aviso}
         </div>
-        <button onclick="removerAnexo(${a.id})" class="text-[#CBD5E1] hover:text-[#FF8AC4] text-xs px-1">✕</button>
+        <button type="button" onclick="removerAnexo('${esc(String(a.id))}')" class="text-[#CBD5E1] hover:text-[#FF8AC4] text-xs px-1">✕</button>
       </div>`;
     }).join('');
   }
@@ -1728,6 +1872,25 @@ function esvaziarLixeira() {
     setTimeout(() => { t.style.opacity = '0'; setTimeout(() => t.remove(), 300); }, 2800);
   }
 
+
+
+  async function baixarAnexoBase64(r2Chave) {
+    const { data: { session } } = await sb.auth.getSession();
+    if (!session?.access_token) throw new Error('Sessão expirada');
+    const url = R2_WORKER_URL + "?path=" + encodeURIComponent(r2Chave);
+    const resp = await fetch(url, {
+      method: "GET",
+      headers: { Authorization: "Bearer " + session.access_token }
+    });
+    if (!resp.ok) throw new Error("Falha ao obter anexo original (" + resp.status + ")");
+    const blob = await resp.blob();
+    return new Promise((resolve, reject) => {
+      const reader = new FileReader();
+      reader.onload = () => resolve(String(reader.result || "").split(",")[1] || "");
+      reader.onerror = () => reject(new Error("Não foi possível ler o anexo encaminhado"));
+      reader.readAsDataURL(blob);
+    });
+  }
 
   async function baixarAnexo(r2Chave, nomeArquivo) {
     if (!r2Chave) {
