@@ -330,6 +330,75 @@
     .bloco-modal table { display: block; max-width: 100%; overflow-x: auto; }
     .acoes-leitura { position: sticky; bottom: 0; z-index: 2; background: rgba(20, 12, 40, 0.92); backdrop-filter: blur(14px); -webkit-backdrop-filter: blur(14px); padding-bottom: 8px; }
     .sel-check { width: 16px; height: 16px; accent-color: #00e5ff; flex-shrink: 0; cursor: pointer; }
+  
+    /* ===== PATCH ROLAGEM + BARRA FIXA (22/10/2026) ===== */
+    html, body { height: 100%; }
+    body { overflow: hidden; } /* a rolagem fica nos painéis internos */
+
+    .main-grid {
+      height: calc(100dvh - var(--menu-topo, 72px));
+      min-height: 0;
+    }
+    @media (max-width: 1023px) {
+      body { overflow: auto; } /* mobile: deixa a página rolar se necessário */
+      .main-grid { height: auto; min-height: calc(100dvh - var(--menu-topo, 72px)); }
+    }
+
+    #painel-leitura {
+      overflow-y: auto !important;
+      overflow-x: auto !important;
+      flex: 1 1 0% !important;
+      min-height: 0 !important;
+      overscroll-behavior: contain;
+      -webkit-overflow-scrolling: touch;
+    }
+    #painel-composer {
+      overflow-y: auto !important;
+      min-height: 0 !important;
+      overscroll-behavior: contain;
+    }
+    #lista-emails {
+      overflow-y: auto !important;
+      min-height: 0 !important;
+      overscroll-behavior: contain;
+    }
+    #sidebar-pastas {
+      overflow-y: auto !important;
+      overscroll-behavior: contain;
+    }
+
+    /* Conteúdo do e-mail: quebra e rolagem horizontal controlada */
+    .bloco-modal {
+      overflow-wrap: anywhere;
+      word-break: break-word;
+      max-width: 100%;
+    }
+    .bloco-modal img {
+      max-width: 100%;
+      height: auto;
+    }
+    .bloco-modal table {
+      display: block;
+      max-width: 100%;
+      overflow-x: auto;
+    }
+
+    /* Barra de ações fixa no topo do painel de leitura */
+    .acoes-leitura-fix {
+      position: sticky;
+      top: 0;
+      z-index: 10;
+      background: linear-gradient(180deg, rgba(15,12,30,0.97) 0%, rgba(15,12,30,0.92) 100%);
+      backdrop-filter: blur(12px);
+      -webkit-backdrop-filter: blur(12px);
+      border-bottom: 1px solid rgba(255,255,255,0.08);
+      padding: 8px 0 10px;
+      margin: -4px 0 12px;
+      display: flex;
+      flex-wrap: wrap;
+      gap: 6px;
+    }
+
   </style>
 </head>
 <body class="h-full antialiased overflow-x-hidden">
@@ -552,6 +621,7 @@
   const INTERVALO_ATUALIZACAO_MS = 60000;
   const TIPOS_ANEXO = ['application/pdf', 'image/png', 'image/jpeg', 'image/webp', 'image/gif'];
   const LIMITE_LISTA = 500;
+  const R2_WORKER_URL = "https://432up-r2-upload.432up-producoes.workers.dev/";
 
   const MODELOS = {
     agradecimento: `<p>Olá!</p><p>Agradecemos o contato e o envio das informações. Já estamos analisando e retornamos em breve.</p><p>Atenciosamente,</p>`,
@@ -641,7 +711,7 @@
     try {
       const [msgs, pastas] = await Promise.all([
         sb.from('email_mensagens')
-          .select('*, email_anexos(id, nome, tipo, tamanho_bytes)')
+          .select('*, email_anexos(id, nome, tipo, tamanho_bytes, r2_chave)')
           .order('criado_em', { ascending: false })
           .limit(LIMITE_LISTA),
         sb.from('email_pastas').select('*').order('criado_em', { ascending: true })
@@ -708,15 +778,20 @@
       ...estado.pastasCustom.map(p => ({ id: p.id, nome: p.nome, icon: 'M3 7v10a2 2 0 002 2h14a2 2 0 002-2V9a2 2 0 00-2-2h-6l-2-2H5a2 2 0 00-2 2z', custom: true }))
     ];
     ul.innerHTML = todas.map(p => {
-      const count = mensagensDaPasta(p.id).filter(m => m.direcao === 'recebida' && !m.lida).length;
-      const badge = `<span class="${count ? 'badge-nao-lida' : ''} text-[11px] font-bold px-2 py-0.5 rounded-full ${count ? '' : 'hidden'}" data-contador="${esc(p.id)}">${count}</span>`;
+      const msgsPasta = mensagensDaPasta(p.id);
+      const total = msgsPasta.length;
+      const naoLidas = msgsPasta.filter(m => m.direcao === 'recebida' && !m.lida).length;
+      const totalHtml = total ? `<span class="text-[10px] text-white/40 font-medium">${total}</span>` : '';
+      const badge = naoLidas
+        ? `<span class="badge-nao-lida text-[11px] font-bold px-2 py-0.5 rounded-full" data-contador="${esc(p.id)}">${naoLidas}</span>`
+        : '';
       const delBtn = p.custom ? `<button onclick="event.stopPropagation(); excluirPasta('${esc(p.id)}')" class="text-red-300/70 hover:text-red-300 text-xs ml-1" title="Excluir pasta">×</button>` : '';
       return `<li data-pasta="${esc(p.id)}" ondragover="arrastarSobre(event)" ondragleave="this.classList.remove('arrasto-sobre')" ondrop="soltarNaPasta(event,'${esc(p.id)}')" onclick="trocarPasta('${esc(p.id)}'); fecharSidebarMobile();" class="item-pasta flex items-center justify-between p-2.5 rounded-xl cursor-pointer">
         <span class="flex items-center gap-2.5 min-w-0">
           <svg class="w-4 h-4 shrink-0" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="${p.icon}"/></svg>
           <span class="truncate">${esc(p.nome)}</span>
         </span>
-        <span class="flex items-center gap-1">${badge}${delBtn}</span>
+        <span class="flex items-center gap-1.5">${totalHtml}${badge}${delBtn}</span>
       </li>`;
     }).join('');
   }
@@ -896,20 +971,28 @@
     const anexos = m.email_anexos || [];
     const anexosHtml = anexos.length ? `
       <div class="mt-3 space-y-1">
-        <div class="text-xs font-semibold text-white/70">Anexos</div>
+        <div class="text-xs font-semibold text-white/70">Anexos (${anexos.length})</div>
         <div class="flex flex-wrap gap-2">
-          ${anexos.map(a => `
-            <div class="flex items-center gap-2 bg-white/10 rounded-lg px-2 py-1.5 text-xs">
-              <span>📄</span>
-              <span class="text-white">${esc(a.nome)}</span>
+          ${anexos.map(a => {
+            const podeBaixar = !!a.r2_chave;
+            const ehImg = (a.tipo || "").startsWith("image/");
+            return `
+            <button type="button"
+              onclick="${podeBaixar ? `baixarAnexo('${esc(a.r2_chave)}','${esc(a.nome)}')` : `mostrarAviso('Anexo ainda não disponível.',true)`}"
+              class="flex items-center gap-2 bg-white/10 hover:bg-white/15 rounded-lg px-2.5 py-1.5 text-xs transition border border-white/10 ${podeBaixar ? 'cursor-pointer' : 'opacity-60 cursor-not-allowed'}"
+              title="${podeBaixar ? 'Baixar ' + esc(a.nome) : 'Anexo indisponível'}">
+              <span>${ehImg ? "🖼️" : "📄"}</span>
+              <span class="text-white truncate max-w-[160px]">${esc(a.nome)}</span>
               <span class="text-white/40">${formatBytes(a.tamanho_bytes || 0)}</span>
-            </div>`).join('')}
+              ${podeBaixar ? '<span class="text-cyan-300 text-[10px]">↓</span>' : ""}
+            </button>`;
+          }).join("")}
         </div>
       </div>` : '';
 
     const pastaAtual = pastaDoEmail(m);
     const acoes = `
-      <div class="acoes-leitura flex flex-wrap gap-2 pt-3 border-t border-white/10 mt-3">
+      <div class="acoes-leitura-fix">
         <button onclick="responder()" class="btn-vidro text-xs px-3 py-1.5 rounded-full">Responder</button>
         <button onclick="responderTodos()" class="btn-vidro text-xs px-3 py-1.5 rounded-full">Responder a todos</button>
         <button onclick="encaminhar()" class="btn-vidro text-xs px-3 py-1.5 rounded-full">Encaminhar</button>
@@ -921,6 +1004,7 @@
 
     box.innerHTML = `
       <div class="space-y-3">
+        ${acoes}
         <div class="flex items-start justify-between gap-3 pb-2 border-b linha-borda">
           <div class="min-w-0">
             <h3 class="text-sm font-bold text-white">${esc(m.assunto)}</h3>
@@ -933,7 +1017,6 @@
         </div>
         <div class="bloco-modal min-h-[140px]">${m.corpo_html ? sanitizarHtml(m.corpo_html) : esc(m.corpo_texto || '')}</div>
         ${anexosHtml}
-        ${acoes}
       </div>`;
   }
 
@@ -1808,6 +1891,42 @@ function esvaziarLixeira() {
     t.textContent = texto;
     box.appendChild(t);
     setTimeout(() => { t.style.opacity = '0'; setTimeout(() => t.remove(), 300); }, 2800);
+  }
+
+  async function baixarAnexo(r2Chave, nomeArquivo) {
+    if (!r2Chave) {
+      mostrarAviso("Anexo ainda não disponível para download.", true);
+      return;
+    }
+    try {
+      const { data: { session } } = await sb.auth.getSession();
+      if (!session?.access_token) {
+        mostrarAviso("Sessão expirada. Faça login novamente.", true);
+        return;
+      }
+      const url = R2_WORKER_URL + "?path=" + encodeURIComponent(r2Chave);
+      const resp = await fetch(url, {
+        method: "GET",
+        headers: { Authorization: "Bearer " + session.access_token }
+      });
+      if (!resp.ok) {
+        const txt = await resp.text().catch(() => "");
+        console.error("[anexo] download falhou:", resp.status, txt);
+        mostrarAviso("Não foi possível baixar o anexo.", true);
+        return;
+      }
+      const blob = await resp.blob();
+      const a = document.createElement("a");
+      a.href = URL.createObjectURL(blob);
+      a.download = nomeArquivo || "anexo";
+      document.body.appendChild(a);
+      a.click();
+      a.remove();
+      setTimeout(() => URL.revokeObjectURL(a.href), 5000);
+    } catch (err) {
+      console.error("[anexo] erro:", err);
+      mostrarAviso("Erro ao baixar anexo.", true);
+    }
   }
 
   </script>
