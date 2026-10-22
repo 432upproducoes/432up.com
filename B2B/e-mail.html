@@ -371,29 +371,37 @@
     /* Preview limitado: ações sempre visíveis; texto completo na tela cheia */
     .bloco-preview {
       max-height: min(280px, 38vh);
-      overflow: hidden;
+      overflow-y: auto;
+      overflow-x: hidden;
       position: relative;
       min-height: 80px;
+      overscroll-behavior: contain;
+      -webkit-overflow-scrolling: touch;
     }
     @media (max-width: 1023px) {
       .bloco-preview {
         max-height: min(220px, 32vh);
       }
     }
-    .bloco-preview::after {
+    /* Gradiente âmbar (só decorativo; não bloqueia a rolagem) */
+    .bloco-preview-wrap {
+      position: relative;
+    }
+    .bloco-preview-wrap::after {
       content: '';
       position: absolute;
       left: 0; right: 0; bottom: 0;
-      height: 36px;
+      height: 40px;
       pointer-events: none;
-      background: linear-gradient(to bottom, transparent, rgba(20, 12, 40, 0.85));
+      background: linear-gradient(to bottom, transparent, rgba(255, 183, 0, 0.18) 55%, rgba(255, 162, 0, 0.28));
+      border-radius: 0 0 12px 12px;
     }
     /* No modal de tela cheia o corpo não tem limite */
     .modal-cartao .bloco-modal {
       max-height: none !important;
       overflow: visible !important;
     }
-    .modal-cartao .bloco-modal::after {
+    .modal-cartao .bloco-preview-wrap::after {
       display: none !important;
     }
 
@@ -1119,7 +1127,7 @@
           </div>
           <span class="text-[11px] text-[#CBD5E1] font-mono shrink-0">${esc(formatarDataHora(dataRef(m)))}</span>
         </div>
-        <div class="bloco-modal bloco-preview">${m.corpo_html ? sanitizarHtml(m.corpo_html) : esc(m.corpo_texto || '')}</div>
+        <div class="bloco-preview-wrap"><div class="bloco-modal bloco-preview">${m.corpo_html ? sanitizarHtml(m.corpo_html) : esc(m.corpo_texto || '')}</div></div>
         ${anexosHtml}
         ${acoes}
       </div>`;
