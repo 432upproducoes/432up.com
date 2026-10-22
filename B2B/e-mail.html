@@ -320,6 +320,16 @@
       .modal-cartao.tela-cheia{height:calc(100dvh - var(--menu-topo));max-height:none}
       .modal-fundo{padding-top:8px}
     }
+    /* ===== PATCH 22/10/2026: rolagem, ações fixas, contador, lote ===== */
+    #painel-leitura { overflow-y: auto !important; flex: 1 1 0; min-height: 0; overscroll-behavior: contain; -webkit-overflow-scrolling: touch; }
+    #painel-composer { overflow-y: auto !important; min-height: 0; overscroll-behavior: contain; }
+    .email-detail-pane > .vidro { height: calc(100dvh - var(--conteudo-topo, 100px) - 24px); }
+    @media (min-width: 1024px) { .email-detail-pane > .vidro { height: 100%; } }
+    .bloco-modal { overflow-wrap: anywhere; }
+    .bloco-modal img { max-width: 100%; height: auto; }
+    .bloco-modal table { display: block; max-width: 100%; overflow-x: auto; }
+    .acoes-leitura { position: sticky; bottom: 0; z-index: 2; background: rgba(20, 12, 40, 0.92); backdrop-filter: blur(14px); -webkit-backdrop-filter: blur(14px); padding-bottom: 8px; }
+    .sel-check { width: 16px; height: 16px; accent-color: #00e5ff; flex-shrink: 0; cursor: pointer; }
   </style>
 </head>
 <body class="h-full antialiased overflow-x-hidden">
@@ -405,6 +415,17 @@
           </div>
         </div>
 
+        <div id="barra-lote" class="vidro p-2 flex-wrap gap-1.5 items-center shrink-0" style="display:none">
+          <span id="lote-contagem" class="text-xs text-white/80 mr-1"></span>
+          <button onclick="selecionarTodos()" class="btn-vidro text-[11px] px-2.5 py-1 rounded-full">Todos</button>
+          <button onclick="acaoLote('lida')" class="btn-vidro text-[11px] px-2.5 py-1 rounded-full">Lida</button>
+          <button onclick="acaoLote('naolida')" class="btn-vidro text-[11px] px-2.5 py-1 rounded-full">Não lida</button>
+          <button onclick="acaoLote('importante')" class="btn-vidro text-[11px] px-2.5 py-1 rounded-full">★ Importante</button>
+          <button onclick="acaoLote('arquivo')" class="btn-vidro text-[11px] px-2.5 py-1 rounded-full">Arquivar</button>
+          <select id="lote-mover" onchange="acaoLoteMover(this)" class="btn-vidro text-[11px] px-2 py-1 rounded-full" aria-label="Mover selecionadas para pasta"></select>
+          <button onclick="acaoLote('lixeira')" class="botao-lixeira text-[11px] px-2.5 py-1 rounded-full">Lixeira</button>
+          <button onclick="limparSelecao()" class="btn-vidro text-[11px] px-2.5 py-1 rounded-full" aria-label="Limpar seleção">✕</button>
+        </div>
         <div id="lista-emails" class="vidro p-2 flex-1 overflow-y-auto space-y-2 min-h-0"></div>
       </section>
 
@@ -566,7 +587,9 @@
     ultimaAcao: null,
     carregando: false,
     enviando: false,
-    salvandoRascunho: false
+    salvandoRascunho: false,
+    selecionados: new Set(),
+    ultimoSel: null
   };
 
   // ---------- INICIALIZAÇÃO ----------
@@ -642,6 +665,7 @@
   }
 
   function renderizarTudo() {
+    atualizarBarraLote();
     renderizarPastas();
     renderizarLista();
     renderizarLixeira();
@@ -684,8 +708,8 @@
       ...estado.pastasCustom.map(p => ({ id: p.id, nome: p.nome, icon: 'M3 7v10a2 2 0 002 2h14a2 2 0 002-2V9a2 2 0 00-2-2h-6l-2-2H5a2 2 0 00-2 2z', custom: true }))
     ];
     ul.innerHTML = todas.map(p => {
-      const count = mensagensDaPasta(p.id).length;
-      const badge = `<span class="badge text-[11px] font-bold px-2 py-0.5 rounded-full ${count ? '' : 'hidden'}" data-contador="${esc(p.id)}">${count}</span>`;
+      const count = mensagensDaPasta(p.id).filter(m => m.direcao === 'recebida' && !m.lida).length;
+      const badge = `<span class="${count ? 'badge-nao-lida' : ''} text-[11px] font-bold px-2 py-0.5 rounded-full ${count ? '' : 'hidden'}" data-contador="${esc(p.id)}">${count}</span>`;
       const delBtn = p.custom ? `<button onclick="event.stopPropagation(); excluirPasta('${esc(p.id)}')" class="text-red-300/70 hover:text-red-300 text-xs ml-1" title="Excluir pasta">×</button>` : '';
       return `<li data-pasta="${esc(p.id)}" ondragover="arrastarSobre(event)" ondragleave="this.classList.remove('arrasto-sobre')" ondrop="soltarNaPasta(event,'${esc(p.id)}')" onclick="trocarPasta('${esc(p.id)}'); fecharSidebarMobile();" class="item-pasta flex items-center justify-between p-2.5 rounded-xl cursor-pointer">
         <span class="flex items-center gap-2.5 min-w-0">
@@ -698,6 +722,7 @@
   }
 
   function trocarPasta(pasta) {
+    estado.selecionados.clear();
     estado.pasta = pasta;
     const lista = filtrar(mensagensDaPasta(pasta));
     estado.ativoId = lista.length ? lista[0].id : null;
@@ -735,6 +760,7 @@
 
   // ---------- FILTROS / BUSCA ----------
   function trocarFiltro(filtro) {
+    estado.selecionados.clear();
     estado.filtro = filtro;
     destacarFiltro();
     renderizarLista();
@@ -815,6 +841,7 @@
         <div class="flex items-start justify-between gap-2">
           <div class="min-w-0 flex-1">
             <div class="flex items-center gap-1.5 ${peso}">
+              <input type="checkbox" class="sel-check" aria-label="Selecionar" ${estado.selecionados.has(m.id) ? 'checked' : ''} onclick="event.stopPropagation(); alternarSelecao('${m.id}', event)">
               ${estrela}
               <span class="text-sm text-white truncate">${esc(rotuloPessoa(m))}</span>
               ${anexoIcon}
@@ -882,7 +909,7 @@
 
     const pastaAtual = pastaDoEmail(m);
     const acoes = `
-      <div class="flex flex-wrap gap-2 pt-3 border-t border-white/10 mt-3">
+      <div class="acoes-leitura flex flex-wrap gap-2 pt-3 border-t border-white/10 mt-3">
         <button onclick="responder()" class="btn-vidro text-xs px-3 py-1.5 rounded-full">Responder</button>
         <button onclick="responderTodos()" class="btn-vidro text-xs px-3 py-1.5 rounded-full">Responder a todos</button>
         <button onclick="encaminhar()" class="btn-vidro text-xs px-3 py-1.5 rounded-full">Encaminhar</button>
@@ -1597,6 +1624,121 @@ function esvaziarLixeira() {
   });
   window.addEventListener('load', medirMenuTopo);
   window.addEventListener('resize', medirMenuTopo);
+
+  // ---------- SELEÇÃO EM LOTE ----------
+  function listaVisivel() {
+    return filtrar(mensagensDaPasta(estado.pasta)).sort((a, b) => new Date(dataRef(b)) - new Date(dataRef(a)));
+  }
+
+  function alternarSelecao(id, ev) {
+    const ids = listaVisivel().map(m => m.id);
+    if (ev && ev.shiftKey && estado.ultimoSel && ids.includes(estado.ultimoSel)) {
+      const a = ids.indexOf(estado.ultimoSel), b = ids.indexOf(id);
+      const marcar = !estado.selecionados.has(id);
+      for (let i = Math.min(a, b); i <= Math.max(a, b); i++) {
+        marcar ? estado.selecionados.add(ids[i]) : estado.selecionados.delete(ids[i]);
+      }
+    } else {
+      estado.selecionados.has(id) ? estado.selecionados.delete(id) : estado.selecionados.add(id);
+    }
+    estado.ultimoSel = id;
+    renderizarLista();
+    atualizarBarraLote();
+  }
+
+  function selecionarTodos() {
+    const ids = listaVisivel().map(m => m.id);
+    const tudoMarcado = ids.length && ids.every(id => estado.selecionados.has(id));
+    ids.forEach(id => tudoMarcado ? estado.selecionados.delete(id) : estado.selecionados.add(id));
+    renderizarLista();
+    atualizarBarraLote();
+  }
+
+  function limparSelecao() {
+    estado.selecionados.clear();
+    renderizarLista();
+    atualizarBarraLote();
+  }
+
+  function atualizarBarraLote() {
+    const barra = document.getElementById('barra-lote');
+    if (!barra) return;
+    const n = estado.selecionados.size;
+    barra.style.display = n ? 'flex' : 'none';
+    document.getElementById('lote-contagem').textContent = n + ' selecionada(s)';
+    const dest = [
+      ['sistema:entrada', 'Caixa de Entrada'], ['sistema:arquivo', 'Arquivo'], ['sistema:spam', 'Spam'],
+      ...estado.pastasCustom.map(p => ['custom:' + p.id, p.nome])
+    ];
+    document.getElementById('lote-mover').innerHTML =
+      '<option value="">Mover para…</option>' + dest.map(([v, t]) => `<option value="${esc(v)}">${esc(t)}</option>`).join('');
+  }
+
+  // Atualiza várias mensagens com um único UPDATE. Devolve o snapshot para o "Desfazer".
+  async function atualizarLote(ids, campos) {
+    const alvos = ids.map(encontrarEmail).filter(Boolean);
+    if (!alvos.length) return [];
+    const snapshot = alvos.map(m => {
+      const antes = {};
+      Object.keys(campos).forEach(k => antes[k] = m[k]);
+      return { id: m.id, antes };
+    });
+    const { data, error } = await sb.from('email_mensagens')
+      .update({ ...campos, atualizado_em: new Date().toISOString() })
+      .in('id', alvos.map(m => m.id))
+      .select('id');
+    if (error) { mostrarAviso('Não foi possível salvar o lote: ' + error.message, true); return null; }
+    const okIds = new Set((data || []).map(r => r.id));
+    alvos.forEach(m => { if (okIds.has(m.id)) Object.assign(m, campos); });
+    if (okIds.size < alvos.length) mostrarAviso(`${okIds.size} de ${alvos.length} alteradas (sem permissão para as demais).`, true);
+    renderizarTudo();
+    return snapshot.filter(s => okIds.has(s.id));
+  }
+
+  async function executarLote(ids, campos, texto) {
+    const validos = ids.filter(encontrarEmail);
+    if (!validos.length) return mostrarAviso('Selecione ao menos uma mensagem.', true);
+    const feitos = await atualizarLote(validos, campos);
+    if (!feitos || !feitos.length) return;
+    estado.ultimaAcao = { tipo: 'movimento', itens: feitos };
+    estado.selecionados.clear();
+    mostrarAvisoComDesfazer(`${feitos.length} ${texto}`);
+    atualizarBarraLote();
+  }
+
+  async function acaoLote(tipo) {
+    const ids = [...estado.selecionados];
+    if (tipo === 'lida') return executarLote(ids, { lida: true }, 'marcadas como lidas.');
+    if (tipo === 'naolida') return executarLote(ids, { lida: false }, 'marcadas como não lidas.');
+    if (tipo === 'importante') return executarLote(ids, { importante: true }, 'marcadas como importantes.');
+    if (tipo === 'arquivo') return executarLote(ids, { pasta_sistema: 'arquivo', pasta_id: null, excluida_em: null, pasta_origem: null }, 'arquivadas.');
+    if (tipo === 'lixeira') {
+      // A origem depende da pasta de cada mensagem, então agrupa antes de gravar
+      const grupos = new Map();
+      ids.forEach(id => {
+        const m = encontrarEmail(id);
+        if (!m || m.excluida_em) return;
+        const origem = m.pasta_id ? 'pasta:' + m.pasta_id : null;
+        if (!grupos.has(origem)) grupos.set(origem, []);
+        grupos.get(origem).push(id);
+      });
+      for (const [origem, grupo] of grupos) {
+        await executarLote(grupo, { excluida_em: new Date().toISOString(), pasta_origem: origem }, 'movidas para a lixeira.');
+      }
+    }
+  }
+
+  async function acaoLoteMover(select) {
+    const valor = select.value;
+    select.value = '';
+    const [tipo, ...resto] = valor.split(':');
+    const id = resto.join(':');
+    if (!id) return;
+    const campos = tipo === 'custom'
+      ? { pasta_id: id, excluida_em: null, pasta_origem: null }
+      : { pasta_sistema: id, pasta_id: null, excluida_em: null, pasta_origem: null };
+    await executarLote([...estado.selecionados], campos, 'movidas para ' + nomeDestino({ tipo, id }) + '.');
+  }
 
   // ---------- UTILS ----------
   function esc(valor) {
