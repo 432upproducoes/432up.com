@@ -368,19 +368,55 @@
     }
 
   
-    /* Corpo da mensagem: rola no painel; sem segundo nível de tela cheia */
+    /* Preview com rolagem própria; texto completo na tela cheia */
     .bloco-preview {
-      max-height: none;
-      overflow: visible;
+      max-height: min(280px, 38vh);
+      overflow-y: auto;
+      overflow-x: hidden;
       position: relative;
       min-height: 80px;
+      overscroll-behavior: contain;
+      -webkit-overflow-scrolling: touch;
+    }
+    @media (max-width: 1023px) {
+      .bloco-preview {
+        max-height: min(220px, 32vh);
+      }
     }
     .bloco-preview-wrap {
       position: relative;
     }
+    /* Esmaecimento de profundidade (não luz): some no fundo da UI */
     .bloco-preview-wrap::before,
     .bloco-preview-wrap::after {
-      display: none;
+      content: '';
+      position: absolute;
+      left: 0; right: 0;
+      height: 40px;
+      pointer-events: none;
+      opacity: 0;
+      transition: opacity 0.2s ease;
+      z-index: 2;
+    }
+    .bloco-preview-wrap::before {
+      top: 0;
+      background: linear-gradient(to bottom, rgba(18, 10, 28, 0.92) 0%, rgba(18, 10, 28, 0.45) 45%, transparent 100%);
+      border-radius: 12px 12px 0 0;
+    }
+    .bloco-preview-wrap::after {
+      bottom: 0;
+      background: linear-gradient(to top, rgba(18, 10, 28, 0.92) 0%, rgba(18, 10, 28, 0.45) 45%, transparent 100%);
+      border-radius: 0 0 12px 12px;
+    }
+    .bloco-preview-wrap.tem-mais-cima::before { opacity: 1; }
+    .bloco-preview-wrap.tem-mais-baixo::after { opacity: 1; }
+    .modal-cartao .bloco-modal {
+      max-height: none !important;
+      overflow: visible !important;
+    }
+    .modal-cartao .bloco-preview-wrap::before,
+    .modal-cartao .bloco-preview-wrap::after {
+      display: none !important;
     }
     /* Checkbox de seleção */
     .sel-check {
@@ -528,6 +564,7 @@
             <button class="aba ativa" data-modo="leitura" onclick="trocarModo('leitura')">Leitura</button>
             <button class="aba" data-modo="composer" onclick="trocarModo('composer')">Escrever</button>
             <div class="flex-1"></div>
+            <button onclick="abrirTelaCheia()" class="text-xs text-cyan-300 hover:underline px-2" title="Tela cheia">⛶</button>
 
           </div>
 
