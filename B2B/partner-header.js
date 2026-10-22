@@ -936,6 +936,17 @@
       #mn-agenda-popover[data-theme="cyan"]::before { background: rgba(5,20,28,.90); border-color: rgba(6,182,212,.30); }
       @keyframes mnAgendaIn { from { opacity: 0; transform: translateY(-5px) scale(.985); } to { opacity: 1; transform: translateY(0) scale(1); } }
     #calc-header[data-mn-toggle="0"] .mn-items { justify-content: flex-end !important; -webkit-mask-image: none !important; mask-image: none !important; }
+    @media (max-width: 1024px) {
+      #calc-header.mn-ready[data-mn-toggle="1"] > .mn-toggle-d { max-width: 170px; justify-content: center; cursor: pointer; }
+      #calc-header.mn-ready[data-mn-toggle="1"] > .mn-toggle-d .mn-pill { display: none !important; }
+      #calc-header.mn-ready[data-mn-toggle="1"] > .mn-toggle-d .mn-tab:not([aria-pressed="true"]) { display: none !important; }
+      #calc-header.mn-ready[data-mn-toggle="1"] > .mn-toggle-d .mn-tab[aria-pressed="true"] { background: rgba(0,240,255,.16); border-radius: 999px; }
+    }
+    /* Botão Instalar: discreto no desktop, dentro do menu hambúrguer no mobile */
+    #calc-header .mn-install-d { display: none; align-items: center; gap: 6px; margin-left: 10px; padding: 6px 12px; border-radius: 999px; cursor: pointer; font: 700 11px/1 system-ui, -apple-system, sans-serif; letter-spacing: .06em; text-transform: uppercase; color: #00f0ff; background: rgba(0,240,255,.08); border: 1px solid rgba(0,240,255,.4); flex: none; }
+    @media (min-width: 1025px) { #calc-header .mn-install-d { display: inline-flex; } }
+    #mobile-menu .mn-install-m { display: flex; align-items: center; justify-content: center; width: 100%; margin: 12px 0 0; padding: 12px; border-radius: 999px; cursor: pointer; font: 700 13px/1 system-ui, -apple-system, sans-serif; letter-spacing: .06em; text-transform: uppercase; color: #00f0ff; background: rgba(0,240,255,.08); border: 1px solid rgba(0,240,255,.4); }
+    @media (min-width: 1025px) { #mobile-menu .mn-install-m { display: none; } }
     `;
     document.head.appendChild(pop);
   }
@@ -1004,6 +1015,18 @@
   if (!IN_FRAME) {
     calCss();
     document.addEventListener('click', function (e) {
+      if (window.innerWidth <= 1024) {
+        var capNarrow = e.target.closest && e.target.closest('#calc-header > .mn-toggle-d');
+        if (capNarrow) {
+          var tabNarrow = e.target.closest('.mn-tab');
+          if (!tabNarrow || tabNarrow.getAttribute('aria-pressed') === 'true') {
+            e.preventDefault();
+            e.stopPropagation();
+            openMobile();
+            return;
+          }
+        }
+      }
       var calendarTrigger = e.target.closest && e.target.closest('a.mn-calendar-trigger');
       if (calendarTrigger) {
         e.preventDefault();
@@ -1052,8 +1075,8 @@
         '<div data-partner-avatar class="mn-m-av"></div>' +
         '<div style="text-align:left;">' +
           '<span data-partner-nome style="display:block;font-size:.9rem;font-weight:700;color:#fff;">—</span>' +
-          '<span style="font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:.05em;color:' + (master ? '#fbbf24' : '#22d3ee') + ';">' +
-            (master ? 'Master Admin ➔' : 'Ver Meu Perfil ➔') + '</span>' +
+          '<span style="font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:.05em;color:#22d3ee;">' +
+            'Editar perfil ➔</span>' +
         '</div></a>' +
       '<div style="display:flex;align-items:center;gap:6px;flex:none;">' + pushBtnHTML() + calLinkHTML('', false) + mailLinkHTML('', false) + '</div>' +
     '</div>';
@@ -1874,13 +1897,59 @@
       });
   }
 
-  window.addEventListener('appinstalled', function () { marcarInstalado(); fechar(); });
+  function botoesInstalar() {
+    document.querySelectorAll('.mn-install-d, .mn-install-m').forEach(function (b) { b.parentNode.removeChild(b); });
+  }
+
+  function acaoInstalar() {
+    if (promptDiferido) {
+      promptDiferido.prompt();
+      promptDiferido.userChoice.then(function () { promptDiferido = null; });
+    } else if (ios()) {
+      instrucoesIOS();
+    } else {
+      mostrar('Instale o app 432UP!',
+        '<p>No menu do seu navegador, toque em <b>Instalar app</b> ou <b>Adicionar à tela inicial</b>.</p>',
+        '<button type="button" class="mi-x">Entendi</button>', { '.mi-x': fechar });
+    }
+  }
+
+  function garantirBotoesInstalar() {
+    if (standalone() || instalado() || window.self !== window.top) { botoesInstalar(); return; }
+    var hdr = document.getElementById('calc-header');
+    if (hdr && !hdr.querySelector('.mn-install-d')) {
+      var logo = hdr.querySelector('.logo-container');
+      if (logo) {
+        logo.insertAdjacentHTML('afterend', '<button type="button" class="mn-install-d">Instalar</button>');
+        logo.nextElementSibling.addEventListener('click', acaoInstalar);
+      }
+    }
+    var menu = document.getElementById('mobile-menu');
+    if (menu && !menu.querySelector('.mn-install-m')) {
+      var user = menu.querySelector('.mn-m-user');
+      if (user) {
+        user.insertAdjacentHTML('afterend', '<button type="button" class="mn-install-m">Instalar app</button>');
+        user.nextElementSibling.addEventListener('click', acaoInstalar);
+      }
+    }
+  }
+
+  var agendaInstallTick = false;
+  new MutationObserver(function () {
+    if (agendaInstallTick) return;
+    agendaInstallTick = true;
+    requestAnimationFrame(function () { agendaInstallTick = false; garantirBotoesInstalar(); });
+  }).observe(document.body, { childList: true, subtree: true });
+
+  window.addEventListener('appinstalled', function () { marcarInstalado(); fechar(); botoesInstalar(); });
 
   window.addEventListener('beforeinstallprompt', function (e) {
     e.preventDefault();
     promptDiferido = e;
     if (!instalado() && !fechadoRecente()) instalarAndroid();
   });
+
+  garantirBotoesInstalar();
 
   if (instalado()) {
     if (!fechadoRecente()) lembrete();
