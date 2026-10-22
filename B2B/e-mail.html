@@ -368,56 +368,19 @@
     }
 
   
-    /* Preview limitado: ações sempre visíveis; texto completo na tela cheia */
+    /* Corpo da mensagem: rola no painel; sem segundo nível de tela cheia */
     .bloco-preview {
-      max-height: min(280px, 38vh);
-      overflow-y: auto;
-      overflow-x: hidden;
+      max-height: none;
+      overflow: visible;
       position: relative;
       min-height: 80px;
-      overscroll-behavior: contain;
-      -webkit-overflow-scrolling: touch;
     }
-    @media (max-width: 1023px) {
-      .bloco-preview {
-        max-height: min(220px, 32vh);
-      }
-    }
-    /* Gradientes ametista dinâmicos (topo/fundo conforme rolagem) */
     .bloco-preview-wrap {
       position: relative;
     }
     .bloco-preview-wrap::before,
     .bloco-preview-wrap::after {
-      content: '';
-      position: absolute;
-      left: 0; right: 0;
-      height: 36px;
-      pointer-events: none;
-      opacity: 0;
-      transition: opacity 0.2s ease;
-      z-index: 2;
-    }
-    .bloco-preview-wrap::before {
-      top: 0;
-      background: linear-gradient(to bottom, rgba(168, 85, 247, 0.35), transparent);
-      border-radius: 12px 12px 0 0;
-    }
-    .bloco-preview-wrap::after {
-      bottom: 0;
-      background: linear-gradient(to top, rgba(168, 85, 247, 0.35), transparent);
-      border-radius: 0 0 12px 12px;
-    }
-    .bloco-preview-wrap.tem-mais-cima::before { opacity: 1; }
-    .bloco-preview-wrap.tem-mais-baixo::after { opacity: 1; }
-    /* No modal de tela cheia o corpo não tem limite */
-    .modal-cartao .bloco-modal {
-      max-height: none !important;
-      overflow: visible !important;
-    }
-    .modal-cartao .bloco-preview-wrap::before,
-    .modal-cartao .bloco-preview-wrap::after {
-      display: none !important;
+      display: none;
     }
     /* Checkbox de seleção */
     .sel-check {
@@ -426,6 +389,37 @@
       accent-color: #a855f7;
       flex-shrink: 0;
       cursor: pointer;
+    }
+
+  
+    .chip-icon {
+      width: 34px;
+      height: 34px;
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      border-radius: 999px;
+      border: 1px solid var(--borda);
+      background: var(--vidro-bg-2);
+      color: var(--texto-2);
+      font-size: 14px;
+      cursor: pointer;
+      transition: all 0.15s ease;
+      flex-shrink: 0;
+      padding: 0;
+    }
+    .chip-icon:hover { color: #fff; border-color: var(--borda-lilas); }
+    .chip-icon.ativo {
+      background: rgba(168, 85, 247, 0.45);
+      border-color: rgba(196, 160, 255, 0.75);
+      color: #fff;
+    }
+    #filtros {
+      display: flex !important;
+      flex-wrap: nowrap !important;
+      gap: 6px !important;
+      overflow-x: auto;
+      grid-template-columns: none !important;
     }
 
   </style>
@@ -493,22 +487,18 @@
           <div class="flex gap-2">
             <input id="campo-busca" type="search" placeholder="Buscar remetente, assunto, data..." class="campo-busca flex-1 rounded-xl px-3 py-2 text-sm" oninput="buscar()">
           </div>
-          <div class="flex flex-wrap gap-1.5" id="filtros">
-            <button data-filtro="todos" onclick="trocarFiltro('todos')" class="chip ativo">Todos</button>
-            <button data-filtro="nao-lidos" onclick="trocarFiltro('nao-lidos')" class="chip">Não lidos</button>
-            <button data-filtro="importantes" onclick="trocarFiltro('importantes')" class="chip">Importantes</button>
-            <button data-filtro="com-anexo" onclick="trocarFiltro('com-anexo')" class="chip">Com anexo</button>
-          </div>
-          <div class="filtro-datas">
-            <label class="chip chip-data">
-              <span class="rot">De</span><span class="val">dd/mm/aaaa</span>
-              <input type="date" id="filtro-data-de" aria-label="Data inicial" onchange="atualizarChipData(this); buscar()">
-              <button type="button" class="limpar" aria-label="Limpar data inicial" onclick="limparData(event,'filtro-data-de')">×</button>
+          <div class="flex items-center gap-1.5" id="filtros">
+            <button data-filtro="todos" onclick="trocarFiltro('todos')" class="chip-icon ativo" title="Todos">☰</button>
+            <button data-filtro="nao-lidos" onclick="trocarFiltro('nao-lidos')" class="chip-icon" title="Não lidos">●</button>
+            <button data-filtro="importantes" onclick="trocarFiltro('importantes')" class="chip-icon" title="Importantes">★</button>
+            <button data-filtro="com-anexo" onclick="trocarFiltro('com-anexo')" class="chip-icon" title="Com anexo">📎</button>
+            <label class="chip-icon chip-data relative" title="Data inicial">
+              <span class="text-[11px]">📅</span>
+              <input type="date" id="filtro-data-de" aria-label="Data inicial" onchange="atualizarChipData(this); buscar()" class="absolute inset-0 opacity-0 cursor-pointer">
             </label>
-            <label class="chip chip-data">
-              <span class="rot">Até</span><span class="val">dd/mm/aaaa</span>
-              <input type="date" id="filtro-data-ate" aria-label="Data final" onchange="atualizarChipData(this); buscar()">
-              <button type="button" class="limpar" aria-label="Limpar data final" onclick="limparData(event,'filtro-data-ate')">×</button>
+            <label class="chip-icon chip-data relative" title="Data final">
+              <span class="text-[11px]">→📅</span>
+              <input type="date" id="filtro-data-ate" aria-label="Data final" onchange="atualizarChipData(this); buscar()" class="absolute inset-0 opacity-0 cursor-pointer">
             </label>
           </div>
         </div>
@@ -538,7 +528,7 @@
             <button class="aba ativa" data-modo="leitura" onclick="trocarModo('leitura')">Leitura</button>
             <button class="aba" data-modo="composer" onclick="trocarModo('composer')">Escrever</button>
             <div class="flex-1"></div>
-            <button onclick="abrirTelaCheia()" class="text-xs text-cyan-300 hover:underline px-2" title="Tela cheia">⛶</button>
+
           </div>
 
           <!-- Painel leitura -->
@@ -921,13 +911,21 @@
   // ---------- FILTRO DE DATAS (cápsulas) ----------
   function atualizarChipData(input) {
     const chip = input.closest('.chip-data');
+    if (!chip) return;
     chip.classList.toggle('ativo', !!input.value);
-    chip.querySelector('.val').textContent = input.value ? input.value.split('-').reverse().join('/') : 'dd/mm/aaaa';
+    const val = chip.querySelector('.val');
+    if (val) val.textContent = input.value ? input.value.split('-').reverse().join('/') : 'dd/mm/aaaa';
+    if (input.value) {
+      chip.title = (input.id.includes('de') ? 'De ' : 'Até ') + input.value.split('-').reverse().join('/');
+    }
   }
   function limparData(ev, id) {
-    ev.preventDefault(); ev.stopPropagation();
+    if (ev) { ev.preventDefault(); ev.stopPropagation(); }
     const i = document.getElementById(id);
-    i.value = ''; atualizarChipData(i); buscar();
+    if (!i) return;
+    i.value = '';
+    atualizarChipData(i);
+    buscar();
   }
 
   // ---------- LISTA ----------
