@@ -383,26 +383,49 @@
         max-height: min(220px, 32vh);
       }
     }
-    /* Gradiente âmbar (só decorativo; não bloqueia a rolagem) */
+    /* Gradientes ametista dinâmicos (topo/fundo conforme rolagem) */
     .bloco-preview-wrap {
       position: relative;
     }
+    .bloco-preview-wrap::before,
     .bloco-preview-wrap::after {
       content: '';
       position: absolute;
-      left: 0; right: 0; bottom: 0;
-      height: 40px;
+      left: 0; right: 0;
+      height: 36px;
       pointer-events: none;
-      background: linear-gradient(to bottom, transparent, rgba(255, 183, 0, 0.18) 55%, rgba(255, 162, 0, 0.28));
+      opacity: 0;
+      transition: opacity 0.2s ease;
+      z-index: 2;
+    }
+    .bloco-preview-wrap::before {
+      top: 0;
+      background: linear-gradient(to bottom, rgba(168, 85, 247, 0.35), transparent);
+      border-radius: 12px 12px 0 0;
+    }
+    .bloco-preview-wrap::after {
+      bottom: 0;
+      background: linear-gradient(to top, rgba(168, 85, 247, 0.35), transparent);
       border-radius: 0 0 12px 12px;
     }
+    .bloco-preview-wrap.tem-mais-cima::before { opacity: 1; }
+    .bloco-preview-wrap.tem-mais-baixo::after { opacity: 1; }
     /* No modal de tela cheia o corpo não tem limite */
     .modal-cartao .bloco-modal {
       max-height: none !important;
       overflow: visible !important;
     }
+    .modal-cartao .bloco-preview-wrap::before,
     .modal-cartao .bloco-preview-wrap::after {
       display: none !important;
+    }
+    /* Checkbox de seleção */
+    .sel-check {
+      width: 16px;
+      height: 16px;
+      accent-color: #a855f7;
+      flex-shrink: 0;
+      cursor: pointer;
     }
 
   </style>
@@ -492,6 +515,7 @@
 
         <div id="barra-lote" class="hidden flex flex-wrap items-center gap-1.5 px-2 py-1.5 mb-1 rounded-xl bg-white/10 border border-white/15">
           <span id="lote-contagem" class="text-xs text-white/80 mr-1"></span>
+          <button onclick="selecionarTodosVisiveis()" class="btn-vidro text-[11px] px-2.5 py-1 rounded-full">Todos</button>
           <button onclick="acaoLote('lida')" class="btn-vidro text-[11px] px-2.5 py-1 rounded-full">Lida</button>
           <button onclick="acaoLote('naolida')" class="btn-vidro text-[11px] px-2.5 py-1 rounded-full">Não lida</button>
           <button onclick="acaoLote('importante')" class="btn-vidro text-[11px] px-2.5 py-1 rounded-full">★ Importante</button>
@@ -931,9 +955,12 @@
       const anexoIcon = (m.email_anexos || []).length ? '<span class="text-[10px] text-white/50">📎</span>' : '';
       const statusHtml = m.direcao === 'enviada' ? badgeStatus(m.status_envio) : '';
       const acao = m.direcao === 'rascunho' ? `abrirRascunho('${m.id}')` : `selecionarEmail('${m.id}')`;
+      const checked = estado.selecionados.has(m.id) ? 'checked' : '';
       return `<div class="cartao-email ${ativo} ${selecionado} ${naoLida}" draggable="${m.direcao !== 'rascunho'}" ondragstart="iniciarArraste(event,'${m.id}')" onclick="${acao}">
         <div class="flex items-start justify-between gap-2">
-          <div class="min-w-0 flex-1">
+          <div class="flex items-start gap-2 min-w-0 flex-1">
+            <input type="checkbox" class="sel-check mt-0.5" ${checked} onclick="toggleSelecao('${m.id}', event)" aria-label="Selecionar">
+            <div class="min-w-0 flex-1">
             <div class="flex items-center gap-1.5 ${peso}">
               ${estrela}
               <span class="text-sm text-white truncate">${esc(rotuloPessoa(m))}</span>
@@ -941,6 +968,7 @@
             </div>
             <div class="text-xs ${peso} text-white/90 truncate mt-0.5">${esc(m.assunto)}</div>
             <div class="text-[11px] text-[#94A3B8] truncate mt-0.5">${esc((m.corpo_texto || '').slice(0, 80))}</div>
+            </div>
           </div>
           <div class="flex flex-col items-end gap-1 shrink-0">
             <span class="text-[10px] text-[#94A3B8] font-mono">${esc(formatarDataCurta(new Date(dataRef(m))))}</span>
@@ -959,29 +987,35 @@
 
   async function selecionarEmail(id) {
     estado.rascunhoEditandoId = null;
-    const jaSelecionado = estado.selecionados.has(id);
-    const eraAtivo = estado.ativoId === id;
-
-    if (jaSelecionado && eraAtivo) {
-      // Segundo clique no que está sendo visualizado: desmarca todos e deixa só este
-      estado.selecionados.clear();
-      estado.selecionados.add(id);
-    } else if (!jaSelecionado) {
-      // Primeiro toque em célula nova: adiciona à seleção
-      estado.selecionados.add(id);
-    }
-    // Se já estava selecionado mas não era o ativo: só visualiza (não desmarca)
-
     estado.ativoId = id;
     const m = encontrarEmail(id);
     if (m && m.direcao === 'recebida' && !m.lida) {
       await atualizarCampos(id, { lida: true }, true);
     }
     renderizarLista();
-    atualizarBarraLote();
     trocarModo('leitura');
     renderizarLeitura();
     definirTelaMobile('reader');
+  }
+
+  function toggleSelecao(id, ev) {
+    if (ev) ev.stopPropagation();
+    if (estado.selecionados.has(id)) estado.selecionados.delete(id);
+    else estado.selecionados.add(id);
+    renderizarLista();
+    atualizarBarraLote();
+  }
+
+  function selecionarTodosVisiveis() {
+    const lista = filtrar(mensagensDaPasta(estado.pasta));
+    const todosMarcados = lista.length && lista.every(m => estado.selecionados.has(m.id));
+    if (todosMarcados) {
+      lista.forEach(m => estado.selecionados.delete(m.id));
+    } else {
+      lista.forEach(m => estado.selecionados.add(m.id));
+    }
+    renderizarLista();
+    atualizarBarraLote();
   }
 
   function limparSelecao() {
@@ -1131,6 +1165,21 @@
         ${anexosHtml}
         ${acoes}
       </div>`;
+
+    // Gradientes ametista dinâmicos no preview
+    const wrap = box.querySelector('.bloco-preview-wrap');
+    const preview = box.querySelector('.bloco-preview');
+    if (wrap && preview) {
+      const atualizarSombras = () => {
+        const top = preview.scrollTop > 4;
+        const bottom = preview.scrollTop + preview.clientHeight < preview.scrollHeight - 4;
+        wrap.classList.toggle('tem-mais-cima', top);
+        wrap.classList.toggle('tem-mais-baixo', bottom);
+      };
+      preview.addEventListener('scroll', atualizarSombras, { passive: true });
+      // estado inicial (tem mais embaixo se o conteúdo extrapola)
+      requestAnimationFrame(atualizarSombras);
+    }
   }
 
   // ---------- AÇÕES DE MENSAGEM ----------
