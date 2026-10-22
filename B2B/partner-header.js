@@ -938,9 +938,11 @@
     #calc-header[data-mn-toggle="0"] .mn-items { justify-content: flex-end !important; -webkit-mask-image: none !important; mask-image: none !important; }
     @media (max-width: 1024px) {
       #calc-header.mn-ready[data-mn-toggle="1"] > .mn-toggle-d { max-width: 170px; justify-content: center; cursor: pointer; }
-      #calc-header.mn-ready[data-mn-toggle="1"] > .mn-toggle-d .mn-pill { display: none !important; }
       #calc-header.mn-ready[data-mn-toggle="1"] > .mn-toggle-d .mn-tab:not([aria-pressed="true"]) { display: none !important; }
-      #calc-header.mn-ready[data-mn-toggle="1"] > .mn-toggle-d .mn-tab[aria-pressed="true"] { background: rgba(0,240,255,.16); border-radius: 999px; }
+    }
+    @media (max-width: 1024px) {
+      #mobile-menu { overflow-y: auto !important; -webkit-overflow-scrolling: touch; overscroll-behavior: contain; justify-content: flex-start !important; }
+      #mobile-menu > * { flex-shrink: 0; }
     }
     /* Botão Instalar: discreto no desktop, dentro do menu hambúrguer no mobile */
     @keyframes mnInstallPulse { 0%,100% { box-shadow: 0 0 0 rgba(0,240,255,0); } 6% { box-shadow: 0 0 12px rgba(0,240,255,.45); } 14% { box-shadow: 0 0 0 rgba(0,240,255,0); } 22% { box-shadow: 0 0 10px rgba(0,240,255,.35); } 30%,100% { box-shadow: 0 0 0 rgba(0,240,255,0); } } @media (prefers-reduced-motion: reduce) { #calc-header .mn-install-d, #mobile-menu .mn-install-m { animation: none !important; } } 
@@ -1051,7 +1053,6 @@
       '<a href="' + perfilHref + '" title="Meu Perfil" class="b2b-avatar-link' + perfilAtivo + '"' + (onCliente ? ' data-mn-perfil="1"' : '') + '>' +
         '<div data-partner-avatar class="b2b-avatar-img"></div>' +
       '</a>' +
-      '<button type="button" id="btnLogoutDesk" title="Sair do Portal" class="mn-logout">🔒 Sair</button>' +
     '</div>';
   }
 
@@ -1928,10 +1929,13 @@
     var menu = document.getElementById('mobile-menu');
     if (menu && !menu.querySelector('.mn-install-m')) {
       var user = menu.querySelector('.mn-m-user');
-      if (user) {
-        user.insertAdjacentHTML('afterend', '<button type="button" class="mn-install-m">Instalar app</button>');
-        user.nextElementSibling.addEventListener('click', acaoInstalar);
-      }
+      var btn = document.createElement('button');
+      btn.type = 'button';
+      btn.className = 'mn-install-m';
+      btn.textContent = 'Instalar app';
+      btn.addEventListener('click', acaoInstalar);
+      if (user) user.insertAdjacentElement('afterend', btn);
+      else menu.insertAdjacentElement('afterbegin', btn);
     }
   }
 
