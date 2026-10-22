@@ -943,9 +943,10 @@
       #calc-header.mn-ready[data-mn-toggle="1"] > .mn-toggle-d .mn-tab[aria-pressed="true"] { background: rgba(0,240,255,.16); border-radius: 999px; }
     }
     /* Botão Instalar: discreto no desktop, dentro do menu hambúrguer no mobile */
-    #calc-header .mn-install-d { display: none; align-items: center; gap: 6px; margin-left: 10px; padding: 6px 12px; border-radius: 999px; cursor: pointer; font: 700 11px/1 system-ui, -apple-system, sans-serif; letter-spacing: .06em; text-transform: uppercase; color: #00f0ff; background: rgba(0,240,255,.08); border: 1px solid rgba(0,240,255,.4); flex: none; }
+    @keyframes mnInstallPulse { 0%,100% { box-shadow: 0 0 0 rgba(0,240,255,0); } 6% { box-shadow: 0 0 12px rgba(0,240,255,.45); } 14% { box-shadow: 0 0 0 rgba(0,240,255,0); } 22% { box-shadow: 0 0 10px rgba(0,240,255,.35); } 30%,100% { box-shadow: 0 0 0 rgba(0,240,255,0); } } @media (prefers-reduced-motion: reduce) { #calc-header .mn-install-d, #mobile-menu .mn-install-m { animation: none !important; } } 
+    #calc-header .mn-install-d { animation: mnInstallPulse 7s ease-in-out infinite; text-shadow: 0 0 6px rgba(0,240,255,.35); display: none; align-items: center; gap: 6px; margin-left: 10px; padding: 6px 12px; border-radius: 999px; cursor: pointer; font: 700 11px/1 system-ui, -apple-system, sans-serif; letter-spacing: .06em; text-transform: uppercase; color: #00f0ff; background: rgba(0,240,255,.16); border: 1px solid rgba(0,240,255,.65); flex: none; }
     @media (min-width: 1025px) { #calc-header .mn-install-d { display: inline-flex; } }
-    #mobile-menu .mn-install-m { display: flex; align-items: center; justify-content: center; width: 100%; margin: 12px 0 0; padding: 12px; border-radius: 999px; cursor: pointer; font: 700 13px/1 system-ui, -apple-system, sans-serif; letter-spacing: .06em; text-transform: uppercase; color: #00f0ff; background: rgba(0,240,255,.08); border: 1px solid rgba(0,240,255,.4); }
+    #mobile-menu .mn-install-m { display: flex; align-items: center; justify-content: center; width: 100%; margin: 12px 0 0; padding: 12px; border-radius: 999px; cursor: pointer; font: 700 13px/1 system-ui, -apple-system, sans-serif; letter-spacing: .06em; text-transform: uppercase; color: #5ff7ff; background: rgba(0,240,255,.16); border: 1px solid rgba(0,240,255,.65); font-weight: 800; text-shadow: 0 0 6px rgba(0,240,255,.35); animation: mnInstallPulse 7s ease-in-out infinite; }
     @media (min-width: 1025px) { #mobile-menu .mn-install-m { display: none; } }
     `;
     document.head.appendChild(pop);
