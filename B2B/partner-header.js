@@ -943,6 +943,10 @@
     @media (max-width: 1024px) {
       #mobile-menu { overflow-y: auto !important; -webkit-overflow-scrolling: touch; overscroll-behavior: contain; justify-content: flex-start !important; }
       #mobile-menu > * { flex-shrink: 0; }
+      #mobile-menu:has(.mn-m-user) { display: flex !important; flex-direction: column !important; justify-content: flex-start !important; height: 100% !important; box-sizing: border-box; padding-bottom: calc(env(safe-area-inset-bottom, 0px) + 12px) !important; }
+      @media (display-mode: standalone) { #mobile-menu:has(.mn-m-user) { padding-top: max(env(safe-area-inset-top, 0px), 48px) !important; } }
+      #mobile-menu:has(.mn-m-user) #mnMobItems { flex: 1 1 auto; display: flex; flex-direction: column; min-height: 0; }
+      #mobile-menu:has(.mn-m-user) #btnLogoutMob { margin-top: auto !important; }
     }
     /* Botão Instalar: discreto no desktop, dentro do menu hambúrguer no mobile */
     @keyframes mnInstallPulse { 0%,100% { box-shadow: 0 0 0 rgba(0,240,255,0); } 6% { box-shadow: 0 0 12px rgba(0,240,255,.45); } 14% { box-shadow: 0 0 0 rgba(0,240,255,0); } 22% { box-shadow: 0 0 10px rgba(0,240,255,.35); } 30%,100% { box-shadow: 0 0 0 rgba(0,240,255,0); } } @media (prefers-reduced-motion: reduce) { #calc-header .mn-install-d, #mobile-menu .mn-install-m { animation: none !important; } } 
