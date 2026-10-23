@@ -266,6 +266,16 @@
     @media (max-width: 640px) { .foto-grid { grid-template-columns: repeat(2, 1fr); } .foto:nth-child(1) { grid-column: span 2; grid-row: auto; aspect-ratio: 16 / 9; } }
     .galeria-vazia { border: 1px dashed rgba(255, 255, 255, .14); border-radius: 18px; padding: 28px 18px; text-align: center; color: var(--mut); font-size: 14px; }
 
+    /* Fotolog real (fotos e vídeos do evento, vindos do R2) */
+    .foto-real { position: relative; aspect-ratio: 4 / 3; border-radius: 16px; overflow: hidden; padding: 0; cursor: pointer; border: 1px solid rgba(255, 255, 255, .12); background: #0b0b10; }
+    .foto-real img, .foto-real video { width: 100%; height: 100%; object-fit: cover; display: block; }
+    .foto-real:nth-child(1) { grid-column: span 2; grid-row: span 2; aspect-ratio: auto; }
+    .foto-real .foto-play { position: absolute; left: 50%; top: 50%; transform: translate(-50%, -50%); width: 44px; height: 44px; border-radius: 50%; background: rgba(0, 0, 0, .55); color: #fff; display: flex; align-items: center; justify-content: center; font-size: 16px; pointer-events: none; }
+    @media (max-width: 640px) { .foto-real:nth-child(1) { grid-column: span 2; grid-row: auto; aspect-ratio: 16 / 9; } }
+    .foto-lb-midia { display: flex; align-items: center; justify-content: center; max-height: 72vh; }
+    .foto-lb-midia img, .foto-lb-midia video { max-width: 100%; max-height: 72vh; border-radius: 16px; }
+    .foto-lb-legenda { color: var(--body); font-size: 14px; text-align: center; margin: 12px 0 0; min-height: 18px; }
+
     /* Perfil: foto no topo, dados no padrão canônico */
     .perfil-hero { display: flex; flex-direction: column; align-items: center; gap: 10px; padding: 6px 0 18px; text-align: center; }
     .perfil-foto { position: relative; width: 116px; height: 116px; border-radius: 50%; cursor: pointer; box-shadow: 0 0 22px rgba(6, 182, 212, .35); margin-bottom: 8px; }
@@ -483,10 +493,13 @@
         <div class="box-full">
           <h2>Galeria</h2>
           <div id="memGaleria">
+            <div id="fotosReais" class="foto-grid" style="display:none"></div>
+            <div id="fotosExemplo">
             <div class="foto-grid" aria-hidden="true">
               <div class="foto"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><path d="M4 8h3l2-3h6l2 3h3v11H4z"/><circle cx="12" cy="13" r="3.5"/></svg></div><div class="foto"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><path d="M4 8h3l2-3h6l2 3h3v11H4z"/><circle cx="12" cy="13" r="3.5"/></svg></div><div class="foto"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><path d="M4 8h3l2-3h6l2 3h3v11H4z"/><circle cx="12" cy="13" r="3.5"/></svg></div><div class="foto"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><path d="M4 8h3l2-3h6l2 3h3v11H4z"/><circle cx="12" cy="13" r="3.5"/></svg></div><div class="foto"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><path d="M4 8h3l2-3h6l2 3h3v11H4z"/><circle cx="12" cy="13" r="3.5"/></svg></div><div class="foto"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><path d="M4 8h3l2-3h6l2 3h3v11H4z"/><circle cx="12" cy="13" r="3.5"/></svg></div>
             </div>
             <p class="pill" style="margin:12px 0 0;text-align:center">Fotos de exemplo · as fotos reais do seu evento aparecem aqui depois do grande dia.</p>
+            </div>
           </div>
         </div>
       </section>
@@ -535,6 +548,13 @@
   </div>
 
   <!-- Recorte do avatar -->
+  <div class="modal-bg" id="modalFoto" role="dialog" aria-modal="true" aria-label="Foto do evento">
+    <div style="position:relative;width:min(92vw,980px)">
+      <button type="button" id="btnFotoFechar" class="btn-s" style="position:absolute;right:0;top:-44px;margin-top:0">Fechar</button>
+      <div class="foto-lb-midia" id="fotoLbMidia"></div>
+      <p class="foto-lb-legenda" id="fotoLbLegenda"></p>
+    </div>
+  </div>
   <div class="modal-bg" id="modalCrop" role="dialog" aria-modal="true" aria-label="Recortar foto">
     <div class="modal-box" style="max-width:520px">
       <div style="display:flex;justify-content:space-between;align-items:center;gap:8px;margin-bottom:10px">
@@ -1435,7 +1455,42 @@
     else { prev.style.backgroundImage = ''; ph.style.display = ''; }
   }
 
+  function renderFotos() {
+    var fotos = (dados && dados.fotos) || [];
+    var grid = $('fotosReais');
+    var ex = $('fotosExemplo');
+    if (!fotos.length) { grid.style.display = 'none'; grid.innerHTML = ''; ex.style.display = ''; return; }
+    grid.innerHTML = fotos.map(function (f, i) {
+      var media = f.tipo === 'video'
+        ? '<video src="' + E(f.url) + '" muted playsinline preload="metadata"></video><span class="foto-play">▶</span>'
+        : '<img src="' + E(f.url) + '" alt="' + E(f.legenda || 'Foto do evento') + '" loading="lazy">';
+      return '<button type="button" class="foto-real" data-i="' + i + '">' + media + '</button>';
+    }).join('');
+    grid.style.display = '';
+    ex.style.display = 'none';
+  }
+
+  $('fotosReais').addEventListener('click', function (e) {
+    var b = e.target.closest('.foto-real');
+    if (!b) return;
+    var f = ((dados && dados.fotos) || [])[+b.dataset.i];
+    if (!f) return;
+    $('fotoLbMidia').innerHTML = f.tipo === 'video'
+      ? '<video src="' + E(f.url) + '" controls playsinline autoplay></video>'
+      : '<img src="' + E(f.url) + '" alt="">';
+    $('fotoLbLegenda').textContent = f.legenda || '';
+    $('modalFoto').classList.add('on');
+  });
+
+  $('modalFoto').addEventListener('click', function (e) {
+    if (e.target === this || e.target.id === 'btnFotoFechar') {
+      this.classList.remove('on');
+      $('fotoLbMidia').innerHTML = '';
+    }
+  });
+
   function render() {
+    renderFotos();
     renderCadastro();
     renderPedidos();
     renderInicio();
