@@ -266,12 +266,21 @@
     @media (max-width: 640px) { .foto-grid { grid-template-columns: repeat(2, 1fr); } .foto:nth-child(1) { grid-column: span 2; grid-row: auto; aspect-ratio: 16 / 9; } }
     .galeria-vazia { border: 1px dashed rgba(255, 255, 255, .14); border-radius: 18px; padding: 28px 18px; text-align: center; color: var(--mut); font-size: 14px; }
 
-    /* Fotolog real: mural principal (6 fotos, a primeira grande), como aprovado */
-    .foto-real { position: relative; aspect-ratio: 4 / 3; border-radius: 16px; overflow: hidden; padding: 0; cursor: pointer; border: 1px solid rgba(255, 255, 255, .12); background: #0b0b10; }
+    /* Fotolog: mural principal com 6 posições fixas (1 grande + 5 pequenas). Vagas vazias ficam como placeholder */
+    .mural { display: grid; grid-template-columns: repeat(3, 1fr); grid-template-areas: "s1 s1 s2" "s1 s1 s3" "s4 s5 s6"; gap: 10px; }
+    .mural .s1 { grid-area: s1; } .mural .s2 { grid-area: s2; } .mural .s3 { grid-area: s3; }
+    .mural .s4 { grid-area: s4; } .mural .s5 { grid-area: s5; } .mural .s6 { grid-area: s6; }
+    .foto-real { position: relative; aspect-ratio: 4 / 3; border-radius: 16px; overflow: hidden; padding: 0; cursor: pointer; border: 1px solid rgba(255, 255, 255, .12); background: #0b0b10; font: inherit; color: inherit; }
+    .foto-real.s1 { aspect-ratio: auto; }
     .foto-real img, .foto-real video { width: 100%; height: 100%; object-fit: cover; display: block; }
-    .foto-real:nth-child(1) { grid-column: span 2; grid-row: span 2; aspect-ratio: auto; }
-    @media (max-width: 640px) { .foto-real:nth-child(1) { grid-column: span 2; grid-row: auto; aspect-ratio: 16 / 9; } }
+    .foto-real.vazio { cursor: default; display: flex; align-items: center; justify-content: center; color: rgba(255, 255, 255, .55); background: linear-gradient(135deg, rgba(168, 85, 247, .22), rgba(6, 182, 212, .12)); }
+    .foto-real.vazio.s2, .foto-real.vazio.s4, .foto-real.vazio.s6 { background: linear-gradient(135deg, rgba(255, 0, 127, .16), rgba(168, 85, 247, .14)); }
+    .foto-real.vazio svg { width: 28px; height: 28px; }
     .foto-play { position: absolute; left: 50%; top: 50%; transform: translate(-50%, -50%); width: 44px; height: 44px; border-radius: 50%; background: rgba(0, 0, 0, .55); color: #fff; display: flex; align-items: center; justify-content: center; font-size: 16px; pointer-events: none; }
+    @media (max-width: 640px) {
+      .mural { grid-template-columns: 1fr 1fr; grid-template-areas: "s1 s1" "s2 s3" "s4 s5" "s6 s6"; }
+      .mural .foto-real.s1, .mural .foto-real.s6 { aspect-ratio: 16 / 9; }
+    }
 
     /* Card "Veja mais momentos": foto com título e descrição ao lado */
     .foto-sep { border: 0; border-top: 1px solid rgba(255, 255, 255, .14); margin: 0 0 18px; }
@@ -516,7 +525,7 @@
         <div class="box-full">
           <h2>Galeria</h2>
           <div id="memGaleria">
-            <div id="fotosReais" class="foto-grid" style="display:none"></div>
+            <div id="fotosReais" class="mural" style="display:none"></div>
             <div id="fotosExemplo">
             <div class="foto-grid" aria-hidden="true">
               <div class="foto"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><path d="M4 8h3l2-3h6l2 3h3v11H4z"/><circle cx="12" cy="13" r="3.5"/></svg></div><div class="foto"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><path d="M4 8h3l2-3h6l2 3h3v11H4z"/><circle cx="12" cy="13" r="3.5"/></svg></div><div class="foto"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><path d="M4 8h3l2-3h6l2 3h3v11H4z"/><circle cx="12" cy="13" r="3.5"/></svg></div><div class="foto"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><path d="M4 8h3l2-3h6l2 3h3v11H4z"/><circle cx="12" cy="13" r="3.5"/></svg></div><div class="foto"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><path d="M4 8h3l2-3h6l2 3h3v11H4z"/><circle cx="12" cy="13" r="3.5"/></svg></div><div class="foto"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><path d="M4 8h3l2-3h6l2 3h3v11H4z"/><circle cx="12" cy="13" r="3.5"/></svg></div>
@@ -1110,10 +1119,12 @@
 
   function renderGuia() {
     var pedido = pedidoAtivo();
-    $('cardLinhaTempo').style.display = pedido ? '' : 'none';
+    $('cardLinhaTempo').style.display = '';
     var etapas = pedido ? (dados.etapas || []).filter(function (e) { return e.proposta_id === pedido.id; }) : [];
     var lt = $('linhaTempo');
-    if (!etapas.length) {
+    if (!pedido) {
+      lt.innerHTML = '<div class="vazio">Sua linha do tempo aparecerá aqui quando houver um evento.</div>';
+    } else if (!etapas.length) {
       lt.innerHTML =
         '<div class="etapa"><div class="nome mut">Boas-vindas</div><div class="hora">Em breve</div></div>' +
         '<div class="etapa"><div class="nome mut">Setlist e preparativos</div><div class="hora">Em breve</div></div>' +
@@ -1432,12 +1443,12 @@
   }
   function renderEquipe() {
     var p = pedidoAtivo();
-    $('cardEquipe').style.display = p ? '' : 'none';
+    $('cardEquipe').style.display = '';
     var box = $('listaEquipe');
-    var eq = (dados.equipe || []).filter(function (m) { return !m.proposta_id || !p || m.proposta_id === p.id; });
+    var eq = p ? (dados.equipe || []).filter(function (m) { return m.proposta_id === p.id; }) : [];
     if (!eq.length) {
       box.className = 'vazio';
-      box.textContent = 'A equipe técnica do seu evento aparece aqui assim que for confirmada.';
+      box.textContent = p ? 'A equipe técnica do seu evento aparece aqui assim que for confirmada.' : 'Sua equipe técnica aparecerá aqui quando houver um evento.';
       $('btnListaEquipe').style.display = 'none';
       return;
     }
@@ -1497,15 +1508,22 @@
   var LISTA_LB = [], LB_I = 0, LB_ANIM = false, PT = null, SUPRIMIR_CLIQUE = false;
 
   function midia(f) {
-    return f.tipo === 'video'
-      ? '<video src="' + E(f.url) + '" muted playsinline preload="metadata"></video><span class="foto-play">▶</span>'
-      : '<img src="' + E(f.url) + '" alt="' + E(f.legenda || 'Foto do evento') + '" loading="lazy">';
+    if (f.tipo === 'video') {
+      var poster = f.poster_url ? ' poster="' + E(f.poster_url) + '"' : '';
+      return '<video src="' + E(f.url) + '#t=0.01"' + poster + ' muted playsinline preload="metadata"></video><span class="foto-play">▶</span>';
+    }
+    return '<img src="' + E(f.url) + '" alt="' + E(f.legenda || 'Foto do evento') + '" loading="lazy">';
   }
 
   function renderFotos() {
     var fotos = ((dados && dados.fotos) || []).filter(function (f) { return f.visivel !== false; });
-    var principais = fotos.filter(function (f) { return !f.na_linha; }).slice(0, 6);
+    var porPos = {};
+    fotos.forEach(function (f) {
+      if (!f.na_linha && f.posicao >= 1 && f.posicao <= 6 && !porPos[f.posicao]) porPos[f.posicao] = f;
+    });
     var linhas = fotos.filter(function (f) { return f.na_linha; });
+    var principais = [];
+    for (var n = 1; n <= 6; n++) if (porPos[n]) principais.push(porPos[n]);
     LISTA_LB = principais.concat(linhas);
     var box = $('fotosReais'), ex = $('fotosExemplo'), card = $('cardLinha'), lin = $('fotosLinha');
     if (!principais.length && !linhas.length) {
@@ -1513,9 +1531,14 @@
       return;
     }
     if (principais.length) {
-      box.innerHTML = principais.map(function (f, i) {
-        return '<button type="button" class="foto-real" data-k="' + i + '">' + midia(f) + '</button>';
-      }).join('');
+      var html = '';
+      for (var m = 1; m <= 6; m++) {
+        var f2 = porPos[m];
+        html += f2
+          ? '<button type="button" class="foto-real s' + m + '" data-k="' + principais.indexOf(f2) + '">' + midia(f2) + '</button>'
+          : '<div class="foto-real vazio s' + m + '" aria-hidden="true">' + CAMERA_SVG + '</div>';
+      }
+      box.innerHTML = html;
       box.style.display = '';
     } else {
       box.style.display = 'none'; box.innerHTML = '';
@@ -1554,7 +1577,7 @@
     d.className = 'lb-slide';
     d.style.transform = 'translateX(0)';
     d.innerHTML = f.tipo === 'video'
-      ? '<video src="' + E(f.url) + '" controls playsinline></video>'
+      ? '<video src="' + E(f.url) + '"' + (f.poster_url ? ' poster="' + E(f.poster_url) + '"' : '') + ' controls playsinline preload="auto"></video>'
       : '<img src="' + E(f.url) + '" alt="" draggable="false">';
     return d;
   }
