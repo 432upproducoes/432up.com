@@ -3,59 +3,382 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
-  <title>Fotos do evento · Admin 432UP!</title>
+  <title>Admin Fotolog — 432UP!</title>
+
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&display=swap" rel="stylesheet">
+
   <link rel="stylesheet" href="https://www.432up.com/css/style.css">
+  <script src="https://cdn.tailwindcss.com"></script>
   <link rel="stylesheet" href="css/admin.css">
+  <script>
+    tailwind.config = {
+      theme: {
+        extend: {
+          colors: {
+            ink: '#06080c',
+            panel: 'rgba(14,14,22,0.72)',
+            lilac: '#f59e0b',
+            lime: '#fbbf24',
+            cyan: '#fbbf24',
+            amber: '#f59e0b'
+          },
+          fontFamily: { sans: ['Inter', 'system-ui', 'sans-serif'] }
+        }
+      }
+    }
+  </script>
+
   <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
   <script src="https://cdn.jsdelivr.net/npm/browser-image-compression@2.0.2/dist/browser-image-compression.min.js"></script>
   <script src="https://cdn.jsdelivr.net/npm/sortablejs@1.15.2/Sortable.min.js"></script>
+  <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/cropperjs@1.6.2/dist/cropper.min.css">
+  <script src="https://cdn.jsdelivr.net/npm/cropperjs@1.6.2/dist/cropper.min.js"></script>
+
   <style>
-    body { min-height: 100vh; margin: 0; background: #06080c; color: #e5e7eb; font-family: Inter, system-ui, sans-serif; }
-    main { padding-top: 96px; }
-    .f-select { width: 100%; padding: 12px 14px; border-radius: 12px; background: rgba(255,255,255,.05); border: 1px solid rgba(245,158,11,.28); color: #fff; font: inherit; font-size: .88rem; }
-    .f-select option { background: #17122b; }
-    .f-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(180px, 1fr)); gap: 14px; margin-top: 16px; }
-    .f-item { position: relative; border-radius: 16px; overflow: hidden; border: 1px solid rgba(255,255,255,.12); background: #0b0b10; cursor: grab; }
-    .f-item.off { opacity: .45; }
-    .f-item .thumb { width: 100%; aspect-ratio: 4 / 3; object-fit: cover; display: block; }
-    .f-item .tag { position: absolute; left: 8px; top: 8px; font-size: 10px; font-weight: 800; padding: 3px 8px; border-radius: 999px; background: rgba(0,0,0,.6); color: #fbbf24; text-transform: uppercase; }
-    .f-item .corpo { padding: 10px; display: grid; gap: 8px; }
-    .f-item input { width: 100%; padding: 8px 10px; border-radius: 10px; background: rgba(255,255,255,.06); border: 1px solid rgba(255,255,255,.14); color: #fff; font: inherit; font-size: 12px; }
-    .f-item .acoes { display: flex; gap: 6px; }
-    .f-item .acoes button { flex: 1; font-size: 11px; padding: 6px; border-radius: 10px; border: 1px solid rgba(255,255,255,.18); background: transparent; color: #e5e7eb; cursor: pointer; }
-    .f-item .acoes button.perigo { border-color: rgba(255,77,77,.5); color: #ff8a8a; }
-    .f-drop { margin-top: 16px; border: 1px dashed rgba(245,158,11,.4); border-radius: 16px; padding: 22px; text-align: center; color: #9ca3af; font-size: 14px; }
-    .f-msg { font-size: 12px; min-height: 16px; margin-top: 10px; color: #fbbf24; }
-    .f-msg.erro { color: #ff8a8a; }
+    body { min-height: 100vh; margin: 0; background: var(--bg-base); color: var(--text-body); font-family: Inter, system-ui, sans-serif; }
+    .adm-input {
+      width: 100%; background: rgba(255,255,255,0.05);
+      border: 1px solid rgba(var(--accent-rgb),0.28);
+      padding: 10px 14px; border-radius: 12px; color: #fff; font-size: 0.88rem;
+      outline: none; box-sizing: border-box; font-family: inherit;
+      transition: border-color .2s, box-shadow .2s;
+    }
+    .adm-input:focus { border-color: var(--accent); box-shadow: 0 0 12px rgba(var(--accent-rgb),0.25); }
+    textarea.adm-input { resize: vertical; min-height: 72px; }
+
+    .btn-adm-primary {
+      background: linear-gradient(135deg, rgba(var(--accent-rgb),0.18), rgba(var(--accent-rgb),0.06));
+      border: 1px solid var(--accent); color: var(--accent-lighter); font-weight: 700;
+      padding: 10px 18px; border-radius: 20px; cursor: pointer;
+      display: inline-flex; align-items: center; justify-content: center; gap: 8px;
+      font-size: 0.84rem; transition: all .25s ease; white-space: nowrap;
+    }
+    .btn-adm-primary:hover { background: var(--accent); color: #08080A; box-shadow: 0 0 22px rgba(var(--accent-rgb),0.45); transform: translateY(-1px); }
+    .btn-adm-primary:disabled { opacity: .55; cursor: not-allowed; transform: none; }
+
+    .btn-lime {
+      background: linear-gradient(135deg, rgba(var(--accent-rgb),0.14), rgba(var(--accent-rgb),0.04));
+      border: 1px solid var(--accent-light); color: var(--accent-light); font-weight: 700;
+      padding: 10px 18px; border-radius: 20px; cursor: pointer;
+      display: inline-flex; align-items: center; gap: 8px; font-size: 0.84rem;
+      transition: all .25s ease; white-space: nowrap;
+    }
+    .btn-lime:hover { background: var(--accent-light); color: #08080A; box-shadow: 0 0 22px rgba(var(--accent-rgb),0.4); }
+
+    .btn-ghost {
+      background: rgba(255,255,255,0.04); border: 1px solid rgba(255,255,255,0.12);
+      color: #cbd5e1; font-weight: 600; padding: 10px 16px; border-radius: 20px;
+      cursor: pointer; font-size: 0.82rem; transition: all .2s;
+    }
+    .btn-ghost:hover { border-color: rgba(255,255,255,0.28); color: #fff; }
+
+    .btn-danger-outline {
+      background: linear-gradient(135deg, rgba(255,77,77,0.12), rgba(255,77,77,0.04));
+      border: 1px solid #FF4D4D; color: #FF8080; font-weight: 700;
+      padding: 10px 18px; border-radius: 20px; cursor: pointer;
+      display: inline-flex; align-items: center; gap: 8px; font-size: 0.84rem;
+      transition: all .25s;
+    }
+    .btn-danger-outline:hover { background: #FF4D4D; color: #08080A; }
+
+    .file-upload-wrap { display: flex; flex-wrap: wrap; align-items: center; gap: 10px; }
+    .file-upload-input { position: absolute; width: 1px; height: 1px; padding: 0; margin: -1px; overflow: hidden; clip: rect(0,0,0,0); white-space: nowrap; border: 0; }
+    .btn-file-upload {
+      background: linear-gradient(135deg, rgba(var(--accent-rgb),0.12), rgba(var(--accent-rgb),0.04));
+      border: 1px solid var(--accent-light); color: var(--accent-light); font-weight: 700;
+      padding: 10px 16px; border-radius: 18px; cursor: pointer;
+      display: inline-flex; align-items: center; gap: 8px; font-size: 0.8rem;
+      transition: all .25s; user-select: none;
+    }
+    .btn-file-upload:hover { background: var(--accent-light); color: #08080A; }
+    .file-upload-filename { font-size: 0.76rem; color: #94a3b8; max-width: 180px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+
+    .glass-card {
+      background: rgba(14,14,22,0.75); backdrop-filter: blur(20px); -webkit-backdrop-filter: blur(20px);
+      border: 1px solid rgba(var(--accent-rgb),0.22); border-radius: 20px;
+    }
+
+    .marca-chip {
+      display: inline-flex; align-items: center; gap: 8px;
+      background: rgba(255,255,255,0.04); border: 1px solid rgba(255,255,255,0.1);
+      padding: 6px 10px 6px 12px; border-radius: 999px; font-size: 0.82rem; font-weight: 600;
+    }
+    .marca-chip img { height: 22px; width: auto; object-fit: contain; }
+    .marca-chip .chip-btn {
+      background: none; border: none; cursor: pointer; padding: 0 2px;
+      font-size: 0.85rem; line-height: 1; opacity: .75;
+    }
+    .marca-chip .chip-btn:hover { opacity: 1; }
+    .marca-chip .chip-edit { color: var(--accent-lighter); }
+    .marca-chip .chip-del { color: #FF8080; }
+
+    .admin-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(280px, 1fr)); gap: 18px; }
+    .adm-card {
+      background: rgba(14,14,22,0.8); border: 1px solid rgba(var(--accent-rgb),0.2);
+      border-radius: 18px; overflow: hidden; display: flex; flex-direction: column;
+      transition: transform .2s, border-color .2s, box-shadow .2s;
+    }
+    .adm-card:hover { border-color: var(--accent); transform: translateY(-3px); box-shadow: 0 16px 36px rgba(0,0,0,0.5), 0 0 18px rgba(var(--accent-rgb),0.12); }
+    .adm-card-media { width: 100%; height: 170px; object-fit: cover; background: #111; cursor: pointer; }
+    .adm-card-body { padding: 14px 16px 16px; flex: 1; display: flex; flex-direction: column; gap: 6px; }
+    .adm-card-title { font-size: 1rem; font-weight: 800; color: #fff; }
+    .adm-card-sub { font-size: 0.72rem; color: #94a3b8; text-transform: uppercase; letter-spacing: 0.3px; }
+    .btn-edit-modal {
+      background: linear-gradient(135deg, rgba(var(--accent-rgb),0.15), rgba(var(--accent-rgb),0.05));
+      color: var(--accent-lighter); border: 1px solid var(--accent); padding: 7px 14px; border-radius: 16px;
+      font-weight: 700; font-size: 0.76rem; cursor: pointer; transition: all .2s; white-space: nowrap;
+    }
+    .btn-edit-modal:hover { background: var(--accent); color: #08080A; }
+    .btn-icon-action {
+      background: rgba(255,255,255,0.04); border: 1px solid rgba(255,255,255,0.12); color: #fff;
+      width: 30px; height: 30px; border-radius: 8px; cursor: pointer; font-size: 0.78rem;
+      display: inline-flex; align-items: center; justify-content: center;
+    }
+    .btn-icon-action:hover { border-color: var(--accent); background: rgba(var(--accent-rgb),0.15); }
+
+    #edit-modal-overlay {
+      position: fixed; inset: 0; z-index: 100050;
+      display: flex; align-items: center; justify-content: center;
+      opacity: 0; pointer-events: none; visibility: hidden;
+      transition: opacity .3s, visibility .3s; padding: 20px;
+    }
+    #edit-modal-overlay.open { opacity: 1; pointer-events: auto; visibility: visible; }
+    .glx-backdrop { position: absolute; inset: 0; background: rgba(6,8,12,0.82); backdrop-filter: blur(18px); }
+    .glx-stage {
+      position: relative; width: min(96vw, 900px); max-height: 90vh;
+      transform: scale(0.96) translateY(12px); transition: transform .3s cubic-bezier(0.22,1,0.36,1); z-index: 2;
+    }
+    #edit-modal-overlay.open .glx-stage { transform: scale(1) translateY(0); }
+    .glx-panel {
+      max-height: 90vh; overflow-y: auto;
+      background: linear-gradient(135deg, rgba(14,14,22,0.98), rgba(28,20,48,0.94));
+      border: 1px solid rgba(var(--accent-rgb),0.3); border-radius: 22px;
+      box-shadow: 0 25px 60px rgba(0,0,0,0.85), 0 0 36px rgba(var(--accent-rgb),0.15);
+      padding: 28px;
+    }
+    .glx-close {
+      position: absolute; top: 16px; right: 16px; z-index: 5;
+      width: 36px; height: 36px; border-radius: 50%;
+      background: rgba(255,255,255,0.08); border: 1px solid rgba(255,255,255,0.15);
+      color: #fff; font-size: 1.2rem; cursor: pointer; display: flex; align-items: center; justify-content: center;
+    }
+    .glx-close:hover { color: var(--accent-light); border-color: var(--accent-light); }
+
+    .edit-section-title {
+      font-size: 0.7rem; font-weight: 700; text-transform: uppercase; letter-spacing: 1.4px;
+      color: var(--accent-lighter); margin: 22px 0 12px;
+    }
+    .edit-media-grid { display: flex; gap: 12px; overflow-x: auto; padding-bottom: 10px; }
+    .edit-media-thumb {
+      flex: 0 0 auto; width: 132px; height: 100px; border-radius: 12px; overflow: hidden;
+      position: relative; border: 1px solid rgba(var(--accent-rgb),0.3); background: rgba(0,0,0,0.4);
+    }
+    .edit-media-thumb img, .edit-media-thumb video { width: 100%; height: 100%; object-fit: cover; }
+    .edit-media-thumb.selecionavel { cursor: pointer; transition: border-color .15s, transform .15s; }
+    .edit-media-thumb.selecionavel:hover { border-color: var(--accent); transform: translateY(-2px); }
+    .btn-del-media {
+      position: absolute; top: 6px; right: 6px; background: rgba(255,77,77,0.9); border: none;
+      color: #fff; width: 22px; height: 22px; border-radius: 50%; cursor: pointer; font-weight: 800; font-size: 0.7rem; z-index: 10;
+    }
+    .specs-edit-list { display: flex; flex-direction: column; gap: 8px; margin-bottom: 10px; }
+    .spec-edit-item { display: flex; gap: 8px; align-items: center; }
+    .spec-drag-handle { cursor: grab; padding: 8px 6px; color: var(--accent-lighter); font-size: 1rem; user-select: none; }
+    .spec-edit-item.sortable-ghost, .admin-card-draggable.sortable-ghost { opacity: 0.35; }
+
+    .heic-warning, .slug-warning {
+      font-size: 0.74rem; padding: 8px 12px; border-radius: 10px; margin-top: 6px;
+      display: none; align-items: center; gap: 6px;
+    }
+    .heic-warning { background: rgba(255,184,0,0.1); border: 1px solid rgba(255,184,0,0.4); color: #FFB800; }
+    .slug-warning { background: rgba(255,77,77,0.08); border: 1px solid rgba(255,77,77,0.35); color: #FF8080; }
+
+    .toggle-switch {
+      position: relative; width: 42px; height: 24px; border-radius: 999px;
+      background: rgba(255,255,255,0.12); border: 1px solid rgba(255,255,255,0.18);
+      cursor: pointer; transition: background .2s;
+    }
+    .toggle-switch.on { background: rgba(var(--accent-rgb),0.35); border-color: var(--accent-light); }
+    .toggle-switch::after {
+      content: ''; position: absolute; top: 2px; left: 2px; width: 18px; height: 18px;
+      border-radius: 50%; background: #cbd5e1; transition: transform .2s, background .2s;
+    }
+    .toggle-switch.on::after { transform: translateX(18px); background: var(--accent-light); }
+
+
+    /* tip / help */
+    .help-tip {
+      display: inline-flex; align-items: center; justify-content: center;
+      width: 18px; height: 18px; border-radius: 50%;
+      border: 1px solid rgba(var(--accent-rgb),0.45); color: var(--accent-lighter);
+      font-size: 0.7rem; font-weight: 800; cursor: help; position: relative;
+      flex-shrink: 0; line-height: 1;
+    }
+    .help-tip .help-bubble {
+      display: none; position: absolute; bottom: calc(100% + 8px); left: 50%;
+      transform: translateX(-50%); width: min(260px, 70vw); padding: 10px 12px;
+      background: rgba(14,14,22,0.98); border: 1px solid rgba(var(--accent-rgb),0.4);
+      border-radius: 12px; font-size: 0.72rem; font-weight: 500; color: #e2e8f0;
+      line-height: 1.45; text-align: left; z-index: 40;
+      box-shadow: 0 12px 28px rgba(0,0,0,0.55); pointer-events: none;
+      white-space: normal;
+    }
+    .help-tip:hover .help-bubble, .help-tip:focus .help-bubble { display: block; }
+
+    /* crop modal */
+    #crop-modal-overlay {
+      position: fixed; inset: 0; z-index: 100080;
+      display: flex; align-items: center; justify-content: center;
+      opacity: 0; pointer-events: none; visibility: hidden;
+      transition: opacity .25s, visibility .25s; padding: 16px;
+      background: rgba(6,8,12,0.88); backdrop-filter: blur(14px);
+    }
+    #crop-modal-overlay.open { opacity: 1; pointer-events: auto; visibility: visible; }
+    .crop-panel {
+      width: min(96vw, 720px); max-height: 92vh; overflow: auto;
+      background: linear-gradient(135deg, rgba(14,14,22,0.98), rgba(28,20,48,0.95));
+      border: 1px solid rgba(var(--accent-rgb),0.35); border-radius: 20px;
+      box-shadow: 0 24px 60px rgba(0,0,0,0.85); padding: 20px;
+    }
+    .crop-stage {
+      width: 100%; max-height: 55vh; background: #0a0a10; border-radius: 12px; overflow: hidden;
+    }
+    .crop-stage img { display: block; max-width: 100%; }
+    .marca-chip { cursor: grab; }
+    .marca-chip.sortable-ghost { opacity: 0.35; }
+    @media (max-width: 720px) {
+      .glx-panel { padding: 20px 16px; }
+      .admin-grid { grid-template-columns: 1fr; }
+    }
+  </style>
+
+  <style>
+    /* Mural do fotolog: mesmo CSS da galeria do cliente (cliente/index.html) */
+    .mural { display: grid; grid-template-columns: repeat(3, 1fr); grid-template-areas: "s1 s1 s2" "s1 s1 s3" "s4 s5 s6"; gap: 10px; }
+    .mural .s1 { grid-area: s1; } .mural .s2 { grid-area: s2; } .mural .s3 { grid-area: s3; }
+    .mural .s4 { grid-area: s4; } .mural .s5 { grid-area: s5; } .mural .s6 { grid-area: s6; }
+    .slot { position: relative; aspect-ratio: 4 / 3; border-radius: 16px; overflow: hidden; border: 1px solid rgba(255, 255, 255, .12); background: #0b0b10; padding: 0; cursor: pointer; display: flex; align-items: center; justify-content: center; color: rgba(255, 255, 255, .55); }
+    .slot.s1 { aspect-ratio: auto; }
+    .slot.vazio { cursor: pointer; background: linear-gradient(135deg, rgba(168, 85, 247, .22), rgba(6, 182, 212, .12)); }
+    .slot.vazio.s2, .slot.vazio.s4, .slot.vazio.s6 { background: linear-gradient(135deg, rgba(255, 0, 127, .16), rgba(168, 85, 247, .14)); }
+    .slot-cta { display: flex; flex-direction: column; align-items: center; gap: 6px; font-size: 12px; }
+    .slot-cta svg { width: 28px; height: 28px; }
+    .slot img, .slot video, .linha-item img, .linha-item video { width: 100%; height: 100%; object-fit: cover; display: block; }
+    .slot-tag { position: absolute; left: 8px; top: 8px; z-index: 2; font-size: 10px; font-weight: 800; padding: 3px 8px; border-radius: 999px; background: rgba(0, 0, 0, .6); color: #fbbf24; text-transform: uppercase; letter-spacing: .04em; pointer-events: none; }
+    .slot-off { position: absolute; right: 8px; top: 8px; z-index: 2; font-size: 10px; font-weight: 800; padding: 3px 8px; border-radius: 999px; background: rgba(255, 77, 77, .8); color: #fff; text-transform: uppercase; pointer-events: none; }
+    .linha { display: flex; gap: 10px; overflow-x: auto; scroll-snap-type: x mandatory; padding: 4px 0 8px; margin-top: 14px; scrollbar-width: thin; }
+    .linha-item { position: relative; flex: 0 0 auto; height: 180px; aspect-ratio: 4 / 3; border-radius: 16px; overflow: hidden; scroll-snap-align: start; border: 1px solid rgba(255, 255, 255, .12); background: #0b0b10; padding: 0; cursor: pointer; }
+    @media (max-width: 640px) {
+      .mural { grid-template-columns: 1fr 1fr; grid-template-areas: "s1 s1" "s2 s3" "s4 s5" "s6 s6"; }
+      .mural .slot.s1, .mural .slot.s6 { aspect-ratio: 16 / 9; }
+      .linha-item { height: 140px; }
+    }
   </style>
 </head>
-<body class="theme-admin h-full antialiased overflow-x-hidden">
+<body class="theme-admin h-full text-slate-200 font-sans antialiased bg-[#06080c] overflow-x-hidden">
+
+  <canvas id="orbit-canvas"></canvas>
+  <div id="plasmaLayer" class="plasma-top-layer"></div>
+
   <header id="calc-header"></header>
+  <div id="mobile-menu"></div>
 
-  <main class="w-full max-w-6xl mx-auto px-4 pb-24 space-y-6">
-    <section class="glass-card p-5 sm:p-6">
-      <p class="text-[10px] font-bold text-amber-400 uppercase tracking-widest">Fotolog do cliente</p>
-      <h1 class="text-2xl font-extrabold mt-1">Fotos e vídeos do evento</h1>
-      <p class="text-sm text-slate-400 mt-1">Escolha o pedido. O que estiver visível aparece no painel do cliente, na seção Galeria. Arraste para ordenar.</p>
+  <div class="flex flex-col min-h-screen relative z-10 pb-16">
+    <main class="flex-1 p-4 lg:p-8 space-y-6 pt-20 lg:pt-24 w-full max-w-7xl mx-auto">
 
-      <label class="block mt-5 text-xs font-bold uppercase tracking-wider text-slate-400" for="sel-proposta">Pedido</label>
-      <select id="sel-proposta" class="f-select mt-2"><option value="">Carregando pedidos…</option></select>
-    </section>
+      <div class="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
+        <div>
+          <h1 class="text-2xl sm:text-3xl font-extrabold text-white tracking-tight">Admin Fotolog</h1>
+          <p class="text-sm text-slate-400 mt-1">Monte a galeria do cliente: 6 posições (1 grande, 5 pequenas), faixa em linha e reserva do evento</p>
+        </div>
+        <div class="flex flex-wrap items-center gap-3">
+          <div class="flex items-center gap-2 px-3 py-2 rounded-full border border-white/10 bg-white/5 text-xs text-slate-300">
+            <span>Modo Drag</span>
+            <button type="button" id="toggle-drag" class="toggle-switch" title="Ativar/desativar arrastar" aria-pressed="false"></button>
+            <span id="drag-label" class="text-slate-500">Arrastar bloqueado</span>
+          </div>
+          <button type="button" class="btn-lime" id="btn-enviar">+ Enviar fotos</button>
+          <button type="button" class="btn-ghost" id="btn-atualizar">Atualizar</button>
+        </div>
+      </div>
 
-    <section id="area-fotos" class="glass-card p-5 sm:p-6" style="display:none">
-      <label id="drop" class="f-drop block cursor-pointer">
-        <input id="input-arquivos" type="file" accept="image/*,video/*" multiple style="display:none">
-        <span>+ Adicionar fotos ou vídeos</span>
-        <span class="block text-xs mt-1 text-slate-500">Imagens são compactadas. Vídeos passam pelo otimizador do R2.</span>
-      </label>
-      <div id="upload-status" class="f-msg"></div>
-      <div id="lista" class="f-grid"></div>
-      <p id="vazio" class="text-sm text-slate-500 mt-6" style="display:none">Nenhuma foto ainda neste pedido.</p>
-    </section>
-  </main>
+      <section class="glass-card p-5 sm:p-6">
+        <h2 class="text-xs font-bold uppercase tracking-widest text-amber-300 mb-1">Pedido</h2>
+        <p class="text-xs text-slate-500 mb-4">Escolha o pedido do cliente. A galeria abaixo é a que ele vê no painel.</p>
+        <select id="sel-proposta" class="adm-input" style="max-width:560px"><option value="">Carregando pedidos…</option></select>
+        <div id="msg" class="text-xs mt-3 text-amber-300 min-h-[16px]"></div>
+      </section>
+
+      <section id="area" class="space-y-6" style="display:none">
+
+        <div class="glass-card p-5 sm:p-6">
+          <h2 class="text-xs font-bold uppercase tracking-widest text-amber-300 mb-1">Galeria do cliente</h2>
+          <p class="text-xs text-slate-500 mb-4">Com Modo Drag ativo, arraste uma foto para uma posição (troca se já houver uma). Sem Modo Drag, clique para editar. Posição vazia: clique para enviar direto nela.</p>
+          <div id="mural" class="mural"></div>
+
+          <div class="mt-6">
+            <h3 class="text-xs font-bold uppercase tracking-widest text-amber-300">Faixa em linha</h3>
+            <p class="text-xs text-slate-500 mb-2">Fotos marcadas como “Na linha” aparecem nessa faixa para o cliente. Com Modo Drag ativo, reordene.</p>
+            <div id="linha" class="linha"></div>
+            <p id="linha-vazia" class="text-sm text-slate-500" style="display:none">Nenhuma foto marcada como “Na linha”.</p>
+          </div>
+        </div>
+
+        <div id="editor" class="glass-card p-5 sm:p-6" style="display:none">
+          <h2 class="text-xs font-bold uppercase tracking-widest text-amber-300 mb-4">Editar mídia</h2>
+          <div class="grid gap-5 md:grid-cols-[220px_1fr] items-start">
+            <div id="ed-midia" class="rounded-2xl overflow-hidden border border-white/10 bg-black" style="aspect-ratio:4/3"></div>
+            <div class="space-y-4">
+              <div>
+                <label class="text-xs text-slate-400 font-bold uppercase tracking-wider" for="ed-posicao">Posição no mural</label>
+                <select id="ed-posicao" class="adm-input mt-1">
+                  <option value="">Sem posição (só reserva)</option>
+                  <option value="1">1 · grande</option>
+                  <option value="2">2 · pequena</option>
+                  <option value="3">3 · pequena</option>
+                  <option value="4">4 · pequena</option>
+                  <option value="5">5 · pequena</option>
+                  <option value="6">6 · pequena</option>
+                </select>
+              </div>
+              <div>
+                <label class="text-xs text-slate-400 font-bold uppercase tracking-wider" for="ed-legenda">Legenda</label>
+                <input id="ed-legenda" type="text" maxlength="160" class="adm-input mt-1" placeholder="Opcional">
+              </div>
+              <div class="flex flex-wrap gap-3">
+                <div class="flex items-center gap-2 px-3 py-2 rounded-full border border-white/10 bg-white/5 text-xs text-slate-300">
+                  <span>Na linha</span>
+                  <button type="button" id="ed-linha" class="toggle-switch" aria-pressed="false"></button>
+                </div>
+                <div class="flex items-center gap-2 px-3 py-2 rounded-full border border-white/10 bg-white/5 text-xs text-slate-300">
+                  <span>Visível</span>
+                  <button type="button" id="ed-visivel" class="toggle-switch" aria-pressed="false"></button>
+                </div>
+              </div>
+              <div class="flex flex-wrap gap-3 pt-2">
+                <button type="button" class="btn-danger-outline" id="ed-apagar">Apagar</button>
+                <button type="button" class="btn-ghost" id="ed-fechar">Fechar</button>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <div class="glass-card p-5 sm:p-6" id="reserva" data-drop="reserva">
+          <div class="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-2 mb-1">
+            <h2 class="text-xs font-bold uppercase tracking-widest text-amber-300">Reserva do evento</h2>
+            <button type="button" class="btn-file-upload" id="btn-enviar-reserva">+ Enviar para a reserva</button>
+          </div>
+          <p class="text-xs text-slate-500 mb-4">Todas as mídias deste pedido. Quem não está no mural nem na faixa fica só aqui. Arraste de volta para cá para tirar do mural.</p>
+          <div id="biblioteca" class="grid gap-4" style="grid-template-columns:repeat(auto-fill,minmax(150px,1fr))"></div>
+          <p id="biblioteca-vazia" class="text-sm text-slate-500" style="display:none">Nenhuma mídia neste pedido ainda.</p>
+        </div>
+      </section>
+
+      <input type="file" id="input-lib" accept="image/*,video/*" multiple hidden>
+      <input type="file" id="input-slot" accept="image/*,video/*" hidden>
+    </main>
+  </div>
 
   <script src="https://www.432up.com/B2B/partner-config.js"></script>
   <script src="https://www.432up.com/script/script.js" defer></script>
@@ -65,12 +388,27 @@
     const R2_UPLOAD_URL = 'https://432up-r2-upload.432up-producoes.workers.dev/';
     const _sb = (typeof sbPartner !== 'undefined') ? sbPartner : null;
     const $ = (id) => document.getElementById(id);
-    let PROPOSTA_ID = '';
-    let FOTOS = [];
-    let SORTABLE = null;
-
     const esc = (s) => String(s ?? '').replace(/[&<>"']/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
-    const msg = (t, erro) => { const el = $('upload-status'); el.textContent = t || ''; el.className = 'f-msg' + (erro ? ' erro' : ''); };
+    const CAMERA_SVG = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round" width="28" height="28"><path d="M4 8h3l2-3h6l2 3h3v11H4z"/><circle cx="12" cy="13" r="3.5"/></svg>';
+
+    let PID = '';
+    let FOTOS = [];
+    let SEL = null;
+    let DRAG = false;
+    let SLOT_ALVO = null;
+    let SORT_LINHA = null;
+
+    function msg(t, erro) {
+      const el = $('msg');
+      el.textContent = t || '';
+      el.className = 'text-xs mt-3 min-h-[16px] ' + (erro ? 'text-red-300' : 'text-amber-300');
+    }
+
+    function midia(f, controles) {
+      return f.tipo === 'video'
+        ? `<video src="${esc(f.url)}" muted playsinline preload="metadata" ${controles ? 'controls' : ''} style="width:100%;height:100%;object-fit:cover;display:block"></video><span class="foto-play" style="position:absolute;left:50%;top:50%;transform:translate(-50%,-50%);width:40px;height:40px;border-radius:50%;background:rgba(0,0,0,.55);color:#fff;display:flex;align-items:center;justify-content:center;pointer-events:none">▶</span>`
+        : `<img src="${esc(f.url)}" alt="" loading="lazy" style="width:100%;height:100%;object-fit:cover;display:block">`;
+    }
 
     async function token() {
       const { data } = await _sb.auth.getSession();
@@ -79,7 +417,7 @@
       return t;
     }
 
-    // Mesmo worker de todas as mídias do portal. Admin pode gravar qualquer caminho.
+    // Mesmo worker de todas as mídias do portal (admin pode gravar qualquer caminho)
     async function r2Subir(path, file) {
       const resp = await fetch(R2_UPLOAD_URL + '?path=' + encodeURIComponent(path), {
         method: 'PUT',
@@ -95,12 +433,18 @@
       await fetch(R2_UPLOAD_URL + '?path=' + encodeURIComponent(path), {
         method: 'DELETE',
         headers: { 'Authorization': 'Bearer ' + await token() }
-      });
+      }).catch(() => {});
+    }
+
+    async function up(id, patch) {
+      const { error } = await _sb.from('evento_fotos').update(patch).eq('id', id);
+      if (error) { msg('Erro: ' + error.message, true); return false; }
+      return true;
     }
 
     async function carregarPedidos() {
       const { data, error } = await _sb.from('propostas')
-        .select('id, numero, cliente_nome, data_evento, status')
+        .select('id, numero, cliente_nome, data_evento')
         .order('data_evento', { ascending: false }).limit(300);
       const sel = $('sel-proposta');
       if (error) { sel.innerHTML = '<option value="">Erro ao carregar pedidos</option>'; return; }
@@ -109,121 +453,248 @@
       ).join('');
     }
 
-    async function carregarFotos() {
+    async function carregar() {
+      if (!PID) return;
       const { data, error } = await _sb.from('evento_fotos').select('*')
-        .eq('proposta_id', PROPOSTA_ID).order('ordem', { ascending: true });
-      if (error) { msg('Erro ao carregar fotos: ' + error.message, true); return; }
+        .eq('proposta_id', PID).order('ordem', { ascending: true });
+      if (error) { msg('Erro ao carregar: ' + error.message, true); return; }
       FOTOS = data || [];
-      renderFotos();
+      if (SEL && !FOTOS.find(f => f.id === SEL)) SEL = null;
+      render();
     }
 
-    function renderFotos() {
-      const lista = $('lista');
-      $('vazio').style.display = FOTOS.length ? 'none' : '';
-      lista.innerHTML = FOTOS.map(f => `
-        <div class="f-item ${f.visivel ? '' : 'off'}" data-id="${f.id}">
-          ${f.tipo === 'video'
-            ? `<video class="thumb" src="${esc(f.url)}" muted preload="metadata"></video>`
-            : `<img class="thumb" src="${esc(f.url)}" alt="" loading="lazy">`}
-          <span class="tag">${f.tipo === 'video' ? 'Vídeo' : 'Foto'}</span>
-          <div class="corpo">
-            <input type="text" maxlength="160" placeholder="Legenda (opcional)" value="${esc(f.legenda || '')}" data-legenda="${f.id}">
-            <div class="acoes">
-              <button type="button" data-visivel="${f.id}">${f.visivel ? 'Ocultar' : 'Mostrar'}</button>
-              <button type="button" class="perigo" data-apagar="${f.id}">Apagar</button>
+    function render() {
+      renderMural();
+      renderLinha();
+      renderBiblioteca();
+      renderEditor();
+    }
+
+    function renderMural() {
+      let h = '';
+      for (let n = 1; n <= 6; n++) {
+        const f = FOTOS.find(x => x.posicao === n);
+        const rotulo = `${n}${n === 1 ? ' · grande' : ''}`;
+        if (f) {
+          h += `<div class="slot s${n}" data-id="${f.id}" data-drop="${n}" draggable="${DRAG}" style="${SEL === f.id ? 'outline:2px solid var(--accent-light);outline-offset:2px;' : ''}">
+                  <span class="slot-tag">${rotulo}</span>
+                  ${f.visivel ? '' : '<span class="slot-off">oculta</span>'}
+                  ${midia(f)}
+                </div>`;
+        } else {
+          h += `<div class="slot vazio s${n}" data-drop="${n}" data-vazio="${n}">
+                  <span class="slot-tag">${rotulo}</span>
+                  <div class="slot-cta">${CAMERA_SVG}<span>Enviar aqui</span></div>
+                </div>`;
+        }
+      }
+      $('mural').innerHTML = h;
+    }
+
+    function renderLinha() {
+      const lista = FOTOS.filter(f => f.na_linha).sort((a, b) => (a.ordem || 0) - (b.ordem || 0));
+      $('linha').innerHTML = lista.map(f => `
+        <button type="button" class="linha-item" data-id="${f.id}" draggable="${DRAG}" style="${SEL === f.id ? 'outline:2px solid var(--accent-light);outline-offset:2px;' : ''}">${midia(f)}</button>`).join('');
+      $('linha-vazia').style.display = lista.length ? 'none' : '';
+    }
+
+    function renderBiblioteca() {
+      $('biblioteca-vazia').style.display = FOTOS.length ? 'none' : '';
+      $('biblioteca').innerHTML = FOTOS.map(f => {
+        const tags = [];
+        if (f.posicao) tags.push(`Posição ${f.posicao}`);
+        if (f.na_linha) tags.push('Na linha');
+        if (!f.visivel) tags.push('Oculta');
+        if (!tags.length) tags.push('Reserva');
+        return `
+          <div class="adm-card" data-id="${f.id}" draggable="${DRAG}" style="cursor:${DRAG ? 'grab' : 'pointer'};${SEL === f.id ? 'outline:2px solid var(--accent-light);' : ''}">
+            <div style="position:relative;aspect-ratio:4/3;background:#0b0b10;overflow:hidden">${midia(f)}</div>
+            <div class="adm-card-body">
+              <div class="adm-card-sub">${tags.map(t => esc(t)).join(' · ')}</div>
             </div>
-          </div>
-        </div>`).join('');
+          </div>`;
+      }).join('');
+    }
 
-      if (SORTABLE) SORTABLE.destroy();
-      SORTABLE = Sortable.create(lista, {
-        animation: 180,
-        onEnd: async () => {
-          const ids = [...lista.querySelectorAll('.f-item')].map(el => el.dataset.id);
-          await Promise.all(ids.map((id, i) => _sb.from('evento_fotos').update({ ordem: i + 1 }).eq('id', id)));
-          FOTOS.sort((a, b) => ids.indexOf(a.id) - ids.indexOf(b.id));
-          FOTOS.forEach((f, i) => f.ordem = i + 1);
-          msg('Ordem salva.');
-        }
+    function renderEditor() {
+      const f = FOTOS.find(x => x.id === SEL);
+      $('editor').style.display = f ? '' : 'none';
+      if (!f) return;
+      $('ed-midia').innerHTML = midia(f, true);
+      $('ed-posicao').value = f.posicao ? String(f.posicao) : '';
+      $('ed-legenda').value = f.legenda || '';
+      $('ed-linha').classList.toggle('on', !!f.na_linha);
+      $('ed-linha').setAttribute('aria-pressed', f.na_linha ? 'true' : 'false');
+      $('ed-visivel').classList.toggle('on', !!f.visivel);
+      $('ed-visivel').setAttribute('aria-pressed', f.visivel ? 'true' : 'false');
+    }
+
+    // Troca de posição: se o destino está ocupado, a foto que estava lá vai para a posição de origem (ou para a reserva)
+    async function mover(id, destino) {
+      const f = FOTOS.find(x => x.id === id);
+      if (!f || f.posicao === destino) return;
+      const antiga = f.posicao;
+      if (destino) {
+        const outro = FOTOS.find(x => x.posicao === destino && x.id !== id);
+        if (outro && !(await up(outro.id, { posicao: null }))) return;
+        if (!(await up(id, { posicao: destino }))) return;
+        if (outro && antiga && !(await up(outro.id, { posicao: antiga }))) return;
+      } else {
+        if (!(await up(id, { posicao: null }))) return;
+      }
+      msg('');
+      await carregar();
+    }
+
+    async function enviarArquivo(file, extra) {
+      const ehVideo = file.type.startsWith('video/');
+      let arquivo = file;
+      if (!ehVideo) {
+        arquivo = await imageCompression(file, { maxSizeMB: 0.8, maxWidthOrHeight: 1920, useWebWorker: true, fileType: 'image/jpeg' });
+      }
+      const path = `eventos/${PID}/${crypto.randomUUID()}.${ehVideo ? 'mp4' : 'jpg'}`;
+      const r = await r2Subir(path, arquivo);
+      const ordemBase = FOTOS.reduce((m, x) => Math.max(m, x.ordem || 0), 0);
+      const { error } = await _sb.from('evento_fotos').insert({
+        proposta_id: PID,
+        tipo: ehVideo ? 'video' : 'imagem',
+        url: r.url,
+        path: r.path,
+        ordem: ordemBase + 1,
+        visivel: true,
+        na_linha: false,
+        posicao: extra && extra.posicao ? extra.posicao : null
       });
+      if (error) throw error;
     }
 
-    $('lista').addEventListener('change', async (e) => {
-      const id = e.target.dataset.legenda;
-      if (!id) return;
-      const { error } = await _sb.from('evento_fotos').update({ legenda: e.target.value.trim() || null }).eq('id', id);
-      msg(error ? 'Erro ao salvar legenda.' : 'Legenda salva.', !!error);
-    });
-
-    $('lista').addEventListener('click', async (e) => {
-      const vis = e.target.dataset.visivel;
-      const apagar = e.target.dataset.apagar;
-      if (vis) {
-        const f = FOTOS.find(x => x.id === vis);
-        const novo = !f.visivel;
-        const { error } = await _sb.from('evento_fotos').update({ visivel: novo }).eq('id', vis);
-        if (error) return msg('Erro: ' + error.message, true);
-        f.visivel = novo;
-        renderFotos();
+    async function enviarLote(files, extra) {
+      if (!PID) return msg('Escolha um pedido antes.', true);
+      let falhas = 0;
+      for (let i = 0; i < files.length; i++) {
+        msg(`Enviando ${i + 1} de ${files.length}…`);
+        try { await enviarArquivo(files[i], extra); }
+        catch (err) { falhas++; msg('Falha em "' + files[i].name + '": ' + err.message, true); }
       }
-      if (apagar) {
-        const f = FOTOS.find(x => x.id === apagar);
-        if (!f || !confirm('Apagar esta mídia do pedido? Ela some do painel do cliente.')) return;
-        const { error } = await _sb.from('evento_fotos').delete().eq('id', apagar);
-        if (error) return msg('Erro ao apagar: ' + error.message, true);
-        await r2Apagar(f.path).catch(() => {});
-        FOTOS = FOTOS.filter(x => x.id !== apagar);
-        renderFotos();
-        msg('Mídia apagada.');
-      }
-    });
-
-    async function enviarArquivos(files) {
-      if (!PROPOSTA_ID) return msg('Escolha um pedido antes.', true);
-      const base = FOTOS.reduce((m, f) => Math.max(m, f.ordem || 0), 0);
-      let n = 0;
-      for (const original of files) {
-        n++;
-        msg(`Enviando ${n} de ${files.length}…`);
-        try {
-          const ehVideo = original.type.startsWith('video/');
-          let arquivo = original;
-          if (!ehVideo) {
-            arquivo = await imageCompression(original, { maxSizeMB: 0.8, maxWidthOrHeight: 1920, useWebWorker: true, fileType: 'image/jpeg' });
-          }
-          const ext = ehVideo ? 'mp4' : 'jpg';
-          const path = `eventos/${PROPOSTA_ID}/${crypto.randomUUID()}.${ext}`;
-          const r = await r2Subir(path, arquivo);
-          const { error } = await _sb.from('evento_fotos').insert({
-            proposta_id: PROPOSTA_ID,
-            tipo: ehVideo ? 'video' : 'imagem',
-            url: r.url,
-            path: r.path,
-            ordem: base + n,
-            visivel: true
-          });
-          if (error) throw error;
-        } catch (err) {
-          msg('Falha em "' + original.name + '": ' + err.message, true);
-        }
-      }
-      await carregarFotos();
-      if (!$('upload-status').classList.contains('erro')) msg('Envio concluído.');
+      await carregar();
+      if (!falhas) msg('Envio concluído.');
     }
 
-    $('input-arquivos').addEventListener('change', (e) => {
+    async function apagar(id) {
+      const f = FOTOS.find(x => x.id === id);
+      if (!f || !confirm('Apagar esta mídia? Ela some do painel do cliente.')) return;
+      const { error } = await _sb.from('evento_fotos').delete().eq('id', id);
+      if (error) return msg('Erro ao apagar: ' + error.message, true);
+      await r2Apagar(f.path);
+      if (SEL === id) SEL = null;
+      msg('Mídia apagada.');
+      await carregar();
+    }
+
+    // ----- Eventos -----
+    $('sel-proposta').addEventListener('change', (e) => {
+      PID = e.target.value;
+      SEL = null;
+      $('area').style.display = PID ? '' : 'none';
+      FOTOS = [];
+      msg('');
+      carregar();
+    });
+
+    $('btn-atualizar').addEventListener('click', () => carregar());
+    $('btn-enviar').addEventListener('click', () => $('input-lib').click());
+    $('btn-enviar-reserva').addEventListener('click', () => $('input-lib').click());
+    $('input-lib').addEventListener('change', (e) => {
       const files = [...e.target.files];
       e.target.value = '';
-      if (files.length) enviarArquivos(files);
+      if (files.length) enviarLote(files, null);
+    });
+    $('input-slot').addEventListener('change', async (e) => {
+      const file = e.target.files[0];
+      e.target.value = '';
+      if (!file || !SLOT_ALVO) return;
+      const n = SLOT_ALVO;
+      SLOT_ALVO = null;
+      const ocupante = FOTOS.find(x => x.posicao === n);
+      if (ocupante && !(await up(ocupante.id, { posicao: null }))) return;
+      await enviarLote([file], { posicao: n });
     });
 
-    $('sel-proposta').addEventListener('change', (e) => {
-      PROPOSTA_ID = e.target.value;
-      $('area-fotos').style.display = PROPOSTA_ID ? '' : 'none';
-      FOTOS = [];
-      if (PROPOSTA_ID) carregarFotos();
-      msg('');
+    // Toggle Modo Drag
+    $('toggle-drag').addEventListener('click', function () {
+      DRAG = !DRAG;
+      this.classList.toggle('on', DRAG);
+      this.setAttribute('aria-pressed', DRAG ? 'true' : 'false');
+      $('drag-label').textContent = DRAG ? 'Arrastar ativo' : 'Arrastar bloqueado';
+      if (SORT_LINHA) SORT_LINHA.option('disabled', !DRAG);
+      render();
     });
+
+    // Clique: mural, linha e reserva
+    document.addEventListener('click', (e) => {
+      const vazio = e.target.closest('[data-vazio]');
+      if (vazio && !DRAG) {
+        SLOT_ALVO = Number(vazio.dataset.vazio);
+        $('input-slot').click();
+        return;
+      }
+      const item = e.target.closest('[data-id]');
+      if (item && item.closest('#mural, #linha, #biblioteca')) {
+        SEL = item.dataset.id;
+        render();
+      }
+    });
+
+    // Arrastar (Modo Drag ativo)
+    document.addEventListener('dragstart', (e) => {
+      if (!DRAG) return e.preventDefault();
+      const el = e.target.closest('[data-id]');
+      if (!el) return;
+      e.dataTransfer.setData('text/plain', el.dataset.id);
+      e.dataTransfer.effectAllowed = 'move';
+    });
+    document.addEventListener('dragover', (e) => {
+      if (!DRAG) return;
+      if (e.target.closest('[data-drop]')) e.preventDefault();
+    });
+    document.addEventListener('drop', async (e) => {
+      if (!DRAG) return;
+      const alvo = e.target.closest('[data-drop]');
+      if (!alvo) return;
+      e.preventDefault();
+      const id = e.dataTransfer.getData('text/plain');
+      if (!id) return;
+      const destino = alvo.dataset.drop === 'reserva' ? null : Number(alvo.dataset.drop);
+      await mover(id, destino);
+    });
+
+    // Faixa em linha: reordenar (só com Modo Drag)
+    SORT_LINHA = Sortable.create($('linha'), {
+      animation: 180,
+      disabled: true,
+      draggable: '.linha-item',
+      onEnd: async () => {
+        const ids = [...$('linha').querySelectorAll('.linha-item')].map(el => el.dataset.id);
+        await Promise.all(ids.map((id, i) => up(id, { ordem: i + 1 })));
+        await carregar();
+      }
+    });
+
+    // Editor
+    $('ed-posicao').addEventListener('change', (e) => mover(SEL, e.target.value ? Number(e.target.value) : null));
+    $('ed-legenda').addEventListener('change', async (e) => {
+      if (await up(SEL, { legenda: e.target.value.trim() || null })) { msg('Legenda salva.'); carregar(); }
+    });
+    $('ed-linha').addEventListener('click', async () => {
+      const f = FOTOS.find(x => x.id === SEL);
+      if (f && await up(f.id, { na_linha: !f.na_linha })) carregar();
+    });
+    $('ed-visivel').addEventListener('click', async () => {
+      const f = FOTOS.find(x => x.id === SEL);
+      if (f && await up(f.id, { visivel: !f.visivel })) carregar();
+    });
+    $('ed-apagar').addEventListener('click', () => apagar(SEL));
+    $('ed-fechar').addEventListener('click', () => { SEL = null; render(); });
 
     if (_sb) carregarPedidos();
   </script>
