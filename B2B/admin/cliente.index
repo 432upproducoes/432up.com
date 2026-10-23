@@ -1,0 +1,231 @@
+<!DOCTYPE html>
+<html lang="pt-BR" class="h-full" data-theme="dark">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
+  <title>Fotos do evento · Admin 432UP!</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="https://www.432up.com/css/style.css">
+  <link rel="stylesheet" href="css/admin.css">
+  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+  <script src="https://cdn.jsdelivr.net/npm/browser-image-compression@2.0.2/dist/browser-image-compression.min.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/sortablejs@1.15.2/Sortable.min.js"></script>
+  <style>
+    body { min-height: 100vh; margin: 0; background: #06080c; color: #e5e7eb; font-family: Inter, system-ui, sans-serif; }
+    main { padding-top: 96px; }
+    .f-select { width: 100%; padding: 12px 14px; border-radius: 12px; background: rgba(255,255,255,.05); border: 1px solid rgba(245,158,11,.28); color: #fff; font: inherit; font-size: .88rem; }
+    .f-select option { background: #17122b; }
+    .f-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(180px, 1fr)); gap: 14px; margin-top: 16px; }
+    .f-item { position: relative; border-radius: 16px; overflow: hidden; border: 1px solid rgba(255,255,255,.12); background: #0b0b10; cursor: grab; }
+    .f-item.off { opacity: .45; }
+    .f-item .thumb { width: 100%; aspect-ratio: 4 / 3; object-fit: cover; display: block; }
+    .f-item .tag { position: absolute; left: 8px; top: 8px; font-size: 10px; font-weight: 800; padding: 3px 8px; border-radius: 999px; background: rgba(0,0,0,.6); color: #fbbf24; text-transform: uppercase; }
+    .f-item .corpo { padding: 10px; display: grid; gap: 8px; }
+    .f-item input { width: 100%; padding: 8px 10px; border-radius: 10px; background: rgba(255,255,255,.06); border: 1px solid rgba(255,255,255,.14); color: #fff; font: inherit; font-size: 12px; }
+    .f-item .acoes { display: flex; gap: 6px; }
+    .f-item .acoes button { flex: 1; font-size: 11px; padding: 6px; border-radius: 10px; border: 1px solid rgba(255,255,255,.18); background: transparent; color: #e5e7eb; cursor: pointer; }
+    .f-item .acoes button.perigo { border-color: rgba(255,77,77,.5); color: #ff8a8a; }
+    .f-drop { margin-top: 16px; border: 1px dashed rgba(245,158,11,.4); border-radius: 16px; padding: 22px; text-align: center; color: #9ca3af; font-size: 14px; }
+    .f-msg { font-size: 12px; min-height: 16px; margin-top: 10px; color: #fbbf24; }
+    .f-msg.erro { color: #ff8a8a; }
+  </style>
+</head>
+<body class="theme-admin h-full antialiased overflow-x-hidden">
+  <header id="calc-header"></header>
+
+  <main class="w-full max-w-6xl mx-auto px-4 pb-24 space-y-6">
+    <section class="glass-card p-5 sm:p-6">
+      <p class="text-[10px] font-bold text-amber-400 uppercase tracking-widest">Fotolog do cliente</p>
+      <h1 class="text-2xl font-extrabold mt-1">Fotos e vídeos do evento</h1>
+      <p class="text-sm text-slate-400 mt-1">Escolha o pedido. O que estiver visível aparece no painel do cliente, na seção Galeria. Arraste para ordenar.</p>
+
+      <label class="block mt-5 text-xs font-bold uppercase tracking-wider text-slate-400" for="sel-proposta">Pedido</label>
+      <select id="sel-proposta" class="f-select mt-2"><option value="">Carregando pedidos…</option></select>
+    </section>
+
+    <section id="area-fotos" class="glass-card p-5 sm:p-6" style="display:none">
+      <label id="drop" class="f-drop block cursor-pointer">
+        <input id="input-arquivos" type="file" accept="image/*,video/*" multiple style="display:none">
+        <span>+ Adicionar fotos ou vídeos</span>
+        <span class="block text-xs mt-1 text-slate-500">Imagens são compactadas. Vídeos passam pelo otimizador do R2.</span>
+      </label>
+      <div id="upload-status" class="f-msg"></div>
+      <div id="lista" class="f-grid"></div>
+      <p id="vazio" class="text-sm text-slate-500 mt-6" style="display:none">Nenhuma foto ainda neste pedido.</p>
+    </section>
+  </main>
+
+  <script src="https://www.432up.com/B2B/partner-config.js"></script>
+  <script src="https://www.432up.com/script/script.js" defer></script>
+  <script src="https://www.432up.com/B2B/partner-header.js"></script>
+
+  <script>
+    const R2_UPLOAD_URL = 'https://432up-r2-upload.432up-producoes.workers.dev/';
+    const _sb = (typeof sbPartner !== 'undefined') ? sbPartner : null;
+    const $ = (id) => document.getElementById(id);
+    let PROPOSTA_ID = '';
+    let FOTOS = [];
+    let SORTABLE = null;
+
+    const esc = (s) => String(s ?? '').replace(/[&<>"']/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
+    const msg = (t, erro) => { const el = $('upload-status'); el.textContent = t || ''; el.className = 'f-msg' + (erro ? ' erro' : ''); };
+
+    async function token() {
+      const { data } = await _sb.auth.getSession();
+      const t = data && data.session && data.session.access_token;
+      if (!t) throw new Error('Sessão expirada. Entre novamente.');
+      return t;
+    }
+
+    // Mesmo worker de todas as mídias do portal. Admin pode gravar qualquer caminho.
+    async function r2Subir(path, file) {
+      const resp = await fetch(R2_UPLOAD_URL + '?path=' + encodeURIComponent(path), {
+        method: 'PUT',
+        headers: { 'Authorization': 'Bearer ' + await token(), 'Content-Type': file.type || 'application/octet-stream' },
+        body: file
+      });
+      const j = await resp.json().catch(() => null);
+      if (!resp.ok || !j || !j.ok) throw new Error((j && j.error) || ('Upload falhou (status ' + resp.status + ')'));
+      return j;
+    }
+
+    async function r2Apagar(path) {
+      await fetch(R2_UPLOAD_URL + '?path=' + encodeURIComponent(path), {
+        method: 'DELETE',
+        headers: { 'Authorization': 'Bearer ' + await token() }
+      });
+    }
+
+    async function carregarPedidos() {
+      const { data, error } = await _sb.from('propostas')
+        .select('id, numero, cliente_nome, data_evento, status')
+        .order('data_evento', { ascending: false }).limit(300);
+      const sel = $('sel-proposta');
+      if (error) { sel.innerHTML = '<option value="">Erro ao carregar pedidos</option>'; return; }
+      sel.innerHTML = '<option value="">Escolha um pedido…</option>' + (data || []).map(p =>
+        `<option value="${esc(p.id)}">${esc(p.numero ? '#' + p.numero + ' · ' : '')}${esc(p.cliente_nome || 'Sem nome')}${p.data_evento ? ' · ' + esc(p.data_evento) : ''}</option>`
+      ).join('');
+    }
+
+    async function carregarFotos() {
+      const { data, error } = await _sb.from('evento_fotos').select('*')
+        .eq('proposta_id', PROPOSTA_ID).order('ordem', { ascending: true });
+      if (error) { msg('Erro ao carregar fotos: ' + error.message, true); return; }
+      FOTOS = data || [];
+      renderFotos();
+    }
+
+    function renderFotos() {
+      const lista = $('lista');
+      $('vazio').style.display = FOTOS.length ? 'none' : '';
+      lista.innerHTML = FOTOS.map(f => `
+        <div class="f-item ${f.visivel ? '' : 'off'}" data-id="${f.id}">
+          ${f.tipo === 'video'
+            ? `<video class="thumb" src="${esc(f.url)}" muted preload="metadata"></video>`
+            : `<img class="thumb" src="${esc(f.url)}" alt="" loading="lazy">`}
+          <span class="tag">${f.tipo === 'video' ? 'Vídeo' : 'Foto'}</span>
+          <div class="corpo">
+            <input type="text" maxlength="160" placeholder="Legenda (opcional)" value="${esc(f.legenda || '')}" data-legenda="${f.id}">
+            <div class="acoes">
+              <button type="button" data-visivel="${f.id}">${f.visivel ? 'Ocultar' : 'Mostrar'}</button>
+              <button type="button" class="perigo" data-apagar="${f.id}">Apagar</button>
+            </div>
+          </div>
+        </div>`).join('');
+
+      if (SORTABLE) SORTABLE.destroy();
+      SORTABLE = Sortable.create(lista, {
+        animation: 180,
+        onEnd: async () => {
+          const ids = [...lista.querySelectorAll('.f-item')].map(el => el.dataset.id);
+          await Promise.all(ids.map((id, i) => _sb.from('evento_fotos').update({ ordem: i + 1 }).eq('id', id)));
+          FOTOS.sort((a, b) => ids.indexOf(a.id) - ids.indexOf(b.id));
+          FOTOS.forEach((f, i) => f.ordem = i + 1);
+          msg('Ordem salva.');
+        }
+      });
+    }
+
+    $('lista').addEventListener('change', async (e) => {
+      const id = e.target.dataset.legenda;
+      if (!id) return;
+      const { error } = await _sb.from('evento_fotos').update({ legenda: e.target.value.trim() || null }).eq('id', id);
+      msg(error ? 'Erro ao salvar legenda.' : 'Legenda salva.', !!error);
+    });
+
+    $('lista').addEventListener('click', async (e) => {
+      const vis = e.target.dataset.visivel;
+      const apagar = e.target.dataset.apagar;
+      if (vis) {
+        const f = FOTOS.find(x => x.id === vis);
+        const novo = !f.visivel;
+        const { error } = await _sb.from('evento_fotos').update({ visivel: novo }).eq('id', vis);
+        if (error) return msg('Erro: ' + error.message, true);
+        f.visivel = novo;
+        renderFotos();
+      }
+      if (apagar) {
+        const f = FOTOS.find(x => x.id === apagar);
+        if (!f || !confirm('Apagar esta mídia do pedido? Ela some do painel do cliente.')) return;
+        const { error } = await _sb.from('evento_fotos').delete().eq('id', apagar);
+        if (error) return msg('Erro ao apagar: ' + error.message, true);
+        await r2Apagar(f.path).catch(() => {});
+        FOTOS = FOTOS.filter(x => x.id !== apagar);
+        renderFotos();
+        msg('Mídia apagada.');
+      }
+    });
+
+    async function enviarArquivos(files) {
+      if (!PROPOSTA_ID) return msg('Escolha um pedido antes.', true);
+      const base = FOTOS.reduce((m, f) => Math.max(m, f.ordem || 0), 0);
+      let n = 0;
+      for (const original of files) {
+        n++;
+        msg(`Enviando ${n} de ${files.length}…`);
+        try {
+          const ehVideo = original.type.startsWith('video/');
+          let arquivo = original;
+          if (!ehVideo) {
+            arquivo = await imageCompression(original, { maxSizeMB: 0.8, maxWidthOrHeight: 1920, useWebWorker: true, fileType: 'image/jpeg' });
+          }
+          const ext = ehVideo ? 'mp4' : 'jpg';
+          const path = `eventos/${PROPOSTA_ID}/${crypto.randomUUID()}.${ext}`;
+          const r = await r2Subir(path, arquivo);
+          const { error } = await _sb.from('evento_fotos').insert({
+            proposta_id: PROPOSTA_ID,
+            tipo: ehVideo ? 'video' : 'imagem',
+            url: r.url,
+            path: r.path,
+            ordem: base + n,
+            visivel: true
+          });
+          if (error) throw error;
+        } catch (err) {
+          msg('Falha em "' + original.name + '": ' + err.message, true);
+        }
+      }
+      await carregarFotos();
+      if (!$('upload-status').classList.contains('erro')) msg('Envio concluído.');
+    }
+
+    $('input-arquivos').addEventListener('change', (e) => {
+      const files = [...e.target.files];
+      e.target.value = '';
+      if (files.length) enviarArquivos(files);
+    });
+
+    $('sel-proposta').addEventListener('change', (e) => {
+      PROPOSTA_ID = e.target.value;
+      $('area-fotos').style.display = PROPOSTA_ID ? '' : 'none';
+      FOTOS = [];
+      if (PROPOSTA_ID) carregarFotos();
+      msg('');
+    });
+
+    if (_sb) carregarPedidos();
+  </script>
+</body>
+</html>
