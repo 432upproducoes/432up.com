@@ -689,30 +689,53 @@
       SORT.option('disabled', !DRAG);
     }
 
-    // Envio de uma mídia. Vídeo: miniatura no navegador + envio normal (o worker compacta)
+    // Vídeo: envio idêntico ao do parceiros.html (fetch direto, sem etapas antes). Até 3 tentativas
+    async function enviarVideoR2(path, file) {
+      const { data } = await _sb.auth.getSession();
+      const t = data && data.session && data.session.access_token;
+      if (!t) throw new Error('Sessão expirada. Faça login novamente.');
+      const resp = await fetch(R2_UPLOAD_URL + '?path=' + encodeURIComponent(path), {
+        method: 'PUT',
+        headers: { 'Authorization': 'Bearer ' + t, 'Content-Type': file.type || 'application/octet-stream' },
+        body: file
+      });
+      const j = await resp.json().catch(() => null);
+      if (!resp.ok || !j || !j.ok) throw new Error((j && j.error) || ('Upload falhou (status ' + resp.status + ')'));
+      return j;
+    }
+
+    async function enviarVideoComTentativas(path, file) {
+      let ultimo = null;
+      for (let t = 1; t <= 3; t++) {
+        try { return await enviarVideoR2(path, file); }
+        catch (err) {
+          ultimo = err;
+          if (t < 3) await new Promise(r => setTimeout(r, t * 1500));
+        }
+      }
+      throw ultimo;
+    }
+
+    // Envio de uma mídia. Foto: compactada no navegador. Vídeo: enviado original, o worker compacta.
     async function enviarArquivo(file, extras, onFrac) {
       const e = extras || {};
       const fr = onFrac || (() => {});
       const video = ehVideo(file);
-      let arquivo = file;
-      let poster = null;
-      if (!video) {
-        fr(0.05);
-        arquivo = await imageCompression(file, { maxSizeMB: 0.8, maxWidthOrHeight: 1920, useWebWorker: true, fileType: 'image/jpeg' });
-      } else {
-        fr(0.03);
-        poster = await gerarPoster(file);
-      }
-      fr(0.1);
       const base = `eventos/${PID}/${crypto.randomUUID()}`;
+      let r;
       let posterUrl = null;
-      if (poster) {
-        const pr = await enviarR2(`${base}-poster.jpg`, poster, false, null);
-        posterUrl = pr.url;
+      if (video) {
+        fr(0.05);
+        r = await enviarVideoComTentativas(`eventos/${PID}/video_${Date.now()}_${file.name}`, file);
+        fr(0.8);
+        const poster = await gerarPoster(file);
+        if (poster) posterUrl = (await enviarR2(`${base}-poster.jpg`, poster, false, null)).url;
+      } else {
+        fr(0.05);
+        const arquivo = await imageCompression(file, { maxSizeMB: 0.8, maxWidthOrHeight: 1920, useWebWorker: true, fileType: 'image/jpeg' });
+        fr(0.15);
+        r = await enviarR2(`${base}.jpg`, arquivo, false, (x) => fr(0.15 + x * 0.8));
       }
-      fr(0.15);
-      const caminho = video ? `eventos/${PID}/video_${Date.now()}_${file.name}` : `${base}.jpg`;
-      const r = await enviarR2(caminho, arquivo, false, (x) => fr(0.15 + x * 0.8));
       fr(0.96);
       const ordemBase = FOTOS.reduce((m, x) => Math.max(m, x.ordem || 0), 0);
       const { data, error } = await _sb.from('evento_fotos').insert({
