@@ -731,7 +731,23 @@
         if (resp.ok && j && j.ok) { raw = 'teste sem compactar: OK'; await r2Apagar(j.path); }
         else raw = 'teste sem compactar: falhou (' + resp.status + ') ' + ((j && j.error) || '');
       } catch (e) { raw = 'teste sem compactar: erro ' + e.message; }
-      return `${err.message} | arquivo ${(file.size / 1048576).toFixed(1)} MB, tipo "${file.type || 'vazio'}" | ${raw}`;
+      // Teste 2: mesmo vídeo, COM compactação, dentro da pasta do usuário logado (como perfil e parceiros)
+      let pasta = '';
+      try {
+        const { data: u } = await _sb.auth.getUser();
+        const uid = u && u.user && u.user.id;
+        const t = await token();
+        const path = `${uid}/diag_pasta_${Date.now()}_${file.name}`;
+        const resp = await fetch(R2_UPLOAD_URL + '?path=' + encodeURIComponent(path), {
+          method: 'PUT',
+          headers: { 'Authorization': 'Bearer ' + t, 'Content-Type': file.type || 'application/octet-stream' },
+          body: file
+        });
+        const j = await resp.json().catch(() => null);
+        if (resp.ok && j && j.ok) { pasta = ' | compactado na pasta do usuário: OK'; await r2Apagar(j.path); }
+        else pasta = ' | compactado na pasta do usuário: falhou (' + resp.status + ') ' + ((j && j.error) || '');
+      } catch (e) { pasta = ' | compactado na pasta do usuário: erro ' + e.message; }
+      return `${err.message} | arquivo ${(file.size / 1048576).toFixed(1)} MB, tipo "${file.type || 'vazio'}" | ${raw}${pasta}`;
     }
 
     // Envio de uma mídia. Foto: compactada no navegador. Vídeo: enviado original, o worker compacta.
