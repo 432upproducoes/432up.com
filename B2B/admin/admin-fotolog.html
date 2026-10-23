@@ -252,29 +252,6 @@
       .admin-grid { grid-template-columns: 1fr; }
     }
   </style>
-
-  <style>
-    /* Mural do fotolog: mesmo CSS da galeria do cliente (cliente/index.html) */
-    .mural { display: grid; grid-template-columns: repeat(3, 1fr); grid-template-areas: "s1 s1 s2" "s1 s1 s3" "s4 s5 s6"; gap: 10px; }
-    .mural .s1 { grid-area: s1; } .mural .s2 { grid-area: s2; } .mural .s3 { grid-area: s3; }
-    .mural .s4 { grid-area: s4; } .mural .s5 { grid-area: s5; } .mural .s6 { grid-area: s6; }
-    .slot { position: relative; aspect-ratio: 4 / 3; border-radius: 16px; overflow: hidden; border: 1px solid rgba(255, 255, 255, .12); background: #0b0b10; padding: 0; cursor: pointer; display: flex; align-items: center; justify-content: center; color: rgba(255, 255, 255, .55); }
-    .slot.s1 { aspect-ratio: auto; }
-    .slot.vazio { cursor: pointer; background: linear-gradient(135deg, rgba(168, 85, 247, .22), rgba(6, 182, 212, .12)); }
-    .slot.vazio.s2, .slot.vazio.s4, .slot.vazio.s6 { background: linear-gradient(135deg, rgba(255, 0, 127, .16), rgba(168, 85, 247, .14)); }
-    .slot-cta { display: flex; flex-direction: column; align-items: center; gap: 6px; font-size: 12px; }
-    .slot-cta svg { width: 28px; height: 28px; }
-    .slot img, .slot video, .linha-item img, .linha-item video { width: 100%; height: 100%; object-fit: cover; display: block; }
-    .slot-tag { position: absolute; left: 8px; top: 8px; z-index: 2; font-size: 10px; font-weight: 800; padding: 3px 8px; border-radius: 999px; background: rgba(0, 0, 0, .6); color: #fbbf24; text-transform: uppercase; letter-spacing: .04em; pointer-events: none; }
-    .slot-off { position: absolute; right: 8px; top: 8px; z-index: 2; font-size: 10px; font-weight: 800; padding: 3px 8px; border-radius: 999px; background: rgba(255, 77, 77, .8); color: #fff; text-transform: uppercase; pointer-events: none; }
-    .linha { display: flex; gap: 10px; overflow-x: auto; scroll-snap-type: x mandatory; padding: 4px 0 8px; margin-top: 14px; scrollbar-width: thin; }
-    .linha-item { position: relative; flex: 0 0 auto; height: 180px; aspect-ratio: 4 / 3; border-radius: 16px; overflow: hidden; scroll-snap-align: start; border: 1px solid rgba(255, 255, 255, .12); background: #0b0b10; padding: 0; cursor: pointer; }
-    @media (max-width: 640px) {
-      .mural { grid-template-columns: 1fr 1fr; grid-template-areas: "s1 s1" "s2 s3" "s4 s5" "s6 s6"; }
-      .mural .slot.s1, .mural .slot.s6 { aspect-ratio: 16 / 9; }
-      .linha-item { height: 140px; }
-    }
-  </style>
 </head>
 <body class="theme-admin h-full text-slate-200 font-sans antialiased bg-[#06080c] overflow-x-hidden">
 
@@ -290,93 +267,39 @@
       <div class="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
         <div>
           <h1 class="text-2xl sm:text-3xl font-extrabold text-white tracking-tight">Admin Fotolog</h1>
-          <p class="text-sm text-slate-400 mt-1">Monte a galeria do cliente: 6 posições (1 grande, 5 pequenas), faixa em linha e reserva do evento</p>
+          <p class="text-sm text-slate-400 mt-1">Fotos, vídeos e legendas da galeria do cliente</p>
         </div>
         <div class="flex flex-wrap items-center gap-3">
           <div class="flex items-center gap-2 px-3 py-2 rounded-full border border-white/10 bg-white/5 text-xs text-slate-300">
             <span>Modo Drag</span>
-            <button type="button" id="toggle-drag" class="toggle-switch" title="Ativar/desativar arrastar" aria-pressed="false"></button>
+            <button type="button" id="toggle-drag" class="toggle-switch" title="Ativar/desativar arrastar para reordenar" aria-pressed="false"></button>
             <span id="drag-label" class="text-slate-500">Arrastar bloqueado</span>
           </div>
-          <button type="button" class="btn-lime" id="btn-enviar">+ Enviar fotos</button>
+          <button type="button" class="btn-lime" id="btn-enviar">+ Enviar fotos e vídeos</button>
           <button type="button" class="btn-ghost" id="btn-atualizar">Atualizar</button>
         </div>
       </div>
 
       <section class="glass-card p-5 sm:p-6">
         <h2 class="text-xs font-bold uppercase tracking-widest text-amber-300 mb-1">Pedido</h2>
-        <p class="text-xs text-slate-500 mb-4">Escolha o pedido do cliente. A galeria abaixo é a que ele vê no painel.</p>
+        <p class="text-xs text-slate-500 mb-4">Escolha o pedido do cliente.</p>
         <select id="sel-proposta" class="adm-input" style="max-width:560px"><option value="">Carregando pedidos…</option></select>
-        <div id="msg" class="text-xs mt-3 text-amber-300 min-h-[16px]"></div>
+        <div id="msg" class="text-xs mt-3 min-h-[16px] text-amber-300"></div>
       </section>
 
-      <section id="area" class="space-y-6" style="display:none">
-
-        <div class="glass-card p-5 sm:p-6">
-          <h2 class="text-xs font-bold uppercase tracking-widest text-amber-300 mb-1">Galeria do cliente</h2>
-          <p class="text-xs text-slate-500 mb-4">Com Modo Drag ativo, arraste uma foto para uma posição (troca se já houver uma). Sem Modo Drag, clique para editar. Posição vazia: clique para enviar direto nela.</p>
-          <div id="mural" class="mural"></div>
-
-          <div class="mt-6">
-            <h3 class="text-xs font-bold uppercase tracking-widest text-amber-300">Faixa em linha</h3>
-            <p class="text-xs text-slate-500 mb-2">Fotos marcadas como “Na linha” aparecem nessa faixa para o cliente. Com Modo Drag ativo, reordene.</p>
-            <div id="linha" class="linha"></div>
-            <p id="linha-vazia" class="text-sm text-slate-500" style="display:none">Nenhuma foto marcada como “Na linha”.</p>
-          </div>
-        </div>
-
-        <div id="editor" class="glass-card p-5 sm:p-6" style="display:none">
-          <h2 class="text-xs font-bold uppercase tracking-widest text-amber-300 mb-4">Editar mídia</h2>
-          <div class="grid gap-5 md:grid-cols-[220px_1fr] items-start">
-            <div id="ed-midia" class="rounded-2xl overflow-hidden border border-white/10 bg-black" style="aspect-ratio:4/3"></div>
-            <div class="space-y-4">
-              <div>
-                <label class="text-xs text-slate-400 font-bold uppercase tracking-wider" for="ed-posicao">Posição no mural</label>
-                <select id="ed-posicao" class="adm-input mt-1">
-                  <option value="">Sem posição (só reserva)</option>
-                  <option value="1">1 · grande</option>
-                  <option value="2">2 · pequena</option>
-                  <option value="3">3 · pequena</option>
-                  <option value="4">4 · pequena</option>
-                  <option value="5">5 · pequena</option>
-                  <option value="6">6 · pequena</option>
-                </select>
-              </div>
-              <div>
-                <label class="text-xs text-slate-400 font-bold uppercase tracking-wider" for="ed-legenda">Legenda</label>
-                <input id="ed-legenda" type="text" maxlength="160" class="adm-input mt-1" placeholder="Opcional">
-              </div>
-              <div class="flex flex-wrap gap-3">
-                <div class="flex items-center gap-2 px-3 py-2 rounded-full border border-white/10 bg-white/5 text-xs text-slate-300">
-                  <span>Na linha</span>
-                  <button type="button" id="ed-linha" class="toggle-switch" aria-pressed="false"></button>
-                </div>
-                <div class="flex items-center gap-2 px-3 py-2 rounded-full border border-white/10 bg-white/5 text-xs text-slate-300">
-                  <span>Visível</span>
-                  <button type="button" id="ed-visivel" class="toggle-switch" aria-pressed="false"></button>
-                </div>
-              </div>
-              <div class="flex flex-wrap gap-3 pt-2">
-                <button type="button" class="btn-danger-outline" id="ed-apagar">Apagar</button>
-                <button type="button" class="btn-ghost" id="ed-fechar">Fechar</button>
-              </div>
-            </div>
-          </div>
-        </div>
-
-        <div class="glass-card p-5 sm:p-6" id="reserva" data-drop="reserva">
-          <div class="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-2 mb-1">
-            <h2 class="text-xs font-bold uppercase tracking-widest text-amber-300">Reserva do evento</h2>
-            <button type="button" class="btn-file-upload" id="btn-enviar-reserva">+ Enviar para a reserva</button>
-          </div>
-          <p class="text-xs text-slate-500 mb-4">Todas as mídias deste pedido. Quem não está no mural nem na faixa fica só aqui. Arraste de volta para cá para tirar do mural.</p>
-          <div id="biblioteca" class="grid gap-4" style="grid-template-columns:repeat(auto-fill,minmax(150px,1fr))"></div>
-          <p id="biblioteca-vazia" class="text-sm text-slate-500" style="display:none">Nenhuma mídia neste pedido ainda.</p>
-        </div>
+      <section id="area" class="glass-card p-5 sm:p-6" style="display:none">
+        <h2 class="text-xs font-bold uppercase tracking-widest text-amber-300 mb-1">Galeria do cliente</h2>
+        <p class="text-xs text-slate-500 mb-4">
+          <strong class="text-slate-300">Mural:</strong> as 6 primeiras fotos da ordem que não estão na linha (a primeira é a grande).
+          <strong class="text-slate-300">Em linha:</strong> aparecem no card “Veja mais momentos”, sem limite.
+          <strong class="text-slate-300">Reserva:</strong> as demais, guardadas no evento.
+          Com Modo Drag ativo, arraste para reordenar.
+        </p>
+        <div id="lista" class="grid gap-4" style="grid-template-columns:repeat(auto-fill,minmax(200px,1fr))"></div>
+        <p id="vazio" class="text-sm text-slate-500 mt-4" style="display:none">Nenhuma mídia neste pedido ainda.</p>
       </section>
 
-      <input type="file" id="input-lib" accept="image/*,video/*" multiple hidden>
-      <input type="file" id="input-slot" accept="image/*,video/*" hidden>
+      <input type="file" id="input-arquivos" accept="image/*,video/*" multiple hidden>
     </main>
   </div>
 
@@ -389,14 +312,11 @@
     const _sb = (typeof sbPartner !== 'undefined') ? sbPartner : null;
     const $ = (id) => document.getElementById(id);
     const esc = (s) => String(s ?? '').replace(/[&<>"']/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
-    const CAMERA_SVG = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round" width="28" height="28"><path d="M4 8h3l2-3h6l2 3h3v11H4z"/><circle cx="12" cy="13" r="3.5"/></svg>';
 
     let PID = '';
     let FOTOS = [];
-    let SEL = null;
     let DRAG = false;
-    let SLOT_ALVO = null;
-    let SORT_LINHA = null;
+    let SORT = null;
 
     function msg(t, erro) {
       const el = $('msg');
@@ -404,9 +324,13 @@
       el.className = 'text-xs mt-3 min-h-[16px] ' + (erro ? 'text-red-300' : 'text-amber-300');
     }
 
-    function midia(f, controles) {
+    function ehVideo(file) {
+      return (file.type || '').startsWith('video/') || /\.(mp4|mov|m4v|webm|3gp)$/i.test(file.name || '');
+    }
+
+    function midia(f) {
       return f.tipo === 'video'
-        ? `<video src="${esc(f.url)}" muted playsinline preload="metadata" ${controles ? 'controls' : ''} style="width:100%;height:100%;object-fit:cover;display:block"></video><span class="foto-play" style="position:absolute;left:50%;top:50%;transform:translate(-50%,-50%);width:40px;height:40px;border-radius:50%;background:rgba(0,0,0,.55);color:#fff;display:flex;align-items:center;justify-content:center;pointer-events:none">▶</span>`
+        ? `<video src="${esc(f.url)}" muted playsinline preload="metadata" style="width:100%;height:100%;object-fit:cover;display:block"></video>`
         : `<img src="${esc(f.url)}" alt="" loading="lazy" style="width:100%;height:100%;object-fit:cover;display:block">`;
     }
 
@@ -417,7 +341,7 @@
       return t;
     }
 
-    // Mesmo worker de todas as mídias do portal (admin pode gravar qualquer caminho)
+    // Mesmo worker de todas as mídias do portal
     async function r2Subir(path, file) {
       const resp = await fetch(R2_UPLOAD_URL + '?path=' + encodeURIComponent(path), {
         method: 'PUT',
@@ -459,121 +383,79 @@
         .eq('proposta_id', PID).order('ordem', { ascending: true });
       if (error) { msg('Erro ao carregar: ' + error.message, true); return; }
       FOTOS = data || [];
-      if (SEL && !FOTOS.find(f => f.id === SEL)) SEL = null;
       render();
     }
 
     function render() {
-      renderMural();
-      renderLinha();
-      renderBiblioteca();
-      renderEditor();
-    }
-
-    function renderMural() {
-      let h = '';
-      for (let n = 1; n <= 6; n++) {
-        const f = FOTOS.find(x => x.posicao === n);
-        const rotulo = `${n}${n === 1 ? ' · grande' : ''}`;
-        if (f) {
-          h += `<div class="slot s${n}" data-id="${f.id}" data-drop="${n}" draggable="${DRAG}" style="${SEL === f.id ? 'outline:2px solid var(--accent-light);outline-offset:2px;' : ''}">
-                  <span class="slot-tag">${rotulo}</span>
-                  ${f.visivel ? '' : '<span class="slot-off">oculta</span>'}
-                  ${midia(f)}
-                </div>`;
-        } else {
-          h += `<div class="slot vazio s${n}" data-drop="${n}" data-vazio="${n}">
-                  <span class="slot-tag">${rotulo}</span>
-                  <div class="slot-cta">${CAMERA_SVG}<span>Enviar aqui</span></div>
-                </div>`;
-        }
-      }
-      $('mural').innerHTML = h;
-    }
-
-    function renderLinha() {
-      const lista = FOTOS.filter(f => f.na_linha).sort((a, b) => (a.ordem || 0) - (b.ordem || 0));
-      $('linha').innerHTML = lista.map(f => `
-        <button type="button" class="linha-item" data-id="${f.id}" draggable="${DRAG}" style="${SEL === f.id ? 'outline:2px solid var(--accent-light);outline-offset:2px;' : ''}">${midia(f)}</button>`).join('');
-      $('linha-vazia').style.display = lista.length ? 'none' : '';
-    }
-
-    function renderBiblioteca() {
-      $('biblioteca-vazia').style.display = FOTOS.length ? 'none' : '';
-      $('biblioteca').innerHTML = FOTOS.map(f => {
-        const tags = [];
-        if (f.posicao) tags.push(`Posição ${f.posicao}`);
-        if (f.na_linha) tags.push('Na linha');
-        if (!f.visivel) tags.push('Oculta');
-        if (!tags.length) tags.push('Reserva');
+      // Mural = 6 primeiras visíveis que não estão em linha, na ordem da lista
+      const mural = FOTOS.filter(f => f.visivel && !f.na_linha).slice(0, 6).map(f => f.id);
+      $('vazio').style.display = FOTOS.length ? 'none' : '';
+      $('lista').innerHTML = FOTOS.map(f => {
+        let badge;
+        if (!f.visivel) badge = 'Oculta';
+        else if (f.na_linha) badge = 'Em linha';
+        else if (mural.indexOf(f.id) >= 0) badge = 'Mural · ' + (mural.indexOf(f.id) + 1) + (mural.indexOf(f.id) === 0 ? ' · grande' : '');
+        else badge = 'Reserva';
         return `
-          <div class="adm-card" data-id="${f.id}" draggable="${DRAG}" style="cursor:${DRAG ? 'grab' : 'pointer'};${SEL === f.id ? 'outline:2px solid var(--accent-light);' : ''}">
-            <div style="position:relative;aspect-ratio:4/3;background:#0b0b10;overflow:hidden">${midia(f)}</div>
-            <div class="adm-card-body">
-              <div class="adm-card-sub">${tags.map(t => esc(t)).join(' · ')}</div>
+          <div class="adm-card" data-id="${f.id}" style="${f.visivel ? '' : 'opacity:.5'}">
+            <div style="position:relative;aspect-ratio:4/3;background:#0b0b10;overflow:hidden">
+              ${midia(f)}
+              <span style="position:absolute;left:8px;top:8px;font-size:10px;font-weight:800;padding:3px 8px;border-radius:999px;background:rgba(0,0,0,.6);color:#fbbf24;text-transform:uppercase">${esc(badge)}</span>
+            </div>
+            <div class="adm-card-body" style="display:grid;gap:10px">
+              <input type="text" class="adm-input" maxlength="160" placeholder="Legenda (opcional)" value="${esc(f.legenda || '')}" data-leg="${f.id}">
+              <div class="flex flex-wrap gap-2">
+                <button type="button" class="btn-ghost" data-linha="${f.id}">${f.na_linha ? 'Tirar da linha' : 'Pôr na linha'}</button>
+                <button type="button" class="btn-ghost" data-vis="${f.id}">${f.visivel ? 'Ocultar' : 'Mostrar'}</button>
+                <button type="button" class="btn-danger-outline" data-del="${f.id}">Apagar</button>
+              </div>
             </div>
           </div>`;
       }).join('');
-    }
 
-    function renderEditor() {
-      const f = FOTOS.find(x => x.id === SEL);
-      $('editor').style.display = f ? '' : 'none';
-      if (!f) return;
-      $('ed-midia').innerHTML = midia(f, true);
-      $('ed-posicao').value = f.posicao ? String(f.posicao) : '';
-      $('ed-legenda').value = f.legenda || '';
-      $('ed-linha').classList.toggle('on', !!f.na_linha);
-      $('ed-linha').setAttribute('aria-pressed', f.na_linha ? 'true' : 'false');
-      $('ed-visivel').classList.toggle('on', !!f.visivel);
-      $('ed-visivel').setAttribute('aria-pressed', f.visivel ? 'true' : 'false');
-    }
-
-    // Troca de posição: se o destino está ocupado, a foto que estava lá vai para a posição de origem (ou para a reserva)
-    async function mover(id, destino) {
-      const f = FOTOS.find(x => x.id === id);
-      if (!f || f.posicao === destino) return;
-      const antiga = f.posicao;
-      if (destino) {
-        const outro = FOTOS.find(x => x.posicao === destino && x.id !== id);
-        if (outro && !(await up(outro.id, { posicao: null }))) return;
-        if (!(await up(id, { posicao: destino }))) return;
-        if (outro && antiga && !(await up(outro.id, { posicao: antiga }))) return;
-      } else {
-        if (!(await up(id, { posicao: null }))) return;
+      if (!SORT) {
+        SORT = Sortable.create($('lista'), {
+          animation: 180,
+          disabled: true,
+          filter: 'input, button, video',
+          preventOnFilter: false,
+          onEnd: async () => {
+            const ids = [...$('lista').children].map(el => el.dataset.id);
+            await Promise.all(ids.map((id, i) => up(id, { ordem: i + 1 })));
+            await carregar();
+          }
+        });
       }
-      msg('');
-      await carregar();
+      SORT.option('disabled', !DRAG);
     }
 
-    async function enviarArquivo(file, extra) {
-      const ehVideo = file.type.startsWith('video/');
+    async function enviarArquivo(file) {
+      const video = ehVideo(file);
       let arquivo = file;
-      if (!ehVideo) {
+      if (!video) {
         arquivo = await imageCompression(file, { maxSizeMB: 0.8, maxWidthOrHeight: 1920, useWebWorker: true, fileType: 'image/jpeg' });
       }
-      const path = `eventos/${PID}/${crypto.randomUUID()}.${ehVideo ? 'mp4' : 'jpg'}`;
+      const path = `eventos/${PID}/${crypto.randomUUID()}.${video ? 'mp4' : 'jpg'}`;
       const r = await r2Subir(path, arquivo);
       const ordemBase = FOTOS.reduce((m, x) => Math.max(m, x.ordem || 0), 0);
       const { error } = await _sb.from('evento_fotos').insert({
         proposta_id: PID,
-        tipo: ehVideo ? 'video' : 'imagem',
+        tipo: video ? 'video' : 'imagem',
         url: r.url,
         path: r.path,
         ordem: ordemBase + 1,
         visivel: true,
-        na_linha: false,
-        posicao: extra && extra.posicao ? extra.posicao : null
+        na_linha: false
       });
       if (error) throw error;
     }
 
-    async function enviarLote(files, extra) {
+    async function enviarLote(files) {
       if (!PID) return msg('Escolha um pedido antes.', true);
       let falhas = 0;
       for (let i = 0; i < files.length; i++) {
-        msg(`Enviando ${i + 1} de ${files.length}…`);
-        try { await enviarArquivo(files[i], extra); }
+        msg(`Enviando ${i + 1} de ${files.length}: ${files[i].name}…`);
+        try { await enviarArquivo(files[i]); }
         catch (err) { falhas++; msg('Falha em "' + files[i].name + '": ' + err.message, true); }
       }
       await carregar();
@@ -586,7 +468,6 @@
       const { error } = await _sb.from('evento_fotos').delete().eq('id', id);
       if (error) return msg('Erro ao apagar: ' + error.message, true);
       await r2Apagar(f.path);
-      if (SEL === id) SEL = null;
       msg('Mídia apagada.');
       await carregar();
     }
@@ -594,7 +475,6 @@
     // ----- Eventos -----
     $('sel-proposta').addEventListener('change', (e) => {
       PID = e.target.value;
-      SEL = null;
       $('area').style.display = PID ? '' : 'none';
       FOTOS = [];
       msg('');
@@ -602,99 +482,39 @@
     });
 
     $('btn-atualizar').addEventListener('click', () => carregar());
-    $('btn-enviar').addEventListener('click', () => $('input-lib').click());
-    $('btn-enviar-reserva').addEventListener('click', () => $('input-lib').click());
-    $('input-lib').addEventListener('change', (e) => {
+    $('btn-enviar').addEventListener('click', () => $('input-arquivos').click());
+    $('input-arquivos').addEventListener('change', (e) => {
       const files = [...e.target.files];
       e.target.value = '';
-      if (files.length) enviarLote(files, null);
-    });
-    $('input-slot').addEventListener('change', async (e) => {
-      const file = e.target.files[0];
-      e.target.value = '';
-      if (!file || !SLOT_ALVO) return;
-      const n = SLOT_ALVO;
-      SLOT_ALVO = null;
-      const ocupante = FOTOS.find(x => x.posicao === n);
-      if (ocupante && !(await up(ocupante.id, { posicao: null }))) return;
-      await enviarLote([file], { posicao: n });
+      if (files.length) enviarLote(files);
     });
 
-    // Toggle Modo Drag
     $('toggle-drag').addEventListener('click', function () {
       DRAG = !DRAG;
       this.classList.toggle('on', DRAG);
       this.setAttribute('aria-pressed', DRAG ? 'true' : 'false');
       $('drag-label').textContent = DRAG ? 'Arrastar ativo' : 'Arrastar bloqueado';
-      if (SORT_LINHA) SORT_LINHA.option('disabled', !DRAG);
-      render();
+      if (SORT) SORT.option('disabled', !DRAG);
     });
 
-    // Clique: mural, linha e reserva
-    document.addEventListener('click', (e) => {
-      const vazio = e.target.closest('[data-vazio]');
-      if (vazio && !DRAG) {
-        SLOT_ALVO = Number(vazio.dataset.vazio);
-        $('input-slot').click();
-        return;
-      }
-      const item = e.target.closest('[data-id]');
-      if (item && item.closest('#mural, #linha, #biblioteca')) {
-        SEL = item.dataset.id;
-        render();
-      }
-    });
-
-    // Arrastar (Modo Drag ativo)
-    document.addEventListener('dragstart', (e) => {
-      if (!DRAG) return e.preventDefault();
-      const el = e.target.closest('[data-id]');
-      if (!el) return;
-      e.dataTransfer.setData('text/plain', el.dataset.id);
-      e.dataTransfer.effectAllowed = 'move';
-    });
-    document.addEventListener('dragover', (e) => {
-      if (!DRAG) return;
-      if (e.target.closest('[data-drop]')) e.preventDefault();
-    });
-    document.addEventListener('drop', async (e) => {
-      if (!DRAG) return;
-      const alvo = e.target.closest('[data-drop]');
-      if (!alvo) return;
-      e.preventDefault();
-      const id = e.dataTransfer.getData('text/plain');
+    $('lista').addEventListener('change', async (e) => {
+      const id = e.target.dataset.leg;
       if (!id) return;
-      const destino = alvo.dataset.drop === 'reserva' ? null : Number(alvo.dataset.drop);
-      await mover(id, destino);
+      if (await up(id, { legenda: e.target.value.trim() || null })) msg('Legenda salva.');
     });
 
-    // Faixa em linha: reordenar (só com Modo Drag)
-    SORT_LINHA = Sortable.create($('linha'), {
-      animation: 180,
-      disabled: true,
-      draggable: '.linha-item',
-      onEnd: async () => {
-        const ids = [...$('linha').querySelectorAll('.linha-item')].map(el => el.dataset.id);
-        await Promise.all(ids.map((id, i) => up(id, { ordem: i + 1 })));
-        await carregar();
+    $('lista').addEventListener('click', async (e) => {
+      const t = e.target;
+      if (t.dataset.linha) {
+        const f = FOTOS.find(x => x.id === t.dataset.linha);
+        if (f && await up(f.id, { na_linha: !f.na_linha })) carregar();
+      } else if (t.dataset.vis) {
+        const f = FOTOS.find(x => x.id === t.dataset.vis);
+        if (f && await up(f.id, { visivel: !f.visivel })) carregar();
+      } else if (t.dataset.del) {
+        apagar(t.dataset.del);
       }
     });
-
-    // Editor
-    $('ed-posicao').addEventListener('change', (e) => mover(SEL, e.target.value ? Number(e.target.value) : null));
-    $('ed-legenda').addEventListener('change', async (e) => {
-      if (await up(SEL, { legenda: e.target.value.trim() || null })) { msg('Legenda salva.'); carregar(); }
-    });
-    $('ed-linha').addEventListener('click', async () => {
-      const f = FOTOS.find(x => x.id === SEL);
-      if (f && await up(f.id, { na_linha: !f.na_linha })) carregar();
-    });
-    $('ed-visivel').addEventListener('click', async () => {
-      const f = FOTOS.find(x => x.id === SEL);
-      if (f && await up(f.id, { visivel: !f.visivel })) carregar();
-    });
-    $('ed-apagar').addEventListener('click', () => apagar(SEL));
-    $('ed-fechar').addEventListener('click', () => { SEL = null; render(); });
 
     if (_sb) carregarPedidos();
   </script>
