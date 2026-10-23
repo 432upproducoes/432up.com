@@ -864,11 +864,10 @@
     $('btn-trocar-pedido').addEventListener('click', trocarPedido);
     $('btn-atualizar').addEventListener('click', () => carregar());
 
-    $('btn-enviar').addEventListener('click', () => $('input-arquivos').click());
-    $('btn-enviar-lista').addEventListener('click', () => $('input-arquivos').click());
+    $('btn-enviar').addEventListener('click', () => { $('input-arquivos').value = ''; $('input-arquivos').click(); });
+    $('btn-enviar-lista').addEventListener('click', () => { $('input-arquivos').value = ''; $('input-arquivos').click(); });
     $('input-arquivos').addEventListener('change', (e) => {
       const files = [...e.target.files];
-      e.target.value = '';
       if (!files.length) return;
       if (!window.confirm(`Enviar ${files.length} arquivo(s) para este pedido?`)) return;
       enviarLista(files);
@@ -876,7 +875,6 @@
 
     $('input-slot').addEventListener('change', (e) => {
       const file = e.target.files[0];
-      e.target.value = '';
       const n = SLOT_ALVO;
       SLOT_ALVO = null;
       if (file && n) enviarParaSlot(file, n);
@@ -884,7 +882,6 @@
 
     $('input-replace').addEventListener('change', (e) => {
       const file = e.target.files[0];
-      e.target.value = '';
       const alvo = $('sheet-replace').dataset.alvo;
       fecharSheet();
       if (file && alvo) substituir(alvo, file);
@@ -956,6 +953,7 @@
       const vazio = e.target.closest('.slot.vazio[data-n]');
       if (vazio) {
         SLOT_ALVO = Number(vazio.dataset.n);
+        $('input-slot').value = '';
         $('input-slot').click();
         return;
       }
@@ -963,7 +961,7 @@
       if (el) abrirSheet(el.dataset.id);
     });
 
-    $('sheet-replace').addEventListener('click', () => $('input-replace').click());
+    $('sheet-replace').addEventListener('click', () => { $('input-replace').value = ''; $('input-replace').click(); });
     $('sheet-tirar').addEventListener('click', () => {
       const id = $('sheet-tirar').dataset.alvo;
       fecharSheet();
