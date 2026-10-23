@@ -266,12 +266,25 @@
     @media (max-width: 640px) { .foto-grid { grid-template-columns: repeat(2, 1fr); } .foto:nth-child(1) { grid-column: span 2; grid-row: auto; aspect-ratio: 16 / 9; } }
     .galeria-vazia { border: 1px dashed rgba(255, 255, 255, .14); border-radius: 18px; padding: 28px 18px; text-align: center; color: var(--mut); font-size: 14px; }
 
-    /* Fotolog real (fotos e vídeos do evento, vindos do R2) */
-    .foto-real { position: relative; aspect-ratio: 4 / 3; border-radius: 16px; overflow: hidden; padding: 0; cursor: pointer; border: 1px solid rgba(255, 255, 255, .12); background: #0b0b10; }
-    .foto-real img, .foto-real video { width: 100%; height: 100%; object-fit: cover; display: block; }
-    .foto-real:nth-child(1) { grid-column: span 2; grid-row: span 2; aspect-ratio: auto; }
-    .foto-real .foto-play { position: absolute; left: 50%; top: 50%; transform: translate(-50%, -50%); width: 44px; height: 44px; border-radius: 50%; background: rgba(0, 0, 0, .55); color: #fff; display: flex; align-items: center; justify-content: center; font-size: 16px; pointer-events: none; }
-    @media (max-width: 640px) { .foto-real:nth-child(1) { grid-column: span 2; grid-row: auto; aspect-ratio: 16 / 9; } }
+    /* Fotolog: mural de 6 posições (1 grande + 5 pequenas) e faixa em linha. Mesmo CSS no admin */
+    .mural { display: grid; grid-template-columns: repeat(3, 1fr); grid-template-areas: "s1 s1 s2" "s1 s1 s3" "s4 s5 s6"; gap: 10px; }
+    .mural .s1 { grid-area: s1; } .mural .s2 { grid-area: s2; } .mural .s3 { grid-area: s3; }
+    .mural .s4 { grid-area: s4; } .mural .s5 { grid-area: s5; } .mural .s6 { grid-area: s6; }
+    .slot { position: relative; aspect-ratio: 4 / 3; border-radius: 16px; overflow: hidden; border: 1px solid rgba(255, 255, 255, .12); background: #0b0b10; padding: 0; cursor: pointer; display: flex; align-items: center; justify-content: center; color: rgba(255, 255, 255, .55); font: inherit; }
+    .slot.s1 { aspect-ratio: auto; }
+    .slot.vazio { cursor: default; background: linear-gradient(135deg, rgba(168, 85, 247, .22), rgba(6, 182, 212, .12)); }
+    .slot.vazio.s2, .slot.vazio.s4, .slot.vazio.s6 { background: linear-gradient(135deg, rgba(255, 0, 127, .16), rgba(168, 85, 247, .14)); }
+    .slot-cta { display: flex; flex-direction: column; align-items: center; gap: 6px; font-size: 12px; }
+    .slot-cta svg { width: 28px; height: 28px; }
+    .slot img, .slot video, .linha-item img, .linha-item video { width: 100%; height: 100%; object-fit: cover; display: block; }
+    .foto-play { position: absolute; left: 50%; top: 50%; transform: translate(-50%, -50%); width: 44px; height: 44px; border-radius: 50%; background: rgba(0, 0, 0, .55); color: #fff; display: flex; align-items: center; justify-content: center; font-size: 16px; pointer-events: none; }
+    .linha { display: flex; gap: 10px; overflow-x: auto; scroll-snap-type: x mandatory; padding: 4px 0 8px; margin-top: 14px; scrollbar-width: thin; }
+    .linha-item { position: relative; flex: 0 0 auto; height: 180px; aspect-ratio: 4 / 3; border-radius: 16px; overflow: hidden; scroll-snap-align: start; border: 1px solid rgba(255, 255, 255, .12); background: #0b0b10; padding: 0; cursor: pointer; }
+    @media (max-width: 640px) {
+      .mural { grid-template-columns: 1fr 1fr; grid-template-areas: "s1 s1" "s2 s3" "s4 s5" "s6 s6"; }
+      .mural .slot.s1, .mural .slot.s6 { aspect-ratio: 16 / 9; }
+      .linha-item { height: 140px; }
+    }
     .foto-lb-midia { display: flex; align-items: center; justify-content: center; max-height: 72vh; }
     .foto-lb-midia img, .foto-lb-midia video { max-width: 100%; max-height: 72vh; border-radius: 16px; }
     .foto-lb-legenda { color: var(--body); font-size: 14px; text-align: center; margin: 12px 0 0; min-height: 18px; }
@@ -629,6 +642,7 @@
   var SB = window.sbPartner;
 
   var $ = function (id) { return document.getElementById(id); };
+  var CAMERA_SVG = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><path d="M4 8h3l2-3h6l2 3h3v11H4z"/><circle cx="12" cy="13" r="3.5"/></svg>';
   var E = function (s) {
     return String(s == null ? '' : s)
       .replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;');
@@ -1457,21 +1471,48 @@
 
   function renderFotos() {
     var fotos = (dados && dados.fotos) || [];
-    var grid = $('fotosReais');
+    var box = $('fotosReais');
     var ex = $('fotosExemplo');
-    if (!fotos.length) { grid.style.display = 'none'; grid.innerHTML = ''; ex.style.display = ''; return; }
-    grid.innerHTML = fotos.map(function (f, i) {
-      var media = f.tipo === 'video'
-        ? '<video src="' + E(f.url) + '" muted playsinline preload="metadata"></video><span class="foto-play">▶</span>'
-        : '<img src="' + E(f.url) + '" alt="' + E(f.legenda || 'Foto do evento') + '" loading="lazy">';
-      return '<button type="button" class="foto-real" data-i="' + i + '">' + media + '</button>';
-    }).join('');
-    grid.style.display = '';
+    var slots = {};
+    fotos.forEach(function (f, i) {
+      if (f.posicao >= 1 && f.posicao <= 6 && !slots[f.posicao]) slots[f.posicao] = { f: f, i: i };
+    });
+    var linha = [];
+    fotos.forEach(function (f, i) { if (f.na_linha) linha.push({ f: f, i: i }); });
+    if (!Object.keys(slots).length && !linha.length) {
+      box.style.display = 'none';
+      box.innerHTML = '';
+      ex.style.display = '';
+      return;
+    }
+    var html = '<div class="mural">';
+    for (var n = 1; n <= 6; n++) {
+      var s = slots[n];
+      if (s) {
+        html += '<button type="button" class="slot s' + n + '" data-i="' + s.i + '">' + midia(s.f) + '</button>';
+      } else {
+        html += '<div class="slot vazio s' + n + '" aria-hidden="true"><div class="slot-cta">' + CAMERA_SVG + '</div></div>';
+      }
+    }
+    html += '</div>';
+    if (linha.length) {
+      html += '<div class="linha">' + linha.map(function (x) {
+        return '<button type="button" class="linha-item" data-i="' + x.i + '">' + midia(x.f) + '</button>';
+      }).join('') + '</div>';
+    }
+    box.innerHTML = html;
+    box.style.display = '';
     ex.style.display = 'none';
   }
 
+  function midia(f) {
+    return f.tipo === 'video'
+      ? '<video src="' + E(f.url) + '" muted playsinline preload="metadata"></video><span class="foto-play">▶</span>'
+      : '<img src="' + E(f.url) + '" alt="' + E(f.legenda || 'Foto do evento') + '" loading="lazy">';
+  }
+
   $('fotosReais').addEventListener('click', function (e) {
-    var b = e.target.closest('.foto-real');
+    var b = e.target.closest('[data-i]');
     if (!b) return;
     var f = ((dados && dados.fotos) || [])[+b.dataset.i];
     if (!f) return;
