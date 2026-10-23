@@ -258,19 +258,35 @@
     .mural { display: grid; grid-template-columns: repeat(3, 1fr); grid-template-areas: "s1 s1 s2" "s1 s1 s3" "s4 s5 s6"; gap: 10px; }
     .mural .s1 { grid-area: s1; } .mural .s2 { grid-area: s2; } .mural .s3 { grid-area: s3; }
     .mural .s4 { grid-area: s4; } .mural .s5 { grid-area: s5; } .mural .s6 { grid-area: s6; }
-    .slot { position: relative; aspect-ratio: 4 / 3; border-radius: 16px; overflow: hidden; border: 1px solid rgba(255, 255, 255, .12); background: #0b0b10; display: flex; align-items: center; justify-content: center; color: rgba(255, 255, 255, .55); }
+    .slot { position: relative; aspect-ratio: 4 / 3; border-radius: 16px; overflow: hidden; border: 1px solid rgba(255, 255, 255, .12); background: #0b0b10; display: flex; align-items: center; justify-content: center; color: rgba(255, 255, 255, .55); cursor: pointer; user-select: none; -webkit-user-select: none; -webkit-touch-callout: none; }
     .slot.s1 { aspect-ratio: auto; }
-    .slot[draggable="true"] { cursor: grab; }
+    .drag-on .slot[data-id] { touch-action: none; cursor: grab; }
     .slot.vazio { background: linear-gradient(135deg, rgba(168, 85, 247, .22), rgba(6, 182, 212, .12)); }
     .slot.vazio.s2, .slot.vazio.s4, .slot.vazio.s6 { background: linear-gradient(135deg, rgba(255, 0, 127, .16), rgba(168, 85, 247, .14)); }
     .slot-cta { display: flex; flex-direction: column; align-items: center; gap: 6px; font-size: 12px; }
-    .slot img, .slot video { width: 100%; height: 100%; object-fit: cover; display: block; }
+    .slot-cta svg { width: 28px; height: 28px; }
+    .slot img, .slot video { width: 100%; height: 100%; object-fit: cover; display: block; pointer-events: none; }
     .slot-tag { position: absolute; left: 8px; top: 8px; z-index: 2; font-size: 10px; font-weight: 800; padding: 3px 8px; border-radius: 999px; background: rgba(0, 0, 0, .6); color: #fbbf24; text-transform: uppercase; letter-spacing: .04em; pointer-events: none; }
     .slot-off { position: absolute; right: 8px; top: 8px; z-index: 2; font-size: 10px; font-weight: 800; padding: 3px 8px; border-radius: 999px; background: rgba(255, 77, 77, .8); color: #fff; text-transform: uppercase; pointer-events: none; }
+    .slot.drop-alvo { outline: 3px solid #fbbf24; outline-offset: 3px; }
+    .slot-ghost { border-radius: 16px; }
     @media (max-width: 640px) {
       .mural { grid-template-columns: 1fr 1fr; grid-template-areas: "s1 s1" "s2 s3" "s4 s5" "s6 s6"; }
       .mural .slot.s1, .mural .slot.s6 { aspect-ratio: 16 / 9; }
     }
+
+    /* Pedido: resultados da busca */
+    .res-item { display: block; width: 100%; text-align: left; padding: 10px 14px; border-radius: 12px; border: 1px solid rgba(245, 158, 11, .22); background: rgba(255, 255, 255, .04); color: #e5e7eb; font: inherit; font-size: .85rem; cursor: pointer; }
+    .res-item:hover, .res-item:focus-visible { border-color: #f59e0b; background: rgba(245, 158, 11, .08); outline: none; }
+
+    /* Opções de uma mídia */
+    #sheet { position: fixed; inset: 0; z-index: 9000; background: rgba(6, 8, 12, .72); display: none; align-items: center; justify-content: center; padding: 16px; }
+    #sheet.on { display: flex; }
+
+    /* Carregamento: mesmo visualizador do perfil do B2B */
+    #loadingOverlay { position: fixed; top: 0; left: 0; width: 100vw; height: 100vh; background: rgba(14, 10, 20, 0.88); backdrop-filter: blur(18px); -webkit-backdrop-filter: blur(18px); z-index: 100000; display: none; flex-direction: column; align-items: center; justify-content: center; padding: 20px; transition: opacity 0.3s ease; }
+    #loadingOverlay.active { display: flex; }
+    .glass-b2b { background: rgba(15, 12, 24, .92); backdrop-filter: blur(18px); -webkit-backdrop-filter: blur(18px); }
   </style>
 </head>
 <body class="theme-admin h-full text-slate-200 font-sans antialiased bg-[#06080c] overflow-x-hidden">
@@ -295,15 +311,25 @@
             <button type="button" id="toggle-drag" class="toggle-switch" title="Ativar/desativar arrastar" aria-pressed="false"></button>
             <span id="drag-label" class="text-slate-500">Arrastar bloqueado</span>
           </div>
-          <button type="button" class="btn-lime" id="btn-enviar">+ Enviar fotos e vídeos</button>
-          <button type="button" class="btn-ghost" id="btn-atualizar">Atualizar</button>
+          <button type="button" class="btn-lime" id="btn-enviar" style="display:none">+ Enviar fotos e vídeos</button>
+          <button type="button" class="btn-ghost" id="btn-atualizar" style="display:none">Atualizar</button>
         </div>
       </div>
 
       <section class="glass-card p-5 sm:p-6">
         <h2 class="text-xs font-bold uppercase tracking-widest text-amber-300 mb-1">Pedido</h2>
-        <p class="text-xs text-slate-500 mb-4">Escolha o pedido do cliente.</p>
-        <select id="sel-proposta" class="adm-input" style="max-width:560px"><option value="">Carregando pedidos…</option></select>
+        <p class="text-xs text-slate-500 mb-4">Busque pelo nome do cliente, pelo número do pedido ou pela data do evento (ex.: 28/10/2026).</p>
+
+        <div id="pedido-busca">
+          <input id="busca-pedido" type="text" class="adm-input" style="max-width:560px" placeholder="Nome, nº do pedido ou data" autocomplete="off">
+          <div id="resultados" class="grid gap-2 mt-3" style="max-width:560px"></div>
+          <p id="sem-resultado" class="text-xs text-slate-500 mt-2" style="display:none">Nenhum pedido encontrado.</p>
+        </div>
+
+        <div id="pedido-escolhido" class="flex flex-wrap items-center gap-3" style="display:none">
+          <span id="pedido-chip" class="text-sm text-white font-bold"></span>
+          <button type="button" class="btn-ghost" id="btn-trocar-pedido">Trocar pedido</button>
+        </div>
         <div id="msg" class="text-xs mt-3 min-h-[16px] text-amber-300"></div>
       </section>
 
@@ -312,14 +338,17 @@
         <div class="glass-card p-5 sm:p-6">
           <h2 class="text-xs font-bold uppercase tracking-widest text-amber-300 mb-1">Galeria como o cliente vê</h2>
           <p class="text-xs text-slate-500 mb-4">
-            Espelho do mural do painel: a 1 é a grande. Com Modo Drag ativo, arraste uma foto sobre outra para trocar de posição.
-            Para tirar ou colocar uma foto no mural, use a lista abaixo (a ordem define quem entra).
+            Clique num quadrado para ver as opções (substituir ou excluir). Clique num quadrado vazio para enviar foto ou vídeo nele.
+            Com Modo Drag ativo, arraste uma foto sobre outra para trocar as duas de lugar. Toda ação pede confirmação.
           </p>
           <div id="mural" class="mural"></div>
         </div>
 
         <div class="glass-card p-5 sm:p-6">
-          <h2 class="text-xs font-bold uppercase tracking-widest text-amber-300 mb-1">Todas as mídias</h2>
+          <div class="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-2 mb-1">
+            <h2 class="text-xs font-bold uppercase tracking-widest text-amber-300">Todas as mídias</h2>
+            <button type="button" class="btn-file-upload" id="btn-enviar-lista">+ Enviar fotos e vídeos</button>
+          </div>
           <p class="text-xs text-slate-500 mb-4">
             <strong class="text-slate-300">Mural:</strong> as 6 primeiras da ordem que não estão em linha.
             <strong class="text-slate-300">Em linha:</strong> aparecem no card “Veja mais momentos”, com título e descrição.
@@ -331,7 +360,36 @@
       </section>
 
       <input type="file" id="input-arquivos" accept="image/*,video/*" multiple hidden>
+      <input type="file" id="input-slot" accept="image/*,video/*" hidden>
+      <input type="file" id="input-replace" accept="image/*,video/*" hidden>
     </main>
+  </div>
+
+  <!-- Opções de uma mídia do mural -->
+  <div id="sheet" role="dialog" aria-modal="true" aria-label="Opções da mídia">
+    <div class="glass-card p-5 sm:p-6" style="width:min(92vw,420px)">
+      <div id="sheet-midia" class="rounded-2xl overflow-hidden border border-white/10 bg-black mb-4" style="aspect-ratio:4/3"></div>
+      <p id="sheet-info" class="text-xs text-slate-400 mb-4"></p>
+      <div class="flex flex-col gap-2">
+        <button type="button" class="btn-adm-primary" id="sheet-replace">Substituir por outra foto ou vídeo</button>
+        <button type="button" class="btn-danger-outline" id="sheet-del">Excluir</button>
+        <button type="button" class="btn-ghost" id="sheet-fechar">Fechar</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- Carregamento: mesmo visualizador do perfil do B2B -->
+  <div id="loadingOverlay">
+    <div class="glass-b2b p-8 rounded-2xl max-w-sm w-full text-center space-y-4 border border-cyan-500/40 shadow-[0_0_35px_rgba(0,240,255,0.25)]">
+      <div class="w-12 h-12 border-4 border-cyan-400 border-t-transparent rounded-full animate-spin mx-auto mb-2"></div>
+      <div>
+        <span id="loadingMessage" class="text-xs font-bold text-cyan-300 uppercase tracking-wider block">Enviando…</span>
+        <span id="loadingPercentageText" class="text-2xl font-extrabold text-white mt-1 block">0%</span>
+      </div>
+      <div class="w-full bg-slate-950/80 rounded-full h-2.5 overflow-hidden border border-cyan-500/30">
+        <div id="loadingProgressBar" class="bg-gradient-to-r from-cyan-500 via-cyan-400 to-amber-400 h-2.5 rounded-full transition-all duration-150 shadow-[0_0_12px_rgba(0,240,255,0.8)]" style="width: 0%"></div>
+      </div>
+    </div>
   </div>
 
   <script src="https://www.432up.com/B2B/partner-config.js"></script>
@@ -343,12 +401,17 @@
     const _sb = (typeof sbPartner !== 'undefined') ? sbPartner : null;
     const $ = (id) => document.getElementById(id);
     const esc = (s) => String(s ?? '').replace(/[&<>"']/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
+    const norm = (s) => String(s ?? '').normalize('NFD').replace(/[̀-ͯ]/g, '').toLowerCase().trim();
     const CAMERA_SVG = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round" width="28" height="28"><path d="M4 8h3l2-3h6l2 3h3v11H4z"/><circle cx="12" cy="13" r="3.5"/></svg>';
 
+    let PEDIDOS = [];
     let PID = '';
     let FOTOS = [];
     let DRAG = false;
     let SORT = null;
+    let SLOT_ALVO = null;
+    let PD = null;          // arraste no espelho (ponteiro)
+    let SUPRIMIR_TAP = false;
 
     function msg(t, erro) {
       const el = $('msg');
@@ -356,13 +419,26 @@
       el.className = 'text-xs mt-3 min-h-[16px] ' + (erro ? 'text-red-300' : 'text-amber-300');
     }
 
+    function loading(texto, feito, total) {
+      $('loadingMessage').textContent = texto || 'Enviando…';
+      const pct = total ? Math.round((feito / total) * 100) : 0;
+      $('loadingPercentageText').textContent = pct + '%';
+      $('loadingProgressBar').style.width = pct + '%';
+      $('loadingOverlay').classList.add('active');
+    }
+    function loadingFim() { $('loadingOverlay').classList.remove('active'); }
+
     function ehVideo(file) {
       return (file.type || '').startsWith('video/') || /\.(mp4|mov|m4v|webm|3gp)$/i.test(file.name || '');
     }
+    function extDe(file) {
+      const m = /\.([a-z0-9]{2,5})$/i.exec(file.name || '');
+      return m ? m[1].toLowerCase() : 'mp4';
+    }
 
-    function midia(f) {
+    function midia(f, controles) {
       return f.tipo === 'video'
-        ? `<video src="${esc(f.url)}" muted playsinline preload="metadata" style="width:100%;height:100%;object-fit:cover;display:block"></video>`
+        ? `<video src="${esc(f.url)}" muted playsinline preload="metadata" ${controles ? 'controls' : ''} style="width:100%;height:100%;object-fit:cover;display:block"></video>`
         : `<img src="${esc(f.url)}" alt="" loading="lazy" style="width:100%;height:100%;object-fit:cover;display:block">`;
     }
 
@@ -373,9 +449,9 @@
       return t;
     }
 
-    // Mesmo worker de todas as mídias do portal
-    async function r2Subir(path, file) {
-      const resp = await fetch(R2_UPLOAD_URL + '?path=' + encodeURIComponent(path), {
+    // Mesmo worker de todas as mídias do portal. raw=1 grava o vídeo original (fallback)
+    async function r2Subir(path, file, raw) {
+      const resp = await fetch(R2_UPLOAD_URL + '?path=' + encodeURIComponent(path) + (raw ? '&raw=1' : ''), {
         method: 'PUT',
         headers: { 'Authorization': 'Bearer ' + await token(), 'Content-Type': file.type || 'application/octet-stream' },
         body: file
@@ -398,7 +474,6 @@
       return true;
     }
 
-    // Regrava a ordem (1..n) na sequência dada
     async function gravarOrdem(ids) {
       await Promise.all(ids.map((id, i) => up(id, { ordem: i + 1 })));
       await carregar();
@@ -408,17 +483,81 @@
       return FOTOS.filter(f => f.visivel && !f.na_linha).slice(0, 6);
     }
 
+    // ----- Pedido: busca por nome, número ou data -----
     async function carregarPedidos() {
       const { data, error } = await _sb.from('propostas')
-        .select('id, numero, cliente_nome, data_evento')
-        .order('data_evento', { ascending: false }).limit(300);
-      const sel = $('sel-proposta');
-      if (error) { sel.innerHTML = '<option value="">Erro ao carregar pedidos</option>'; return; }
-      sel.innerHTML = '<option value="">Escolha um pedido…</option>' + (data || []).map(p =>
-        `<option value="${esc(p.id)}">${esc(p.numero ? '#' + p.numero + ' · ' : '')}${esc(p.cliente_nome || 'Sem nome')}${p.data_evento ? ' · ' + esc(p.data_evento) : ''}</option>`
-      ).join('');
+        .select('id, numero, cliente_nome, data_evento, status')
+        .order('data_evento', { ascending: false }).limit(800);
+      if (error) { msg('Erro ao carregar pedidos: ' + error.message, true); return; }
+      PEDIDOS = data || [];
+      buscarPedido('');
     }
 
+    function pedidosQue(termo) {
+      const t = norm(termo);
+      if (!t) return PEDIDOS.slice(0, 20);
+      let iso = null, sufixo = null, prefixo = null;
+      let m = t.match(/^(\d{1,2})[\/.-](\d{1,2})[\/.-](\d{4})$/);
+      if (m) iso = `${m[3]}-${m[2].padStart(2, '0')}-${m[1].padStart(2, '0')}`;
+      m = !iso && t.match(/^(\d{1,2})[\/.-](\d{1,2})$/);
+      if (m) sufixo = `-${m[2].padStart(2, '0')}-${m[1].padStart(2, '0')}`;
+      m = !iso && !sufixo && t.match(/^(\d{4})(?:-(\d{1,2}))?(?:-(\d{1,2}))?$/);
+      if (m) prefixo = [m[1], m[2] && m[2].padStart(2, '0'), m[3] && m[3].padStart(2, '0')].filter(Boolean).join('-');
+      const digitos = t.replace(/\D/g, '');
+      return PEDIDOS.filter(p => {
+        const d = String(p.data_evento || '').slice(0, 10);
+        if (iso) return d === iso;
+        if (sufixo) return d.endsWith(sufixo);
+        if (prefixo) return d.startsWith(prefixo);
+        const nome = norm(p.cliente_nome);
+        const nomeOk = nome.includes(t);
+        const numOk = digitos && String(p.numero ?? '').includes(digitos) && t.replace(/[\s#]/g, '') === digitos;
+        return nomeOk || numOk || (digitos && String(p.numero ?? '') === digitos);
+      }).slice(0, 20);
+    }
+
+    function formatarData(d) {
+      if (!d) return 'sem data';
+      const [y, m, dd] = String(d).slice(0, 10).split('-');
+      return `${dd}/${m}/${y}`;
+    }
+
+    function buscarPedido(termo) {
+      const lista = pedidosQue(termo);
+      $('resultados').innerHTML = lista.map(p => `
+        <button type="button" class="res-item" data-pid="${esc(p.id)}">
+          <strong>${p.numero ? '#' + esc(p.numero) : 'Sem número'}</strong> · ${esc(p.cliente_nome || 'Sem nome')} · ${formatarData(p.data_evento)}${p.status ? ' · ' + esc(p.status) : ''}
+        </button>`).join('');
+      $('sem-resultado').style.display = (termo && !lista.length) ? '' : 'none';
+    }
+
+    function escolherPedido(id) {
+      const p = PEDIDOS.find(x => x.id === id);
+      if (!p) return;
+      PID = id;
+      $('pedido-chip').textContent = `${p.numero ? '#' + p.numero + ' · ' : ''}${p.cliente_nome || 'Sem nome'} · ${formatarData(p.data_evento)}`;
+      $('pedido-busca').style.display = 'none';
+      $('pedido-escolhido').style.display = 'flex';
+      $('area').style.display = '';
+      $('btn-enviar').style.display = '';
+      $('btn-atualizar').style.display = '';
+      msg('');
+      carregar();
+    }
+
+    function trocarPedido() {
+      PID = ''; FOTOS = [];
+      $('pedido-busca').style.display = '';
+      $('pedido-escolhido').style.display = 'none';
+      $('area').style.display = 'none';
+      $('btn-enviar').style.display = 'none';
+      $('btn-atualizar').style.display = 'none';
+      $('busca-pedido').value = '';
+      buscarPedido('');
+      $('busca-pedido').focus();
+    }
+
+    // ----- Fotos -----
     async function carregar() {
       if (!PID) return;
       const { data, error } = await _sb.from('evento_fotos').select('*')
@@ -440,19 +579,21 @@
         const f = m[n - 1];
         const rotulo = n === 1 ? '1 · grande' : String(n);
         if (f) {
-          h += `<div class="slot s${n}" data-id="${f.id}" draggable="${DRAG}">
+          h += `<div class="slot s${n}" data-id="${f.id}" data-n="${n}">
                   <span class="slot-tag">${rotulo}</span>
                   ${f.visivel ? '' : '<span class="slot-off">oculta</span>'}
                   ${midia(f)}
                 </div>`;
         } else {
-          h += `<div class="slot vazio s${n}">
+          h += `<div class="slot vazio s${n}" data-n="${n}">
                   <span class="slot-tag">${rotulo}</span>
-                  <div class="slot-cta">${CAMERA_SVG}<span>Sem foto</span></div>
+                  <div class="slot-cta">${CAMERA_SVG}<span>Enviar aqui</span></div>
                 </div>`;
         }
       }
-      $('mural').innerHTML = h;
+      const el = $('mural');
+      el.innerHTML = h;
+      el.classList.toggle('drag-on', DRAG);
     }
 
     function renderLista() {
@@ -486,15 +627,128 @@
         SORT = Sortable.create($('lista'), {
           animation: 180,
           disabled: true,
+          forceFallback: true,
           filter: 'input, button, video',
           preventOnFilter: false,
-          onEnd: () => gravarOrdem([...$('lista').children].map(el => el.dataset.id))
+          onEnd: async () => {
+            const ids = [...$('lista').children].map(el => el.dataset.id);
+            if (!(await confirm2(`Gravar a nova ordem da lista (${ids.length} mídias)?`))) return carregar();
+            gravarOrdem(ids);
+          }
         });
       }
       SORT.option('disabled', !DRAG);
     }
 
-    // Troca de posição no espelho: as duas fotos trocam de lugar na ordem
+    function confirm2(texto) {
+      return Promise.resolve(window.confirm(texto));
+    }
+
+    // Envio de uma mídia. Vídeo que falhar na otimização é regravado como original (raw=1)
+    async function enviarArquivo(file, extras) {
+      const video = ehVideo(file);
+      let arquivo = file;
+      if (!video) {
+        arquivo = await imageCompression(file, { maxSizeMB: 0.8, maxWidthOrHeight: 1920, useWebWorker: true, fileType: 'image/jpeg' });
+      }
+      const path = `eventos/${PID}/${crypto.randomUUID()}.${video ? extDe(file) : 'jpg'}`;
+      let r;
+      try { r = await r2Subir(path, arquivo, false); }
+      catch (err) {
+        if (!video) throw err;
+        r = await r2Subir(path, arquivo, true);
+      }
+      const ordemBase = FOTOS.reduce((m, x) => Math.max(m, x.ordem || 0), 0);
+      const e = extras || {};
+      const { data, error } = await _sb.from('evento_fotos').insert({
+        proposta_id: PID,
+        tipo: video ? 'video' : 'imagem',
+        url: r.url,
+        path: r.path,
+        ordem: ordemBase + 1,
+        visivel: e.visivel !== undefined ? e.visivel : true,
+        na_linha: e.na_linha !== undefined ? e.na_linha : false,
+        legenda: e.legenda || null,
+        descricao: e.descricao || null
+      }).select('id').single();
+      if (error) throw error;
+      return data.id;
+    }
+
+    async function enviarLista(files) {
+      if (!PID) return msg('Escolha um pedido antes.', true);
+      let falhas = 0;
+      for (let i = 0; i < files.length; i++) {
+        loading(`Enviando ${i + 1} de ${files.length}`, i, files.length);
+        try { await enviarArquivo(files[i]); }
+        catch (err) { falhas++; msg('Falha em "' + files[i].name + '": ' + err.message, true); }
+      }
+      loading('Atualizando galeria', files.length, files.length);
+      await carregar();
+      loadingFim();
+      if (!falhas) msg('Envio concluído.');
+    }
+
+    // Coloca a mídia nova na posição n do mural (1 = grande)
+    async function posicionar(novoId, n) {
+      const ids = FOTOS.map(f => f.id).filter(x => x !== novoId);
+      const m = mural().map(f => f.id).filter(x => x !== novoId);
+      let idx;
+      if (m.length >= n) idx = ids.indexOf(m[n - 1]);
+      else idx = m.length ? ids.indexOf(m[m.length - 1]) + 1 : 0;
+      ids.splice(Math.max(0, idx), 0, novoId);
+      await gravarOrdem(ids);
+    }
+
+    async function enviarParaSlot(file, n) {
+      const ok = window.confirm(`Enviar "${file.name}" para a posição ${n === 1 ? '1 (grande)' : n} do mural?`);
+      if (!ok) return;
+      loading('Enviando', 0, 1);
+      try {
+        const id = await enviarArquivo(file);
+        loading('Posicionando', 1, 1);
+        await carregar();
+        await posicionar(id, n);
+        msg('Enviado para a posição ' + n + '.');
+      } catch (err) {
+        msg('Falha ao enviar: ' + err.message, true);
+      } finally { loadingFim(); }
+    }
+
+    async function substituir(alvoId, file) {
+      const antigo = FOTOS.find(x => x.id === alvoId);
+      if (!antigo) return;
+      const ok = window.confirm(`Substituir esta mídia por "${file.name}"? A mídia atual será apagada.`);
+      if (!ok) return;
+      loading('Enviando', 0, 1);
+      try {
+        const novoId = await enviarArquivo(file, {
+          legenda: antigo.legenda, descricao: antigo.descricao,
+          na_linha: antigo.na_linha, visivel: antigo.visivel
+        });
+        await carregar();
+        const ids = FOTOS.filter(f => f.id !== novoId).map(f => f.id === alvoId ? novoId : f.id);
+        await gravarOrdem(ids);
+        await _sb.from('evento_fotos').delete().eq('id', alvoId);
+        await r2Apagar(antigo.path);
+        await carregar();
+        msg('Mídia substituída.');
+      } catch (err) {
+        msg('Falha ao substituir: ' + err.message, true);
+      } finally { loadingFim(); }
+    }
+
+    async function apagar(id) {
+      const f = FOTOS.find(x => x.id === id);
+      if (!f || !window.confirm('Apagar esta mídia? Ela some do painel do cliente.')) return;
+      const { error } = await _sb.from('evento_fotos').delete().eq('id', id);
+      if (error) return msg('Erro ao apagar: ' + error.message, true);
+      await r2Apagar(f.path);
+      msg('Mídia apagada.');
+      await carregar();
+    }
+
+    // Troca de posição no espelho (confirmada)
     async function trocar(a, b) {
       const ids = FOTOS.map(f => f.id);
       const ia = ids.indexOf(a), ib = ids.indexOf(b);
@@ -503,64 +757,55 @@
       await gravarOrdem(ids);
     }
 
-    async function enviarArquivo(file) {
-      const video = ehVideo(file);
-      let arquivo = file;
-      if (!video) {
-        arquivo = await imageCompression(file, { maxSizeMB: 0.8, maxWidthOrHeight: 1920, useWebWorker: true, fileType: 'image/jpeg' });
-      }
-      const path = `eventos/${PID}/${crypto.randomUUID()}.${video ? 'mp4' : 'jpg'}`;
-      const r = await r2Subir(path, arquivo);
-      const ordemBase = FOTOS.reduce((m, x) => Math.max(m, x.ordem || 0), 0);
-      const { error } = await _sb.from('evento_fotos').insert({
-        proposta_id: PID,
-        tipo: video ? 'video' : 'imagem',
-        url: r.url,
-        path: r.path,
-        ordem: ordemBase + 1,
-        visivel: true,
-        na_linha: false
-      });
-      if (error) throw error;
-    }
-
-    async function enviarLote(files) {
-      if (!PID) return msg('Escolha um pedido antes.', true);
-      let falhas = 0;
-      for (let i = 0; i < files.length; i++) {
-        msg(`Enviando ${i + 1} de ${files.length}: ${files[i].name}…`);
-        try { await enviarArquivo(files[i]); }
-        catch (err) { falhas++; msg('Falha em "' + files[i].name + '": ' + err.message, true); }
-      }
-      await carregar();
-      if (!falhas) msg('Envio concluído.');
-    }
-
-    async function apagar(id) {
+    function abrirSheet(id) {
       const f = FOTOS.find(x => x.id === id);
-      if (!f || !confirm('Apagar esta mídia? Ela some do painel do cliente.')) return;
-      const { error } = await _sb.from('evento_fotos').delete().eq('id', id);
-      if (error) return msg('Erro ao apagar: ' + error.message, true);
-      await r2Apagar(f.path);
-      msg('Mídia apagada.');
-      await carregar();
+      if (!f) return;
+      const m = mural().findIndex(x => x.id === id);
+      $('sheet-midia').innerHTML = midia(f, true);
+      $('sheet-info').textContent = (m >= 0 ? 'Posição ' + (m + 1) + (m === 0 ? ' (grande)' : '') + ' no mural' : 'Fora do mural') +
+        (f.legenda ? ' · ' + f.legenda : '');
+      $('sheet-replace').dataset.alvo = id;
+      $('sheet-del').dataset.alvo = id;
+      $('sheet').classList.add('on');
+    }
+    function fecharSheet() {
+      $('sheet').classList.remove('on');
+      $('sheet-midia').innerHTML = '';
     }
 
     // ----- Eventos -----
-    $('sel-proposta').addEventListener('change', (e) => {
-      PID = e.target.value;
-      $('area').style.display = PID ? '' : 'none';
-      FOTOS = [];
-      msg('');
-      carregar();
+    $('busca-pedido').addEventListener('input', (e) => buscarPedido(e.target.value));
+    $('resultados').addEventListener('click', (e) => {
+      const b = e.target.closest('[data-pid]');
+      if (b) escolherPedido(b.dataset.pid);
     });
-
+    $('btn-trocar-pedido').addEventListener('click', trocarPedido);
     $('btn-atualizar').addEventListener('click', () => carregar());
+
     $('btn-enviar').addEventListener('click', () => $('input-arquivos').click());
+    $('btn-enviar-lista').addEventListener('click', () => $('input-arquivos').click());
     $('input-arquivos').addEventListener('change', (e) => {
       const files = [...e.target.files];
       e.target.value = '';
-      if (files.length) enviarLote(files);
+      if (!files.length) return;
+      if (!window.confirm(`Enviar ${files.length} arquivo(s) para este pedido?`)) return;
+      enviarLista(files);
+    });
+
+    $('input-slot').addEventListener('change', (e) => {
+      const file = e.target.files[0];
+      e.target.value = '';
+      const n = SLOT_ALVO;
+      SLOT_ALVO = null;
+      if (file && n) enviarParaSlot(file, n);
+    });
+
+    $('input-replace').addEventListener('change', (e) => {
+      const file = e.target.files[0];
+      e.target.value = '';
+      const alvo = $('sheet-replace').dataset.alvo;
+      fecharSheet();
+      if (file && alvo) substituir(alvo, file);
     });
 
     $('toggle-drag').addEventListener('click', function () {
@@ -572,25 +817,76 @@
       renderMural();
     });
 
-    // Espelho: arrastar uma foto sobre outra troca as duas
-    $('mural').addEventListener('dragstart', (e) => {
-      if (!DRAG) return e.preventDefault();
-      const el = e.target.closest('[data-id]');
+    // Espelho: toque/clique abre opções ou envia; arrastar (Modo Drag) troca de posição
+    const MURAL_EL = $('mural');
+    MURAL_EL.addEventListener('pointerdown', (e) => {
+      const el = e.target.closest('.slot[data-id]');
+      SUPRIMIR_TAP = false;
       if (!el) return;
-      e.dataTransfer.setData('text/plain', el.dataset.id);
-      e.dataTransfer.effectAllowed = 'move';
+      PD = { id: el.dataset.id, el, x: e.clientX, y: e.clientY, ativo: false, ghost: null, alvoEl: null };
     });
-    $('mural').addEventListener('dragover', (e) => {
-      if (DRAG && e.target.closest('[data-id]')) e.preventDefault();
+    window.addEventListener('pointermove', (e) => {
+      if (!PD) return;
+      const dx = e.clientX - PD.x, dy = e.clientY - PD.y;
+      if (!PD.ativo) {
+        if (!DRAG || Math.hypot(dx, dy) < 8) return;
+        PD.ativo = true;
+        SUPRIMIR_TAP = true;
+        const r = PD.el.getBoundingClientRect();
+        const g = PD.el.cloneNode(true);
+        g.classList.add('slot-ghost');
+        g.style.cssText = `position:fixed;left:${r.left}px;top:${r.top}px;width:${r.width}px;height:${r.height}px;opacity:.9;pointer-events:none;z-index:9500;box-shadow:0 14px 34px rgba(0,0,0,.55);`;
+        document.body.appendChild(g);
+        PD.ghost = g;
+        PD.el.style.opacity = '.35';
+      }
+      PD.ghost.style.transform = `translate(${dx}px, ${dy}px)`;
+      PD.ghost.style.display = 'none';
+      const sob = document.elementFromPoint(e.clientX, e.clientY);
+      PD.ghost.style.display = '';
+      const alvo = sob && sob.closest('#mural .slot[data-id]');
+      if (PD.alvoEl && PD.alvoEl !== alvo) PD.alvoEl.classList.remove('drop-alvo');
+      PD.alvoEl = (alvo && alvo.dataset.id !== PD.id) ? alvo : null;
+      if (PD.alvoEl) PD.alvoEl.classList.add('drop-alvo');
     });
-    $('mural').addEventListener('drop', async (e) => {
-      if (!DRAG) return;
-      const el = e.target.closest('[data-id]');
-      if (!el) return;
-      e.preventDefault();
-      const de = e.dataTransfer.getData('text/plain');
-      if (de && de !== el.dataset.id) await trocar(de, el.dataset.id);
+    function finalizarPonteiro() {
+      if (!PD) return;
+      const p = PD;
+      PD = null;
+      if (p.ghost) p.ghost.remove();
+      p.el.style.opacity = '';
+      if (p.alvoEl) p.alvoEl.classList.remove('drop-alvo');
+      if (p.ativo && p.alvoEl) {
+        const a = FOTOS.find(f => f.id === p.id);
+        const b = FOTOS.find(f => f.id === p.alvoEl.dataset.id);
+        const pa = mural().findIndex(f => f.id === p.id) + 1;
+        const pb = mural().findIndex(f => f.id === p.alvoEl.dataset.id) + 1;
+        if (a && b && window.confirm(`Trocar a posição ${pa} com a posição ${pb}?`)) trocar(a.id, b.id);
+      }
+    }
+    window.addEventListener('pointerup', finalizarPonteiro);
+    window.addEventListener('pointercancel', finalizarPonteiro);
+
+    MURAL_EL.addEventListener('click', (e) => {
+      if (SUPRIMIR_TAP) { SUPRIMIR_TAP = false; return; }
+      const vazio = e.target.closest('.slot.vazio[data-n]');
+      if (vazio) {
+        SLOT_ALVO = Number(vazio.dataset.n);
+        $('input-slot').click();
+        return;
+      }
+      const el = e.target.closest('.slot[data-id]');
+      if (el) abrirSheet(el.dataset.id);
     });
+
+    $('sheet-replace').addEventListener('click', () => $('input-replace').click());
+    $('sheet-del').addEventListener('click', () => {
+      const id = $('sheet-del').dataset.alvo;
+      fecharSheet();
+      apagar(id);
+    });
+    $('sheet-fechar').addEventListener('click', fecharSheet);
+    $('sheet').addEventListener('click', (e) => { if (e.target === $('sheet')) fecharSheet(); });
 
     $('lista').addEventListener('change', async (e) => {
       if (e.target.dataset.leg) {
