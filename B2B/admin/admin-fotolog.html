@@ -338,8 +338,8 @@
         <div class="glass-card p-5 sm:p-6">
           <h2 class="text-xs font-bold uppercase tracking-widest text-amber-300 mb-1">Galeria como o cliente vê</h2>
           <p class="text-xs text-slate-500 mb-4">
-            Clique num quadrado para ver as opções (substituir ou excluir). Clique num quadrado vazio para enviar foto ou vídeo nele.
-            Com Modo Drag ativo, arraste uma foto sobre outra para trocar as duas de lugar. Toda ação pede confirmação.
+            Cada quadrado é uma posição fixa do mural. Clique num quadrado com foto para substituir, tirar do mural ou excluir.
+            Clique num quadrado vazio para enviar foto ou vídeo nele. Com Modo Drag ativo, arraste uma foto para outro quadrado (vazio ou não) e ela muda de lugar. Toda ação pede confirmação.
           </p>
           <div id="mural" class="mural"></div>
         </div>
@@ -350,9 +350,9 @@
             <button type="button" class="btn-file-upload" id="btn-enviar-lista">+ Enviar fotos e vídeos</button>
           </div>
           <p class="text-xs text-slate-500 mb-4">
-            <strong class="text-slate-300">Mural:</strong> as 6 primeiras da ordem que não estão em linha.
-            <strong class="text-slate-300">Em linha:</strong> aparecem no card “Veja mais momentos”, com título e descrição.
-            <strong class="text-slate-300">Reserva:</strong> as demais, guardadas no evento.
+            <strong class="text-slate-300">Mural:</strong> ocupa uma das 6 posições.
+            <strong class="text-slate-300">Em linha:</strong> aparece no card “Veja mais momentos”, com título e descrição.
+            <strong class="text-slate-300">Reserva:</strong> fora do mural e da linha, guardada no evento.
           </p>
           <div id="lista" class="grid gap-4" style="grid-template-columns:repeat(auto-fill,minmax(220px,1fr))"></div>
           <p id="vazio" class="text-sm text-slate-500 mt-4" style="display:none">Nenhuma mídia neste pedido ainda.</p>
@@ -372,6 +372,7 @@
       <p id="sheet-info" class="text-xs text-slate-400 mb-4"></p>
       <div class="flex flex-col gap-2">
         <button type="button" class="btn-adm-primary" id="sheet-replace">Substituir por outra foto ou vídeo</button>
+        <button type="button" class="btn-ghost" id="sheet-tirar">Tirar do mural (vai para a reserva)</button>
         <button type="button" class="btn-danger-outline" id="sheet-del">Excluir</button>
         <button type="button" class="btn-ghost" id="sheet-fechar">Fechar</button>
       </div>
@@ -410,7 +411,7 @@
     let DRAG = false;
     let SORT = null;
     let SLOT_ALVO = null;
-    let PD = null;          // arraste no espelho (ponteiro)
+    let PD = null;
     let SUPRIMIR_TAP = false;
 
     function msg(t, erro) {
@@ -419,14 +420,15 @@
       el.className = 'text-xs mt-3 min-h-[16px] ' + (erro ? 'text-red-300' : 'text-amber-300');
     }
 
-    function loading(texto, feito, total) {
+    // Progresso real: 0 a 1 (bytes enviados ou etapa concluída)
+    function progresso(texto, fracao) {
+      const pct = Math.round(Math.max(0, Math.min(1, fracao || 0)) * 100);
       $('loadingMessage').textContent = texto || 'Enviando…';
-      const pct = total ? Math.round((feito / total) * 100) : 0;
       $('loadingPercentageText').textContent = pct + '%';
       $('loadingProgressBar').style.width = pct + '%';
       $('loadingOverlay').classList.add('active');
     }
-    function loadingFim() { $('loadingOverlay').classList.remove('active'); }
+    function progressoFim() { $('loadingOverlay').classList.remove('active'); }
 
     function ehVideo(file) {
       return (file.type || '').startsWith('video/') || /\.(mp4|mov|m4v|webm|3gp)$/i.test(file.name || '');
@@ -436,10 +438,13 @@
       return m ? m[1].toLowerCase() : 'mp4';
     }
 
+    // Vídeo: poster (miniatura) ou primeiro frame (#t=0.01)
     function midia(f, controles) {
-      return f.tipo === 'video'
-        ? `<video src="${esc(f.url)}" muted playsinline preload="metadata" ${controles ? 'controls' : ''} style="width:100%;height:100%;object-fit:cover;display:block"></video>`
-        : `<img src="${esc(f.url)}" alt="" loading="lazy" style="width:100%;height:100%;object-fit:cover;display:block">`;
+      if (f.tipo === 'video') {
+        const poster = f.poster_url ? ` poster="${esc(f.poster_url)}"` : '';
+        return `<video src="${esc(f.url)}#t=0.01"${poster} muted playsinline preload="metadata" ${controles ? 'controls' : ''} style="width:100%;height:100%;object-fit:cover;display:block;background:#0b0b10"></video>`;
+      }
+      return `<img src="${esc(f.url)}" alt="" loading="lazy" style="width:100%;height:100%;object-fit:cover;display:block">`;
     }
 
     async function token() {
@@ -449,23 +454,70 @@
       return t;
     }
 
-    // Mesmo worker de todas as mídias do portal. raw=1 grava o vídeo original (fallback)
-    async function r2Subir(path, file, raw) {
-      const resp = await fetch(R2_UPLOAD_URL + '?path=' + encodeURIComponent(path) + (raw ? '&raw=1' : ''), {
-        method: 'PUT',
-        headers: { 'Authorization': 'Bearer ' + await token(), 'Content-Type': file.type || 'application/octet-stream' },
-        body: file
+    // Até 3 tentativas com o mesmo caminho (mesmo padrão do perfil do B2B)
+    async function enviarR2(path, blob, raw, onFrac) {
+      let ultimo = null;
+      for (let t = 1; t <= 3; t++) {
+        try { return await enviarR2Uma(path, blob, raw, onFrac); }
+        catch (err) {
+          ultimo = err;
+          if (t < 3) await new Promise(r => setTimeout(r, t * 1500));
+        }
+      }
+      throw ultimo;
+    }
+
+    // Envio com progresso real (XHR). Vídeo vai sem raw: o worker compacta no servidor, como no perfil
+    async function enviarR2Uma(path, blob, raw, onFrac) {
+      const t = await token();
+      return new Promise((resolve, reject) => {
+        const xhr = new XMLHttpRequest();
+        xhr.open('PUT', R2_UPLOAD_URL + '?path=' + encodeURIComponent(path) + (raw ? '&raw=1' : ''));
+        xhr.setRequestHeader('Authorization', 'Bearer ' + t);
+        xhr.setRequestHeader('Content-Type', blob.type || 'application/octet-stream');
+        xhr.upload.onprogress = (e) => { if (e.lengthComputable && onFrac) onFrac(e.loaded / e.total); };
+        xhr.onload = () => {
+          let j = null;
+          try { j = JSON.parse(xhr.responseText); } catch (err) {}
+          if (xhr.status >= 200 && xhr.status < 300 && j && j.ok) resolve(j);
+          else reject(new Error((j && j.error) || ('Upload falhou (status ' + xhr.status + ')')));
+        };
+        xhr.onerror = () => reject(new Error('Falha de rede no envio'));
+        xhr.send(blob);
       });
-      const j = await resp.json().catch(() => null);
-      if (!resp.ok || !j || !j.ok) throw new Error((j && j.error) || ('Upload falhou (status ' + resp.status + ')'));
-      return j;
     }
 
     async function r2Apagar(path) {
+      if (!path) return;
       await fetch(R2_UPLOAD_URL + '?path=' + encodeURIComponent(path), {
         method: 'DELETE',
         headers: { 'Authorization': 'Bearer ' + await token() }
       }).catch(() => {});
+    }
+
+    // Miniatura: captura o frame em 0.01 s
+    function gerarPoster(file) {
+      return new Promise((resolve) => {
+        const url = URL.createObjectURL(file);
+        const v = document.createElement('video');
+        v.muted = true; v.playsInline = true; v.preload = 'auto'; v.src = url;
+        let feito = false;
+        const fim = (blob) => { if (feito) return; feito = true; URL.revokeObjectURL(url); resolve(blob); };
+        v.onerror = () => fim(null);
+        v.onloadeddata = () => { try { v.currentTime = 0.01; } catch (e) { fim(null); } };
+        v.onseeked = () => {
+          try {
+            if (!v.videoWidth) return fim(null);
+            const w = Math.min(v.videoWidth, 960);
+            const h = Math.round(w * v.videoHeight / v.videoWidth);
+            const c = document.createElement('canvas');
+            c.width = w; c.height = h;
+            c.getContext('2d').drawImage(v, 0, 0, w, h);
+            c.toBlob((b) => fim(b), 'image/jpeg', 0.86);
+          } catch (e) { fim(null); }
+        };
+        setTimeout(() => fim(null), 15000);
+      });
     }
 
     async function up(id, patch) {
@@ -477,10 +529,6 @@
     async function gravarOrdem(ids) {
       await Promise.all(ids.map((id, i) => up(id, { ordem: i + 1 })));
       await carregar();
-    }
-
-    function mural() {
-      return FOTOS.filter(f => f.visivel && !f.na_linha).slice(0, 6);
     }
 
     // ----- Pedido: busca por nome, número ou data -----
@@ -509,10 +557,9 @@
         if (iso) return d === iso;
         if (sufixo) return d.endsWith(sufixo);
         if (prefixo) return d.startsWith(prefixo);
-        const nome = norm(p.cliente_nome);
-        const nomeOk = nome.includes(t);
-        const numOk = digitos && String(p.numero ?? '').includes(digitos) && t.replace(/[\s#]/g, '') === digitos;
-        return nomeOk || numOk || (digitos && String(p.numero ?? '') === digitos);
+        const nomeOk = norm(p.cliente_nome).includes(t);
+        const numOk = digitos && String(p.numero ?? '') === digitos;
+        return nomeOk || numOk;
       }).slice(0, 20);
     }
 
@@ -572,11 +619,14 @@
       renderLista();
     }
 
+    function noSlot(n) {
+      return FOTOS.find(f => f.posicao === n) || null;
+    }
+
     function renderMural() {
-      const m = mural();
       let h = '';
       for (let n = 1; n <= 6; n++) {
-        const f = m[n - 1];
+        const f = noSlot(n);
         const rotulo = n === 1 ? '1 · grande' : String(n);
         if (f) {
           h += `<div class="slot s${n}" data-id="${f.id}" data-n="${n}">
@@ -597,13 +647,12 @@
     }
 
     function renderLista() {
-      const mu = mural().map(f => f.id);
       $('vazio').style.display = FOTOS.length ? 'none' : '';
       $('lista').innerHTML = FOTOS.map(f => {
         let badge;
         if (!f.visivel) badge = 'Oculta';
         else if (f.na_linha) badge = 'Em linha';
-        else if (mu.indexOf(f.id) >= 0) badge = 'Mural · ' + (mu.indexOf(f.id) + 1) + (mu.indexOf(f.id) === 0 ? ' · grande' : '');
+        else if (f.posicao) badge = 'Mural · ' + f.posicao + (f.posicao === 1 ? ' · grande' : '');
         else badge = 'Reserva';
         return `
           <div class="adm-card" data-id="${f.id}" style="${f.visivel ? '' : 'opacity:.5'}">
@@ -632,7 +681,7 @@
           preventOnFilter: false,
           onEnd: async () => {
             const ids = [...$('lista').children].map(el => el.dataset.id);
-            if (!(await confirm2(`Gravar a nova ordem da lista (${ids.length} mídias)?`))) return carregar();
+            if (!window.confirm(`Gravar a nova ordem da lista (${ids.length} mídias)?`)) return carregar();
             gravarOrdem(ids);
           }
         });
@@ -640,102 +689,106 @@
       SORT.option('disabled', !DRAG);
     }
 
-    function confirm2(texto) {
-      return Promise.resolve(window.confirm(texto));
-    }
-
-    // Envio de uma mídia. Vídeo que falhar na otimização é regravado como original (raw=1)
-    async function enviarArquivo(file, extras) {
+    // Envio de uma mídia. Vídeo: miniatura no navegador + envio normal (o worker compacta)
+    async function enviarArquivo(file, extras, onFrac) {
+      const e = extras || {};
+      const fr = onFrac || (() => {});
       const video = ehVideo(file);
       let arquivo = file;
+      let poster = null;
       if (!video) {
+        fr(0.05);
         arquivo = await imageCompression(file, { maxSizeMB: 0.8, maxWidthOrHeight: 1920, useWebWorker: true, fileType: 'image/jpeg' });
+      } else {
+        fr(0.03);
+        poster = await gerarPoster(file);
       }
-      const path = `eventos/${PID}/${crypto.randomUUID()}.${video ? extDe(file) : 'jpg'}`;
-      let r;
-      try { r = await r2Subir(path, arquivo, false); }
-      catch (err) {
-        if (!video) throw err;
-        r = await r2Subir(path, arquivo, true);
+      fr(0.1);
+      const base = `eventos/${PID}/${crypto.randomUUID()}`;
+      let posterUrl = null;
+      if (poster) {
+        const pr = await enviarR2(`${base}-poster.jpg`, poster, false, null);
+        posterUrl = pr.url;
       }
+      fr(0.15);
+      const r = await enviarR2(`${base}.${video ? extDe(file) : 'jpg'}`, arquivo, false, (x) => fr(0.15 + x * 0.8));
+      fr(0.96);
       const ordemBase = FOTOS.reduce((m, x) => Math.max(m, x.ordem || 0), 0);
-      const e = extras || {};
       const { data, error } = await _sb.from('evento_fotos').insert({
         proposta_id: PID,
         tipo: video ? 'video' : 'imagem',
         url: r.url,
         path: r.path,
-        ordem: ordemBase + 1,
+        poster_url: posterUrl,
+        ordem: e.ordem !== undefined ? e.ordem : ordemBase + 1,
         visivel: e.visivel !== undefined ? e.visivel : true,
         na_linha: e.na_linha !== undefined ? e.na_linha : false,
+        posicao: e.posicao || null,
         legenda: e.legenda || null,
         descricao: e.descricao || null
       }).select('id').single();
       if (error) throw error;
+      fr(1);
       return data.id;
     }
 
     async function enviarLista(files) {
       if (!PID) return msg('Escolha um pedido antes.', true);
       let falhas = 0;
-      for (let i = 0; i < files.length; i++) {
-        loading(`Enviando ${i + 1} de ${files.length}`, i, files.length);
-        try { await enviarArquivo(files[i]); }
-        catch (err) { falhas++; msg('Falha em "' + files[i].name + '": ' + err.message, true); }
-      }
-      loading('Atualizando galeria', files.length, files.length);
-      await carregar();
-      loadingFim();
+      try {
+        for (let i = 0; i < files.length; i++) {
+          const nome = `Enviando ${i + 1} de ${files.length}`;
+          try { await enviarArquivo(files[i], null, (f) => progresso(nome, (i + f) / files.length)); }
+          catch (err) { falhas++; msg('Falha em "' + files[i].name + '": ' + err.message, true); }
+        }
+        progresso('Atualizando galeria', 1);
+        await carregar();
+      } finally { progressoFim(); }
       if (!falhas) msg('Envio concluído.');
     }
 
-    // Coloca a mídia nova na posição n do mural (1 = grande)
-    async function posicionar(novoId, n) {
-      const ids = FOTOS.map(f => f.id).filter(x => x !== novoId);
-      const m = mural().map(f => f.id).filter(x => x !== novoId);
-      let idx;
-      if (m.length >= n) idx = ids.indexOf(m[n - 1]);
-      else idx = m.length ? ids.indexOf(m[m.length - 1]) + 1 : 0;
-      ids.splice(Math.max(0, idx), 0, novoId);
-      await gravarOrdem(ids);
-    }
-
+    // Envio direto numa vaga vazia do mural
     async function enviarParaSlot(file, n) {
-      const ok = window.confirm(`Enviar "${file.name}" para a posição ${n === 1 ? '1 (grande)' : n} do mural?`);
-      if (!ok) return;
-      loading('Enviando', 0, 1);
+      if (noSlot(n)) return msg('Essa posição já está ocupada. Atualize a tela.', true);
+      if (!window.confirm(`Enviar "${file.name}" para a posição ${n === 1 ? '1 (grande)' : n} do mural?`)) return;
       try {
-        const id = await enviarArquivo(file);
-        loading('Posicionando', 1, 1);
+        await enviarArquivo(file, { posicao: n }, (f) => progresso('Enviando para a posição ' + n, f));
+        progresso('Atualizando galeria', 1);
         await carregar();
-        await posicionar(id, n);
         msg('Enviado para a posição ' + n + '.');
       } catch (err) {
         msg('Falha ao enviar: ' + err.message, true);
-      } finally { loadingFim(); }
+      } finally { progressoFim(); }
     }
 
+    // Substitui a mídia mantendo a mesma posição, legenda, linha e ordem
     async function substituir(alvoId, file) {
       const antigo = FOTOS.find(x => x.id === alvoId);
       if (!antigo) return;
-      const ok = window.confirm(`Substituir esta mídia por "${file.name}"? A mídia atual será apagada.`);
-      if (!ok) return;
-      loading('Enviando', 0, 1);
+      if (!window.confirm(`Substituir esta mídia por "${file.name}"? A mídia atual será apagada.`)) return;
       try {
         const novoId = await enviarArquivo(file, {
           legenda: antigo.legenda, descricao: antigo.descricao,
-          na_linha: antigo.na_linha, visivel: antigo.visivel
-        });
-        await carregar();
-        const ids = FOTOS.filter(f => f.id !== novoId).map(f => f.id === alvoId ? novoId : f.id);
-        await gravarOrdem(ids);
-        await _sb.from('evento_fotos').delete().eq('id', alvoId);
+          na_linha: antigo.na_linha, visivel: antigo.visivel, ordem: antigo.ordem
+        }, (f) => progresso('Substituindo', f));
+        if (antigo.posicao) {
+          await up(antigo.id, { posicao: null });
+          await up(novoId, { posicao: antigo.posicao });
+        }
+        await _sb.from('evento_fotos').delete().eq('id', antigo.id);
         await r2Apagar(antigo.path);
+        await r2Apagar(caminhoDe(antigo.poster_url));
+        progresso('Atualizando galeria', 1);
         await carregar();
         msg('Mídia substituída.');
       } catch (err) {
         msg('Falha ao substituir: ' + err.message, true);
-      } finally { loadingFim(); }
+      } finally { progressoFim(); }
+    }
+
+    function caminhoDe(url) {
+      if (!url) return null;
+      try { return new URL(url).pathname.replace(/^\//, ''); } catch (e) { return null; }
     }
 
     async function apagar(id) {
@@ -744,27 +797,32 @@
       const { error } = await _sb.from('evento_fotos').delete().eq('id', id);
       if (error) return msg('Erro ao apagar: ' + error.message, true);
       await r2Apagar(f.path);
+      await r2Apagar(caminhoDe(f.poster_url));
       msg('Mídia apagada.');
       await carregar();
     }
 
-    // Troca de posição no espelho (confirmada)
-    async function trocar(a, b) {
-      const ids = FOTOS.map(f => f.id);
-      const ia = ids.indexOf(a), ib = ids.indexOf(b);
-      if (ia < 0 || ib < 0) return;
-      [ids[ia], ids[ib]] = [ids[ib], ids[ia]];
-      await gravarOrdem(ids);
+    // Move a mídia para a posição destino (1 a 6) ou para a reserva (null). Se o destino está ocupado, as duas trocam.
+    async function mover(id, destino) {
+      const f = FOTOS.find(x => x.id === id);
+      if (!f || f.posicao === destino) return;
+      const origem = f.posicao;
+      const ocupante = destino ? FOTOS.find(x => x.posicao === destino && x.id !== id) : null;
+      if (ocupante && !(await up(ocupante.id, { posicao: null }))) return;
+      if (!(await up(id, { posicao: destino }))) return;
+      if (ocupante && origem && !(await up(ocupante.id, { posicao: origem }))) return;
+      await carregar();
     }
 
     function abrirSheet(id) {
       const f = FOTOS.find(x => x.id === id);
       if (!f) return;
-      const m = mural().findIndex(x => x.id === id);
       $('sheet-midia').innerHTML = midia(f, true);
-      $('sheet-info').textContent = (m >= 0 ? 'Posição ' + (m + 1) + (m === 0 ? ' (grande)' : '') + ' no mural' : 'Fora do mural') +
+      $('sheet-info').textContent = (f.posicao ? 'Posição ' + f.posicao + (f.posicao === 1 ? ' (grande)' : '') + ' no mural' : 'Fora do mural') +
         (f.legenda ? ' · ' + f.legenda : '');
       $('sheet-replace').dataset.alvo = id;
+      $('sheet-tirar').dataset.alvo = id;
+      $('sheet-tirar').style.display = f.posicao ? '' : 'none';
       $('sheet-del').dataset.alvo = id;
       $('sheet').classList.add('on');
     }
@@ -817,13 +875,13 @@
       renderMural();
     });
 
-    // Espelho: toque/clique abre opções ou envia; arrastar (Modo Drag) troca de posição
+    // Espelho: arrastar uma foto para outro quadrado (vazio ou com foto) muda de lugar, com confirmação
     const MURAL_EL = $('mural');
     MURAL_EL.addEventListener('pointerdown', (e) => {
       const el = e.target.closest('.slot[data-id]');
       SUPRIMIR_TAP = false;
       if (!el) return;
-      PD = { id: el.dataset.id, el, x: e.clientX, y: e.clientY, ativo: false, ghost: null, alvoEl: null };
+      PD = { id: el.dataset.id, n: Number(el.dataset.n), el, x: e.clientX, y: e.clientY, ativo: false, ghost: null, alvoEl: null };
     });
     window.addEventListener('pointermove', (e) => {
       if (!PD) return;
@@ -844,9 +902,9 @@
       PD.ghost.style.display = 'none';
       const sob = document.elementFromPoint(e.clientX, e.clientY);
       PD.ghost.style.display = '';
-      const alvo = sob && sob.closest('#mural .slot[data-id]');
+      const alvo = sob && sob.closest('#mural .slot[data-n]');
       if (PD.alvoEl && PD.alvoEl !== alvo) PD.alvoEl.classList.remove('drop-alvo');
-      PD.alvoEl = (alvo && alvo.dataset.id !== PD.id) ? alvo : null;
+      PD.alvoEl = (alvo && Number(alvo.dataset.n) !== PD.n) ? alvo : null;
       if (PD.alvoEl) PD.alvoEl.classList.add('drop-alvo');
     });
     function finalizarPonteiro() {
@@ -858,10 +916,12 @@
       if (p.alvoEl) p.alvoEl.classList.remove('drop-alvo');
       if (p.ativo && p.alvoEl) {
         const a = FOTOS.find(f => f.id === p.id);
-        const b = FOTOS.find(f => f.id === p.alvoEl.dataset.id);
-        const pa = mural().findIndex(f => f.id === p.id) + 1;
-        const pb = mural().findIndex(f => f.id === p.alvoEl.dataset.id) + 1;
-        if (a && b && window.confirm(`Trocar a posição ${pa} com a posição ${pb}?`)) trocar(a.id, b.id);
+        const destino = Number(p.alvoEl.dataset.n);
+        const ocupado = FOTOS.find(f => f.posicao === destino);
+        const pergunta = ocupado
+          ? `Trocar a foto da posição ${p.n} com a da posição ${destino}?`
+          : `Mover a foto da posição ${p.n} para a posição ${destino}?`;
+        if (a && window.confirm(pergunta)) mover(a.id, destino);
       }
     }
     window.addEventListener('pointerup', finalizarPonteiro);
@@ -880,6 +940,11 @@
     });
 
     $('sheet-replace').addEventListener('click', () => $('input-replace').click());
+    $('sheet-tirar').addEventListener('click', () => {
+      const id = $('sheet-tirar').dataset.alvo;
+      fecharSheet();
+      if (window.confirm('Tirar esta mídia do mural? Ela vai para a reserva e some do painel do cliente.')) mover(id, null);
+    });
     $('sheet-del').addEventListener('click', () => {
       const id = $('sheet-del').dataset.alvo;
       fecharSheet();
@@ -900,7 +965,9 @@
       const t = e.target;
       if (t.dataset.linha) {
         const f = FOTOS.find(x => x.id === t.dataset.linha);
-        if (f && await up(f.id, { na_linha: !f.na_linha })) carregar();
+        if (!f) return;
+        const patch = f.na_linha ? { na_linha: false } : { na_linha: true, posicao: null };
+        if (await up(f.id, patch)) carregar();
       } else if (t.dataset.vis) {
         const f = FOTOS.find(x => x.id === t.dataset.vis);
         if (f && await up(f.id, { visivel: !f.visivel })) carregar();
