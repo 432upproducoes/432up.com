@@ -266,25 +266,21 @@
     @media (max-width: 640px) { .foto-grid { grid-template-columns: repeat(2, 1fr); } .foto:nth-child(1) { grid-column: span 2; grid-row: auto; aspect-ratio: 16 / 9; } }
     .galeria-vazia { border: 1px dashed rgba(255, 255, 255, .14); border-radius: 18px; padding: 28px 18px; text-align: center; color: var(--mut); font-size: 14px; }
 
-    /* Fotolog: mural de 6 posições (1 grande + 5 pequenas) e faixa em linha. Mesmo CSS no admin */
-    .mural { display: grid; grid-template-columns: repeat(3, 1fr); grid-template-areas: "s1 s1 s2" "s1 s1 s3" "s4 s5 s6"; gap: 10px; }
-    .mural .s1 { grid-area: s1; } .mural .s2 { grid-area: s2; } .mural .s3 { grid-area: s3; }
-    .mural .s4 { grid-area: s4; } .mural .s5 { grid-area: s5; } .mural .s6 { grid-area: s6; }
-    .slot { position: relative; aspect-ratio: 4 / 3; border-radius: 16px; overflow: hidden; border: 1px solid rgba(255, 255, 255, .12); background: #0b0b10; padding: 0; cursor: pointer; display: flex; align-items: center; justify-content: center; color: rgba(255, 255, 255, .55); font: inherit; }
-    .slot.s1 { aspect-ratio: auto; }
-    .slot.vazio { cursor: default; background: linear-gradient(135deg, rgba(168, 85, 247, .22), rgba(6, 182, 212, .12)); }
-    .slot.vazio.s2, .slot.vazio.s4, .slot.vazio.s6 { background: linear-gradient(135deg, rgba(255, 0, 127, .16), rgba(168, 85, 247, .14)); }
-    .slot-cta { display: flex; flex-direction: column; align-items: center; gap: 6px; font-size: 12px; }
-    .slot-cta svg { width: 28px; height: 28px; }
-    .slot img, .slot video, .linha-item img, .linha-item video { width: 100%; height: 100%; object-fit: cover; display: block; }
+    /* Fotolog real: mural principal (6 fotos, a primeira grande), como aprovado */
+    .foto-real { position: relative; aspect-ratio: 4 / 3; border-radius: 16px; overflow: hidden; padding: 0; cursor: pointer; border: 1px solid rgba(255, 255, 255, .12); background: #0b0b10; }
+    .foto-real img, .foto-real video { width: 100%; height: 100%; object-fit: cover; display: block; }
+    .foto-real:nth-child(1) { grid-column: span 2; grid-row: span 2; aspect-ratio: auto; }
+    @media (max-width: 640px) { .foto-real:nth-child(1) { grid-column: span 2; grid-row: auto; aspect-ratio: 16 / 9; } }
     .foto-play { position: absolute; left: 50%; top: 50%; transform: translate(-50%, -50%); width: 44px; height: 44px; border-radius: 50%; background: rgba(0, 0, 0, .55); color: #fff; display: flex; align-items: center; justify-content: center; font-size: 16px; pointer-events: none; }
-    .linha { display: flex; gap: 10px; overflow-x: auto; scroll-snap-type: x mandatory; padding: 4px 0 8px; margin-top: 14px; scrollbar-width: thin; }
-    .linha-item { position: relative; flex: 0 0 auto; height: 180px; aspect-ratio: 4 / 3; border-radius: 16px; overflow: hidden; scroll-snap-align: start; border: 1px solid rgba(255, 255, 255, .12); background: #0b0b10; padding: 0; cursor: pointer; }
-    @media (max-width: 640px) {
-      .mural { grid-template-columns: 1fr 1fr; grid-template-areas: "s1 s1" "s2 s3" "s4 s5" "s6 s6"; }
-      .mural .slot.s1, .mural .slot.s6 { aspect-ratio: 16 / 9; }
-      .linha-item { height: 140px; }
-    }
+
+    /* Card "Veja mais momentos": fotos em linha, com legenda, abaixo do principal */
+    .foto-sep { border: 0; border-top: 1px solid rgba(255, 255, 255, .14); margin: 0 0 18px; }
+    #fotosLinha { display: grid; grid-template-columns: repeat(auto-fill, minmax(150px, 1fr)); gap: 14px; }
+    .linha-item { background: none; border: 0; padding: 0; color: inherit; cursor: pointer; text-align: left; font: inherit; display: flex; flex-direction: column; gap: 6px; min-width: 0; }
+    .linha-media { position: relative; display: block; aspect-ratio: 4 / 3; border-radius: 14px; overflow: hidden; border: 1px solid rgba(255, 255, 255, .12); background: #0b0b10; }
+    .linha-media img, .linha-media video { width: 100%; height: 100%; object-fit: cover; display: block; }
+    .linha-leg { font-size: 12px; color: var(--body); line-height: 1.35; overflow-wrap: anywhere; }
+    @media (max-width: 640px) { #fotosLinha { grid-template-columns: repeat(2, 1fr); gap: 12px; } }
     .foto-lb-midia { display: flex; align-items: center; justify-content: center; max-height: 72vh; }
     .foto-lb-midia img, .foto-lb-midia video { max-width: 100%; max-height: 72vh; border-radius: 16px; }
     .foto-lb-legenda { color: var(--body); font-size: 14px; text-align: center; margin: 12px 0 0; min-height: 18px; }
@@ -515,6 +511,12 @@
             </div>
           </div>
         </div>
+              <div class="box-full" id="cardLinha" style="display:none">
+          <hr class="foto-sep">
+          <h2>Veja mais momentos</h2>
+          <p class="pill" style="margin:-6px 0 14px">Fotos e vídeos do evento, com legenda.</p>
+          <div id="fotosLinha"></div>
+        </div>
       </section>
 
       <!-- 4 · PERFIL -->
@@ -564,8 +566,11 @@
   <div class="modal-bg" id="modalFoto" role="dialog" aria-modal="true" aria-label="Foto do evento">
     <div style="position:relative;width:min(92vw,980px)">
       <button type="button" id="btnFotoFechar" class="btn-s" style="position:absolute;right:0;top:-44px;margin-top:0">Fechar</button>
+      <button type="button" id="btnFotoAnt" class="btn-s" aria-label="Anterior" style="position:absolute;left:-6px;top:40%;margin-top:0;font-size:20px;padding:4px 14px">‹</button>
+      <button type="button" id="btnFotoProx" class="btn-s" aria-label="Próxima" style="position:absolute;right:-6px;top:40%;margin-top:0;font-size:20px;padding:4px 14px">›</button>
       <div class="foto-lb-midia" id="fotoLbMidia"></div>
       <p class="foto-lb-legenda" id="fotoLbLegenda"></p>
+      <p class="pill" id="fotoLbContador" style="text-align:center;margin:4px 0 0"></p>
     </div>
   </div>
   <div class="modal-bg" id="modalCrop" role="dialog" aria-modal="true" aria-label="Recortar foto">
@@ -1469,41 +1474,7 @@
     else { prev.style.backgroundImage = ''; ph.style.display = ''; }
   }
 
-  function renderFotos() {
-    var fotos = (dados && dados.fotos) || [];
-    var box = $('fotosReais');
-    var ex = $('fotosExemplo');
-    var slots = {};
-    fotos.forEach(function (f, i) {
-      if (f.posicao >= 1 && f.posicao <= 6 && !slots[f.posicao]) slots[f.posicao] = { f: f, i: i };
-    });
-    var linha = [];
-    fotos.forEach(function (f, i) { if (f.na_linha) linha.push({ f: f, i: i }); });
-    if (!Object.keys(slots).length && !linha.length) {
-      box.style.display = 'none';
-      box.innerHTML = '';
-      ex.style.display = '';
-      return;
-    }
-    var html = '<div class="mural">';
-    for (var n = 1; n <= 6; n++) {
-      var s = slots[n];
-      if (s) {
-        html += '<button type="button" class="slot s' + n + '" data-i="' + s.i + '">' + midia(s.f) + '</button>';
-      } else {
-        html += '<div class="slot vazio s' + n + '" aria-hidden="true"><div class="slot-cta">' + CAMERA_SVG + '</div></div>';
-      }
-    }
-    html += '</div>';
-    if (linha.length) {
-      html += '<div class="linha">' + linha.map(function (x) {
-        return '<button type="button" class="linha-item" data-i="' + x.i + '">' + midia(x.f) + '</button>';
-      }).join('') + '</div>';
-    }
-    box.innerHTML = html;
-    box.style.display = '';
-    ex.style.display = 'none';
-  }
+  var LISTA_LB = [], LB_I = 0;
 
   function midia(f) {
     return f.tipo === 'video'
@@ -1511,23 +1482,77 @@
       : '<img src="' + E(f.url) + '" alt="' + E(f.legenda || 'Foto do evento') + '" loading="lazy">';
   }
 
-  $('fotosReais').addEventListener('click', function (e) {
-    var b = e.target.closest('[data-i]');
-    if (!b) return;
-    var f = ((dados && dados.fotos) || [])[+b.dataset.i];
+  function renderFotos() {
+    var fotos = ((dados && dados.fotos) || []).filter(function (f) { return f.visivel !== false; });
+    var principais = fotos.filter(function (f) { return !f.na_linha; }).slice(0, 6);
+    var linhas = fotos.filter(function (f) { return f.na_linha; });
+    LISTA_LB = principais.concat(linhas);
+    var box = $('fotosReais'), ex = $('fotosExemplo'), card = $('cardLinha'), lin = $('fotosLinha');
+    if (!principais.length && !linhas.length) {
+      box.style.display = 'none'; box.innerHTML = ''; ex.style.display = ''; card.style.display = 'none';
+      return;
+    }
+    if (principais.length) {
+      box.innerHTML = principais.map(function (f, i) {
+        return '<button type="button" class="foto-real" data-k="' + i + '">' + midia(f) + '</button>';
+      }).join('');
+      box.style.display = '';
+    } else {
+      box.style.display = 'none'; box.innerHTML = '';
+    }
+    ex.style.display = principais.length ? 'none' : '';
+    if (linhas.length) {
+      lin.innerHTML = linhas.map(function (f, j) {
+        var k = principais.length + j;
+        return '<button type="button" class="linha-item" data-k="' + k + '"><span class="linha-media">' + midia(f) + '</span>' +
+          (f.legenda ? '<span class="linha-leg">' + E(f.legenda) + '</span>' : '') + '</button>';
+      }).join('');
+      card.style.display = '';
+    } else {
+      lin.innerHTML = ''; card.style.display = 'none';
+    }
+  }
+
+  function mostrarLb() {
+    var f = LISTA_LB[LB_I];
     if (!f) return;
     $('fotoLbMidia').innerHTML = f.tipo === 'video'
       ? '<video src="' + E(f.url) + '" controls playsinline autoplay></video>'
       : '<img src="' + E(f.url) + '" alt="">';
     $('fotoLbLegenda').textContent = f.legenda || '';
+    $('fotoLbContador').textContent = (LB_I + 1) + ' / ' + LISTA_LB.length;
+    $('btnFotoAnt').style.visibility = LB_I > 0 ? '' : 'hidden';
+    $('btnFotoProx').style.visibility = LB_I < LISTA_LB.length - 1 ? '' : 'hidden';
+  }
+
+  function abrirLb(i) {
+    LB_I = i;
+    mostrarLb();
     $('modalFoto').classList.add('on');
+  }
+
+  function fecharLb() {
+    $('modalFoto').classList.remove('on');
+    $('fotoLbMidia').innerHTML = '';
+  }
+
+  ['fotosReais', 'fotosLinha'].forEach(function (id) {
+    $(id).addEventListener('click', function (e) {
+      var b = e.target.closest('[data-k]');
+      if (b) abrirLb(+b.dataset.k);
+    });
   });
 
+  $('btnFotoAnt').addEventListener('click', function () { if (LB_I > 0) { LB_I--; mostrarLb(); } });
+  $('btnFotoProx').addEventListener('click', function () { if (LB_I < LISTA_LB.length - 1) { LB_I++; mostrarLb(); } });
   $('modalFoto').addEventListener('click', function (e) {
-    if (e.target === this || e.target.id === 'btnFotoFechar') {
-      this.classList.remove('on');
-      $('fotoLbMidia').innerHTML = '';
-    }
+    if (e.target === this || e.target.id === 'btnFotoFechar') fecharLb();
+  });
+  document.addEventListener('keydown', function (e) {
+    if (!$('modalFoto').classList.contains('on')) return;
+    if (e.key === 'Escape') fecharLb();
+    if (e.key === 'ArrowLeft' && LB_I > 0) { LB_I--; mostrarLb(); }
+    if (e.key === 'ArrowRight' && LB_I < LISTA_LB.length - 1) { LB_I++; mostrarLb(); }
   });
 
   function render() {
