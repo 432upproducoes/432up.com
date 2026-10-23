@@ -273,17 +273,31 @@
     @media (max-width: 640px) { .foto-real:nth-child(1) { grid-column: span 2; grid-row: auto; aspect-ratio: 16 / 9; } }
     .foto-play { position: absolute; left: 50%; top: 50%; transform: translate(-50%, -50%); width: 44px; height: 44px; border-radius: 50%; background: rgba(0, 0, 0, .55); color: #fff; display: flex; align-items: center; justify-content: center; font-size: 16px; pointer-events: none; }
 
-    /* Card "Veja mais momentos": fotos em linha, com legenda, abaixo do principal */
+    /* Card "Veja mais momentos": foto com título e descrição ao lado */
     .foto-sep { border: 0; border-top: 1px solid rgba(255, 255, 255, .14); margin: 0 0 18px; }
-    #fotosLinha { display: grid; grid-template-columns: repeat(auto-fill, minmax(150px, 1fr)); gap: 14px; }
-    .linha-item { background: none; border: 0; padding: 0; color: inherit; cursor: pointer; text-align: left; font: inherit; display: flex; flex-direction: column; gap: 6px; min-width: 0; }
-    .linha-media { position: relative; display: block; aspect-ratio: 4 / 3; border-radius: 14px; overflow: hidden; border: 1px solid rgba(255, 255, 255, .12); background: #0b0b10; }
+    #fotosLinha { display: grid; grid-template-columns: repeat(auto-fill, minmax(280px, 1fr)); gap: 14px; }
+    .linha-item { background: none; border: 0; padding: 0; color: inherit; cursor: pointer; text-align: left; font: inherit; display: flex; align-items: center; gap: 14px; min-width: 0; }
+    .linha-media { position: relative; flex: 0 0 132px; aspect-ratio: 4 / 3; border-radius: 14px; overflow: hidden; border: 1px solid rgba(255, 255, 255, .12); background: #0b0b10; }
     .linha-media img, .linha-media video { width: 100%; height: 100%; object-fit: cover; display: block; }
-    .linha-leg { font-size: 12px; color: var(--body); line-height: 1.35; overflow-wrap: anywhere; }
-    @media (max-width: 640px) { #fotosLinha { grid-template-columns: repeat(2, 1fr); gap: 12px; } }
-    .foto-lb-midia { display: flex; align-items: center; justify-content: center; max-height: 72vh; }
-    .foto-lb-midia img, .foto-lb-midia video { max-width: 100%; max-height: 72vh; border-radius: 16px; }
-    .foto-lb-legenda { color: var(--body); font-size: 14px; text-align: center; margin: 12px 0 0; min-height: 18px; }
+    .linha-txt { min-width: 0; display: flex; flex-direction: column; gap: 4px; }
+    .linha-tit { font-size: 14px; font-weight: 700; color: var(--text); overflow-wrap: anywhere; }
+    .linha-desc { font-size: 12px; color: var(--mut); line-height: 1.4; overflow-wrap: anywhere; }
+
+    /* Lightbox: fundo âmbar escuro, deslize com arrastar, setas e clique nas laterais */
+    #modalFoto.modal-bg { background: radial-gradient(ellipse at center, rgba(128, 74, 10, .96) 0%, rgba(70, 40, 6, .97) 70%, rgba(40, 22, 3, .98) 100%); }
+    .lb-wrap { position: relative; width: min(94vw, 1040px); }
+    .lb-fechar { position: absolute; right: 0; top: -44px; padding: 7px 14px; border-radius: 12px; border: 1px solid rgba(251, 191, 36, .5); background: rgba(251, 191, 36, .14); color: #fde68a; font: inherit; font-size: 13px; cursor: pointer; }
+    .lb-stage-wrap { display: flex; align-items: center; gap: 10px; }
+    .lb-stage { position: relative; flex: 1; min-width: 0; height: min(68vh, 640px); overflow: hidden; border-radius: 18px; touch-action: pan-y; user-select: none; -webkit-user-select: none; }
+    .lb-slide { position: absolute; inset: 0; display: flex; align-items: center; justify-content: center; transform: translateX(0); transition: transform .32s cubic-bezier(.25, .8, .25, 1); will-change: transform; }
+    .lb-slide img { max-width: 100%; max-height: 100%; object-fit: contain; border-radius: 14px; pointer-events: none; -webkit-user-drag: none; }
+    .lb-slide video { max-width: 100%; max-height: 100%; border-radius: 14px; }
+    .lb-nav { flex: 0 0 auto; width: 42px; height: 42px; border-radius: 50%; border: 1px solid rgba(251, 191, 36, .5); background: rgba(251, 191, 36, .14); color: #fde68a; font-size: 22px; line-height: 1; cursor: pointer; }
+    .lb-info { margin-top: 14px; text-align: center; color: #fef3c7; }
+    .lb-tit { display: block; font-size: 16px; color: #fff; }
+    .lb-desc { display: block; font-size: 13px; color: #fde68a; margin-top: 4px; line-height: 1.4; }
+    .lb-cont { font-size: 12px; color: #fcd34d; opacity: .85; margin-top: 8px; }
+    @media (max-width: 640px) { .lb-nav { width: 34px; height: 34px; font-size: 18px; } .lb-stage { height: 60vh; } }
 
     /* Perfil: foto no topo, dados no padrão canônico */
     .perfil-hero { display: flex; flex-direction: column; align-items: center; gap: 10px; padding: 6px 0 18px; text-align: center; }
@@ -564,13 +578,17 @@
 
   <!-- Recorte do avatar -->
   <div class="modal-bg" id="modalFoto" role="dialog" aria-modal="true" aria-label="Foto do evento">
-    <div style="position:relative;width:min(92vw,980px)">
-      <button type="button" id="btnFotoFechar" class="btn-s" style="position:absolute;right:0;top:-44px;margin-top:0">Fechar</button>
-      <button type="button" id="btnFotoAnt" class="btn-s" aria-label="Anterior" style="position:absolute;left:-6px;top:40%;margin-top:0;font-size:20px;padding:4px 14px">‹</button>
-      <button type="button" id="btnFotoProx" class="btn-s" aria-label="Próxima" style="position:absolute;right:-6px;top:40%;margin-top:0;font-size:20px;padding:4px 14px">›</button>
-      <div class="foto-lb-midia" id="fotoLbMidia"></div>
-      <p class="foto-lb-legenda" id="fotoLbLegenda"></p>
-      <p class="pill" id="fotoLbContador" style="text-align:center;margin:4px 0 0"></p>
+    <div class="lb-wrap">
+      <button type="button" id="btnFotoFechar" class="lb-fechar">Fechar</button>
+      <div class="lb-stage-wrap">
+        <button type="button" id="btnFotoAnt" class="lb-nav" aria-label="Anterior">‹</button>
+        <div class="lb-stage" id="lbStage"></div>
+        <button type="button" id="btnFotoProx" class="lb-nav" aria-label="Próxima">›</button>
+      </div>
+      <div class="lb-info">
+        <div id="fotoLbLegenda"></div>
+        <div id="fotoLbContador" class="lb-cont"></div>
+      </div>
     </div>
   </div>
   <div class="modal-bg" id="modalCrop" role="dialog" aria-modal="true" aria-label="Recortar foto">
@@ -1474,7 +1492,7 @@
     else { prev.style.backgroundImage = ''; ph.style.display = ''; }
   }
 
-  var LISTA_LB = [], LB_I = 0;
+  var LISTA_LB = [], LB_I = 0, LB_ANIM = false, PT = null, SUPRIMIR_CLIQUE = false;
 
   function midia(f) {
     return f.tipo === 'video'
@@ -1504,8 +1522,12 @@
     if (linhas.length) {
       lin.innerHTML = linhas.map(function (f, j) {
         var k = principais.length + j;
-        return '<button type="button" class="linha-item" data-k="' + k + '"><span class="linha-media">' + midia(f) + '</span>' +
-          (f.legenda ? '<span class="linha-leg">' + E(f.legenda) + '</span>' : '') + '</button>';
+        return '<button type="button" class="linha-item" data-k="' + k + '">' +
+          '<span class="linha-media">' + midia(f) + '</span>' +
+          '<span class="linha-txt">' +
+            (f.legenda ? '<span class="linha-tit">' + E(f.legenda) + '</span>' : '') +
+            (f.descricao ? '<span class="linha-desc">' + E(f.descricao) + '</span>' : '') +
+          '</span></button>';
       }).join('');
       card.style.display = '';
     } else {
@@ -1513,27 +1535,67 @@
     }
   }
 
-  function mostrarLb() {
+  function infoLb() {
     var f = LISTA_LB[LB_I];
     if (!f) return;
-    $('fotoLbMidia').innerHTML = f.tipo === 'video'
-      ? '<video src="' + E(f.url) + '" controls playsinline autoplay></video>'
-      : '<img src="' + E(f.url) + '" alt="">';
-    $('fotoLbLegenda').textContent = f.legenda || '';
+    $('fotoLbLegenda').innerHTML =
+      (f.legenda ? '<strong class="lb-tit">' + E(f.legenda) + '</strong>' : '') +
+      (f.descricao ? '<span class="lb-desc">' + E(f.descricao) + '</span>' : '');
     $('fotoLbContador').textContent = (LB_I + 1) + ' / ' + LISTA_LB.length;
     $('btnFotoAnt').style.visibility = LB_I > 0 ? '' : 'hidden';
     $('btnFotoProx').style.visibility = LB_I < LISTA_LB.length - 1 ? '' : 'hidden';
   }
 
+  function slideEl(i) {
+    var f = LISTA_LB[i];
+    var d = document.createElement('div');
+    d.className = 'lb-slide';
+    d.style.transform = 'translateX(0)';
+    d.innerHTML = f.tipo === 'video'
+      ? '<video src="' + E(f.url) + '" controls playsinline></video>'
+      : '<img src="' + E(f.url) + '" alt="" draggable="false">';
+    return d;
+  }
+
+  // Pré-carrega as vizinhas (anterior e próxima) para trocar rápido
+  function preload(i) {
+    [i - 1, i + 1].forEach(function (k) {
+      var f = LISTA_LB[k];
+      if (f && f.tipo !== 'video') { var im = new Image(); im.src = f.url; }
+    });
+  }
+
   function abrirLb(i) {
-    LB_I = i;
-    mostrarLb();
+    LB_I = i; LB_ANIM = false;
+    var st = $('lbStage');
+    st.innerHTML = '';
+    st.appendChild(slideEl(i));
+    infoLb(); preload(i);
     $('modalFoto').classList.add('on');
   }
 
   function fecharLb() {
     $('modalFoto').classList.remove('on');
-    $('fotoLbMidia').innerHTML = '';
+    $('lbStage').innerHTML = '';
+    PT = null;
+  }
+
+  // Troca com deslize (botões, clique nas laterais, teclado e arrastar)
+  function irPara(novo, dir) {
+    if (LB_ANIM || novo < 0 || novo >= LISTA_LB.length) return;
+    LB_ANIM = true;
+    var st = $('lbStage');
+    var atual = st.querySelector('.lb-slide');
+    var nova = slideEl(novo);
+    nova.style.transform = 'translateX(' + (dir * 100) + '%)';
+    st.appendChild(nova);
+    void nova.offsetWidth;
+    if (atual) atual.style.transform = 'translateX(' + (-dir * 100) + '%)';
+    nova.style.transform = 'translateX(0)';
+    setTimeout(function () {
+      if (atual) atual.remove();
+      LB_I = novo; infoLb(); preload(novo); LB_ANIM = false;
+    }, 320);
   }
 
   ['fotosReais', 'fotosLinha'].forEach(function (id) {
@@ -1543,16 +1605,84 @@
     });
   });
 
-  $('btnFotoAnt').addEventListener('click', function () { if (LB_I > 0) { LB_I--; mostrarLb(); } });
-  $('btnFotoProx').addEventListener('click', function () { if (LB_I < LISTA_LB.length - 1) { LB_I++; mostrarLb(); } });
-  $('modalFoto').addEventListener('click', function (e) {
-    if (e.target === this || e.target.id === 'btnFotoFechar') fecharLb();
-  });
+  $('btnFotoAnt').addEventListener('click', function () { irPara(LB_I - 1, -1); });
+  $('btnFotoProx').addEventListener('click', function () { irPara(LB_I + 1, 1); });
+  $('btnFotoFechar').addEventListener('click', fecharLb);
+  $('modalFoto').addEventListener('click', function (e) { if (e.target === this) fecharLb(); });
+
   document.addEventListener('keydown', function (e) {
     if (!$('modalFoto').classList.contains('on')) return;
     if (e.key === 'Escape') fecharLb();
-    if (e.key === 'ArrowLeft' && LB_I > 0) { LB_I--; mostrarLb(); }
-    if (e.key === 'ArrowRight' && LB_I < LISTA_LB.length - 1) { LB_I++; mostrarLb(); }
+    if (e.key === 'ArrowLeft') irPara(LB_I - 1, -1);
+    if (e.key === 'ArrowRight') irPara(LB_I + 1, 1);
+  });
+
+  // Arrastar: a foto acompanha o dedo/mouse e a vizinha entra deslizando
+  var stage = $('lbStage');
+  stage.addEventListener('pointerdown', function (e) {
+    if (LB_ANIM || e.target.tagName === 'VIDEO') return;
+    SUPRIMIR_CLIQUE = false;
+    PT = { x: e.clientX, dx: 0, nb: null, nbIdx: -1, dir: 0, moveu: false, atual: this.querySelector('.lb-slide'), W: this.clientWidth };
+    try { this.setPointerCapture(e.pointerId); } catch (err) {}
+  });
+  stage.addEventListener('pointermove', function (e) {
+    if (!PT || !PT.atual) return;
+    var dx = e.clientX - PT.x;
+    if (Math.abs(dx) > 6) PT.moveu = true;
+    PT.dx = dx;
+    var dir = dx < 0 ? 1 : -1;
+    var alvo = LB_I + dir;
+    PT.atual.style.transition = 'none';
+    PT.atual.style.transform = 'translateX(' + dx + 'px)';
+    if (alvo >= 0 && alvo < LISTA_LB.length) {
+      if (PT.nbIdx !== alvo) {
+        if (PT.nb) PT.nb.remove();
+        PT.nb = slideEl(alvo);
+        PT.nb.style.transition = 'none';
+        this.appendChild(PT.nb);
+        PT.nbIdx = alvo; PT.dir = dir;
+      }
+      PT.nb.style.transform = 'translateX(' + (dx + dir * PT.W) + 'px)';
+    } else if (PT.nb) {
+      PT.nb.remove(); PT.nb = null; PT.nbIdx = -1;
+    }
+  });
+  function soltar() {
+    if (!PT) return;
+    var p = PT;
+    PT = null;
+    if (!p.atual) return;
+    p.atual.style.transition = '';
+    if (p.nb) p.nb.style.transition = '';
+    if (p.moveu) SUPRIMIR_CLIQUE = true;
+    if (p.nb && Math.abs(p.dx) > p.W * 0.2) {
+      var novo = p.nbIdx;
+      LB_ANIM = true;
+      p.atual.style.transform = 'translateX(' + (-p.dir * 100) + '%)';
+      p.nb.style.transform = 'translateX(0)';
+      setTimeout(function () {
+        p.atual.remove();
+        LB_I = novo; infoLb(); preload(novo); LB_ANIM = false;
+      }, 320);
+    } else {
+      p.atual.style.transform = 'translateX(0)';
+      if (p.nb) {
+        p.nb.style.transform = 'translateX(' + (p.dir * 100) + '%)';
+        setTimeout(function () { if (p.nb) p.nb.remove(); }, 320);
+      }
+    }
+  }
+  stage.addEventListener('pointerup', soltar);
+  stage.addEventListener('pointercancel', soltar);
+
+  // Clique nas laterais também troca de foto
+  stage.addEventListener('click', function (e) {
+    if (SUPRIMIR_CLIQUE) { SUPRIMIR_CLIQUE = false; return; }
+    if (e.target.tagName === 'VIDEO') return;
+    var r = this.getBoundingClientRect();
+    var x = e.clientX - r.left;
+    if (x < r.width * 0.3) irPara(LB_I - 1, -1);
+    else if (x > r.width * 0.7) irPara(LB_I + 1, 1);
   });
 
   function render() {
