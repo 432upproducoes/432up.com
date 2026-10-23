@@ -252,6 +252,26 @@
       .admin-grid { grid-template-columns: 1fr; }
     }
   </style>
+
+  <style>
+    /* Espelho do mural: mesmo CSS do painel do cliente (cliente/index.html) */
+    .mural { display: grid; grid-template-columns: repeat(3, 1fr); grid-template-areas: "s1 s1 s2" "s1 s1 s3" "s4 s5 s6"; gap: 10px; }
+    .mural .s1 { grid-area: s1; } .mural .s2 { grid-area: s2; } .mural .s3 { grid-area: s3; }
+    .mural .s4 { grid-area: s4; } .mural .s5 { grid-area: s5; } .mural .s6 { grid-area: s6; }
+    .slot { position: relative; aspect-ratio: 4 / 3; border-radius: 16px; overflow: hidden; border: 1px solid rgba(255, 255, 255, .12); background: #0b0b10; display: flex; align-items: center; justify-content: center; color: rgba(255, 255, 255, .55); }
+    .slot.s1 { aspect-ratio: auto; }
+    .slot[draggable="true"] { cursor: grab; }
+    .slot.vazio { background: linear-gradient(135deg, rgba(168, 85, 247, .22), rgba(6, 182, 212, .12)); }
+    .slot.vazio.s2, .slot.vazio.s4, .slot.vazio.s6 { background: linear-gradient(135deg, rgba(255, 0, 127, .16), rgba(168, 85, 247, .14)); }
+    .slot-cta { display: flex; flex-direction: column; align-items: center; gap: 6px; font-size: 12px; }
+    .slot img, .slot video { width: 100%; height: 100%; object-fit: cover; display: block; }
+    .slot-tag { position: absolute; left: 8px; top: 8px; z-index: 2; font-size: 10px; font-weight: 800; padding: 3px 8px; border-radius: 999px; background: rgba(0, 0, 0, .6); color: #fbbf24; text-transform: uppercase; letter-spacing: .04em; pointer-events: none; }
+    .slot-off { position: absolute; right: 8px; top: 8px; z-index: 2; font-size: 10px; font-weight: 800; padding: 3px 8px; border-radius: 999px; background: rgba(255, 77, 77, .8); color: #fff; text-transform: uppercase; pointer-events: none; }
+    @media (max-width: 640px) {
+      .mural { grid-template-columns: 1fr 1fr; grid-template-areas: "s1 s1" "s2 s3" "s4 s5" "s6 s6"; }
+      .mural .slot.s1, .mural .slot.s6 { aspect-ratio: 16 / 9; }
+    }
+  </style>
 </head>
 <body class="theme-admin h-full text-slate-200 font-sans antialiased bg-[#06080c] overflow-x-hidden">
 
@@ -272,7 +292,7 @@
         <div class="flex flex-wrap items-center gap-3">
           <div class="flex items-center gap-2 px-3 py-2 rounded-full border border-white/10 bg-white/5 text-xs text-slate-300">
             <span>Modo Drag</span>
-            <button type="button" id="toggle-drag" class="toggle-switch" title="Ativar/desativar arrastar para reordenar" aria-pressed="false"></button>
+            <button type="button" id="toggle-drag" class="toggle-switch" title="Ativar/desativar arrastar" aria-pressed="false"></button>
             <span id="drag-label" class="text-slate-500">Arrastar bloqueado</span>
           </div>
           <button type="button" class="btn-lime" id="btn-enviar">+ Enviar fotos e vídeos</button>
@@ -287,16 +307,27 @@
         <div id="msg" class="text-xs mt-3 min-h-[16px] text-amber-300"></div>
       </section>
 
-      <section id="area" class="glass-card p-5 sm:p-6" style="display:none">
-        <h2 class="text-xs font-bold uppercase tracking-widest text-amber-300 mb-1">Galeria do cliente</h2>
-        <p class="text-xs text-slate-500 mb-4">
-          <strong class="text-slate-300">Mural:</strong> as 6 primeiras fotos da ordem que não estão na linha (a primeira é a grande).
-          <strong class="text-slate-300">Em linha:</strong> aparecem no card “Veja mais momentos”, sem limite.
-          <strong class="text-slate-300">Reserva:</strong> as demais, guardadas no evento.
-          Com Modo Drag ativo, arraste para reordenar.
-        </p>
-        <div id="lista" class="grid gap-4" style="grid-template-columns:repeat(auto-fill,minmax(200px,1fr))"></div>
-        <p id="vazio" class="text-sm text-slate-500 mt-4" style="display:none">Nenhuma mídia neste pedido ainda.</p>
+      <section id="area" class="space-y-6" style="display:none">
+
+        <div class="glass-card p-5 sm:p-6">
+          <h2 class="text-xs font-bold uppercase tracking-widest text-amber-300 mb-1">Galeria como o cliente vê</h2>
+          <p class="text-xs text-slate-500 mb-4">
+            Espelho do mural do painel: a 1 é a grande. Com Modo Drag ativo, arraste uma foto sobre outra para trocar de posição.
+            Para tirar ou colocar uma foto no mural, use a lista abaixo (a ordem define quem entra).
+          </p>
+          <div id="mural" class="mural"></div>
+        </div>
+
+        <div class="glass-card p-5 sm:p-6">
+          <h2 class="text-xs font-bold uppercase tracking-widest text-amber-300 mb-1">Todas as mídias</h2>
+          <p class="text-xs text-slate-500 mb-4">
+            <strong class="text-slate-300">Mural:</strong> as 6 primeiras da ordem que não estão em linha.
+            <strong class="text-slate-300">Em linha:</strong> aparecem no card “Veja mais momentos”, com título e descrição.
+            <strong class="text-slate-300">Reserva:</strong> as demais, guardadas no evento.
+          </p>
+          <div id="lista" class="grid gap-4" style="grid-template-columns:repeat(auto-fill,minmax(220px,1fr))"></div>
+          <p id="vazio" class="text-sm text-slate-500 mt-4" style="display:none">Nenhuma mídia neste pedido ainda.</p>
+        </div>
       </section>
 
       <input type="file" id="input-arquivos" accept="image/*,video/*" multiple hidden>
@@ -312,6 +343,7 @@
     const _sb = (typeof sbPartner !== 'undefined') ? sbPartner : null;
     const $ = (id) => document.getElementById(id);
     const esc = (s) => String(s ?? '').replace(/[&<>"']/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
+    const CAMERA_SVG = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round" width="28" height="28"><path d="M4 8h3l2-3h6l2 3h3v11H4z"/><circle cx="12" cy="13" r="3.5"/></svg>';
 
     let PID = '';
     let FOTOS = [];
@@ -366,6 +398,16 @@
       return true;
     }
 
+    // Regrava a ordem (1..n) na sequência dada
+    async function gravarOrdem(ids) {
+      await Promise.all(ids.map((id, i) => up(id, { ordem: i + 1 })));
+      await carregar();
+    }
+
+    function mural() {
+      return FOTOS.filter(f => f.visivel && !f.na_linha).slice(0, 6);
+    }
+
     async function carregarPedidos() {
       const { data, error } = await _sb.from('propostas')
         .select('id, numero, cliente_nome, data_evento')
@@ -387,14 +429,40 @@
     }
 
     function render() {
-      // Mural = 6 primeiras visíveis que não estão em linha, na ordem da lista
-      const mural = FOTOS.filter(f => f.visivel && !f.na_linha).slice(0, 6).map(f => f.id);
+      renderMural();
+      renderLista();
+    }
+
+    function renderMural() {
+      const m = mural();
+      let h = '';
+      for (let n = 1; n <= 6; n++) {
+        const f = m[n - 1];
+        const rotulo = n === 1 ? '1 · grande' : String(n);
+        if (f) {
+          h += `<div class="slot s${n}" data-id="${f.id}" draggable="${DRAG}">
+                  <span class="slot-tag">${rotulo}</span>
+                  ${f.visivel ? '' : '<span class="slot-off">oculta</span>'}
+                  ${midia(f)}
+                </div>`;
+        } else {
+          h += `<div class="slot vazio s${n}">
+                  <span class="slot-tag">${rotulo}</span>
+                  <div class="slot-cta">${CAMERA_SVG}<span>Sem foto</span></div>
+                </div>`;
+        }
+      }
+      $('mural').innerHTML = h;
+    }
+
+    function renderLista() {
+      const mu = mural().map(f => f.id);
       $('vazio').style.display = FOTOS.length ? 'none' : '';
       $('lista').innerHTML = FOTOS.map(f => {
         let badge;
         if (!f.visivel) badge = 'Oculta';
         else if (f.na_linha) badge = 'Em linha';
-        else if (mural.indexOf(f.id) >= 0) badge = 'Mural · ' + (mural.indexOf(f.id) + 1) + (mural.indexOf(f.id) === 0 ? ' · grande' : '');
+        else if (mu.indexOf(f.id) >= 0) badge = 'Mural · ' + (mu.indexOf(f.id) + 1) + (mu.indexOf(f.id) === 0 ? ' · grande' : '');
         else badge = 'Reserva';
         return `
           <div class="adm-card" data-id="${f.id}" style="${f.visivel ? '' : 'opacity:.5'}">
@@ -402,8 +470,9 @@
               ${midia(f)}
               <span style="position:absolute;left:8px;top:8px;font-size:10px;font-weight:800;padding:3px 8px;border-radius:999px;background:rgba(0,0,0,.6);color:#fbbf24;text-transform:uppercase">${esc(badge)}</span>
             </div>
-            <div class="adm-card-body" style="display:grid;gap:10px">
-              <input type="text" class="adm-input" maxlength="160" placeholder="Legenda (opcional)" value="${esc(f.legenda || '')}" data-leg="${f.id}">
+            <div class="adm-card-body" style="display:grid;gap:8px">
+              <input type="text" class="adm-input" maxlength="160" placeholder="Título (legenda)" value="${esc(f.legenda || '')}" data-leg="${f.id}">
+              <input type="text" class="adm-input" maxlength="300" placeholder="Descrição (opcional)" value="${esc(f.descricao || '')}" data-desc="${f.id}">
               <div class="flex flex-wrap gap-2">
                 <button type="button" class="btn-ghost" data-linha="${f.id}">${f.na_linha ? 'Tirar da linha' : 'Pôr na linha'}</button>
                 <button type="button" class="btn-ghost" data-vis="${f.id}">${f.visivel ? 'Ocultar' : 'Mostrar'}</button>
@@ -419,14 +488,19 @@
           disabled: true,
           filter: 'input, button, video',
           preventOnFilter: false,
-          onEnd: async () => {
-            const ids = [...$('lista').children].map(el => el.dataset.id);
-            await Promise.all(ids.map((id, i) => up(id, { ordem: i + 1 })));
-            await carregar();
-          }
+          onEnd: () => gravarOrdem([...$('lista').children].map(el => el.dataset.id))
         });
       }
       SORT.option('disabled', !DRAG);
+    }
+
+    // Troca de posição no espelho: as duas fotos trocam de lugar na ordem
+    async function trocar(a, b) {
+      const ids = FOTOS.map(f => f.id);
+      const ia = ids.indexOf(a), ib = ids.indexOf(b);
+      if (ia < 0 || ib < 0) return;
+      [ids[ia], ids[ib]] = [ids[ib], ids[ia]];
+      await gravarOrdem(ids);
     }
 
     async function enviarArquivo(file) {
@@ -495,12 +569,35 @@
       this.setAttribute('aria-pressed', DRAG ? 'true' : 'false');
       $('drag-label').textContent = DRAG ? 'Arrastar ativo' : 'Arrastar bloqueado';
       if (SORT) SORT.option('disabled', !DRAG);
+      renderMural();
+    });
+
+    // Espelho: arrastar uma foto sobre outra troca as duas
+    $('mural').addEventListener('dragstart', (e) => {
+      if (!DRAG) return e.preventDefault();
+      const el = e.target.closest('[data-id]');
+      if (!el) return;
+      e.dataTransfer.setData('text/plain', el.dataset.id);
+      e.dataTransfer.effectAllowed = 'move';
+    });
+    $('mural').addEventListener('dragover', (e) => {
+      if (DRAG && e.target.closest('[data-id]')) e.preventDefault();
+    });
+    $('mural').addEventListener('drop', async (e) => {
+      if (!DRAG) return;
+      const el = e.target.closest('[data-id]');
+      if (!el) return;
+      e.preventDefault();
+      const de = e.dataTransfer.getData('text/plain');
+      if (de && de !== el.dataset.id) await trocar(de, el.dataset.id);
     });
 
     $('lista').addEventListener('change', async (e) => {
-      const id = e.target.dataset.leg;
-      if (!id) return;
-      if (await up(id, { legenda: e.target.value.trim() || null })) msg('Legenda salva.');
+      if (e.target.dataset.leg) {
+        if (await up(e.target.dataset.leg, { legenda: e.target.value.trim() || null })) msg('Título salvo.');
+      } else if (e.target.dataset.desc) {
+        if (await up(e.target.dataset.desc, { descricao: e.target.value.trim() || null })) msg('Descrição salva.');
+      }
     });
 
     $('lista').addEventListener('click', async (e) => {
