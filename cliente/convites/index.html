@@ -659,50 +659,71 @@
       const uid = (session.user && session.user.id) || 'anon';
       const video = (file.type || '').startsWith('video/') || /\.(mp4|mov|webm|m4v)$/i.test(file.name || '');
 
+      async function putR2(pathName, body, contentType, raw) {
+        const q = R2_UPLOAD_URL + '?path=' + encodeURIComponent(pathName) + (raw ? '&raw=1' : '');
+        return await new Promise((resolve, reject) => {
+          const xhr = new XMLHttpRequest();
+          xhr.open('PUT', q);
+          xhr.setRequestHeader('Authorization', 'Bearer ' + tok);
+          xhr.setRequestHeader('Content-Type', contentType || 'application/octet-stream');
+          xhr.onload = () => {
+            let bodyJson = null;
+            const rawText = xhr.responseText || '';
+            try { bodyJson = JSON.parse(rawText); } catch (_) {}
+            if (xhr.status >= 200 && xhr.status < 300 && bodyJson && bodyJson.ok && bodyJson.url) {
+              resolve(bodyJson);
+            } else {
+              const detail = (bodyJson && (bodyJson.error || bodyJson.message)) || rawText.slice(0, 200) || ('HTTP ' + xhr.status);
+              const err = new Error(detail);
+              err.status = xhr.status;
+              err.detail = detail;
+              reject(err);
+            }
+          };
+          xhr.onerror = () => reject(new Error('Falha de rede'));
+          xhr.send(body);
+        });
+      }
+
       if (video) {
-        // Cópia fiel do Fotolog: path eventos/{uuid}/video_... + ArrayBuffer + XHR (sem raw=1)
-        // O worker parece exigir UUID logo após eventos/ (como proposta_id no fotolog).
         let corpo;
         try {
           const buf = await file.arrayBuffer();
-          if (!buf.byteLength) throw new Error('o aparelho não conseguiu ler o arquivo (0 bytes)');
+          if (!buf.byteLength) throw new Error('arquivo 0 bytes');
           corpo = new Blob([buf], { type: file.type || 'video/mp4' });
         } catch (e) {
-          throw new Error('Não foi possível ler o vídeo: ' + (e && e.message ? e.message : e));
+          throw new Error('Não foi possível ler o vídeo no aparelho: ' + (e.message || e));
         }
         const safeName = (file.name || 'capa.mp4').replace(/[^\w.\-]+/g, '_').slice(-80);
-        const path = 'eventos/' + uid + '/video_' + Date.now() + '_' + safeName;
-        let ultimo = null;
-        for (let tentativa = 1; tentativa <= 3; tentativa++) {
+        const ts = Date.now();
+        const prop = (atual && atual.proposta_id) ? atual.proposta_id : null;
+        // Tentativas na ordem: mesmo prefixo da foto que já funciona; depois eventos como no fotolog
+        const attempts = [
+          { path: uid + '/convite-video-' + ts + '_' + safeName, raw: false },
+          { path: uid + '/convite-video-' + ts + '_' + safeName, raw: true },
+          { path: 'eventos/' + uid + '/video_' + ts + '_' + safeName, raw: false },
+          { path: 'eventos/' + uid + '/video_' + ts + '_' + safeName, raw: true },
+        ];
+        if (prop) {
+          attempts.unshift(
+            { path: 'eventos/' + prop + '/video_' + ts + '_' + safeName, raw: false },
+            { path: 'eventos/' + prop + '/video_' + ts + '_' + safeName, raw: true }
+          );
+        }
+        const ctype = file.type || 'application/octet-stream';
+        let lastErr = null;
+        for (const a of attempts) {
           try {
-            const j = await new Promise((resolve, reject) => {
-              const xhr = new XMLHttpRequest();
-              xhr.open('PUT', R2_UPLOAD_URL + '?path=' + encodeURIComponent(path));
-              xhr.setRequestHeader('Authorization', 'Bearer ' + tok);
-              xhr.setRequestHeader('Content-Type', file.type || 'application/octet-stream');
-              xhr.onload = () => {
-                let body = null;
-                const rawText = xhr.responseText || '';
-                try { body = JSON.parse(rawText); } catch (_) {}
-                if (xhr.status >= 200 && xhr.status < 300 && body && body.ok && body.url) resolve(body);
-                else {
-                  const detail = (body && (body.error || body.message)) || rawText.slice(0, 180) || ('HTTP ' + xhr.status);
-                  reject(new Error('Vídeo: ' + detail));
-                }
-              };
-              xhr.onerror = () => reject(new Error('Falha de rede no envio do vídeo'));
-              xhr.send(corpo);
-            });
+            const j = await putR2(a.path, corpo, ctype, a.raw);
             return j.url;
           } catch (err) {
-            ultimo = err;
-            if (tentativa < 3) await new Promise(r => setTimeout(r, tentativa * 1500));
+            lastErr = err;
           }
         }
-        throw ultimo;
+        throw new Error('Vídeo bloqueado pelo storage (' + (lastErr && lastErr.detail ? lastErr.detail : 'forbidden') + '). Use uma foto de capa ou vincule o convite a uma proposta e tente de novo.');
       }
 
-      // Imagem: path {uid}/... (igual avatar — já funciona)
+      // Imagem (já ok)
       const blob = await new Promise((resolve, reject) => {
         const img = new Image();
         const url = URL.createObjectURL(file);
@@ -720,17 +741,9 @@
         img.onerror = () => { URL.revokeObjectURL(url); reject(new Error('Imagem inválida')); };
         img.src = url;
       });
-      const path = uid + '/convite-capa-' + Date.now() + '.jpg';
-      const resp = await fetch(R2_UPLOAD_URL + '?path=' + encodeURIComponent(path), {
-        method: 'PUT',
-        headers: { 'Authorization': 'Bearer ' + tok, 'Content-Type': 'image/jpeg' },
-        body: blob
-      });
-      const result = await resp.json().catch(() => null);
-      if (!resp.ok || !result || !result.ok || !result.url) {
-        throw new Error((result && (result.error || result.message)) || ('Upload falhou (status ' + resp.status + ')'));
-      }
-      return result.url;
+      const pathImg = uid + '/convite-capa-' + Date.now() + '.jpg';
+      const j = await putR2(pathImg, blob, 'image/jpeg', false);
+      return j.url;
     }
 
 let TOKEN = '';
