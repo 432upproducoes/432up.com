@@ -600,7 +600,7 @@
           <button class="btn-control-box btn-delete-element" title="Remover Logo" onclick="removeElement('wrap-logo')">✕</button>
         </div>
         <div class="logo-container" id="card-logo">
-          <img id="img-logo-element" src="imagens/logofesta.png" alt="Logo Marca" style="max-width: 198px; max-height: none;" onerror="this.style.display='none'" />
+          <img id="img-logo-element" src="../../imagens/logofesta.png" alt="Logo Marca" style="max-width: 198px; max-height: none;" onerror="this.style.display='none'" />
         </div>
       </div>
 
@@ -804,7 +804,7 @@
     function changeElementFontSize(wrapperId, delta) {
       const parent = document.getElementById(wrapperId);
       if (!parent) return;
-      const target = parent.querySelector('[contenteditable]') || parent.querySelector('.urgency-badge') || parent.querySelector('.header-title') || parent.querySelector('.header-subtitle') || parent.querySelector('.cta-box') || parent.querySelector('.card-promo-text');
+      const target = parent.querySelector('[contenteditable]') || parent.querySelector('.urgency-badge') || parent.querySelector('.header-title') || parent.querySelector('.header-subtitle') || parent.querySelector('.item-pill') || parent.querySelector('.offer-value') || parent.querySelector('.card-site-link');
       if (target) {
         const style = window.getComputedStyle(target);
         let currentSize = parseFloat(style.fontSize);
@@ -934,7 +934,7 @@
       const titleEl = document.getElementById('card-title');
 
       if (theme === 'festa') {
-        logoImg.src = 'imagens/logofesta.png';
+        logoImg.src = '../../imagens/logofesta.png';
         logoImg.style.maxWidth = '198px';
         logoImg.style.maxHeight = 'none';
 
@@ -951,7 +951,7 @@
         
         items = [...itemsFesta];
       } else {
-        logoImg.src = 'imagens/logo432.png';
+        logoImg.src = '../../imagens/logo432.png';
         logoImg.style.maxWidth = '260px';
         logoImg.style.maxHeight = '100px';
 
@@ -998,38 +998,41 @@
 
     function setMode(mode) {
       currentMode = mode;
-      document.getElementById('btn-mode-light').className = `pill-btn mode ${mode === 'light' ? 'active' : ''}`;
-      document.getElementById('btn-mode-dark').className = `pill-btn mode ${mode === 'dark' ? 'active' : ''}`;
+      document.querySelectorAll('.controls-group .pill-btn.mode').forEach(btn => btn.classList.remove('active'));
+      document.getElementById(`btn-mode-${mode}`).classList.add('active');
       updateCardStyle();
     }
 
     function updateCardStyle() {
       const card = document.getElementById('ad-card');
       const stage = document.getElementById('preview-stage');
-      const logoImg = document.getElementById('img-logo-element');
+      const isDark = currentMode === 'dark';
+      const themeClass = currentTheme === 'enterprise' ? 'enterprise' : 'festa';
+      const isEnterprise = currentTheme === 'enterprise';
 
-      card.className = `ad-card ${currentTheme} ${currentMode} layout-${currentLayout} aspect-${currentAspect}`;
-      stage.className = `stage ${currentTheme}-${currentMode}`;
+      card.classList.remove('festa', 'enterprise', 'light', 'dark', 'magic-mode');
+      card.classList.add(themeClass);
+      card.classList.add(isDark ? 'dark' : 'light');
+      if (isMagicPNG) card.classList.add('magic-mode');
 
-      if (currentMode === 'dark') {
-        logoImg.classList.add('logo-glow');
+      if (isEnterprise) {
+        card.style.backgroundImage = isMagicPNG ? 'none' : `linear-gradient(135deg, rgba(9, 9, 18, 0.7), rgba(17, 10, 30, 0.58)), url(${generateSpaceBackground(isDark)})`;
       } else {
-        logoImg.classList.remove('logo-glow');
+        card.style.backgroundImage = 'none';
       }
 
-      if (isMagicPNG) {
-        card.classList.add('magic-mode');
-        const autoColor = currentMode === 'light' ? '#110D0A' : '#FFFFFF';
-        card.style.color = autoColor;
-      } else {
-        card.classList.remove('magic-mode');
-        card.style.color = '';
-        if (currentTheme === 'enterprise') {
-          const bgDataUrl = generateSpaceBackground(currentMode === 'dark');
-          card.style.backgroundImage = `url('${bgDataUrl}')`;
-        } else {
-          card.style.backgroundImage = 'none';
-        }
+      stage.classList.remove('festa-light', 'festa-dark', 'enterprise-dark', 'enterprise-light');
+      stage.classList.add(isEnterprise ? (isDark ? 'enterprise-dark' : 'enterprise-light') : (isDark ? 'festa-dark' : 'festa-light'));
+
+      const photoWrap = document.getElementById('wrap-photo');
+      if (photoWrap) {
+        photoWrap.style.display = showPhoto ? 'block' : 'none';
+      }
+
+      const btnPhoto = document.getElementById('btn-toggle-photo');
+      if (btnPhoto) {
+        btnPhoto.innerText = `📷 Foto: ${showPhoto ? 'ON' : 'OFF'}`;
+        btnPhoto.style.borderColor = showPhoto ? '#FF007F' : 'var(--panel-border)';
       }
 
       renderItems();
@@ -1037,12 +1040,7 @@
 
     function togglePhotoSpace() {
       showPhoto = !showPhoto;
-      const btn = document.getElementById('btn-toggle-photo');
-      const photoWrap = document.getElementById('wrap-photo');
-
-      btn.innerText = `📷 Foto: ${showPhoto ? 'ON' : 'OFF'}`;
-      btn.style.borderColor = showPhoto ? '#10b981' : 'var(--panel-border)';
-      photoWrap.style.display = showPhoto ? 'block' : 'none';
+      updateCardStyle();
     }
 
     function triggerPhotoUpload() {
@@ -1051,131 +1049,60 @@
 
     function handlePhotoUpload(event) {
       const file = event.target.files[0];
-      if (file) {
-        const reader = new FileReader();
-        reader.onload = function(e) {
-          const img = document.getElementById('card-photo-img');
-          const placeholder = document.getElementById('photo-placeholder');
-          img.src = e.target.result;
-          img.style.display = 'block';
-          placeholder.style.display = 'none';
-        };
-        reader.readAsDataURL(file);
-      }
+      if (!file) return;
+      const reader = new FileReader();
+      reader.onload = function (e) {
+        const imgEl = document.getElementById('card-photo-img');
+        imgEl.src = e.target.result;
+        imgEl.style.display = 'block';
+        document.getElementById('photo-placeholder').style.display = 'none';
+      };
+      reader.readAsDataURL(file);
     }
 
-    /* LÓGICA DE ARRASTE LIVRE (SOMENTE NO MODO EDIÇÃO COMPLETA) */
     function initDraggableElements() {
-      document.querySelectorAll('.removable-wrapper').forEach(el => {
-        let isDragging = false;
-        let startY, currentY, initialTranslateY = 0;
-
-        el.addEventListener('pointerdown', (e) => {
-          if (!isFullEditMode) return;
-          if (e.target.isContentEditable && e.target.offsetWidth > 0) return;
-          if (e.target.classList.contains('btn-control-box') || e.target.classList.contains('btn-add-inline')) return;
-          
-          isDragging = true;
-          startY = e.clientY;
-          
-          const style = window.getComputedStyle(el);
-          const matrix = new WebKitCSSMatrix(style.transform);
-          initialTranslateY = matrix.f;
-          
-          el.setPointerCapture(e.pointerId);
-        });
-
-        el.addEventListener('pointermove', (e) => {
-          if (!isDragging) return;
-          const deltaY = e.clientY - startY;
-          currentY = initialTranslateY + deltaY;
-          el.style.transform = `translateY(${currentY}px)`;
-        });
-
-        const stopDrag = (e) => {
-          if (isDragging) {
-            isDragging = false;
-            try { el.releasePointerCapture(e.pointerId); } catch (err) {}
-          }
-        };
-
-        el.addEventListener('pointerup', stopDrag);
-        el.addEventListener('pointercancel', stopDrag);
+      const wrappers = document.querySelectorAll('.removable-wrapper');
+      wrappers.forEach((wrapper) => {
+        if (wrapper.id === 'wrap-logo' || wrapper.id === 'wrap-badge' || wrapper.id === 'wrap-title' || wrapper.id === 'wrap-subtitle' || wrapper.id === 'wrap-cta' || wrapper.id === 'wrap-footer' || wrapper.id === 'wrap-photo' || wrapper.id.startsWith('item-wrapper-') || wrapper.id === 'wrap-btn-add' || wrapper.id === 'wrap-offer') {
+          wrapper.style.position = 'relative';
+          wrapper.setAttribute('data-drag-ready', 'true');
+          wrapper.addEventListener('pointerdown', startDrag);
+        }
       });
     }
 
-    function getFileName() {
-      const brandName = currentTheme === 'festa' ? 'Festa-no-Condomínio' : '432UP-Enterprise';
-      return `Proposta-de-Evento-${brandName}-${currentAspect}`;
+    function startDrag(event) {
+      const wrapper = event.currentTarget;
+      if (!wrapper.hasAttribute('data-drag-ready')) return;
+      const parent = wrapper.parentElement;
+      if (!parent) return;
+      const startX = event.clientX;
+      const startY = event.clientY;
+      const rect = wrapper.getBoundingClientRect();
+      const offsetX = startX - rect.left;
+      const offsetY = startY - rect.top;
+
+      function onMove(moveEvent) {
+        const newLeft = moveEvent.clientX - parent.getBoundingClientRect().left - offsetX;
+        const newTop = moveEvent.clientY - parent.getBoundingClientRect().top - offsetY;
+        wrapper.style.left = `${newLeft}px`;
+        wrapper.style.top = `${newTop}px`;
+      }
+
+      function onUp() {
+        window.removeEventListener('pointermove', onMove);
+        window.removeEventListener('pointerup', onUp);
+      }
+
+      window.addEventListener('pointermove', onMove);
+      window.addEventListener('pointerup', onUp);
     }
 
-    function exportPNG() {
-      const card = document.getElementById('ad-card');
-      const btn = document.querySelector('.btn-export');
-      const originalText = btn.innerHTML;
-
-      btn.innerHTML = '⚡ Gerando...';
-
-      document.querySelectorAll('.floating-box-controls, .btn-add-inline').forEach(b => b.style.visibility = 'hidden');
-
-      html2canvas(card, {
-        scale: 3,
-        useCORS: true,
-        backgroundColor: null
-      }).then(canvas => {
-        const link = document.createElement('a');
-        link.download = `${getFileName()}.png`;
-        link.href = canvas.toDataURL('image/png');
-        link.click();
-        btn.innerHTML = originalText;
-        document.querySelectorAll('.floating-box-controls, .btn-add-inline').forEach(b => b.style.visibility = 'visible');
-      }).catch(err => {
-        alert("Erro ao exportar PNG: " + err);
-        btn.innerHTML = originalText;
-        document.querySelectorAll('.floating-box-controls, .btn-add-inline').forEach(b => b.style.visibility = 'visible');
-      });
-    }
-
-    function exportPDF() {
-      const card = document.getElementById('ad-card');
-      const btn = document.querySelector('.btn-export-pdf');
-      const originalText = btn.innerHTML;
-
-      btn.innerHTML = '⚡ Gerando PDF...';
-
-      document.querySelectorAll('.floating-box-controls, .btn-add-inline').forEach(b => b.style.visibility = 'hidden');
-
-      html2canvas(card, {
-        scale: 3,
-        useCORS: true,
-        backgroundColor: null
-      }).then(canvas => {
-        const imgData = canvas.toDataURL('image/png');
-        const { jsPDF } = window.jspdf;
-        
-        const pdfWidth = canvas.width / 3;
-        const pdfHeight = canvas.height / 3;
-
-        const pdf = new jsPDF({
-          orientation: pdfWidth > pdfHeight ? 'landscape' : 'portrait',
-          unit: 'px',
-          format: [pdfWidth, pdfHeight]
-        });
-
-        pdf.addImage(imgData, 'PNG', 0, 0, pdfWidth, pdfHeight);
-        pdf.save(`${getFileName()}.pdf`);
-
-        btn.innerHTML = originalText;
-        document.querySelectorAll('.floating-box-controls, .btn-add-inline').forEach(b => b.style.visibility = 'visible');
-      }).catch(err => {
-        alert("Erro ao exportar PDF: " + err);
-        btn.innerHTML = originalText;
-        document.querySelectorAll('.floating-box-controls, .btn-add-inline').forEach(b => b.style.visibility = 'visible');
-      });
-    }
-
-    renderItems();
-    setTheme('festa');
+    document.addEventListener('DOMContentLoaded', () => {
+      renderItems();
+      setTheme('festa');
+      updateCardStyle();
+    });
   </script>
 </body>
 </html>
