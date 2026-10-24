@@ -461,10 +461,54 @@
 
     const R2_UPLOAD_URL = 'https://432up-r2-upload.432up-producoes.workers.dev/';
 
-    async function uploadParaR2(path, file) {
+    function ehVideoArquivo(file) {
+      return (file && file.type ? file.type : '').indexOf('video/') === 0;
+    }
+
+    /*
+     * Envio para o Worker R2.
+     * Vídeo: lê o arquivo inteiro para a memória e envia como Blob, com progresso por XHR.
+     * onFrac (opcional) recebe 0 a 1 quando o navegador informa bytes, ou null enquanto não informa.
+     * Fotos e demais arquivos: sem alteração (fetch direto).
+     * Não existe fallback de vídeo sem compactação: o vídeo sempre passa pelo Worker.
+     */
+    async function uploadParaR2(path, file, onFrac) {
       const { data: sessionData } = await _supabase.auth.getSession();
       const token = sessionData?.session?.access_token;
       if (!token) throw new Error('Sessão expirada. Faça login novamente.');
+
+      if (ehVideoArquivo(file)) {
+        let corpo;
+        try {
+          const buf = await file.arrayBuffer();
+          if (!buf.byteLength) throw new Error('o aparelho não conseguiu ler o vídeo (0 bytes)');
+          corpo = new Blob([buf], { type: file.type || 'video/mp4' });
+        } catch (e) {
+          throw new Error('Não foi possível ler o vídeo no aparelho: ' + (e && e.message ? e.message : e));
+        }
+
+        return new Promise((resolve, reject) => {
+          const xhr = new XMLHttpRequest();
+          xhr.open('PUT', `${R2_UPLOAD_URL}?path=${encodeURIComponent(path)}`);
+          xhr.setRequestHeader('Authorization', `Bearer ${token}`);
+          xhr.setRequestHeader('Content-Type', file.type || 'video/mp4');
+          xhr.upload.onprogress = (e) => {
+            if (e.lengthComputable && onFrac) onFrac(e.loaded / e.total);
+          };
+          xhr.onload = () => {
+            let result = null;
+            try { result = JSON.parse(xhr.responseText); } catch (err) {}
+            if (xhr.status >= 200 && xhr.status < 300 && result && result.ok) {
+              resolve(result.url);
+            } else {
+              reject(new Error((result && result.error) || `Upload falhou (status ${xhr.status})`));
+            }
+          };
+          xhr.onerror = () => reject(new Error('Falha de rede no envio'));
+          if (onFrac) onFrac(null);
+          xhr.send(corpo);
+        });
+      }
 
       const resp = await fetch(
         `${R2_UPLOAD_URL}?path=${encodeURIComponent(path)}`,
@@ -989,7 +1033,11 @@
         const fileName = `full/${sanitizarNomeArquivo(file.name)}`;
         let newUrl;
         try {
-          newUrl = await uploadParaR2(fileName, file);
+          newUrl = await uploadParaR2(fileName, file, (f) => {
+            btn.innerText = f === null
+              ? 'Enviando capa (aguardando o aparelho)...'
+              : 'Enviando capa ' + Math.round(f * 100) + '%...';
+          });
         } catch (uploadErr) {
           alert('Erro no upload: ' + uploadErr.message);
           btn.innerText = '💾 Salvar Alterações';
@@ -1115,7 +1163,11 @@
         catch (e) { concluidos++; continue; }
         const path = `midias/${sanitizarNomeArquivo(file.name)}`;
         try {
-          const url = await uploadParaR2(path, file);
+          const url = await uploadParaR2(path, file, (f) => {
+            statusLabel.innerText = f === null
+              ? `Enviando ${concluidos + 1} de ${files.length} (aguardando o aparelho)...`
+              : `Enviando ${concluidos + 1} de ${files.length}: ${Math.round(f * 100)}%`;
+          });
           await _supabase.from('co_galeria_case_midias').insert([{ case_slug: slug, url, tipo: normalizarTipoUpload(file), ordem: proximaOrdem }]);
           proximaOrdem++;
         } catch (uploadErr) {
