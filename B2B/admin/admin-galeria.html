@@ -1186,7 +1186,17 @@
               ? rotulo + ' (vídeo, aguarde…)'
               : rotulo + ' — ' + Math.round(f * 100) + '%';
           } : undefined);
-          await _supabase.from('co_galeria_case_midias').insert([{ case_slug: slug, url, tipo: normalizarTipoUpload(file), ordem: proximaOrdem }]);
+          const { error: errMidia } = await _supabase.from('co_galeria_case_midias').insert([{ case_slug: slug, url, tipo: normalizarTipoUpload(file), ordem: proximaOrdem }]);
+          if (errMidia) {
+            console.error('Erro ao gravar mídia no álbum:', errMidia);
+            alert('O arquivo chegou ao R2, mas não foi gravado no álbum.\n\nErro: ' + (errMidia.message || '—') +
+              '\nDetalhe: ' + (errMidia.details || '—') +
+              '\nDica: ' + (errMidia.hint || '—') +
+              '\nCódigo: ' + (errMidia.code || '—') +
+              '\nTipo enviado: ' + normalizarTipoUpload(file));
+            concluidos++;
+            continue;
+          }
           proximaOrdem++;
         } catch (uploadErr) {
           console.warn('Falha no upload de mídia:', uploadErr.message);
