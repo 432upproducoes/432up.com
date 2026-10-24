@@ -419,15 +419,30 @@
       el.className = 'text-xs mt-3 min-h-[16px] ' + (erro ? 'text-red-300' : 'text-amber-300');
     }
 
-    // Progresso real: 0 a 1 (bytes enviados ou etapa concluída)
+    /*
+     * Barra de progresso.
+     * fracao entre 0 e 1: progresso real (bytes enviados ou etapa concluída).
+     * fracao null: o aparelho ainda não informa bytes enviados; a barra fica animada (sem número).
+     */
     function progresso(texto, fracao) {
-      const pct = Math.round(Math.max(0, Math.min(1, fracao || 0)) * 100);
+      const barra = $('loadingProgressBar');
       $('loadingMessage').textContent = texto || 'Enviando…';
-      $('loadingPercentageText').textContent = pct + '%';
-      $('loadingProgressBar').style.width = pct + '%';
+      if (fracao === null) {
+        $('loadingPercentageText').textContent = 'enviando…';
+        barra.style.width = '100%';
+        barra.classList.add('animate-pulse');
+      } else {
+        const pct = Math.round(Math.max(0, Math.min(1, fracao || 0)) * 100);
+        $('loadingPercentageText').textContent = pct + '%';
+        barra.style.width = pct + '%';
+        barra.classList.remove('animate-pulse');
+      }
       $('loadingOverlay').classList.add('active');
     }
-    function progressoFim() { $('loadingOverlay').classList.remove('active'); }
+    function progressoFim() {
+      $('loadingProgressBar').classList.remove('animate-pulse');
+      $('loadingOverlay').classList.remove('active');
+    }
 
     function ehVideo(file) {
       return (file.type || '').startsWith('video/') || /\.(mp4|mov|m4v|webm|3gp)$/i.test(file.name || '');
@@ -449,8 +464,10 @@
       return t;
     }
 
-    // Vídeo: lê o arquivo inteiro para a memória e envia como Blob, com progresso real (XHR).
-    // Não há mais logs de diagnóstico nem teste paralelo.
+    /*
+     * Vídeo: lê o arquivo inteiro para a memória e envia como Blob, com progresso por XHR.
+     * onFrac recebe null enquanto o navegador não informa bytes, e um valor de 0 a 1 quando informa.
+     */
     async function enviarVideoR2(path, file, onFrac) {
       const t = await token();
 
@@ -480,6 +497,7 @@
           else reject(new Error((j && j.error) || ('Upload falhou (status ' + xhr.status + ')')));
         };
         xhr.onerror = () => reject(new Error('Falha de rede no envio'));
+        if (onFrac) onFrac(null);
         xhr.send(corpo);
       });
     }
@@ -745,7 +763,7 @@
         r = await enviarVideoComTentativas(
           `eventos/${PID}/video_${Date.now()}_${file.name}`,
           file,
-          (x) => fr(0.05 + x * 0.7)
+          (x) => fr(x === null ? null : 0.05 + x * 0.7)
         );
         fr(0.8);
         const poster = await gerarPoster(file);
@@ -782,7 +800,9 @@
       try {
         for (let i = 0; i < files.length; i++) {
           const nome = `Enviando ${i + 1} de ${files.length}`;
-          try { await enviarArquivo(files[i], null, (f) => progresso(nome, (i + f) / files.length)); }
+          try {
+            await enviarArquivo(files[i], null, (f) => progresso(nome, f === null ? null : (i + f) / files.length));
+          }
           catch (err) { falhas++; msg('Falha em "' + files[i].name + '": ' + err.message, true); }
         }
         progresso('Atualizando galeria', 1);
