@@ -141,17 +141,26 @@
     .chk input{width:auto}
     @media(max-width:560px){.totais{grid-template-columns:1fr 1fr}.grid2{grid-template-columns:1fr}}
 
-    /* ===== EDITOR ===== */
-    .ed-shell{display:grid;grid-template-columns:minmax(260px,320px) 1fr;min-height:100vh}
-    @media(max-width:900px){.ed-shell{grid-template-columns:1fr}.ed-side{max-height:40vh;overflow:auto;position:sticky;top:0;z-index:5}}
-    .ed-side{background:rgba(12,10,22,.97);border-right:1px solid var(--line);padding:14px 12px 36px;overflow:auto}
-    .ed-side h1{font-size:1rem;margin:0 0 4px}
-    .ed-side .sub{font-size:11px;color:var(--mut);margin-bottom:10px}
-    .ed-preview{padding:16px 10px 70px;overflow:auto}
-    .ed-lp{width:min(680px,100%);margin:0 auto}
-    .editavel{cursor:pointer;outline:1px dashed transparent;border-radius:6px}
-    .editavel:hover,.editavel.on{outline-color:rgba(212,175,55,.7);background:rgba(212,175,55,.06)}
-    .editavel[contenteditable="true"]{outline-color:var(--purple);background:rgba(168,85,247,.08)}
+    /* ===== EDITOR (só o convite + rodapé) ===== */
+    .ed-shell{min-height:100vh;padding-bottom:96px}
+    .ed-preview{padding:20px 14px 40px;max-width:720px;margin:0 auto}
+    .ed-lp{width:100%}
+    .editavel{cursor:text;-webkit-user-select:text;user-select:text;outline:1px dashed transparent;border-radius:8px;min-width:1.2em;transition:outline-color .15s,background .15s}
+    .editavel:hover{outline-color:rgba(212,175,55,.55);background:rgba(212,175,55,.05)}
+    .editavel:focus,.editavel.on{outline-color:rgba(168,85,247,.7);background:rgba(168,85,247,.1)}
+    .names-edit{color:#F5EFE0;display:inline-block;min-width:2ch}
+    .names-edit:empty::before{content:attr(data-ph);opacity:.4;color:var(--gold)}
+    .ed-bar{position:fixed;left:0;right:0;bottom:0;z-index:60;display:flex;flex-wrap:wrap;gap:8px;justify-content:center;align-items:center;padding:12px 14px calc(12px + env(safe-area-inset-bottom));background:rgba(10,8,20,.92);border-top:1px solid rgba(255,255,255,.12);backdrop-filter:blur(16px);-webkit-backdrop-filter:blur(16px)}
+    .ed-bar .msg{margin:0;flex:1 1 100%;text-align:center;min-height:0}
+    .ed-hint{text-align:center;font-size:12px;color:var(--mut);margin:0 0 16px}
+    .ed-tools{display:flex;flex-wrap:wrap;gap:8px;justify-content:center;margin:12px 0 20px}
+    .ed-tools input,.ed-tools select{width:auto;min-width:0;max-width:100%;background:rgba(255,255,255,.06);color:#fff;border:1px solid rgba(255,255,255,.16);border-radius:12px;padding:10px 12px;font:inherit;font-size:13px}
+    .prog-edit-row{display:grid;grid-template-columns:72px 1fr auto;gap:8px;align-items:start;padding:12px 0;border-bottom:1px solid rgba(255,255,255,.08)}
+    .prog-edit-row input{width:100%;background:rgba(255,255,255,.06);border:1px solid rgba(255,255,255,.14);border-radius:10px;color:#fff;padding:8px 10px;font:inherit;font-size:13px}
+    .btn-icon{width:34px;height:34px;border-radius:999px;border:1px solid rgba(255,255,255,.2);background:transparent;color:#fff;cursor:pointer;font-size:16px}
+    .btn-icon.danger{border-color:rgba(255,77,77,.4);color:var(--alert)}
+    .tap-field{cursor:pointer}
+    .tap-field input[type=date],.tap-field input[type=time]{position:absolute;opacity:0;pointer-events:none;width:0;height:0}
   </style>
 </head>
 <body>
@@ -330,79 +339,103 @@
     </div>
   </div>
 
-  <!-- ===================== EDITOR ===================== -->
+  <!-- ===================== EDITOR (convite = formulário) ===================== -->
   <div class="ed-shell hidden" id="viewEditor">
-    <aside class="ed-side">
-      <h1>Editor visual</h1>
-      <p class="sub">Clique nos textos da miniatura para editar. Capa: URL do R2 (jpg/png/webp ou mp4/webm).</p>
-      <label>Tipo</label><select id="edTipo"></select>
-      <label>Skin</label>
-      <select id="edSkin"><option value="padrao">Padrão</option><option value="classico">Clássico</option><option value="minimal">Minimal</option></select>
-      <label>Abertura</label>
-      <select id="edAbertura"><option value="nenhuma">Nenhuma</option><option value="envelope">Envelope</option><option value="fade">Fade</option></select>
-      <div id="edAnfs"></div>
-      <div class="chk"><input type="checkbox" id="edUsaPads"><label for="edUsaPads" style="margin:0;color:var(--body);text-transform:none;letter-spacing:0;font-weight:500">Incluir padrinhos / homenageados</label></div>
-      <div id="edPadsBox" class="hidden"><label>Nomes (um por linha)</label><textarea id="edPads" rows="3"></textarea></div>
-      <label>Data</label><input type="date" id="edData">
-      <label>Hora</label><input type="time" id="edHora">
-      <label>Duração (h)</label><input type="number" id="edDur" min="1" max="24" step="0.5" value="6">
-      <label>Local</label><input id="edLocal">
-      <label>Endereço</label><input id="edEndereco">
-      <label>Capa (URL R2 — foto ou vídeo)</label><input id="edCapa" placeholder="https://media.432up.com/...">
-      <label>Kicker</label><input id="edKicker">
-      <label>Intro</label><textarea id="edIntro" rows="2"></textarea>
-      <label>Título história</label><input id="edTitHist">
-      <label>Citação</label><textarea id="edCitacao" rows="2"></textarea>
-      <label>Fechamento</label><input id="edFech">
-      <label>Traje</label><input id="edTraje">
-      <label>Texto traje</label><input id="edTrajeTxt">
-      <label>Observação</label><textarea id="edObs" rows="2"></textarea>
-      <label>Agência</label><input id="edAgencia" value="432UP">
-      <label>Programação (JSON)</label><textarea id="edProg" rows="5" style="font-family:ui-monospace,monospace;font-size:11px"></textarea>
-      <label>Limite acompanhantes</label><input type="number" id="edRsvpLim" min="0" max="20" value="3">
-      <div class="chk"><input type="checkbox" id="edRsvpRest" checked><label for="edRsvpRest" style="margin:0;color:var(--body);text-transform:none;letter-spacing:0;font-weight:500">Pedir restrição</label></div>
-      <div class="chk"><input type="checkbox" id="edRsvpMsg" checked><label for="edRsvpMsg" style="margin:0;color:var(--body);text-transform:none;letter-spacing:0;font-weight:500">Pedir mensagem</label></div>
-      <p class="msg" id="edMsg"></p>
-      <div class="actions">
-        <button class="btn btn-gold" type="button" id="edSalvar"><i class="fas fa-save"></i> Salvar</button>
-        <button class="btn" type="button" id="edPublicar">Publicar</button>
-        <button class="btn-s" type="button" id="edVoltar">← Painel</button>
-      </div>
-    </aside>
     <div class="ed-preview">
+      <p class="ed-hint">Toque em qualquer texto para editar. Data e hora: toque em “Quando”. Use + / − na programação e nos padrinhos.</p>
+
+      <div class="ed-tools">
+        <select id="edTipo" title="Tipo" aria-label="Tipo"></select>
+        <input type="url" id="edCapa" placeholder="URL da capa (R2 foto ou vídeo)" style="flex:1;min-width:180px">
+        <input type="text" id="edProposta" placeholder="UUID proposta (opcional)" style="min-width:160px">
+        <label class="chk" style="margin:0"><input type="checkbox" id="edUsaPads"> Padrinhos</label>
+        <label class="chk" style="margin:0">Acomp. <input type="number" id="edRsvpLim" min="0" max="20" value="3" style="width:52px"></label>
+      </div>
+
       <div class="ed-lp">
         <section class="demo-glass protagonist center">
-          <div class="hero-photo" id="pvCapa"></div>
-          <span class="eyebrow editavel" data-f="edKicker" id="pvKicker"></span>
+          <div class="hero-photo" id="pvCapa" title="Altere a URL da capa acima"></div>
+          <span class="eyebrow editavel" id="pvKicker" contenteditable="true" data-key="kicker"></span>
           <h1 class="demo-title" id="pvNomes"></h1>
-          <p class="demo-intro editavel" data-f="edIntro" id="pvIntro"></p>
+          <p class="demo-intro editavel" id="pvIntro" contenteditable="true" data-key="intro"></p>
           <div class="date-row">
-            <div><small id="pvDiaSem"></small><strong id="pvDiaCurto"></strong></div>
-            <div><small>Horário</small><strong id="pvHora"></strong></div>
-            <div><small>Ano</small><strong id="pvAno"></strong></div>
+            <div class="tap-field" id="tapData">
+              <small id="pvDiaSem">—</small>
+              <strong id="pvDiaCurto">Data</strong>
+              <input type="date" id="edData">
+            </div>
+            <div class="tap-field" id="tapHora">
+              <small>Horário</small>
+              <strong id="pvHora">—</strong>
+              <input type="time" id="edHora">
+            </div>
+            <div>
+              <small>Ano</small>
+              <strong id="pvAno">—</strong>
+            </div>
           </div>
         </section>
-        <section class="center" style="margin:28px 0">
+
+        <section class="center" style="margin:32px 0">
           <span class="eyebrow">Nossa história</span>
-          <h2 class="section-title editavel" data-f="edTitHist" id="pvTitHist"></h2>
-          <p class="editavel" data-f="edCitacao" id="pvCitacao" style="font-family:'Cormorant Garamond',serif;font-style:italic;color:var(--gold);max-width:600px;margin:12px auto"></p>
-          <p class="editavel" data-f="edFech" id="pvFech" style="color:#B8B8C2"></p>
+          <h2 class="section-title editavel" id="pvTitHist" contenteditable="true" data-key="tituloHistoria"></h2>
+          <p class="editavel" id="pvCitacao" contenteditable="true" data-key="citacao" style="font-family:'Cormorant Garamond',serif;font-style:italic;color:var(--gold);max-width:600px;margin:12px auto;font-size:1.2rem"></p>
+          <p class="editavel" id="pvFech" contenteditable="true" data-key="fechamento" style="color:#B8B8C2"></p>
         </section>
-        <section class="center hidden" id="pvPadsSec" style="margin:28px 0">
-          <span class="eyebrow">Padrinhos</span>
+
+        <section class="center" style="margin:32px 0" id="pvPadsSec">
+          <span class="eyebrow">Padrinhos &amp; homenageados</span>
           <div class="padrinhos-list" id="pvPadsList"></div>
-        </section>
-        <section class="center" style="margin:28px 0">
-          <h2 class="section-title">Detalhes</h2>
-          <div class="info-grid">
-            <div class="info-card"><h3>Quando</h3><strong id="pvDataL"></strong><p id="pvHora2"></p></div>
-            <div class="info-card"><h3>Onde</h3><strong class="editavel" data-f="edLocal" id="pvLocal"></strong><p class="editavel" data-f="edEndereco" id="pvEnd"></p></div>
-            <div class="info-card"><h3>Traje</h3><strong class="editavel" data-f="edTraje" id="pvTraje"></strong><p class="editavel" data-f="edTrajeTxt" id="pvTrajeTxt"></p></div>
-            <div class="info-card"><h3>Obs.</h3><p class="editavel" data-f="edObs" id="pvObs"></p></div>
+          <div class="ed-tools" id="padsTools">
+            <button type="button" class="btn-s" id="btnAddPad">+ Padrinho</button>
           </div>
         </section>
-        <section class="center" style="margin:28px 0"><div class="prog-box" id="pvProg"></div></section>
+
+        <section class="center" style="margin:32px 0">
+          <span class="eyebrow">Prepare-se para celebrar</span>
+          <h2 class="section-title">Detalhes do evento</h2>
+          <div class="info-grid">
+            <div class="info-card tap-field" id="tapData2">
+              <div class="glyph">✦</div><h3>Quando</h3>
+              <strong id="pvDataL">Toque para data</strong>
+              <p id="pvHora2">Horário</p>
+            </div>
+            <div class="info-card">
+              <div class="glyph">⌖</div><h3>Onde</h3>
+              <strong class="editavel" id="pvLocal" contenteditable="true" data-key="local" data-ph="Local do evento"></strong>
+              <p class="editavel" id="pvEnd" contenteditable="true" data-key="endereco" data-ph="Endereço completo"></p>
+            </div>
+            <div class="info-card">
+              <div class="glyph">♣</div><h3>Traje</h3>
+              <strong class="editavel" id="pvTraje" contenteditable="true" data-key="traje" data-ph="Esporte fino"></strong>
+              <p class="editavel" id="pvTrajeTxt" contenteditable="true" data-key="trajeTexto" data-ph="Orientação de traje"></p>
+            </div>
+            <div class="info-card">
+              <div class="glyph">♡</div><h3>Observação</h3>
+              <p class="editavel" id="pvObs" contenteditable="true" data-key="observacao" data-ph="Acessibilidade, restrições…"></p>
+            </div>
+          </div>
+        </section>
+
+        <section class="center" style="margin:32px 0">
+          <span class="eyebrow">Programação</span>
+          <h2 class="section-title">Um dia para guardar na memória</h2>
+          <div class="prog-box" id="pvProg"></div>
+          <div class="ed-tools"><button type="button" class="btn-s" id="btnAddProg">+ Etapa</button></div>
+        </section>
+
+        <section class="center" style="margin:24px 0 40px">
+          <p class="editavel" id="pvAgencia" contenteditable="true" data-key="agencia" style="color:var(--mut);font-size:13px">432UP</p>
+        </section>
       </div>
+    </div>
+
+    <div class="ed-bar">
+      <p class="msg" id="edMsg"></p>
+      <button type="button" class="btn-s" id="edVoltar">← Painel</button>
+      <button type="button" class="btn btn-gold" id="edSalvar"><i class="fas fa-save"></i> Salvar</button>
+      <button type="button" class="btn" id="edPublicar">Publicar</button>
+      <a class="btn-s" id="edWa" target="_blank" rel="noopener"><i class="fab fa-whatsapp"></i> WhatsApp</a>
     </div>
   </div>
 
@@ -411,6 +444,9 @@
     <div class="modal-box">
       <div style="display:flex;justify-content:space-between;align-items:center"><strong>Novo convite</strong><button class="btn-s" type="button" id="fecharNovo">✕</button></div>
       <label>Tipo</label><select id="novoTipo"></select>
+      <label>Proposta (opcional)</label>
+      <input id="novoProposta" placeholder="UUID da proposta — importa data, local, capa…">
+      <p style="font-size:12px;color:var(--mut)">Deixe vazio para convite avulso. Com UUID, cria e já vincula.</p>
       <p class="msg" id="msgNovo"></p>
       <button class="btn" type="button" id="btnCriar" style="width:100%;margin-top:12px">Criar</button>
     </div>
@@ -789,8 +825,17 @@
       $('msgNovo').textContent = 'Criando…';
       try {
         const id = await rpc('convite_criar_avulso', { p_tipo: $('novoTipo').value || 'casamento' });
+        const prop = ($('novoProposta').value || '').trim();
+        if (prop) {
+          try {
+            await rpc('convite_vincular', { p_convite: id, p_proposta: prop });
+          } catch (ve) {
+            toast('Criado, mas vínculo falhou: ' + ve.message);
+          }
+        }
         $('modalNovo').classList.remove('on');
-        toast('Criado.');
+        $('novoProposta').value = '';
+        toast(prop ? 'Criado e vinculado.' : 'Criado.');
         await carregarLista();
         await abrirDetalhe(id);
       } catch (e) { $('msgNovo').textContent = e.message; }
@@ -836,174 +881,342 @@
       } catch (e) { toast(e.message); }
     });
 
-    /* ===================== EDITOR ===================== */
-    function coletarAnfs() {
-      return [...document.querySelectorAll('#edAnfs [data-papel]')].map(el => ({
-        papel: el.dataset.papel, nome: el.querySelector('input').value.trim()
-      })).filter(a => a.nome);
-    }
-    function coletarPads() {
-      if (!$('edUsaPads').checked) return [];
-      return $('edPads').value.split(/\n+/).map(s => s.trim()).filter(Boolean).map(nome => ({ nome }));
-    }
-    function syncEd() {
-      if (!atual) return;
-      const d = Object.assign({}, atual.dados || {});
-      d.kicker = $('edKicker').value; d.intro = $('edIntro').value;
-      d.tituloHistoria = $('edTitHist').value; d.citacao = $('edCitacao').value;
-      d.fechamento = $('edFech').value; d.traje = $('edTraje').value;
-      d.trajeTexto = $('edTrajeTxt').value; d.observacao = $('edObs').value;
-      d.local = $('edLocal').value; d.endereco = $('edEndereco').value;
-      d.data = $('edData').value; d.hora = ($('edHora').value||'18:00').slice(0,5);
-      d.duracao_horas = +$('edDur').value||6;
-      d.capa_url = $('edCapa').value.trim();
-      d.agencia = $('edAgencia').value || '432UP';
-      d.rsvp = { limite: +$('edRsvpLim').value||0, restricao: $('edRsvpRest').checked, mensagem: $('edRsvpMsg').checked };
-      try { d.programacao = JSON.parse($('edProg').value||'[]'); } catch(_){}
-      const anfs = coletarAnfs();
-      if (anfs[0]) d.nomeA = anfs[0].nome; if (anfs[1]) d.nomeB = anfs[1].nome;
-      atual.dados = d;
-      atual.skin = $('edSkin').value; atual.abertura = $('edAbertura').value;
-      atual.tipo_codigo = $('edTipo').value;
-    }
-    function fillAnfs(tipo) {
-      const t = tipos.find(x => x.codigo === tipo) || { anfitrioes: [{papel:'anfitriao_1',rotulo:'Anfitrião'}] };
-      const atuais = {};
-      (atual.anfitrioes||[]).forEach(a => atuais[a.papel]=a.nome);
-      if (!atuais.anfitriao_1 && atual.dados?.nomeA) atuais.anfitriao_1 = atual.dados.nomeA;
-      if (!atuais.anfitriao_2 && atual.dados?.nomeB) atuais.anfitriao_2 = atual.dados.nomeB;
-      $('edAnfs').innerHTML = (t.anfitrioes||[]).map(p =>
-        `<label>${esc(p.rotulo)}</label><div data-papel="${esc(p.papel)}"><input value="${esc(atuais[p.papel]||'')}"></div>`
-      ).join('');
-      $('edAnfs').querySelectorAll('input').forEach(i => i.addEventListener('input', () => { syncEd(); renderEdPreview(); }));
-    }
-    function fillEditor() {
-      const d = atual.dados || {};
-      $('edTipo').value = atual.tipo_codigo || 'casamento';
-      $('edSkin').value = atual.skin || 'padrao';
-      $('edAbertura').value = atual.abertura || 'nenhuma';
-      $('edData').value = (d.data||'').slice(0,10);
-      $('edHora').value = (d.hora||'18:00').toString().slice(0,5);
-      $('edDur').value = d.duracao_horas || 6;
-      $('edLocal').value = d.local||''; $('edEndereco').value = d.endereco||'';
-      $('edCapa').value = d.capa_url || d.capa || '';
-      $('edKicker').value = d.kicker || 'Com alegria, convidamos você';
-      $('edIntro').value = d.intro||''; $('edTitHist').value = d.tituloHistoria||'';
-      $('edCitacao').value = d.citacao||''; $('edFech').value = d.fechamento||'';
-      $('edTraje').value = d.traje||''; $('edTrajeTxt').value = d.trajeTexto||'';
-      $('edObs').value = d.observacao||''; $('edAgencia').value = d.agencia || d.empresa || '432UP';
-      $('edProg').value = JSON.stringify(d.programacao||[], null, 2);
-      const r = d.rsvp||{};
-      $('edRsvpLim').value = r.limite??3;
-      $('edRsvpRest').checked = r.restricao!==false;
-      $('edRsvpMsg').checked = r.mensagem!==false;
-      $('edPads').value = (atual.padrinhos||[]).map(p=>p.nome||p).join('\n');
-      $('edUsaPads').checked = (atual.padrinhos||[]).length>0;
-      $('edPadsBox').classList.toggle('hidden', !$('edUsaPads').checked);
-      fillAnfs($('edTipo').value);
-    }
-    function renderEdPreview() {
-      syncEd();
-      const d = atual.dados || {};
-      const anfs = coletarAnfs();
-      $('pvKicker').textContent = d.kicker||'';
-      $('pvIntro').textContent = d.intro||'';
-      $('pvTitHist').textContent = d.tituloHistoria||'';
-      $('pvCitacao').textContent = d.citacao||'';
-      $('pvFech').textContent = d.fechamento||'';
-      $('pvLocal').textContent = d.local||'';
-      $('pvEnd').textContent = d.endereco||'';
-      $('pvTraje').textContent = d.traje||'';
-      $('pvTrajeTxt').textContent = d.trajeTexto||'';
-      $('pvObs').textContent = d.observacao||'';
-      if (anfs.length>=2)
-        $('pvNomes').innerHTML = `<span class="names">${esc(anfs[0].nome)}</span> <span class="amp">&amp;</span> <span class="names">${esc(anfs[1].nome)}</span>`;
-      else if (anfs.length===1)
-        $('pvNomes').innerHTML = `<span class="names">${esc(anfs[0].nome)}</span>`;
-      else $('pvNomes').innerHTML = '<span class="names">Anfitriões</span>';
-      $('pvCapa').innerHTML = mediaHtml(d.capa_url, 'Capa');
-      if (d.data && /^\d{4}-\d{2}-\d{2}$/.test(d.data)) {
-        const [y,m,day]=d.data.split('-').map(Number);
-        const [hh,mm]=(d.hora||'18:00').split(':');
-        $('pvDiaSem').textContent = DIAS[new Date(y,m-1,day).getDay()];
-        $('pvDiaCurto').textContent = `${pad(day)} ${MESES[m-1].slice(0,3).replace(/^./,c=>c.toUpperCase())}`;
-        $('pvDataL').textContent = `${day} de ${MESES[m-1]} de ${y}`;
-        const hc = mm==='00'?`${+hh}h`:`${+hh}h${mm}`;
-        $('pvHora').textContent = hc; $('pvHora2').textContent = 'A partir das '+hc;
-        $('pvAno').textContent = String(y);
+    /* ===================== EDITOR (WYSIWYG sem lateral) ===================== */
+    let edState = { anfitrioes: [], padrinhos: [], programacao: [], dados: {} };
+
+    function normDados(raw, imp) {
+      const d = Object.assign({}, imp || {}, raw || {});
+      if (!d.data && d.data_evento) d.data = String(d.data_evento).slice(0, 10);
+      if (!d.hora && d.horario_inicio) d.hora = String(d.horario_inicio).slice(0, 5);
+      if (!d.duracao_horas && d.duracaoHoras) d.duracao_horas = d.duracaoHoras;
+      if (!d.capa_url && d.capa) d.capa_url = d.capa;
+      if (typeof d.programacao === 'string') {
+        try { d.programacao = JSON.parse(d.programacao); } catch (_) { d.programacao = []; }
       }
-      const pads = coletarPads();
-      if (pads.length) {
-        $('pvPadsSec').classList.remove('hidden');
-        $('pvPadsList').innerHTML = pads.map(p=>`<span>${esc(p.nome)}</span>`).join('');
-      } else $('pvPadsSec').classList.add('hidden');
-      const prog = Array.isArray(d.programacao)?d.programacao:[];
-      $('pvProg').innerHTML = prog.map(p=>
-        `<div class="prog-row"><b>${esc(p.hora||'')}</b><div><strong>${esc(p.titulo||'')}</strong><p>${esc(p.desc||'')}</p></div></div>`
-      ).join('') || '<p class="vazio">Sem programação</p>';
+      if (!Array.isArray(d.programacao)) d.programacao = [];
+      d.programacao = d.programacao.map(p => ({
+        hora: p.hora || '',
+        titulo: p.titulo || p.nome || '',
+        desc: p.desc || p.descricao || ''
+      }));
+      if (!d.rsvp) d.rsvp = { limite: 3, restricao: true, mensagem: true };
+      if (!d.kicker) d.kicker = 'Com alegria, convidamos você';
+      if (!d.agencia && d.empresa) d.agencia = d.empresa;
+      if (!d.agencia) d.agencia = '432UP';
+      return d;
     }
 
-    document.querySelector('.ed-lp')?.addEventListener('click', e => {
-      const el = e.target.closest('.editavel');
-      if (!el) return;
-      document.querySelectorAll('.editavel.on').forEach(x => { x.classList.remove('on'); x.removeAttribute('contenteditable'); });
-      el.classList.add('on'); el.contentEditable = 'true'; el.focus();
-      el.onblur = () => {
-        el.classList.remove('on'); el.removeAttribute('contenteditable');
-        const fid = el.dataset.f;
-        if (fid && $(fid)) { $(fid).value = el.textContent.trim(); syncEd(); }
-      };
-    });
-    ['edKicker','edIntro','edTitHist','edCitacao','edFech','edTraje','edTrajeTxt','edObs','edLocal','edEndereco','edData','edHora','edDur','edCapa','edAgencia','edProg','edRsvpLim','edSkin','edAbertura']
-      .forEach(id => {
-        const el = $(id); if (!el) return;
-        el.addEventListener('input', () => { syncEd(); renderEdPreview(); });
-        el.addEventListener('change', () => { syncEd(); renderEdPreview(); });
+    function readDomIntoState() {
+      document.querySelectorAll('#viewEditor [data-key][contenteditable]').forEach(el => {
+        const k = el.getAttribute('data-key');
+        let t = (el.textContent || '').trim();
+        const ph = el.getAttribute('data-ph');
+        if (ph && t === ph) t = '';
+        edState.dados[k] = t;
       });
-    $('edUsaPads').addEventListener('change', () => {
-      $('edPadsBox').classList.toggle('hidden', !$('edUsaPads').checked);
-      renderEdPreview();
-    });
-    $('edPads').addEventListener('input', renderEdPreview);
-    $('edTipo').addEventListener('change', () => { fillAnfs($('edTipo').value); renderEdPreview(); });
+      edState.dados.data = $('edData').value || edState.dados.data || '';
+      edState.dados.hora = ($('edHora').value || edState.dados.hora || '18:00').slice(0, 5);
+      edState.dados.capa_url = ($('edCapa').value || '').trim();
+      edState.dados.rsvp = {
+        limite: +$('edRsvpLim').value || 0,
+        restricao: true,
+        mensagem: true
+      };
+      // anfitriões
+      edState.anfitrioes = [...document.querySelectorAll('#pvNomes [data-papel]')].map(el => ({
+        papel: el.getAttribute('data-papel'),
+        nome: (el.textContent || '').trim()
+      })).filter(a => a.nome);
+      // padrinhos
+      if ($('edUsaPads').checked) {
+        edState.padrinhos = [...document.querySelectorAll('#pvPadsList [data-pad]')].map(el => ({
+          nome: (el.textContent || '').trim()
+        })).filter(p => p.nome);
+      } else {
+        edState.padrinhos = [];
+      }
+      // programação
+      edState.programacao = [...document.querySelectorAll('#pvProg .prog-edit-row')].map(row => ({
+        hora: (row.querySelector('[data-p=hora]')?.value || '').trim(),
+        titulo: (row.querySelector('[data-p=titulo]')?.value || '').trim(),
+        desc: (row.querySelector('[data-p=desc]')?.value || '').trim()
+      })).filter(p => p.hora || p.titulo);
+      edState.dados.programacao = edState.programacao;
+      edState.dados.nomeA = edState.anfitrioes[0]?.nome || '';
+      edState.dados.nomeB = edState.anfitrioes[1]?.nome || '';
+    }
+
+    function updateDateLabels() {
+      const data = $('edData').value;
+      const hora = ($('edHora').value || '18:00').slice(0, 5);
+      if (data && /^\d{4}-\d{2}-\d{2}$/.test(data)) {
+        const [y, m, day] = data.split('-').map(Number);
+        const [hh, mm] = hora.split(':');
+        $('pvDiaSem').textContent = DIAS[new Date(y, m - 1, day).getDay()];
+        $('pvDiaCurto').textContent = pad(day) + ' ' + MESES[m - 1].slice(0, 3).replace(/^./, c => c.toUpperCase());
+        $('pvDataL').textContent = day + ' de ' + MESES[m - 1] + ' de ' + y;
+        const hc = mm === '00' ? (+hh + 'h') : (+hh + 'h' + mm);
+        $('pvHora').textContent = hc;
+        $('pvHora2').textContent = 'A partir das ' + hc;
+        $('pvAno').textContent = String(y);
+      } else {
+        $('pvDiaSem').textContent = '—';
+        $('pvDiaCurto').textContent = 'Data';
+        $('pvDataL').textContent = 'Toque para data';
+        $('pvHora').textContent = '—';
+        $('pvHora2').textContent = 'Horário';
+        $('pvAno').textContent = '—';
+      }
+    }
+
+    function renderNomes() {
+      const tipo = tipos.find(t => t.codigo === $('edTipo').value) || { anfitrioes: [{ papel: 'anfitriao_1', rotulo: 'Anfitrião' }] };
+      const papeis = tipo.anfitrioes || [{ papel: 'anfitriao_1', rotulo: 'Anfitrião' }];
+      const byPapel = {};
+      (edState.anfitrioes || []).forEach(a => { byPapel[a.papel] = a.nome; });
+      if (!byPapel.anfitriao_1 && edState.dados.nomeA) byPapel.anfitriao_1 = edState.dados.nomeA;
+      if (!byPapel.anfitriao_2 && edState.dados.nomeB) byPapel.anfitriao_2 = edState.dados.nomeB;
+
+      if (papeis.length >= 2) {
+        $('pvNomes').innerHTML =
+          '<span class="names names-edit" contenteditable="true" data-papel="' + esc(papeis[0].papel) + '" data-ph="' + esc(papeis[0].rotulo) + '">' + esc(byPapel[papeis[0].papel] || '') + '</span>' +
+          ' <span class="amp">&amp;</span> ' +
+          '<span class="names names-edit" contenteditable="true" data-papel="' + esc(papeis[1].papel) + '" data-ph="' + esc(papeis[1].rotulo) + '">' + esc(byPapel[papeis[1].papel] || '') + '</span>';
+      } else {
+        const p = papeis[0];
+        $('pvNomes').innerHTML =
+          '<span class="names names-edit" contenteditable="true" data-papel="' + esc(p.papel) + '" data-ph="' + esc(p.rotulo) + '">' + esc(byPapel[p.papel] || '') + '</span>';
+      }
+    }
+
+    function renderPads() {
+      const on = $('edUsaPads').checked;
+      $('pvPadsSec').style.display = on ? '' : 'none';
+      $('padsTools').style.display = on ? '' : 'none';
+      if (!on) { $('pvPadsList').innerHTML = ''; return; }
+      const list = edState.padrinhos || [];
+      if (!list.length) {
+        $('pvPadsList').innerHTML = '<span class="names-edit" contenteditable="true" data-pad="0" data-ph="Nome do padrinho"></span>';
+        return;
+      }
+      $('pvPadsList').innerHTML = list.map((p, i) =>
+        '<span class="names-edit" contenteditable="true" data-pad="' + i + '" data-ph="Nome">' + esc(p.nome || '') + '</span>' +
+        '<button type="button" class="btn-icon danger" data-rm-pad="' + i + '" aria-label="Remover">−</button>'
+      ).join(' ');
+      $('pvPadsList').querySelectorAll('[data-rm-pad]').forEach(btn => {
+        btn.addEventListener('click', () => {
+          readDomIntoState();
+          edState.padrinhos.splice(+btn.getAttribute('data-rm-pad'), 1);
+          renderPads();
+        });
+      });
+    }
+
+    function renderProg() {
+      const list = edState.programacao || [];
+      if (!list.length) {
+        $('pvProg').innerHTML = '<p class="vazio" style="text-align:center">Nenhuma etapa. Use + Etapa.</p>';
+        return;
+      }
+      $('pvProg').innerHTML = list.map((p, i) =>
+        '<div class="prog-edit-row" data-i="' + i + '">' +
+          '<input data-p="hora" placeholder="17h00" value="' + esc(p.hora || '') + '">' +
+          '<div><input data-p="titulo" placeholder="Título" value="' + esc(p.titulo || '') + '" style="margin-bottom:6px">' +
+          '<input data-p="desc" placeholder="Descrição" value="' + esc(p.desc || '') + '"></div>' +
+          '<button type="button" class="btn-icon danger" data-rm-prog="' + i + '">−</button>' +
+        '</div>'
+      ).join('');
+      $('pvProg').querySelectorAll('[data-rm-prog]').forEach(btn => {
+        btn.addEventListener('click', () => {
+          readDomIntoState();
+          edState.programacao.splice(+btn.getAttribute('data-rm-prog'), 1);
+          renderProg();
+        });
+      });
+    }
+
+    function fillEditor() {
+      const d = normDados(atual.dados, atual.importado);
+      edState.dados = d;
+      edState.anfitrioes = (atual.anfitrioes || []).map(a => ({ papel: a.papel, nome: a.nome }));
+      edState.padrinhos = (atual.padrinhos || []).map(p => ({ nome: p.nome || p }));
+      edState.programacao = d.programacao || [];
+
+      if (tipos.length) {
+        $('edTipo').innerHTML = tipos.map(t => '<option value="' + esc(t.codigo) + '">' + esc(t.rotulo) + '</option>').join('');
+      }
+      $('edTipo').value = atual.tipo_codigo || 'casamento';
+      $('edCapa').value = d.capa_url || '';
+      $('edData').value = (d.data || '').toString().slice(0, 10);
+      $('edHora').value = (d.hora || '18:00').toString().slice(0, 5);
+      $('edRsvpLim').value = (d.rsvp && d.rsvp.limite != null) ? d.rsvp.limite : 3;
+      $('edUsaPads').checked = edState.padrinhos.length > 0 || !!(atual.tipo && atual.tipo.permite_padrinhos);
+      if ($('edProposta')) {
+        $('edProposta').value = atual.proposta_id || '';
+        $('edProposta').disabled = !!atual.proposta_id;
+      }
+
+      const setTxt = (id, val, ph) => {
+        const el = $(id);
+        if (!el) return;
+        el.textContent = val || '';
+        if (!val && ph) el.setAttribute('data-ph', ph);
+      };
+      setTxt('pvKicker', d.kicker);
+      setTxt('pvIntro', d.intro, 'Texto de introdução…');
+      setTxt('pvTitHist', d.tituloHistoria, 'Título da história');
+      setTxt('pvCitacao', d.citacao, 'Citação…');
+      setTxt('pvFech', d.fechamento, 'Fechamento…');
+      setTxt('pvLocal', d.local, 'Local do evento');
+      setTxt('pvEnd', d.endereco, 'Endereço completo');
+      setTxt('pvTraje', d.traje, 'Esporte fino');
+      setTxt('pvTrajeTxt', d.trajeTexto, 'Orientação de traje');
+      setTxt('pvObs', d.observacao, 'Acessibilidade, restrições…');
+      setTxt('pvAgencia', d.agencia || '432UP');
+
+      $('pvCapa').innerHTML = mediaHtml(d.capa_url, 'Capa');
+      updateDateLabels();
+      renderNomes();
+      renderPads();
+      renderProg();
+
+      const url = linkPublico(atual.token_publico);
+      if ($('edWa')) $('edWa').href = 'https://wa.me/?text=' + encodeURIComponent('Segue o convite: ' + url);
+      if ($('edMsg')) { $('edMsg').className = 'msg'; $('edMsg').textContent = ''; }
+    }
+
+    function collectForSave() {
+      readDomIntoState();
+      const dados = Object.assign({}, edState.dados, {
+        programacao: edState.programacao,
+        rsvp: {
+          limite: +$('edRsvpLim').value || 0,
+          restricao: true,
+          mensagem: true
+        },
+        capa_url: ($('edCapa').value || '').trim(),
+        data: $('edData').value || '',
+        hora: ($('edHora').value || '18:00').slice(0, 5)
+      });
+      return {
+        dados,
+        anfitrioes: edState.anfitrioes,
+        padrinhos: $('edUsaPads').checked ? edState.padrinhos : [],
+        tipo: $('edTipo').value || atual.tipo_codigo
+      };
+    }
 
     async function abrirEditor(id) {
       editId = id;
-      if (!tipos.length) try { tipos = await rpc('convite_tipos_listar')||[]; } catch(_){}
-      $('edTipo').innerHTML = tipos.map(t=>`<option value="${esc(t.codigo)}">${esc(t.rotulo)}</option>`).join('');
+      if (!tipos.length) {
+        try { tipos = await rpc('convite_tipos_listar') || []; } catch (_) { tipos = []; }
+      }
       atual = await rpc('convite_detalhe', { p_convite: id });
+      if (!atual) throw new Error('Convite não encontrado');
       $('viewAdmin').classList.add('hidden');
       $('viewEditor').classList.remove('hidden');
-      fillEditor(); renderEdPreview();
+      window.scrollTo(0, 0);
+      fillEditor();
     }
+
     $('edVoltar').addEventListener('click', () => {
       $('viewEditor').classList.add('hidden');
       $('viewAdmin').classList.remove('hidden');
       if (editId) abrirDetalhe(editId);
     });
+
+    // Data / hora: toque no card abre o picker
+    function wireTap(el, inputId) {
+      if (!el) return;
+      el.addEventListener('click', () => {
+        const inp = $(inputId);
+        if (!inp) return;
+        try { inp.showPicker ? inp.showPicker() : inp.click(); } catch (_) { inp.focus(); }
+      });
+    }
+    wireTap($('tapData'), 'edData');
+    wireTap($('tapData2'), 'edData');
+    wireTap($('tapHora'), 'edHora');
+    $('edData').addEventListener('change', updateDateLabels);
+    $('edHora').addEventListener('change', updateDateLabels);
+    $('edCapa').addEventListener('change', () => {
+      $('pvCapa').innerHTML = mediaHtml($('edCapa').value.trim(), 'Capa');
+    });
+    $('edTipo').addEventListener('change', () => {
+      readDomIntoState();
+      renderNomes();
+    });
+    $('edUsaPads').addEventListener('change', () => {
+      readDomIntoState();
+      renderPads();
+    });
+    $('btnAddPad').addEventListener('click', () => {
+      readDomIntoState();
+      edState.padrinhos.push({ nome: '' });
+      renderPads();
+    });
+    $('btnAddProg').addEventListener('click', () => {
+      readDomIntoState();
+      edState.programacao.push({ hora: '', titulo: '', desc: '' });
+      renderProg();
+    });
+
     $('edSalvar').addEventListener('click', async () => {
-      $('edMsg').className = 'msg'; $('edMsg').textContent = 'Salvando…';
+      $('edMsg').className = 'msg';
+      $('edMsg').textContent = 'Salvando…';
       try {
-        syncEd();
-        try { JSON.parse($('edProg').value||'[]'); } catch(_){ throw new Error('JSON da programação inválido'); }
+        const pack = collectForSave();
         await rpc('convite_salvar', {
-          p_convite: editId, p_dados: atual.dados,
-          p_skin: atual.skin, p_abertura: atual.abertura, p_tipo: atual.tipo_codigo
+          p_convite: editId,
+          p_dados: pack.dados,
+          p_skin: atual.skin || 'padrao',
+          p_abertura: atual.abertura || 'nenhuma',
+          p_tipo: pack.tipo
         });
-        await rpc('convite_salvar_anfitrioes', { p_convite: editId, p_lista: coletarAnfs() });
-        await rpc('convite_salvar_padrinhos', { p_convite: editId, p_lista: coletarPads() });
-        $('edMsg').className = 'msg ok'; $('edMsg').textContent = 'Salvo.';
+        await rpc('convite_salvar_anfitrioes', { p_convite: editId, p_lista: pack.anfitrioes });
+        await rpc('convite_salvar_padrinhos', { p_convite: editId, p_lista: pack.padrinhos });
+        const propId = ($('edProposta') && !$('edProposta').disabled && $('edProposta').value.trim()) || '';
+        if (propId && !atual.proposta_id) {
+          try {
+            await rpc('convite_vincular', { p_convite: editId, p_proposta: propId });
+            toast('Vinculado à proposta.');
+          } catch (ve) {
+            toast('Salvo; vínculo: ' + ve.message);
+          }
+        }
+        $('edMsg').className = 'msg ok';
+        $('edMsg').textContent = 'Salvo.';
         toast('Salvo.');
         atual = await rpc('convite_detalhe', { p_convite: editId });
-        fillEditor(); renderEdPreview();
-      } catch (e) { $('edMsg').textContent = e.message; }
+        fillEditor();
+      } catch (e) {
+        $('edMsg').className = 'msg';
+        $('edMsg').textContent = e.message;
+      }
     });
+
     $('edPublicar').addEventListener('click', async () => {
       try {
-        await $('edSalvar').dispatchEvent(new Event('click'));
+        const pack = collectForSave();
+        await rpc('convite_salvar', {
+          p_convite: editId,
+          p_dados: pack.dados,
+          p_skin: atual.skin || 'padrao',
+          p_abertura: atual.abertura || 'nenhuma',
+          p_tipo: pack.tipo
+        });
+        await rpc('convite_salvar_anfitrioes', { p_convite: editId, p_lista: pack.anfitrioes });
+        await rpc('convite_salvar_padrinhos', { p_convite: editId, p_lista: pack.padrinhos });
         await rpc('convite_publicar', { p_convite: editId, p_publicar: true });
         toast('Publicado.');
-      } catch (e) { toast(e.message); }
+        $('edMsg').className = 'msg ok';
+        $('edMsg').textContent = 'Publicado.';
+        atual = await rpc('convite_detalhe', { p_convite: editId });
+        fillEditor();
+      } catch (e) {
+        toast(e.message);
+        $('edMsg').textContent = e.message;
+      }
     });
 
     /* ===================== BOOT ===================== */
