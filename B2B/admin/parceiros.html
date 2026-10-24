@@ -556,10 +556,13 @@
             </div>
 
             <div id="mContainerAcaoMidias" class="flex items-center justify-end gap-2 pt-2 border-t border-white/10">
-              <button type="button" onclick="recusarMidiasArtista()" class="px-4 py-2 rounded-xl bg-red-500/20 hover:bg-red-500/30 text-red-300 border border-red-500/40 text-xs font-bold transition cursor-pointer">
+              <button type="button" id="btnDevolverVitrine" onclick="devolverVitrineAnalise()" class="hidden px-4 py-2 rounded-xl bg-amber-500/20 hover:bg-amber-500/30 text-amber-300 border border-amber-500/40 text-xs font-bold transition cursor-pointer">
+                ⏸ Devolver para Análise
+              </button>
+              <button type="button" id="btnRecusarMidias" onclick="recusarMidiasArtista()" class="px-4 py-2 rounded-xl bg-red-500/20 hover:bg-red-500/30 text-red-300 border border-red-500/40 text-xs font-bold transition cursor-pointer">
                 ❌ Recusar Mídias / Solicitar Ajuste
               </button>
-              <button type="button" onclick="aprovarMidiasArtista()" class="px-5 py-2 rounded-xl bg-emerald-500 hover:bg-emerald-400 text-slate-950 text-xs font-extrabold uppercase tracking-wider transition shadow-[0_0_15px_rgba(16,185,129,0.4)] cursor-pointer">
+              <button type="button" id="btnAprovarMidias" onclick="aprovarMidiasArtista()" class="px-5 py-2 rounded-xl bg-emerald-500 hover:bg-emerald-400 text-slate-950 text-xs font-extrabold uppercase tracking-wider transition shadow-[0_0_15px_rgba(16,185,129,0.4)] cursor-pointer">
                 ✅ Aprovar Mídias & Publicar Vitrine
               </button>
             </div>
@@ -804,12 +807,22 @@
         sel.value = base.indicado_por || '';
       }
 
+      // Vitrine em edição (null = cadastro principal)
       var mVitrineId = null;
+
+      // Vídeos publicados (estado separado dos vídeos pendentes e dos novos)
+      var admVideoAtivo = { youtube_1: null, youtube_2: null };
+
+      /* Retorna a ficha a ser editada.
+         - Cadastro principal: o próprio registro.
+         - Vitrine extra: cópia do cadastro com os campos da vitrine por cima.
+           Se a vitrine não estiver carregada, retorna null (nunca cai no cadastro principal). */
       function obterFichaParaModal(id) {
         var base = listaParceiros.find(function (item) { return String(item.id) === String(id); });
-        if (!base || !mVitrineId) return base;
+        if (!base) return null;
+        if (!mVitrineId) return base;
         var vit = (vitrinesPorParceiro[base.id] || []).find(function (v) { return v.id === mVitrineId; });
-        if (!vit) return base;
+        if (!vit) return null;
         return Object.assign({}, base, vit, {
           id: base.id, status: base.status, status_artista: base.status_artista,
           __vitrineId: vit.id, __vitrineStatus: vit.status, __vitrineOrdem: vit.ordem
@@ -818,7 +831,8 @@
 
       function filtrarPayloadVitrine(payload) {
         var permitidos = ['nome_artistico','tagline_artistica','cache_base','experiencia_comercial','bio_artistica',
-          'rider_tecnico','youtube_1','youtube_2','galeria_fotos','foto_capa_url','midias_pendentes'];
+          'rider_tecnico','youtube_1','youtube_2','galeria_fotos','foto_capa_url','midias_pendentes',
+          'status','motivo_recusa','aprovada_em'];
         var out = {};
         permitidos.forEach(function (k) { if (payload[k] !== undefined) out[k] = payload[k]; });
         return out;
@@ -860,7 +874,8 @@
         var pay = { galeria_fotos: mGaleriaFotosAtual, foto_capa_url: mFotoCapaUrlAtual, midias_pendentes: [] };
         var capaP = (mMidiasPendentesAtual || []).find(function (m) { return m.tipo === 'capa'; });
         if (capaP) { pay.foto_capa_url = capaP.url; mFotoCapaUrlAtual = capaP.url; }
-        (mMidiasPendentesAtual || []).filter(function (m) { return m.tipo === 'video'; }).forEach(function (vid) {
+        var videosPend = (mMidiasPendentesAtual || []).filter(function (m) { return m.tipo === 'video'; });
+        videosPend.forEach(function (vid) {
           pay[vid.campo_destino || 'youtube_1'] = vid.url;
         });
         (mMidiasPendentesAtual || []).filter(function (m) { return m.tipo === 'galeria' || !m.tipo; }).forEach(function (item) {
@@ -869,16 +884,15 @@
         if (!confirm('Aprovar e publicar esta vitrine?')) return;
         pay.status = 'aprovada';
         pay.aprovada_em = new Date().toISOString();
+        pay.motivo_recusa = null;
         var r = await sbPartner.from('vitrines').update(pay).eq('id', mVitrineId);
         if (r.error) { alert('Erro ao aprovar: ' + r.error.message); return; }
-        (mMidiasPendentesAtual || []).filter(function (m) { return m.tipo === 'video'; }).forEach(function (vid) {
-          atualizarLabelsVideoAdmin(vid.campo_destino || 'youtube_1', vid.url, false);
+        videosPend.forEach(function (vid) {
+          admSetVideoAtivo(vid.campo_destino || 'youtube_1', vid.url);
         });
         mMidiasPendentesAtual = [];
         document.getElementById('mMediaPendingBadge').classList.add('hidden');
-        document.getElementById('mContainerAcaoMidias').classList.add('hidden');
-        document.getElementById('mContainerAcaoMidias').classList.remove('flex');
-        document.getElementById('mMidiasEmDiaMsg').classList.remove('hidden');
+        document.getElementById('mStatusArtista').value = 'aprovado';
         renderCapaAdmin();
         renderGaleriaAdmin();
         alert('✅ Vitrine aprovada.');
@@ -891,15 +905,31 @@
         var motivo = prompt('Motivo da recusa (o artista verá):');
         if (motivo === null) return;
         var r = await sbPartner.from('vitrines')
-          .update({ status: 'recusada', motivo_recusa: motivo, midias_pendentes: [] })
+          .update({ status: 'recusada', motivo_recusa: motivo, midias_pendentes: [], aprovada_em: null })
           .eq('id', mVitrineId);
         if (r.error) { alert('Erro ao recusar: ' + r.error.message); return; }
         alert('Vitrine recusada.');
         mMidiasPendentesAtual = [];
+        document.getElementById('mStatusArtista').value = 'recusado';
+        document.getElementById('mMediaPendingBadge').classList.add('hidden');
         await carregarVitrinesAdmin();
         renderAbasVitrinesAdmin();
         carregarTaxonomiaEParceiros();
       }
+
+      window.devolverVitrineAnalise = async function () {
+        if (!mVitrineId) return;
+        if (!confirm('Devolver esta vitrine para análise? Ela sai do ar até ser aprovada novamente.')) return;
+        var r = await sbPartner.from('vitrines')
+          .update({ status: 'pendente', aprovada_em: null })
+          .eq('id', mVitrineId);
+        if (r.error) { alert('Erro: ' + r.error.message); return; }
+        document.getElementById('mStatusArtista').value = 'pendente';
+        alert('Vitrine devolvida para análise.');
+        await carregarVitrinesAdmin();
+        renderAbasVitrinesAdmin();
+        carregarTaxonomiaEParceiros();
+      };
 
       async function carregarVitrinesAdmin() {
         try {
@@ -2159,9 +2189,15 @@
         }
       }
 
+      /* Define o vídeo PUBLICADO de um campo (youtube_1 ou youtube_2) e atualiza a tela. */
+      function admSetVideoAtivo(campo, url) {
+        admVideoAtivo[campo] = url || null;
+        atualizarLabelsVideoAdmin(campo, url || '', false);
+      }
+
       /* =========================================================================
          Barra de progresso
-         - Fotos e capa: animação até a etapa seguinte (como antes).
+         - Fotos e capa: animação até a etapa seguinte.
          - Vídeos: progresso real quando o navegador informa; sem informação, barra animada sem número.
          ========================================================================= */
       var currentProgressVal = 0;
@@ -2334,7 +2370,7 @@
       }
       window.alert = function (msg) { mostrarAvisoTemporario(String(msg)); };
 
-      /* Lista as URLs de mídia do cadastro. base = valores finais (opcional). */
+      /* Lista as URLs de mídia do cadastro/vitrine. base = valores finais (opcional). */
       function admListarUrls(p, base) {
         function pick(k) {
           if (base && base[k] !== undefined) return base[k];
@@ -2378,7 +2414,8 @@
         esconderBannerPendente();
       }
 
-      /* Publica as mídias novas no R2 (chamado ao clicar em Salvar, antes de montar o payload) */
+      /* Publica as mídias novas no R2 (chamado ao clicar em Salvar, antes de montar o payload).
+         Nunca altera o cadastro principal: só mexe na ficha em edição (vitrine ou cadastro). */
       async function admPublicarMidiasNovas(parceiro) {
         var uid = parceiro.user_id + (parceiro.__vitrineOrdem && parceiro.__vitrineOrdem > 1 ? '/vitrine-' + parceiro.__vitrineOrdem : '');
         var ts = Date.now();
@@ -2401,10 +2438,7 @@
             novo.file,
             function (f) { progressoVideo(rotulo, f); }
           );
-          var urlVid = respVid.url;
-          atualizarLabelsVideoAdmin(campo, urlVid, false);
-          var parceiroRef = listaParceiros.find(function (item) { return String(item.id) === String(parceiro.id); });
-          if (parceiroRef) parceiroRef[campo] = urlVid;
+          admSetVideoAtivo(campo, respVid.url);
           mMidiasPendentesAtual = mMidiasPendentesAtual.filter(function (m) { return !(m.tipo === 'video' && m.campo_destino === campo); });
           admVideoNovo[campo] = null;
           var el = document.getElementById(campo === 'youtube_1' ? 'mArtVideo1' : 'mArtVideo2');
@@ -2585,11 +2619,20 @@
         renderGaleriaAdmin();
       };
 
-      window.abrirFichaParceiro = function (id) {
+      window.abrirFichaParceiro = async function (id) {
         mVitrineId = window.__vitrineSolicitada || null;
         window.__vitrineSolicitada = null;
+
+        // Atualiza o cache antes de abrir uma vitrine: evita editar com dados antigos
+        if (mVitrineId) await carregarVitrinesAdmin();
+
         var parceiro = obterFichaParaModal(id);
-        if (!parceiro) return;
+        if (!parceiro) {
+          alert('Não foi possível carregar esta vitrine. Feche a ficha e abra de novo.');
+          mVitrineId = null;
+          return;
+        }
+
         setTimeout(function () { renderAbasVitrinesAdmin(); preencherSelectIndicado(parceiro.id); }, 0);
 
         parceiroSelecionadoId = parceiro.id;
@@ -2637,48 +2680,59 @@
         document.getElementById('mTipoPix').value = parceiro.tipo_pix || 'cpf_cnpj';
         document.getElementById('mChavePix').value = parceiro.chave_pix || '';
 
+        /* Controles de decisão:
+           - Vitrine extra: sempre visíveis (aprovar, recusar, devolver para análise).
+           - Cadastro principal: visíveis só quando há mídia pendente. */
         var badgePending = document.getElementById('mMediaPendingBadge');
         var containerAcao = document.getElementById('mContainerAcaoMidias');
         var msgEmDia = document.getElementById('mMidiasEmDiaMsg');
+        var temPend = temFotosPendentes(parceiro);
 
-        if (temFotosPendentes(parceiro)) {
-          badgePending.classList.remove('hidden');
+        badgePending.classList.toggle('hidden', !temPend);
+        if (mVitrineId || temPend) {
           containerAcao.classList.remove('hidden');
           containerAcao.classList.add('flex');
           msgEmDia.classList.add('hidden');
         } else {
-          badgePending.classList.add('hidden');
           containerAcao.classList.add('hidden');
           containerAcao.classList.remove('flex');
           msgEmDia.classList.remove('hidden');
         }
 
+        document.getElementById('btnDevolverVitrine').classList.toggle('hidden', !mVitrineId);
+        document.getElementById('btnRecusarMidias').textContent = mVitrineId
+          ? '❌ Recusar Vitrine'
+          : '❌ Recusar Mídias / Solicitar Ajuste';
+        document.getElementById('btnAprovarMidias').textContent = mVitrineId
+          ? '✅ Aprovar Vitrine'
+          : '✅ Aprovar Mídias & Publicar Vitrine';
+
+        /* Status: em vitrine extra mostra o status da própria vitrine; no cadastro, o status do artista */
+        var mapaStatusVitrine = { aprovada: 'aprovado', recusada: 'recusado', pendente: 'pendente' };
+        document.getElementById('mStatusArtista').value = mVitrineId
+          ? (mapaStatusVitrine[parceiro.__vitrineStatus] || 'pendente')
+          : String(parceiro.status_artista || 'pendente').toLowerCase();
+
         document.getElementById('mIsDestaque').checked = Boolean(parceiro.is_destaque);
-        document.getElementById('mStatusArtista').value = (parceiro.status_artista || 'pendente').toLowerCase();
-        document.getElementById('mArtNomeArtistico').value = parceiro.nome_artistico || '';
         carregarVitrinesExtras(parceiro.id);
+        document.getElementById('mArtNomeArtistico').value = parceiro.nome_artistico || '';
         document.getElementById('mArtTagline').value = parceiro.tagline_artistica || '';
         document.getElementById('mArtCacheBase').value = parceiro.cache_base || '';
         document.getElementById('mArtExperiencia').value = parceiro.experiencia_comercial || '';
         document.getElementById('mArtBio').value = parceiro.bio_artistica || '';
         document.getElementById('mArtRider').value = parceiro.rider_tecnico || '';
-        // Vídeos: hidden fields + labels/links (sem YouTube)
-        var vid1Pendente = (Array.isArray(parceiro.midias_pendentes) ? parceiro.midias_pendentes : []).find(function(m) {
-          return m.tipo === 'video' && m.campo_destino === 'youtube_1';
-        });
-        var vid2Pendente = (Array.isArray(parceiro.midias_pendentes) ? parceiro.midias_pendentes : []).find(function(m) {
-          return m.tipo === 'video' && m.campo_destino === 'youtube_2';
-        });
-        if (vid1Pendente) {
-          atualizarLabelsVideoAdmin('youtube_1', vid1Pendente.url, true);
-        } else {
-          atualizarLabelsVideoAdmin('youtube_1', parceiro.youtube_1 || '', false);
-        }
-        if (vid2Pendente) {
-          atualizarLabelsVideoAdmin('youtube_2', vid2Pendente.url, true);
-        } else {
-          atualizarLabelsVideoAdmin('youtube_2', parceiro.youtube_2 || '', false);
-        }
+
+        /* Vídeos: o publicado vem do próprio registro; o pendente só mostra o selo de análise */
+        admVideoAtivo = { youtube_1: parceiro.youtube_1 || null, youtube_2: parceiro.youtube_2 || null };
+        var pendentesLista = Array.isArray(parceiro.midias_pendentes) ? parceiro.midias_pendentes : [];
+        var vid1Pendente = pendentesLista.find(function(m) { return m.tipo === 'video' && m.campo_destino === 'youtube_1'; });
+        var vid2Pendente = pendentesLista.find(function(m) { return m.tipo === 'video' && m.campo_destino === 'youtube_2'; });
+
+        atualizarLabelsVideoAdmin('youtube_1', admVideoAtivo.youtube_1 || '', false);
+        atualizarLabelsVideoAdmin('youtube_2', admVideoAtivo.youtube_2 || '', false);
+        document.getElementById('badgeVideo1PendenteAdmin').classList.toggle('hidden', !vid1Pendente);
+        document.getElementById('badgeVideo2PendenteAdmin').classList.toggle('hidden', !vid2Pendente);
+
         var elV1 = document.getElementById('mArtVideo1');
         var elV2 = document.getElementById('mArtVideo2');
         if (elV1) elV1.value = '';
@@ -2805,13 +2859,11 @@
 
         var midiasPendentesFila = mMidiasPendentesAtual.filter(function(m) { return m.tipo !== 'capa'; });
 
-        var vid1Ativo = (document.getElementById('mArtYoutube1') && document.getElementById('mArtYoutube1').value || '').trim();
-        var vid2Ativo = (document.getElementById('mArtYoutube2') && document.getElementById('mArtYoutube2').value || '').trim();
-        var pendVid1 = midiasPendentesFila.some(function(m) { return m.tipo === 'video' && m.campo_destino === 'youtube_1'; });
-        var pendVid2 = midiasPendentesFila.some(function(m) { return m.tipo === 'video' && m.campo_destino === 'youtube_2'; });
-        // Vídeo novo substitui o ativo na grade até o Salvar
-        var mostrarAtivo1 = !pendVid1 && vid1Ativo && !admVideoNovo.youtube_1;
-        var mostrarAtivo2 = !pendVid2 && vid2Ativo && !admVideoNovo.youtube_2;
+        // Vídeos publicados aparecem sempre; um vídeo novo escolhido substitui a exibição até o Salvar
+        var vid1Ativo = admVideoAtivo.youtube_1 || '';
+        var vid2Ativo = admVideoAtivo.youtube_2 || '';
+        var mostrarAtivo1 = Boolean(vid1Ativo) && !admVideoNovo.youtube_1;
+        var mostrarAtivo2 = Boolean(vid2Ativo) && !admVideoNovo.youtube_2;
 
         var totalExibido = mGaleriaFotosAtual.length + admGaleriaNovas.length + midiasPendentesFila.length
           + (mostrarAtivo1 ? 1 : 0) + (mostrarAtivo2 ? 1 : 0)
@@ -2888,9 +2940,7 @@
       }
 
       window.removerVideoAtivoAdmin = function(campo) {
-        atualizarLabelsVideoAdmin(campo, '', false);
-        var parceiro = obterFichaParaModal(parceiroSelecionadoId);
-        if (parceiro) parceiro[campo] = null;
+        admSetVideoAtivo(campo, null);
         mostrarBannerPendente();
         renderGaleriaAdmin();
       };
@@ -2919,6 +2969,8 @@
 
       var _vitrineParceiroId = null;
       function _escV(t) { return String(t == null ? '' : t).replace(/[&<>"']/g, function (c) { return {'&':'&amp;','<':'&gt;','"':'&quot;',"'":'&#39;'}[c]; }); }
+
+      /* Lista de vitrines extras: mostra só as ações que fazem sentido para o status atual */
       window.carregarVitrinesExtras = async function (parceiroId) {
         _vitrineParceiroId = parceiroId;
         var box = document.getElementById('mVitrinesExtrasLista');
@@ -2929,29 +2981,49 @@
         if (r.error) { box.textContent = 'Erro: ' + r.error.message; return; }
         if (!r.data || !r.data.length) { box.textContent = 'Nenhuma vitrine extra solicitada.'; return; }
         box.innerHTML = r.data.map(function (v) {
-          var acoes = v.status === 'pendente'
-            ? '<div class="flex gap-2"><button type="button" onclick="decidirVitrine(\'' + v.id + '\',\'aprovada\')" class="px-3 py-1.5 rounded-lg bg-emerald-500 text-slate-950 font-bold">Aprovar</button>' +
-              '<button type="button" onclick="decidirVitrine(\'' + v.id + '\',\'recusada\')" class="px-3 py-1.5 rounded-lg border border-rose-500/50 text-rose-300">Recusar</button></div>'
-            : '';
+          var botoes = '';
+          if (v.status !== 'aprovada') {
+            botoes += '<button type="button" onclick="decidirVitrine(\'' + v.id + '\',\'aprovada\')" class="px-3 py-1.5 rounded-lg bg-emerald-500 text-slate-950 font-bold">Aprovar</button>';
+          }
+          if (v.status !== 'recusada') {
+            botoes += '<button type="button" onclick="decidirVitrine(\'' + v.id + '\',\'recusada\')" class="px-3 py-1.5 rounded-lg border border-rose-500/50 text-rose-300">Bloquear / Recusar</button>';
+          }
+          if (v.status !== 'pendente') {
+            botoes += '<button type="button" onclick="decidirVitrine(\'' + v.id + '\',\'pendente\')" class="px-3 py-1.5 rounded-lg border border-amber-500/50 text-amber-300">Devolver p/ análise</button>';
+          }
           return '<div class="flex items-center justify-between gap-3 bg-slate-900/60 rounded-lg p-2.5 border border-white/5">' +
             '<div><strong class="text-white">' + _escV(v.nome_artistico || 'Sem nome') + '</strong>' +
             '<span class="block text-slate-400">Vitrine ' + v.ordem + ' · ' + _escV(v.status) + '</span>' +
             (v.motivo_recusa ? '<span class="block text-rose-300">Motivo: ' + _escV(v.motivo_recusa) + '</span>' : '') +
-            '</div>' + acoes + '</div>';
+            '</div><div class="flex gap-2 flex-wrap justify-end">' + botoes + '</div></div>';
         }).join('');
       };
+
       window.decidirVitrine = async function (id, status) {
         var motivo = null;
         if (status === 'recusada') {
           motivo = prompt('Motivo da recusa (o artista verá):');
           if (motivo === null) return;
         }
+        var acao = status === 'aprovada' ? 'aprovar'
+          : status === 'recusada' ? 'bloquear'
+          : 'devolver para análise';
+        if (!confirm('Confirmar: ' + acao + ' esta vitrine?')) return;
+
         var r = await sbPartner.from('vitrines').update({
           status: status,
           aprovada_em: status === 'aprovada' ? new Date().toISOString() : null,
-          motivo_recusa: motivo
+          motivo_recusa: status === 'recusada' ? motivo : null
         }).eq('id', id);
         if (r.error) { alert('Erro: ' + r.error.message); return; }
+
+        // Se a vitrine aberta na ficha for a mesma, sincroniza o seletor de status
+        if (mVitrineId === id) {
+          var mapa = { aprovada: 'aprovado', recusada: 'recusado', pendente: 'pendente' };
+          document.getElementById('mStatusArtista').value = mapa[status] || 'pendente';
+        }
+        await carregarVitrinesAdmin();
+        renderAbasVitrinesAdmin();
         carregarVitrinesExtras(_vitrineParceiroId);
       };
 
@@ -2966,12 +3038,9 @@
           mFotoCapaUrlAtual = capaPendente.url;
         }
 
-        // Preserva campo_destino exatamente — grava URL R2 em youtube_1 / youtube_2
         var videosPendentes = mMidiasPendentesAtual.filter(function(m) { return m.tipo === 'video'; });
         videosPendentes.forEach(function(vid) {
-          var campoDestino = vid.campo_destino || 'youtube_1';
-          payloadToUpdate[campoDestino] = vid.url;
-          atualizarLabelsVideoAdmin(campoDestino, vid.url, false);
+          payloadToUpdate[vid.campo_destino || 'youtube_1'] = vid.url;
         });
 
         var pendentesGaleria = mMidiasPendentesAtual.filter(function(m) { return m.tipo === 'galeria' || !m.tipo; });
@@ -2990,19 +3059,19 @@
           payloadToUpdate.is_destaque = ehDestaque;
           payloadToUpdate.galeria_fotos = mGaleriaFotosAtual;
           payloadToUpdate.foto_capa_url = mFotoCapaUrlAtual;
-          // midias_pendentes só é limpo DEPOIS do UPDATE bem-sucedido (abaixo)
           payloadToUpdate.midias_pendentes = [];
 
           sbPartner.from('parceiros').update(payloadToUpdate).eq('id', parceiroSelecionadoId).then(function(res) {
             if (res.error) {
               alert('Erro ao aprovar mídias: ' + res.error.message);
-              // NÃO limpa midias_pendentes em memória se o UPDATE falhou
             } else {
               alert('✅ Mídias aprovadas com sucesso!');
-              // Só agora limpa o estado local
+              // Só depois do banco confirmar: atualiza o estado publicado e limpa os pendentes
+              videosPendentes.forEach(function(vid) {
+                admSetVideoAtivo(vid.campo_destino || 'youtube_1', vid.url);
+              });
               mMidiasPendentesAtual = [];
-              // Sincroniza objeto em memória para o Salvar Cadastro não sobrescrever
-              var parceiro = obterFichaParaModal(parceiroSelecionadoId);
+              var parceiro = listaParceiros.find(function (item) { return String(item.id) === String(parceiroSelecionadoId); });
               if (parceiro) {
                 if (payloadToUpdate.youtube_1) parceiro.youtube_1 = payloadToUpdate.youtube_1;
                 if (payloadToUpdate.youtube_2) parceiro.youtube_2 = payloadToUpdate.youtube_2;
@@ -3036,13 +3105,9 @@
           var payload = {
             fotos_pendentes_aprovacao: false,
             status_artista: 'recusado',
-            observacoes_admin: novaObs
+            observacoes_admin: novaObs,
+            midias_pendentes: []
           };
-
-          var parceiro = obterFichaParaModal(parceiroSelecionadoId);
-          if (parceiro && parceiro.midias_pendentes !== undefined) {
-            payload.midias_pendentes = [];
-          }
 
           sbPartner.from('parceiros').update(payload).eq('id', parceiroSelecionadoId).then(function(res) {
             if (res.error) {
@@ -3067,22 +3132,38 @@
       document.getElementById('btnSalvarFicha').addEventListener('click', async function () {
         if (!parceiroSelecionadoId) return;
 
+        // Ficha alvo: vitrine (se aberta) ou cadastro. Sem fallback para o cadastro principal.
+        var parceiroParaEnvio = obterFichaParaModal(parceiroSelecionadoId);
+        if (!parceiroParaEnvio) {
+          alert('Esta vitrine não está carregada. Feche a ficha e abra de novo.');
+          return;
+        }
+
+        // Validações antes de qualquer upload (nada é enviado se o admin cancelar)
+        var stSel = document.getElementById('mStatusArtista').value;
+        var statusVitrine = null;
+        var motivoVitrine = null;
+        if (mVitrineId) {
+          statusVitrine = { aprovado: 'aprovada', pendente: 'pendente', recusado: 'recusada' }[stSel] || 'pendente';
+          if (statusVitrine === 'recusada') {
+            motivoVitrine = prompt('Motivo da recusa (o artista verá):', parceiroParaEnvio.motivo_recusa || '');
+            if (motivoVitrine === null) return;
+          }
+        }
+
         var btn = this;
         btn.disabled = true;
         btn.textContent = 'Salvando...';
 
         // 1) Envia para o R2 o que foi escolhido (capa, fotos, vídeos) — só agora
-        var parceiroParaEnvio = obterFichaParaModal(parceiroSelecionadoId);
-        if (parceiroParaEnvio) {
-          try {
-            await admPublicarMidiasNovas(parceiroParaEnvio);
-          } catch (errEnvio) {
-            hideLoadingProgress();
-            btn.disabled = false;
-            btn.textContent = 'Salvar Cadastro Completo';
-            alert('Não foi possível enviar as mídias: ' + (errEnvio && errEnvio.message ? errEnvio.message : 'falha desconhecida') + '. Nada foi gravado. Tente de novo.');
-            return;
-          }
+        try {
+          await admPublicarMidiasNovas(parceiroParaEnvio);
+        } catch (errEnvio) {
+          hideLoadingProgress();
+          btn.disabled = false;
+          btn.textContent = 'Salvar Cadastro Completo';
+          alert('Não foi possível enviar as mídias: ' + (errEnvio && errEnvio.message ? errEnvio.message : 'falha desconhecida') + '. Nada foi gravado. Tente de novo.');
+          return;
         }
 
         var baseId = document.getElementById('mPerfilBase').value;
@@ -3115,7 +3196,7 @@
           chave_pix: document.getElementById('mChavePix').value.trim(),
           observacoes_admin: document.getElementById('mObsAdmin').value.trim(),
 
-          status_artista: document.getElementById('mStatusArtista').value,
+          status_artista: stSel,
           indicado_por: (document.getElementById('mIndicadoPor') && document.getElementById('mIndicadoPor').value) || null,
           is_destaque: document.getElementById('mIsDestaque').checked,
           nome_artistico: document.getElementById('mArtNomeArtistico').value.trim() || null,
@@ -3125,16 +3206,21 @@
           bio_artistica: document.getElementById('mArtBio').value.trim() || null,
           rider_tecnico: document.getElementById('mArtRider').value.trim() || null,
 
-          // URLs R2 dos vídeos (campos técnicos youtube_1/2 por compatibilidade)
-          youtube_1: (document.getElementById('mArtYoutube1').value || '').trim() || (obterFichaParaModal(parceiroSelecionadoId) || {}).youtube_1 || null,
-          youtube_2: (document.getElementById('mArtYoutube2').value || '').trim() || (obterFichaParaModal(parceiroSelecionadoId) || {}).youtube_2 || null,
+          // Vídeos PUBLICADOS (estado próprio: não recebe vídeo pendente nem de outra ficha)
+          youtube_1: admVideoAtivo.youtube_1 || null,
+          youtube_2: admVideoAtivo.youtube_2 || null,
 
           galeria_fotos: mGaleriaFotosAtual,
           foto_capa_url: mFotoCapaUrlAtual
         };
 
-        var parceiro = obterFichaParaModal(parceiroSelecionadoId);
-        if (parceiro && parceiro.midias_pendentes !== undefined) {
+        if (mVitrineId) {
+          payload.status = statusVitrine;
+          payload.motivo_recusa = statusVitrine === 'recusada' ? motivoVitrine : null;
+          if (statusVitrine === 'aprovada') payload.aprovada_em = new Date().toISOString();
+        }
+
+        if (parceiroParaEnvio.midias_pendentes !== undefined) {
           payload.midias_pendentes = mMidiasPendentesAtual;
         }
 
@@ -3160,6 +3246,7 @@
             }
           })
           .catch(function() {
+            hideLoadingProgress();
             btn.disabled = false;
             btn.textContent = 'Salvar Cadastro Completo';
             alert('Erro inesperado ao salvar os dados.');
