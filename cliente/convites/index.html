@@ -660,7 +660,8 @@
       const video = (file.type || '').startsWith('video/') || /\.(mp4|mov|webm|m4v)$/i.test(file.name || '');
 
       if (video) {
-        // Mesmo fluxo do Fotolog (B2B/admin): path eventos/ + ArrayBuffer + XHR (sem &raw=1)
+        // Cópia fiel do Fotolog: path eventos/{uuid}/video_... + ArrayBuffer + XHR (sem raw=1)
+        // O worker parece exigir UUID logo após eventos/ (como proposta_id no fotolog).
         let corpo;
         try {
           const buf = await file.arrayBuffer();
@@ -670,7 +671,7 @@
           throw new Error('Não foi possível ler o vídeo: ' + (e && e.message ? e.message : e));
         }
         const safeName = (file.name || 'capa.mp4').replace(/[^\w.\-]+/g, '_').slice(-80);
-        const path = 'eventos/convites/' + uid + '/video_' + Date.now() + '_' + safeName;
+        const path = 'eventos/' + uid + '/video_' + Date.now() + '_' + safeName;
         let ultimo = null;
         for (let tentativa = 1; tentativa <= 3; tentativa++) {
           try {
@@ -681,9 +682,13 @@
               xhr.setRequestHeader('Content-Type', file.type || 'application/octet-stream');
               xhr.onload = () => {
                 let body = null;
-                try { body = JSON.parse(xhr.responseText); } catch (_) {}
+                const rawText = xhr.responseText || '';
+                try { body = JSON.parse(rawText); } catch (_) {}
                 if (xhr.status >= 200 && xhr.status < 300 && body && body.ok && body.url) resolve(body);
-                else reject(new Error((body && body.error) || ('Upload falhou (HTTP ' + xhr.status + ')')));
+                else {
+                  const detail = (body && (body.error || body.message)) || rawText.slice(0, 180) || ('HTTP ' + xhr.status);
+                  reject(new Error('Vídeo: ' + detail));
+                }
               };
               xhr.onerror = () => reject(new Error('Falha de rede no envio do vídeo'));
               xhr.send(corpo);
@@ -697,7 +702,7 @@
         throw ultimo;
       }
 
-      // Imagem: path {uid}/... (igual avatar da área do cliente)
+      // Imagem: path {uid}/... (igual avatar — já funciona)
       const blob = await new Promise((resolve, reject) => {
         const img = new Image();
         const url = URL.createObjectURL(file);
