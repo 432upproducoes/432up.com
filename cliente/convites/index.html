@@ -133,7 +133,9 @@
     .grid2{display:grid;grid-template-columns:1fr 1fr;gap:10px}
     .modal{position:fixed;inset:0;z-index:10040;display:none;align-items:flex-end;justify-content:center;padding:12px;background:rgba(8,8,10,.72);backdrop-filter:blur(10px)}
     .modal.on{display:flex}
-    .modal-box{width:min(540px,100%);max-height:90vh;overflow:auto;border-radius:20px;padding:18px;background:linear-gradient(160deg,rgba(255,255,255,.08),rgba(16,12,28,.96));border:1px solid rgba(255,255,255,.14)}
+    .modal-box{width:min(540px,100%);max-height:90vh;overflow:auto;border-radius:20px;padding:18px;background:linear-gradient(160deg,rgba(255,255,255,.08),rgba(16,12,28,.96));border:1px solid rgba(212,175,55,.35)}
+    .modal-box label{display:block;width:100%;margin-top:12px}
+    .modal-box input,.modal-box select{width:100%;box-sizing:border-box;margin-top:6px}
     .vazio{font-size:13px;color:var(--mut);padding:8px 0}
     .msg{font-size:12px;color:#fca5a5;min-height:16px;margin-top:6px}
     .msg.ok{color:var(--action)}
@@ -148,19 +150,47 @@
     .editavel{cursor:text;-webkit-user-select:text;user-select:text;outline:1px dashed transparent;border-radius:8px;min-width:1.2em;transition:outline-color .15s,background .15s}
     .editavel:hover{outline-color:rgba(212,175,55,.55);background:rgba(212,175,55,.05)}
     .editavel:focus,.editavel.on{outline-color:rgba(168,85,247,.7);background:rgba(168,85,247,.1)}
-    .names-edit{color:#F5EFE0;display:inline-block;min-width:2ch}
-    .names-edit:empty::before{content:attr(data-ph);opacity:.4;color:var(--gold)}
+    .names-edit{color:#F5EFE0;display:inline-block;min-width:2ch;outline:none}
+    .names-edit:empty::before,.editavel[data-ph]:empty::before,[contenteditable][data-ph]:empty::before{
+      content:attr(data-ph);color:rgba(212,175,55,.65);pointer-events:none;font-style:normal;opacity:1
+    }
+    .names-edit:focus{outline:1px dashed rgba(212,175,55,.7);background:rgba(212,175,55,.08);border-radius:8px}
     .ed-bar{position:fixed;left:0;right:0;bottom:0;z-index:60;display:flex;flex-wrap:wrap;gap:8px;justify-content:center;align-items:center;padding:12px 14px calc(12px + env(safe-area-inset-bottom));background:rgba(10,8,20,.92);border-top:1px solid rgba(255,255,255,.12);backdrop-filter:blur(16px);-webkit-backdrop-filter:blur(16px)}
     .ed-bar .msg{margin:0;flex:1 1 100%;text-align:center;min-height:0}
     .ed-hint{text-align:center;font-size:12px;color:var(--mut);margin:0 0 16px}
-    .ed-tools{display:flex;flex-wrap:wrap;gap:8px;justify-content:center;margin:12px 0 20px}
-    .ed-tools input,.ed-tools select{width:auto;min-width:0;max-width:100%;background:rgba(255,255,255,.06);color:#fff;border:1px solid rgba(255,255,255,.16);border-radius:12px;padding:10px 12px;font:inherit;font-size:13px}
-    .prog-edit-row{display:grid;grid-template-columns:72px 1fr auto;gap:8px;align-items:start;padding:12px 0;border-bottom:1px solid rgba(255,255,255,.08)}
-    .prog-edit-row input{width:100%;background:rgba(255,255,255,.06);border:1px solid rgba(255,255,255,.14);border-radius:10px;color:#fff;padding:8px 10px;font:inherit;font-size:13px}
-    .btn-icon{width:34px;height:34px;border-radius:999px;border:1px solid rgba(255,255,255,.2);background:transparent;color:#fff;cursor:pointer;font-size:16px}
-    .btn-icon.danger{border-color:rgba(255,77,77,.4);color:var(--alert)}
-    .tap-field{cursor:pointer}
-    .tap-field input[type=date],.tap-field input[type=time]{position:absolute;opacity:0;pointer-events:none;width:0;height:0}
+    .ed-tools{display:flex;flex-wrap:wrap;gap:10px;justify-content:center;align-items:center;margin:12px 0 20px}
+    .ed-tools input,.ed-tools select,.prog-edit-row input,.modal-box input,.modal-box select,.adm-gold{
+      width:auto;min-width:0;max-width:100%;background:rgba(8,8,10,.55);color:#F5EFE0;
+      border:1px solid rgba(212,175,55,.5);border-radius:999px;padding:11px 16px;
+      font:inherit;font-size:13px;outline:none;transition:border-color .2s,box-shadow .2s,background .2s
+    }
+    .ed-tools select,.modal-box select{
+      appearance:none;-webkit-appearance:none;padding-right:34px;
+      background-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='8' viewBox='0 0 12 8'%3E%3Cpath fill='%23D4AF37' d='M1 1l5 5 5-5'/%3E%3C/svg%3E");
+      background-repeat:no-repeat;background-position:right 14px center
+    }
+    .ed-tools input:focus,.ed-tools select:focus,.prog-edit-row input:focus,.modal-box input:focus,.modal-box select:focus{
+      border-color:rgba(212,175,55,.9);box-shadow:0 0 18px rgba(212,175,55,.22);background:rgba(12,10,18,.8)
+    }
+    .prog-edit-row{display:grid;grid-template-columns:88px 1fr auto;gap:8px;align-items:start;padding:12px 0;border-bottom:1px solid rgba(255,255,255,.08)}
+    .prog-edit-row input{width:100%;border-radius:14px}
+    .btn-icon{width:34px;height:34px;border-radius:999px;border:1px solid rgba(212,175,55,.45);background:transparent;color:var(--gold);cursor:pointer;font-size:16px}
+    .btn-icon.danger{border-color:rgba(255,77,77,.45);color:var(--alert)}
+    .tap-field{cursor:pointer;position:relative}
+    /* picker nativo cobrindo a área (iOS/Android abrem calendário/relógio) */
+    .tap-field input[type=date],.tap-field input[type=time]{
+      position:absolute;left:0;top:0;width:100%;height:100%;opacity:.02;border:0;margin:0;padding:0;
+      font-size:16px;cursor:pointer;z-index:2
+    }
+    .hero-photo{position:relative}
+    .capa-btn{
+      position:absolute;left:50%;bottom:12px;transform:translateX(-50%);z-index:3;
+      display:inline-flex;align-items:center;gap:8px;padding:10px 18px;border-radius:999px;
+      border:1px solid rgba(212,175,55,.65);background:rgba(8,8,10,.75);color:var(--gold);
+      font-size:13px;font-weight:700;cursor:pointer;backdrop-filter:blur(10px);font-family:inherit
+    }
+    .capa-btn:hover{background:rgba(212,175,55,.18)}
+    #edCapaFile{position:absolute;width:1px;height:1px;opacity:0;overflow:hidden}
   </style>
 </head>
 <body>
@@ -345,19 +375,22 @@
       <p class="ed-hint">Toque em qualquer texto para editar. Data e hora: toque em “Quando”. Use + / − na programação e nos padrinhos.</p>
 
       <div class="ed-tools">
-        <select id="edTipo" title="Tipo" aria-label="Tipo"></select>
-        <input type="url" id="edCapa" placeholder="URL da capa (R2 foto ou vídeo)" style="flex:1;min-width:180px">
-        <input type="text" id="edProposta" placeholder="UUID proposta (opcional)" style="min-width:160px">
+        <select id="edTipo" title="Tipo" aria-label="Tipo de convite"></select>
+        <input type="text" id="edProposta" class="adm-gold" placeholder="Vincular proposta (opcional)" style="min-width:180px">
         <label class="chk" style="margin:0"><input type="checkbox" id="edUsaPads"> Padrinhos</label>
-        <label class="chk" style="margin:0">Acomp. <input type="number" id="edRsvpLim" min="0" max="20" value="3" style="width:52px"></label>
+        <label class="chk" style="margin:0">Acompanhantes <input type="number" id="edRsvpLim" class="adm-gold" min="0" max="20" value="3" style="width:64px;border-radius:12px;padding:8px 10px"></label>
       </div>
 
       <div class="ed-lp">
         <section class="demo-glass protagonist center">
-          <div class="hero-photo" id="pvCapa" title="Altere a URL da capa acima"></div>
-          <span class="eyebrow editavel" id="pvKicker" contenteditable="true" data-key="kicker"></span>
+          <div class="hero-photo" id="pvCapaWrap">
+            <div id="pvCapa"></div>
+            <button type="button" class="capa-btn" id="btnCapa"><i class="fas fa-camera"></i> Trocar capa</button>
+            <input type="file" id="edCapaFile" accept="image/*,video/mp4,video/webm,video/quicktime">
+          </div>
+          <span class="eyebrow editavel" id="pvKicker" contenteditable="true" data-key="kicker" data-ph="Com alegria, convidamos você"></span>
           <h1 class="demo-title" id="pvNomes"></h1>
-          <p class="demo-intro editavel" id="pvIntro" contenteditable="true" data-key="intro"></p>
+          <p class="demo-intro editavel" id="pvIntro" contenteditable="true" data-key="intro" data-ph="Texto de introdução do convite…"></p>
           <div class="date-row">
             <div class="tap-field" id="tapData">
               <small id="pvDiaSem">—</small>
@@ -378,9 +411,9 @@
 
         <section class="center" style="margin:32px 0">
           <span class="eyebrow">Nossa história</span>
-          <h2 class="section-title editavel" id="pvTitHist" contenteditable="true" data-key="tituloHistoria"></h2>
-          <p class="editavel" id="pvCitacao" contenteditable="true" data-key="citacao" style="font-family:'Cormorant Garamond',serif;font-style:italic;color:var(--gold);max-width:600px;margin:12px auto;font-size:1.2rem"></p>
-          <p class="editavel" id="pvFech" contenteditable="true" data-key="fechamento" style="color:#B8B8C2"></p>
+          <h2 class="section-title editavel" id="pvTitHist" contenteditable="true" data-key="tituloHistoria" data-ph="Título da história"></h2>
+          <p class="editavel" id="pvCitacao" contenteditable="true" data-key="citacao" data-ph="Citação…" style="font-family:'Cormorant Garamond',serif;font-style:italic;color:var(--gold);max-width:600px;margin:12px auto;font-size:1.2rem"></p>
+          <p class="editavel" id="pvFech" contenteditable="true" data-key="fechamento" data-ph="Fechamento…" style="color:#B8B8C2"></p>
         </section>
 
         <section class="center" style="margin:32px 0" id="pvPadsSec">
@@ -558,7 +591,53 @@
     }
 
     /* ---------- ESTADO ---------- */
-    let TOKEN = '';
+    
+    const R2_UPLOAD_URL = 'https://432up-r2-upload.432up-producoes.workers.dev/';
+    async function tokenAuth() {
+      const s = await SB.auth.getSession();
+      const tok = s.data && s.data.session && s.data.session.access_token;
+      if (!tok) throw new Error('Sessão expirada — faça login de novo');
+      return tok;
+    }
+    async function uploadCapaR2(file) {
+      const tok = await tokenAuth();
+      const uid = (await SB.auth.getUser()).data.user?.id || 'anon';
+      const video = (file.type || '').startsWith('video/');
+      let blob = file;
+      let ext = video ? 'mp4' : 'jpg';
+      if (!video && file.type && file.type.startsWith('image/')) {
+        // compacta no cliente (mesmo espírito do fotolog)
+        blob = await new Promise((resolve, reject) => {
+          const img = new Image();
+          const url = URL.createObjectURL(file);
+          img.onload = () => {
+            try {
+              const max = 1600;
+              let w = img.naturalWidth, h = img.naturalHeight;
+              const scale = Math.min(1, max / Math.max(w, h));
+              const c = document.createElement('canvas');
+              c.width = Math.round(w * scale); c.height = Math.round(h * scale);
+              c.getContext('2d').drawImage(img, 0, 0, c.width, c.height);
+              c.toBlob(b => { URL.revokeObjectURL(url); b ? resolve(b) : reject(new Error('Falha ao compactar')); }, 'image/jpeg', 0.85);
+            } catch (e) { URL.revokeObjectURL(url); reject(e); }
+          };
+          img.onerror = () => { URL.revokeObjectURL(url); reject(new Error('Imagem inválida')); };
+          img.src = url;
+        });
+        ext = 'jpg';
+      }
+      const path = 'convites/' + uid + '/capa-' + Date.now() + '.' + ext;
+      const resp = await fetch(R2_UPLOAD_URL + '?path=' + encodeURIComponent(path) + (video ? '&raw=1' : ''), {
+        method: 'PUT',
+        headers: { 'Authorization': 'Bearer ' + tok, 'Content-Type': blob.type || (video ? 'video/mp4' : 'image/jpeg') },
+        body: blob
+      });
+      const j = await resp.json().catch(() => null);
+      if (!resp.ok || !j || !j.ok || !j.url) throw new Error((j && j.error) || ('Upload falhou (' + resp.status + ')'));
+      return j.url;
+    }
+
+let TOKEN = '';
     let PUB = null;
     let atual = null;
     let tipos = [];
@@ -916,7 +995,7 @@
       });
       edState.dados.data = $('edData').value || edState.dados.data || '';
       edState.dados.hora = ($('edHora').value || edState.dados.hora || '18:00').slice(0, 5);
-      edState.dados.capa_url = ($('edCapa').value || '').trim();
+      edState.dados.capa_url = edState.dados.capa_url || '';
       edState.dados.rsvp = {
         limite: +$('edRsvpLim').value || 0,
         restricao: true,
@@ -1046,7 +1125,7 @@
         $('edTipo').innerHTML = tipos.map(t => '<option value="' + esc(t.codigo) + '">' + esc(t.rotulo) + '</option>').join('');
       }
       $('edTipo').value = atual.tipo_codigo || 'casamento';
-      $('edCapa').value = d.capa_url || '';
+      edState.dados.capa_url = d.capa_url || '';
       $('edData').value = (d.data || '').toString().slice(0, 10);
       $('edHora').value = (d.hora || '18:00').toString().slice(0, 5);
       $('edRsvpLim').value = (d.rsvp && d.rsvp.limite != null) ? d.rsvp.limite : 3;
@@ -1059,11 +1138,11 @@
       const setTxt = (id, val, ph) => {
         const el = $(id);
         if (!el) return;
+        if (ph) el.setAttribute('data-ph', ph);
         el.textContent = val || '';
-        if (!val && ph) el.setAttribute('data-ph', ph);
       };
-      setTxt('pvKicker', d.kicker);
-      setTxt('pvIntro', d.intro, 'Texto de introdução…');
+      setTxt('pvKicker', d.kicker, 'Com alegria, convidamos você');
+      setTxt('pvIntro', d.intro, 'Texto de introdução do convite…');
       setTxt('pvTitHist', d.tituloHistoria, 'Título da história');
       setTxt('pvCitacao', d.citacao, 'Citação…');
       setTxt('pvFech', d.fechamento, 'Fechamento…');
@@ -1072,7 +1151,7 @@
       setTxt('pvTraje', d.traje, 'Esporte fino');
       setTxt('pvTrajeTxt', d.trajeTexto, 'Orientação de traje');
       setTxt('pvObs', d.observacao, 'Acessibilidade, restrições…');
-      setTxt('pvAgencia', d.agencia || '432UP');
+      setTxt('pvAgencia', d.agencia || '432UP', '432UP');
 
       $('pvCapa').innerHTML = mediaHtml(d.capa_url, 'Capa');
       updateDateLabels();
@@ -1094,7 +1173,7 @@
           restricao: true,
           mensagem: true
         },
-        capa_url: ($('edCapa').value || '').trim(),
+        capa_url: edState.dados.capa_url || '',
         data: $('edData').value || '',
         hora: ($('edHora').value || '18:00').slice(0, 5)
       });
@@ -1139,9 +1218,29 @@
     wireTap($('tapHora'), 'edHora');
     $('edData').addEventListener('change', updateDateLabels);
     $('edHora').addEventListener('change', updateDateLabels);
-    $('edCapa').addEventListener('change', () => {
-      $('pvCapa').innerHTML = mediaHtml($('edCapa').value.trim(), 'Capa');
-    });
+    // Capa via R2 (mesmo worker do perfil / fotolog)
+    if ($('btnCapa') && $('edCapaFile')) {
+      $('btnCapa').addEventListener('click', () => $('edCapaFile').click());
+      $('edCapaFile').addEventListener('change', async () => {
+        const file = $('edCapaFile').files && $('edCapaFile').files[0];
+        if (!file) return;
+        const prev = $('btnCapa').innerHTML;
+        $('btnCapa').disabled = true;
+        $('btnCapa').textContent = 'Enviando…';
+        try {
+          const url = await uploadCapaR2(file);
+          edState.dados.capa_url = url;
+          $('pvCapa').innerHTML = mediaHtml(url, 'Capa');
+          toast('Capa atualizada.');
+        } catch (e) {
+          toast(e.message || 'Falha no envio da capa');
+        } finally {
+          $('btnCapa').disabled = false;
+          $('btnCapa').innerHTML = prev;
+          $('edCapaFile').value = '';
+        }
+      });
+    }
     $('edTipo').addEventListener('change', () => {
       readDomIntoState();
       renderNomes();
