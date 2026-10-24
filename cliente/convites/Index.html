@@ -1,0 +1,988 @@
+<!DOCTYPE html>
+<html lang="pt-BR" data-theme="dark">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
+  <meta name="theme-color" content="#08080A">
+  <meta name="apple-mobile-web-app-capable" content="yes">
+  <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+  <title>Convites · 432UP</title>
+  <meta name="description" content="Convite digital 432UP">
+
+  <script async src="https://www.googletagmanager.com/gtag/js?id=G-7SWNCP1NV6"></script>
+  <script>window.dataLayer=window.dataLayer||[];function gtag(){dataLayer.push(arguments);}gtag('js',new Date());gtag('config','G-7SWNCP1NV6');</script>
+  <script src="https://unpkg.com/@supabase/supabase-js@2"></script>
+  <script src="https://www.432up.com/script/tracker.js"></script>
+  <script src="https://www.432up.com/B2B/partner-config.js"></script>
+
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&family=Cormorant+Garamond:ital,wght@0,400;0,600;1,400&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+  <link rel="stylesheet" href="https://www.432up.com/css/style.css">
+
+  <style>
+    :root{
+      --bg:#08080A;--text:#fff;--body:#E7E7EC;--mut:#9A97B0;
+      --gold:#D4AF37;--purple:#A855F7;--action:#00FF66;--alert:#FF4D4D;--tech:#06B6D4;
+      --line:rgba(255,255,255,.12);
+    }
+    *,*::before,*::after{box-sizing:border-box}
+    body{margin:0;background:var(--bg)!important;color:var(--text)!important;font-family:'Inter',system-ui,sans-serif;overflow-x:hidden}
+    .hidden{display:none!important}
+    #toast{position:fixed;left:50%;bottom:24px;transform:translate(-50%,16px);opacity:0;padding:12px 20px;border-radius:999px;background:#0d0b16;border:1px solid rgba(168,85,247,.5);color:#fff;font-size:.85rem;z-index:10080;transition:.3s;pointer-events:none;max-width:calc(100% - 32px)}
+    #toast.show{opacity:1;transform:translate(-50%,0)}
+
+    /* ===== PÚBLICO ===== */
+    .pub{width:min(1180px,calc(100% - 32px));margin:0 auto;padding:100px 0 110px;position:relative;z-index:2}
+    .direction-block{margin:72px 0}
+    .eyebrow{display:block;font-size:.68rem;letter-spacing:.18em;text-transform:uppercase;font-weight:700;opacity:.85;color:var(--gold);margin-bottom:12px}
+    .demo-title{font-family:'Cormorant Garamond',serif;font-weight:400;font-size:clamp(2.4rem,7vw,5.2rem);line-height:.96;letter-spacing:-.02em;margin:14px 0 22px}
+    .names{color:#F5EFE0;text-shadow:0 0 18px rgba(212,175,55,.45)}
+    .amp{color:var(--gold);font-style:italic}
+    .section-title{font-family:'Cormorant Garamond',serif;font-weight:400;font-size:clamp(2rem,5vw,3.4rem);line-height:1.05;margin:0 0 14px}
+    .demo-intro{max-width:640px;font-size:clamp(1rem,1.8vw,1.12rem);line-height:1.65;color:var(--body);margin:0 auto 28px}
+    .center{text-align:center}
+    .demo-glass{border-radius:24px;padding:clamp(24px,4vw,48px);background:rgba(255,255,255,.045);border:1px solid rgba(255,255,255,.14);backdrop-filter:blur(24px);-webkit-backdrop-filter:blur(24px)}
+    .demo-glass.protagonist{background:linear-gradient(135deg,rgba(255,255,255,.1),rgba(168,85,247,.05));border-color:rgba(168,85,247,.36);box-shadow:0 0 60px rgba(168,85,247,.1)}
+    .hero-photo{width:100%;height:min(440px,56vw);overflow:hidden;border-radius:18px;margin-bottom:32px;background:#000}
+    .hero-photo img,.hero-photo video{width:100%;height:100%;object-fit:cover;display:block}
+    .date-row{display:grid;grid-template-columns:repeat(3,1fr);gap:14px;max-width:600px;margin:0 auto 32px;padding:16px 0;border-top:1px solid rgba(212,175,55,.25);border-bottom:1px solid rgba(212,175,55,.25)}
+    .date-row small{display:block;font-size:.62rem;letter-spacing:.16em;text-transform:uppercase;opacity:.6}
+    .date-row strong{font-family:'Cormorant Garamond',serif;font-size:1.55rem;font-weight:400;color:var(--gold)}
+    .countdown{display:grid;grid-template-columns:repeat(4,1fr);gap:10px;max-width:460px;margin:0 auto 36px}
+    .countdown div{border:1px solid rgba(212,175,55,.22);border-radius:14px;padding:12px 4px;background:rgba(255,255,255,.03)}
+    .countdown b{display:block;font-family:'Cormorant Garamond',serif;font-size:1.85rem;font-weight:600;color:var(--gold)}
+    .countdown span{font-size:.58rem;letter-spacing:.14em;text-transform:uppercase;opacity:.7}
+    .btn-row{display:flex;flex-wrap:wrap;gap:10px;justify-content:center}
+    .btn-action{display:inline-flex;align-items:center;gap:8px;padding:15px 28px;border-radius:999px;border:0;background:linear-gradient(135deg,#F5D76E,#B8860B);color:#08080A;font-weight:700;font-size:.95rem;cursor:pointer;font-family:inherit;box-shadow:0 0 28px rgba(212,175,55,.25)}
+    .btn-ghost{display:inline-flex;align-items:center;gap:8px;padding:13px 22px;border-radius:999px;border:1px solid rgba(212,175,55,.55);background:transparent;color:var(--gold);font-size:.88rem;cursor:pointer;text-decoration:none;font-family:inherit}
+    .info-grid{display:grid;grid-template-columns:1fr 1fr;gap:14px;margin-top:32px}
+    .info-card{border:1px solid rgba(212,175,55,.28);border-radius:20px;padding:26px 20px;text-align:center;background:linear-gradient(135deg,rgba(255,255,255,.03),rgba(10,8,20,.35))}
+    .info-card .glyph{color:var(--gold)}
+    .info-card h3{font-family:'Cormorant Garamond',serif;font-weight:400;font-size:1.7rem;margin:8px 0 10px}
+    .info-card strong{display:block;margin-bottom:4px}
+    .info-card p{margin:0;color:var(--body);line-height:1.5}
+    .info-card small{opacity:.6}
+    .map-card{margin-top:18px;height:240px;border-radius:16px;overflow:hidden;border:1px solid rgba(255,255,255,.12)}
+    .map-card iframe{width:100%;height:100%;border:0}
+    .prog-box{border:1px solid rgba(212,175,55,.28);border-radius:20px;padding:10px 24px;background:rgba(255,255,255,.02);text-align:left}
+    .prog-row{display:grid;grid-template-columns:88px 1fr;gap:16px;padding:20px 0;border-bottom:1px solid rgba(255,255,255,.08)}
+    .prog-row:last-child{border-bottom:0}
+    .prog-row b{color:var(--gold)}
+    .prog-row p{margin:4px 0 0;color:#9d9daa}
+    .padrinhos-list{display:flex;flex-wrap:wrap;gap:10px;justify-content:center;margin-top:16px}
+    .padrinhos-list span{border:1px solid rgba(212,175,55,.35);border-radius:999px;padding:8px 16px;font-size:.9rem}
+    .footer-box{border-top:1px solid rgba(255,255,255,.08);margin-top:64px;padding-top:48px;text-align:center;color:var(--body);font-size:.9rem}
+    .today{font-family:'Cormorant Garamond',serif;font-size:1.35rem;color:var(--gold);text-align:center;margin-bottom:32px}
+    .rsvp-overlay{position:fixed;inset:0;z-index:10050;display:none;align-items:center;justify-content:center;padding:16px;background:rgba(10,8,20,.75);backdrop-filter:blur(12px)}
+    .rsvp-overlay.open{display:flex}
+    .rsvp-modal{position:relative;width:min(640px,100%);max-height:92vh;overflow-y:auto;border-radius:24px;padding:clamp(18px,4vw,32px);background:linear-gradient(135deg,rgba(255,255,255,.08),rgba(168,85,247,.1)),rgba(10,8,20,.92);border:1px solid rgba(212,175,55,.55)}
+    .rsvp-close{position:absolute;top:12px;right:14px;background:none;border:0;color:#fff;font-size:1.1rem;cursor:pointer}
+    .form-grid{display:grid;grid-template-columns:1fr 1fr;gap:0 16px}
+    .field{margin-bottom:16px}
+    .field.full{grid-column:1/-1}
+    .field label{display:block;font-size:.85rem;color:var(--gold);margin-bottom:7px}
+    .field input,.field select,.field textarea{width:100%;padding:13px;border-radius:14px;border:1px solid rgba(212,175,55,.3);background:rgba(8,8,10,.65);color:#fff;font:inherit;font-size:.95rem}
+    .field textarea{min-height:100px;resize:vertical}
+    .ok-box{text-align:center;padding:24px 0}
+    .ok-box h4{font-family:'Cormorant Garamond',serif;font-size:1.7rem;font-weight:400;margin:10px 0}
+    .erro-box{max-width:440px;margin:22vh auto;text-align:center;padding:36px 22px;border-radius:24px;border:1px solid rgba(255,255,255,.12);background:rgba(255,255,255,.04)}
+    @media(max-width:680px){.info-grid,.form-grid{grid-template-columns:1fr}.prog-row{grid-template-columns:70px 1fr}.date-row strong{font-size:1.25rem}.countdown b{font-size:1.4rem}}
+
+    /* ===== ADMIN ===== */
+    .admin{width:100%;max-width:1120px;margin:0 auto;padding:24px 16px 100px;position:relative;z-index:2}
+    .admin .titulo{font-size:clamp(1.8rem,5vw,2.6rem);font-weight:800;letter-spacing:-.04em;margin:8px 0 6px}
+    .admin .lead{color:var(--body);margin:0 0 18px;max-width:640px;line-height:1.55}
+    .box{border-radius:22px;padding:20px;margin-bottom:14px;background:rgba(255,255,255,.045);border:1px solid rgba(255,255,255,.14);backdrop-filter:blur(20px)}
+    .box h2{font-size:.7rem;letter-spacing:.14em;text-transform:uppercase;color:var(--gold);margin:0 0 12px;font-weight:800}
+    .btn{display:inline-flex;align-items:center;justify-content:center;gap:7px;padding:11px 16px;border-radius:13px;border:0;background:var(--action);color:#04120a;font-weight:800;font-size:13px;cursor:pointer;font-family:inherit;text-decoration:none}
+    .btn:disabled{opacity:.5}
+    .btn-s{display:inline-flex;align-items:center;gap:6px;padding:9px 13px;border-radius:12px;border:1px solid rgba(255,255,255,.18);background:transparent;color:#fff;font-size:12px;cursor:pointer;font-family:inherit;text-decoration:none}
+    .btn-gold{background:var(--gold);color:#1a1300}
+    .actions{display:flex;flex-wrap:wrap;gap:8px;margin:10px 0 16px}
+    .tag{display:inline-block;font-size:10px;font-weight:800;padding:4px 9px;border-radius:999px;text-transform:uppercase}
+    .t-ok{background:rgba(0,255,102,.14);color:var(--action)}
+    .t-pend{background:rgba(212,175,55,.16);color:var(--gold)}
+    .t-rec{background:rgba(255,77,77,.15);color:var(--alert)}
+    .t-pub{background:rgba(6,182,212,.16);color:var(--tech)}
+    .card-c{border:1px solid var(--line);border-radius:16px;padding:14px;margin-bottom:10px;background:rgba(255,255,255,.03);cursor:pointer}
+    .card-c:hover{border-color:rgba(212,175,55,.45)}
+    .card-c .nomes{font-size:1.1rem;font-weight:700;margin:4px 0}
+    .card-c .meta{font-size:12px;color:var(--mut)}
+    .dl-row{display:flex;justify-content:space-between;align-items:center;gap:10px;flex-wrap:wrap;padding:10px 0;border-bottom:1px solid var(--line)}
+    .dl-row:last-child{border-bottom:0}
+    .rot{display:block;font-size:11px;color:var(--mut);text-transform:uppercase;letter-spacing:.05em;font-weight:600}
+    .val{display:block;font-size:15px;font-weight:600}
+    .totais{display:grid;grid-template-columns:repeat(4,1fr);gap:8px;margin:12px 0}
+    .totais div{text-align:center;padding:12px 4px;border-radius:14px;border:1px solid var(--line)}
+    .totais b{display:block;font-size:1.35rem;color:var(--gold);font-family:'Cormorant Garamond',serif}
+    .totais span{font-size:10px;letter-spacing:.08em;text-transform:uppercase;color:var(--mut)}
+    .tabs{display:flex;gap:8px;overflow-x:auto;margin:0 0 12px;scrollbar-width:none}
+    .tab{flex:0 0 auto;padding:8px 14px;border-radius:999px;border:1px solid var(--line);background:rgba(255,255,255,.03);color:var(--mut);font-size:11px;font-weight:700;text-transform:uppercase;cursor:pointer}
+    .tab.on{color:var(--tech);border-color:rgba(6,182,212,.5);background:rgba(6,182,212,.12)}
+    .panel{display:none}.panel.on{display:block}
+    .admin input,.admin select,.admin textarea{width:100%;background:rgba(255,255,255,.06);color:#fff;border:1px solid rgba(255,255,255,.16);border-radius:12px;padding:11px 12px;font:inherit;font-size:13px}
+    .admin label{display:block;font-size:11px;color:var(--gold);margin:10px 0 5px;font-weight:600}
+    .grid2{display:grid;grid-template-columns:1fr 1fr;gap:10px}
+    .modal{position:fixed;inset:0;z-index:10040;display:none;align-items:flex-end;justify-content:center;padding:12px;background:rgba(8,8,10,.72);backdrop-filter:blur(10px)}
+    .modal.on{display:flex}
+    .modal-box{width:min(540px,100%);max-height:90vh;overflow:auto;border-radius:20px;padding:18px;background:linear-gradient(160deg,rgba(255,255,255,.08),rgba(16,12,28,.96));border:1px solid rgba(255,255,255,.14)}
+    .vazio{font-size:13px;color:var(--mut);padding:8px 0}
+    .msg{font-size:12px;color:#fca5a5;min-height:16px;margin-top:6px}
+    .msg.ok{color:var(--action)}
+    .chk{display:flex;align-items:center;gap:8px;font-size:13px;color:var(--body);margin:8px 0}
+    .chk input{width:auto}
+    @media(max-width:560px){.totais{grid-template-columns:1fr 1fr}.grid2{grid-template-columns:1fr}}
+
+    /* ===== EDITOR ===== */
+    .ed-shell{display:grid;grid-template-columns:minmax(260px,320px) 1fr;min-height:100vh}
+    @media(max-width:900px){.ed-shell{grid-template-columns:1fr}.ed-side{max-height:40vh;overflow:auto;position:sticky;top:0;z-index:5}}
+    .ed-side{background:rgba(12,10,22,.97);border-right:1px solid var(--line);padding:14px 12px 36px;overflow:auto}
+    .ed-side h1{font-size:1rem;margin:0 0 4px}
+    .ed-side .sub{font-size:11px;color:var(--mut);margin-bottom:10px}
+    .ed-preview{padding:16px 10px 70px;overflow:auto}
+    .ed-lp{width:min(680px,100%);margin:0 auto}
+    .editavel{cursor:pointer;outline:1px dashed transparent;border-radius:6px}
+    .editavel:hover,.editavel.on{outline-color:rgba(212,175,55,.7);background:rgba(212,175,55,.06)}
+    .editavel[contenteditable="true"]{outline-color:var(--purple);background:rgba(168,85,247,.08)}
+  </style>
+</head>
+<body>
+  <canvas id="orbit-canvas"></canvas>
+  <div id="plasmaLayer" class="plasma-top-layer"></div>
+
+  <!-- ===================== PÚBLICO ===================== -->
+  <main class="pub hidden" id="viewPublic">
+    <section class="direction-block demo-glass protagonist center" style="margin-top:0">
+      <div class="hero-photo" id="capa"></div>
+      <span class="eyebrow" id="kicker"></span>
+      <h1 class="demo-title" id="tituloNomes"></h1>
+      <p class="demo-intro" id="intro"></p>
+      <div class="date-row">
+        <div><small id="diaSemana"></small><strong id="diaCurto"></strong></div>
+        <div><small>Horário</small><strong id="horaCurta"></strong></div>
+        <div><small>Ano</small><strong id="ano"></strong></div>
+      </div>
+      <p class="eyebrow">Contagem para o grande dia</p>
+      <p class="today hidden" id="hoje">É hoje o grande dia!</p>
+      <div class="countdown" id="cd">
+        <div><b id="cd-d">00</b><span>Dias</span></div>
+        <div><b id="cd-h">00</b><span>Horas</span></div>
+        <div><b id="cd-m">00</b><span>Min</span></div>
+        <div><b id="cd-s">00</b><span>Seg</span></div>
+      </div>
+      <div class="btn-row"><button class="btn-action" type="button" data-go="rsvp"><i class="fas fa-envelope-open-text"></i> Confirmar presença</button></div>
+    </section>
+
+    <section class="direction-block center" id="secHistoria">
+      <span class="eyebrow">Nossa história</span>
+      <h2 class="section-title" id="tituloHistoria"></h2>
+      <p id="citacao" style="font-family:'Cormorant Garamond',serif;font-style:italic;font-size:clamp(1.2rem,2.6vw,1.7rem);line-height:1.4;max-width:760px;margin:18px auto;color:var(--gold)"></p>
+      <p id="fechamento" style="color:#B8B8C2"></p>
+    </section>
+
+    <section class="direction-block center hidden" id="secPadrinhos">
+      <span class="eyebrow">Padrinhos &amp; homenageados</span>
+      <h2 class="section-title">Quem caminha conosco</h2>
+      <div class="padrinhos-list" id="listaPadrinhos"></div>
+    </section>
+
+    <section class="direction-block center">
+      <span class="eyebrow">Prepare-se para celebrar</span>
+      <h2 class="section-title">Detalhes do evento</h2>
+      <div class="info-grid">
+        <div class="info-card"><div class="glyph">✦</div><h3>Quando</h3><strong id="dataLonga"></strong><p>Recepção a partir das <span id="horaCurta2"></span></p><small>Horário de Brasília</small></div>
+        <div class="info-card"><div class="glyph">⌖</div><h3>Onde</h3><strong id="local"></strong><p id="endereco"></p></div>
+        <div class="info-card" id="cardTraje"><div class="glyph">♣</div><h3>Traje</h3><strong id="traje"></strong><p id="trajeTexto"></p></div>
+        <div class="info-card" id="cardObs"><div class="glyph">♡</div><h3>Uma observação</h3><p id="observacao"></p></div>
+      </div>
+    </section>
+
+    <section class="direction-block center" id="secMapa">
+      <div class="btn-row">
+        <a class="btn-ghost" id="gmaps" target="_blank" rel="noopener"><i class="fas fa-location-dot"></i> Google Maps</a>
+        <a class="btn-ghost" id="waze" target="_blank" rel="noopener"><i class="fas fa-route"></i> Waze</a>
+        <button class="btn-ghost" type="button" id="agendar"><i class="far fa-calendar-plus"></i> Agenda</button>
+      </div>
+      <div class="map-card"><iframe id="mapa" loading="lazy" title="Mapa"></iframe></div>
+    </section>
+
+    <section class="direction-block center" id="secProg">
+      <span class="eyebrow">Programação</span>
+      <h2 class="section-title">Um dia para guardar na memória</h2>
+      <div class="prog-box" id="prog"></div>
+    </section>
+
+    <section class="direction-block center">
+      <span class="eyebrow">Sua presença</span>
+      <h2 class="section-title">Confirme seu convite</h2>
+      <div class="btn-row"><button class="btn-action" type="button" data-go="rsvp"><i class="fas fa-envelope-open-text"></i> Confirmar presença</button></div>
+    </section>
+
+    <div class="rsvp-overlay" id="rsvpOverlay">
+      <div class="rsvp-modal">
+        <button class="rsvp-close" type="button" id="rsvpClose">✕</button>
+        <form id="rsvpForm">
+          <div class="form-grid">
+            <div class="field full"><label>Nome completo *</label><input id="rsvpNome" required maxlength="120" placeholder="Seu nome e sobrenome"></div>
+            <div class="field"><label>Comparecerá? *</label>
+              <select id="rsvpPresenca" required>
+                <option value="">Selecione</option>
+                <option value="sim">Sim, com certeza</option>
+                <option value="nao">Infelizmente não</option>
+              </select>
+            </div>
+            <div class="field" id="wAcomp"><label>Acompanhantes</label><select id="rsvpAcomp"></select></div>
+            <div class="field full" id="wRestricao"><label>Restrição / acessibilidade (opcional)</label><input id="rsvpRestricao" maxlength="500"></div>
+            <div class="field full" id="wMsg"><label>Mensagem (opcional)</label><textarea id="rsvpMsg" maxlength="1000"></textarea></div>
+          </div>
+          <div class="btn-row"><button type="submit" class="btn-action" id="btnRsvp">Enviar resposta</button></div>
+        </form>
+        <div id="rsvpOk" class="ok-box hidden">
+          <i class="fas fa-circle-check" style="font-size:2rem;color:var(--action)"></i>
+          <h4>Resposta recebida</h4>
+          <p>Agradecemos seu carinho.</p>
+        </div>
+      </div>
+    </div>
+
+    <section class="direction-block center">
+      <span class="eyebrow">Compartilhe</span>
+      <h2 class="section-title">Esperamos você!</h2>
+      <div class="btn-row">
+        <button class="btn-ghost" type="button" id="btnShare"><i class="fas fa-share-nodes"></i> Compartilhar</button>
+        <button class="btn-ghost" type="button" id="btnCopy"><i class="far fa-copy"></i> Copiar link</button>
+        <a class="btn-ghost" id="btnWa" target="_blank" rel="noopener"><i class="fab fa-whatsapp"></i> WhatsApp</a>
+      </div>
+      <div class="footer-box">
+        <p style="color:var(--gold);letter-spacing:.28em" id="iniciais"></p>
+        <p>Feito com carinho para celebrar uma nova história.</p>
+        <p>Experiência digital por <b id="agencia">432UP</b></p>
+      </div>
+    </section>
+  </main>
+
+  <div class="erro-box hidden" id="viewErro">
+    <h2 style="font-family:'Cormorant Garamond',serif;font-weight:400">Convite indisponível</h2>
+    <p style="color:#B8B8C2">Link inativo ou ainda não publicado.</p>
+  </div>
+
+  <!-- ===================== ADMIN LISTA / DETALHE ===================== -->
+  <div class="admin hidden" id="viewAdmin">
+    <span class="eyebrow">Área do cliente</span>
+    <h1 class="titulo">Convites</h1>
+    <p class="lead">Crie, edite, publique e acompanhe confirmações. Link público: esta mesma página com <code>?t=TOKEN</code>.</p>
+    <div class="actions">
+      <button class="btn" type="button" id="btnNovo"><i class="fas fa-plus"></i> Novo convite</button>
+      <a class="btn-s" href="../index.html">← Área do cliente</a>
+    </div>
+    <div class="box" id="boxLista">
+      <h2>Seus convites</h2>
+      <div id="listaBody"><div class="vazio">Carregando…</div></div>
+    </div>
+
+    <div class="hidden" id="boxDetalhe">
+      <div class="actions">
+        <button class="btn-s" type="button" id="btnVoltar">← Lista</button>
+        <button class="btn-s" type="button" id="btnAbrirEditor"><i class="fas fa-pen"></i> Editar visual</button>
+        <button class="btn-s" type="button" id="btnPublicar"></button>
+        <button class="btn-s" type="button" id="btnCopiar"><i class="far fa-copy"></i> Copiar link</button>
+        <a class="btn-s" id="btnWaAdmin" target="_blank" rel="noopener"><i class="fab fa-whatsapp"></i> WhatsApp</a>
+        <a class="btn-s" id="btnVerPub" target="_blank" rel="noopener"><i class="fas fa-external-link-alt"></i> Ver público</a>
+      </div>
+      <div class="box">
+        <h2>Resumo</h2>
+        <div class="dl-row"><div><span class="rot">Anfitriões</span><span class="val" id="dNomes">—</span></div><div id="dStatus"></div></div>
+        <div class="dl-row"><div><span class="rot">Tipo</span><span class="val" id="dTipo">—</span></div></div>
+        <div class="totais">
+          <div><b id="tConf">0</b><span>Confirmados</span></div>
+          <div><b id="tRec">0</b><span>Recusados</span></div>
+          <div><b id="tPess">0</b><span>Pessoas</span></div>
+          <div><b id="tLista">0</b><span>Na lista</span></div>
+        </div>
+      </div>
+      <div class="tabs" id="tabsDet">
+        <button class="tab on" type="button" data-p="rsvps">Confirmações</button>
+        <button class="tab" type="button" data-p="convidados">Lista de convidados</button>
+      </div>
+      <div class="panel on" id="p-rsvps"><div class="box"><h2>Caixa de confirmações</h2><div id="rsvpBody"></div></div></div>
+      <div class="panel" id="p-convidados">
+        <div class="box">
+          <div style="display:flex;justify-content:space-between;align-items:center;gap:8px;margin-bottom:8px">
+            <h2 style="margin:0">Convidados</h2>
+            <button class="btn-s" type="button" id="btnAddConv"><i class="fas fa-user-plus"></i> Adicionar</button>
+          </div>
+          <div id="convBody"></div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ===================== EDITOR ===================== -->
+  <div class="ed-shell hidden" id="viewEditor">
+    <aside class="ed-side">
+      <h1>Editor visual</h1>
+      <p class="sub">Clique nos textos da miniatura para editar. Capa: URL do R2 (jpg/png/webp ou mp4/webm).</p>
+      <label>Tipo</label><select id="edTipo"></select>
+      <label>Skin</label>
+      <select id="edSkin"><option value="padrao">Padrão</option><option value="classico">Clássico</option><option value="minimal">Minimal</option></select>
+      <label>Abertura</label>
+      <select id="edAbertura"><option value="nenhuma">Nenhuma</option><option value="envelope">Envelope</option><option value="fade">Fade</option></select>
+      <div id="edAnfs"></div>
+      <div class="chk"><input type="checkbox" id="edUsaPads"><label for="edUsaPads" style="margin:0;color:var(--body);text-transform:none;letter-spacing:0;font-weight:500">Incluir padrinhos / homenageados</label></div>
+      <div id="edPadsBox" class="hidden"><label>Nomes (um por linha)</label><textarea id="edPads" rows="3"></textarea></div>
+      <label>Data</label><input type="date" id="edData">
+      <label>Hora</label><input type="time" id="edHora">
+      <label>Duração (h)</label><input type="number" id="edDur" min="1" max="24" step="0.5" value="6">
+      <label>Local</label><input id="edLocal">
+      <label>Endereço</label><input id="edEndereco">
+      <label>Capa (URL R2 — foto ou vídeo)</label><input id="edCapa" placeholder="https://media.432up.com/...">
+      <label>Kicker</label><input id="edKicker">
+      <label>Intro</label><textarea id="edIntro" rows="2"></textarea>
+      <label>Título história</label><input id="edTitHist">
+      <label>Citação</label><textarea id="edCitacao" rows="2"></textarea>
+      <label>Fechamento</label><input id="edFech">
+      <label>Traje</label><input id="edTraje">
+      <label>Texto traje</label><input id="edTrajeTxt">
+      <label>Observação</label><textarea id="edObs" rows="2"></textarea>
+      <label>Agência</label><input id="edAgencia" value="432UP">
+      <label>Programação (JSON)</label><textarea id="edProg" rows="5" style="font-family:ui-monospace,monospace;font-size:11px"></textarea>
+      <label>Limite acompanhantes</label><input type="number" id="edRsvpLim" min="0" max="20" value="3">
+      <div class="chk"><input type="checkbox" id="edRsvpRest" checked><label for="edRsvpRest" style="margin:0;color:var(--body);text-transform:none;letter-spacing:0;font-weight:500">Pedir restrição</label></div>
+      <div class="chk"><input type="checkbox" id="edRsvpMsg" checked><label for="edRsvpMsg" style="margin:0;color:var(--body);text-transform:none;letter-spacing:0;font-weight:500">Pedir mensagem</label></div>
+      <p class="msg" id="edMsg"></p>
+      <div class="actions">
+        <button class="btn btn-gold" type="button" id="edSalvar"><i class="fas fa-save"></i> Salvar</button>
+        <button class="btn" type="button" id="edPublicar">Publicar</button>
+        <button class="btn-s" type="button" id="edVoltar">← Painel</button>
+      </div>
+    </aside>
+    <div class="ed-preview">
+      <div class="ed-lp">
+        <section class="demo-glass protagonist center">
+          <div class="hero-photo" id="pvCapa"></div>
+          <span class="eyebrow editavel" data-f="edKicker" id="pvKicker"></span>
+          <h1 class="demo-title" id="pvNomes"></h1>
+          <p class="demo-intro editavel" data-f="edIntro" id="pvIntro"></p>
+          <div class="date-row">
+            <div><small id="pvDiaSem"></small><strong id="pvDiaCurto"></strong></div>
+            <div><small>Horário</small><strong id="pvHora"></strong></div>
+            <div><small>Ano</small><strong id="pvAno"></strong></div>
+          </div>
+        </section>
+        <section class="center" style="margin:28px 0">
+          <span class="eyebrow">Nossa história</span>
+          <h2 class="section-title editavel" data-f="edTitHist" id="pvTitHist"></h2>
+          <p class="editavel" data-f="edCitacao" id="pvCitacao" style="font-family:'Cormorant Garamond',serif;font-style:italic;color:var(--gold);max-width:600px;margin:12px auto"></p>
+          <p class="editavel" data-f="edFech" id="pvFech" style="color:#B8B8C2"></p>
+        </section>
+        <section class="center hidden" id="pvPadsSec" style="margin:28px 0">
+          <span class="eyebrow">Padrinhos</span>
+          <div class="padrinhos-list" id="pvPadsList"></div>
+        </section>
+        <section class="center" style="margin:28px 0">
+          <h2 class="section-title">Detalhes</h2>
+          <div class="info-grid">
+            <div class="info-card"><h3>Quando</h3><strong id="pvDataL"></strong><p id="pvHora2"></p></div>
+            <div class="info-card"><h3>Onde</h3><strong class="editavel" data-f="edLocal" id="pvLocal"></strong><p class="editavel" data-f="edEndereco" id="pvEnd"></p></div>
+            <div class="info-card"><h3>Traje</h3><strong class="editavel" data-f="edTraje" id="pvTraje"></strong><p class="editavel" data-f="edTrajeTxt" id="pvTrajeTxt"></p></div>
+            <div class="info-card"><h3>Obs.</h3><p class="editavel" data-f="edObs" id="pvObs"></p></div>
+          </div>
+        </section>
+        <section class="center" style="margin:28px 0"><div class="prog-box" id="pvProg"></div></section>
+      </div>
+    </div>
+  </div>
+
+  <!-- Modais admin -->
+  <div class="modal" id="modalNovo">
+    <div class="modal-box">
+      <div style="display:flex;justify-content:space-between;align-items:center"><strong>Novo convite</strong><button class="btn-s" type="button" id="fecharNovo">✕</button></div>
+      <label>Tipo</label><select id="novoTipo"></select>
+      <p class="msg" id="msgNovo"></p>
+      <button class="btn" type="button" id="btnCriar" style="width:100%;margin-top:12px">Criar</button>
+    </div>
+  </div>
+  <div class="modal" id="modalConv">
+    <div class="modal-box">
+      <div style="display:flex;justify-content:space-between;align-items:center"><strong id="titConv">Convidado</strong><button class="btn-s" type="button" id="fecharConv">✕</button></div>
+      <input type="hidden" id="convId">
+      <label>Nome *</label><input id="convNome" maxlength="120">
+      <div class="grid2"><div><label>Telefone</label><input id="convTel"></div><div><label>E-mail</label><input id="convEmail"></div></div>
+      <div class="grid2">
+        <div><label>Acompanhantes</label><input type="number" id="convAcomp" min="0" max="20" value="0"></div>
+        <div><label>Status</label>
+          <select id="convStatus">
+            <option value="pendente">Pendente</option>
+            <option value="enviado">Enviado</option>
+            <option value="confirmado">Confirmado</option>
+            <option value="recusado">Recusado</option>
+          </select>
+        </div>
+      </div>
+      <label>Obs.</label><input id="convObs">
+      <p class="msg" id="msgConv"></p>
+      <div class="actions">
+        <button class="btn" type="button" id="btnSalvarConv">Salvar</button>
+        <button class="btn-s" type="button" id="btnRemConv" style="color:var(--alert)">Remover</button>
+      </div>
+    </div>
+  </div>
+
+  <div id="toast"></div>
+
+  <script>
+  (function () {
+    const CFG = window.PARTNER_CFG || window.CFG || {};
+    const SB_URL = CFG.SB_URL || CFG.supabaseUrl || '';
+    const SB_KEY = CFG.SB_ANON || CFG.supabaseAnonKey || '';
+    const SB = window.supabase.createClient(SB_URL, SB_KEY);
+
+    const $ = id => document.getElementById(id);
+    const pad = n => String(n).padStart(2, '0');
+    const esc = s => String(s ?? '').replace(/[&<>"']/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
+    const MESES = ['janeiro','fevereiro','março','abril','maio','junho','julho','agosto','setembro','outubro','novembro','dezembro'];
+    const DIAS = ['Domingo','Segunda','Terça','Quarta','Quinta','Sexta','Sábado'];
+    const CAPA_FALLBACK = 'https://media.432up.com/midias/1790651227224_9ba618d5-6f86-4040-8910-5d978339a716.jpeg';
+
+    function toast(m) {
+      const t = $('toast'); t.textContent = m; t.classList.add('show');
+      clearTimeout(window._tt); window._tt = setTimeout(() => t.classList.remove('show'), 3000);
+    }
+    async function rpc(name, args) {
+      const { data, error } = await SB.rpc(name, args || {});
+      if (error) throw new Error(error.message || 'Erro');
+      return data;
+    }
+    function tokenUrl() {
+      const u = new URL(location.href);
+      let t = (u.searchParams.get('t') || u.searchParams.get('token') || '').trim();
+      if (t) return t;
+      const parts = location.pathname.replace(/\/+$/, '').split('/');
+      const last = parts[parts.length - 1];
+      if (last && !/convite\.html|index\.html|convites/i.test(last)) return last;
+      return '';
+    }
+    function linkPublico(token) {
+      const base = location.href.split('?')[0].replace(/#.*$/, '');
+      return base + (base.includes('?') ? '&' : '?') + 't=' + encodeURIComponent(token);
+    }
+    function mediaHtml(url, alt) {
+      const u = url || CAPA_FALLBACK;
+      if (/\.(mp4|webm|mov)(\?|$)/i.test(u))
+        return `<video src="${esc(u)}" autoplay muted loop playsinline></video>`;
+      return `<img src="${esc(u)}" alt="${esc(alt || 'Capa')}">`;
+    }
+
+    /* ---------- ESTADO ---------- */
+    let TOKEN = '';
+    let PUB = null;
+    let atual = null;
+    let tipos = [];
+    let editId = null;
+
+    /* ===================== PÚBLICO ===================== */
+    function dataEvento(d) {
+      const data = d.data || '';
+      const hora = (d.hora || '18:00').toString().slice(0, 5);
+      const fuso = d.fuso || '-03:00';
+      if (!data) return null;
+      return new Date(`${data}T${hora}:00${fuso}`);
+    }
+    function renderPublic() {
+      const d = PUB.dados || {};
+      const anfs = PUB.anfitrioes || [];
+      $('kicker').textContent = d.kicker || 'Com alegria, convidamos você';
+      $('intro').textContent = d.intro || '';
+      if (anfs.length >= 2)
+        $('tituloNomes').innerHTML = `<span class="names">${esc(anfs[0].nome)}</span> <span class="amp">&amp;</span> <span class="names">${esc(anfs[1].nome)}</span>`;
+      else if (anfs.length === 1)
+        $('tituloNomes').innerHTML = `<span class="names">${esc(anfs[0].nome)}</span>`;
+      else
+        $('tituloNomes').innerHTML = `<span class="names">${esc(d.nomeA || (PUB.tipo && PUB.tipo.rotulo) || 'Convite')}</span>` +
+          (d.nomeB ? ` <span class="amp">&amp;</span> <span class="names">${esc(d.nomeB)}</span>` : '');
+
+      document.title = anfs.map(a => a.nome).filter(Boolean).join(' & ') || 'Convite';
+      $('capa').innerHTML = mediaHtml(d.capa_url || d.capa, document.title);
+
+      if (d.data && /^\d{4}-\d{2}-\d{2}$/.test(d.data)) {
+        const [y, m, day] = d.data.split('-').map(Number);
+        const [hh, mm] = (d.hora || '18:00').toString().slice(0, 5).split(':');
+        $('diaSemana').textContent = DIAS[new Date(y, m - 1, day).getDay()];
+        $('diaCurto').textContent = `${pad(day)} ${MESES[m - 1].slice(0, 3).replace(/^./, c => c.toUpperCase())}`;
+        $('dataLonga').textContent = `${day} de ${MESES[m - 1]} de ${y}`;
+        const hc = mm === '00' ? `${+hh}h` : `${+hh}h${mm}`;
+        $('horaCurta').textContent = hc; $('horaCurta2').textContent = hc;
+        $('ano').textContent = String(y);
+      }
+      $('tituloHistoria').textContent = d.tituloHistoria || '';
+      $('citacao').textContent = d.citacao || '';
+      $('fechamento').textContent = d.fechamento || '';
+      if (!d.tituloHistoria && !d.citacao && !d.fechamento) $('secHistoria').classList.add('hidden');
+      else $('secHistoria').classList.remove('hidden');
+
+      $('local').textContent = d.local || '';
+      $('endereco').textContent = d.endereco || '';
+      $('traje').textContent = d.traje || '';
+      $('trajeTexto').textContent = d.trajeTexto || '';
+      $('observacao').textContent = d.observacao || '';
+      $('cardTraje').style.display = (d.traje || d.trajeTexto) ? '' : 'none';
+      $('cardObs').style.display = d.observacao ? '' : 'none';
+      $('agencia').textContent = d.agencia || d.empresa || '432UP';
+
+      if (anfs.length >= 2) $('iniciais').textContent = ((anfs[0].nome||' ')[0] + ' & ' + (anfs[1].nome||' ')[0]).toUpperCase();
+      else if (anfs.length === 1) $('iniciais').textContent = (anfs[0].nome || '').slice(0, 2).toUpperCase();
+      else $('iniciais').textContent = '';
+
+      const pads = PUB.padrinhos || [];
+      if (pads.length) {
+        $('listaPadrinhos').innerHTML = pads.map(p => `<span>${esc(typeof p === 'string' ? p : p.nome)}</span>`).join('');
+        $('secPadrinhos').classList.remove('hidden');
+      } else $('secPadrinhos').classList.add('hidden');
+
+      const q = encodeURIComponent(`${d.local || ''} ${d.endereco || ''}`.trim());
+      if (q.trim()) {
+        $('mapa').src = `https://www.google.com/maps?q=${q}&output=embed`;
+        $('gmaps').href = `https://maps.google.com/?q=${q}`;
+        $('waze').href = `https://waze.com/ul?q=${q}`;
+        $('secMapa').classList.remove('hidden');
+      } else $('secMapa').classList.add('hidden');
+
+      const prog = Array.isArray(d.programacao) ? d.programacao : [];
+      if (prog.length) {
+        $('prog').innerHTML = prog.map(p =>
+          `<div class="prog-row"><b>${esc(p.hora||'')}</b><div><strong>${esc(p.titulo||p.nome||'')}</strong><p>${esc(p.desc||p.descricao||'')}</p></div></div>`
+        ).join('');
+        $('secProg').classList.remove('hidden');
+      } else $('secProg').classList.add('hidden');
+
+      const rsvp = d.rsvp || { limite: 3, restricao: true, mensagem: true };
+      const L = Math.max(0, Math.min(20, +(rsvp.limite ?? 3)));
+      $('rsvpAcomp').innerHTML = Array.from({ length: L + 1 }, (_, i) =>
+        `<option value="${i}">${i ? '+' + i + (i > 1 ? ' acompanhantes' : ' acompanhante') : 'Somente eu'}</option>`
+      ).join('');
+      $('wAcomp').classList.toggle('hidden', L === 0);
+      $('wRestricao').classList.toggle('hidden', rsvp.restricao === false);
+      $('wMsg').classList.toggle('hidden', rsvp.mensagem === false);
+
+      const share = location.href;
+      $('btnWa').href = 'https://wa.me/?text=' + encodeURIComponent('Segue o convite: ' + share);
+    }
+    function tick() {
+      if (!PUB) return;
+      const dt = dataEvento(PUB.dados || {});
+      if (!dt) return;
+      const dist = dt - Date.now();
+      if (dist < 0) { $('cd').classList.add('hidden'); $('hoje').classList.remove('hidden'); return; }
+      $('cd-d').textContent = pad(Math.floor(dist / 864e5));
+      $('cd-h').textContent = pad(Math.floor(dist % 864e5 / 36e5));
+      $('cd-m').textContent = pad(Math.floor(dist % 36e5 / 6e4));
+      $('cd-s').textContent = pad(Math.floor(dist % 6e4 / 1e3));
+    }
+
+    $('agendar')?.addEventListener('click', () => {
+      const d = PUB.dados || {};
+      const ini = dataEvento(d);
+      if (!ini) return toast('Data não definida.');
+      const fim = new Date(ini.getTime() + (+(d.duracao_horas || 6)) * 36e5);
+      const f = x => x.toISOString().replace(/[-:]/g, '').replace(/\.\d{3}/, '');
+      const nomes = (PUB.anfitrioes || []).map(a => a.nome).filter(Boolean).join(' & ') || 'Evento';
+      const tipo = (PUB.tipo && PUB.tipo.rotulo) || 'Evento';
+      window.open('https://calendar.google.com/calendar/render?action=TEMPLATE'
+        + '&text=' + encodeURIComponent(tipo + ' · ' + nomes)
+        + '&dates=' + f(ini) + '/' + f(fim)
+        + '&location=' + encodeURIComponent((d.local||'') + ' - ' + (d.endereco||''))
+        + '&details=' + encodeURIComponent(tipo + ' de ' + nomes), '_blank', 'noopener');
+    });
+
+    const ov = $('rsvpOverlay');
+    document.querySelectorAll('[data-go="rsvp"]').forEach(b => b.addEventListener('click', () => ov.classList.add('open')));
+    $('rsvpClose').addEventListener('click', () => ov.classList.remove('open'));
+    ov.addEventListener('click', e => { if (e.target === ov) ov.classList.remove('open'); });
+    $('rsvpForm').addEventListener('submit', async e => {
+      e.preventDefault();
+      const btn = $('btnRsvp'); btn.disabled = true;
+      try {
+        await rpc('convite_enviar_rsvp', {
+          p_token: TOKEN,
+          p_nome: $('rsvpNome').value.trim(),
+          p_presenca: $('rsvpPresenca').value,
+          p_acomp: +$('rsvpAcomp').value || 0,
+          p_restricao: $('rsvpRestricao').value.trim() || null,
+          p_mensagem: $('rsvpMsg').value.trim() || null
+        });
+        $('rsvpForm').classList.add('hidden');
+        $('rsvpOk').classList.remove('hidden');
+        toast($('rsvpPresenca').value === 'sim' ? 'Presença confirmada!' : 'Obrigado por avisar.');
+      } catch (err) {
+        toast(err.message); btn.disabled = false;
+      }
+    });
+    $('btnCopy').addEventListener('click', () => navigator.clipboard?.writeText(location.href).then(() => toast('Link copiado.')));
+    $('btnShare').addEventListener('click', async () => {
+      if (navigator.share) { try { await navigator.share({ title: document.title, url: location.href }); } catch (_) {} }
+      else navigator.clipboard?.writeText(location.href).then(() => toast('Link copiado.'));
+    });
+
+    async function bootPublic(token) {
+      TOKEN = token;
+      try {
+        const data = await rpc('convite_publico', { p_token: token });
+        if (!data) throw new Error('vazio');
+        PUB = data;
+        $('viewPublic').classList.remove('hidden');
+        renderPublic();
+        tick(); setInterval(tick, 1000);
+      } catch (_) {
+        $('viewErro').classList.remove('hidden');
+      }
+    }
+
+    /* ===================== ADMIN ===================== */
+    async function carregarLista() {
+      $('listaBody').innerHTML = '<div class="vazio">Carregando…</div>';
+      try {
+        const lista = await rpc('convite_listar') || [];
+        if (!lista.length) { $('listaBody').innerHTML = '<div class="vazio">Nenhum convite. Crie o primeiro.</div>'; return; }
+        $('listaBody').innerHTML = lista.map(c =>
+          `<div class="card-c" data-id="${esc(c.id)}">
+            <div style="display:flex;justify-content:space-between;gap:8px">
+              <div><span class="rot">${esc(c.tipo_rotulo||c.tipo_codigo)}</span>
+              <div class="nomes">${esc(c.nomes||'Sem nomes')}</div>
+              <div class="meta">${c.confirmados||0} confirmação(ões)</div></div>
+              ${c.status==='publicado'?'<span class="tag t-pub">Publicado</span>':'<span class="tag t-pend">Rascunho</span>'}
+            </div></div>`
+        ).join('');
+        $('listaBody').querySelectorAll('.card-c').forEach(el =>
+          el.addEventListener('click', () => abrirDetalhe(el.dataset.id)));
+      } catch (e) { $('listaBody').innerHTML = '<div class="vazio">' + esc(e.message) + '</div>'; }
+    }
+
+    async function abrirDetalhe(id) {
+      atual = await rpc('convite_detalhe', { p_convite: id });
+      if (!atual) return toast('Não encontrado');
+      $('boxLista').classList.add('hidden');
+      $('boxDetalhe').classList.remove('hidden');
+      const nomes = (atual.anfitrioes||[]).map(a=>a.nome).filter(Boolean).join(' & ') || '—';
+      $('dNomes').textContent = nomes;
+      $('dTipo').textContent = (atual.tipo&&atual.tipo.rotulo)||atual.tipo_codigo;
+      $('dStatus').innerHTML = atual.status==='publicado'?'<span class="tag t-pub">Publicado</span>':'<span class="tag t-pend">Rascunho</span>';
+      $('tConf').textContent = atual.totais?.confirmados??0;
+      $('tRec').textContent = atual.totais?.recusados??0;
+      $('tPess').textContent = atual.totais?.pessoas??0;
+      $('tLista').textContent = atual.totais?.convidados_lista??0;
+      $('btnPublicar').textContent = atual.status==='publicado'?'Despublicar':'Publicar';
+      $('btnPublicar').className = atual.status==='publicado'?'btn-s':'btn btn-gold';
+      const url = linkPublico(atual.token_publico);
+      $('btnVerPub').href = url;
+      $('btnWaAdmin').href = 'https://wa.me/?text=' + encodeURIComponent('Segue o convite: ' + url);
+
+      const rsvps = atual.rsvps || [];
+      $('rsvpBody').innerHTML = rsvps.length ? rsvps.map(r => {
+        const tag = r.presenca==='sim'?'t-ok':'t-rec';
+        const lab = r.presenca==='sim'?'Confirmou':'Não vai';
+        const ac = r.acompanhantes>0?' · +'+r.acompanhantes:'';
+        const when = r.criado_em?new Date(r.criado_em).toLocaleString('pt-BR'):'';
+        return `<div class="dl-row"><div><span class="val">${esc(r.nome)}${ac}</span>
+          <span class="rot" style="text-transform:none;letter-spacing:0;margin-top:3px">${esc(when)}${r.mensagem?' · “'+esc(r.mensagem)+'”':''}</span></div>
+          <span class="tag ${tag}">${lab}</span></div>`;
+      }).join('') : '<div class="vazio">Nenhuma resposta ainda.</div>';
+
+      const gs = atual.convidados || [];
+      $('convBody').innerHTML = gs.length ? gs.map(g => {
+        const st = {pendente:'t-pend',enviado:'t-pub',confirmado:'t-ok',recusado:'t-rec'}[g.status]||'t-pend';
+        return `<div class="dl-row" data-gid="${esc(g.id)}" style="cursor:pointer">
+          <div><span class="val">${esc(g.nome)}</span>
+          <span class="rot" style="text-transform:none;letter-spacing:0">${esc([g.telefone,g.email].filter(Boolean).join(' · ')||'—')}</span></div>
+          <span class="tag ${st}">${esc(g.status)}</span></div>`;
+      }).join('') : '<div class="vazio">Lista vazia.</div>';
+      $('convBody').querySelectorAll('[data-gid]').forEach(el =>
+        el.addEventListener('click', () => editarConv(el.dataset.gid)));
+    }
+
+    $('btnVoltar').addEventListener('click', () => {
+      $('boxDetalhe').classList.add('hidden');
+      $('boxLista').classList.remove('hidden');
+      carregarLista();
+    });
+    $('tabsDet').querySelectorAll('.tab').forEach(t => t.addEventListener('click', () => {
+      $('tabsDet').querySelectorAll('.tab').forEach(x => x.classList.remove('on'));
+      t.classList.add('on');
+      ['rsvps','convidados'].forEach(p => $('p-'+p).classList.toggle('on', t.dataset.p===p));
+    }));
+    $('btnPublicar').addEventListener('click', async () => {
+      if (!atual) return;
+      const pub = atual.status !== 'publicado';
+      try {
+        await rpc('convite_publicar', { p_convite: atual.id, p_publicar: pub });
+        toast(pub ? 'Publicado.' : 'Rascunho.');
+        await abrirDetalhe(atual.id);
+      } catch (e) { toast(e.message); }
+    });
+    $('btnCopiar').addEventListener('click', () => {
+      if (!atual) return;
+      navigator.clipboard?.writeText(linkPublico(atual.token_publico)).then(() => toast('Link copiado.'));
+    });
+    $('btnAbrirEditor').addEventListener('click', () => {
+      if (!atual) return;
+      abrirEditor(atual.id);
+    });
+
+    $('btnNovo').addEventListener('click', async () => {
+      try { tipos = await rpc('convite_tipos_listar') || []; } catch (_) { tipos = [{codigo:'casamento',rotulo:'Casamento'}]; }
+      $('novoTipo').innerHTML = tipos.map(t => `<option value="${esc(t.codigo)}">${esc(t.rotulo)}</option>`).join('');
+      $('msgNovo').textContent = '';
+      $('modalNovo').classList.add('on');
+    });
+    $('fecharNovo').addEventListener('click', () => $('modalNovo').classList.remove('on'));
+    $('btnCriar').addEventListener('click', async () => {
+      $('msgNovo').textContent = 'Criando…';
+      try {
+        const id = await rpc('convite_criar_avulso', { p_tipo: $('novoTipo').value || 'casamento' });
+        $('modalNovo').classList.remove('on');
+        toast('Criado.');
+        await carregarLista();
+        await abrirDetalhe(id);
+      } catch (e) { $('msgNovo').textContent = e.message; }
+    });
+
+    $('btnAddConv').addEventListener('click', () => {
+      $('titConv').textContent = 'Novo convidado';
+      $('convId').value = ''; $('convNome').value = ''; $('convTel').value = '';
+      $('convEmail').value = ''; $('convAcomp').value = '0'; $('convStatus').value = 'pendente';
+      $('convObs').value = ''; $('msgConv').textContent = '';
+      $('btnRemConv').classList.add('hidden');
+      $('modalConv').classList.add('on');
+    });
+    function editarConv(gid) {
+      const g = (atual.convidados||[]).find(x => x.id === gid);
+      if (!g) return;
+      $('titConv').textContent = 'Editar';
+      $('convId').value = g.id; $('convNome').value = g.nome||'';
+      $('convTel').value = g.telefone||''; $('convEmail').value = g.email||'';
+      $('convAcomp').value = g.acompanhantes_previstos||0; $('convStatus').value = g.status||'pendente';
+      $('convObs').value = g.observacao||''; $('msgConv').textContent = '';
+      $('btnRemConv').classList.remove('hidden');
+      $('modalConv').classList.add('on');
+    }
+    $('fecharConv').addEventListener('click', () => $('modalConv').classList.remove('on'));
+    $('btnSalvarConv').addEventListener('click', async () => {
+      try {
+        await rpc('convite_convidado_salvar', {
+          p_convite: atual.id, p_id: $('convId').value || null,
+          p_nome: $('convNome').value.trim(), p_telefone: $('convTel').value.trim()||null,
+          p_email: $('convEmail').value.trim()||null, p_acomp: +$('convAcomp').value||0,
+          p_status: $('convStatus').value, p_obs: $('convObs').value.trim()||null
+        });
+        $('modalConv').classList.remove('on');
+        toast('Salvo.'); await abrirDetalhe(atual.id);
+      } catch (e) { $('msgConv').textContent = e.message; }
+    });
+    $('btnRemConv').addEventListener('click', async () => {
+      if (!confirm('Remover?')) return;
+      try {
+        await rpc('convite_convidado_remover', { p_id: $('convId').value });
+        $('modalConv').classList.remove('on'); toast('Removido.'); await abrirDetalhe(atual.id);
+      } catch (e) { toast(e.message); }
+    });
+
+    /* ===================== EDITOR ===================== */
+    function coletarAnfs() {
+      return [...document.querySelectorAll('#edAnfs [data-papel]')].map(el => ({
+        papel: el.dataset.papel, nome: el.querySelector('input').value.trim()
+      })).filter(a => a.nome);
+    }
+    function coletarPads() {
+      if (!$('edUsaPads').checked) return [];
+      return $('edPads').value.split(/\n+/).map(s => s.trim()).filter(Boolean).map(nome => ({ nome }));
+    }
+    function syncEd() {
+      if (!atual) return;
+      const d = Object.assign({}, atual.dados || {});
+      d.kicker = $('edKicker').value; d.intro = $('edIntro').value;
+      d.tituloHistoria = $('edTitHist').value; d.citacao = $('edCitacao').value;
+      d.fechamento = $('edFech').value; d.traje = $('edTraje').value;
+      d.trajeTexto = $('edTrajeTxt').value; d.observacao = $('edObs').value;
+      d.local = $('edLocal').value; d.endereco = $('edEndereco').value;
+      d.data = $('edData').value; d.hora = ($('edHora').value||'18:00').slice(0,5);
+      d.duracao_horas = +$('edDur').value||6;
+      d.capa_url = $('edCapa').value.trim();
+      d.agencia = $('edAgencia').value || '432UP';
+      d.rsvp = { limite: +$('edRsvpLim').value||0, restricao: $('edRsvpRest').checked, mensagem: $('edRsvpMsg').checked };
+      try { d.programacao = JSON.parse($('edProg').value||'[]'); } catch(_){}
+      const anfs = coletarAnfs();
+      if (anfs[0]) d.nomeA = anfs[0].nome; if (anfs[1]) d.nomeB = anfs[1].nome;
+      atual.dados = d;
+      atual.skin = $('edSkin').value; atual.abertura = $('edAbertura').value;
+      atual.tipo_codigo = $('edTipo').value;
+    }
+    function fillAnfs(tipo) {
+      const t = tipos.find(x => x.codigo === tipo) || { anfitrioes: [{papel:'anfitriao_1',rotulo:'Anfitrião'}] };
+      const atuais = {};
+      (atual.anfitrioes||[]).forEach(a => atuais[a.papel]=a.nome);
+      if (!atuais.anfitriao_1 && atual.dados?.nomeA) atuais.anfitriao_1 = atual.dados.nomeA;
+      if (!atuais.anfitriao_2 && atual.dados?.nomeB) atuais.anfitriao_2 = atual.dados.nomeB;
+      $('edAnfs').innerHTML = (t.anfitrioes||[]).map(p =>
+        `<label>${esc(p.rotulo)}</label><div data-papel="${esc(p.papel)}"><input value="${esc(atuais[p.papel]||'')}"></div>`
+      ).join('');
+      $('edAnfs').querySelectorAll('input').forEach(i => i.addEventListener('input', () => { syncEd(); renderEdPreview(); }));
+    }
+    function fillEditor() {
+      const d = atual.dados || {};
+      $('edTipo').value = atual.tipo_codigo || 'casamento';
+      $('edSkin').value = atual.skin || 'padrao';
+      $('edAbertura').value = atual.abertura || 'nenhuma';
+      $('edData').value = (d.data||'').slice(0,10);
+      $('edHora').value = (d.hora||'18:00').toString().slice(0,5);
+      $('edDur').value = d.duracao_horas || 6;
+      $('edLocal').value = d.local||''; $('edEndereco').value = d.endereco||'';
+      $('edCapa').value = d.capa_url || d.capa || '';
+      $('edKicker').value = d.kicker || 'Com alegria, convidamos você';
+      $('edIntro').value = d.intro||''; $('edTitHist').value = d.tituloHistoria||'';
+      $('edCitacao').value = d.citacao||''; $('edFech').value = d.fechamento||'';
+      $('edTraje').value = d.traje||''; $('edTrajeTxt').value = d.trajeTexto||'';
+      $('edObs').value = d.observacao||''; $('edAgencia').value = d.agencia || d.empresa || '432UP';
+      $('edProg').value = JSON.stringify(d.programacao||[], null, 2);
+      const r = d.rsvp||{};
+      $('edRsvpLim').value = r.limite??3;
+      $('edRsvpRest').checked = r.restricao!==false;
+      $('edRsvpMsg').checked = r.mensagem!==false;
+      $('edPads').value = (atual.padrinhos||[]).map(p=>p.nome||p).join('\n');
+      $('edUsaPads').checked = (atual.padrinhos||[]).length>0;
+      $('edPadsBox').classList.toggle('hidden', !$('edUsaPads').checked);
+      fillAnfs($('edTipo').value);
+    }
+    function renderEdPreview() {
+      syncEd();
+      const d = atual.dados || {};
+      const anfs = coletarAnfs();
+      $('pvKicker').textContent = d.kicker||'';
+      $('pvIntro').textContent = d.intro||'';
+      $('pvTitHist').textContent = d.tituloHistoria||'';
+      $('pvCitacao').textContent = d.citacao||'';
+      $('pvFech').textContent = d.fechamento||'';
+      $('pvLocal').textContent = d.local||'';
+      $('pvEnd').textContent = d.endereco||'';
+      $('pvTraje').textContent = d.traje||'';
+      $('pvTrajeTxt').textContent = d.trajeTexto||'';
+      $('pvObs').textContent = d.observacao||'';
+      if (anfs.length>=2)
+        $('pvNomes').innerHTML = `<span class="names">${esc(anfs[0].nome)}</span> <span class="amp">&amp;</span> <span class="names">${esc(anfs[1].nome)}</span>`;
+      else if (anfs.length===1)
+        $('pvNomes').innerHTML = `<span class="names">${esc(anfs[0].nome)}</span>`;
+      else $('pvNomes').innerHTML = '<span class="names">Anfitriões</span>';
+      $('pvCapa').innerHTML = mediaHtml(d.capa_url, 'Capa');
+      if (d.data && /^\d{4}-\d{2}-\d{2}$/.test(d.data)) {
+        const [y,m,day]=d.data.split('-').map(Number);
+        const [hh,mm]=(d.hora||'18:00').split(':');
+        $('pvDiaSem').textContent = DIAS[new Date(y,m-1,day).getDay()];
+        $('pvDiaCurto').textContent = `${pad(day)} ${MESES[m-1].slice(0,3).replace(/^./,c=>c.toUpperCase())}`;
+        $('pvDataL').textContent = `${day} de ${MESES[m-1]} de ${y}`;
+        const hc = mm==='00'?`${+hh}h`:`${+hh}h${mm}`;
+        $('pvHora').textContent = hc; $('pvHora2').textContent = 'A partir das '+hc;
+        $('pvAno').textContent = String(y);
+      }
+      const pads = coletarPads();
+      if (pads.length) {
+        $('pvPadsSec').classList.remove('hidden');
+        $('pvPadsList').innerHTML = pads.map(p=>`<span>${esc(p.nome)}</span>`).join('');
+      } else $('pvPadsSec').classList.add('hidden');
+      const prog = Array.isArray(d.programacao)?d.programacao:[];
+      $('pvProg').innerHTML = prog.map(p=>
+        `<div class="prog-row"><b>${esc(p.hora||'')}</b><div><strong>${esc(p.titulo||'')}</strong><p>${esc(p.desc||'')}</p></div></div>`
+      ).join('') || '<p class="vazio">Sem programação</p>';
+    }
+
+    document.querySelector('.ed-lp')?.addEventListener('click', e => {
+      const el = e.target.closest('.editavel');
+      if (!el) return;
+      document.querySelectorAll('.editavel.on').forEach(x => { x.classList.remove('on'); x.removeAttribute('contenteditable'); });
+      el.classList.add('on'); el.contentEditable = 'true'; el.focus();
+      el.onblur = () => {
+        el.classList.remove('on'); el.removeAttribute('contenteditable');
+        const fid = el.dataset.f;
+        if (fid && $(fid)) { $(fid).value = el.textContent.trim(); syncEd(); }
+      };
+    });
+    ['edKicker','edIntro','edTitHist','edCitacao','edFech','edTraje','edTrajeTxt','edObs','edLocal','edEndereco','edData','edHora','edDur','edCapa','edAgencia','edProg','edRsvpLim','edSkin','edAbertura']
+      .forEach(id => {
+        const el = $(id); if (!el) return;
+        el.addEventListener('input', () => { syncEd(); renderEdPreview(); });
+        el.addEventListener('change', () => { syncEd(); renderEdPreview(); });
+      });
+    $('edUsaPads').addEventListener('change', () => {
+      $('edPadsBox').classList.toggle('hidden', !$('edUsaPads').checked);
+      renderEdPreview();
+    });
+    $('edPads').addEventListener('input', renderEdPreview);
+    $('edTipo').addEventListener('change', () => { fillAnfs($('edTipo').value); renderEdPreview(); });
+
+    async function abrirEditor(id) {
+      editId = id;
+      if (!tipos.length) try { tipos = await rpc('convite_tipos_listar')||[]; } catch(_){}
+      $('edTipo').innerHTML = tipos.map(t=>`<option value="${esc(t.codigo)}">${esc(t.rotulo)}</option>`).join('');
+      atual = await rpc('convite_detalhe', { p_convite: id });
+      $('viewAdmin').classList.add('hidden');
+      $('viewEditor').classList.remove('hidden');
+      fillEditor(); renderEdPreview();
+    }
+    $('edVoltar').addEventListener('click', () => {
+      $('viewEditor').classList.add('hidden');
+      $('viewAdmin').classList.remove('hidden');
+      if (editId) abrirDetalhe(editId);
+    });
+    $('edSalvar').addEventListener('click', async () => {
+      $('edMsg').className = 'msg'; $('edMsg').textContent = 'Salvando…';
+      try {
+        syncEd();
+        try { JSON.parse($('edProg').value||'[]'); } catch(_){ throw new Error('JSON da programação inválido'); }
+        await rpc('convite_salvar', {
+          p_convite: editId, p_dados: atual.dados,
+          p_skin: atual.skin, p_abertura: atual.abertura, p_tipo: atual.tipo_codigo
+        });
+        await rpc('convite_salvar_anfitrioes', { p_convite: editId, p_lista: coletarAnfs() });
+        await rpc('convite_salvar_padrinhos', { p_convite: editId, p_lista: coletarPads() });
+        $('edMsg').className = 'msg ok'; $('edMsg').textContent = 'Salvo.';
+        toast('Salvo.');
+        atual = await rpc('convite_detalhe', { p_convite: editId });
+        fillEditor(); renderEdPreview();
+      } catch (e) { $('edMsg').textContent = e.message; }
+    });
+    $('edPublicar').addEventListener('click', async () => {
+      try {
+        await $('edSalvar').dispatchEvent(new Event('click'));
+        await rpc('convite_publicar', { p_convite: editId, p_publicar: true });
+        toast('Publicado.');
+      } catch (e) { toast(e.message); }
+    });
+
+    /* ===================== BOOT ===================== */
+    (async function boot() {
+      const t = tokenUrl();
+      if (t) {
+        await bootPublic(t);
+        return;
+      }
+      // Admin: precisa login
+      const s = await SB.auth.getSession();
+      if (!(s.data && s.data.session)) {
+        document.body.insertAdjacentHTML('beforeend',
+          '<div class="erro-box" style="margin-top:18vh"><h2 style="font-family:Cormorant Garamond,serif;font-weight:400">Área restrita</h2>'+
+          '<p style="color:#B8B8C2">Faça login na área do cliente para gerenciar convites.</p>'+
+          '<p><a class="btn" href="../index.html">Área do cliente</a></p></div>');
+        return;
+      }
+      $('viewAdmin').classList.remove('hidden');
+      await carregarLista();
+      const id = new URLSearchParams(location.search).get('id');
+      if (id) await abrirDetalhe(id);
+      if (new URLSearchParams(location.search).get('editar')) {
+        await abrirEditor(new URLSearchParams(location.search).get('editar'));
+      }
+    })();
+  })();
+  </script>
+  <script src="https://www.432up.com/script/script.js" defer></script>
+</body>
+</html>
