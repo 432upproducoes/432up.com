@@ -206,7 +206,6 @@
     }
     .toggle-switch.on::after { transform: translateX(18px); background: var(--accent-light); }
 
-
     /* tip / help */
     .help-tip {
       display: inline-flex; align-items: center; justify-content: center;
@@ -433,10 +432,6 @@
     function ehVideo(file) {
       return (file.type || '').startsWith('video/') || /\.(mp4|mov|m4v|webm|3gp)$/i.test(file.name || '');
     }
-    function extDe(file) {
-      const m = /\.([a-z0-9]{2,5})$/i.exec(file.name || '');
-      return m ? m[1].toLowerCase() : 'mp4';
-    }
 
     // Vídeo: poster (miniatura) ou primeiro frame (#t=0.01)
     function midia(f, controles) {
@@ -454,69 +449,52 @@
       return t;
     }
 
-    // Vídeo: envio por fetch direto. Até 3 tentativas (ver enviarVideoComTentativas).
-    // AJUSTE: o vídeo é lido para a memória (file.arrayBuffer) antes do envio. Isso testa se o
-    // navegador consegue ler o arquivo e envia um Blob em memória, como já acontece com as fotos.
-    async function enviarVideoR2(path, file) {
-      const { data } = await _sb.auth.getSession();
-      const t = data && data.session && data.session.access_token;
+    // Vídeo: lê o arquivo inteiro para a memória e envia como Blob, com progresso real (XHR).
+    // Não há mais logs de diagnóstico nem teste paralelo.
+    async function enviarVideoR2(path, file, onFrac) {
+      const t = await token();
 
-      if (!t) {
-        throw new Error('Sessão expirada. Faça login novamente.');
-      }
-
-      // DIAGNÓSTICO 1: confirma os dados do arquivo antes do envio
-      console.log('[VIDEO-ENVIO]', {
-        nome: file.name,
-        tamanhoBytes: file.size,
-        tipo: file.type,
-        instancia: file instanceof Blob
-      });
-
-      // DIAGNÓSTICO 3 + AJUSTE: lê o conteúdo real do arquivo antes de enviar
       let corpo;
       try {
         const buf = await file.arrayBuffer();
-        console.log('[VIDEO-LEITURA]', {
-          bytesLidos: buf.byteLength,
-          tamanhoEsperado: file.size
-        });
         if (!buf.byteLength) {
-          throw new Error('o navegador leu 0 bytes de um arquivo de ' + file.size + ' bytes');
+          throw new Error('o aparelho não conseguiu ler o arquivo (0 bytes)');
         }
         corpo = new Blob([buf], { type: file.type || 'video/mp4' });
       } catch (e) {
-        console.log('[VIDEO-LEITURA-ERRO]', e && e.message);
         throw new Error('Não foi possível ler o vídeo no aparelho: ' + (e && e.message ? e.message : e));
       }
 
-      const resp = await fetch(
-        R2_UPLOAD_URL + '?path=' + encodeURIComponent(path),
-        {
-          method: 'PUT',
-          headers: {
-            'Authorization': 'Bearer ' + t,
-            'Content-Type': file.type || 'application/octet-stream'
-          },
-          body: corpo
-        }
-      );
-
-      // DIAGNÓSTICO 2: registra a resposta do Worker sem consumir o corpo original
-      console.log('[VIDEO-RESPOSTA]', {
-        status: resp.status,
-        resposta: await resp.clone().text()
+      return new Promise((resolve, reject) => {
+        const xhr = new XMLHttpRequest();
+        xhr.open('PUT', R2_UPLOAD_URL + '?path=' + encodeURIComponent(path));
+        xhr.setRequestHeader('Authorization', 'Bearer ' + t);
+        xhr.setRequestHeader('Content-Type', file.type || 'application/octet-stream');
+        xhr.upload.onprogress = (e) => {
+          if (e.lengthComputable && onFrac) onFrac(e.loaded / e.total);
+        };
+        xhr.onload = () => {
+          let j = null;
+          try { j = JSON.parse(xhr.responseText); } catch (err) {}
+          if (xhr.status >= 200 && xhr.status < 300 && j && j.ok) resolve(j);
+          else reject(new Error((j && j.error) || ('Upload falhou (status ' + xhr.status + ')')));
+        };
+        xhr.onerror = () => reject(new Error('Falha de rede no envio'));
+        xhr.send(corpo);
       });
+    }
 
-      const j = await resp.json().catch(() => null);
-
-      if (!resp.ok || !j || !j.ok) {
-        throw new Error(
-          (j && j.error) || ('Upload falhou (status ' + resp.status + ')')
-        );
+    // Até 3 tentativas com o mesmo caminho
+    async function enviarVideoComTentativas(path, file, onFrac) {
+      let ultimo = null;
+      for (let t = 1; t <= 3; t++) {
+        try { return await enviarVideoR2(path, file, onFrac); }
+        catch (err) {
+          ultimo = err;
+          if (t < 3) await new Promise(r => setTimeout(r, t * 1500));
+        }
       }
-
-      return j;
+      throw ultimo;
     }
 
     // Até 3 tentativas com o mesmo caminho (mesmo padrão do perfil do B2B)
@@ -532,7 +510,7 @@
       throw ultimo;
     }
 
-    // Envio com progresso real (XHR). Vídeo vai sem raw: o worker compacta no servidor, como no perfil
+    // Envio com progresso real (XHR) para fotos e posters
     async function enviarR2Uma(path, blob, raw, onFrac) {
       const t = await token();
       return new Promise((resolve, reject) => {
@@ -754,61 +732,8 @@
       SORT.option('disabled', !DRAG);
     }
 
-    async function enviarVideoComTentativas(path, file) {
-      let ultimo = null;
-      for (let t = 1; t <= 3; t++) {
-        try { return await enviarVideoR2(path, file); }
-        catch (err) {
-          ultimo = err;
-          if (t < 3) await new Promise(r => setTimeout(r, t * 1500));
-        }
-      }
-      throw ultimo;
-    }
-
-    // Diagnóstico: quando o vídeo falha, testa o mesmo arquivo sem compactação e mostra o resultado
-    async function diagnosticoVideo(file, err) {
-      let raw = '';
-      try {
-        const t = await token();
-        const path = `eventos/${PID}/diag_${Date.now()}_${file.name}`;
-        const resp = await fetch(R2_UPLOAD_URL + '?path=' + encodeURIComponent(path) + '&raw=1', {
-          method: 'PUT',
-          headers: { 'Authorization': 'Bearer ' + t, 'Content-Type': file.type || 'application/octet-stream' },
-          body: file
-        });
-        const j = await resp.json().catch(() => null);
-        if (resp.ok && j && j.ok) { raw = 'teste sem compactar: OK'; await r2Apagar(j.path); }
-        else raw = 'teste sem compactar: falhou (' + resp.status + ') ' + ((j && j.error) || '');
-      } catch (e) { raw = 'teste sem compactar: erro ' + e.message; }
-      // Teste 2: mesmo vídeo, COM compactação, dentro da pasta do usuário logado (como perfil e parceiros)
-      let pasta = '';
-      try {
-        const { data: u } = await _sb.auth.getUser();
-        const uid = u && u.user && u.user.id;
-        const t = await token();
-        const path = `${uid}/diag_pasta_${Date.now()}_${file.name}`;
-        const resp = await fetch(R2_UPLOAD_URL + '?path=' + encodeURIComponent(path), {
-          method: 'PUT',
-          headers: { 'Authorization': 'Bearer ' + t, 'Content-Type': file.type || 'application/octet-stream' },
-          body: file
-        });
-        const j = await resp.json().catch(() => null);
-        if (resp.ok && j && j.ok) { pasta = ' | compactado na pasta do usuário: OK'; await r2Apagar(j.path); }
-        else pasta = ' | compactado na pasta do usuário: falhou (' + resp.status + ') ' + ((j && j.error) || '');
-      } catch (e) { pasta = ' | compactado na pasta do usuário: erro ' + e.message; }
-      return `${err.message} | arquivo ${(file.size / 1048576).toFixed(1)} MB, tipo "${file.type || 'vazio'}" | ${raw}${pasta}`;
-    }
-
     // Envio de uma mídia. Foto: compactada no navegador. Vídeo: enviado original, o worker compacta.
     async function enviarArquivo(file, extras, onFrac) {
-
-      console.log('[432UP TESTE] Arquivo selecionado:', {
-        nome: file && file.name,
-        tipo: file && file.type,
-        tamanhoBytes: file && file.size,
-        ehVideo: ehVideo(file)
-      });
       const e = extras || {};
       const fr = onFrac || (() => {});
       const video = ehVideo(file);
@@ -817,8 +742,11 @@
       let posterUrl = null;
       if (video) {
         fr(0.05);
-        try { r = await enviarVideoComTentativas(`eventos/${PID}/video_${Date.now()}_${file.name}`, file); }
-        catch (err) { throw new Error(await diagnosticoVideo(file, err)); }
+        r = await enviarVideoComTentativas(
+          `eventos/${PID}/video_${Date.now()}_${file.name}`,
+          file,
+          (x) => fr(0.05 + x * 0.7)
+        );
         fr(0.8);
         const poster = await gerarPoster(file);
         if (poster) posterUrl = (await enviarR2(`${base}-poster.jpg`, poster, false, null)).url;
