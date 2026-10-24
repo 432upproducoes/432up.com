@@ -587,14 +587,19 @@
       // ======================================================================
       var R2_UPLOAD_URL = 'https://432up-r2-upload.432up-producoes.workers.dev/';
 
+      function ehVideoArquivo(file) {
+        return (file && file.type ? file.type : '').indexOf('video/') === 0;
+      }
+
       // TENTATIVAS AUTOMÁTICAS: até 3 envios, com pausa crescente entre eles.
       // O caminho (path) é definido uma única vez por arquivo, então uma nova
       // tentativa não cria cópias com outro nome.
-      async function uploadComTentativas(path, file) {
+      // Não existe fallback de vídeo sem compactação: o vídeo sempre passa pelo Worker.
+      async function uploadComTentativas(path, file, onFrac) {
         var ultimoErro = null;
         for (var tentativa = 1; tentativa <= 3; tentativa++) {
           try {
-            return await uploadParaR2(path, file);
+            return await uploadParaR2(path, file, onFrac);
           } catch (err) {
             ultimoErro = err;
             console.warn('[432UP Partner] Tentativa ' + tentativa + ' falhou:', err && err.message);
@@ -606,13 +611,48 @@
         throw ultimoErro;
       }
 
-      async function uploadParaR2(path, file) {
+      async function uploadParaR2(path, file, onFrac) {
         var sessionRes = await sbPartner.auth.getSession();
         var token = (sessionRes && sessionRes.data && sessionRes.data.session)
           ? sessionRes.data.session.access_token
           : null;
         if (!token) throw new Error('Sessão expirada. Faça login novamente.');
 
+        // VÍDEO: lê o arquivo inteiro para a memória e envia como Blob, com progresso por XHR
+        if (ehVideoArquivo(file)) {
+          var corpo;
+          try {
+            var buf = await file.arrayBuffer();
+            if (!buf.byteLength) throw new Error('o aparelho não conseguiu ler o vídeo (0 bytes)');
+            corpo = new Blob([buf], { type: file.type || 'video/mp4' });
+          } catch (e) {
+            throw new Error('Não foi possível ler o vídeo no aparelho: ' + (e && e.message ? e.message : e));
+          }
+
+          return new Promise(function (resolve, reject) {
+            var xhr = new XMLHttpRequest();
+            xhr.open('PUT', R2_UPLOAD_URL + '?path=' + encodeURIComponent(path));
+            xhr.setRequestHeader('Authorization', 'Bearer ' + token);
+            xhr.setRequestHeader('Content-Type', file.type || 'video/mp4');
+            xhr.upload.onprogress = function (e) {
+              if (e.lengthComputable && onFrac) onFrac(e.loaded / e.total);
+            };
+            xhr.onload = function () {
+              var result = null;
+              try { result = JSON.parse(xhr.responseText); } catch (err) {}
+              if (xhr.status >= 200 && xhr.status < 300 && result && result.ok) {
+                resolve(result.url);
+              } else {
+                reject(new Error((result && result.error) || ('Upload falhou (status ' + xhr.status + ')')));
+              }
+            };
+            xhr.onerror = function () { reject(new Error('Falha de rede no envio')); };
+            if (onFrac) onFrac(null);
+            xhr.send(corpo);
+          });
+        }
+
+        // FOTOS E DEMAIS ARQUIVOS: sem alterações
         var resp = await fetch(
           R2_UPLOAD_URL + '?path=' + encodeURIComponent(path),
           {
@@ -1924,10 +1964,27 @@
           };
           updateLoadingProgress(10, 'Enviando mídias...');
 
+          // Progresso real para um arquivo: base = % já concluído antes dele; fatia = % que ele ocupa
+          var progressoDeArquivo = function (base, fatia, rotulo) {
+            return function (f) {
+              if (f === null || f === undefined) {
+                document.getElementById('loadingMessage').textContent = rotulo + ' (aguardando o aparelho)';
+                return;
+              }
+              if (progressInterval) { clearInterval(progressInterval); progressInterval = null; }
+              var pct = base + Math.round(f * fatia);
+              currentProgressVal = pct;
+              renderProgressVisuals(pct);
+              document.getElementById('loadingMessage').textContent = rotulo;
+            };
+          };
+
           if (video1File) {
             try {
               var path1 = prefixoMidia() + '/video_principal_' + Date.now() + '_' + video1File.name;
-              var video1Url = await uploadComTentativas(path1, video1File);
+              var base1 = 10 + Math.round((concluidosItens / totalItens) * 80);
+              var video1Url = await uploadComTentativas(path1, video1File,
+                progressoDeArquivo(base1, 80 / totalItens, 'Enviando vídeo principal'));
               houveEnvioMidia = true;
               novasMidiasPendentes = novasMidiasPendentes.filter(function(m) {
                 return !(m.tipo === 'video' && m.campo_destino === 'youtube_1');
@@ -1951,7 +2008,9 @@
           if (video2File) {
             try {
               var path2 = prefixoMidia() + '/video_secundario_' + Date.now() + '_' + video2File.name;
-              var video2Url = await uploadComTentativas(path2, video2File);
+              var base2 = 10 + Math.round((concluidosItens / totalItens) * 80);
+              var video2Url = await uploadComTentativas(path2, video2File,
+                progressoDeArquivo(base2, 80 / totalItens, 'Enviando vídeo secundário'));
               houveEnvioMidia = true;
               novasMidiasPendentes = novasMidiasPendentes.filter(function(m) {
                 return !(m.tipo === 'video' && m.campo_destino === 'youtube_2');
