@@ -1027,7 +1027,7 @@
         if (vitrineNum === 1) return parceiro;
         var r = await sbPartner.from('vitrines').select('*')
           .eq('parceiro_id', parceiro.id).eq('ordem', vitrineNum).maybeSingle();
-        if (!r.data) { showAlert('Esta vitrine não existe.', 'error'); return parceiro; }
+        if (!r.data) throw new Error('Esta vitrine não existe para o seu cadastro.');
         var v = r.data;
         var merged = Object.assign({}, parceiro, v);
         merged.id = parceiro.id;
@@ -1073,7 +1073,8 @@
       async function renderAbasVitrines() {
         var box = document.getElementById('abasVitrines');
         if (!box) return;
-        var r = await sbPartner.from('vitrines').select('id, ordem, nome_artistico, status').order('ordem');
+        var r = await sbPartner.from('vitrines').select('id, ordem, nome_artistico, status')
+          .eq('parceiro_id', parceiroAtual.id).order('ordem');
         var extras = r.data || [];
         var nomeBase = parceiroAtual.__baseNome || parceiroAtual.nome_artistico || 'Vitrine principal';
         var aba = function (ativa) {
@@ -1097,12 +1098,13 @@
       window.adicionarVitrine = async function () {
         var r = await sbPartner.rpc('solicitar_vitrine', { p_dados: {} });
         if (r.error) { showAlert(r.error.message, 'error'); return; }
-        var lista = await sbPartner.from('vitrines').select('ordem').order('ordem', { ascending: false }).limit(1);
+        var lista = await sbPartner.from('vitrines').select('ordem')
+          .eq('parceiro_id', parceiroAtual.id).order('ordem', { ascending: false }).limit(1);
         var nova = lista.data && lista.data[0] ? lista.data[0].ordem : 2;
         window.location.href = 'perfil.html?vitrine=' + nova;
       };
 
-      function esc(t) { return String(t == null ? '' : t).replace(/[&<>"']/g, function (c) { return {'&':'&amp;','<':'&gt;','"':'&quot;',"'":'&#39;'}[c]; }); }
+      function esc(t) { return String(t == null ? '' : t).replace(/[&<>"']/g, function (c) { return {'&':'&amp;','<':'&lt;','"':'&quot;',"'":'&#39;'}[c]; }); }
 
       // INICIALIZAÇÃO DA PÁGINA COM CARREGAMENTO PARALELO
       Promise.all([
@@ -1256,7 +1258,7 @@
         renderAbasVitrines();
       }).catch(function (err) {
         console.error("Erro na inicialização:", err);
-        showAlert('Erro de autenticação ou carregamento de dados.', 'error');
+        showAlert(err && err.message ? err.message : 'Erro ao carregar os dados.', 'error');
       });
 
       function exibirFotoCapaPreview(src, isPendente) {
@@ -1859,6 +1861,13 @@
       /* SALVAR DADOS COM PERFIL_PARCEIRO_ID E CONVERSÃO LEGADA */
       document.getElementById('dadosForm').addEventListener('submit', async function (e) {
         e.preventDefault();
+
+        // PROTEÇÃO: vitrine extra (2 ou 3) sem vínculo carregado não pode
+        // salvar, senão o update cairia no cadastro principal (parceiros).
+        if (vitrineNum > 1 && !parceiroAtual.__vitrineId) {
+          showAlert('Esta vitrine não está carregada. Recarregue a página.', 'error');
+          return;
+        }
         
         var chkTermos = document.getElementById('fTermos');
         if (!chkTermos.checked) {
