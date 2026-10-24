@@ -298,7 +298,7 @@
         <button class="rsvp-close" type="button" id="rsvpClose">✕</button>
         <form id="rsvpForm">
           <div class="form-grid">
-            <div class="field full"><label>Nome completo *</label><input id="rsvpNome" required maxlength="120" placeholder="Seu nome e sobrenome"></div>
+            <div class="field full"><label>Nome completo *</label><datalist id="listaConvidados"></datalist><input id="rsvpNome" list="listaConvidados" autocomplete="name" required maxlength="120" placeholder="Seu nome e sobrenome"></div>
             <div class="field"><label>Comparecerá? *</label>
               <select id="rsvpPresenca" required>
                 <option value="">Selecione</option>
@@ -474,11 +474,11 @@
               <strong class="editavel" id="pvLocal" contenteditable="true" data-key="local" data-ph="Nome do local (salão, fazenda…)" style="display:block;text-align:center"></strong>
               <p class="editavel" id="pvEnd" contenteditable="true" data-key="endereco" data-ph="Rua, número" style="text-align:center"></p>
               <div class="addr-search">
-                <input class="adm-gold" id="edCidade" placeholder="Cidade / UF" style="border-radius:14px">
-                <input class="adm-gold" id="edCep" placeholder="CEP" inputmode="numeric" maxlength="9" style="border-radius:14px">
-                <input class="adm-gold" id="edBuscaEnd" placeholder="Buscar endereço…" style="border-radius:14px">
+                <input class="adm-gold" id="edCep" placeholder="CEP — digite e aguarde" inputmode="numeric" maxlength="9" style="border-radius:14px">
+                <input class="adm-gold" id="edCidade" placeholder="Cidade / UF (preenche com o CEP)" style="border-radius:14px">
+                <input class="adm-gold" id="edBuscaEnd" placeholder="Ou busque o endereço…" style="border-radius:14px">
                 <ul class="addr-sug hidden" id="addrSug"></ul>
-                <p style="font-size:11px;color:var(--mut);margin:0;text-align:center">Usado no Google Maps / Waze do convite público</p>
+                <p style="font-size:11px;color:var(--mut);margin:4px 0 0;text-align:center">No convite público aparece só o texto elegante + Maps</p>
               </div>
             </div>
             <div class="info-card">
@@ -643,53 +643,68 @@
       return tok;
     }
     async function uploadCapaR2(file) {
-      const tok = await tokenAuth();
-      const uid = ((await SB.auth.getUser()).data.user || {}).id || 'anon';
+      const sess = await SB.auth.getSession();
+      const session = sess.data && sess.data.session;
+      if (!session || !session.access_token) throw new Error('Sessão expirada — faça login de novo');
+      const tok = session.access_token;
+      const uid = (session.user && session.user.id) || 'anon';
       const video = (file.type || '').startsWith('video/') || /\.(mp4|mov|webm|m4v)$/i.test(file.name || '');
       let blob = file;
-      let ext = 'jpg';
-      let ctype = 'image/jpeg';
+      let path;
+      let ctype;
       if (video) {
-        ext = (file.name.split('.').pop() || 'mp4').toLowerCase().replace(/[^a-z0-9]/g, '') || 'mp4';
+        const ext = (file.name.split('.').pop() || 'mp4').toLowerCase().replace(/[^a-z0-9]/g, '') || 'mp4';
+        path = uid + '/convite-capa-' + Date.now() + '.' + ext;
         ctype = file.type || 'video/mp4';
-      } else if (file.type && file.type.startsWith('image/')) {
-        blob = await new Promise((resolve, reject) => {
-          const img = new Image();
-          const url = URL.createObjectURL(file);
-          img.onload = () => {
-            try {
-              const max = 1600;
-              let w = img.naturalWidth, h = img.naturalHeight;
-              const scale = Math.min(1, max / Math.max(w, h));
-              const c = document.createElement('canvas');
-              c.width = Math.round(w * scale); c.height = Math.round(h * scale);
-              c.getContext('2d').drawImage(img, 0, 0, c.width, c.height);
-              c.toBlob(b => { URL.revokeObjectURL(url); b ? resolve(b) : reject(new Error('Falha ao compactar')); }, 'image/jpeg', 0.85);
-            } catch (e) { URL.revokeObjectURL(url); reject(e); }
+        // worker: raw=1 para vídeo (igual fotolog)
+        const q = R2_UPLOAD_URL + '?path=' + encodeURIComponent(path) + '&raw=1';
+        const j = await new Promise((resolve, reject) => {
+          const xhr = new XMLHttpRequest();
+          xhr.open('PUT', q);
+          xhr.setRequestHeader('Authorization', 'Bearer ' + tok);
+          xhr.setRequestHeader('Content-Type', ctype);
+          xhr.onload = () => {
+            let body = null;
+            try { body = JSON.parse(xhr.responseText); } catch (_) {}
+            if (xhr.status >= 200 && xhr.status < 300 && body && body.ok && body.url) resolve(body);
+            else reject(new Error((body && (body.error || body.message)) || ('Upload falhou (HTTP ' + xhr.status + ')')));
           };
-          img.onerror = () => { URL.revokeObjectURL(url); reject(new Error('Imagem inválida')); };
-          img.src = url;
+          xhr.onerror = () => reject(new Error('Falha de rede no envio'));
+          xhr.send(blob);
         });
-        ext = 'jpg'; ctype = 'image/jpeg';
+        return j.url;
       }
-      // mesmo prefixo midias/ usado no site (media.432up.com/midias/...)
-      const path = 'midias/convites/' + uid + '/capa-' + Date.now() + '.' + ext;
-      const q = R2_UPLOAD_URL + '?path=' + encodeURIComponent(path) + (video ? '&raw=1' : '');
-      const j = await new Promise((resolve, reject) => {
-        const xhr = new XMLHttpRequest();
-        xhr.open('PUT', q);
-        xhr.setRequestHeader('Authorization', 'Bearer ' + tok);
-        xhr.setRequestHeader('Content-Type', ctype);
-        xhr.onload = () => {
-          let body = null;
-          try { body = JSON.parse(xhr.responseText); } catch (_) {}
-          if (xhr.status >= 200 && xhr.status < 300 && body && body.ok && body.url) resolve(body);
-          else reject(new Error((body && body.error) || ('Upload falhou (HTTP ' + xhr.status + ')')));
+      // imagem: compacta JPEG (mesmo espírito do perfil, path {uid}/...)
+      blob = await new Promise((resolve, reject) => {
+        const img = new Image();
+        const url = URL.createObjectURL(file);
+        img.onload = () => {
+          try {
+            const max = 1600;
+            let w = img.naturalWidth, h = img.naturalHeight;
+            const scale = Math.min(1, max / Math.max(w, h));
+            const c = document.createElement('canvas');
+            c.width = Math.round(w * scale); c.height = Math.round(h * scale);
+            c.getContext('2d').drawImage(img, 0, 0, c.width, c.height);
+            c.toBlob(b => { URL.revokeObjectURL(url); b ? resolve(b) : reject(new Error('Falha ao compactar')); }, 'image/jpeg', 0.85);
+          } catch (e) { URL.revokeObjectURL(url); reject(e); }
         };
-        xhr.onerror = () => reject(new Error('Falha de rede no envio da capa'));
-        xhr.send(blob);
+        img.onerror = () => { URL.revokeObjectURL(url); reject(new Error('Imagem inválida')); };
+        img.src = url;
       });
-      return j.url;
+      path = uid + '/convite-capa-' + Date.now() + '.jpg';
+      ctype = 'image/jpeg';
+      // fetch igual área do cliente (avatar)
+      const resp = await fetch(R2_UPLOAD_URL + '?path=' + encodeURIComponent(path), {
+        method: 'PUT',
+        headers: { 'Authorization': 'Bearer ' + tok, 'Content-Type': ctype },
+        body: blob
+      });
+      const result = await resp.json().catch(() => null);
+      if (!resp.ok || !result || !result.ok || !result.url) {
+        throw new Error((result && (result.error || result.message)) || ('Upload falhou (status ' + resp.status + ')'));
+      }
+      return result.url;
     }
 
 let TOKEN = '';
@@ -779,6 +794,11 @@ let TOKEN = '';
         `<option value="${i}">${i ? '+' + i + (i > 1 ? ' acompanhantes' : ' acompanhante') : 'Somente eu'}</option>`
       ).join('');
       $('wAcomp').classList.toggle('hidden', L === 0);
+      const dl = $('listaConvidados');
+      if (dl) {
+        const convs = (PUB.convidados || []).filter(c => c && c.nome);
+        dl.innerHTML = convs.map(c => '<option value="' + esc(c.nome) + '">').join('');
+      }
       $('wRestricao').classList.toggle('hidden', rsvp.restricao === false);
       $('wMsg').classList.toggle('hidden', rsvp.mensagem === false);
 
@@ -1087,11 +1107,18 @@ let TOKEN = '';
         edState.padrinhos = [];
       }
       // programação
-      edState.programacao = [...document.querySelectorAll('#pvProg .prog-edit-row')].map(row => ({
-        hora: (row.querySelector('[data-p=hora]')?.value || '').trim(),
-        titulo: (row.querySelector('[data-p=titulo]')?.value || '').trim(),
-        desc: (row.querySelector('[data-p=desc]')?.value || '').trim()
-      })).filter(p => p.hora || p.titulo);
+      edState.programacao = [...document.querySelectorAll('#pvProg .prog-edit-row')].map(row => {
+        let hv = (row.querySelector('[data-p=hora]')?.value || '').trim();
+        if (/^\d{2}:\d{2}$/.test(hv)) {
+          const [hh, mm] = hv.split(':');
+          hv = mm === '00' ? (String(+hh) + 'h') : (String(+hh) + 'h' + mm);
+        }
+        return {
+          hora: hv,
+          titulo: (row.querySelector('[data-p=titulo]')?.value || '').trim(),
+          desc: (row.querySelector('[data-p=desc]')?.value || '').trim()
+        };
+      }).filter(p => p.hora || p.titulo);
       edState.dados.programacao = edState.programacao;
       edState.dados.nomeA = edState.anfitrioes[0]?.nome || '';
       edState.dados.nomeB = edState.anfitrioes[1]?.nome || '';
@@ -1192,12 +1219,19 @@ let TOKEN = '';
         return;
       }
       $('pvProg').innerHTML = list.map((p, i) =>
-        '<div class="prog-edit-row" data-i="' + i + '">' +
-          '<input data-p="hora" placeholder="17h00" value="' + esc(p.hora || '') + '">' +
-          '<div><input data-p="titulo" placeholder="Título" value="' + esc(p.titulo || '') + '" style="margin-bottom:6px">' +
-          '<input data-p="desc" placeholder="Descrição" value="' + esc(p.desc || '') + '"></div>' +
-          '<button type="button" class="btn-icon danger" data-rm-prog="' + i + '">−</button>' +
-        '</div>'
+        (() => {
+          let hv = (p.hora || '').toString().trim();
+          // normaliza 17h00 / 17h / 17:00 -> HH:MM para input time
+          const m = hv.match(/^(\d{1,2})[:hH]?(\d{2})?/);
+          if (m) hv = String(m[1]).padStart(2,'0') + ':' + String(m[2] || '00').padStart(2,'0');
+          else if (!/^\d{2}:\d{2}$/.test(hv)) hv = '';
+          return '<div class="prog-edit-row" data-i="' + i + '">' +
+            '<input type="time" data-p="hora" value="' + esc(hv) + '" title="Toque para escolher a hora" style="border-radius:14px">' +
+            '<div><input data-p="titulo" placeholder="Título (ex.: Recepção)" value="' + esc(p.titulo || '') + '" style="margin-bottom:6px">' +
+            '<input data-p="desc" placeholder="Descrição (opcional)" value="' + esc(p.desc || '') + '"></div>' +
+            '<button type="button" class="btn-icon danger" data-rm-prog="' + i + '" aria-label="Remover">−</button>' +
+          '</div>';
+        })()
       ).join('');
       $('pvProg').querySelectorAll('[data-rm-prog]').forEach(btn => {
         btn.addEventListener('click', () => {
@@ -1213,7 +1247,11 @@ let TOKEN = '';
       edState.dados = d;
       edState.anfitrioes = (atual.anfitrioes || []).map(a => ({ papel: a.papel, nome: a.nome }));
       edState.padrinhos = (atual.padrinhos || []).map(p => ({ nome: p.nome || p }));
-      edState.programacao = d.programacao || [];
+      edState.programacao = (d.programacao && d.programacao.length) ? d.programacao : [
+        { hora: '17:00', titulo: 'Recepção', desc: 'Chegada dos convidados' },
+        { hora: '18:00', titulo: 'Cerimônia', desc: '' },
+        { hora: '20:00', titulo: 'Celebração', desc: 'Festa e confraternização' }
+      ];
 
       if (tipos.length) {
         $('edTipo').innerHTML = tipos.map(t => '<option value="' + esc(t.codigo) + '">' + esc(t.rotulo) + '</option>').join('');
@@ -1428,18 +1466,24 @@ let TOKEN = '';
       return j;
     }
     if ($('edCep')) {
-      $('edCep').addEventListener('blur', async () => {
+      const aplicarCep = async () => {
+        const raw = $('edCep').value;
+        const n = String(raw || '').replace(/\D/g, '');
+        if (n.length !== 8) return;
+        toast('Buscando CEP…');
         try {
-          const j = await buscarCep($('edCep').value);
-          if (!j) return;
-          if ($('edCidade') && !$('edCidade').value) $('edCidade').value = [j.localidade, j.uf].filter(Boolean).join(' / ');
+          const j = await buscarCep(n);
+          if (!j) { toast('CEP não encontrado'); return; }
+          if ($('edCidade')) $('edCidade').value = [j.localidade, j.uf].filter(Boolean).join(' / ');
           const rua = [j.logradouro, j.bairro].filter(Boolean).join(', ');
-          if (rua && $('pvEnd') && !($('pvEnd').textContent || '').trim()) {
-            $('pvEnd').textContent = rua;
-          }
-          toast('CEP encontrado.');
-        } catch (_) {}
-      });
+          if (rua && $('pvEnd')) $('pvEnd').textContent = rua;
+          // formata CEP
+          $('edCep').value = n.replace(/(\d{5})(\d{3})/, '$1-$2');
+          toast('Endereço preenchido pelo CEP.');
+        } catch (_) { toast('Não foi possível consultar o CEP'); }
+      };
+      $('edCep').addEventListener('blur', aplicarCep);
+      $('edCep').addEventListener('change', aplicarCep);
     }
     let _addrT = null;
     if ($('edBuscaEnd')) {
