@@ -402,7 +402,7 @@
     const _sb = (typeof sbPartner !== 'undefined') ? sbPartner : null;
     const $ = (id) => document.getElementById(id);
     const esc = (s) => String(s ?? '').replace(/[&<>"']/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
-    const norm = (s) => String(s ?? '').normalize('NFD').replace(/[̀-ͯ]/g, '').toLowerCase().trim();
+    const norm = (s) => String(s ?? '').normalize('NFD').replace(/[\u0300-\u036f]/g, '').toLowerCase().trim();
     const CAMERA_SVG = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round" width="28" height="28"><path d="M4 8h3l2-3h6l2 3h3v11H4z"/><circle cx="12" cy="13" r="3.5"/></svg>';
 
     let PEDIDOS = [];
@@ -454,7 +454,9 @@
       return t;
     }
 
-    // Vídeo: envio idêntico ao do parceiros.html (fetch direto, sem etapas antes). Até 3 tentativas
+    // Vídeo: envio por fetch direto. Até 3 tentativas (ver enviarVideoComTentativas).
+    // AJUSTE: o vídeo é lido para a memória (file.arrayBuffer) antes do envio. Isso testa se o
+    // navegador consegue ler o arquivo e envia um Blob em memória, como já acontece com as fotos.
     async function enviarVideoR2(path, file) {
       const { data } = await _sb.auth.getSession();
       const t = data && data.session && data.session.access_token;
@@ -471,6 +473,23 @@
         instancia: file instanceof Blob
       });
 
+      // DIAGNÓSTICO 3 + AJUSTE: lê o conteúdo real do arquivo antes de enviar
+      let corpo;
+      try {
+        const buf = await file.arrayBuffer();
+        console.log('[VIDEO-LEITURA]', {
+          bytesLidos: buf.byteLength,
+          tamanhoEsperado: file.size
+        });
+        if (!buf.byteLength) {
+          throw new Error('o navegador leu 0 bytes de um arquivo de ' + file.size + ' bytes');
+        }
+        corpo = new Blob([buf], { type: file.type || 'video/mp4' });
+      } catch (e) {
+        console.log('[VIDEO-LEITURA-ERRO]', e && e.message);
+        throw new Error('Não foi possível ler o vídeo no aparelho: ' + (e && e.message ? e.message : e));
+      }
+
       const resp = await fetch(
         R2_UPLOAD_URL + '?path=' + encodeURIComponent(path),
         {
@@ -479,7 +498,7 @@
             'Authorization': 'Bearer ' + t,
             'Content-Type': file.type || 'application/octet-stream'
           },
-          body: file
+          body: corpo
         }
       );
 
