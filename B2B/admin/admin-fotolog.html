@@ -454,6 +454,52 @@
       return t;
     }
 
+    // Vídeo: envio idêntico ao do parceiros.html (fetch direto, sem etapas antes). Até 3 tentativas
+    async function enviarVideoR2(path, file) {
+      const { data } = await _sb.auth.getSession();
+      const t = data && data.session && data.session.access_token;
+
+      if (!t) {
+        throw new Error('Sessão expirada. Faça login novamente.');
+      }
+
+      // DIAGNÓSTICO 1: confirma os dados do arquivo antes do envio
+      console.log('[VIDEO-ENVIO]', {
+        nome: file.name,
+        tamanhoBytes: file.size,
+        tipo: file.type,
+        instancia: file instanceof Blob
+      });
+
+      const resp = await fetch(
+        R2_UPLOAD_URL + '?path=' + encodeURIComponent(path),
+        {
+          method: 'PUT',
+          headers: {
+            'Authorization': 'Bearer ' + t,
+            'Content-Type': file.type || 'application/octet-stream'
+          },
+          body: file
+        }
+      );
+
+      // DIAGNÓSTICO 2: registra a resposta do Worker sem consumir o corpo original
+      console.log('[VIDEO-RESPOSTA]', {
+        status: resp.status,
+        resposta: await resp.clone().text()
+      });
+
+      const j = await resp.json().catch(() => null);
+
+      if (!resp.ok || !j || !j.ok) {
+        throw new Error(
+          (j && j.error) || ('Upload falhou (status ' + resp.status + ')')
+        );
+      }
+
+      return j;
+    }
+
     // Até 3 tentativas com o mesmo caminho (mesmo padrão do perfil do B2B)
     async function enviarR2(path, blob, raw, onFrac) {
       let ultimo = null;
@@ -689,21 +735,6 @@
       SORT.option('disabled', !DRAG);
     }
 
-    // Vídeo: envio idêntico ao do parceiros.html (fetch direto, sem etapas antes). Até 3 tentativas
-    async function enviarVideoR2(path, file) {
-      const { data } = await _sb.auth.getSession();
-      const t = data && data.session && data.session.access_token;
-      if (!t) throw new Error('Sessão expirada. Faça login novamente.');
-      const resp = await fetch(R2_UPLOAD_URL + '?path=' + encodeURIComponent(path), {
-        method: 'PUT',
-        headers: { 'Authorization': 'Bearer ' + t, 'Content-Type': file.type || 'application/octet-stream' },
-        body: file
-      });
-      const j = await resp.json().catch(() => null);
-      if (!resp.ok || !j || !j.ok) throw new Error((j && j.error) || ('Upload falhou (status ' + resp.status + ')'));
-      return j;
-    }
-
     async function enviarVideoComTentativas(path, file) {
       let ultimo = null;
       for (let t = 1; t <= 3; t++) {
@@ -754,11 +785,11 @@
     async function enviarArquivo(file, extras, onFrac) {
 
       console.log('[432UP TESTE] Arquivo selecionado:', {
-  nome: file && file.name,
-  tipo: file && file.type,
-  tamanhoBytes: file && file.size,
-  ehVideo: ehVideo(file)
-});
+        nome: file && file.name,
+        tipo: file && file.type,
+        tamanhoBytes: file && file.size,
+        ehVideo: ehVideo(file)
+      });
       const e = extras || {};
       const fr = onFrac || (() => {});
       const video = ehVideo(file);
