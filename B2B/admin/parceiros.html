@@ -2342,9 +2342,39 @@
         }
         var lista = [];
         (pick('galeria_fotos') || []).forEach(function (u) { if (u) lista.push(u); });
-        (pick('midias_pendentes') || []).forEach(function (m) { if (m && m.url) lista.push(m.url); });
+        (pick('midias_pendentes') || []).forEach(function (m) { if (m && m.url) { lista.push(m.url); if (m.tipo === 'video') lista.push(posterDoVideo(m.url)); } });
         [pick('foto_capa_url'), pick('youtube_1'), pick('youtube_2')].forEach(function (u) { if (u) lista.push(u); });
+        [pick('youtube_1'), pick('youtube_2')].forEach(function (u) { if (u) lista.push(posterDoVideo(u)); });
         return lista;
+      }
+
+      /* Miniatura do vídeo: fica no R2 ao lado do vídeo, com o mesmo nome e sufixo _poster.jpg.
+         Não precisa de campo novo no banco; a URL é derivada da URL do vídeo. */
+      function semExtensao(s) { return String(s).replace(/\.[^./]+$/, ''); }
+      function posterDoVideo(url) { return url ? semExtensao(url) + '_poster.jpg' : null; }
+
+      function gerarPosterVideo(file) {
+        return new Promise(function (resolve) {
+          var url = URL.createObjectURL(file);
+          var v = document.createElement('video');
+          v.muted = true; v.playsInline = true; v.preload = 'auto'; v.src = url;
+          var feito = false;
+          function fim(blob) { if (feito) return; feito = true; URL.revokeObjectURL(url); resolve(blob); }
+          v.onerror = function () { fim(null); };
+          v.onloadeddata = function () { try { v.currentTime = 0.01; } catch (e) { fim(null); } };
+          v.onseeked = function () {
+            try {
+              if (!v.videoWidth) return fim(null);
+              var w = Math.min(v.videoWidth, 960);
+              var h = Math.round(w * v.videoHeight / v.videoWidth);
+              var c = document.createElement('canvas');
+              c.width = w; c.height = h;
+              c.getContext('2d').drawImage(v, 0, 0, w, h);
+              c.toBlob(function (b) { fim(b); }, 'image/jpeg', 0.86);
+            } catch (e) { fim(null); }
+          };
+          setTimeout(function () { fim(null); }, 15000);
+        });
       }
 
       /* Apaga do R2 um arquivo que saiu do cadastro. */
@@ -2361,7 +2391,7 @@
             method: 'DELETE',
             headers: { 'Authorization': 'Bearer ' + token }
           });
-          if (!respDel2.ok) {
+          if (!respDel2.ok && respDel2.status !== 404) {
             alert('R2: não apagou o arquivo (status ' + respDel2.status + ').');
           }
         } catch (err) {
@@ -2395,11 +2425,17 @@
           var prefix = campo === 'youtube_2' ? 'video_secundario_' : 'video_principal_';
           var rotulo = 'Enviando vídeo ' + (c + 1);
           progressoVideo(rotulo, 0);
+          var pathVid = uid + '/' + prefix + ts + '_' + novo.file.name;
           var urlVid = await enviarVideoComTentativas(
-            uid + '/' + prefix + ts + '_' + novo.file.name,
+            pathVid,
             novo.file,
             function (f) { progressoVideo(rotulo, f); }
           );
+          var blobPoster = await gerarPosterVideo(novo.file);
+          if (blobPoster) {
+            try { await uploadComTentativas(semExtensao(pathVid) + '_poster.jpg', blobPoster); }
+            catch (ePoster) { console.warn('Miniatura não enviada:', ePoster && ePoster.message); }
+          }
           atualizarLabelsVideoAdmin(campo, urlVid, false);
           var parceiroRef = listaParceiros.find(function (item) { return String(item.id) === String(parceiro.id); });
           if (parceiroRef) parceiroRef[campo] = urlVid;
@@ -2838,14 +2874,14 @@
           html += '<div class="portfolio-item-admin bg-slate-950">' +
             '<span class="absolute top-1 left-1 px-1 py-0.5 rounded text-[8px] font-extrabold bg-emerald-500/90 text-white z-10 shadow">🎬 Vídeo 1</span>' +
             '<button type="button" class="btn-remove-galeria-admin" onclick="removerVideoAtivoAdmin(\'youtube_1\')" title="Excluir vídeo principal">×</button>' +
-            '<video src="' + vid1Ativo + (vid1Ativo.indexOf('#') > -1 ? '' : '#t=0.001') + '" muted playsinline preload="metadata" class="w-full h-full object-cover"></video>' +
+            '<video src="' + vid1Ativo + (vid1Ativo.indexOf('#') > -1 ? '' : '#t=0.001') + '" poster="' + esc(posterDoVideo(vid1Ativo)) + '" muted playsinline preload="metadata" class="w-full h-full object-cover"></video>' +
           '</div>';
         }
         if (mostrarAtivo2) {
           html += '<div class="portfolio-item-admin bg-slate-950">' +
             '<span class="absolute top-1 left-1 px-1 py-0.5 rounded text-[8px] font-extrabold bg-emerald-500/90 text-white z-10 shadow">🎬 Vídeo 2</span>' +
             '<button type="button" class="btn-remove-galeria-admin" onclick="removerVideoAtivoAdmin(\'youtube_2\')" title="Excluir vídeo secundário">×</button>' +
-            '<video src="' + vid2Ativo + (vid2Ativo.indexOf('#') > -1 ? '' : '#t=0.001') + '" muted playsinline preload="metadata" class="w-full h-full object-cover"></video>' +
+            '<video src="' + vid2Ativo + (vid2Ativo.indexOf('#') > -1 ? '' : '#t=0.001') + '" poster="' + esc(posterDoVideo(vid2Ativo)) + '" muted playsinline preload="metadata" class="w-full h-full object-cover"></video>' +
           '</div>';
         }
 
@@ -2867,7 +2903,7 @@
             html += '<div class="portfolio-item-admin item-pendente bg-slate-950">' +
               '<span class="absolute top-1 left-1 px-1 py-0.5 rounded text-[8px] font-extrabold bg-amber-500/90 text-slate-950 z-10 shadow">🎬 Pendente</span>' +
               '<button type="button" class="btn-remove-galeria-admin" onclick="removerFotoPendenteAdmin(' + idx + ')" title="Excluir vídeo pendente">×</button>' +
-              '<video src="' + item.url + (String(item.url).indexOf('#') > -1 ? '' : '#t=0.001') + '" muted playsinline preload="metadata" class="w-full h-full object-cover"></video>' +
+              '<video src="' + item.url + (String(item.url).indexOf('#') > -1 ? '' : '#t=0.001') + '" poster="' + esc(posterDoVideo(item.url)) + '" muted playsinline preload="metadata" class="w-full h-full object-cover"></video>' +
             '</div>';
           } else {
             html += '<div class="portfolio-item-admin item-pendente">' +
