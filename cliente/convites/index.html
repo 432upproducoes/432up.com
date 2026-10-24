@@ -11,9 +11,11 @@
 
   <script async src="https://www.googletagmanager.com/gtag/js?id=G-7SWNCP1NV6"></script>
   <script>window.dataLayer=window.dataLayer||[];function gtag(){dataLayer.push(arguments);}gtag('js',new Date());gtag('config','G-7SWNCP1NV6');</script>
-  <script src="https://unpkg.com/@supabase/supabase-js@2"></script>
+  <!-- Absolut os mesmos da área do cliente -->
+  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
   <script src="https://www.432up.com/script/tracker.js"></script>
   <script src="https://www.432up.com/B2B/partner-config.js"></script>
+  <script src="https://www.432up.com/B2B/partner-header.js"></script>
 
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
@@ -30,6 +32,10 @@
     *,*::before,*::after{box-sizing:border-box}
     body{margin:0;background:var(--bg)!important;color:var(--text)!important;font-family:'Inter',system-ui,sans-serif;overflow-x:hidden}
     .hidden{display:none!important}
+    #viewPublic,#viewAdmin,#viewEditor,#viewErro,#viewBoot{position:relative;z-index:5}
+    #viewBoot{max-width:480px;margin:18vh auto;padding:28px 22px;text-align:center;border-radius:22px;border:1px solid rgba(255,255,255,.12);background:rgba(12,10,22,.88);color:var(--body);line-height:1.5}
+    #viewBoot code{color:var(--gold);font-size:12px;word-break:break-all}
+    #orbit-canvas,.plasma-top-layer{pointer-events:none;z-index:0!important}
     #toast{position:fixed;left:50%;bottom:24px;transform:translate(-50%,16px);opacity:0;padding:12px 20px;border-radius:999px;background:#0d0b16;border:1px solid rgba(168,85,247,.5);color:#fff;font-size:.85rem;z-index:10080;transition:.3s;pointer-events:none;max-width:calc(100% - 32px)}
     #toast.show{opacity:1;transform:translate(-50%,0)}
 
@@ -151,6 +157,11 @@
 <body>
   <canvas id="orbit-canvas"></canvas>
   <div id="plasmaLayer" class="plasma-top-layer"></div>
+
+  <div id="viewBoot">
+    <p style="color:var(--gold);letter-spacing:.14em;text-transform:uppercase;font-size:11px;font-weight:700">Convites 432UP</p>
+    <p id="bootMsg">Carregando…</p>
+  </div>
 
   <!-- ===================== PÚBLICO ===================== -->
   <main class="pub hidden" id="viewPublic">
@@ -275,7 +286,7 @@
     <p class="lead">Crie, edite, publique e acompanhe confirmações. Link público: esta mesma página com <code>?t=TOKEN</code>.</p>
     <div class="actions">
       <button class="btn" type="button" id="btnNovo"><i class="fas fa-plus"></i> Novo convite</button>
-      <a class="btn-s" href="../index.html">← Área do cliente</a>
+      <a class="btn-s" href="https://www.432up.com/cliente/index.html">← Área do cliente</a>
     </div>
     <div class="box" id="boxLista">
       <h2>Seus convites</h2>
@@ -434,12 +445,47 @@
 
   <script>
   (function () {
-    const CFG = window.PARTNER_CFG || window.CFG || {};
-    const SB_URL = CFG.SB_URL || CFG.supabaseUrl || '';
-    const SB_KEY = CFG.SB_ANON || CFG.supabaseAnonKey || '';
-    const SB = window.supabase.createClient(SB_URL, SB_KEY);
-
     const $ = id => document.getElementById(id);
+    function bootFail(msg, detail) {
+      const el = $('viewBoot');
+      if (!el) return;
+      el.classList.remove('hidden');
+      $('bootMsg').innerHTML = msg + (detail ? '<br><br><code>' + String(detail).replace(/[<>]/g,'') + '</code>' : '');
+    }
+    function bootHide() {
+      const el = $('viewBoot');
+      if (el) el.classList.add('hidden');
+    }
+
+    // Igual à área do cliente: window.PARTNER_CFG com SB_URL + SB_KEY
+    const CFG = window.PARTNER_CFG || window.CFG || {};
+    const SB_URL = (CFG.SB_URL || CFG.supabaseUrl || '').trim();
+    // Na área do cliente a chave anônima se chama SB_KEY (não SB_ANON)
+    const SB_KEY = (CFG.SB_KEY || CFG.SB_ANON || CFG.supabaseAnonKey || '').trim();
+
+    if (!window.supabase) {
+      bootFail('Biblioteca Supabase não carregou (cdn.jsdelivr.net).');
+      return;
+    }
+    if (!CFG || !SB_URL || !SB_KEY) {
+      bootFail(
+        'PARTNER_CFG ausente ou incompleto.',
+        'Esperado: https://www.432up.com/B2B/partner-config.js com PARTNER_CFG.SB_URL e PARTNER_CFG.SB_KEY'
+      );
+      return;
+    }
+
+    let SB;
+    try {
+      // Mesmo padrão da clientes/index.html
+      SB = window.supabase.createClient(SB_URL, SB_KEY, {
+        auth: { persistSession: true, autoRefreshToken: true, detectSessionInUrl: true }
+      });
+      window.sbPartner = SB;
+    } catch (e) {
+      bootFail('Falha ao iniciar Supabase.', e.message);
+      return;
+    }
     const pad = n => String(n).padStart(2, '0');
     const esc = s => String(s ?? '').replace(/[&<>"']/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
     const MESES = ['janeiro','fevereiro','março','abril','maio','junho','julho','agosto','setembro','outubro','novembro','dezembro'];
@@ -629,13 +675,16 @@
       TOKEN = token;
       try {
         const data = await rpc('convite_publico', { p_token: token });
-        if (!data) throw new Error('vazio');
+        if (!data) throw new Error('Convite não encontrado ou não publicado');
         PUB = data;
+        bootHide();
         $('viewPublic').classList.remove('hidden');
         renderPublic();
         tick(); setInterval(tick, 1000);
-      } catch (_) {
+      } catch (e) {
+        bootHide();
         $('viewErro').classList.remove('hidden');
+        $('viewErro').querySelector('p').textContent = e.message || 'Link inativo ou ainda não publicado.';
       }
     }
 
@@ -959,30 +1008,47 @@
 
     /* ===================== BOOT ===================== */
     (async function boot() {
-      const t = tokenUrl();
-      if (t) {
-        await bootPublic(t);
-        return;
-      }
-      // Admin: precisa login
-      const s = await SB.auth.getSession();
-      if (!(s.data && s.data.session)) {
-        document.body.insertAdjacentHTML('beforeend',
-          '<div class="erro-box" style="margin-top:18vh"><h2 style="font-family:Cormorant Garamond,serif;font-weight:400">Área restrita</h2>'+
-          '<p style="color:#B8B8C2">Faça login na área do cliente para gerenciar convites.</p>'+
-          '<p><a class="btn" href="../index.html">Área do cliente</a></p></div>');
-        return;
-      }
-      $('viewAdmin').classList.remove('hidden');
-      await carregarLista();
-      const id = new URLSearchParams(location.search).get('id');
-      if (id) await abrirDetalhe(id);
-      if (new URLSearchParams(location.search).get('editar')) {
-        await abrirEditor(new URLSearchParams(location.search).get('editar'));
+      try {
+        const t = tokenUrl();
+        if (t) {
+          bootHide();
+          await bootPublic(t);
+          return;
+        }
+
+        // Aguarda sessão (cookie/storage pode demorar um pouco após redirect)
+        let s = await SB.auth.getSession();
+        if (!(s.data && s.data.session)) {
+          await new Promise(r => setTimeout(r, 600));
+          s = await SB.auth.getSession();
+        }
+        if (!(s.data && s.data.session)) {
+          bootFail(
+            'Sessão não encontrada. Abra a área do cliente logado e entre em Convites de novo.',
+            'Ou use o link público com ?t=TOKEN'
+          );
+          return;
+        }
+
+        bootHide();
+        $('viewAdmin').classList.remove('hidden');
+        try {
+          await carregarLista();
+        } catch (e) {
+          $('listaBody').innerHTML = '<div class="vazio">Erro ao listar: ' + esc(e.message) +
+            '<br><br>Confirme se o SQL complemento (convite_listar etc.) foi aplicado.</div>';
+        }
+        const qs = new URLSearchParams(location.search);
+        const id = qs.get('id');
+        if (id) await abrirDetalhe(id);
+        if (qs.get('editar')) await abrirEditor(qs.get('editar'));
+      } catch (e) {
+        bootFail('Erro ao iniciar.', e.message || e);
       }
     })();
   })();
   </script>
+  <link rel="stylesheet" href="https://www.432up.com/css/style.css">
   <script src="https://www.432up.com/script/script.js" defer></script>
 </body>
 </html>
