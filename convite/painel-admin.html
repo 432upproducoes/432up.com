@@ -1,0 +1,357 @@
+<!DOCTYPE html>
+<html lang="pt-BR" data-theme="dark">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
+  <meta name="theme-color" content="#08080A">
+  <title>Painel de convites · 432UP!</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=Cormorant+Garamond:ital,wght@0,400;0,600;1,400&display=swap" rel="stylesheet">
+  <style>
+    :root{--bg-pure:#08080A;--text-primary:#FFFFFF;--text-body:#E7E7EC;--sem-life:#D4AF37;--sem-spirit:#A855F7;--direction-fume:rgba(22,18,33,.92)}
+    *,*::before,*::after{box-sizing:border-box}
+    body{background:var(--bg-pure);color:var(--text-primary);margin:0;font-family:'Inter',system-ui,sans-serif}
+    .topbar{position:sticky;top:0;z-index:10;display:flex;justify-content:space-between;align-items:center;flex-wrap:wrap;gap:10px;padding:14px 18px;background:rgba(8,8,10,.92);backdrop-filter:blur(12px);border-bottom:1px solid rgba(212,175,55,.2)}
+    .topbar strong{font-family:'Cormorant Garamond',serif;font-size:1.5rem;font-weight:400}
+    .badge{font-size:.7rem;letter-spacing:.12em;text-transform:uppercase;color:#F5D76E;border:1px solid rgba(212,175,55,.4);border-radius:999px;padding:6px 12px;margin-left:10px}
+    .wrap{width:min(1100px,calc(100% - 28px));margin:0 auto;padding:28px 0 80px}
+    .panel{border:1px solid rgba(212,175,55,.3);border-radius:22px;padding:clamp(20px,3vw,32px);background:rgba(255,255,255,.03);margin-bottom:26px}
+    .panel h2{font-family:'Cormorant Garamond',serif;font-weight:400;font-size:2rem;margin:0 0 6px}
+    .panel > p.hint{margin:0 0 20px;color:#9d9daa;font-size:.9rem}
+    .eyebrow{font-size:.68rem;letter-spacing:.18em;text-transform:uppercase;font-weight:700;color:var(--sem-life);opacity:.85}
+    .btn-action,.btn-ghost{display:inline-flex;align-items:center;gap:8px;border-radius:999px;cursor:pointer;font-family:inherit;text-decoration:none;white-space:nowrap}
+    .btn-action{padding:14px 26px;border:0;background:linear-gradient(135deg,#F5D76E,#B8860B);color:#08080A;font-weight:700;font-size:.92rem}
+    .btn-ghost{padding:12px 20px;border:1px solid rgba(212,175,55,.6);background:transparent;color:var(--sem-life);font-size:.85rem}
+    .btn-ghost.danger{border-color:rgba(255,120,120,.5);color:#ff9a9a}
+    .btn-ghost:hover{background:rgba(212,175,55,.1)}
+    .btn-action:disabled,.btn-ghost:disabled{opacity:.45;cursor:not-allowed}
+    .convites{display:grid;gap:10px}
+    .conv{display:flex;justify-content:space-between;align-items:center;gap:10px;flex-wrap:wrap;padding:14px 16px;border:1px solid rgba(255,255,255,.12);border-radius:16px;background:rgba(8,8,10,.6);color:#fff;cursor:pointer;text-align:left;font:inherit}
+    .conv.on{border-color:var(--sem-life);box-shadow:0 0 18px rgba(212,175,55,.25)}
+    .conv small{display:block;color:#9d9daa;font-size:.78rem;margin-top:3px}
+    .tag{font-size:10px;font-weight:700;padding:4px 9px;border-radius:999px;text-transform:uppercase;letter-spacing:.05em;background:rgba(168,85,247,.18);color:#e9d5ff}
+    .tag.pub{background:rgba(0,255,102,.14);color:#00FF66}
+    .preview{border-radius:24px;padding:clamp(22px,4vw,44px);background:rgba(255,255,255,.045);border:1px solid rgba(168,85,247,.36);box-shadow:0 0 70px rgba(168,85,247,.12);text-align:center}
+    .ed{outline:1px dashed rgba(212,175,55,.55);outline-offset:5px;border-radius:6px;cursor:text}
+    .ed:focus{outline:1px solid rgba(212,175,55,.8);background:rgba(212,175,55,.08)}
+    .prev-title{font-family:'Cormorant Garamond',serif;font-weight:400;font-size:clamp(2.4rem,6vw,4.4rem);line-height:1;margin:12px 0 18px}
+    .prev-title .amp{color:var(--sem-life);font-style:italic}
+    .form-grid{display:grid;grid-template-columns:1fr 1fr;gap:0 18px}
+    .field{margin-bottom:16px}
+    .field.full{grid-column:1/-1}
+    .field label{display:block;font-size:.8rem;color:var(--sem-life);margin-bottom:7px}
+    .field input,.field select,.field textarea{width:100%;padding:13px 14px;border-radius:14px;border:1px solid rgba(212,175,55,.3);background:rgba(8,8,10,.6);color:#fff;font:inherit;font-size:.92rem}
+    .field textarea{min-height:90px;resize:vertical}
+    .field input:focus,.field select:focus,.field textarea:focus{outline:none;border-color:var(--sem-spirit)}
+    .check{display:flex;align-items:center;gap:10px;font-size:.92rem;color:var(--text-body);padding:12px 0}
+    .check input{width:18px;height:18px;accent-color:#D4AF37}
+    .row-ed{display:grid;grid-template-columns:1fr 2fr auto;gap:10px;margin-bottom:10px;align-items:center}
+    .row-ed input{padding:12px;border-radius:12px;border:1px solid rgba(212,175,55,.3);background:rgba(8,8,10,.6);color:#fff;font:inherit;font-size:.9rem;width:100%}
+    .tbl{width:100%;border-collapse:collapse;font-size:.88rem}
+    .tbl th{text-align:left;font-size:.7rem;letter-spacing:.1em;text-transform:uppercase;color:var(--sem-life);padding:8px;border-bottom:1px solid rgba(212,175,55,.25)}
+    .tbl td{padding:10px 8px;border-bottom:1px solid rgba(255,255,255,.07);color:var(--text-body)}
+    .empty{text-align:center;color:#9d9daa;padding:24px 0;font-size:.92rem}
+    .note{border:1px solid rgba(255,190,80,.4);background:rgba(255,190,80,.06);border-radius:16px;padding:14px 16px;font-size:.88rem;color:#F5D7A0;margin-bottom:26px;line-height:1.5}
+    .toast{position:fixed;left:50%;bottom:26px;transform:translate(-50%,20px);opacity:0;padding:13px 20px;border-radius:999px;background:#0d0b16;border:1px solid rgba(168,85,247,.5);font-size:.85rem;transition:opacity .3s,transform .3s;pointer-events:none;max-width:calc(100% - 32px);text-align:center;z-index:50}
+    .toast.show{opacity:1;transform:translate(-50%,0)}
+    @media(max-width:700px){.form-grid{grid-template-columns:1fr}.row-ed{grid-template-columns:1fr}}
+  </style>
+</head>
+<body>
+
+  <header class="topbar">
+    <div><strong>Painel de convites</strong><span class="badge">Admin</span></div>
+    <div style="display:flex;gap:10px;flex-wrap:wrap">
+      <button class="btn-ghost" id="btnVer" disabled><i></i>Ver convite</button>
+      <button class="btn-action" id="btnPublicar" disabled>Publicar</button>
+      <button class="btn-action" id="btnSalvar" disabled>Salvar</button>
+    </div>
+  </header>
+
+  <main class="wrap">
+    <div class="note">Alterações só aparecem no convite público depois de salvar. Dados do pedido não são alterados por este painel.</div>
+
+    <section class="panel">
+      <span class="eyebrow">Convites</span>
+      <h2>Todos os convites</h2>
+      <p class="hint">Toque em um convite para editar.</p>
+      <div class="convites" id="lista"><div class="empty">Carregando…</div></div>
+    </section>
+
+    <section class="panel" id="areaEdicao" style="display:none">
+      <span class="eyebrow" id="tipoTxt"></span>
+      <h2>Prévia do convite</h2>
+      <p class="hint">Toque nos nomes para editar direto aqui.</p>
+      <div class="preview">
+        <span class="eyebrow ed" contenteditable="true" data-edit="frase_abertura" id="pvFrase"></span>
+        <h3 class="prev-title" id="pvNomes"></h3>
+      </div>
+    </section>
+
+    <section class="panel" id="secDados" style="display:none">
+      <span class="eyebrow">Dados</span>
+      <h2>Informações do convite</h2>
+      <div class="form-grid">
+        <div class="field"><label for="f_tipo">Tipo de convite</label><select id="f_tipo"></select></div>
+        <div class="field"><label for="f_status">Situação</label>
+          <select id="f_status"><option value="rascunho">Rascunho</option><option value="publicado">Publicado</option></select></div>
+        <div class="field"><label for="f_empresa">Empresa / nome fantasia</label><input id="f_empresa" data-k="empresa"></div>
+        <div class="field"><label for="f_tipo_evento">Tipo de evento</label><input id="f_tipo_evento" data-k="tipo_evento"></div>
+        <div class="field"><label for="f_data">Data</label><input id="f_data" type="date" data-k="data"></div>
+        <div class="field"><label for="f_hora">Início (padrão 18:00)</label><input id="f_hora" type="time" data-k="hora"></div>
+        <div class="field"><label for="f_hora_fim">Término</label><input id="f_hora_fim" type="time" data-k="hora_fim"></div>
+        <div class="field"><label for="f_convidados">Nº de convidados</label><input id="f_convidados" data-k="convidados"></div>
+        <div class="field"><label for="f_local">Local</label><input id="f_local" data-k="local"></div>
+        <div class="field"><label for="f_traje">Traje</label><input id="f_traje" data-k="traje"></div>
+        <div class="field full"><label for="f_endereco">Endereço</label><textarea id="f_endereco" data-k="endereco"></textarea></div>
+        <div class="field full"><label for="f_intro">Texto de apresentação</label><textarea id="f_intro" data-k="intro"></textarea></div>
+        <div class="field full"><label for="f_titulo_historia">Título da história</label><input id="f_titulo_historia" data-k="titulo_historia"></div>
+        <div class="field full"><label for="f_citacao">Citação</label><textarea id="f_citacao" data-k="citacao"></textarea></div>
+        <div class="field full"><label for="f_fechamento">Frase final</label><input id="f_fechamento" data-k="fechamento"></div>
+        <div class="field full"><label for="f_traje_texto">Texto do traje</label><textarea id="f_traje_texto" data-k="traje_texto"></textarea></div>
+        <div class="field full"><label for="f_observacao">Observação aos convidados</label><textarea id="f_observacao" data-k="observacao"></textarea></div>
+        <div class="field full"><label for="f_capa">Capa (link da imagem ou vídeo)</label><input id="f_capa" data-k="capa_url"></div>
+      </div>
+    </section>
+
+    <section class="panel" id="secAnf" style="display:none">
+      <span class="eyebrow">Pessoas</span>
+      <h2>Anfitriões e padrinhos</h2>
+      <p class="hint">Os campos mudam conforme o tipo do convite.</p>
+      <div id="anfBox"></div>
+      <div id="padBox" style="margin-top:18px"></div>
+    </section>
+
+    <section class="panel" id="secProg" style="display:none">
+      <span class="eyebrow">Programação</span>
+      <h2>Momentos do dia</h2>
+      <p class="hint">Uma linha por momento: horário | título | descrição.</p>
+      <textarea id="prog" rows="5" style="width:100%;padding:13px;border-radius:14px;border:1px solid rgba(212,175,55,.3);background:rgba(8,8,10,.6);color:#fff;font:inherit"></textarea>
+    </section>
+
+    <section class="panel" id="secRsvp" style="display:none">
+      <span class="eyebrow">Presença</span>
+      <h2>Confirmações recebidas</h2>
+      <div class="form-grid" style="margin-bottom:18px">
+        <div class="field"><label for="r_limite">Limite de acompanhantes</label>
+          <select id="r_limite"><option value="0">Nenhum</option><option value="1">Até 1</option><option value="2">Até 2</option><option value="3">Até 3</option><option value="4">Até 4</option><option value="5">Até 5</option></select></div>
+        <div class="field"><label for="r_prazo">Prazo para confirmar</label><input id="r_prazo" type="date"></div>
+        <label class="check"><input type="checkbox" id="r_restricao"> Pedir restrição alimentar ou acessibilidade</label>
+        <label class="check"><input type="checkbox" id="r_mensagem"> Receber mensagem para o casal</label>
+      </div>
+      <div id="tabelaRsvp"></div>
+    </section>
+  </main>
+
+  <div class="toast" id="toast" role="status"></div>
+
+  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+  <script>
+    const CFG = {
+      url: 'https://paetkspbfejtjjkngqej.supabase.co',
+      key: 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InBhZXRrc3BiZmVqdGpqa25ncWVqIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzA5MDU2OTgsImV4cCI6MjA4NjQ4MTY5OH0.IiYweZ2g3bP7b0o7VvBW5LLb6d1oHtSNFUZlVkIsdsA',
+      link: 'https://www.432up.com/convite/?t='
+    };
+    const sb = supabase.createClient(CFG.url, CFG.key);
+    const $ = id => document.getElementById(id);
+    const esc = s => String(s ?? '').replace(/[&<>"']/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
+
+    const CAMPOS_TEXTO = ['empresa','tipo_evento','convidados','local','traje','endereco','intro','titulo_historia','citacao','fechamento','traje_texto','observacao','capa_url','hora_fim'];
+
+    let TIPOS = [], CONVITES = [], SEL = null, RSVPS = [];
+
+    function toast(msg) {
+      const t = $('toast'); t.textContent = msg; t.classList.add('show');
+      clearTimeout(t._h); t._h = setTimeout(() => t.classList.remove('show'), 3000);
+    }
+
+    function tipoDe(c) {
+      return TIPOS.find(t => t.codigo === c.tipo_codigo) || { codigo: c.tipo_codigo, rotulo: c.tipo_codigo, anfitrioes: [], permite_padrinhos: false };
+    }
+
+    function titulo(c) {
+      const nomes = (tipoDe(c).anfitrioes || []).map(a => c.anf && c.anf[a.papel]).filter(Boolean);
+      return nomes.length ? nomes.join(' & ') : ((c.dados && c.dados.empresa) || 'Sem nome');
+    }
+
+    async function init() {
+      const { data: { session } } = await sb.auth.getSession();
+      if (!session) { $('lista').innerHTML = '<div class="empty">Entre com uma conta de administrador para acessar.</div>'; return; }
+      const t = await sb.from('convite_tipos').select('*').eq('ativo', true).order('ordem');
+      TIPOS = t.data || [];
+      $('f_tipo').innerHTML = TIPOS.map(x => `<option value="${esc(x.codigo)}">${esc(x.rotulo)}</option>`).join('');
+      await carregar();
+    }
+
+    async function carregar(selecionarId) {
+      const r = await sb.from('convites').select('*').order('atualizado_em', { ascending: false });
+      if (r.error) { toast('Erro: ' + r.error.message); return; }
+      CONVITES = r.data || [];
+      if (CONVITES.length) {
+        const ids = CONVITES.map(c => c.id);
+        const [an, pa] = await Promise.all([
+          sb.from('convite_anfitrioes').select('*').in('convite_id', ids).order('ordem'),
+          sb.from('convite_padrinhos').select('*').in('convite_id', ids).order('ordem')
+        ]);
+        CONVITES.forEach(c => {
+          c.anf = {};
+          (an.data || []).filter(a => a.convite_id === c.id).forEach(a => c.anf[a.papel] = a.nome);
+          c.pad = (pa.data || []).filter(p => p.convite_id === c.id).map(p => p.nome);
+        });
+      }
+      renderLista();
+      const id = selecionarId || (SEL && SEL.id);
+      if (id && CONVITES.find(c => c.id === id)) await abrir(id);
+    }
+
+    function renderLista() {
+      if (!CONVITES.length) { $('lista').innerHTML = '<div class="empty">Nenhum convite criado ainda.</div>'; return; }
+      $('lista').innerHTML = CONVITES.map(c => {
+        const pub = c.status === 'publicado';
+        return `<button class="conv ${SEL && SEL.id === c.id ? 'on' : ''}" onclick="abrir('${c.id}')">
+          <div><strong>${esc(titulo(c))}</strong><small>${esc(tipoDe(c).rotulo)} · ${c.proposta_id ? 'pedido vinculado' : 'avulso'}${c.dados && c.dados.data ? ' · ' + esc(c.dados.data) : ''}</small></div>
+          <span class="tag ${pub ? 'pub' : ''}">${pub ? 'Publicado' : 'Rascunho'}</span></button>`;
+      }).join('');
+    }
+
+    async function abrir(id) {
+      SEL = CONVITES.find(c => c.id === id);
+      if (!SEL) return;
+      const r = await sb.from('convite_rsvps').select('*').eq('convite_id', id).order('criado_em');
+      RSVPS = r.data || [];
+      renderLista();
+      renderEditor();
+    }
+
+    function renderEditor() {
+      const c = SEL, d = c.dados || {}, t = tipoDe(c), rs = d.rsvp || {};
+      ['areaEdicao','secDados','secAnf','secProg','secRsvp'].forEach(x => $(x).style.display = '');
+      $('btnVer').disabled = false; $('btnSalvar').disabled = false; $('btnPublicar').disabled = false;
+      $('btnPublicar').textContent = c.status === 'publicado' ? 'Despublicar' : 'Publicar';
+      $('btnVer').onclick = () => window.open(CFG.link + c.token_publico, '_blank');
+      $('tipoTxt').textContent = t.rotulo + ' · ' + (c.proposta_id ? 'pedido vinculado' : 'convite avulso');
+
+      $('f_tipo').value = c.tipo_codigo;
+      $('f_status').value = c.status;
+      $('pvFrase').textContent = d.frase_abertura || '';
+      $('pvNomes').innerHTML = (t.anfitrioes || []).map((a, i) =>
+        (i ? '<span class="amp">&amp;</span>' : '') +
+        `<span class="ed" contenteditable="true" data-anf-prev="${esc(a.papel)}">${esc((c.anf || {})[a.papel] || '')}</span>`).join('');
+
+      CAMPOS_TEXTO.forEach(k => { const el = document.querySelector(`[data-k="${k}"]`); if (el) el.value = d[k] ?? ''; });
+      $('f_hora').value = d.hora || '18:00';
+      $('f_data').value = d.data || '';
+      $('prog').value = (d.programacao || []).map(p => `${p.hora || ''} | ${p.titulo || ''} | ${p.desc || ''}`).join('\n');
+      $('r_limite').value = String(rs.limite ?? 3);
+      $('r_prazo').value = rs.prazo || '';
+      $('r_restricao').checked = !!rs.restricao;
+      $('r_mensagem').checked = !!rs.mensagem;
+
+      $('anfBox').innerHTML = (t.anfitrioes || []).map(a => `
+        <div class="field"><label for="anf_${esc(a.papel)}">${esc(a.rotulo)}${a.obrigatorio ? ' *' : ''}</label>
+        <input id="anf_${esc(a.papel)}" data-anf="${esc(a.papel)}" value="${esc((c.anf || {})[a.papel] || '')}"></div>`).join('');
+
+      $('padBox').innerHTML = t.permite_padrinhos ? `
+        <span class="eyebrow">Padrinhos</span>
+        <div id="listaPad">${(c.pad || []).map(padLinha).join('')}</div>
+        <button class="btn-ghost" style="margin-top:8px" onclick="addPad()">+ Adicionar padrinho</button>` : '';
+
+      renderRsvps();
+    }
+
+    function padLinha(nome) {
+      return `<div class="row-ed" style="grid-template-columns:1fr auto"><input data-pad="1" value="${esc(nome)}" placeholder="Nome"><button class="btn-ghost danger" onclick="this.closest('.row-ed').remove()">Remover</button></div>`;
+    }
+    function addPad() { $('listaPad').insertAdjacentHTML('beforeend', padLinha('')); }
+
+    function renderRsvps() {
+      if (!RSVPS.length) { $('tabelaRsvp').innerHTML = '<div class="empty">Nenhuma confirmação recebida ainda.</div>'; return; }
+      const sim = RSVPS.filter(r => r.presenca === 'sim');
+      const total = sim.reduce((s, r) => s + 1 + (r.acompanhantes || 0), 0);
+      $('tabelaRsvp').innerHTML = `
+        <p class="hint" style="margin:0 0 12px">${sim.length} confirmaram · ${total} pessoas no total · ${RSVPS.length - sim.length} não vão</p>
+        <table class="tbl"><thead><tr><th>Nome</th><th>Presença</th><th>Acomp.</th><th>Restrição</th><th>Mensagem</th></tr></thead><tbody>
+        ${RSVPS.map(r => `<tr><td>${esc(r.nome)}</td><td>${r.presenca === 'sim' ? 'Sim' : 'Não'}</td><td>${r.acompanhantes || 0}</td><td>${esc(r.restricao || '')}</td><td>${esc(r.mensagem || '')}</td></tr>`).join('')}
+        </tbody></table>`;
+    }
+
+    /* Edição direta dos nomes na prévia: sincroniza com o campo do anfitrião */
+    document.addEventListener('input', e => {
+      const t = e.target;
+      if (t.dataset && t.dataset.anfPrev && SEL) {
+        SEL.anf = SEL.anf || {};
+        SEL.anf[t.dataset.anfPrev] = t.textContent.trim();
+        const campo = document.querySelector(`[data-anf="${t.dataset.anfPrev}"]`);
+        if (campo) campo.value = t.textContent.trim();
+      }
+      if (t.dataset && t.dataset.edit === 'frase_abertura' && SEL) {
+        SEL.dados = Object.assign({}, SEL.dados || {}, { frase_abertura: t.textContent.trim() });
+      }
+    });
+
+    async function salvar() {
+      const c = SEL;
+      if (!c) return;
+      const dados = Object.assign({}, c.dados || {});
+      document.querySelectorAll('[data-k]').forEach(el => dados[el.dataset.k] = el.value.trim());
+      dados.hora = $('f_hora').value || '18:00';
+      dados.data = $('f_data').value || '';
+      dados.frase_abertura = ($('pvFrase').textContent || '').trim();
+      dados.programacao = $('prog').value.split('\n').map(l => l.trim()).filter(Boolean).map(l => {
+        const p = l.split('|').map(s => s.trim());
+        return { hora: p[0] || '', titulo: p[1] || '', desc: p[2] || '' };
+      });
+      dados.rsvp = {
+        limite: Number($('r_limite').value), prazo: $('r_prazo').value || null,
+        restricao: $('r_restricao').checked, mensagem: $('r_mensagem').checked
+      };
+      const up = await sb.from('convites').update({ dados, tipo_codigo: $('f_tipo').value }).eq('id', c.id);
+      if (up.error) return toast('Erro: ' + up.error.message);
+
+      const anfs = [...document.querySelectorAll('[data-anf]')].map((el, i) => ({
+        convite_id: c.id, papel: el.dataset.anf, nome: el.value.trim(), ordem: i
+      })).filter(a => a.nome);
+      await sb.from('convite_anfitrioes').delete().eq('convite_id', c.id);
+      if (anfs.length) {
+        const r = await sb.from('convite_anfitrioes').insert(anfs);
+        if (r.error) return toast('Erro nos anfitriões: ' + r.error.message);
+      }
+
+      const pads = [...document.querySelectorAll('[data-pad]')].map((el, i) => ({
+        convite_id: c.id, nome: el.value.trim(), ordem: i
+      })).filter(p => p.nome);
+      await sb.from('convite_padrinhos').delete().eq('convite_id', c.id);
+      if (pads.length) {
+        const r = await sb.from('convite_padrinhos').insert(pads);
+        if (r.error) return toast('Erro nos padrinhos: ' + r.error.message);
+      }
+
+      toast('Convite salvo');
+      await carregar(c.id);
+    }
+
+    async function publicar() {
+      const c = SEL;
+      if (!c) return;
+      const on = c.status !== 'publicado';
+      if (on) {
+        const anf = {};
+        document.querySelectorAll('[data-anf]').forEach(el => anf[el.dataset.anf] = el.value.trim());
+        const falta = (tipoDe(c).anfitrioes || []).filter(a => a.obrigatorio && !anf[a.papel]);
+        if (falta.length) return toast('Preencha: ' + falta.map(a => a.rotulo).join(', '));
+        if (!$('f_data').value) return toast('Informe a data do evento antes de publicar');
+      }
+      const patch = on ? { status: 'publicado', publicado_em: new Date().toISOString() } : { status: 'rascunho' };
+      const r = await sb.from('convites').update(patch).eq('id', c.id);
+      if (r.error) return toast('Erro: ' + r.error.message);
+      toast(on ? 'Convite publicado' : 'Convite voltou a rascunho');
+      await carregar(c.id);
+    }
+
+    $('btnSalvar').addEventListener('click', salvar);
+    $('btnPublicar').addEventListener('click', publicar);
+    init();
+  </script>
+</body>
+</html>
