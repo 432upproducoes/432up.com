@@ -636,11 +636,25 @@
       return base + (base.includes('?') ? '&' : '?') + 't=' + encodeURIComponent(token);
     }
     function mediaHtml(url, alt) {
-      const u = url || CAPA_FALLBACK;
-      if (/\.(mp4|webm|mov)(\?|$)/i.test(u))
-        return `<video src="${esc(u)}" autoplay muted loop playsinline></video>`;
+      const u = (url || '').trim();
+      if (!u) return '';
+      // Capa de vídeo = o próprio arquivo, frame em ~0,01s pausado (igual fotolog / painel)
+      if (/\.(mp4|webm|mov|m4v)(\?|$)/i.test(u) || /[?&].*video/i.test(u)) {
+        const src = u.includes('#') ? u : (u + '#t=0.01');
+        return `<video src="${esc(src)}" muted playsinline preload="metadata" class="capa-video"></video>`;
+      }
       return `<img src="${esc(u)}" alt="${esc(alt || 'Capa')}">`;
     }
+    // Garante pause no primeiro frame (iOS/Safari)
+    function armCapaVideos(root) {
+      (root || document).querySelectorAll('video.capa-video').forEach(v => {
+        const go = () => { try { v.pause(); if (v.currentTime < 0.05) v.currentTime = 0.01; } catch (_) {} };
+        v.addEventListener('loadeddata', go, { once: true });
+        v.addEventListener('seeked', () => { try { v.pause(); } catch (_) {} });
+        if (v.readyState >= 2) go();
+      });
+    }
+
 
     /* ---------- ESTADO ---------- */
     
@@ -685,45 +699,80 @@
         });
       }
 
+      async function uploadImageBlob(blob) {
+        const pathImg = uid + '/convite-capa-' + Date.now() + '.jpg';
+        const j = await putR2(pathImg, blob, 'image/jpeg', false);
+        return j.url;
+      }
+
+      // Extrai 1º frame do vídeo → JPEG (mesmo path de foto que já funciona)
+      function frameDoVideo(file) {
+        return new Promise((resolve, reject) => {
+          const url = URL.createObjectURL(file);
+          const v = document.createElement('video');
+          v.preload = 'auto';
+          v.muted = true;
+          v.playsInline = true;
+          v.src = url;
+          const fail = (msg) => { URL.revokeObjectURL(url); reject(new Error(msg || 'Não foi possível ler o vídeo')); };
+          v.onerror = () => fail('Vídeo inválido ou codec não suportado neste aparelho');
+          v.onloadeddata = () => {
+            try { v.currentTime = Math.min(0.15, (v.duration || 1) * 0.01); } catch (_) {}
+          };
+          v.onseeked = () => {
+            try {
+              const c = document.createElement('canvas');
+              const w = v.videoWidth || 1280, h = v.videoHeight || 720;
+              const max = 1600;
+              const scale = Math.min(1, max / Math.max(w, h));
+              c.width = Math.round(w * scale); c.height = Math.round(h * scale);
+              c.getContext('2d').drawImage(v, 0, 0, c.width, c.height);
+              c.toBlob(b => {
+                URL.revokeObjectURL(url);
+                if (b) resolve(b); else reject(new Error('Falha ao gerar frame'));
+              }, 'image/jpeg', 0.88);
+            } catch (e) { fail(e.message); }
+          };
+          setTimeout(() => { if (!v.videoWidth) fail('Timeout ao carregar vídeo'); }, 12000);
+        });
+      }
+
       if (video) {
+        // 1) tenta vídeo real (vários paths — worker pode liberar no futuro)
         let corpo;
         try {
           const buf = await file.arrayBuffer();
           if (!buf.byteLength) throw new Error('arquivo 0 bytes');
           corpo = new Blob([buf], { type: file.type || 'video/mp4' });
         } catch (e) {
-          throw new Error('Não foi possível ler o vídeo no aparelho: ' + (e.message || e));
+          throw new Error('Não foi possível ler o vídeo: ' + (e.message || e));
         }
         const safeName = (file.name || 'capa.mp4').replace(/[^\w.\-]+/g, '_').slice(-80);
         const ts = Date.now();
         const prop = (atual && atual.proposta_id) ? atual.proposta_id : null;
-        // Tentativas na ordem: mesmo prefixo da foto que já funciona; depois eventos como no fotolog
-        const attempts = [
-          { path: uid + '/convite-video-' + ts + '_' + safeName, raw: false },
-          { path: uid + '/convite-video-' + ts + '_' + safeName, raw: true },
-          { path: 'eventos/' + uid + '/video_' + ts + '_' + safeName, raw: false },
-          { path: 'eventos/' + uid + '/video_' + ts + '_' + safeName, raw: true },
-        ];
+        const attempts = [];
         if (prop) {
-          attempts.unshift(
+          attempts.push(
             { path: 'eventos/' + prop + '/video_' + ts + '_' + safeName, raw: false },
             { path: 'eventos/' + prop + '/video_' + ts + '_' + safeName, raw: true }
           );
         }
+        attempts.push(
+          { path: uid + '/convite-video-' + ts + '_' + safeName, raw: false },
+          { path: uid + '/convite-video-' + ts + '_' + safeName, raw: true },
+          { path: 'eventos/' + uid + '/video_' + ts + '_' + safeName, raw: false }
+        );
         const ctype = file.type || 'application/octet-stream';
-        let lastErr = null;
         for (const a of attempts) {
           try {
             const j = await putR2(a.path, corpo, ctype, a.raw);
-            return j.url;
-          } catch (err) {
-            lastErr = err;
-          }
+            return j.url; // URL do vídeo; a capa visual é #t=0.01 no HTML
+          } catch (_) { /* tenta próximo */ }
         }
-        throw new Error('Vídeo bloqueado pelo storage (' + (lastErr && lastErr.detail ? lastErr.detail : 'forbidden') + '). Use uma foto de capa ou vincule o convite a uma proposta e tente de novo.');
+        throw new Error('Não foi possível enviar o vídeo ao storage (Forbidden). Sem alterar o Worker, use uma foto de capa — ou envie o vídeo pelo Fotolog/admin e cole a URL se precisar.');
       }
 
-      // Imagem (já ok)
+      // Imagem
       const blob = await new Promise((resolve, reject) => {
         const img = new Image();
         const url = URL.createObjectURL(file);
@@ -741,9 +790,7 @@
         img.onerror = () => { URL.revokeObjectURL(url); reject(new Error('Imagem inválida')); };
         img.src = url;
       });
-      const pathImg = uid + '/convite-capa-' + Date.now() + '.jpg';
-      const j = await putR2(pathImg, blob, 'image/jpeg', false);
-      return j.url;
+      return await uploadImageBlob(blob);
     }
 
 let TOKEN = '';
@@ -775,6 +822,7 @@ let TOKEN = '';
 
       document.title = anfs.map(a => a.nome).filter(Boolean).join(' & ') || 'Convite';
       $('capa').innerHTML = mediaHtml(d.capa_url || d.capa, document.title);
+      armCapaVideos($('capa'));
 
       if (d.data && /^\d{4}-\d{2}-\d{2}$/.test(d.data)) {
         const [y, m, day] = d.data.split('-').map(Number);
@@ -927,7 +975,7 @@ let TOKEN = '';
           const capa = (c.dados && (c.dados.capa_url || c.dados.capa)) || '';
           const thumb = capa
             ? (/\.(mp4|webm|mov)(\?|$)/i.test(capa)
-                ? `<video src="${esc(capa)}" muted></video>`
+                ? `<video class="capa-video" src="${esc(capa.includes('#')?capa:capa+'#t=0.01')}" muted playsinline preload="metadata"></video>`
                 : `<img src="${esc(capa)}" alt="">`)
             : `<div class="empty">✦</div>`;
           return `<div class="card-c" data-id="${esc(c.id)}" title="Abrir / editar">
@@ -1331,6 +1379,7 @@ let TOKEN = '';
       setTxt('pvAgencia', d.agencia || '432UP', '432UP');
 
       $('pvCapa').innerHTML = mediaHtml(d.capa_url, 'Capa');
+      armCapaVideos($('pvCapa'));
       updateDateLabels();
       renderNomes();
       renderPads();
@@ -1411,6 +1460,7 @@ let TOKEN = '';
           const url = await uploadCapaR2(file);
           edState.dados.capa_url = url;
           $('pvCapa').innerHTML = mediaHtml(url, 'Capa');
+          armCapaVideos($('pvCapa'));
           toast('Capa atualizada.');
         } catch (e) {
           toast(e.message || 'Falha no envio da capa');
