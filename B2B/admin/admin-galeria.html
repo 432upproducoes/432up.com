@@ -7,7 +7,7 @@
 
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-  <link href="httxps://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&display=swap" rel="stylesheet">
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&display=swap" rel="stylesheet">
 
   <link rel="stylesheet" href="https://www.432up.com/css/style.css">
   <script src="https://cdn.tailwindcss.com"></script>
@@ -461,7 +461,67 @@
 
     const R2_UPLOAD_URL = 'https://432up-r2-upload.432up-producoes.workers.dev/';
 
-    async function uploadParaR2(path, file) {
+    /* ---------- ENVIO PARA O R2 ---------- */
+
+    function ehVideoArquivo(file) {
+      return (file.type || '').startsWith('video/') || /\.(mp4|mov|m4v|webm|3gp)$/i.test(file.name || '');
+    }
+
+    // Vídeo: lê o arquivo inteiro para a memória e envia como Blob, com progresso por XHR.
+    // onFrac recebe null enquanto o navegador não informa bytes, e um valor de 0 a 1 quando informa.
+    async function uploadVideoR2Uma(path, file, onFrac) {
+      const { data: sessionData } = await _supabase.auth.getSession();
+      const token = sessionData?.session?.access_token;
+      if (!token) throw new Error('Sessão expirada. Faça login novamente.');
+
+      let corpo;
+      try {
+        const buf = await file.arrayBuffer();
+        if (!buf.byteLength) {
+          throw new Error('o aparelho não conseguiu ler o arquivo (0 bytes)');
+        }
+        corpo = new Blob([buf], { type: file.type || 'video/mp4' });
+      } catch (e) {
+        throw new Error('Não foi possível ler o vídeo no aparelho: ' + (e && e.message ? e.message : e));
+      }
+
+      return new Promise((resolve, reject) => {
+        const xhr = new XMLHttpRequest();
+        xhr.open('PUT', `${R2_UPLOAD_URL}?path=${encodeURIComponent(path)}`);
+        xhr.setRequestHeader('Authorization', `Bearer ${token}`);
+        xhr.setRequestHeader('Content-Type', file.type || 'application/octet-stream');
+        xhr.upload.onprogress = (e) => {
+          if (e.lengthComputable && onFrac) onFrac(e.loaded / e.total);
+        };
+        xhr.onload = () => {
+          let j = null;
+          try { j = JSON.parse(xhr.responseText); } catch (err) {}
+          if (xhr.status >= 200 && xhr.status < 300 && j && j.ok) resolve(j.url);
+          else reject(new Error((j && j.error) || `Upload falhou (status ${xhr.status})`));
+        };
+        xhr.onerror = () => reject(new Error('Falha de rede no envio'));
+        if (onFrac) onFrac(null);
+        xhr.send(corpo);
+      });
+    }
+
+    // Até 3 tentativas com o mesmo caminho
+    async function uploadVideoComTentativas(path, file, onFrac) {
+      let ultimo = null;
+      for (let t = 1; t <= 3; t++) {
+        try { return await uploadVideoR2Uma(path, file, onFrac); }
+        catch (err) {
+          ultimo = err;
+          console.warn(`[Admin Galeria] Vídeo, tentativa ${t} falhou:`, err && err.message);
+          if (t < 3) await new Promise(r => setTimeout(r, t * 1500));
+        }
+      }
+      throw ultimo;
+    }
+
+    async function uploadParaR2(path, file, onFrac) {
+      if (ehVideoArquivo(file)) return uploadVideoComTentativas(path, file, onFrac);
+
       const { data: sessionData } = await _supabase.auth.getSession();
       const token = sessionData?.session?.access_token;
       if (!token) throw new Error('Sessão expirada. Faça login novamente.');
@@ -764,7 +824,8 @@
     function videoTagPausado(url, extraStyle) {
       const autoAttr = AUTOPLAY_ENABLED ? 'autoplay' : '';
       const controlsAttr = AUTOPLAY_ENABLED ? '' : 'controls';
-      return `<video src="${url}" ${autoAttr} loop muted playsinline preload="metadata" ${controlsAttr} style="${extraStyle || ''}"></video>`;
+      const srcComFrame = String(url).indexOf('#') > -1 ? url : `${url}#t=0.1`;
+      return `<video src="${srcComFrame}" ${autoAttr} loop muted playsinline preload="metadata" ${controlsAttr} style="${extraStyle || ''}"></video>`;
     }
 
     document.getElementById('toggle-drag').addEventListener('click', function () {
@@ -987,9 +1048,12 @@
         try { file = await otimizarImagemSeNecessario(coverFile, 'heic-warning-cover'); }
         catch (e) { btn.innerText = '💾 Salvar Alterações'; return; }
         const fileName = `full/${sanitizarNomeArquivo(file.name)}`;
+        const ehVideo = ehVideoArquivo(file);
         let newUrl;
         try {
-          newUrl = await uploadParaR2(fileName, file);
+          newUrl = await uploadParaR2(fileName, file, ehVideo ? (f) => {
+            btn.innerText = f === null ? 'Enviando vídeo…' : `Enviando vídeo ${Math.round(f * 100)}%`;
+          } : undefined);
         } catch (uploadErr) {
           alert('Erro no upload: ' + uploadErr.message);
           btn.innerText = '💾 Salvar Alterações';
@@ -1109,17 +1173,24 @@
 
       let concluidos = 0;
       for (let originalFile of files) {
-        statusLabel.innerText = `Enviando ${concluidos + 1} de ${files.length}...`;
+        const rotulo = `Enviando ${concluidos + 1} de ${files.length}`;
+        statusLabel.innerText = rotulo + '...';
         let file;
         try { file = await otimizarImagemSeNecessario(originalFile, 'heic-warning-lote'); }
         catch (e) { concluidos++; continue; }
         const path = `midias/${sanitizarNomeArquivo(file.name)}`;
+        const ehVideo = ehVideoArquivo(file);
         try {
-          const url = await uploadParaR2(path, file);
+          const url = await uploadParaR2(path, file, ehVideo ? (f) => {
+            statusLabel.innerText = f === null
+              ? rotulo + ' (vídeo, aguarde…)'
+              : rotulo + ' — ' + Math.round(f * 100) + '%';
+          } : undefined);
           await _supabase.from('co_galeria_case_midias').insert([{ case_slug: slug, url, tipo: normalizarTipoUpload(file), ordem: proximaOrdem }]);
           proximaOrdem++;
         } catch (uploadErr) {
           console.warn('Falha no upload de mídia:', uploadErr.message);
+          alert('Falha em "' + originalFile.name + '": ' + uploadErr.message);
         }
         concluidos++;
       }
