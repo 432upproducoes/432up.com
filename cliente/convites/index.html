@@ -131,11 +131,34 @@
     .admin input,.admin select,.admin textarea{width:100%;background:rgba(255,255,255,.06);color:#fff;border:1px solid rgba(255,255,255,.16);border-radius:12px;padding:11px 12px;font:inherit;font-size:13px}
     .admin label{display:block;font-size:11px;color:var(--gold);margin:10px 0 5px;font-weight:600}
     .grid2{display:grid;grid-template-columns:1fr 1fr;gap:10px}
-    .modal{position:fixed;inset:0;z-index:10040;display:none;align-items:flex-end;justify-content:center;padding:12px;background:rgba(8,8,10,.72);backdrop-filter:blur(10px)}
+    .modal{position:fixed;inset:0;z-index:10050;display:none;align-items:center;justify-content:center;padding:16px;background:rgba(10,8,20,.78);backdrop-filter:blur(14px);-webkit-backdrop-filter:blur(14px)}
     .modal.on{display:flex}
-    .modal-box{width:min(540px,100%);max-height:90vh;overflow:auto;border-radius:20px;padding:18px;background:linear-gradient(160deg,rgba(255,255,255,.08),rgba(16,12,28,.96));border:1px solid rgba(212,175,55,.35)}
-    .modal-box label{display:block;width:100%;margin-top:12px}
-    .modal-box input,.modal-box select{width:100%;box-sizing:border-box;margin-top:6px}
+    .modal-box{
+      width:min(520px,100%);max-height:90vh;overflow:auto;border-radius:24px;padding:22px 20px;
+      background:linear-gradient(135deg,rgba(255,255,255,.08),rgba(168,85,247,.1)),rgba(10,8,20,.94);
+      border:1px solid rgba(212,175,55,.55);box-shadow:0 24px 60px rgba(0,0,0,.55),0 0 40px rgba(212,175,55,.08)
+    }
+    .modal-box label{display:block;width:100%;margin:12px 0 6px;font-size:.85rem;color:var(--gold);font-weight:600}
+    .modal-box input,.modal-box select,.modal-box textarea{
+      width:100%!important;box-sizing:border-box!important;
+      background:rgba(8,8,10,.65)!important;color:#F5EFE0!important;
+      border:1px solid rgba(212,175,55,.4)!important;border-radius:14px!important;
+      padding:13px 14px!important;font:inherit!important;font-size:.95rem!important;outline:none!important
+    }
+    .modal-box select{border-radius:999px!important;appearance:none;-webkit-appearance:none;padding-right:34px!important;
+      background-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='8' viewBox='0 0 12 8'%3E%3Cpath fill='%23D4AF37' d='M1 1l5 5 5-5'/%3E%3C/svg%3E")!important;
+      background-repeat:no-repeat!important;background-position:right 14px center!important}
+    .modal-box input:focus,.modal-box select:focus{border-color:rgba(212,175,55,.9)!important;box-shadow:0 0 16px rgba(212,175,55,.22)!important}
+    .card-c{display:grid;grid-template-columns:72px 1fr;gap:12px;align-items:center}
+    .card-c .thumb{width:72px;height:72px;border-radius:14px;overflow:hidden;background:#111;border:1px solid rgba(212,175,55,.25)}
+    .card-c .thumb img,.card-c .thumb video{width:100%;height:100%;object-fit:cover;display:block}
+    .card-c .thumb.empty{display:flex;align-items:center;justify-content:center;color:var(--gold);font-size:1.2rem}
+    .addr-search{margin-top:10px;display:flex;flex-direction:column;gap:8px}
+    .addr-search input{width:100%;box-sizing:border-box}
+    .addr-sug{list-style:none;margin:0;padding:0;max-height:160px;overflow:auto;border:1px solid rgba(212,175,55,.3);border-radius:14px;background:rgba(8,8,10,.9)}
+    .addr-sug li{padding:10px 12px;font-size:12px;color:var(--body);cursor:pointer;border-bottom:1px solid rgba(255,255,255,.06)}
+    .addr-sug li:hover{background:rgba(212,175,55,.12);color:#fff}
+    .addr-sug li:last-child{border-bottom:0}
     .vazio{font-size:13px;color:var(--mut);padding:8px 0}
     .msg{font-size:12px;color:#fca5a5;min-height:16px;margin-top:6px}
     .msg.ok{color:var(--action)}
@@ -341,9 +364,14 @@
         <a class="btn-s" id="btnWaAdmin" target="_blank" rel="noopener"><i class="fab fa-whatsapp"></i> WhatsApp</a>
         <a class="btn-s" id="btnVerPub" target="_blank" rel="noopener"><i class="fas fa-external-link-alt"></i> Ver público</a>
       </div>
-      <div class="box">
-        <h2>Resumo</h2>
-        <div class="dl-row"><div><span class="rot">Anfitriões</span><span class="val" id="dNomes">—</span></div><div id="dStatus"></div></div>
+      <div class="box" id="boxResumo" style="cursor:pointer" title="Editar visual">
+        <h2>Resumo · toque para editar</h2>
+        <div style="display:grid;grid-template-columns:88px 1fr;gap:14px;align-items:center;margin-bottom:10px">
+          <div class="thumb" id="dThumb" style="width:88px;height:88px;border-radius:16px;overflow:hidden;border:1px solid rgba(212,175,55,.3);background:#111"></div>
+          <div>
+            <div class="dl-row" style="border:0;padding:0"><div><span class="rot">Anfitriões</span><span class="val" id="dNomes">—</span></div><div id="dStatus"></div></div>
+          </div>
+        </div>
         <div class="dl-row"><div><span class="rot">Tipo</span><span class="val" id="dTipo">—</span></div></div>
         <div class="totais">
           <div><b id="tConf">0</b><span>Confirmados</span></div>
@@ -407,6 +435,13 @@
               <strong id="pvAno">—</strong>
             </div>
           </div>
+          <p class="eyebrow" style="margin-top:18px">Contagem para o grande dia</p>
+          <div class="countdown" id="pvCd">
+            <div><b id="pv-cd-d">00</b><span>Dias</span></div>
+            <div><b id="pv-cd-h">00</b><span>Horas</span></div>
+            <div><b id="pv-cd-m">00</b><span>Min</span></div>
+            <div><b id="pv-cd-s">00</b><span>Seg</span></div>
+          </div>
         </section>
 
         <section class="center" style="margin:32px 0">
@@ -433,10 +468,18 @@
               <strong id="pvDataL">Toque para data</strong>
               <p id="pvHora2">Horário</p>
             </div>
-            <div class="info-card">
-              <div class="glyph">⌖</div><h3>Onde</h3>
-              <strong class="editavel" id="pvLocal" contenteditable="true" data-key="local" data-ph="Local do evento"></strong>
-              <p class="editavel" id="pvEnd" contenteditable="true" data-key="endereco" data-ph="Endereço completo"></p>
+            <div class="info-card" style="text-align:left">
+              <div class="glyph" style="text-align:center">⌖</div>
+              <h3 style="text-align:center">Onde</h3>
+              <strong class="editavel" id="pvLocal" contenteditable="true" data-key="local" data-ph="Nome do local (salão, fazenda…)" style="display:block;text-align:center"></strong>
+              <p class="editavel" id="pvEnd" contenteditable="true" data-key="endereco" data-ph="Rua, número" style="text-align:center"></p>
+              <div class="addr-search">
+                <input class="adm-gold" id="edCidade" placeholder="Cidade / UF" style="border-radius:14px">
+                <input class="adm-gold" id="edCep" placeholder="CEP" inputmode="numeric" maxlength="9" style="border-radius:14px">
+                <input class="adm-gold" id="edBuscaEnd" placeholder="Buscar endereço…" style="border-radius:14px">
+                <ul class="addr-sug hidden" id="addrSug"></ul>
+                <p style="font-size:11px;color:var(--mut);margin:0;text-align:center">Usado no Google Maps / Waze do convite público</p>
+              </div>
             </div>
             <div class="info-card">
               <div class="glyph">♣</div><h3>Traje</h3>
@@ -601,12 +644,15 @@
     }
     async function uploadCapaR2(file) {
       const tok = await tokenAuth();
-      const uid = (await SB.auth.getUser()).data.user?.id || 'anon';
-      const video = (file.type || '').startsWith('video/');
+      const uid = ((await SB.auth.getUser()).data.user || {}).id || 'anon';
+      const video = (file.type || '').startsWith('video/') || /\.(mp4|mov|webm|m4v)$/i.test(file.name || '');
       let blob = file;
-      let ext = video ? 'mp4' : 'jpg';
-      if (!video && file.type && file.type.startsWith('image/')) {
-        // compacta no cliente (mesmo espírito do fotolog)
+      let ext = 'jpg';
+      let ctype = 'image/jpeg';
+      if (video) {
+        ext = (file.name.split('.').pop() || 'mp4').toLowerCase().replace(/[^a-z0-9]/g, '') || 'mp4';
+        ctype = file.type || 'video/mp4';
+      } else if (file.type && file.type.startsWith('image/')) {
         blob = await new Promise((resolve, reject) => {
           const img = new Image();
           const url = URL.createObjectURL(file);
@@ -624,16 +670,25 @@
           img.onerror = () => { URL.revokeObjectURL(url); reject(new Error('Imagem inválida')); };
           img.src = url;
         });
-        ext = 'jpg';
+        ext = 'jpg'; ctype = 'image/jpeg';
       }
-      const path = 'convites/' + uid + '/capa-' + Date.now() + '.' + ext;
-      const resp = await fetch(R2_UPLOAD_URL + '?path=' + encodeURIComponent(path) + (video ? '&raw=1' : ''), {
-        method: 'PUT',
-        headers: { 'Authorization': 'Bearer ' + tok, 'Content-Type': blob.type || (video ? 'video/mp4' : 'image/jpeg') },
-        body: blob
+      // mesmo prefixo midias/ usado no site (media.432up.com/midias/...)
+      const path = 'midias/convites/' + uid + '/capa-' + Date.now() + '.' + ext;
+      const q = R2_UPLOAD_URL + '?path=' + encodeURIComponent(path) + (video ? '&raw=1' : '');
+      const j = await new Promise((resolve, reject) => {
+        const xhr = new XMLHttpRequest();
+        xhr.open('PUT', q);
+        xhr.setRequestHeader('Authorization', 'Bearer ' + tok);
+        xhr.setRequestHeader('Content-Type', ctype);
+        xhr.onload = () => {
+          let body = null;
+          try { body = JSON.parse(xhr.responseText); } catch (_) {}
+          if (xhr.status >= 200 && xhr.status < 300 && body && body.ok && body.url) resolve(body);
+          else reject(new Error((body && body.error) || ('Upload falhou (HTTP ' + xhr.status + ')')));
+        };
+        xhr.onerror = () => reject(new Error('Falha de rede no envio da capa'));
+        xhr.send(blob);
       });
-      const j = await resp.json().catch(() => null);
-      if (!resp.ok || !j || !j.ok || !j.url) throw new Error((j && j.error) || ('Upload falhou (' + resp.status + ')'));
       return j.url;
     }
 
@@ -702,7 +757,7 @@ let TOKEN = '';
         $('secPadrinhos').classList.remove('hidden');
       } else $('secPadrinhos').classList.add('hidden');
 
-      const q = encodeURIComponent(`${d.local || ''} ${d.endereco || ''}`.trim());
+      const q = encodeURIComponent((d.maps_query || [d.local, d.endereco, d.cidade, d.cep, 'Brasil'].filter(Boolean).join(', ')).trim());
       if (q.trim()) {
         $('mapa').src = `https://www.google.com/maps?q=${q}&output=embed`;
         $('gmaps').href = `https://maps.google.com/?q=${q}`;
@@ -809,15 +864,25 @@ let TOKEN = '';
       try {
         const lista = await rpc('convite_listar') || [];
         if (!lista.length) { $('listaBody').innerHTML = '<div class="vazio">Nenhum convite. Crie o primeiro.</div>'; return; }
-        $('listaBody').innerHTML = lista.map(c =>
-          `<div class="card-c" data-id="${esc(c.id)}">
-            <div style="display:flex;justify-content:space-between;gap:8px">
-              <div><span class="rot">${esc(c.tipo_rotulo||c.tipo_codigo)}</span>
+        $('listaBody').innerHTML = lista.map(c => {
+          const capa = (c.dados && (c.dados.capa_url || c.dados.capa)) || '';
+          const thumb = capa
+            ? (/\.(mp4|webm|mov)(\?|$)/i.test(capa)
+                ? `<video src="${esc(capa)}" muted></video>`
+                : `<img src="${esc(capa)}" alt="">`)
+            : `<div class="empty">✦</div>`;
+          return `<div class="card-c" data-id="${esc(c.id)}" title="Abrir / editar">
+            <div class="thumb">${thumb}</div>
+            <div>
+              <div style="display:flex;justify-content:space-between;gap:8px;align-items:flex-start">
+                <span class="rot">${esc(c.tipo_rotulo||c.tipo_codigo)}</span>
+                ${c.status==='publicado'?'<span class="tag t-pub">Publicado</span>':'<span class="tag t-pend">Rascunho</span>'}
+              </div>
               <div class="nomes">${esc(c.nomes||'Sem nomes')}</div>
-              <div class="meta">${c.confirmados||0} confirmação(ões)</div></div>
-              ${c.status==='publicado'?'<span class="tag t-pub">Publicado</span>':'<span class="tag t-pend">Rascunho</span>'}
-            </div></div>`
-        ).join('');
+              <div class="meta">${c.confirmados||0} confirmação(ões) · toque para editar</div>
+            </div>
+          </div>`;
+        }).join('');
         $('listaBody').querySelectorAll('.card-c').forEach(el =>
           el.addEventListener('click', () => abrirDetalhe(el.dataset.id)));
       } catch (e) { $('listaBody').innerHTML = '<div class="vazio">' + esc(e.message) + '</div>'; }
@@ -831,6 +896,12 @@ let TOKEN = '';
       const nomes = (atual.anfitrioes||[]).map(a=>a.nome).filter(Boolean).join(' & ') || '—';
       $('dNomes').textContent = nomes;
       $('dTipo').textContent = (atual.tipo&&atual.tipo.rotulo)||atual.tipo_codigo;
+      const capaD = (atual.dados && (atual.dados.capa_url || atual.dados.capa)) || '';
+      if ($('dThumb')) {
+        $('dThumb').innerHTML = capaD
+          ? mediaHtml(capaD, 'Capa')
+          : '<div style="display:flex;height:100%;align-items:center;justify-content:center;color:var(--gold)">✦</div>';
+      }
       $('dStatus').innerHTML = atual.status==='publicado'?'<span class="tag t-pub">Publicado</span>':'<span class="tag t-pend">Rascunho</span>';
       $('tConf').textContent = atual.totais?.confirmados??0;
       $('tRec').textContent = atual.totais?.recusados??0;
@@ -892,6 +963,7 @@ let TOKEN = '';
       if (!atual) return;
       abrirEditor(atual.id);
     });
+    if ($('boxResumo')) $('boxResumo').addEventListener('click', () => { if (atual) abrirEditor(atual.id); });
 
     $('btnNovo').addEventListener('click', async () => {
       try { tipos = await rpc('convite_tipos_listar') || []; } catch (_) { tipos = [{codigo:'casamento',rotulo:'Casamento'}]; }
@@ -1046,7 +1118,29 @@ let TOKEN = '';
         $('pvHora2').textContent = 'Horário';
         $('pvAno').textContent = '—';
       }
+      tickEditorCd();
     }
+    function tickEditorCd() {
+      if (!$('pv-cd-d')) return;
+      const data = $('edData').value;
+      const hora = ($('edHora').value || '18:00').slice(0, 5);
+      if (!data) {
+        ['pv-cd-d','pv-cd-h','pv-cd-m','pv-cd-s'].forEach(id => { if ($(id)) $(id).textContent = '00'; });
+        return;
+      }
+      const dt = new Date(data + 'T' + hora + ':00-03:00');
+      const dist = dt - Date.now();
+      if (dist < 0) {
+        $('pv-cd-d').textContent = '00'; $('pv-cd-h').textContent = '00';
+        $('pv-cd-m').textContent = '00'; $('pv-cd-s').textContent = '00';
+        return;
+      }
+      $('pv-cd-d').textContent = pad(Math.floor(dist / 864e5));
+      $('pv-cd-h').textContent = pad(Math.floor(dist % 864e5 / 36e5));
+      $('pv-cd-m').textContent = pad(Math.floor(dist % 36e5 / 6e4));
+      $('pv-cd-s').textContent = pad(Math.floor(dist % 6e4 / 1e3));
+    }
+    setInterval(tickEditorCd, 1000);
 
     function renderNomes() {
       const tipo = tipos.find(t => t.codigo === $('edTipo').value) || { anfitrioes: [{ papel: 'anfitriao_1', rotulo: 'Anfitrião' }] };
@@ -1126,6 +1220,8 @@ let TOKEN = '';
       }
       $('edTipo').value = atual.tipo_codigo || 'casamento';
       edState.dados.capa_url = d.capa_url || '';
+      if ($('edCidade')) $('edCidade').value = d.cidade || '';
+      if ($('edCep')) $('edCep').value = d.cep || '';
       $('edData').value = (d.data || '').toString().slice(0, 10);
       $('edHora').value = (d.hora || '18:00').toString().slice(0, 5);
       $('edRsvpLim').value = (d.rsvp && d.rsvp.limite != null) ? d.rsvp.limite : 3;
@@ -1177,6 +1273,9 @@ let TOKEN = '';
         data: $('edData').value || '',
         hora: ($('edHora').value || '18:00').slice(0, 5)
       });
+      dados.cidade = ($('edCidade') && $('edCidade').value.trim()) || dados.cidade || '';
+      dados.cep = ($('edCep') && $('edCep').value.trim()) || dados.cep || '';
+      dados.maps_query = [dados.local, dados.endereco, dados.cidade, dados.cep, 'Brasil'].filter(Boolean).join(', ');
       return {
         dados,
         anfitrioes: edState.anfitrioes,
@@ -1317,6 +1416,71 @@ let TOKEN = '';
         $('edMsg').textContent = e.message;
       }
     });
+
+
+    // CEP ViaCEP + busca textual (Nominatim quando CORS permitir)
+    async function buscarCep(cep) {
+      const n = String(cep || '').replace(/\D/g, '');
+      if (n.length !== 8) return null;
+      const r = await fetch('https://viacep.com.br/ws/' + n + '/json/');
+      const j = await r.json();
+      if (j.erro) return null;
+      return j;
+    }
+    if ($('edCep')) {
+      $('edCep').addEventListener('blur', async () => {
+        try {
+          const j = await buscarCep($('edCep').value);
+          if (!j) return;
+          if ($('edCidade') && !$('edCidade').value) $('edCidade').value = [j.localidade, j.uf].filter(Boolean).join(' / ');
+          const rua = [j.logradouro, j.bairro].filter(Boolean).join(', ');
+          if (rua && $('pvEnd') && !($('pvEnd').textContent || '').trim()) {
+            $('pvEnd').textContent = rua;
+          }
+          toast('CEP encontrado.');
+        } catch (_) {}
+      });
+    }
+    let _addrT = null;
+    if ($('edBuscaEnd')) {
+      $('edBuscaEnd').addEventListener('input', () => {
+        clearTimeout(_addrT);
+        const q = $('edBuscaEnd').value.trim();
+        if (q.length < 5) { $('addrSug').classList.add('hidden'); $('addrSug').innerHTML = ''; return; }
+        _addrT = setTimeout(async () => {
+          try {
+            const url = 'https://nominatim.openstreetmap.org/search?format=json&addressdetails=1&countrycodes=br&limit=5&q=' + encodeURIComponent(q);
+            const r = await fetch(url, { headers: { 'Accept': 'application/json' } });
+            if (!r.ok) throw new Error('busca');
+            const list = await r.json();
+            if (!list.length) { $('addrSug').classList.add('hidden'); return; }
+            $('addrSug').innerHTML = list.map((it, i) =>
+              '<li data-i="' + i + '">' + esc(it.display_name) + '</li>').join('');
+            $('addrSug').classList.remove('hidden');
+            $('addrSug').querySelectorAll('li').forEach(li => {
+              li.addEventListener('click', () => {
+                const it = list[+li.dataset.i];
+                const a = it.address || {};
+                const rua = [a.road, a.house_number].filter(Boolean).join(', ') || it.display_name.split(',')[0];
+                if ($('pvEnd')) $('pvEnd').textContent = rua;
+                if ($('edCidade')) $('edCidade').value = [a.city || a.town || a.village || a.municipality, a.state].filter(Boolean).join(' / ');
+                if ($('edCep') && a.postcode) $('edCep').value = a.postcode;
+                if ($('pvLocal') && !($('pvLocal').textContent || '').trim() && (a.amenity || a.building)) {
+                  $('pvLocal').textContent = a.amenity || a.building;
+                }
+                $('edBuscaEnd').value = '';
+                $('addrSug').classList.add('hidden');
+                toast('Endereço aplicado.');
+              });
+            });
+          } catch (_) {
+            $('addrSug').classList.add('hidden');
+          }
+        }, 450);
+      });
+    }
+
+    // Detalhe: botão editar já existe; card da lista também
 
     /* ===================== BOOT ===================== */
     (async function boot() {
