@@ -195,8 +195,17 @@
     .ed-tools input:focus,.ed-tools select:focus,.prog-edit-row input:focus,.modal-box input:focus,.modal-box select:focus{
       border-color:rgba(212,175,55,.9);box-shadow:0 0 18px rgba(212,175,55,.22);background:rgba(12,10,18,.8)
     }
-    .prog-edit-row{display:grid;grid-template-columns:88px 1fr auto;gap:8px;align-items:start;padding:12px 0;border-bottom:1px solid rgba(255,255,255,.08)}
-    .prog-edit-row input{width:100%;border-radius:14px}
+    .prog-edit-row{
+      display:grid;grid-template-columns:118px 1fr 40px;gap:10px;align-items:center;
+      padding:12px;margin:0 0 12px;border-radius:18px;
+      border:1px solid rgba(212,175,55,.4);background:rgba(8,8,10,.45)
+    }
+    .prog-edit-row input{width:100%;border-radius:14px;min-height:44px;box-sizing:border-box}
+    .prog-edit-row input[type="time"]{
+      -webkit-appearance:none;appearance:none;text-align:center;font-variant-numeric:tabular-nums;
+      font-weight:600;color:var(--gold);padding:10px 8px
+    }
+    .prog-edit-row .btn-icon{width:40px;height:40px;flex-shrink:0}
     .btn-icon{width:34px;height:34px;border-radius:999px;border:1px solid rgba(212,175,55,.45);background:transparent;color:var(--gold);cursor:pointer;font-size:16px}
     .btn-icon.danger{border-color:rgba(255,77,77,.45);color:var(--alert)}
     .tap-field{cursor:pointer;position:relative}
@@ -649,33 +658,47 @@
       const tok = session.access_token;
       const uid = (session.user && session.user.id) || 'anon';
       const video = (file.type || '').startsWith('video/') || /\.(mp4|mov|webm|m4v)$/i.test(file.name || '');
-      let blob = file;
-      let path;
-      let ctype;
+
       if (video) {
-        const ext = (file.name.split('.').pop() || 'mp4').toLowerCase().replace(/[^a-z0-9]/g, '') || 'mp4';
-        path = uid + '/convite-capa-' + Date.now() + '.' + ext;
-        ctype = file.type || 'video/mp4';
-        // worker: raw=1 para vídeo (igual fotolog)
-        const q = R2_UPLOAD_URL + '?path=' + encodeURIComponent(path) + '&raw=1';
-        const j = await new Promise((resolve, reject) => {
-          const xhr = new XMLHttpRequest();
-          xhr.open('PUT', q);
-          xhr.setRequestHeader('Authorization', 'Bearer ' + tok);
-          xhr.setRequestHeader('Content-Type', ctype);
-          xhr.onload = () => {
-            let body = null;
-            try { body = JSON.parse(xhr.responseText); } catch (_) {}
-            if (xhr.status >= 200 && xhr.status < 300 && body && body.ok && body.url) resolve(body);
-            else reject(new Error((body && (body.error || body.message)) || ('Upload falhou (HTTP ' + xhr.status + ')')));
-          };
-          xhr.onerror = () => reject(new Error('Falha de rede no envio'));
-          xhr.send(blob);
-        });
-        return j.url;
+        // Mesmo fluxo do Fotolog (B2B/admin): path eventos/ + ArrayBuffer + XHR (sem &raw=1)
+        let corpo;
+        try {
+          const buf = await file.arrayBuffer();
+          if (!buf.byteLength) throw new Error('o aparelho não conseguiu ler o arquivo (0 bytes)');
+          corpo = new Blob([buf], { type: file.type || 'video/mp4' });
+        } catch (e) {
+          throw new Error('Não foi possível ler o vídeo: ' + (e && e.message ? e.message : e));
+        }
+        const safeName = (file.name || 'capa.mp4').replace(/[^\w.\-]+/g, '_').slice(-80);
+        const path = 'eventos/convites/' + uid + '/video_' + Date.now() + '_' + safeName;
+        let ultimo = null;
+        for (let tentativa = 1; tentativa <= 3; tentativa++) {
+          try {
+            const j = await new Promise((resolve, reject) => {
+              const xhr = new XMLHttpRequest();
+              xhr.open('PUT', R2_UPLOAD_URL + '?path=' + encodeURIComponent(path));
+              xhr.setRequestHeader('Authorization', 'Bearer ' + tok);
+              xhr.setRequestHeader('Content-Type', file.type || 'application/octet-stream');
+              xhr.onload = () => {
+                let body = null;
+                try { body = JSON.parse(xhr.responseText); } catch (_) {}
+                if (xhr.status >= 200 && xhr.status < 300 && body && body.ok && body.url) resolve(body);
+                else reject(new Error((body && body.error) || ('Upload falhou (HTTP ' + xhr.status + ')')));
+              };
+              xhr.onerror = () => reject(new Error('Falha de rede no envio do vídeo'));
+              xhr.send(corpo);
+            });
+            return j.url;
+          } catch (err) {
+            ultimo = err;
+            if (tentativa < 3) await new Promise(r => setTimeout(r, tentativa * 1500));
+          }
+        }
+        throw ultimo;
       }
-      // imagem: compacta JPEG (mesmo espírito do perfil, path {uid}/...)
-      blob = await new Promise((resolve, reject) => {
+
+      // Imagem: path {uid}/... (igual avatar da área do cliente)
+      const blob = await new Promise((resolve, reject) => {
         const img = new Image();
         const url = URL.createObjectURL(file);
         img.onload = () => {
@@ -692,12 +715,10 @@
         img.onerror = () => { URL.revokeObjectURL(url); reject(new Error('Imagem inválida')); };
         img.src = url;
       });
-      path = uid + '/convite-capa-' + Date.now() + '.jpg';
-      ctype = 'image/jpeg';
-      // fetch igual área do cliente (avatar)
+      const path = uid + '/convite-capa-' + Date.now() + '.jpg';
       const resp = await fetch(R2_UPLOAD_URL + '?path=' + encodeURIComponent(path), {
         method: 'PUT',
-        headers: { 'Authorization': 'Bearer ' + tok, 'Content-Type': ctype },
+        headers: { 'Authorization': 'Bearer ' + tok, 'Content-Type': 'image/jpeg' },
         body: blob
       });
       const result = await resp.json().catch(() => null);
@@ -1221,10 +1242,14 @@ let TOKEN = '';
       $('pvProg').innerHTML = list.map((p, i) =>
         (() => {
           let hv = (p.hora || '').toString().trim();
-          // normaliza 17h00 / 17h / 17:00 -> HH:MM para input time
-          const m = hv.match(/^(\d{1,2})[:hH]?(\d{2})?/);
-          if (m) hv = String(m[1]).padStart(2,'0') + ':' + String(m[2] || '00').padStart(2,'0');
-          else if (!/^\d{2}:\d{2}$/.test(hv)) hv = '';
+          // normaliza 17h00 / 17h / 17:00 / 5:30 -> HH:MM
+          let mmatch = hv.match(/^(\d{1,2})\s*[:hH]\s*(\d{0,2})/);
+          if (!mmatch) mmatch = hv.match(/^(\d{1,2})$/);
+          if (mmatch) {
+            const hh = Math.min(23, Math.max(0, +mmatch[1]));
+            const mi = mmatch[2] !== undefined && mmatch[2] !== '' ? Math.min(59, +mmatch[2]) : 0;
+            hv = String(hh).padStart(2,'0') + ':' + String(mi).padStart(2,'0');
+          } else if (!/^\d{2}:\d{2}$/.test(hv)) hv = '';
           return '<div class="prog-edit-row" data-i="' + i + '">' +
             '<input type="time" data-p="hora" value="' + esc(hv) + '" title="Toque para escolher a hora" style="border-radius:14px">' +
             '<div><input data-p="titulo" placeholder="Título (ex.: Recepção)" value="' + esc(p.titulo || '') + '" style="margin-bottom:6px">' +
