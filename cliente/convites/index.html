@@ -473,6 +473,7 @@
           <button class="btn btn-danger" type="button" id="btnExcluir">Excluir convite</button>
         </div>
       </div>
+      <div class="actions" style="margin-top:12px"><button class="btn-s" type="button" id="btnVisualDet"><i class="fas fa-eye"></i> Visualizar convite</button></div>
     </section>
 
     <!-- Editor -->
@@ -597,9 +598,18 @@
       <div class="ed-bar">
         <p class="msg" id="edMsg"></p>
         <button type="button" class="btn-s" id="edVoltar">← Voltar ao convite</button>
+        <button type="button" class="btn-s" id="edVisualizar"><i class="fas fa-eye"></i> Visualizar convite</button>
         <button type="button" class="btn-s" id="edSalvar"><i class="fas fa-save"></i> Salvar</button>
         <button type="button" class="btn" id="edPublicar" style="width:auto;margin-top:0;padding:10px 18px">Publicar</button>
       </div>
+    </section>
+
+    <!-- Visualização do convite (como o convidado vê) -->
+    <section class="view hidden" id="vVisual">
+      <div class="actions">
+        <button class="btn-s gold" type="button" id="btnVoltarEd"><i class="fas fa-arrow-left"></i> Voltar para editar</button>
+      </div>
+      <div id="visualBox"></div>
     </section>
 
     <!-- Login (sem sessão) -->
@@ -810,11 +820,11 @@
     function fmtTempo(s) { s = Math.max(0, Math.round(s)); return Math.floor(s / 60) + ':' + String(s % 60).padStart(2, '0'); }
 
     /* ===== Navegação entre telas da área de convites ===== */
-    var VIEWS = { lista: 'vLista', lixeira: 'vLixeira', detalhe: 'vDetalhe', editor: 'vEditor' };
+    var VIEWS = { lista: 'vLista', lixeira: 'vLixeira', detalhe: 'vDetalhe', editor: 'vEditor', visual: 'vVisual' };
     function showView(v) {
-      if (v !== 'editor') aplicarHalloween(document.body, false);
+      if (v !== 'editor' && v !== 'visual') aplicarHalloween(document.body, false);
       Object.keys(VIEWS).forEach(function (k) { $(VIEWS[k]).classList.toggle('hidden', k !== v); });
-      var mostraTabs = v !== 'editor';
+      var mostraTabs = v !== 'editor' && v !== 'visual';
       $('tabsConv').classList.toggle('hidden', !mostraTabs);
       var tabBase = v === 'lixeira' ? 'lixeira' : 'lista';
       document.querySelectorAll('#tabsConv .tab[data-v]').forEach(function (t) { t.classList.toggle('on', t.getAttribute('data-v') === tabBase); });
@@ -1600,9 +1610,17 @@
             '<div style="display:flex;justify-content:space-between;gap:8px;align-items:flex-start"><span class="rot">' + esc(c.tipo_rotulo || c.tipo_codigo) + '</span>' +
             (c.status === 'publicado' ? '<span class="tag t-pub">Publicado</span>' : '<span class="tag t-pend">Rascunho</span>') + '</div>' +
             '<div class="nomes">' + esc(c.nomes || 'Sem nomes') + '</div>' +
-            '<div class="meta">' + (c.confirmados || 0) + ' confirmação(ões) · toque para abrir</div></div></div>';
+            '<div class="meta">' + (c.confirmados || 0) + ' confirmação(ões) · toque para abrir</div>' +
+            '<div class="actions" style="margin:8px 0 0"><button class="btn-s gold" type="button" data-cl-ed="' + esc(c.id) + '"><i class="fas fa-pen"></i> Editar</button>' +
+            '<button class="btn-s" type="button" data-cl-vi="' + esc(c.id) + '"><i class="fas fa-eye"></i> Visualizar</button></div></div></div>';
         }).join('');
         $('listaBody').querySelectorAll('.card-c').forEach(function (el) { el.addEventListener('click', function () { abrirDetalhe(el.dataset.id); }); });
+        $('listaBody').querySelectorAll('[data-cl-ed]').forEach(function (b) {
+          b.addEventListener('click', function (e) { e.stopPropagation(); abrirEditor(b.dataset.clEd); });
+        });
+        $('listaBody').querySelectorAll('[data-cl-vi]').forEach(function (b) {
+          b.addEventListener('click', function (e) { e.stopPropagation(); abrirEditor(b.dataset.clVi).then(function () { abrirVisual(); }); });
+        });
       }).catch(function (e) { $('listaBody').innerHTML = '<div class="vazio">' + esc(e.message) + '</div>'; });
     }
 
@@ -1859,6 +1877,30 @@
         atualizarCapaAtual();
       }).catch(function (e) { toast(e.message); });
     }
+
+    function abrirVisual() {
+      CUR = edD;
+      var c = ctxEditor();
+      c.ed = false;
+      var box = $('visualBox');
+      box.innerHTML = pageHTML(c);
+      var hw = (edD._skin || 'padrao') === 'halloween';
+      aplicarHalloween(document.body, hw);
+      if (hw) decorarHalloween(box);
+      initVideoLoops(box);
+      paintCores(box); paintMapa(); tickCd();
+      showView('visual');
+    }
+    $('btnVoltarEd').addEventListener('click', function () {
+      showView('editor');
+      var hw = (edD._skin || 'padrao') === 'halloween';
+      aplicarHalloween(document.body, hw);
+      refreshPreview();
+    });
+    $('edVisualizar').addEventListener('click', function () { abrirVisual(); });
+    $('btnVisualDet').addEventListener('click', function () {
+      if (atual) abrirEditor(atual.id).then(function () { abrirVisual(); });
+    });
 
     function ctxEditor() {
       var papeis = edD._papeis || [{ papel: 'anfitriao_1', rotulo: 'Anfitrião' }];
