@@ -1033,7 +1033,7 @@
       d.pix = Object.assign({ ativo: false, tipo: 'CPF', chave: '', titular: '' }, d.pix || {});
       d.hora = (d.hora || '18:00').toString().slice(0, 5);
       // Programação: se o convite nunca teve etapas definidas, entram as três padrão
-      d.programacao = Array.isArray(d.programacao) ? d.programacao : DEF_PROG.map(p => ({ ...p }));
+      d.programacao = (Array.isArray(d.programacao) && d.programacao.length) ? d.programacao : DEF_PROG.map(p => ({ ...p }));
       d.hospedagem = Array.isArray(d.hospedagem) ? d.hospedagem : [];
       d.transporte = Array.isArray(d.transporte) ? d.transporte : [];
       d.faq = Array.isArray(d.faq) ? d.faq : [];
@@ -1882,7 +1882,7 @@
         try {
           const det = await rpc('convite_detalhe', { p_convite: id });
           const dados = Object.assign({}, (det && det.dados) || {});
-          if (!Array.isArray(dados.programacao)) dados.programacao = DEF_PROG.map(p => ({ ...p }));
+          if (!Array.isArray(dados.programacao) || !dados.programacao.length) dados.programacao = DEF_PROG.map(p => ({ ...p }));
           if (skinNovo === 'halloween') {
             dados.cores = Object.assign({}, DEF_CORES_HALLOWEEN);
             if (!dados.capa_url) dados.capa_url = CAPA_FALLBACK_HALLOWEEN;
