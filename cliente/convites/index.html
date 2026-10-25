@@ -47,6 +47,11 @@
     #capaLoad .cl-box{width:min(92vw,360px);padding:28px;border-radius:18px;text-align:center;border:1px solid rgba(6,182,212,.4);background:rgba(15,12,24,.94)}
     #capaLoad .cl-bar{width:100%;height:10px;border-radius:999px;background:rgba(0,0,0,.5);overflow:hidden;margin-top:14px}
     #capaLoad .cl-fill{height:100%;width:0;background:linear-gradient(90deg,#06b6d4,#fbbf24);transition:width .15s}
+    /* Vídeo de capa em loop: dois vídeos sobrepostos, com fade entre o fim e o início do trecho */
+    .vloop{position:absolute;inset:0;background:#000}
+    .vloop .vl{position:absolute;inset:0;width:100%;height:100%;object-fit:cover;display:block;transition:opacity .6s ease;opacity:1}
+    .vloop .vl.off{opacity:0}
+    .vplay{position:absolute;left:50%;top:50%;transform:translate(-50%,-50%);z-index:4;width:64px;height:64px;border-radius:50%;border:1px solid rgba(212,175,55,.8);background:rgba(8,8,10,.6);color:var(--c-gold);font-size:20px;cursor:pointer;backdrop-filter:blur(8px);-webkit-backdrop-filter:blur(8px)}
     /* Miniaturas 4:3 (todas) */
     .thumb-43{aspect-ratio:4/3;overflow:hidden}
     .thumb-43 img,.thumb-43 video{width:100%;height:100%;object-fit:cover;display:block}
@@ -428,6 +433,7 @@
         <h2>Capa</h2>
         <div class="actions"><button type="button" class="btn-s" data-act="capa"><i class="fas fa-camera"></i> Trocar capa (foto ou vídeo)</button></div>
         <p class="ed-hint" style="margin:0">Foto: você corta na proporção 4:3 antes do envio. Vídeo: aparece no mesmo quadro.</p>
+        <div id="edTrim"></div>
         <input type="file" id="edCapaFile" accept="image/*,video/*">
       </div>
 
@@ -871,7 +877,9 @@
       const names = anfs.map((a, i) => (i ? ' <span class="amp">&amp;</span> ' : '') +
         (ed ? `<span class="names names-edit" contenteditable="true" data-papel="${esc(a.papel)}" data-ph="${esc(a.rotulo || 'Nome')}">${esc(a.nome)}</span>`
             : `<span class="names">${esc(a.nome)}</span>`)).join('');
-      const capa = d.capa_url ? mediaHtml(d.capa_url, d.capa_poster_url) : '<div class="capa-empty">✦</div>';
+      const capa = d.capa_url
+        ? (isVideoUrl(d.capa_url) ? loopHtml(d.capa_url, d.capa_poster_url, d.video_inicio, ed) : mediaHtml(d.capa_url, d.capa_poster_url))
+        : '<div class="capa-empty">✦</div>';
       const q = mapaQuery(d);
       const gQ = encodeURIComponent(q);
       const dt = dataEvento(d);
@@ -1018,6 +1026,140 @@
           </div>
         </div>`;
     }
+    /* ---------- Vídeo de capa em loop (trecho de até 6 s, fade entre o fim e o início) ---------- */
+    const JAN_VIDEO = 6;
+    const FADE_VIDEO = 0.6;
+    function isVideoUrl(u) { return /\.(mp4|mov|webm|m4v)(\?|#|$)/i.test(String(u || '')); }
+    function fmtTempo(s) { s = Math.max(0, Math.round(s)); return Math.floor(s / 60) + ':' + String(s % 60).padStart(2, '0'); }
+    function loopHtml(url, poster, inicio, ed) {
+      const ini = Number(inicio) || 0;
+      const p = poster ? esc(poster) : '';
+      return `<div class="vloop" data-src="${esc(url)}" data-inicio="${ini}" data-ed="${ed ? 1 : 0}">` +
+        `<video class="vl a" muted playsinline preload="auto" ${p ? `poster="${p}"` : ''}></video>` +
+        `<video class="vl b off" muted playsinline preload="auto" ${p ? `poster="${p}"` : ''}></video>` +
+        (ed ? '<button type="button" class="vplay" data-act="vplay" aria-label="Reproduzir trecho" style="display:none"><i class="fas fa-play"></i></button>' : '') +
+        `</div>`;
+    }
+    function initVideoLoops(root) { (root || document).querySelectorAll('.vloop').forEach(initUmLoop); }
+    function initUmLoop(box) {
+      if (box._init) return;
+      box._init = true;
+      const a = box.querySelector('.vl.a');
+      const b = box.querySelector('.vl.b');
+      const btn = box.querySelector('.vplay');
+      const ed = box.dataset.ed === '1';
+      let ativo = a, reserva = b, dur = 0, trocando = false, rodando = !ed;
+
+      const getIni = () => Math.max(0, Number(box.dataset.inicio) || 0);
+      const inicioEf = () => (dur ? Math.min(getIni(), Math.max(0, dur - 0.5)) : getIni());
+      const janela = () => Math.min(JAN_VIDEO, Math.max(0.5, dur - inicioEf()));
+
+      [a, b].forEach(v => {
+        v.src = box.dataset.src;
+        v.muted = true;
+        v.defaultMuted = true;
+        v.setAttribute('playsinline', '');
+        v.setAttribute('webkit-playsinline', '');
+      });
+
+      a.addEventListener('loadedmetadata', () => {
+        dur = a.duration || 0;
+        a.currentTime = inicioEf();
+        if (btn) btn.style.display = ed ? '' : 'none';
+        if (!ed) a.play().catch(() => {});
+      });
+      b.addEventListener('loadedmetadata', () => { b.currentTime = inicioEf(); });
+
+      function trocar() {
+        trocando = true;
+        reserva.currentTime = inicioEf();
+        reserva.play().catch(() => {});
+        reserva.classList.remove('off');
+        ativo.classList.add('off');
+        const antigo = ativo;
+        ativo = reserva;
+        reserva = antigo;
+        setTimeout(() => {
+          reserva.pause();
+          reserva.currentTime = inicioEf();
+          trocando = false;
+        }, FADE_VIDEO * 1000 + 80);
+      }
+
+      function tick() {
+        if (!box.isConnected) return;
+        if (rodando && dur && ativo.readyState >= 2) {
+          const ini = inicioEf();
+          if (ativo.ended) { ativo.currentTime = ini; ativo.play().catch(() => {}); }
+          else if (!trocando && ativo.currentTime >= ini + janela() - FADE_VIDEO) trocar();
+          else if (ativo.currentTime < ini - 0.05) ativo.currentTime = ini;
+        }
+        requestAnimationFrame(tick);
+      }
+
+      // iOS pausa vídeo ao trocar de aba: retoma ao voltar
+      document.addEventListener('visibilitychange', () => {
+        if (document.visibilityState === 'visible' && box.isConnected && rodando) ativo.play().catch(() => {});
+      });
+
+      // Editor: botão de play mostra o trecho; de novo pausa
+      box._toggle = () => {
+        rodando = !rodando;
+        if (rodando) {
+          ativo.currentTime = inicioEf();
+          ativo.play().catch(() => {});
+          if (btn) btn.style.display = 'none';
+        } else {
+          ativo.pause();
+          reserva.pause();
+          if (btn) btn.style.display = '';
+        }
+      };
+      // Editor: troca de trecho ao arrastar a linha do tempo, sem recriar o vídeo
+      box._sync = () => {
+        if (!rodando) { a.currentTime = inicioEf(); b.currentTime = inicioEf(); }
+      };
+      requestAnimationFrame(tick);
+    }
+
+    // Linha do tempo do trecho (editor): escolhe o início dos 6 segundos
+    function atualizarTrim() {
+      const box = $('edTrim');
+      const url = edD.capa_url || '';
+      if (!isVideoUrl(url)) { box.innerHTML = ''; return; }
+      box.innerHTML = `<div class="box" style="margin-top:10px">
+          <h2>Trecho do vídeo (6 segundos)</h2>
+          <p class="ed-hint" style="margin:0 0 8px">Arraste para escolher o trecho que vai ficar em loop na capa.</p>
+          <input type="range" class="fin" id="trimR" min="0" max="0" step="0.1" value="0" style="padding:0">
+          <p id="trimTxt" style="font-size:12px;color:var(--mut);margin:6px 0 0"></p>
+          <video id="trimV" muted playsinline preload="metadata" src="${esc(url)}" style="display:none"></video>
+        </div>`;
+      const v = $('trimV');
+      const r = $('trimR');
+      const txt = (dur) => {
+        const ini = Number(edD.video_inicio) || 0;
+        const L = Math.min(JAN_VIDEO, Math.max(0, dur - ini));
+        $('trimTxt').textContent = `Trecho: ${fmtTempo(ini)} a ${fmtTempo(ini + L)} (${Math.round(L)} s)`;
+      };
+      v.addEventListener('loadedmetadata', () => {
+        const dur = v.duration || 0;
+        const max = Math.max(0, dur - Math.min(JAN_VIDEO, dur));
+        r.max = max.toFixed(1);
+        r.value = Math.min(Number(edD.video_inicio) || 0, max);
+        edD.video_inicio = Number(r.value);
+        txt(dur);
+      });
+      r.addEventListener('input', () => {
+        edD.video_inicio = Number(r.value);
+        markDirty();
+        txt(v.duration || 0);
+        document.querySelectorAll('.vloop').forEach(bx => {
+          bx.dataset.inicio = edD.video_inicio;
+          if (bx._sync) bx._sync();
+        });
+      });
+    }
+
     function iniciais(anf) {
       const n = anf.filter(a => a.nome).map(a => a.nome.trim()[0]).filter(Boolean);
       return n.length >= 2 ? n[0] + ' & ' + n[1] : (n[0] || '');
@@ -1053,6 +1195,7 @@
       const c = ctxPublico();
       CUR = c.d;
       $('viewPublic').innerHTML = pageHTML(c);
+      initVideoLoops($('viewPublic'));
       if (GUEST) {
         const b = $('viewPublic').querySelector('.btn-action');
         if (b) b.insertAdjacentHTML('beforebegin', `<p class="demo-intro" style="margin:0 auto 18px">Olá, <b>${esc(GUEST.nome)}</b>! Confirme sua presença abaixo.</p>`);
@@ -1410,6 +1553,7 @@
       syncFormulario();
       renderReps();
       refreshPreview();
+      atualizarTrim();
     }
 
     function ctxEditor() {
@@ -1426,6 +1570,7 @@
       CUR = edD;
       const c = ctxEditor();
       $('edPreview').innerHTML = pageHTML(c);
+      initVideoLoops($('edPreview'));
       paintCores();
       paintMapa();
       syncMapaSeg();
@@ -1502,6 +1647,7 @@
     $('edPreview').addEventListener('click', e => {
       const b = e.target.closest('[data-act]');
       if (b && b.dataset.act === 'capa') $('edCapaFile').click();
+      if (b && b.dataset.act === 'vplay') { const bx = b.closest('.vloop'); if (bx && bx._toggle) bx._toggle(); }
     });
 
     // Campos do formulário
@@ -1549,7 +1695,7 @@
         if (!r) return;
         edD.capa_url = r.url;
         edD.capa_poster_url = r.poster || '';
-        markDirty(); refreshPreview();
+        markDirty(); refreshPreview(); atualizarTrim();
         $('edMsg').className = 'msg ok'; $('edMsg').textContent = 'Capa enviada. Clique em Salvar para manter.';
       } catch (err) {
         $('edMsg').className = 'msg';
