@@ -68,15 +68,13 @@
 
     /* Submenu: mesma cápsula da área do cliente, fixo logo abaixo do cabeçalho */
     .tabs{position:relative;z-index:30;display:flex;gap:6px;flex-wrap:nowrap;overflow-x:auto;scrollbar-width:none;
-      margin:0 -18px 18px;padding:8px 18px;border-bottom:1px solid rgba(0,240,255,.18);
-      background:linear-gradient(180deg,rgba(0,240,255,.06) 0%,rgba(8,12,18,.7) 100%);
-      backdrop-filter:blur(24px);-webkit-backdrop-filter:blur(24px)}
+      margin:0 -18px 18px;padding:8px 18px;background:transparent}
     .tabs::-webkit-scrollbar{display:none}
     .tab{flex:0 0 auto;padding:6px 12px;border-radius:999px;border:1px solid var(--line);background:rgba(255,255,255,.03);color:var(--mut);
       font-size:11px;font-weight:700;letter-spacing:.04em;text-transform:uppercase;cursor:pointer;white-space:nowrap;text-decoration:none;font-family:inherit;display:inline-flex;align-items:center}
     .tab.on{color:var(--tech);border-color:rgba(6,182,212,.5);background:rgba(6,182,212,.12);box-shadow:0 0 18px rgba(6,182,212,.14)}
     a.tab:hover{color:var(--text)}
-    .tabs.fixo{position:fixed;left:0;right:0;margin:0;border-radius:0;padding-left:max(18px,calc((100% - 1120px)/2 + 18px));padding-right:max(18px,calc((100% - 1120px)/2 + 18px));box-shadow:0 6px 18px rgba(0,0,0,.35)}
+    .tabs.fixo{position:fixed;left:0;right:0;margin:0;border-radius:0;padding-left:max(18px,calc((100% - 1120px)/2 + 18px));padding-right:max(18px,calc((100% - 1120px)/2 + 18px));box-shadow:0 6px 18px rgba(0,0,0,.35);border-bottom:1px solid rgba(0,240,255,.18);backdrop-filter:blur(24px);-webkit-backdrop-filter:blur(24px)}
     .tabs-det{position:static;background:none;backdrop-filter:none;-webkit-backdrop-filter:none;border-bottom:1px solid var(--line);margin:0 0 16px;padding:0 0 8px}
 
     .tag{display:inline-block;font-size:10px;font-weight:800;padding:4px 9px;border-radius:999px;text-transform:uppercase;letter-spacing:.04em}
@@ -283,7 +281,7 @@
     .spider-web svg{width:100%;height:100%;display:block;overflow:visible}
     .hw-deco{position:absolute;z-index:4;pointer-events:none;font-size:28px;filter:drop-shadow(0 2px 8px rgba(0,0,0,.5));opacity:.85}
     .hw-pumpkin{top:18px;left:18px;animation:hwBob 3.5s ease-in-out infinite}
-    .hw-ghost{top:22%;right:18px;font-size:32px;opacity:.55;animation:hwFloat 5s ease-in-out infinite}
+    .hw-ghost{top:52%;left:7%;font-size:34px;opacity:.6;animation:hwFloat 7s ease-in-out infinite}
     @keyframes hwBob{0%,100%{transform:translateY(0) rotate(-4deg)}50%{transform:translateY(-6px) rotate(4deg)}}
     @keyframes hwFloat{0%,100%{transform:translateY(0) translateX(0)}50%{transform:translateY(-14px) translateX(-6px)}}
     .theme-halloween .blood-drip-title{position:relative;display:inline-block;padding-bottom:14px}
@@ -409,6 +407,7 @@
       <div class="actions">
         <button class="btn-s" type="button" id="btnVoltar">← Meus convites</button>
         <button class="btn-s gold" type="button" id="btnAbrirEditor"><i class="fas fa-pen"></i> Editar convite</button>
+        
       </div>
 
       <div class="box-full">
@@ -442,7 +441,7 @@
             <button class="btn-s" type="button" id="btnPublicar"></button>
             <button class="btn-s" type="button" id="btnCopiar"><i class="far fa-copy"></i> Copiar link</button>
             <a class="btn-s wa" id="btnWaAdmin" target="_blank" rel="noopener"><i class="fab fa-whatsapp"></i> WhatsApp</a>
-            <a class="btn-s" id="btnVerPub" target="_blank" rel="noopener"><i class="fas fa-external-link-alt"></i> Ver público</a>
+            
           </div>
         </div>
       </div>
@@ -847,6 +846,16 @@
       if (b > 20) document.documentElement.style.setProperty('--hdr-h', b + 'px');
     }
     window.addEventListener('resize', medirTopo);
+    function peleHeader(nav, h) {
+      var layer = h.querySelector('.mn-bg-l.on') || h;
+      var cs = getComputedStyle(layer), csH = getComputedStyle(h);
+      nav.style.backgroundImage = cs.backgroundImage !== 'none' ? cs.backgroundImage : '';
+      nav.style.backgroundColor = cs.backgroundColor !== 'rgba(0, 0, 0, 0)' ? cs.backgroundColor : csH.backgroundColor;
+      var bl = csH.backdropFilter && csH.backdropFilter !== 'none' ? csH.backdropFilter : 'blur(24px)';
+      nav.style.backdropFilter = bl;
+      nav.style.webkitBackdropFilter = bl;
+      nav.style.borderBottomColor = csH.borderBottomColor || 'rgba(0,240,255,.18)';
+    }
     function fixarTabs() {
       var nav = $('tabsConv'), wrap = $('tabsWrap');
       if (!nav || !wrap || $('viewAdmin').classList.contains('hidden')) return;
@@ -855,9 +864,12 @@
         if (!nav.classList.contains('fixo')) wrap.style.height = nav.offsetHeight + 'px';
         nav.classList.add('fixo');
         nav.style.top = hb + 'px';
+        if (h) peleHeader(nav, h);
       } else {
         nav.classList.remove('fixo');
         nav.style.top = '';
+        nav.style.backgroundImage = ''; nav.style.backgroundColor = '';
+        nav.style.backdropFilter = ''; nav.style.webkitBackdropFilter = ''; nav.style.borderBottomColor = '';
         wrap.style.height = '';
       }
     }
@@ -1077,14 +1089,16 @@
       var bc = pt((sp[5].a + sp[6].a) / 2, (rp[5][5] + rp[5][6]) / 2), bx = bc[0], by = bc[1], legs = '';
       for (var q2 = 0; q2 < 8; q2++) {
         var a2 = q2 * Math.PI / 4 + .4;
-        legs += 'M' + f(bx) + ' ' + f(by) + 'l' + f(Math.cos(a2) * 9) + ' ' + f(Math.sin(a2) * 9);
+        legs += 'M' + f(bx) + ' ' + f(by) + 'l' + f(Math.cos(a2) * 15) + ' ' + f(Math.sin(a2) * 15);
       }
       return '<svg viewBox="0 0 200 200" xmlns="http://www.w3.org/2000/svg" aria-hidden="true">' +
         '<g fill="none" stroke="rgba(235,235,240,.5)" stroke-width=".55">' + rings + '</g>' +
         '<path fill="none" stroke="rgba(235,235,240,.6)" stroke-width=".8" d="' + spokes + '"/>' +
         '<path fill="none" stroke="rgba(235,235,240,.35)" stroke-width=".5" d="' + legs + '"/>' +
         '<g fill="rgba(235,235,240,.7)">' + dots + '</g>' +
-        '<ellipse cx="' + f(bx) + '" cy="' + f(by) + '" rx="2.6" ry="3.4" fill="#050505" stroke="rgba(235,235,240,.5)" stroke-width=".5"/></svg>';
+        '<g fill="#050505" stroke="rgba(235,235,240,.75)" stroke-width=".6">' +
+          '<ellipse cx="' + f(bx) + '" cy="' + f(by + 2.5) + '" rx="3.4" ry="4.4"/>' +
+          '<circle cx="' + f(bx) + '" cy="' + f(by - 2.4) + '" r="2.1"/></g></svg>';
     }
 
     /* ===== Efeitos Halloween: sempre dentro do contêiner da prévia/página pública ===== */
@@ -1961,7 +1975,8 @@
       enviarCapa(file).then(function (r) {
         if (!r) return;
         edD.capa_url = r.url; edD.capa_poster_url = r.poster || '';
-        markDirty(); refreshPreview(); atualizarTrim(); atualizarCapaAtual();
+        try { markDirty(); refreshPreview(); atualizarTrim(); atualizarCapaAtual(); }
+        catch (uiErr) { console.warn('[capa] prévia não atualizou', uiErr); }
         $('edMsg').className = 'msg ok'; $('edMsg').textContent = 'Capa enviada. Clique em Salvar para manter.';
       }).catch(function (err) {
         $('edMsg').className = 'msg';
