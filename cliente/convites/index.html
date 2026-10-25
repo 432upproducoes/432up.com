@@ -67,7 +67,7 @@
     .btn-verde{display:inline-flex;align-items:center;justify-content:center;padding:9px 14px;border-radius:12px;border:0;background:var(--action);color:#04120a;font-size:13px;font-weight:800;text-decoration:none;cursor:pointer;font-family:inherit}
 
     /* Submenu: mesma cápsula da área do cliente, fixo logo abaixo do cabeçalho */
-    .tabs{position:sticky;top:var(--hdr-h,64px);z-index:30;display:flex;gap:6px;flex-wrap:nowrap;overflow-x:auto;scrollbar-width:none;
+    .tabs{position:relative;z-index:30;display:flex;gap:6px;flex-wrap:nowrap;overflow-x:auto;scrollbar-width:none;
       margin:0 -18px 18px;padding:8px 18px;border-bottom:1px solid rgba(0,240,255,.18);
       background:linear-gradient(180deg,rgba(0,240,255,.06) 0%,rgba(8,12,18,.7) 100%);
       backdrop-filter:blur(24px);-webkit-backdrop-filter:blur(24px)}
@@ -76,6 +76,7 @@
       font-size:11px;font-weight:700;letter-spacing:.04em;text-transform:uppercase;cursor:pointer;white-space:nowrap;text-decoration:none;font-family:inherit;display:inline-flex;align-items:center}
     .tab.on{color:var(--tech);border-color:rgba(6,182,212,.5);background:rgba(6,182,212,.12);box-shadow:0 0 18px rgba(6,182,212,.14)}
     a.tab:hover{color:var(--text)}
+    .tabs.fixo{position:fixed;left:0;right:0;margin:0;border-radius:0;padding-left:max(18px,calc((100% - 1120px)/2 + 18px));padding-right:max(18px,calc((100% - 1120px)/2 + 18px));box-shadow:0 6px 18px rgba(0,0,0,.35)}
     .tabs-det{position:static;background:none;backdrop-filter:none;-webkit-backdrop-filter:none;border-bottom:1px solid var(--line);margin:0 0 16px;padding:0 0 8px}
 
     .tag{display:inline-block;font-size:10px;font-weight:800;padding:4px 9px;border-radius:999px;text-transform:uppercase;letter-spacing:.04em}
@@ -258,7 +259,7 @@
     @media(max-width:680px){.form-grid{grid-template-columns:1fr}.prog-row{grid-template-columns:70px 1fr}}
 
     /* Halloween: só dentro da prévia do convite (ou da página pública), nunca no fundo da área */
-    .theme-halloween{--c-gold:#ff8f20;--c-text:#f5e6d3;--c-names:#ffe8c8;position:relative;overflow:hidden;isolation:isolate}
+    .theme-halloween{--c-gold:#ff8f20;--c-text:#f5e6d3;--c-names:#ffe8c8}
     body.hw-public{background:#0a0608!important}
     .theme-halloween .demo-glass.protagonist{background:linear-gradient(135deg,rgba(255,143,32,.12),rgba(80,20,10,.35));border-color:rgba(255,143,32,.45);box-shadow:0 0 60px rgba(255,100,20,.15)}
     .theme-halloween .btn-action{background:linear-gradient(135deg,#ff8f20,#b85c0a);color:#1a0a00;box-shadow:0 0 28px rgba(255,143,32,.3)}
@@ -377,12 +378,14 @@
     <h1 class="titulo">Convites</h1>
     <p class="lead">Crie, edite, publique e acompanhe confirmações.</p>
 
+    <div id="tabsWrap">
     <nav class="tabs" id="tabsConv" aria-label="Convites">
       <button type="button" class="tab on" data-v="lista">Meus convites</button>
       <button type="button" class="tab" data-act="novo">+ Novo convite</button>
       <button type="button" class="tab" data-v="lixeira">Lixeira</button>
       <a class="tab" href="../index.html">← Área do cliente</a>
     </nav>
+    </div>
 
     <!-- Lista -->
     <section class="view" id="vLista">
@@ -810,6 +813,7 @@
     /* ===== Navegação entre telas da área de convites ===== */
     var VIEWS = { lista: 'vLista', lixeira: 'vLixeira', detalhe: 'vDetalhe', editor: 'vEditor' };
     function showView(v) {
+      if (v !== 'editor') aplicarHalloween(document.body, false);
       Object.keys(VIEWS).forEach(function (k) { $(VIEWS[k]).classList.toggle('hidden', k !== v); });
       var mostraTabs = v !== 'editor';
       $('tabsConv').classList.toggle('hidden', !mostraTabs);
@@ -843,7 +847,24 @@
       if (b > 20) document.documentElement.style.setProperty('--hdr-h', b + 'px');
     }
     window.addEventListener('resize', medirTopo);
-    setTimeout(medirTopo, 300); setTimeout(medirTopo, 1200);
+    function fixarTabs() {
+      var nav = $('tabsConv'), wrap = $('tabsWrap');
+      if (!nav || !wrap || $('viewAdmin').classList.contains('hidden')) return;
+      var h = $('calc-header'), hb = h ? Math.max(0, Math.round(h.getBoundingClientRect().bottom)) : 0;
+      if (wrap.getBoundingClientRect().top <= hb) {
+        if (!nav.classList.contains('fixo')) wrap.style.height = nav.offsetHeight + 'px';
+        nav.classList.add('fixo');
+        nav.style.top = hb + 'px';
+      } else {
+        nav.classList.remove('fixo');
+        nav.style.top = '';
+        wrap.style.height = '';
+      }
+    }
+    window.addEventListener('scroll', function () { medirTopo(); fixarTabs(); }, { passive: true });
+    window.addEventListener('resize', fixarTabs);
+    setTimeout(function () { medirTopo(); fixarTabs(); }, 300);
+    setTimeout(function () { medirTopo(); fixarTabs(); }, 1200);
 
     /* ===== Sessão e permissões ===== */
     function sessao() {
@@ -1080,15 +1101,18 @@
     }
     /* Liga/desliga o tema dentro do contêiner indicado, sem tocar no fundo da área */
     function aplicarHalloween(el, on) {
+      var ehBody = el === document.body;
       el.classList.toggle('theme-halloween', !!on);
-      var antigo = el.querySelector(':scope > .hw-layer');
-      if (antigo) antigo.parentNode.removeChild(antigo);
+      if (ehBody) document.body.classList.toggle('hw-public', !!on);
+      var antigo = document.querySelectorAll('.hw-layer');
+      for (var ai = 0; ai < antigo.length; ai++) antigo[ai].parentNode.removeChild(antigo[ai]);
       if (on) {
         var camada = document.createElement('div');
         camada.className = 'hw-layer';
-        camada.style.cssText = 'position:absolute;inset:0;pointer-events:none;z-index:0;overflow:hidden';
+        camada.style.cssText = (ehBody ? 'position:fixed' : 'position:absolute') + ';inset:0;pointer-events:none;z-index:5;overflow:hidden';
         camada.innerHTML = efeitosHalloween();
-        el.insertBefore(camada, el.firstChild);
+        if (ehBody) document.body.appendChild(camada);
+        else el.insertBefore(camada, el.firstChild);
       }
     }
 
@@ -1316,8 +1340,7 @@
       var box = $('viewPublic');
       box.innerHTML = pageHTML(c);
       var hw = skin === 'halloween';
-      document.body.classList.toggle('hw-public', hw);
-      aplicarHalloween(box, hw);
+      aplicarHalloween(document.body, hw);
       if (hw) decorarHalloween(box);
       initVideoLoops(box);
       if (GUEST) {
@@ -1337,7 +1360,7 @@
       CUR = edD;
       box.innerHTML = pageHTML(c);
       var hw = (edD._skin || 'padrao') === 'halloween';
-      aplicarHalloween(box, hw);
+      aplicarHalloween(document.body, hw);
       if (hw) decorarHalloween(box);
       initVideoLoops(box);
       paintCores(box); paintMapa(); syncMapaSeg(); syncMapaSliders(); tickCd();
