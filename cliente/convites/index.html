@@ -281,9 +281,11 @@
     .spider-web svg{width:100%;height:100%;display:block;overflow:visible}
     .hw-deco{position:absolute;z-index:4;pointer-events:none;font-size:28px;filter:drop-shadow(0 2px 8px rgba(0,0,0,.5));opacity:.85}
     .hw-pumpkin{top:18px;left:18px;animation:hwBob 3.5s ease-in-out infinite}
-    .hw-ghost{top:52%;left:7%;font-size:34px;opacity:.6;animation:hwFloat 7s ease-in-out infinite}
+    .hw-ghost{top:52%;left:7%;font-size:34px;opacity:.6;animation:hwFloat 9s ease-in-out infinite;transition:left .6s,top .6s}
     @keyframes hwBob{0%,100%{transform:translateY(0) rotate(-4deg)}50%{transform:translateY(-6px) rotate(4deg)}}
-    @keyframes hwFloat{0%,100%{transform:translateY(0) translateX(0)}50%{transform:translateY(-14px) translateX(-6px)}}
+    @keyframes hwFloat{0%,100%{transform:translate(0,0) rotate(-4deg)}25%{transform:translate(34px,-20px) rotate(5deg)}50%{transform:translate(-20px,-40px) rotate(-3deg)}75%{transform:translate(28px,12px) rotate(4deg)}}
+    @keyframes hwPop{0%{opacity:0;transform:scale(.6)}20%{opacity:.85;transform:scale(1)}80%{opacity:.85}100%{opacity:0;transform:scale(.8)}}
+    .hw-ghost.hw-show{animation:hwPop 3.2s ease-in-out forwards}
     .theme-halloween .blood-drip-title{position:relative;display:inline-block;padding-bottom:14px}
     .theme-halloween .blood-drip-title .td1,.theme-halloween .blood-drip-title .td2,.theme-halloween .blood-drip{content:'';position:absolute;bottom:-2px;width:5px;border-radius:0 0 50% 50%;background:#cc0000;box-shadow:0 4px 8px rgba(139,0,0,.4);pointer-events:none;z-index:1;animation:dripFall var(--dd,3s) ease-in infinite var(--ddl,0s)}
     .theme-halloween .blood-drip-title .td1{left:68%;--dd:3.6s;--dh:11px}
@@ -1751,13 +1753,16 @@
             '<span class="rot" style="text-transform:none;letter-spacing:0">' + esc([g.telefone, g.email].filter(Boolean).join(' · ') || '—') + '</span></div>' +
             '<div class="tags"><span class="tag ' + st + '">' + esc(g.status) + '</span>' +
             '<button class="btn-s" data-copy-link="' + esc(g.token) + '">Copiar link pessoal</button>' +
-            '<button class="btn-s" data-rot="' + esc(g.id) + '">Gerar novo link</button></div></div>';
+            '<button class="btn-s" data-rot="' + esc(g.id) + '">Gerar novo link</button>' +
+            '<button class="btn-s danger" data-del-conv="' + esc(g.id) + '">Excluir</button></div></div>';
         }).join('') : '<div class="vazio">Lista vazia.</div>';
         $('convBody').querySelectorAll('[data-gid]').forEach(function (el) {
           el.addEventListener('click', function (e) {
             var cp = e.target.closest('[data-copy-link]'), rt = e.target.closest('[data-rot]');
             if (cp) { navigator.clipboard && navigator.clipboard.writeText(linkConvidado(atual.token_publico, cp.dataset.copyLink)).then(function () { toast('Link pessoal copiado.'); }); return; }
             if (rt) { girarLink(rt.dataset.rot); return; }
+            var dl = e.target.closest('[data-del-conv]');
+            if (dl) { excluirConvidado(dl.dataset.delConv); return; }
             if (e.target.closest('button')) return;
             editarConv(el.dataset.gid);
           });
@@ -1765,6 +1770,13 @@
       }).catch(function (e) { toast(fala(e)); });
     }
     function recarregarDetalhe() { return atual ? abrirDetalhe(atual.id) : Promise.resolve(); }
+    function excluirConvidado(id) {
+      if (!confirm('Remover este convidado da lista? As respostas dele também saem.')) return;
+      rpc('convite_convidado_remover', { p_id: id }).then(function () {
+        toast('Convidado removido.');
+        return recarregarDetalhe();
+      }).catch(function (e) { toast(fala(e)); });
+    }
 
     /* ===== Importar contatos: CSV, vCard (iPhone/iCloud) ou contatos do aparelho (Android) ===== */
     var IMP = [];
@@ -2445,6 +2457,21 @@
       lgMsg('Sua sessão expirou ou você saiu. Entre novamente para continuar.');
     });
 
+    /* Fantasma: reaparece em outro lugar a cada rolagem, sem ficar parado */
+    (function () {
+      var ultimo = 0;
+      window.addEventListener('scroll', function () {
+        var agora = Date.now();
+        if (agora - ultimo < 3500) return;
+        ultimo = agora;
+        document.querySelectorAll('.hw-ghost').forEach(function (g) {
+          g.style.left = (5 + Math.random() * 80) + '%';
+          g.style.top = (10 + Math.random() * 70) + '%';
+          g.classList.remove('hw-show'); void g.offsetWidth; g.classList.add('hw-show');
+        });
+      }, { passive: true });
+    })();
+
     /* ===== Boot ===== */
     function bootHide2() { bootHide(); }
     (function boot() {
@@ -2465,6 +2492,10 @@
         $('viewAdmin').classList.remove('hidden');
         return tierUsuario().then(function (tier) {
           IS_ADMIN = tier === 'admin';
+          if (!IS_ADMIN) {
+            var np = $('novoProposta'); if (np) { np.style.display = 'none'; if (np.previousElementSibling) np.previousElementSibling.style.display = 'none'; }
+            var ep = $('edProposta'); if (ep) ep.closest('div').style.display = 'none';
+          }
           return carregarLista().then(function () {
             var qs = new URLSearchParams(location.search);
             if (qs.get('id')) return abrirDetalhe(qs.get('id'));
