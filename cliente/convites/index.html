@@ -791,6 +791,7 @@
     /* Converte erros técnicos em frases que dizem o que aconteceu e o que fazer */
     function fala(e) {
       var m = String((e && e.message) || e || '');
+      try { console.error('[convite]', e); } catch (x) {}
       var tabela = [
         [/convite indispon/i, 'Este convite não está disponível agora. Ele pode ainda não ter sido publicado. Fale com a 432UP! se precisar de ajuda.'],
         [/prazo de confirma/i, 'O prazo para confirmar presença já terminou. Fale com a 432UP! se ainda precisar responder.'],
@@ -812,7 +813,7 @@
       ];
       for (var i = 0; i < tabela.length; i++) if (tabela[i][0].test(m)) return tabela[i][1];
       if (ehFalhaDeRede(e)) return 'Sem conexão com a internet agora. Verifique o sinal e toque em tentar de novo.';
-      return 'Algo não funcionou como esperado. Tente de novo em instantes.';
+      return 'Algo não funcionou como esperado. Tente de novo em instantes.' + (m ? ' Detalhe técnico: ' + m.slice(0, 200) : '');
     }
     /* Miniatura: vídeo sem imagem de pré-visualização mostra a foto padrão, em vez de tela preta */
     function capaMiniatura(d) {
