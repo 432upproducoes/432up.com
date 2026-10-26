@@ -92,7 +92,8 @@
         { label: 'Pacotes', href: ADM + 'admin-pacotes.html', file: 'admin-pacotes.html' },
         { label: 'Transporte', href: ADM + 'admin-transporte.html', file: 'admin-transporte.html' },
         { label: 'Leads', href: ADM + 'admin-leads.html', file: 'admin-leads.html' },
-        { label: 'Galeria', href: ADM + 'admin-galeria.html', file: 'admin-galeria.html' }
+        { label: 'Galeria', href: ADM + 'admin-galeria.html', file: 'admin-galeria.html' },
+        { label: 'Fotolog', href: ADM + 'admin-fotolog.html', file: 'admin-fotolog.html' }
       ]},
       { label: 'Studio', href: ADM + 'studio.html', file: 'studio.html' }
     ],
@@ -1422,6 +1423,7 @@
             if (onSite) window.location.replace(SITE + 'index.html');
             /* Na área do cliente não usa o partnerLogout (que tinha caminho relativo): vai direto ao login absoluto */
             else if (!onCliente && typeof partnerLogout === 'function') partnerLogout(e);
+            else if (pathName.indexOf('/convites/') !== -1) window.location.replace(window.location.pathname + '?saiu=1');
             else window.location.replace(B2B + 'login.html?saiu=1');
           }
           if (typeof sbPartner !== 'undefined' && sbPartner.auth) {
@@ -1785,6 +1787,33 @@
     }
     partnerRequireAuth({ requireAdmin: false }).then(applyParceiro).catch(function () {});
   }
+
+  /* Sessão que cai com a página aberta: limpa o menu e volta a mostrar o visitante.
+     Fora da página de convites, manda para o login (a página de convites tem login próprio). */
+  function sessaoEncerrada() {
+    cachedLoggedIn = false; cachedIsAdmin = false; cachedIsCliente = false; cachedIsParceiro = false;
+    try {
+      ['432up_is_logged', '432up_is_admin', '432up_is_cliente', '432up_is_parceiro', '432up_login_done', '432up_auto_rota']
+        .forEach(function (k) { sessionStorage.removeItem(k); });
+      localStorage.removeItem('432up_rota');
+    } catch (e) {}
+    try { applyParceiro(null); } catch (e) {}
+    if (pathName.indexOf('/convites/') !== -1) return;
+    if (!onSite) window.location.replace(B2B + 'login.html?expirou=1');
+  }
+  var escutaLigada = false, escutaTentativas = 0;
+  function ligarEscutadorSessao() {
+    if (escutaLigada) return;
+    if (!(typeof sbPartner !== 'undefined' && sbPartner && sbPartner.auth && sbPartner.auth.onAuthStateChange)) {
+      if (escutaTentativas++ < 300) setTimeout(ligarEscutadorSessao, 100);
+      return;
+    }
+    escutaLigada = true;
+    sbPartner.auth.onAuthStateChange(function (evento) {
+      if (evento === 'SIGNED_OUT' && !logoutLock) sessaoEncerrada();
+    });
+  }
+  ligarEscutadorSessao();
 
   injectPwaTags();
 
