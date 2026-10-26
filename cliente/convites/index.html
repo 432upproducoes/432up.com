@@ -1604,6 +1604,7 @@
         : rpc('convite_enviar_rsvp', { p_token: TOKEN, p_nome: $('rsvpNome').value.trim(), p_presenca: $('rsvpPresenca').value, p_acomp: +$('rsvpAcomp').value || 0, p_restricao: $('rsvpRestricao').value.trim() || null, p_mensagem: $('rsvpMsg').value.trim() || null });
       p.then(function () {
         gravarJSON(rsvpKey(TOKEN), { presenca: $('rsvpPresenca').value, acomp: +$('rsvpAcomp').value || 0, quando: new Date().toISOString() });
+        if (GUEST) GUEST.rsvp = { presenca: $('rsvpPresenca').value, acompanhantes: +$('rsvpAcomp').value || 0 };
         $('rsvpForm').classList.add('hidden');
         $('rsvpOk').classList.remove('hidden');
         var antiga = $('rsvpBanner'); if (antiga) antiga.remove();
@@ -1619,8 +1620,12 @@
     function gravarJSON(k, v) { try { localStorage.setItem(k, JSON.stringify(v)); } catch (e) {} }
 
     /* Faixa que mostra ao convidado se ele já respondeu, sem tirar o convite da tela */
+    function respostaAtual(token) {
+      if (GUEST && GUEST.rsvp && GUEST.rsvp.presenca) return { presenca: GUEST.rsvp.presenca, acomp: +GUEST.rsvp.acompanhantes || 0 };
+      return lerJSON(rsvpKey(token));
+    }
     function bannerRsvp(token) {
-      var r = lerJSON(rsvpKey(token));
+      var r = respostaAtual(token);
       if (!r) return '';
       var sim = r.presenca === 'sim';
       var txt = sim
@@ -1632,7 +1637,7 @@
         '<button class="btn-s" type="button" id="btnAlterarRsvp">Alterar minha resposta</button></div>';
     }
     function abrirAlteracao() {
-      var r = lerJSON(rsvpKey(TOKEN)) || {};
+      var r = respostaAtual(TOKEN) || {};
       $('rsvpForm').classList.remove('hidden');
       $('rsvpOk').classList.add('hidden');
       if (r.presenca) $('rsvpPresenca').value = r.presenca;
