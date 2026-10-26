@@ -440,6 +440,7 @@
           <div class="actions">
             <button class="btn-s" type="button" id="btnPublicar"></button>
             <button class="btn-s" type="button" id="btnCopiar"><i class="far fa-copy"></i> Copiar link</button>
+            <a class="btn-s" id="btnVerPub" target="_blank" rel="noopener"><i class="fas fa-up-right-from-square"></i> Ver convite</a>
             <a class="btn-s wa" id="btnWaAdmin" target="_blank" rel="noopener"><i class="fab fa-whatsapp"></i> WhatsApp</a>
             
           </div>
@@ -1723,7 +1724,7 @@
         $('tLista').textContent = (atual.totais && atual.totais.convidados_lista) || 0;
         $('btnPublicar').textContent = atual.status === 'publicado' ? 'Despublicar' : 'Publicar';
         var url = linkPublico(atual.token_publico);
-        $('btnVerPub').href = url;
+        var bv = $('btnVerPub'); if (bv) bv.href = url;
         $('btnWaAdmin').href = 'https://wa.me/?text=' + encodeURIComponent('Segue o convite: ' + url);
 
         var rsvps = atual.rsvps || [];
@@ -1860,7 +1861,7 @@
       }, Promise.resolve()).then(function () {
         fecharImport();
         toast(feitos + ' contato(s) importado(s)' + (falhas ? '. ' + falhas + ' não couberam.' : '.'));
-        return recarregarDetalhe();
+        return recarregarDetalhe().catch(function () { toast('Contatos importados. Atualize a página para ver a lista.'); });
       });
     }
     $('btnImportConv').addEventListener('click', function () {
@@ -1956,8 +1957,11 @@
         p_convite: atual.id, p_id: $('convId').value || null, p_nome: $('convNome').value.trim(),
         p_telefone: $('convTel').value.trim() || null, p_email: $('convEmail').value.trim() || null,
         p_acomp: +$('convAcomp').value || 0, p_status: $('convStatus').value, p_obs: $('convObs').value.trim() || null
-      }).then(function () { $('modalConv').classList.remove('on'); toast('Salvo.'); return recarregarDetalhe(); })
-        .catch(function (e) { $('msgConv').textContent = fala(e); });
+      }).then(function () {
+        $('modalConv').classList.remove('on');
+        toast('Convidado salvo.');
+        return recarregarDetalhe().catch(function () { toast('Convidado salvo. Atualize a página para ver a lista.'); });
+      }, function (e) { $('msgConv').textContent = fala(e); });
     });
     $('btnRemConv').addEventListener('click', function () {
       if (!confirm('Remover este convidado?')) return;
