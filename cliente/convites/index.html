@@ -163,7 +163,7 @@
     .editavel:focus{outline-color:rgba(168,85,247,.7);background:rgba(168,85,247,.1)}
     .names-edit{color:var(--c-names);display:inline-block;min-width:2ch;outline:none;border-radius:8px}
     [contenteditable][data-ph]:empty::before{content:attr(data-ph);color:rgba(212,175,55,.65);pointer-events:none}
-    .pub{width:min(720px,calc(100% - 32px));margin:0 auto;padding:60px 0 110px;position:relative;z-index:2}
+    .pub{box-sizing:border-box;width:min(720px,calc(100% - 32px));margin:0 auto;padding:60px 0 110px;position:relative;z-index:2}
     @media(min-width:900px){.pub{width:min(680px,calc(100% - 48px));padding:70px 0 100px}}
     .eyebrow.c{display:block;font-size:.68rem;letter-spacing:.18em;text-transform:uppercase;font-weight:700;opacity:.85;color:var(--c-gold);margin-bottom:12px}
     .demo-title{font-family:'Cormorant Garamond',serif;font-weight:400;font-size:clamp(2.4rem,7vw,5.2rem);line-height:.96;letter-spacing:-.02em;margin:14px 0 22px}
@@ -253,7 +253,7 @@
     .field label{display:block;font-size:.85rem;color:var(--gold);margin-bottom:7px}
     .ok-box{text-align:center;padding:24px 0}
     .ok-box h4{font-family:'Cormorant Garamond',serif;font-size:1.7rem;font-weight:400;margin:10px 0}
-    .erro-box{max-width:440px;margin:22vh auto;text-align:center;padding:36px 22px;border-radius:24px;border:1px solid var(--line);background:rgba(255,255,255,.04)}
+    .erro-box{box-sizing:border-box;width:calc(100% - 32px);max-width:440px;margin:22vh auto;text-align:center;padding:36px 22px;border-radius:24px;border:1px solid var(--line);background:rgba(255,255,255,.04)}
     @media(max-width:680px){.form-grid{grid-template-columns:1fr}.prog-row{grid-template-columns:70px 1fr}}
 
     /* Halloween: só dentro da prévia do convite (ou da página pública), nunca no fundo da área */
@@ -360,7 +360,7 @@
       <div id="rsvpOk" class="ok-box hidden">
         <i class="fas fa-circle-check" style="font-size:2rem;color:var(--action)"></i>
         <h4>Resposta recebida</h4>
-        <p>Agradecemos seu carinho.</p>
+        <p>Agradecemos seu carinho. Este convite continua disponível neste mesmo link, com endereço, data e programação. Você pode voltar aqui a qualquer momento para ver os dados ou mudar sua resposta até o prazo.</p>
       </div>
     </div>
   </div>
@@ -461,7 +461,10 @@
           <div style="display:flex;justify-content:space-between;align-items:center;gap:8px;flex-wrap:wrap">
             <h2 style="margin:0">Convidados</h2>
             <button class="btn-s" type="button" id="btnAddConv"><i class="fas fa-user-plus"></i> Adicionar</button>
+            <button class="btn-s" type="button" id="btnImportConv"><i class="fas fa-file-import"></i> Importar contatos</button>
+            <input type="file" id="fileContatos" accept=".csv,.vcf,text/csv,text/vcard" class="hidden">
           </div>
+          <div id="impBox" class="hidden" style="margin-top:12px"></div>
           <div id="convBody" style="margin-top:12px"></div>
         </div>
       </div>
@@ -753,8 +756,9 @@
     var CAPA_FALLBACK_HALLOWEEN = 'https://media.432up.com/midias/1790648646798_halloween-a----maya-glasses---432up--produa--a--es.mov#t=0.54';
 
     function bootFail(msg, detail) {
+      try { console.error(msg, detail); } catch (x) {}
       $('viewBoot').classList.remove('hidden');
-      $('bootMsg').innerHTML = msg + (detail ? '<br><br><code>' + esc(detail) + '</code>' : '');
+      $('bootMsg').textContent = 'Não foi possível abrir esta página agora. Atualize a tela e tente de novo. Se continuar, fale com a 432UP!.';
     }
     function bootHide() { $('viewBoot').classList.add('hidden'); }
 
@@ -783,6 +787,40 @@
 
     function toast(m) { var t = $('toast'); t.textContent = m; t.classList.add('show'); clearTimeout(window._tt); window._tt = setTimeout(function () { t.classList.remove('show'); }, 3000); }
     function rpc(name, args) { return SB.rpc(name, args || {}).then(function (r) { if (r.error) throw new Error(r.error.message || 'Erro'); return r.data; }); }
+    function ehFalhaDeRede(e) { return /load failed|failed to fetch|networkerror|network request failed|fetch/i.test(String((e && e.message) || e || '')); }
+    /* Converte erros técnicos em frases que dizem o que aconteceu e o que fazer */
+    function fala(e) {
+      var m = String((e && e.message) || e || '');
+      var tabela = [
+        [/convite indispon/i, 'Este convite não está disponível agora. Ele pode ainda não ter sido publicado. Fale com a 432UP! se precisar de ajuda.'],
+        [/prazo de confirma/i, 'O prazo para confirmar presença já terminou. Fale com a 432UP! se ainda precisar responder.'],
+        [/nome inv/i, 'Informe seu nome completo para confirmar.'],
+        [/presen.a inv/i, 'Escolha se você vai comparecer antes de enviar.'],
+        [/acompanhantes acima/i, 'O número de acompanhantes passou do permitido neste convite.'],
+        [/exige o link pessoal/i, 'Este convite só aceita confirmação pelo link pessoal enviado para você.'],
+        [/link inv/i, 'Este link pessoal não é válido. Use o link que você recebeu.'],
+        [/muitas tentativas/i, 'Muitas respostas foram enviadas em pouco tempo. Tente de novo daqui a alguns minutos.'],
+        [/fa.a login|jwt|not authenticated/i, 'Entre na sua conta para continuar.'],
+        [/sem permiss/i, 'Você não tem permissão para fazer isso neste convite.'],
+        [/resposta n.o encontrada/i, 'Essa resposta não existe mais.'],
+        [/5 rascunhos/i, 'Você já tem 5 rascunhos. Publique ou exclua um antes de criar outro.'],
+        [/tipo de convite inv/i, 'Este tipo de convite não está disponível.'],
+        [/invalid login credentials/i, 'E-mail ou senha incorretos.'],
+        [/email not confirmed/i, 'Confirme seu e-mail antes de entrar. Enviamos um link para sua caixa de entrada.'],
+        [/already registered|already been registered/i, 'Já existe uma conta com este e-mail. Entre com a senha ou use o link mágico.'],
+        [/rate limit|too many/i, 'Muitas tentativas seguidas. Aguarde alguns minutos e tente de novo.']
+      ];
+      for (var i = 0; i < tabela.length; i++) if (tabela[i][0].test(m)) return tabela[i][1];
+      if (ehFalhaDeRede(e)) return 'Sem conexão com a internet agora. Verifique o sinal e toque em tentar de novo.';
+      return 'Algo não funcionou como esperado. Tente de novo em instantes.';
+    }
+    /* Miniatura: vídeo sem imagem de pré-visualização mostra a foto padrão, em vez de tela preta */
+    function capaMiniatura(d) {
+      var capa = (d && (d.capa_url || d.capa)) || '';
+      if (!capa) return '';
+      if (isVideoUrl(capa) && !(d && d.capa_poster_url)) return CAPA_FALLBACK;
+      return capa;
+    }
     function linkPublico(token) { return location.href.split('?')[0] + '?t=' + encodeURIComponent(token); }
     function linkConvidado(token, gtoken) { return linkPublico(token) + '&c=' + encodeURIComponent(gtoken || ''); }
     function tokenDaUrl() { return (new URLSearchParams(location.search).get('t') || '').trim(); }
@@ -1563,37 +1601,81 @@
         ? rpc('convite_enviar_rsvp_convidado', { p_token: TOKEN, p_convidado: GUEST_TOKEN, p_presenca: $('rsvpPresenca').value, p_acomp: +$('rsvpAcomp').value || 0, p_restricao: $('rsvpRestricao').value.trim() || null, p_mensagem: $('rsvpMsg').value.trim() || null })
         : rpc('convite_enviar_rsvp', { p_token: TOKEN, p_nome: $('rsvpNome').value.trim(), p_presenca: $('rsvpPresenca').value, p_acomp: +$('rsvpAcomp').value || 0, p_restricao: $('rsvpRestricao').value.trim() || null, p_mensagem: $('rsvpMsg').value.trim() || null });
       p.then(function () {
+        gravarJSON(rsvpKey(TOKEN), { presenca: $('rsvpPresenca').value, acomp: +$('rsvpAcomp').value || 0, quando: new Date().toISOString() });
         $('rsvpForm').classList.add('hidden');
         $('rsvpOk').classList.remove('hidden');
+        var antiga = $('rsvpBanner'); if (antiga) antiga.remove();
+        $('viewPublic').insertAdjacentHTML('afterbegin', bannerRsvp(TOKEN));
+        var b = $('btnAlterarRsvp'); if (b) b.addEventListener('click', abrirAlteracao);
         toast($('rsvpPresenca').value === 'sim' ? 'Presença confirmada!' : 'Obrigado por avisar.');
-      }).catch(function (err) { toast(err.message); btn.disabled = false; });
+      }).catch(function (err) { toast(fala(err)); btn.disabled = false; });
     });
 
+    function cacheKey(token) { return '432up_convite_cache_' + token; }
+    function rsvpKey(token) { return '432up_convite_rsvp_' + token; }
+    function lerJSON(k) { try { return JSON.parse(localStorage.getItem(k) || 'null'); } catch (e) { return null; } }
+    function gravarJSON(k, v) { try { localStorage.setItem(k, JSON.stringify(v)); } catch (e) {} }
+
+    /* Faixa que mostra ao convidado se ele já respondeu, sem tirar o convite da tela */
+    function bannerRsvp(token) {
+      var r = lerJSON(rsvpKey(token));
+      if (!r) return '';
+      var sim = r.presenca === 'sim';
+      var txt = sim
+        ? 'Sua presença está confirmada' + (r.acomp ? ' (+' + r.acomp + (r.acomp > 1 ? ' acompanhantes' : ' acompanhante') + ')' : '') + '.'
+        : 'Você avisou que não poderá comparecer.';
+      return '<div class="rsvp-banner" id="rsvpBanner" style="border:1px solid rgba(212,175,55,.45);border-radius:16px;padding:14px 16px;margin:0 auto 18px;max-width:520px;text-align:center;background:rgba(212,175,55,.08)">' +
+        '<strong style="color:var(--c-text,#E7E7EC)">' + esc(txt) + '</strong>' +
+        '<p style="margin:6px 0 10px;font-size:13px;color:#B8B8C2">Guarde este endereço: o convite continua aqui, com data, local e mapa. Você pode mudar sua resposta até o prazo.</p>' +
+        '<button class="btn-s" type="button" id="btnAlterarRsvp">Alterar minha resposta</button></div>';
+    }
+    function abrirAlteracao() {
+      var r = lerJSON(rsvpKey(TOKEN)) || {};
+      $('rsvpForm').classList.remove('hidden');
+      $('rsvpOk').classList.add('hidden');
+      if (r.presenca) $('rsvpPresenca').value = r.presenca;
+      if (r.acomp != null) $('rsvpAcomp').value = String(r.acomp);
+      $('btnRsvp').disabled = false;
+      $('rsvpOverlay').classList.add('open');
+    }
+    function mostrarPublico(data, token, offline) {
+      PUB = data;
+      var rsvp = normDadosPublico(PUB.dados || {}).rsvp;
+      var L_ = Math.max(0, Math.min(20, +(rsvp.limite == null ? 3 : rsvp.limite)));
+      var opts = ''; for (var i = 0; i <= L_; i++) opts += '<option value="' + i + '">' + (i ? '+' + i + (i > 1 ? ' acompanhantes' : ' acompanhante') : 'Somente eu') + '</option>';
+      $('rsvpAcomp').innerHTML = opts;
+      $('wAcomp').classList.toggle('hidden', L_ === 0);
+      $('wRestricao').classList.toggle('hidden', rsvp.restricao === false);
+      $('wMsg').classList.toggle('hidden', rsvp.mensagem === false);
+      var anf = ctxPublico().anf.filter(function (a) { return a.nome; }).map(function (a) { return a.nome; });
+      var pedidoGuest = (GUEST_TOKEN && !offline)
+        ? rpc('convite_convidado_publico', { p_token: token, p_convidado: GUEST_TOKEN }).then(function (g) { GUEST = g; }).catch(function () { GUEST = null; GUEST_TOKEN = ''; })
+        : Promise.resolve();
+      return pedidoGuest.then(function () {
+        if (GUEST) { $('rsvpNome').value = GUEST.nome; $('rsvpNome').readOnly = true; }
+        document.title = anf.join(' & ') || 'Convite';
+        bootHide();
+        $('viewPublic').classList.remove('hidden');
+        renderPublico();
+        if (offline) $('viewPublic').insertAdjacentHTML('afterbegin', '<p class="pill" style="text-align:center;margin:0 auto 14px">Sem conexão agora: mostrando a última versão salva deste convite.</p>');
+        $('viewPublic').insertAdjacentHTML('afterbegin', bannerRsvp(token));
+        var b = $('btnAlterarRsvp'); if (b) b.addEventListener('click', abrirAlteracao);
+      });
+    }
     function bootPublico(token) {
       TOKEN = token;
       return rpc('convite_publico', { p_token: token }).then(function (data) {
-        if (!data) throw new Error('Convite não encontrado ou não publicado.');
-        PUB = data;
-        var rsvp = normDadosPublico(PUB.dados || {}).rsvp;
-        var L_ = Math.max(0, Math.min(20, +(rsvp.limite == null ? 3 : rsvp.limite)));
-        var opts = ''; for (var i = 0; i <= L_; i++) opts += '<option value="' + i + '">' + (i ? '+' + i + (i > 1 ? ' acompanhantes' : ' acompanhante') : 'Somente eu') + '</option>';
-        $('rsvpAcomp').innerHTML = opts;
-        $('wAcomp').classList.toggle('hidden', L_ === 0);
-        $('wRestricao').classList.toggle('hidden', rsvp.restricao === false);
-        $('wMsg').classList.toggle('hidden', rsvp.mensagem === false);
-        var anf = ctxPublico().anf.filter(function (a) { return a.nome; }).map(function (a) { return a.nome; });
-        var pedidoGuest = GUEST_TOKEN ? rpc('convite_convidado_publico', { p_token: token, p_convidado: GUEST_TOKEN }).then(function (g) { GUEST = g; }).catch(function () { GUEST = null; GUEST_TOKEN = ''; }) : Promise.resolve();
-        return pedidoGuest.then(function () {
-          if (GUEST) { $('rsvpNome').value = GUEST.nome; $('rsvpNome').readOnly = true; }
-          document.title = anf.join(' & ') || 'Convite';
-          bootHide();
-          $('viewPublic').classList.remove('hidden');
-          renderPublico();
-        });
+        if (!data) throw new Error('convite indisponível');
+        gravarJSON(cacheKey(token), data);
+        return mostrarPublico(data, token, false);
       }).catch(function (e) {
+        var cache = lerJSON(cacheKey(token));
+        if (cache && ehFalhaDeRede(e)) return mostrarPublico(cache, token, true);
         bootHide();
         $('viewErro').classList.remove('hidden');
-        $('erroMsg').textContent = e.message || 'Link inativo ou ainda não publicado.';
+        $('erroMsg').innerHTML = esc(fala(e)) + '<br><br><button class="btn-s" type="button" id="btnTentarNovamente">Tentar de novo</button>';
+        var t = $('btnTentarNovamente');
+        if (t) t.addEventListener('click', function () { $('viewErro').classList.add('hidden'); bootPublico(token); });
       });
     }
 
@@ -1604,7 +1686,7 @@
         lista = (lista || []).filter(function (c) { return c.status !== 'arquivado'; });
         if (!lista.length) { $('listaBody').innerHTML = '<div class="vazio">Nenhum convite ainda. Use “+ Novo convite” no menu acima.</div>'; return; }
         $('listaBody').innerHTML = lista.map(function (c) {
-          var capa = (c.dados && (c.dados.capa_url || c.dados.capa)) || '';
+          var capa = capaMiniatura(c.dados);
           var thumb = capa ? mediaHtml(capa, c.dados.capa_poster_url, '') : '<div style="display:flex;height:100%;align-items:center;justify-content:center;color:var(--gold)">✦</div>';
           return '<div class="card-c" data-id="' + esc(c.id) + '"><div class="thumb" style="width:132px;aspect-ratio:4/3">' + thumb + '</div><div>' +
             '<div style="display:flex;justify-content:space-between;gap:8px;align-items:flex-start"><span class="rot">' + esc(c.tipo_rotulo || c.tipo_codigo) + '</span>' +
@@ -1621,7 +1703,7 @@
         $('listaBody').querySelectorAll('[data-cl-vi]').forEach(function (b) {
           b.addEventListener('click', function (e) { e.stopPropagation(); abrirEditor(b.dataset.clVi).then(function () { abrirVisual(); }); });
         });
-      }).catch(function (e) { $('listaBody').innerHTML = '<div class="vazio">' + esc(e.message) + '</div>'; });
+      }).catch(function (e) { $('listaBody').innerHTML = '<div class="vazio">' + esc(fala(e)) + '</div>'; });
     }
 
     function abrirDetalhe(id) {
@@ -1631,7 +1713,7 @@
         showView('detalhe');
         $('dNomes').textContent = (atual.anfitrioes || []).map(function (a) { return a.nome; }).filter(Boolean).join(' & ') || '—';
         $('dTipo').textContent = (atual.tipo && atual.tipo.rotulo) || atual.tipo_codigo;
-        var capa = (atual.dados && (atual.dados.capa_url || atual.dados.capa)) || '';
+        var capa = capaMiniatura(atual.dados);
         $('dThumb').innerHTML = capa ? mediaHtml(capa, atual.dados.capa_poster_url) : '<div style="display:flex;height:100%;align-items:center;justify-content:center;color:var(--gold)">✦</div>';
         $('dStatus').innerHTML = atual.status === 'publicado' ? '<span class="tag t-pub">Publicado</span>' : '<span class="tag t-pend">Rascunho</span>';
         $('tConf').textContent = (atual.totais && atual.totais.confirmados) || 0;
@@ -1673,15 +1755,151 @@
             editarConv(el.dataset.gid);
           });
         });
-      }).catch(function (e) { toast(e.message); });
+      }).catch(function (e) { toast(fala(e)); });
     }
     function recarregarDetalhe() { return atual ? abrirDetalhe(atual.id) : Promise.resolve(); }
+
+    /* ===== Importar contatos: CSV, vCard (iPhone/iCloud) ou contatos do aparelho (Android) ===== */
+    var IMP = [];
+    function semAcento(t) { return String(t || '').normalize('NFD').replace(/[\u0300-\u036f]/g, '').toLowerCase().replace(/\s+/g, ' ').trim(); }
+    function soDigitos(t) { return String(t || '').replace(/[^\d+]/g, ''); }
+    function csvLinhas(txt) {
+      var primeira = txt.split(/\r?\n/)[0] || '';
+      var sep = (primeira.match(/;/g) || []).length > (primeira.match(/,/g) || []).length ? ';' : ',';
+      var linhas = [], cur = [], campo = '', q = false, c;
+      for (var i = 0; i < txt.length; i++) {
+        c = txt[i];
+        if (q) { if (c === '"') { if (txt[i + 1] === '"') { campo += '"'; i++; } else q = false; } else campo += c; }
+        else if (c === '"') q = true;
+        else if (c === sep) { cur.push(campo); campo = ''; }
+        else if (c === '\n' || c === '\r') { if (c === '\r' && txt[i + 1] === '\n') i++; cur.push(campo); linhas.push(cur); cur = []; campo = ''; }
+        else campo += c;
+      }
+      if (campo.length || cur.length) { cur.push(campo); linhas.push(cur); }
+      return linhas.filter(function (l) { return l.some(function (v) { return String(v).trim(); }); });
+    }
+    function lerCsv(txt) {
+      var linhas = csvLinhas(txt);
+      if (linhas.length < 2) return [];
+      var cab = linhas[0].map(semAcento), iNome = -1, iIni = -1, iSob = -1, iTels = [], iMails = [];
+      cab.forEach(function (h, i) {
+        if (iNome < 0 && /^(nome|name|full name|nome completo)$/.test(h)) iNome = i;
+        if (h === 'first name' || h === 'given name') iIni = i;
+        if (h === 'last name' || h === 'family name') iSob = i;
+        if (/phone|telefone|celular|mobile/.test(h) && !/type|tipo|label/.test(h)) iTels.push(i);
+        if (/e-?mail/.test(h) && !/type|tipo|label/.test(h)) iMails.push(i);
+      });
+      function pega(idxs, l) { for (var k = 0; k < idxs.length; k++) { var v = String(l[idxs[k]] || '').trim(); if (v) return v; } return ''; }
+      return linhas.slice(1).map(function (l) {
+        var nome = iNome >= 0 ? String(l[iNome] || '').trim() : '';
+        if (!nome && (iIni >= 0 || iSob >= 0)) nome = [l[iIni] || '', l[iSob] || ''].join(' ').trim();
+        return { nome: nome, telefone: pega(iTels, l), email: pega(iMails, l) };
+      });
+    }
+    function lerVcf(txt) {
+      return txt.split(/BEGIN:VCARD/i).slice(1).map(function (bloco) {
+        var nome = '', tel = '', mail = '';
+        bloco.split(/\r?\n/).forEach(function (ln) {
+          var k = ln.split(':')[0].toUpperCase(), v = ln.slice(ln.indexOf(':') + 1).trim();
+          if (!nome && /^FN/.test(k)) nome = v;
+          if (!tel && /^TEL/.test(k)) tel = v;
+          if (!mail && /^EMAIL/.test(k)) mail = v;
+        });
+        return { nome: nome, telefone: tel, email: mail };
+      });
+    }
+    function contatosDoAparelho() {
+      return navigator.contacts.select(['name', 'tel', 'email'], { multiple: true }).then(function (lista) {
+        return lista.map(function (c) { return { nome: (c.name && c.name[0]) || '', telefone: (c.tel && c.tel[0]) || '', email: (c.email && c.email[0]) || '' }; });
+      });
+    }
+    function fecharImport() { $('impBox').classList.add('hidden'); $('impBox').innerHTML = ''; IMP = []; }
+    function contarMarcados() { return IMP.filter(function (c) { return c.marc; }).length; }
+    function mostrarPrevia(lista) {
+      var existentes = (atual.convidados || []).map(function (g) { return semAcento(g.nome) + '|' + soDigitos(g.telefone); });
+      var vistos = {};
+      IMP = lista.filter(function (c) { return c.nome || c.telefone; }).slice(0, 500).map(function (c) {
+        var chave = semAcento(c.nome) + '|' + soDigitos(c.telefone);
+        var motivo = !c.nome ? 'sem nome' : (existentes.indexOf(chave) >= 0 ? 'já está na lista' : (vistos[chave] ? 'repetido no arquivo' : ''));
+        vistos[chave] = true;
+        return { nome: c.nome, telefone: c.telefone, email: c.email, motivo: motivo, marc: !motivo };
+      });
+      $('impBox').classList.remove('hidden');
+      $('impBox').innerHTML = '<div class="box-full" style="margin:0"><h2 style="margin:0 0 8px">Prévia da importação</h2>' +
+        '<p class="pill" style="margin:0 0 12px;text-align:left">Importe apenas contatos de pessoas que você quer convidar, com autorização delas (LGPD). Os dados ficam guardados somente neste convite. Só entram os contatos marcados abaixo.</p>' +
+        (IMP.length
+          ? '<div>' + IMP.map(function (c, i) {
+              return '<label class="dl-row" style="cursor:pointer;align-items:center"><span><input type="checkbox" data-imp="' + i + '"' + (c.marc ? ' checked' : '') + '> <span class="val">' + esc(c.nome || '(sem nome)') + '</span></span>' +
+                '<span class="rot" style="text-transform:none;letter-spacing:0">' + esc([c.telefone, c.email].filter(Boolean).join(' · ') || '—') + (c.motivo ? ' · ' + esc(c.motivo) : '') + '</span></label>';
+            }).join('') + '</div>'
+          : '<div class="vazio">Nenhum contato válido encontrado neste arquivo.</div>') +
+        '<div class="btn-row" style="margin-top:12px"><button class="btn" type="button" id="btnImpConfirmar" style="width:auto">Importar ' + contarMarcados() + ' contato(s)</button><button class="btn-s" type="button" id="btnImpCancelar">Cancelar</button></div><p id="impMsg" class="msg"></p></div>';
+      $('btnImpCancelar').addEventListener('click', fecharImport);
+      $('btnImpConfirmar').addEventListener('click', importarSelecionados);
+      $('impBox').querySelectorAll('[data-imp]').forEach(function (cb) {
+        cb.addEventListener('change', function () {
+          IMP[+cb.dataset.imp].marc = cb.checked;
+          $('btnImpConfirmar').textContent = 'Importar ' + contarMarcados() + ' contato(s)';
+        });
+      });
+    }
+    function importarSelecionados() {
+      var sel = IMP.filter(function (c) { return c.marc; });
+      if (!sel.length) { $('impMsg').textContent = 'Marque pelo menos um contato.'; return; }
+      var btn = $('btnImpConfirmar'); btn.disabled = true;
+      var feitos = 0, falhas = 0;
+      sel.reduce(function (p, c) {
+        return p.then(function () {
+          return rpc('convite_convidado_salvar', {
+            p_convite: atual.id, p_id: null, p_nome: c.nome || c.telefone,
+            p_telefone: c.telefone || null, p_email: c.email || null,
+            p_acomp: 0, p_status: 'pendente', p_obs: 'Importado de contatos'
+          }).then(function () { feitos++; }, function () { falhas++; });
+        });
+      }, Promise.resolve()).then(function () {
+        fecharImport();
+        toast(feitos + ' contato(s) importado(s)' + (falhas ? '. ' + falhas + ' não couberam.' : '.'));
+        return recarregarDetalhe();
+      });
+    }
+    $('btnImportConv').addEventListener('click', function () {
+      if (!atual) return;
+      var temAparelho = !!(navigator.contacts && navigator.contacts.select);
+      $('impBox').classList.remove('hidden');
+      $('impBox').innerHTML = '<div class="box-full" style="margin:0"><h2 style="margin:0 0 8px">Importar contatos</h2>' +
+        '<p class="pill" style="margin:0 0 12px;text-align:left">Escolha de onde vêm os contatos. Antes de importar, você confirma quais entram.</p>' +
+        '<div class="btn-row"><button class="btn-s" type="button" id="btnImpArquivo"><i class="fas fa-file-csv"></i> Arquivo CSV ou vCard</button>' +
+        (temAparelho ? '<button class="btn-s" type="button" id="btnImpAparelho"><i class="fas fa-address-book"></i> Contatos deste aparelho</button>' : '') +
+        '<button class="btn-s" type="button" id="btnImpFechar">Fechar</button></div>' +
+        '<p class="pill" style="margin:12px 0 0;text-align:left">No iPhone, exporte em vCard pelo iCloud.com (Contatos > Exportar vCard) e envie o arquivo aqui. No Google Contatos, exporte em CSV.</p></div>';
+      $('btnImpArquivo').addEventListener('click', function () { $('fileContatos').click(); });
+      var ap = $('btnImpAparelho');
+      if (ap) ap.addEventListener('click', function () {
+        contatosDoAparelho().then(mostrarPrevia).catch(function (e) { toast(fala(e)); });
+      });
+      $('btnImpFechar').addEventListener('click', fecharImport);
+    });
+    $('fileContatos').addEventListener('change', function () {
+      var f = this.files && this.files[0];
+      this.value = '';
+      if (!f) return;
+      if (f.size > 2 * 1024 * 1024) { toast('Arquivo grande demais. Use um arquivo de até 2 MB.'); return; }
+      var leitor = new FileReader();
+      leitor.onload = function () {
+        var txt = String(leitor.result || '');
+        var lista = /BEGIN:VCARD/i.test(txt) ? lerVcf(txt) : lerCsv(txt);
+        if (!lista.length) { toast('Não encontramos contatos nesse arquivo. Confira se é CSV ou vCard.'); return; }
+        mostrarPrevia(lista);
+      };
+      leitor.onerror = function () { toast('Não consegui ler esse arquivo. Tente exportar de novo.'); };
+      leitor.readAsText(f, 'UTF-8');
+    });
 
     $('btnVoltar').addEventListener('click', function () { showView('lista'); carregarLista(); });
     $('btnPublicar').addEventListener('click', function () {
       if (!atual) return;
       var pub = atual.status !== 'publicado';
-      rpc('convite_publicar', { p_convite: atual.id, p_publicar: pub }).then(function () { toast(pub ? 'Publicado.' : 'Rascunho.'); return recarregarDetalhe(); }).catch(function (e) { toast(e.message); });
+      rpc('convite_publicar', { p_convite: atual.id, p_publicar: pub }).then(function () { toast(pub ? 'Publicado.' : 'Rascunho.'); return recarregarDetalhe(); }).catch(function (e) { toast(fala(e)); });
     });
     $('btnCopiar').addEventListener('click', function () { if (atual) navigator.clipboard && navigator.clipboard.writeText(linkPublico(atual.token_publico)).then(function () { toast('Link copiado.'); }); });
     $('btnAbrirEditor').addEventListener('click', function () { if (atual) abrirEditor(atual.id); });
@@ -1714,14 +1932,14 @@
     }
     function girarLink(id) {
       if (!confirm('Gerar um novo link pessoal? O link antigo deixa de funcionar.')) return;
-      rpc('convite_rotacionar_token_convidado', { p_id: id }).then(function () { toast('Novo link gerado.'); return recarregarDetalhe(); }).catch(function (e) { toast(e.message); });
+      rpc('convite_rotacionar_token_convidado', { p_id: id }).then(function () { toast('Novo link gerado.'); return recarregarDetalhe(); }).catch(function (e) { toast(fala(e)); });
     }
     $('convBody').addEventListener('click', function () {});
     $('rsvpBody').addEventListener('click', function (e) {
       var b = e.target.closest('[data-mod]');
       if (!b) return;
       if (b.dataset.mod === 'remover' && !confirm('Remover esta resposta?')) return;
-      rpc('convite_rsvp_moderar', { p_rsvp: b.dataset.rid, p_acao: b.dataset.mod }).then(function () { toast('Feito.'); return recarregarDetalhe(); }).catch(function (err) { toast(err.message); });
+      rpc('convite_rsvp_moderar', { p_rsvp: b.dataset.rid, p_acao: b.dataset.mod }).then(function () { toast('Feito.'); return recarregarDetalhe(); }).catch(function (err) { toast(fala(err)); });
     });
     $('fecharConv').addEventListener('click', function () { $('modalConv').classList.remove('on'); });
     $('btnLembrar').addEventListener('click', function () {
@@ -1738,11 +1956,11 @@
         p_telefone: $('convTel').value.trim() || null, p_email: $('convEmail').value.trim() || null,
         p_acomp: +$('convAcomp').value || 0, p_status: $('convStatus').value, p_obs: $('convObs').value.trim() || null
       }).then(function () { $('modalConv').classList.remove('on'); toast('Salvo.'); return recarregarDetalhe(); })
-        .catch(function (e) { $('msgConv').textContent = e.message; });
+        .catch(function (e) { $('msgConv').textContent = fala(e); });
     });
     $('btnRemConv').addEventListener('click', function () {
       if (!confirm('Remover este convidado?')) return;
-      rpc('convite_convidado_remover', { p_id: $('convId').value }).then(function () { $('modalConv').classList.remove('on'); toast('Removido.'); return recarregarDetalhe(); }).catch(function (e) { toast(e.message); });
+      rpc('convite_convidado_remover', { p_id: $('convId').value }).then(function () { $('modalConv').classList.remove('on'); toast('Removido.'); return recarregarDetalhe(); }).catch(function (e) { toast(fala(e)); });
     });
 
     /* ===== Exclusão (EXCLUIR digitado) e lixeira ===== */
@@ -1789,11 +2007,11 @@
             '<div class="acts"><button class="btn-s gold" type="button" data-lrest="' + esc(c.id) + '">Restaurar</button>' +
             (IS_ADMIN ? '<button class="btn-s danger" type="button" data-ldel="' + esc(c.id) + '" data-nome="' + esc(c.nomes || '') + '">Excluir definitivamente</button>' : '') + '</div></div>';
         }).join('');
-      }).catch(function (e) { box.innerHTML = '<div class="vazio">' + esc(e.message) + '</div>'; });
+      }).catch(function (e) { box.innerHTML = '<div class="vazio">' + esc(fala(e)) + '</div>'; });
     }
     $('lixBody').addEventListener('click', function (e) {
       var r = e.target.closest('[data-lrest]'), d = e.target.closest('[data-ldel]');
-      if (r) rpc('convite_restaurar', { p_convite: r.dataset.lrest }).then(function () { toast('Restaurado.'); return carregarLixeira(); }).catch(function (err) { toast(err.message); });
+      if (r) rpc('convite_restaurar', { p_convite: r.dataset.lrest }).then(function () { toast('Restaurado.'); return carregarLixeira(); }).catch(function (err) { toast(fala(err)); });
       if (d) abrirExcl(d.dataset.ldel, 'definitivo', d.dataset.nome);
     });
 
@@ -1875,7 +2093,7 @@
         refreshPreview();
         atualizarTrim();
         atualizarCapaAtual();
-      }).catch(function (e) { toast(e.message); });
+      }).catch(function (e) { toast(fala(e)); });
     }
 
     function abrirVisual() {
@@ -2178,7 +2396,7 @@
     var voltaAqui = function () { return location.href.split('#')[0]; };
     document.querySelectorAll('[data-oauth]').forEach(function (b) {
       b.addEventListener('click', function () {
-        SB.auth.signInWithOAuth({ provider: b.dataset.oauth, options: { redirectTo: voltaAqui() } }).then(function (r) { if (r.error) lgMsg(r.error.message); });
+        SB.auth.signInWithOAuth({ provider: b.dataset.oauth, options: { redirectTo: voltaAqui() } }).then(function (r) { if (r.error) lgMsg(fala(r.error)); });
       });
     });
     $('lgCriar').addEventListener('click', function () { lgSetModo(lgModo === 'criar' ? 'entrar' : 'criar'); });
@@ -2190,7 +2408,7 @@
         if (!$('lgTermos').checked) return lgMsg('Aceite os termos para criar a conta.');
         if (senha.length < 8) return lgMsg('A senha precisa ter pelo menos 8 caracteres.');
         SB.auth.signUp({ email: email, password: senha, options: { data: { nome: $('lgNome').value.trim() }, emailRedirectTo: voltaAqui() } }).then(function (r) {
-          if (r.error) return lgMsg(r.error.message);
+          if (r.error) return lgMsg(fala(r.error));
           if (!r.data.session) return lgMsg('Enviamos um e-mail de confirmação. Confirme e volte aqui para entrar.');
           location.reload();
         });
@@ -2205,8 +2423,16 @@
       var email = $('lgEmail').value.trim();
       if (!email) return lgMsg('Digite seu e-mail.');
       SB.auth.signInWithOtp({ email: email, options: { emailRedirectTo: voltaAqui(), shouldCreateUser: true } }).then(function (r) {
-        lgMsg(r.error ? r.error.message : 'Pronto! Enviamos um link de acesso para o seu e-mail.');
+        lgMsg(r.error ? fala(r.error) : 'Pronto! Enviamos um link de acesso para o seu e-mail.');
       });
+    });
+
+    /* Se a sessão cair com a página aberta, mostra o login em vez de manter a tela de quem saiu */
+    SB.auth.onAuthStateChange(function (evento) {
+      if (evento !== 'SIGNED_OUT' || tokenDaUrl()) return;
+      $('viewAdmin').classList.add('hidden');
+      $('viewLogin').classList.remove('hidden');
+      lgMsg('Sua sessão expirou ou você saiu. Entre novamente para continuar.');
     });
 
     /* ===== Boot ===== */
@@ -2235,7 +2461,7 @@
             if (qs.get('editar')) return abrirEditor(qs.get('editar'));
           });
         });
-      }).catch(function (e) { bootFail('Erro ao iniciar.', e.message || e); });
+      }).catch(function (e) { bootFail('Erro ao iniciar.', e); });
     })();
   })();
   </script>
