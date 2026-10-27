@@ -391,6 +391,7 @@
     .carrossel > .slide { flex: 0 0 100%; min-width: 0; scroll-snap-align: start; }
   </style>
 <script src="https://cdn.jsdelivr.net/npm/browser-image-compression@2.0.2/dist/browser-image-compression.min.js"></script>
+  <link rel="stylesheet" href="css/admin.css">
 </head>
 <body class="h-full antialiased overflow-x-hidden">
 
@@ -2346,7 +2347,7 @@
       btns.style.cssText = 'display:flex;gap:6px;flex-wrap:wrap';
       [['aprovar','Aprovar'],['alterar','Alterar valor'],['recusar','Recusar']].forEach(function (a) {
         var b = document.createElement('button');
-        b.type = 'button'; b.textContent = a[1]; b.className = 'btn';
+        b.type = 'button'; b.textContent = a[1]; b.className = 'btn-ghost';
         b.addEventListener('click', function () { admAcaoComprovante(a[0], c); });
         btns.appendChild(b);
       });
@@ -2414,11 +2415,11 @@
       txt.textContent = (p.numero ? 'Nº ' + p.numero + ' · ' : '') + (p.tipo_evento || 'Evento') + (p.status ? ' · ' + p.status : '');
       var btns = document.createElement('div');
       btns.style.cssText = 'display:flex;gap:6px;flex-wrap:wrap';
-      var bR = document.createElement('button'); bR.type = 'button'; bR.className = 'btn'; bR.textContent = 'Registrar reembolso';
+      var bR = document.createElement('button'); bR.type = 'button'; bR.className = 'btn-ghost'; bR.textContent = 'Registrar reembolso';
       bR.addEventListener('click', function () { admRegistrarReembolso(p); });
       btns.appendChild(bR);
       if (!p.assinado_em && !p.assinatura_dispensada_em && !p.cancelada_em) {
-        var bA = document.createElement('button'); bA.type = 'button'; bA.className = 'btn'; bA.textContent = 'Autorizar sem assinatura';
+        var bA = document.createElement('button'); bA.type = 'button'; bA.className = 'btn-ghost'; bA.textContent = 'Autorizar sem assinatura';
         bA.addEventListener('click', function () { admAutorizarSemAssinatura(p); });
         btns.appendChild(bA);
       }
@@ -2426,7 +2427,7 @@
         txt.textContent += ' · autorizado sem assinatura';
       }
       if (!p.cancelada_em) {
-        var bC = document.createElement('button'); bC.type = 'button'; bC.className = 'btn'; bC.textContent = 'Cancelar contrato';
+        var bC = document.createElement('button'); bC.type = 'button'; bC.className = 'btn-ghost'; bC.textContent = 'Cancelar contrato';
         bC.addEventListener('click', function () { admCancelarContrato(p); });
         btns.appendChild(bC);
       }
@@ -2463,7 +2464,7 @@
         if (x.error) { alert('Não foi possível salvar o padrão.'); cb.checked = !cb.checked; }
       });
       lbl.appendChild(cb); lbl.appendChild(document.createTextNode('Padrão'));
-      var rm = document.createElement('button'); rm.type = 'button'; rm.className = 'btn'; rm.textContent = 'Remover do banco';
+      var rm = document.createElement('button'); rm.type = 'button'; rm.className = 'btn-ghost'; rm.textContent = 'Remover do banco';
       rm.addEventListener('click', async function () {
         if (!confirm('Remover "' + it.nome + '" do banco?')) return;
         var x = await SB.from('evento_etapas_catalogo').update({ ativo: false }).eq('id', it.id);
@@ -2478,8 +2479,8 @@
 
     var add = document.createElement('div');
     add.style.cssText = 'display:flex;gap:8px;margin-top:12px;flex-wrap:wrap';
-    add.innerHTML = '<input id="admNovoItem" type="text" placeholder="Nome do novo item do checklist" class="f-select" style="flex:1;min-width:200px">' +
-                    '<button type="button" id="admAddItem" class="btn">Adicionar ao banco</button>';
+    add.innerHTML = '<input id="admNovoItem" type="text" placeholder="Nome do novo item do checklist" class="adm-input" style="flex:1;min-width:200px">' +
+                    '<button type="button" id="admAddItem" class="btn-lime">Adicionar ao banco</button>';
     box.appendChild(add);
     document.getElementById('admAddItem').addEventListener('click', async function () {
       var nome = (document.getElementById('admNovoItem').value || '').trim();
@@ -2494,7 +2495,7 @@
     aplicar.style.cssText = 'margin-top:14px;display:flex;flex-direction:column;gap:6px';
     aplicar.innerHTML = '<strong style="color:#fbbf24">Escolha os itens para este cliente</strong>' +
       '<div id="admEscolhaChecklist" style="display:flex;flex-direction:column;gap:4px"></div>' +
-      '<button type="button" id="admAplicarChecklist" class="btn" style="align-self:flex-start">Aplicar aos pedidos deste cliente</button>';
+      '<button type="button" id="admAplicarChecklist" class="btn-lime" style="align-self:flex-start">Aplicar aos pedidos deste cliente</button>';
     box.appendChild(aplicar);
     var escolha = document.getElementById('admEscolhaChecklist');
     var marcados = {};
@@ -2556,7 +2557,7 @@
         linha.style.cssText = 'display:flex;justify-content:space-between;align-items:center;gap:8px;padding:4px 0';
         var t = document.createElement('span');
         t.textContent = (nomes[c.parceiro_id] || 'Equipe 432UP') + ' · ' + (c.nivel === 'agenda' ? 'só agenda' : 'dados completos');
-        var rm = document.createElement('button'); rm.type = 'button'; rm.className = 'btn'; rm.textContent = 'Remover';
+        var rm = document.createElement('button'); rm.type = 'button'; rm.className = 'btn-ghost'; rm.textContent = 'Remover';
         rm.addEventListener('click', async function () {
           if (!confirm('Remover ' + (nomes[c.parceiro_id] || 'este membro') + ' da equipe deste pedido?')) return;
           var x = await SB.from('projeto_colaboradores').delete().eq('id', c.id);
@@ -2568,8 +2569,8 @@
 
       var busca = document.createElement('div');
       busca.style.cssText = 'display:flex;gap:6px;flex-wrap:wrap;margin-top:8px';
-      busca.innerHTML = '<input type="search" placeholder="Buscar membro da equipe pelo nome" class="f-select" style="flex:1;min-width:200px">' +
-        '<select class="f-select" style="width:auto"><option value="agenda">Só agenda</option><option value="dados_sensiveis">Dados completos</option></select>';
+      busca.innerHTML = '<input type="search" placeholder="Buscar membro da equipe pelo nome" class="adm-input" style="flex:1;min-width:200px">' +
+        '<select class="adm-input" style="width:auto"><option value="agenda">Só agenda</option><option value="dados_sensiveis">Dados completos</option></select>';
       bloco.appendChild(busca);
       var lista = document.createElement('div');
       lista.style.cssText = 'display:flex;flex-direction:column;gap:4px;margin-top:6px';
@@ -2659,7 +2660,7 @@
       bloco.appendChild(grid);
       var up = document.createElement('div');
       up.style.cssText = 'margin-top:10px;display:flex;flex-wrap:wrap;gap:8px;align-items:center';
-      up.innerHTML = '<input type="file" multiple accept="image/*,video/*" class="f-select" style="flex:1;min-width:200px">' +
+      up.innerHTML = '<input type="file" multiple accept="image/*,video/*" class="adm-input" style="flex:1;min-width:200px">' +
                      '<span style="color:#9ca3af;font-size:.82rem"></span>';
       bloco.appendChild(up);
       var fileIn = up.querySelector('input'); var stat = up.querySelector('span');
@@ -2756,7 +2757,7 @@
       '<div style="max-width:560px;margin:40px auto;background:#0e1623;border:1px solid rgba(245,158,11,.28);border-radius:16px;padding:24px">' +
       '<h2 style="margin:0 0 6px;color:#fff">Escolha o cliente</h2>' +
       '<p style="margin:0 0 14px;color:#9ca3af">Digite o nome para buscar entre os clientes.</p>' +
-      '<input id="admCliBusca" type="search" autocomplete="off" placeholder="Digite o nome do cliente" class="f-select">' +
+      '<input id="admCliBusca" type="search" autocomplete="off" placeholder="Digite o nome do cliente" class="adm-input">' +
       '<label style="display:flex;align-items:center;gap:8px;margin:12px 0;font-size:.88rem;cursor:pointer;color:#e5e7eb">' +
       '<input type="checkbox" id="admCliSoSite"> Mostrar só clientes com cadastro no site</label>' +
       '<div id="admCliResultados" style="margin-top:8px;display:flex;flex-direction:column;gap:6px"></div>' +
@@ -2792,7 +2793,7 @@
       lista.forEach(function (c) {
         var b = document.createElement('button');
         b.type = 'button';
-        b.className = 'btn';
+        b.className = 'btn-ghost';
         b.style.cssText = 'text-align:left;justify-content:flex-start';
         var local = [c.cidade, c.uf].filter(Boolean).join(' / ');
         b.textContent = (c.nome_razao || c.id) + (local ? ' — ' + local : '');
