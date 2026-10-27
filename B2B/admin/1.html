@@ -1,0 +1,2301 @@
+<!DOCTYPE html>
+<html lang="pt-BR" class="h-full">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
+  <meta name="theme-color" content="#08080A">
+  <meta name="apple-mobile-web-app-capable" content="yes">
+  <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+  <title>Minha área · 432UP!</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="../../css/style.css">
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/cropperjs/1.5.13/cropper.min.css">
+  <style>
+    :root {
+      --bg: #08080A;
+      --text: #FFFFFF;
+      --body: #E7E7EC;
+      --mut: #9A97B0;
+      --action: #00FF66;
+      --purple: #A855F7;
+      --pink: #FF007F;
+      --tech: #06B6D4;
+      --gold: #D4AF37;
+      --amber-soft: #F5D061;
+      --alert: #FF4D4D;
+      --line: rgba(255, 255, 255, 0.1);
+    }
+    body { background: var(--bg) !important; color: var(--text) !important; font-family: 'Inter', system-ui, sans-serif; }
+    *, *::before, *::after { box-sizing: border-box; }
+
+    .area {
+      width: 100%; max-width: 1120px; margin: 0 auto; position: relative; z-index: 2;
+      /* --hdr-h é medido por JS a partir do menu fixo; 112px é o plano B */
+      padding-top: calc(var(--hdr-h, 112px) + 32px);
+      padding-left: max(18px, env(safe-area-inset-left)); padding-right: max(18px, env(safe-area-inset-right));
+      padding-bottom: calc(180px + env(safe-area-inset-bottom));
+    }
+    /* Página nunca presa em altura fixa: rola até o fim com respiro embaixo */
+    html, body { height: auto !important; min-height: 100%; }
+    body { overflow-y: visible !important; }
+    .eyebrow { font-size: .68rem; letter-spacing: .18em; text-transform: uppercase; font-weight: 700; opacity: .72; color: var(--gold); }
+    .titulo { font-size: clamp(1.9rem, 5vw, 3rem); line-height: 1; letter-spacing: -.045em; margin: 10px 0 12px; font-weight: 800; }
+    .lead { font-size: 1rem; line-height: 1.6; color: var(--body); margin: 0 0 24px; max-width: 640px; }
+    .mut { color: var(--mut); }
+
+    /* ===== PADRÃO CANÔNICO (referência: Resumo do pedido) =====
+       Caixa: .box-full · Título da caixa: h2 dourado · Nome do campo: .rot · Valor: .val
+       Linhas: .dl (grade) ou .dl-row (lista) com separador fino entre itens */
+    .box-full {
+      border-radius: 24px; padding: 26px; position: relative; overflow: visible; margin-bottom: 18px;
+      background: rgba(255, 255, 255, .045); border: 1px solid rgba(255, 255, 255, .14);
+      backdrop-filter: blur(24px); -webkit-backdrop-filter: blur(24px);
+    }
+    .box-full.i2 { border-color: rgba(168, 85, 247, .36); background: linear-gradient(135deg, rgba(168, 85, 247, .12), rgba(10, 8, 20, .6)); }
+    .box-full.i3 { border-color: rgba(0, 255, 102, .3); background: rgba(0, 255, 102, .05); }
+    .box-full.i4 { border-color: rgba(255, 0, 127, .3); background: rgba(255, 0, 127, .05); }
+    .box-full h2 { font-size: .72rem; letter-spacing: .14em; text-transform: uppercase; color: var(--gold); margin: 0 0 14px; font-weight: 800; }
+
+    .rot { display: block; font-size: 11px; color: var(--mut); text-transform: uppercase; letter-spacing: .06em; font-weight: 600; margin-bottom: 3px; }
+    .val { display: block; font-size: 15px; font-weight: 600; color: var(--text); line-height: 1.35; overflow-wrap: anywhere; }
+    .pill { font-size: 12px; color: var(--mut); }
+    .vazio { font-size: 13px; color: var(--mut); padding: 6px 0; }
+
+    /* Grade de campos (2 colunas no celular largo; 1 no celular) */
+    .dl { display: grid; grid-template-columns: minmax(0, 1fr) minmax(0, 1fr); column-gap: 22px; }
+    .dl-item { padding: 9px 0; border-bottom: 1px solid var(--line); min-width: 0; }
+    .dl-full { grid-column: 1 / -1; }
+    @media (max-width: 560px) { .dl { grid-template-columns: minmax(0, 1fr); } }
+
+    /* Lista de linhas (uma coluna), com o mesmo padrão de nome e valor */
+    .dl-row { display: flex; justify-content: space-between; align-items: center; gap: 12px; flex-wrap: wrap; padding: 9px 0; border-bottom: 1px solid var(--line); min-width: 0; }
+    .dl-row:last-child, .dl-item:last-child { border-bottom: 0; }
+    .dl-row > div { min-width: 0; flex: 1 1 auto; }
+    .dl-row .tags { display: flex; gap: 8px; align-items: center; flex-wrap: wrap; justify-content: flex-end; }
+
+    .btn {
+      display: inline-flex; align-items: center; justify-content: center; gap: 6px;
+      width: 100%; margin-top: 14px; padding: 13px 16px; border-radius: 14px; border: 0;
+      background: var(--action); color: #04120a; font-weight: 800; font-size: 14px; cursor: pointer; text-decoration: none;
+    }
+    .btn:disabled { opacity: .5; cursor: default; }
+    .btn-s {
+      display: inline-flex; align-items: center; justify-content: center;
+      margin-top: 8px; padding: 9px 14px; border-radius: 12px; border: 1px solid rgba(255, 255, 255, .18);
+      background: transparent; color: var(--text); font-size: 13px; cursor: pointer; text-decoration: none;
+    }
+    .btn-s:disabled { opacity: .5; }
+
+    /* Âmbar: tudo que representa pagamento e comprovante */
+    .btn-ambar { background: var(--gold); color: #1a1300; }
+    .btn-s.btn-ambar-s { border-color: rgba(212, 175, 55, .6); background: rgba(212, 175, 55, .14); color: var(--gold); }
+    .btn-s.btn-ambar-s:hover { background: rgba(212, 175, 55, .24); }
+
+    /* Cápsulas + entrada lateral (sem alterar fundo/efeitos canônicos) */
+    .tabs {
+      display: flex; gap: 8px; flex-wrap: nowrap; overflow-x: auto; scroll-snap-type: x mandatory;
+      -webkit-overflow-scrolling: touch; scrollbar-width: none;
+      margin: 10px -18px 18px; padding: 12px 18px 16px; scroll-padding-inline: 18px;
+      border-bottom: 1px solid var(--line); cursor: grab;
+    }
+    .tabs::-webkit-scrollbar { display: none; }
+    .tab {
+      flex: 0 0 auto; scroll-snap-align: start;
+      padding: 9px 16px; border-radius: 999px; border: 1px solid var(--line);
+      background: rgba(255,255,255,.03); color: var(--mut);
+      font-size: 12px; font-weight: 700; letter-spacing: .04em; text-transform: uppercase;
+      cursor: pointer; white-space: nowrap; -webkit-tap-highlight-color: transparent;
+      transition: border-color .2s, background .2s, color .2s, box-shadow .2s;
+    }
+    .tab.on {
+      color: var(--tech); border-color: rgba(6,182,212,.5);
+      background: rgba(6,182,212,.12); box-shadow: 0 0 18px rgba(6,182,212,.14);
+    }
+    .crie-convite { display: flex; align-items: center; gap: 14px; margin: 0 0 16px; padding: 18px 20px; border-radius: 22px; text-decoration: none; color: var(--text); box-sizing: border-box; width: 100%; background: linear-gradient(135deg, rgba(168,85,247,.18), rgba(6,182,212,.08)); border: 1px solid rgba(168,85,247,.42); }
+    .crie-convite > span:nth-child(1) { font-size: 20px; color: #D4AF37; flex: none; }
+    .crie-convite > span:nth-child(2) { min-width: 0; flex: 1; }
+    .crie-convite strong { display: block; font-size: 15px; }
+    .crie-convite small { display: block; margin-top: 4px; font-size: 12.5px; color: var(--mut); line-height: 1.4; }
+    .crie-convite > span:nth-child(3) { font-size: 18px; color: var(--tech); flex: none; }
+    .panel { display: none; }
+    .panel.on { display: block; }
+    /* Slider: durante o arraste/clique, o painel vizinho entra deslizando junto */
+    .panel.slide-vz { display: block !important; position: absolute; margin: 0; pointer-events: none; }
+    .panel.slide-vz, .panel.on.slide-mov { will-change: transform; }
+    .slider-dots { display: flex; justify-content: center; gap: 7px; margin: -8px 0 16px; }
+    .slider-dots i { width: 7px; height: 7px; border-radius: 999px; background: rgba(255, 255, 255, .22); transition: width .3s cubic-bezier(.25,.8,.25,1), background .3s; }
+    .slider-dots i.on { width: 22px; background: var(--tech); box-shadow: 0 0 10px rgba(6, 182, 212, .5); }
+    /* Sino/Sair ficam no header/hambúrguer canônico; IDs permanecem no DOM para o JS */
+    .cli-top-actions { display: none !important; }
+
+    .tag { display: inline-block; font-size: 10px; font-weight: 800; padding: 4px 9px; border-radius: 999px; text-transform: uppercase; letter-spacing: .04em; }
+    .t-ok { background: rgba(0, 255, 102, .14); color: var(--action); }
+    .t-pend { background: rgba(212, 175, 55, .16); color: var(--gold); }
+    .t-pago { background: var(--gold); color: #1a1300; }
+    .t-rec { background: rgba(255, 77, 77, .15); color: var(--alert); }
+    /* Botão X de remover: cápsula redonda no mesmo padrão das tags */
+    button.x {
+      -webkit-appearance: none; appearance: none; position: relative; flex: 0 0 auto;
+      display: inline-flex !important; align-items: center; justify-content: center;
+      width: 24px !important; height: 24px !important; min-width: 0 !important; padding: 0 !important; margin: 0;
+      border-radius: 999px !important; border: 1px solid rgba(255, 77, 77, .38) !important;
+      background: rgba(255, 77, 77, .15) !important; color: var(--alert) !important;
+      line-height: 1; cursor: pointer; transition: background .2s, border-color .2s, transform .15s;
+    }
+    button.x svg { width: 11px; height: 11px; display: block; pointer-events: none; }
+    button.x::after { content: ""; position: absolute; inset: -9px; } /* área de toque maior */
+    button.x:hover { background: rgba(255, 77, 77, .28) !important; border-color: rgba(255, 77, 77, .6) !important; }
+    button.x:active { transform: scale(.92); }
+    button.x:focus-visible { outline: 2px solid var(--alert); outline-offset: 2px; }
+
+    /* Campos em vidro: translúcidos, no tom do site */
+    input, select, textarea {
+      width: 100%; background: rgba(255, 255, 255, .06); color: var(--text);
+      border: 1px solid rgba(255, 255, 255, .16); border-radius: 14px; padding: 12px 14px;
+      font: inherit; font-size: 14px; -webkit-appearance: none; appearance: none;
+      backdrop-filter: blur(10px); -webkit-backdrop-filter: blur(10px);
+      transition: border-color .2s, background .2s, box-shadow .2s;
+    }
+    input::placeholder, textarea::placeholder { color: rgba(255, 255, 255, .38); }
+    input:focus, select:focus, textarea:focus {
+      outline: none; background: rgba(255, 255, 255, .1);
+      border-color: rgba(192, 132, 252, .65); box-shadow: 0 0 0 3px rgba(168, 85, 247, .18);
+    }
+    select option { background: #17122b; color: #fff; }
+    input[type="checkbox"] { -webkit-appearance: auto; appearance: auto; width: auto; padding: 0; background: none; border: 0; box-shadow: none; backdrop-filter: none; -webkit-backdrop-filter: none; accent-color: #a855f7; }
+    input[type="file"] { padding: 8px 10px; font-size: 13px; color: var(--mut); cursor: pointer; }
+    input[type="file"]::file-selector-button {
+      margin-right: 12px; padding: 8px 16px; border-radius: 999px; cursor: pointer;
+      border: 1px solid rgba(192, 132, 252, .5); background: rgba(168, 85, 247, .2); color: #fff;
+      font: inherit; font-size: 12px; font-weight: 700; letter-spacing: .04em; transition: background .2s;
+    }
+    input[type="file"]::file-selector-button:hover { background: rgba(168, 85, 247, .36); }
+    .msg { font-size: 12px; min-height: 16px; margin-top: 8px; color: #fca5a5; }
+    .msg.ok { color: var(--action); }
+
+    /* Linha do tempo com etapas */
+    .trilha { position: relative; padding-left: 20px; }
+    .trilha::before { content: ""; position: absolute; left: 6px; top: 8px; bottom: 8px; width: 2px; background: rgba(255, 255, 255, .12); }
+    .etapa { position: relative; padding: 14px 14px 14px 16px; margin-bottom: 10px; border-radius: 18px; border: 1px solid var(--line); background: rgba(255, 255, 255, .03); }
+    .etapa::before { content: ""; position: absolute; left: -18px; top: 22px; width: 12px; height: 12px; border-radius: 50%; background: var(--bg); border: 2px solid var(--purple); }
+    .etapa.feita::before { background: var(--action); border-color: var(--action); }
+    .etapa.feita { opacity: .8; }
+    .etapa .nome { font-size: 15px; font-weight: 700; }
+    .etapa.feita .nome { text-decoration: line-through; text-decoration-color: rgba(255, 255, 255, .35); color: var(--mut); }
+    .etapa .hora { font-size: 12px; color: var(--mut); margin-top: 3px; }
+    .etapa .ok { display: inline-block; margin-top: 8px; font-size: 11px; font-weight: 800; color: var(--action); }
+    .etapa .aguarda { display: inline-block; margin-top: 8px; font-size: 11px; font-weight: 800; color: var(--gold); }
+    .etapa .conf { display: block; margin-top: 6px; font-size: 12px; color: var(--mut); }
+
+    .slider { position: relative; height: 52px; border-radius: 999px; margin-top: 10px; overflow: hidden; background: rgba(0, 255, 102, .06); border: 1px solid rgba(0, 255, 102, .3); user-select: none; touch-action: none; }
+    .slider-fill { position: absolute; left: 0; top: 0; bottom: 0; width: 0; background: rgba(0, 255, 102, .18); }
+    .slider-knob { position: absolute; left: 3px; top: 3px; width: 46px; height: 46px; border-radius: 50%; background: var(--action); color: #04120a; font-weight: 900; font-size: 22px; display: flex; align-items: center; justify-content: center; cursor: grab; transform: translateX(0); }
+    .slider-txt { position: absolute; inset: 0; display: flex; align-items: center; justify-content: center; font-size: 12px; font-weight: 700; color: var(--mut); padding-left: 48px; pointer-events: none; }
+    .slider.done { border-color: rgba(255, 255, 255, .18); background: rgba(255, 255, 255, .03); }
+    .slider.done .slider-knob { background: #3f3f46; color: var(--mut); cursor: default; }
+
+    /* Próximo evento */
+    .hero-num { font-size: 30px; font-weight: 800; letter-spacing: -.03em; color: var(--text); }
+
+    /* Calendário */
+    .cal { display: grid; grid-template-columns: repeat(7, 1fr); gap: 4px; font-size: 11px; text-align: center; }
+    .cal .hd { color: var(--mut); font-weight: 700; padding: 6px 0; }
+    .cal .d { padding: 10px 0; border-radius: 12px; border: 1px solid transparent; color: var(--body); min-height: 44px; }
+    .cal .d.muted { opacity: .3; }
+    .cal .d.tem { border-color: rgba(var(--rgb), .5); background: rgba(var(--rgb), .14); color: #fff; font-weight: 800; cursor: pointer; }
+    .cal .d .dots { display: flex; gap: 3px; justify-content: center; margin-top: 4px; min-height: 6px; }
+    .cal .d .dots i { width: 6px; height: 6px; border-radius: 50%; display: block; }
+    .filtros .sw { width: 10px; height: 10px; border-radius: 3px; display: inline-block; }
+    .cal .d.hoje { border-color: rgba(212, 175, 55, .5); }
+    .cal .d.sel { outline: 2px solid var(--action); outline-offset: -2px; }
+    .cal-nav { display: flex; align-items: center; justify-content: space-between; gap: 8px; margin-bottom: 12px; }
+    /* Legenda do calendário: cada cápsula é o próprio filtro (ligada / desligada) */
+    .filtros { display: flex; flex-wrap: nowrap; gap: 8px; margin: 6px -26px 14px; padding: 2px 26px 4px; overflow-x: auto; scroll-snap-type: x proximity; scrollbar-width: none; -webkit-overflow-scrolling: touch; }
+    .filtros::-webkit-scrollbar { display: none; }
+    .filtros { touch-action: pan-x; overscroll-behavior: contain; }
+    .leg {
+      flex: 0 0 auto; scroll-snap-align: start;
+      display: inline-flex; align-items: center; gap: 7px;
+      padding: 7px 13px; border-radius: 999px; cursor: pointer;
+      font: inherit; font-size: 12px; font-weight: 700; color: var(--mut); white-space: nowrap;
+      background: rgba(255, 255, 255, .03); border: 1px solid var(--line);
+      transition: background .2s, border-color .2s, color .2s, opacity .2s;
+      -webkit-tap-highlight-color: transparent;
+    }
+    .leg .sw { width: 9px; height: 9px; border-radius: 999px; background: var(--c); flex: none; }
+    .leg.on { color: var(--text); border-color: var(--c); background: color-mix(in srgb, var(--c) 16%, transparent); }
+    .leg:not(.on) { opacity: .5; }
+    .leg:focus-visible { outline: 2px solid var(--c); outline-offset: 2px; }
+    @media (max-width: 640px) { .filtros { margin: 6px -18px 14px; padding: 2px 18px 4px; } }
+    .dia-item { border: 1px solid var(--line); border-radius: 16px; padding: 12px; margin-bottom: 8px; border-left: 4px solid #c084fc; background: rgba(255, 255, 255, .025); }
+    .dia-item strong { display: block; margin-bottom: 2px; }
+    .dia-item small { color: var(--mut); display: block; font-size: 12px; }
+
+    /* Mini checklist (Início) */
+    .mk-topo { display: flex; justify-content: space-between; align-items: center; gap: 10px; margin-bottom: 6px; }
+    .mk-topo h2 { margin: 0 !important; }
+    .mk-topo .btn-s { margin-top: 0; padding: 7px 12px; font-size: 12px; white-space: nowrap; }
+    /* Só o checklist rola aqui: gesto horizontal fica na faixa e a página não se mexe */
+    .mini-ck { display: flex; align-items: center; gap: 6px; overflow-x: auto; padding: 16px 2px 14px; scrollbar-width: none; touch-action: pan-x; overscroll-behavior: contain; -webkit-overflow-scrolling: touch; }
+    .mini-ck::-webkit-scrollbar { display: none; }
+    .mk { flex: 0 0 auto; display: inline-flex; align-items: center; gap: 6px; padding: 6px 12px; border-radius: 999px; font-size: 12px; font-weight: 700; white-space: nowrap; border: 1px solid var(--line); background: rgba(255, 255, 255, .04); color: var(--mut); }
+    .mk.feita { border-color: rgba(0, 255, 102, .35); background: rgba(0, 255, 102, .1); color: var(--action); }
+    .mk.prox { border-color: rgba(192, 132, 252, .7); background: rgba(168, 85, 247, .2); color: #fff; box-shadow: 0 0 14px rgba(168, 85, 247, .25); }
+    .mk-seta { flex: 0 0 auto; color: rgba(255, 255, 255, .35); font-size: 16px; line-height: 1; }
+
+    /* Meu evento: no desktop, resumo e equipe à esquerda, checklist à direita; no celular, empilhado */
+    .ck-grid { display: grid; grid-template-columns: minmax(0, 1fr) minmax(0, 1fr); grid-template-areas: "resumo linha" "equipe linha" "obs avisos"; gap: 18px; align-items: start; }
+    .ck-col { display: contents; min-width: 0; }
+    .o-resumo { grid-area: resumo; } .o-equipe { grid-area: equipe; } .o-linha { grid-area: linha; } .o-obs { grid-area: obs; } .o-avisos { grid-area: avisos; }
+    .ck-col .box-full { margin-bottom: 18px; width: 100%; box-sizing: border-box; }
+    @media (max-width: 899px) {
+      .ck-grid { display: flex; flex-direction: column; gap: 0; align-items: stretch; }
+      .ck-col { display: contents; }
+      .ck-grid .box-full { width: 100%; box-sizing: border-box; }
+      .o-resumo { order: 1; } .o-linha { order: 2; } .o-equipe { order: 3; } .o-obs { order: 4; } .o-avisos { order: 5; }
+    }
+
+    /* Equipe técnica: mesmas linhas do padrão canônico */
+    .eq-item { display: flex; align-items: center; gap: 12px; padding: 9px 0; border-bottom: 1px solid var(--line); min-width: 0; }
+    .eq-item:last-child { border-bottom: 0; }
+    .eq-foto { width: 46px; height: 46px; border-radius: 50%; flex: none; background: rgba(168, 85, 247, .18) center/cover no-repeat; border: 2px solid rgba(192, 132, 252, .45); display: flex; align-items: center; justify-content: center; font-weight: 800; color: #e9d5ff; }
+    .eq-item .txt { min-width: 0; flex: 1 1 auto; }
+
+    /* Memórias: galeria */
+    .foto-grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 10px; }
+    .foto { aspect-ratio: 4 / 3; border-radius: 16px; border: 1px solid rgba(255, 255, 255, .12); display: flex; align-items: center; justify-content: center; color: rgba(255, 255, 255, .55); background: linear-gradient(135deg, rgba(168, 85, 247, .22), rgba(6, 182, 212, .12)); }
+    .foto:nth-child(1) { grid-column: span 2; grid-row: span 2; aspect-ratio: auto; }
+    .foto:nth-child(3n+2) { background: linear-gradient(135deg, rgba(255, 0, 127, .16), rgba(168, 85, 247, .14)); }
+    .foto svg { width: 28px; height: 28px; }
+    @media (max-width: 640px) { .foto-grid { grid-template-columns: repeat(2, 1fr); } .foto:nth-child(1) { grid-column: span 2; grid-row: auto; aspect-ratio: 16 / 9; } }
+    .galeria-vazia { border: 1px dashed rgba(255, 255, 255, .14); border-radius: 18px; padding: 28px 18px; text-align: center; color: var(--mut); font-size: 14px; }
+
+    /* Fotolog: mural principal com 6 posições fixas (1 grande + 5 pequenas). Vagas vazias ficam como placeholder */
+    .mural { display: grid; grid-template-columns: repeat(3, 1fr); grid-template-areas: "s1 s1 s2" "s1 s1 s3" "s4 s5 s6"; gap: 10px; }
+    .mural .s1 { grid-area: s1; } .mural .s2 { grid-area: s2; } .mural .s3 { grid-area: s3; }
+    .mural .s4 { grid-area: s4; } .mural .s5 { grid-area: s5; } .mural .s6 { grid-area: s6; }
+    .foto-real { position: relative; aspect-ratio: 4 / 3; border-radius: 16px; overflow: hidden; padding: 0; cursor: pointer; border: 1px solid rgba(255, 255, 255, .12); background: #0b0b10; font: inherit; color: inherit; }
+    .foto-real.s1 { aspect-ratio: auto; }
+    .foto-real img, .foto-real video { width: 100%; height: 100%; object-fit: cover; display: block; }
+    .foto-real.vazio { cursor: default; display: flex; align-items: center; justify-content: center; color: rgba(255, 255, 255, .55); background: linear-gradient(135deg, rgba(168, 85, 247, .22), rgba(6, 182, 212, .12)); }
+    .foto-real.vazio.s2, .foto-real.vazio.s4, .foto-real.vazio.s6 { background: linear-gradient(135deg, rgba(255, 0, 127, .16), rgba(168, 85, 247, .14)); }
+    .foto-real.vazio svg { width: 28px; height: 28px; }
+    .foto-play { position: absolute; left: 50%; top: 50%; transform: translate(-50%, -50%); width: 44px; height: 44px; border-radius: 50%; background: rgba(0, 0, 0, .55); color: #fff; display: flex; align-items: center; justify-content: center; font-size: 16px; pointer-events: none; }
+    @media (max-width: 640px) {
+      .mural { grid-template-columns: 1fr 1fr; grid-template-areas: "s1 s1" "s2 s3" "s4 s5" "s6 s6"; }
+      .mural .foto-real.s1, .mural .foto-real.s6 { aspect-ratio: 16 / 9; }
+    }
+
+    /* Card "Veja mais momentos": foto com título e descrição ao lado */
+    .foto-sep { border: 0; border-top: 1px solid rgba(255, 255, 255, .14); margin: 0 0 18px; }
+    #fotosLinha { display: grid; grid-template-columns: repeat(auto-fill, minmax(min(280px, 100%), 1fr)); gap: 14px; width: 100%; box-sizing: border-box; margin: 0 auto; }
+    #p3 { overflow-x: hidden; }
+    #p3 .mural, #p3 .foto-grid { width: 100%; box-sizing: border-box; margin: 0 auto; }
+    @media (max-width: 640px) { #fotosLinha { grid-template-columns: 1fr; } }
+    .linha-item { background: none; border: 0; padding: 0; color: inherit; cursor: pointer; text-align: left; font: inherit; display: flex; align-items: center; gap: 14px; min-width: 0; }
+    .linha-media { position: relative; flex: 0 0 132px; aspect-ratio: 4 / 3; border-radius: 14px; overflow: hidden; border: 1px solid rgba(255, 255, 255, .12); background: #0b0b10; }
+    .linha-media img, .linha-media video { width: 100%; height: 100%; object-fit: cover; display: block; }
+    .linha-txt { min-width: 0; display: flex; flex-direction: column; gap: 4px; }
+    .linha-tit { font-size: 14px; font-weight: 700; color: var(--text); overflow-wrap: anywhere; }
+    .linha-desc { font-size: 12px; color: var(--mut); line-height: 1.4; overflow-wrap: anywhere; }
+
+    /* Lightbox: fundo âmbar escuro, deslize com arrastar, setas e clique nas laterais */
+    #modalFoto.modal-bg { background: radial-gradient(ellipse at center, rgba(74, 38, 110, .95) 0%, rgba(40, 20, 62, .97) 70%, rgba(22, 10, 36, .98) 100%); }
+    .lb-wrap { position: relative; width: min(94vw, 1040px); }
+    .lb-fechar { position: absolute; right: 0; top: -44px; padding: 7px 14px; border-radius: 12px; border: 1px solid rgba(192, 132, 252, .5); background: rgba(168, 85, 247, .16); color: #e9d5ff; font: inherit; font-size: 13px; cursor: pointer; }
+    .lb-stage-wrap { display: flex; align-items: center; gap: 10px; }
+    .lb-stage { position: relative; flex: 1; min-width: 0; height: min(68vh, 640px); overflow: hidden; border-radius: 18px; touch-action: pan-y; user-select: none; -webkit-user-select: none; }
+    .lb-slide { position: absolute; inset: 0; display: flex; align-items: center; justify-content: center; transform: translateX(0); transition: transform .32s cubic-bezier(.25, .8, .25, 1); will-change: transform; }
+    .lb-slide img { max-width: 100%; max-height: 100%; object-fit: contain; border-radius: 14px; pointer-events: none; -webkit-user-drag: none; }
+    .lb-slide video { max-width: 100%; max-height: 100%; border-radius: 14px; }
+    .lb-nav { flex: 0 0 auto; width: 42px; height: 42px; border-radius: 50%; border: 1px solid rgba(192, 132, 252, .5); background: rgba(168, 85, 247, .16); color: #e9d5ff; font-size: 22px; line-height: 1; cursor: pointer; }
+    .lb-info { margin-top: 14px; text-align: center; color: #f3e8ff; }
+    .lb-tit { display: block; font-size: 16px; color: #fff; }
+    .lb-desc { display: block; font-size: 13px; color: #e9d5ff; margin-top: 4px; line-height: 1.4; }
+    .lb-cont { font-size: 12px; color: #d8b4fe; opacity: .85; margin-top: 8px; }
+    @media (max-width: 640px) { .lb-nav { width: 34px; height: 34px; font-size: 18px; } .lb-stage { height: 60vh; } }
+
+    /* Perfil: foto no topo, dados no padrão canônico */
+    .perfil-hero { display: flex; flex-direction: column; align-items: center; gap: 10px; padding: 6px 0 18px; text-align: center; }
+    .perfil-foto { position: relative; width: 116px; height: 116px; border-radius: 50%; cursor: pointer; box-shadow: 0 0 22px rgba(6, 182, 212, .35); margin-bottom: 8px; }
+    .perfil-foto .avatar { width: 100%; height: 100%; border-color: var(--tech); font-size: 30px; }
+    .perfil-foto-cta { position: absolute; left: 50%; bottom: -10px; transform: translateX(-50%); white-space: nowrap; font-size: 11px; font-weight: 800; letter-spacing: .04em; padding: 5px 12px; border-radius: 999px; background: #0b0b10; color: var(--tech); border: 1px solid rgba(6, 182, 212, .5); }
+    .perfil-file { display: none; }
+    .perfil-dica { font-size: 12px; color: var(--mut); margin: 0 0 14px; }
+    /* Campos lidos como valor; ao editar, viram campo de vidro */
+    #formCadastro .dl-item input {
+      background: transparent; border: 0; border-radius: 0; padding: 2px 0 0; margin: 0;
+      font-size: 15px; font-weight: 600; color: var(--text); backdrop-filter: none; -webkit-backdrop-filter: none;
+      cursor: default; box-shadow: none;
+    }
+    #formCadastro.editando .dl-item input {
+      background: rgba(255, 255, 255, .06); border: 1px solid rgba(255, 255, 255, .16); border-radius: 12px;
+      padding: 10px 12px; cursor: text; backdrop-filter: blur(10px); -webkit-backdrop-filter: blur(10px);
+    }
+    #formCadastro.editando .dl-item { border-bottom-color: transparent; padding: 6px 0; }
+    #formCadastro .btn-s { width: 100%; margin-top: 14px; padding: 13px 16px; border-radius: 14px; }
+    #formCadastro .btn:disabled { opacity: .45; }
+
+    /* Documentação e pagamento: um card por proposta, na cor âmbar do pagamento */
+    /* Cada pedido é um card externo transparente, com leve borda dourada; sem card interno */
+    .doc-wrap { margin-bottom: 18px; }
+    .doc-wrap > h2 { font-size: .72rem; letter-spacing: .14em; text-transform: uppercase; color: var(--gold); margin: 0 0 14px; font-weight: 800; }
+    .pedido-card { border: 1px solid rgba(212, 175, 55, .3); border-radius: 24px; padding: 26px; margin-bottom: 18px; background: rgba(255, 255, 255, .045); backdrop-filter: blur(24px); -webkit-backdrop-filter: blur(24px); }
+    .pedido-card:last-child { margin-bottom: 0; }
+    .pedido-topo { display: flex; justify-content: space-between; gap: 10px; align-items: flex-start; flex-wrap: wrap; }
+    .pedido-titulo { font-size: 10px; letter-spacing: .14em; text-transform: uppercase; color: var(--gold); font-weight: 800; }
+    .pedido-tags { display: flex; flex-wrap: wrap; gap: 6px; justify-content: flex-end; }
+    .pedido-acoes { display: flex; flex-wrap: wrap; gap: 8px; }
+    .pedido-acoes .btn-s, .pedido-acoes .btn-verde { margin-top: 0; }
+    .btn-verde { display: inline-flex; align-items: center; justify-content: center; padding: 9px 14px; border-radius: 12px; border: 0; background: var(--action); color: #04120a; font-size: 13px; font-weight: 800; text-decoration: none; cursor: pointer; }
+    .pedido-cmp { width: 100%; margin-top: 0; padding: 11px 16px; border-radius: 14px; border-color: rgba(212, 175, 55, .6); background: rgba(212, 175, 55, .14); color: var(--gold); }
+    .pedido-cmp:hover { background: rgba(212, 175, 55, .24); }
+    .sec-lbl { font-size: 10px; letter-spacing: .16em; text-transform: uppercase; font-weight: 800; color: var(--gold); margin: 0 0 6px; }
+    .sec-sep { height: 1px; background: rgba(212, 175, 55, .18); margin: 10px 0; }
+    /* Dentro do card de pedido, as linhas ficam mais juntas */
+    .pedido-card .dl-row { padding: 6px 0; }
+    .pedido-card .dl-row .rot { margin-bottom: 1px; }
+    .pedido-card .sec-lbl + div { margin-top: 0; }
+    .pedido-card .sec-lbl + .pedido-acoes { margin-top: 0; }
+    @media (max-width: 640px) { .pedido-card { padding: 20px; } }
+
+    .avatar-wrap { display: flex; align-items: center; gap: 14px; flex-wrap: wrap; margin-bottom: 6px; }
+    .avatar { width: 76px; height: 76px; border-radius: 50%; border: 2px solid rgba(168, 85, 247, .45); background: #0b0b10 center/cover no-repeat; display: flex; align-items: center; justify-content: center; font-size: 26px; color: var(--mut); overflow: hidden; flex-shrink: 0; }
+
+    /* Notificações e modais */
+    .sino { position: relative; }
+    .sino-badge { position: absolute; top: -6px; right: -6px; min-width: 18px; height: 18px; padding: 0 5px; border-radius: 999px; background: var(--pink); color: #fff; font-size: 11px; font-weight: 800; display: none; align-items: center; justify-content: center; }
+    .modal-bg { position: fixed; inset: 0; z-index: 9999; background: rgba(0, 0, 0, .7); display: none; align-items: center; justify-content: center; padding: 16px; }
+    .modal-bg.on { display: flex; }
+    .modal-box { width: 100%; max-width: 480px; max-height: 88vh; overflow: auto; background: #0c0c12; border: 1px solid rgba(168, 85, 247, .28); border-radius: 22px; padding: 20px; }
+    .modal-box h2 { font-size: .72rem; color: var(--gold); text-transform: uppercase; letter-spacing: .12em; font-weight: 800; margin: 0; }
+    .notif { padding: 11px 0; border-bottom: 1px solid var(--line); cursor: pointer; }
+    .notif.nova .t { color: var(--action); font-weight: 800; }
+    .notif .t { font-size: 14px; }
+    .notif .d { font-size: 11px; color: var(--mut); }
+    .cropper-area { max-height: 50vh; background: #030306; border-radius: 14px; overflow: hidden; }
+    .cropper-area img { display: block; max-width: 100%; }
+
+    @media (max-width: 640px) {
+      .cal { gap: 3px; }
+      .cal .d { min-height: 38px; }
+    }
+    /* ===== Ajustes: menu condensado grudado ao canônico ===== */
+    .tabs { z-index: 30; margin: 0 -18px 12px; padding: 8px 18px; gap: 6px; background: transparent; border-bottom: 1px solid rgba(0, 240, 255, .18); }
+    .tab { padding: 6px 12px; font-size: 11px; }
+    .tabs.fixo { position: fixed; left: 0; right: 0; margin: 0; border-radius: 0; padding-left: max(18px, calc((100% - 1120px) / 2 + 18px)); padding-right: max(18px, calc((100% - 1120px) / 2 + 18px)); }
+    .carrossel { display: flex; overflow-x: auto; scroll-snap-type: x mandatory; scrollbar-width: none; -webkit-overflow-scrolling: touch; touch-action: pan-x; overscroll-behavior: contain; }
+    .carrossel::-webkit-scrollbar { display: none; }
+    .carrossel > .slide { flex: 0 0 100%; min-width: 0; scroll-snap-align: start; }
+  </style>
+</head>
+<body class="h-full antialiased overflow-x-hidden">
+
+  <canvas id="orbit-canvas"></canvas>
+  <div id="plasmaLayer" class="plasma-top-layer"></div>
+
+  <header id="calc-header"></header>
+  <div id="mobile-menu"></div>
+
+  <div class="flex flex-col min-h-screen relative z-10">
+    <main class="area">
+
+      <div style="display:flex;align-items:flex-start;justify-content:space-between;gap:12px;flex-wrap:wrap">
+        <div>
+          <span class="eyebrow">Área do cliente</span>
+          <h1 class="titulo" id="saudacao">Olá</h1>
+          <p class="mut" style="margin:0;font-size:14px">Sua área 432UP! — cadastro, evento e memórias num só lugar.</p>
+        </div>
+        <div class="cli-top-actions" style="display:flex;gap:8px;align-items:center">
+          <button type="button" class="btn-s sino" id="btnSino" aria-label="Notificações" style="margin-top:0">🔔<span class="sino-badge" id="sinoBadge">0</span></button>
+          <button type="button" class="btn-s" id="btnSair" style="margin-top:0">Sair</button>
+        </div>
+      </div>
+
+      <div id="tabsWrap">
+      <nav class="tabs" role="tablist" aria-label="Área do cliente">
+        <button type="button" class="tab on" data-i="0" role="tab">Início</button>
+        <button type="button" class="tab" data-i="1" role="tab">Meu evento</button>
+        <button type="button" class="tab" data-i="2" role="tab">Calendário</button>
+        <button type="button" class="tab" data-i="3" role="tab">Memórias</button>
+        <button type="button" class="tab" data-i="4" role="tab">Perfil</button>
+      </nav>
+      </div>
+      <div class="slider-dots" id="sliderDots" aria-hidden="true"><i class="on"></i><i></i><i></i><i></i><i></i></div>
+
+      <!-- 0 · INÍCIO -->
+      <section class="panel on" id="p0" role="tabpanel">
+        <a class="crie-convite" href="convites/index.html" data-convite-link>
+          <span aria-hidden="true">✉</span>
+          <span><strong>Crie seu convite</strong><small>Monte o convite do seu evento, com endereço, programação e confirmação de presença.</small></span>
+          <span aria-hidden="true">→</span>
+        </a>
+        <div class="box-full i2" id="cardProximo">
+          <div class="carrossel" id="carrossel" data-noswipe></div>
+          <div class="slider-dots" id="carDots" style="display:none"></div>
+        </div>
+
+        <div class="box-full" id="cardMiniCk" style="display:none">
+          <div class="mk-topo"><h2>Checklist do evento</h2><button type="button" class="btn-s" id="btnVerCk">Ver checklist ›</button></div>
+          <div class="mini-ck" id="miniCk"></div>
+          <div class="pill" id="miniCkRes" style="margin-top:6px"></div>
+        </div>
+
+        <div class="doc-wrap">
+          <h2>Documentação e pagamento</h2>
+          <div id="listaPedidos" class="vazio">Carregando…</div>
+        </div>
+
+        <div class="box-full">
+          <h2>Resumo rápido</h2>
+          <div id="resumoRapido" class="vazio">Carregando…</div>
+        </div>
+      </section>
+
+      <!-- 1 · MEU EVENTO -->
+      <section class="panel" id="p1" role="tabpanel">
+        <div class="ck-grid">
+          <div class="ck-col">
+        <div class="box-full o-linha" id="cardLinhaTempo">
+          <h2>Linha do tempo</h2>
+          <div class="trilha" id="linhaTempo"><div class="vazio">Carregando…</div></div>
+        </div>
+        <div class="box-full o-equipe" id="cardEquipe">
+          <h2>Equipe técnica</h2>
+          <div id="listaEquipe" class="vazio">Carregando…</div>
+          <button type="button" class="btn-s" id="btnListaEquipe" style="display:none">Receber documentos pelo WhatsApp</button>
+          <div class="msg" id="msgEquipe"></div>
+        </div>
+
+          </div>
+          <div class="ck-col">
+        <div class="box-full o-obs">
+          <h2>Instruções para o seu evento</h2>
+          <div id="listaObs" class="vazio">Carregando…</div>
+          <form id="formObs" style="margin-top:12px">
+            <label class="rot" for="obsNova" style="margin-top:12px">Nova instrução</label>
+            <input id="obsNova" maxlength="400" placeholder="Ex.: horário de chegada da noiva">
+            <button class="btn" type="submit" id="btnObs">Enviar</button>
+            <div class="msg" id="msgObs"></div>
+          </form>
+        </div>
+        <div class="box-full i3 o-avisos" id="cardAvisos">
+          <h2>Avisos no celular</h2>
+          <p class="lead" style="font-size:14px;margin-bottom:4px">Receba no aparelho quando uma etapa do seu evento for confirmada.</p>
+          <button type="button" class="btn" id="btnAvisos">Ativar avisos</button>
+          <div class="msg" id="msgAvisos"></div>
+        </div>
+
+          </div>
+          <div class="ck-col">
+        <div class="box-full o-resumo" id="cardResumoEvt">
+          <h2 id="resumoTitulo">Resumo do pedido</h2>
+          <div id="resumoEvt" class="vazio">Carregando…</div>
+        </div>
+          </div>
+        </div>
+      </section>
+
+      <!-- 2 · CALENDÁRIO -->
+      <section class="panel" id="p2" role="tabpanel">
+        <div class="box-full">
+          <h2>Calendário do evento</h2>
+          <p class="pill" id="calSub" style="margin:0 0 10px">Só as datas dos seus pedidos aparecem aqui.</p>
+          <div class="filtros" id="calFiltros" data-noswipe role="group" aria-label="Filtrar calendário">
+            <button type="button" class="leg" data-filtro="evento" aria-pressed="true" style="--c:#c084fc"><i class="sw"></i>Evento</button>
+            <button type="button" class="leg" data-filtro="contrato" aria-pressed="true" style="--c:#3b82f6"><i class="sw"></i>Contrato</button>
+            <button type="button" class="leg" data-filtro="pagamento" aria-pressed="true" style="--c:#D4AF37"><i class="sw"></i>Pagamentos</button>
+            <button type="button" class="leg" data-filtro="comprovante" aria-pressed="true" style="--c:#F5D061"><i class="sw"></i>Comprovantes</button>
+          </div>
+          <div class="cal-nav">
+            <button type="button" class="btn-s" id="calPrev" style="margin-top:0">‹</button>
+            <strong id="calMesTitulo" style="font-size:15px"></strong>
+            <button type="button" class="btn-s" id="calNext" style="margin-top:0">›</button>
+          </div>
+          <div class="cal" id="calGrid" aria-label="Calendário"></div>
+          <div id="calDiaDetalhe" style="margin-top:14px">
+            <div class="vazio">Toque em um dia com evento para ver o detalhe.</div>
+          </div>
+        </div>
+
+        <div class="box-full">
+          <h2>Levar para o meu calendário</h2>
+          <p class="lead" style="font-size:14px">Assine e as datas dos seus eventos entram no calendário do celular e atualizam sozinhas.</p>
+          <button type="button" class="btn" id="btnAssinarCal">Assinar calendário</button>
+          <button type="button" class="btn-s" id="btnCopiarCal">Copiar link</button>
+          <div class="msg" id="msgCal"></div>
+        </div>
+
+        <div class="box-full">
+          <h2>Próximos marcos</h2>
+          <div id="calLista" class="vazio">Carregando…</div>
+        </div>
+      </section>
+
+      <!-- 3 · MEMÓRIAS -->
+      <section class="panel" id="p3" role="tabpanel">
+        <div class="box-full">
+          <h2>Galeria</h2>
+          <div id="memGaleria">
+            <div id="fotosReais" class="mural" style="display:none"></div>
+            <div id="fotosExemplo">
+            <div class="foto-grid" aria-hidden="true">
+              <div class="foto"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><path d="M4 8h3l2-3h6l2 3h3v11H4z"/><circle cx="12" cy="13" r="3.5"/></svg></div><div class="foto"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><path d="M4 8h3l2-3h6l2 3h3v11H4z"/><circle cx="12" cy="13" r="3.5"/></svg></div><div class="foto"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><path d="M4 8h3l2-3h6l2 3h3v11H4z"/><circle cx="12" cy="13" r="3.5"/></svg></div><div class="foto"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><path d="M4 8h3l2-3h6l2 3h3v11H4z"/><circle cx="12" cy="13" r="3.5"/></svg></div><div class="foto"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><path d="M4 8h3l2-3h6l2 3h3v11H4z"/><circle cx="12" cy="13" r="3.5"/></svg></div><div class="foto"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><path d="M4 8h3l2-3h6l2 3h3v11H4z"/><circle cx="12" cy="13" r="3.5"/></svg></div>
+            </div>
+            <p class="pill" style="margin:12px 0 0;text-align:center">Fotos de exemplo · as fotos reais do seu evento aparecem aqui depois do grande dia.</p>
+            </div>
+          </div>
+        </div>
+              <div class="box-full" id="cardLinha" style="display:none">
+          <hr class="foto-sep">
+          <h2>Veja mais momentos</h2>
+          <p class="pill" style="margin:-6px 0 14px">Fotos e vídeos do evento, com legenda.</p>
+          <div id="fotosLinha"></div>
+        </div>
+      </section>
+
+      <!-- 4 · PERFIL -->
+      <section class="panel" id="p4" role="tabpanel">
+        <div class="box-full" id="semCadastro" style="display:none">
+          <p class="vazio" style="margin:0">Não encontramos seu cadastro de cliente vinculado a esta conta. Fale com o suporte 432UP!.</p>
+        </div>
+
+        <div class="box-full" id="formCadastroWrap">
+          <div class="perfil-hero">
+            <label class="perfil-foto" for="fAvatar" title="Alterar foto">
+              <div class="avatar" id="avatarPreview"><span id="avatarPlaceholder">📷</span></div>
+              <span class="perfil-foto-cta">Alterar Foto</span>
+            </label>
+            <input type="file" id="fAvatar" class="perfil-file" accept="image/png,image/jpeg,image/webp">
+            <p class="pill" style="margin:0">Formatos aceitos: JPG, PNG ou WebP até 5 MB.</p>
+            <button type="button" class="btn-s" id="btnSalvarAvatar" style="display:none;margin-top:4px">Salvar foto</button>
+            <div class="msg" id="msgAvatar"></div>
+          </div>
+
+          <h2>Seus dados</h2>
+          <p class="perfil-dica" id="perfilDica">Toque em Editar Dados para alterar suas informações.</p>
+          <form id="formCadastro">
+            <div class="dl">
+              <div class="dl-item dl-full"><label class="rot" for="c_nome">Nome completo / razão social</label><input class="val" id="c_nome" autocomplete="name"></div>
+              <div class="dl-item"><label class="rot" for="c_tel">Telefone / WhatsApp</label><input class="val" id="c_tel" inputmode="tel" autocomplete="tel"></div>
+              <div class="dl-item"><label class="rot" for="c_email">E-mail principal</label><input class="val" id="c_email" type="email" required autocomplete="email"></div>
+              <div class="dl-item"><label class="rot" for="c_cep">CEP</label><input class="val" id="c_cep" inputmode="numeric"></div>
+              <div class="dl-item"><label class="rot" for="c_uf">UF</label><input class="val" id="c_uf" maxlength="2"></div>
+              <div class="dl-item dl-full"><label class="rot" for="c_log">Logradouro</label><input class="val" id="c_log"></div>
+              <div class="dl-item"><label class="rot" for="c_num">Número</label><input class="val" id="c_num"></div>
+              <div class="dl-item"><label class="rot" for="c_comp">Complemento</label><input class="val" id="c_comp"></div>
+              <div class="dl-item"><label class="rot" for="c_bairro">Bairro</label><input class="val" id="c_bairro"></div>
+              <div class="dl-item"><label class="rot" for="c_cidade">Cidade</label><input class="val" id="c_cidade"></div>
+            </div>
+            <button type="button" class="btn-s" id="btnEditarDados">Editar Dados</button>
+            <button class="btn" type="submit" id="btnCadastro" disabled>Salvar Meus Dados</button>
+            <div class="msg" id="msgCadastro"></div>
+          </form>
+        </div>
+      </section>
+
+    </main>
+  </div>
+
+  <!-- Recorte do avatar -->
+  <div class="modal-bg" id="modalFoto" role="dialog" aria-modal="true" aria-label="Foto do evento">
+    <div class="lb-wrap">
+      <button type="button" id="btnFotoFechar" class="lb-fechar">Fechar</button>
+      <div class="lb-stage-wrap">
+        <button type="button" id="btnFotoAnt" class="lb-nav" aria-label="Anterior">‹</button>
+        <div class="lb-stage" id="lbStage"></div>
+        <button type="button" id="btnFotoProx" class="lb-nav" aria-label="Próxima">›</button>
+      </div>
+      <div class="lb-info">
+        <div id="fotoLbLegenda"></div>
+        <div id="fotoLbContador" class="lb-cont"></div>
+      </div>
+    </div>
+  </div>
+  <div class="modal-bg" id="modalCrop" role="dialog" aria-modal="true" aria-label="Recortar foto">
+    <div class="modal-box" style="max-width:520px">
+      <div style="display:flex;justify-content:space-between;align-items:center;gap:8px;margin-bottom:10px">
+        <h2>Recortar e compactar</h2>
+        <button type="button" class="btn-s" id="btnCropCancel" style="margin-top:0">Cancelar</button>
+      </div>
+      <div class="cropper-area"><img id="cropImage" alt="Recorte da foto de perfil"></div>
+      <button type="button" class="btn" id="btnCropOk">Usar esta foto</button>
+      <div class="msg" id="msgCrop"></div>
+    </div>
+  </div>
+
+  <!-- Comprovante -->
+  <div class="modal-bg" id="modalCmp" role="dialog" aria-modal="true" aria-label="Enviar comprovante">
+    <div class="modal-box">
+      <div style="display:flex;justify-content:space-between;align-items:center;gap:8px">
+        <h2>Enviar comprovante</h2>
+        <button type="button" class="btn-s" id="btnFecharCmp" style="margin-top:0">Fechar</button>
+      </div>
+      <p class="pill" style="margin:8px 0 0">Pode enviar quantos forem necessários (entrada, parcelas, saldo).</p>
+      <input type="hidden" id="cmpPropostaId">
+      <label class="rot" for="cmpTipo" style="margin-top:14px">Tipo</label>
+      <select id="cmpTipo">
+        <option value="entrada">Entrada / sinal</option>
+        <option value="parcela">Parcela</option>
+        <option value="saldo">Saldo / restante</option>
+        <option value="outro">Outro</option>
+      </select>
+      <label class="rot" for="cmpValor" style="margin-top:12px">Valor pago (R$)</label>
+      <input id="cmpValor" type="number" min="0" step="0.01" inputmode="decimal">
+      <label class="rot" for="cmpData" style="margin-top:12px">Data do pagamento</label>
+      <input id="cmpData" type="date">
+      <label class="rot" for="cmpArquivo" style="margin-top:12px">Foto ou PDF</label>
+      <input id="cmpArquivo" type="file" accept="image/*,application/pdf">
+      <button type="button" class="btn btn-ambar" id="btnEnviarCmp">Enviar comprovante</button>
+      <div class="msg" id="msgCmp"></div>
+      <h2 style="margin:18px 0 8px">Já enviados neste pedido</h2>
+      <div id="cmpListaModal" class="vazio">—</div>
+    </div>
+  </div>
+
+  <!-- Notificações -->
+  <div class="modal-bg" id="modalNotif" role="dialog" aria-modal="true" aria-label="Notificações">
+    <div class="modal-box">
+      <div style="display:flex;justify-content:space-between;align-items:center;gap:8px">
+        <h2>Notificações</h2>
+        <button type="button" class="btn-s" id="btnFecharNotif" style="margin-top:0">Fechar</button>
+      </div>
+      <div id="notifNovas" style="margin-top:12px"></div>
+      <button type="button" class="btn-s" id="btnTodasLidas" style="display:none">Marcar todas como lidas</button>
+      <h2 style="margin:18px 0 6px;color:var(--mut)">Já lidas</h2>
+      <div id="notifLidas"></div>
+    </div>
+  </div>
+
+  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/cropperjs/1.5.13/cropper.min.js"></script>
+  <script src="partner-config.js"></script>
+  <script src="../../script/script.js" defer></script>
+  <script src="partner-header.js"></script>
+  <script>
+(function () {
+  'use strict';
+  var CFG = window.PARTNER_CFG;
+  if (!CFG) { console.error('PARTNER_CFG ausente'); return; }
+
+  if (typeof window.sbPartner === 'undefined') {
+    window.sbPartner = window.supabase.createClient(CFG.SB_URL, CFG.SB_KEY, {
+      auth: { persistSession: true, autoRefreshToken: true }
+    });
+  }
+  var SB = window.sbPartner;
+
+  /* Convite: abre direto o convite mais recente do próprio cliente; sem convite, abre a lista */
+  (function () {
+    function abrirConvite(e) {
+      e.preventDefault();
+      var base = this.getAttribute('href');
+      var ir = function (url) { window.location.href = url; };
+      try {
+        SB.from('convites').select('id').not('proposta_id', 'is', null).order('atualizado_em', { ascending: false }).limit(1)
+          .then(function (r) {
+            var id = r && r.data && r.data[0] && r.data[0].id;
+            ir(id ? base + '?id=' + encodeURIComponent(id) : base);
+          })
+          .catch(function () { ir(base); });
+      } catch (err) { ir(base); }
+    }
+    function ligar() {
+      document.querySelectorAll('[data-convite-link]').forEach(function (a) { a.addEventListener('click', abrirConvite); });
+    }
+    if (document.readyState === 'loading') document.addEventListener('DOMContentLoaded', ligar); else ligar();
+  })();
+
+  var $ = function (id) { return document.getElementById(id); };
+  var CAMERA_SVG = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><path d="M4 8h3l2-3h6l2 3h3v11H4z"/><circle cx="12" cy="13" r="3.5"/></svg>';
+  var E = function (s) {
+    return String(s == null ? '' : s)
+      .replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;');
+  };
+  var BRL = function (n) {
+    try { return Number(n || 0).toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' }); }
+    catch (e) { return 'R$ —'; }
+  };
+  function parseDataLocal(d) {
+    if (!d) return null;
+    var s = String(d);
+    var m = s.match(/^(\d{4})-(\d{2})-(\d{2})(?:[T ]\d{2}:\d{2}(?::\d{2}(?:\.\d+)?)?)?$/);
+    if (m) return new Date(Number(m[1]), Number(m[2]) - 1, Number(m[3]), 12, 0, 0);
+    var x = new Date(s);
+    return isNaN(x.getTime()) ? null : x;
+  }
+  /* Data e hora de quando a equipe confirmou a etapa (fuso do aparelho) */
+  var DATA_HORA = function (iso) {
+    var x = new Date(iso);
+    if (isNaN(x.getTime())) return '—';
+    try {
+      return x.toLocaleDateString('pt-BR') + ' às ' + x.toLocaleTimeString('pt-BR', { hour: '2-digit', minute: '2-digit' });
+    } catch (e) { return '—'; }
+  };
+  var DATA = function (d) {
+    var x = parseDataLocal(d);
+    if (!x) return '—';
+    try { return x.toLocaleDateString('pt-BR'); } catch (e) { return '—'; }
+  };
+  var ST = { pendente: 'Pendente', aprovado: 'Aprovado', recusado: 'Recusado', pago: 'Pago' };
+  var ST_CLASSE = { pendente: 't-pend', aprovado: 't-ok', recusado: 't-rec', pago: 't-ok' };
+  /* Pagamentos e comprovantes ficam na cor âmbar (pago = preenchido, pendente = contorno) */
+  var CMP_CLASSE = { pendente: 't-pend', aprovado: 't-pago', recusado: 't-rec', pago: 't-pago' };
+  var ROTULO_CMP = { entrada: 'Entrada', parcela: 'Parcela', saldo: 'Saldo', outro: 'Outro' };
+  var LIMITE_CMP = 4 * 1024 * 1024;
+  var ICON_X = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" aria-hidden="true"><path d="M6 6l12 12M18 6L6 18"/></svg>';
+  var R2_UPLOAD_URL = 'https://432up-r2-upload.432up-producoes.workers.dev/';
+  var dados = null;
+  var novoAvatarBlob = null;
+  var cropperInst = null;
+  var calAno = null, calMes = null, calDiaSel = null;
+  var _contagemTimer = null;
+  /* Cores da agenda do portal: evento = lilás; pagamentos e comprovantes = âmbar */
+  var COR_CAL = {
+    evento:      { hex: '#c084fc', rgb: '192,132,252' },
+    contrato:    { hex: '#3b82f6', rgb: '59,130,246' },
+    pagamento:   { hex: '#D4AF37', rgb: '212,175,55' },
+    comprovante: { hex: '#F5D061', rgb: '245,208,97' }
+  };
+  var FILTROS_CAL = { evento: true, contrato: true, pagamento: true, comprovante: true };
+  try {
+    var _fc = JSON.parse(localStorage.getItem('432up_cli_cal_filtros') || '{}');
+    Object.keys(FILTROS_CAL).forEach(function (k) { if (typeof _fc[k] === 'boolean') FILTROS_CAL[k] = _fc[k]; });
+  } catch (e) {}
+
+  /* Navegação por abas como slider de verdade: o conteúdo acompanha o dedo e o clique desliza */
+  var idxAba = 0;
+  var PANELS = Array.prototype.slice.call(document.querySelectorAll('.panel'));
+  var SLIDE_GAP = 24, slideBusy = false;
+
+  function marcarTab(i) {
+    document.querySelectorAll('.tab').forEach(function (b) {
+      b.classList.toggle('on', Number(b.getAttribute('data-i')) === i);
+    });
+    document.querySelectorAll('#sliderDots i').forEach(function (d, k) { d.classList.toggle('on', k === i); });
+    var tabAtiva = document.querySelector('.tab[data-i="' + i + '"]');
+    if (tabAtiva && tabAtiva.scrollIntoView) {
+      try { tabAtiva.scrollIntoView({ behavior: 'smooth', inline: 'center', block: 'nearest' }); } catch (e) {}
+    }
+  }
+  function goToAba(i) {
+    i = Math.max(0, Math.min(4, i | 0));
+    idxAba = i;
+    marcarTab(i);
+    PANELS.forEach(function (p, idx) { p.classList.toggle('on', idx === i); });
+    try { sessionStorage.setItem('432_cli_tab', String(i)); } catch (e) {}
+  }
+  function posVizinho(from, to) {
+    to.classList.add('slide-vz');
+    to.style.top = from.offsetTop + 'px';
+    to.style.left = from.offsetLeft + 'px';
+    to.style.width = from.offsetWidth + 'px';
+  }
+  function limparSlide(p) {
+    p.classList.remove('slide-vz', 'slide-mov');
+    p.style.top = p.style.left = p.style.width = p.style.transform = p.style.transition = '';
+  }
+  function terminarSlide(from, to, commit, i, dir, w) {
+    slideBusy = true;
+    var t = 'transform .36s cubic-bezier(.25,.8,.25,1)';
+    from.style.transition = t;
+    if (to) to.style.transition = t;
+    void from.offsetWidth;
+    from.style.transform = 'translateX(' + (commit ? -dir * (w + SLIDE_GAP) : 0) + 'px)';
+    if (to) to.style.transform = 'translateX(' + (commit ? 0 : dir * (w + SLIDE_GAP)) + 'px)';
+    setTimeout(function () {
+      if (commit) goToAba(i);
+      limparSlide(from);
+      if (to) limparSlide(to);
+      slideBusy = false;
+    }, 380);
+  }
+  /* clique na aba (ou botão): o painel desliza para dentro */
+  function slideTo(i) {
+    i = Math.max(0, Math.min(4, i | 0));
+    if (slideBusy || i === idxAba) return;
+    var from = PANELS[idxAba], to = PANELS[i];
+    var dir = i > idxAba ? 1 : -1, w = from.offsetWidth;
+    marcarTab(i);
+    from.classList.add('slide-mov');
+    posVizinho(from, to);
+    to.style.transform = 'translateX(' + (dir * (w + SLIDE_GAP)) + 'px)';
+    terminarSlide(from, to, true, i, dir, w);
+  }
+  document.querySelectorAll('.tab').forEach(function (btn) {
+    btn.addEventListener('click', function () { slideTo(Number(btn.getAttribute('data-i'))); });
+  });
+
+  /* Arrastar para o lado: o conteúdo acompanha o dedo (não interfere com scroll vertical) */
+  (function () {
+    var main = document.querySelector('main.area');
+    if (!main) return;
+    var NO_SWIPE = 'input, textarea, select, .tabs, .mini-ck, .slider, .modal-bg, canvas, [data-noswipe]';
+    var d = null;
+
+    main.addEventListener('touchstart', function (e) {
+      if (slideBusy || e.touches.length !== 1) return;
+      if (e.target.closest && e.target.closest(NO_SWIPE)) return;
+      d = { x: e.touches[0].clientX, y: e.touches[0].clientY, t: Date.now(), raw: 0, mode: null,
+            from: PANELS[idxAba], to: null, dir: 0, w: 0 };
+    }, { passive: true });
+
+    main.addEventListener('touchmove', function (e) {
+      if (!d || e.touches.length !== 1) return;
+      var mx = e.touches[0].clientX - d.x, my = e.touches[0].clientY - d.y;
+      if (d.mode === null) {
+        if (Math.abs(my) > 10 && Math.abs(my) > Math.abs(mx)) { d = null; return; }
+        if (Math.abs(mx) > 10 && Math.abs(mx) > Math.abs(my) * 1.2) {
+          d.mode = 'h'; d.w = d.from.offsetWidth; d.from.classList.add('slide-mov');
+        } else return;
+      }
+      if (e.cancelable) e.preventDefault();
+      d.raw = mx;
+      var dir = mx < 0 ? 1 : -1, alvo = idxAba + dir, fora = alvo < 0 || alvo > 4;
+      if (fora) {
+        if (d.to) { limparSlide(d.to); d.to = null; d.dir = 0; }
+        d.from.style.transform = 'translateX(' + (mx * 0.25) + 'px)';
+        return;
+      }
+      if (d.dir !== dir) {
+        if (d.to) limparSlide(d.to);
+        d.to = PANELS[alvo]; d.dir = dir;
+        posVizinho(d.from, d.to);
+      }
+      d.from.style.transform = 'translateX(' + mx + 'px)';
+      d.to.style.transform = 'translateX(' + (mx + dir * (d.w + SLIDE_GAP)) + 'px)';
+    }, { passive: false });
+
+    function soltar(cancelado) {
+      var x = d; d = null;
+      if (!x || x.mode !== 'h') return;
+      var vel = Math.abs(x.raw) / Math.max(1, Date.now() - x.t);
+      var vai = !cancelado && x.to && (Math.abs(x.raw) > x.w * 0.25 || (vel > 0.5 && Math.abs(x.raw) > 40));
+      terminarSlide(x.from, x.to, !!vai, idxAba + x.dir, x.dir, x.w);
+    }
+    main.addEventListener('touchend', function () { soltar(false); });
+    main.addEventListener('touchcancel', function () { soltar(true); });
+  })();
+  try {
+    var st = parseInt(sessionStorage.getItem('432_cli_tab') || '0', 10);
+    if (!isNaN(st) && st > 0) goToAba(st);
+  } catch (e) {}
+  if (/[?&]aba=perfil/.test(location.search || '')) goToAba(4);
+  /* Header canônico: ?notif=1 abre o modal de notificações */
+  if (/[?&]notif=1/.test(location.search || '')) {
+    setTimeout(function () {
+      var m = document.getElementById('modalNotif');
+      if (m) m.classList.add('on');
+    }, 600);
+  }
+
+  /* ===== Menu condensado: gruda logo abaixo do menu canônico (fixo) ===== */
+  (function () {
+    var nav = document.querySelector('#tabsWrap .tabs');
+    var wrap = document.getElementById('tabsWrap');
+    if (!nav || !wrap) return;
+    var base = 0;
+    function alturaCabecalho() {
+      var h = document.getElementById('calc-header');
+      return h ? Math.max(0, Math.round(h.getBoundingClientRect().bottom)) : 0;
+    }
+    /* Copia a mesma pele translúcida do menu canônico (fundo, blur e borda) */
+    function aplicarPele() {
+      var h = document.getElementById('calc-header');
+      if (!h || !window.getComputedStyle) return;
+      var camada = h.querySelector('.mn-bg-l[data-t="cyan"]');
+      var csH = getComputedStyle(h);
+      var csC = camada ? getComputedStyle(camada) : null;
+      var img = csC && csC.backgroundImage !== 'none' ? csC.backgroundImage : csH.backgroundImage;
+      var cor = csC && csC.backgroundColor !== 'rgba(0, 0, 0, 0)' ? csC.backgroundColor : csH.backgroundColor;
+      nav.style.backgroundImage = img && img !== 'none' ? img : 'linear-gradient(180deg, rgba(0, 240, 255, 0.06) 0%, rgba(8, 12, 18, 0.7) 100%)';
+      nav.style.backgroundColor = cor && cor !== 'rgba(0, 0, 0, 0)' ? cor : 'transparent';
+      var blur = csH.backdropFilter && csH.backdropFilter !== 'none' ? csH.backdropFilter : 'blur(24px)';
+      nav.style.backdropFilter = blur;
+      nav.style.webkitBackdropFilter = blur;
+      nav.style.borderBottomColor = csH.borderBottomColor || 'rgba(0, 240, 255, 0.18)';
+    }
+    function limparPele() {
+      nav.style.backgroundImage = '';
+      nav.style.backgroundColor = '';
+      nav.style.backdropFilter = '';
+      nav.style.webkitBackdropFilter = '';
+      nav.style.borderBottomColor = '';
+    }
+    function atualizar() {
+      var hb = alturaCabecalho();
+      if (!nav.classList.contains('fixo')) base = nav.offsetHeight;
+      var passou = wrap.getBoundingClientRect().top <= hb;
+      if (passou && hb > 0) {
+        wrap.style.height = base + 'px';
+        nav.classList.add('fixo');
+        nav.style.top = hb + 'px';
+        aplicarPele();
+      } else {
+        nav.classList.remove('fixo');
+        nav.style.top = '';
+        wrap.style.height = '';
+        limparPele();
+      }
+    }
+    window.addEventListener('scroll', atualizar, { passive: true });
+    window.addEventListener('resize', atualizar);
+    window.addEventListener('load', atualizar);
+    window.addEventListener('pageshow', atualizar);
+    [300, 1000, 2500].forEach(function (ms) { setTimeout(atualizar, ms); });
+    atualizar();
+  })();
+
+  /* ===== Espaço sob o menu fixo ===== */
+  function alturaMenu() {
+    var h = document.getElementById('calc-header');
+    var max = 0;
+    if (h) {
+      [h].concat([].slice.call(h.querySelectorAll('*')).slice(0, 60)).forEach(function (n) {
+        var cs = getComputedStyle(n);
+        if (cs.position !== 'fixed' && cs.position !== 'sticky') return;
+        var r = n.getBoundingClientRect();
+        if (r.height > 20 && r.height < 220 && r.top <= 8 && r.bottom > max) max = r.bottom;
+      });
+      if (!max) max = h.getBoundingClientRect().height;
+    }
+    return Math.ceil(max);
+  }
+  function ajustarTopo() {
+    var h = alturaMenu();
+    if (h >= 40) document.documentElement.style.setProperty('--hdr-h', h + 'px');
+  }
+
+  /* ===== Integração com o menu oficial (partner-header.js) ===== */
+  var _nNotif = 0;
+  function atualizarBadgesMenu(n) {
+    _nNotif = n || 0;
+    if (typeof window.mnSetBadge === 'function') window.mnSetBadge(_nNotif);
+  }
+  window.addEventListener('432up:abrir-notif', function () { $('btnSino').click(); });
+  window.addEventListener('432up:ir-aba', function (e) {
+    var mapa = { inicio: 0, evento: 1, calendario: 2, memorias: 3, perfil: 4 };
+    var k = e && e.detail;
+    if (mapa.hasOwnProperty(k)) { slideTo(mapa[k]); try { window.scrollTo({ top: 0, behavior: 'smooth' }); } catch (x) {} }
+  });
+  (function observarMenu() {
+    var t = null;
+    function rodar() { clearTimeout(t); t = setTimeout(function () { ajustarTopo(); atualizarBadgesMenu(_nNotif); }, 150); }
+    var el = document.getElementById('calc-header');
+    if (el && window.MutationObserver) new MutationObserver(rodar).observe(el, { childList: true, subtree: true });
+    window.addEventListener('resize', rodar);
+    window.addEventListener('load', rodar);
+    [200, 800, 2000].forEach(function (ms) { setTimeout(rodar, ms); });
+    rodar();
+  })();
+
+  var CLIENTE_ID = null;
+  async function chamar(acao, extra) {
+    var r = await SB.functions.invoke('cliente-area', { body: Object.assign({ acao: acao, cliente_id: CLIENTE_ID }, extra || {}) });
+    if (r.error || (r.data && r.data.erro)) {
+      var msg = (r.data && r.data.erro);
+      if (!msg && r.error && r.error.context && typeof r.error.context.json === 'function') {
+        try { var j = await r.error.context.json(); msg = j && j.erro; } catch (e) {}
+      }
+      return { erro: msg || 'Não foi possível concluir. Tente novamente.' };
+    }
+    return r.data;
+  }
+
+  function pedidoAtivo() {
+    return (dados.propostas || []).find(function (p) { return p.status !== 'cancelada'; }) || null;
+  }
+
+  function renderCadastro() {
+    var c = dados && dados.cadastro;
+    if (!c) {
+      $('semCadastro').style.display = 'block';
+      $('formCadastroWrap').style.display = 'none';
+      return;
+    }
+    $('semCadastro').style.display = 'none';
+    $('formCadastroWrap').style.display = 'block';
+    var primeiro = ((c.nome_razao || '').split(' ')[0]) || 'seja bem-vindo';
+    $('saudacao').textContent = 'Olá, ' + primeiro;
+    $('c_nome').value = c.nome_razao || '';
+    $('c_tel').value = c.telefone || '';
+    $('c_email').value = c.email || '';
+    $('c_cep').value = c.cep || '';
+    $('c_uf').value = c.uf || '';
+    $('c_log').value = c.logradouro || '';
+    $('c_num').value = c.numero || '';
+    $('c_comp').value = c.complemento || '';
+    $('c_bairro').value = c.bairro || '';
+    $('c_cidade').value = c.cidade || '';
+    setEdicao(false);
+  }
+
+  /* Dados em modo leitura até tocar em "Editar Dados" */
+  var editandoCadastro = false;
+  function setEdicao(on) {
+    editandoCadastro = !!on;
+    var f = $('formCadastro');
+    if (!f) return;
+    f.classList.toggle('editando', editandoCadastro);
+    f.querySelectorAll('input').forEach(function (i) { i.readOnly = !editandoCadastro; });
+    $('btnEditarDados').textContent = editandoCadastro ? 'Cancelar edição' : 'Editar Dados';
+    $('btnCadastro').disabled = !editandoCadastro;
+    $('perfilDica').textContent = editandoCadastro
+      ? 'Edite os campos e toque em Salvar Meus Dados.'
+      : 'Toque em Editar Dados para alterar suas informações.';
+  }
+  $('btnEditarDados').addEventListener('click', function () {
+    if (editandoCadastro) { renderCadastro(); return; }
+    setEdicao(true);
+    $('c_nome').focus();
+  });
+
+  function agendaDe(p) {
+    var pa = p.pagamento_agenda || {};
+    if (typeof pa === 'string') { try { pa = JSON.parse(pa); } catch (e) { pa = {}; } }
+    return pa;
+  }
+
+  function renderPedidos() {
+    var el = $('listaPedidos');
+    if (!dados.propostas || !dados.propostas.length) {
+      el.innerHTML = '<div class="vazio">Você ainda não tem pedidos conosco.</div>';
+      return;
+    }
+    el.innerHTML = dados.propostas.map(function (p) {
+      var cancelado = p.status === 'cancelada';
+      var assinado = !!p.assinado_em;
+      var comps = (dados.comprovantes || []).filter(function (c) { return c.proposta_id === p.id; });
+      var pa = agendaDe(p);
+      var parcelas = [['Sinal inicial', pa.data_entrada, pa.status_entrada, pa.valor_entrada],
+        ['Parcela', pa.data_parcela, pa.status_parcela, pa.valor_parcela],
+        ['Saldo', pa.data_saldo, pa.status_saldo, pa.valor_saldo]]
+        .filter(function (r) { return r[1]; })
+        .map(function (r) {
+          var pago = r[2] === 'pago';
+          return '<div class="dl-row"><div><span class="rot">' + E(r[0]) + ' · vence ' + DATA(r[1]) + '</span>' +
+            '<span class="val">' + (r[3] != null ? BRL(r[3]) : '—') + '</span></div>' +
+            '<div class="tags"><span class="tag ' + (pago ? 't-pago' : 't-pend') + '">' + (pago ? 'Pago' : 'Pendente') + '</span></div></div>';
+        }).join('');
+      var lista = comps.map(function (c) {
+        var st = c.confirmado || c.status === 'aprovado' || c.status === 'pago' ? 'aprovado'
+          : (c.status === 'recusado' ? 'recusado' : 'pendente');
+        var podeExcluir = !(c.confirmado || st === 'aprovado' || st === 'pago');
+        return '<div class="dl-row"><div>' +
+          '<span class="rot">' + E(ROTULO_CMP[c.tipo] || c.tipo) + ' · ' + DATA(c.data_pagamento) + '</span>' +
+          '<span class="val">' + BRL(c.valor) +
+          (c.arquivo_url ? ' <a href="' + E(c.arquivo_url) + '" target="_blank" rel="noopener" style="color:var(--gold);font-size:12px;font-weight:700">ver</a>' : '') +
+          '</span>' +
+          (st === 'recusado' && c.motivo_recusa ? '<div style="color:var(--alert);font-size:11px;margin-top:4px">Motivo: ' + E(c.motivo_recusa) + '. Exclua e envie de novo.</div>' : '') +
+          '</div>' +
+          '<div class="tags">' +
+            '<span class="tag ' + (CMP_CLASSE[st] || 't-pend') + '">' + E(ST[st] || c.status) + '</span>' +
+            (podeExcluir ? '<button type="button" class="x" aria-label="Excluir comprovante" title="Excluir comprovante" data-del-cmp="' + E(c.id) + '" data-prop="' + E(p.id) + '">' + ICON_X + '</button>' : '') +
+          '</div></div>';
+      }).join('') || '<div class="vazio">Nenhum comprovante enviado ainda.</div>';
+      /* Pendências desta proposta: contrato, pagamento e comprovante */
+      var pagPend = [['Sinal', pa.data_entrada, pa.status_entrada], ['Parcela', pa.data_parcela, pa.status_parcela], ['Saldo', pa.data_saldo, pa.status_saldo]]
+        .some(function (r) { return r[1] && r[2] !== 'pago'; });
+      var cmpPend = comps.some(function (c) { return !(c.confirmado || c.status === 'aprovado' || c.status === 'pago' || c.status === 'recusado'); });
+      var tags = '';
+      if (cancelado) tags = '<span class="tag t-rec">Cancelado</span>';
+      else {
+        tags += assinado ? '<span class="tag t-ok">Contrato assinado</span>' : '<span class="tag t-pend">Aguardando assinatura</span>';
+        if (pagPend) tags += '<span class="tag t-pend">Pagamento pendente</span>';
+        if (cmpPend) tags += '<span class="tag t-pend">Comprovante em análise</span>';
+        if (assinado && !pagPend && !cmpPend) tags += '<span class="tag t-pago">Em dia</span>';
+      }
+      var topo = '<div class="pedido-topo"><div>' +
+        '<div class="pedido-titulo">Proposta / Pedido #' + E(p.numero) + '</div>' +
+        '<div class="pill" style="margin-top:4px">' + E(p.tipo_evento || '') + ' · ' + DATA(p.data_evento) + ' · ' + BRL(p.valor_total) + '</div>' +
+        '</div><div class="pedido-tags">' + tags + '</div></div>';
+      if (cancelado) return '<div class="pedido-card">' + topo + '</div>';
+      var BASE_DOC = location.origin + '/B2B/';
+      var linkContrato = '<a class="' + (assinado ? 'btn-s' : 'btn-verde') + '" target="_blank" rel="noopener" href="' + BASE_DOC + 'visualizar-contrato.html?id=' + encodeURIComponent(p.id) + '">' + (assinado ? 'Ver contrato' : 'Ver e assinar contrato') + '</a>';
+      var linkProposta = '<a class="btn-s" target="_blank" rel="noopener" href="' + BASE_DOC + 'visualizar-proposta.html?id=' + encodeURIComponent(p.id) + '">Ver proposta</a>';
+      var btnCmp = '<button type="button" class="btn-s pedido-cmp" data-cmp="' + E(p.id) + '">+ Enviar comprovante</button>';
+      return '<div class="pedido-card">' + topo +
+        '<div class="sec-sep"></div>' +
+        '<div class="sec-lbl">Documentos</div><div class="pedido-acoes">' + linkContrato + linkProposta + '</div>' +
+        '<div class="sec-sep"></div>' +
+        '<div class="sec-lbl">Pagamentos</div>' +
+        '<div>' + (parcelas || '<div class="vazio">Sem parcelas agendadas.</div>') + '</div>' +
+        '<div class="sec-sep"></div>' +
+        '<div class="sec-lbl">Comprovantes</div>' +
+        '<div>' + lista + '</div>' +
+        '<div style="margin-top:12px">' + btnCmp + '</div></div>';
+    }).join('');
+
+    el.querySelectorAll('[data-pdf]').forEach(function (b) {
+      b.addEventListener('click', async function () {
+        var r = await chamar('contrato_pdf', { proposta_id: b.getAttribute('data-pdf') });
+        if (r.erro) return alert(r.erro);
+        if (r.url) window.open(r.url, '_blank');
+      });
+    });
+    el.querySelectorAll('[data-cmp]').forEach(function (b) {
+      b.addEventListener('click', function () { abrirModalCmp(b.getAttribute('data-cmp')); });
+    });
+    el.querySelectorAll('[data-del-cmp]').forEach(function (b) {
+      b.addEventListener('click', async function () {
+        if (!confirm('Excluir este comprovante?')) return;
+        var r = await SB.functions.invoke('gerenciar-comprovantes', {
+          body: { action: 'excluir', proposta_id: b.getAttribute('data-prop'), comprovante_id: b.getAttribute('data-del-cmp') }
+        });
+        if (r.error || (r.data && r.data.erro)) {
+          alert((r.data && r.data.erro) || 'Não foi possível excluir.');
+          return;
+        }
+        await carregar();
+      });
+    });
+  }
+
+  function renderGuia() {
+    var pedido = pedidoAtivo();
+    $('cardLinhaTempo').style.display = '';
+    var etapas = pedido ? (dados.etapas || []).filter(function (e) { return e.proposta_id === pedido.id; }) : [];
+    var lt = $('linhaTempo');
+    if (!pedido) {
+      lt.innerHTML = '<div class="vazio">Sua linha do tempo aparecerá aqui quando houver um evento.</div>';
+    } else if (!etapas.length) {
+      lt.innerHTML =
+        '<div class="etapa"><div class="nome mut">Boas-vindas</div><div class="hora">Em breve</div></div>' +
+        '<div class="etapa"><div class="nome mut">Setlist e preparativos</div><div class="hora">Em breve</div></div>' +
+        '<div class="etapa"><div class="nome mut">Dia do seu evento</div><div class="hora">Em breve</div></div>';
+    } else {
+      lt.innerHTML = etapas.map(function (e) {
+        var feita = e.situacao === 'concluida';
+        return '<div class="etapa ' + (feita ? 'feita' : '') + '">' +
+          '<div class="nome">' + E(e.nome) + '</div>' +
+          '<div class="hora">' + (e.hora ? E(e.hora) : 'Horário a confirmar') + '</div>' +
+          (feita
+            ? '<span class="ok">✓ Confirmada pela equipe</span>' + (e.concluida_em ? '<span class="conf">Em ' + DATA_HORA(e.concluida_em) + (e.concluida_por ? ' por ' + E(e.concluida_por) : '') + '</span>' : '')
+            : '<span class="aguarda">Aguardando equipe</span>') +
+          '</div>';
+      }).join('');
+    }
+    var obs = pedido ? (dados.observacoes || []).filter(function (o) { return o.proposta_id === pedido.id; }) : [];
+    var lo = $('listaObs');
+    if (!obs.length) lo.innerHTML = '<div class="vazio">Nenhuma instrução ainda.</div>';
+    else lo.innerHTML = obs.map(function (o) {
+      var minha = o.criado_por === 'cliente';
+      return '<div class="dl-row"><div>' +
+        '<span class="rot">' + (minha ? 'Você' : 'Equipe 432UP!') + '</span>' +
+        '<span class="val" style="font-size:14px;font-weight:500">' + E(o.texto) + '</span></div>' +
+        (minha ? '<div class="tags"><button type="button" class="x" aria-label="Remover instrução" title="Remover instrução" data-obs="' + E(o.id) + '">' + ICON_X + '</button></div>' : '') + '</div>';
+    }).join('');
+    lo.querySelectorAll('[data-obs]').forEach(function (b) {
+      b.addEventListener('click', async function () {
+        var r = await chamar('obs_remover', { id: b.getAttribute('data-obs') });
+        if (r.erro) return alert(r.erro);
+        await carregar();
+      });
+    });
+  }
+
+  $('btnVerCk').addEventListener('click', function () { slideTo(1); try { window.scrollTo({ top: 0, behavior: 'smooth' }); } catch (e) {} });
+
+  function renderCalendario() {
+    var pedidos = (dados.propostas || []).filter(function (p) { return p.status !== 'cancelada' && p.data_evento; });
+    var datas = {};
+    function pushDia(k, item) { if (!k) return; (datas[k] = datas[k] || []).push(item); }
+
+    pedidos.forEach(function (p) {
+      var k = String(p.data_evento).slice(0, 10);
+      pushDia(k, { kind: 'evento', prop: p, titulo: '#' + p.numero + ' · Dia do evento', sub: p.tipo_evento || '' });
+      if (p.assinado_em) {
+        pushDia(String(p.assinado_em).slice(0, 10), { kind: 'contrato', prop: p, titulo: '#' + p.numero + ' · Contrato assinado', sub: 'Documento formalizado' });
+      }
+      var pa = agendaDe(p);
+      [['entrada', pa.data_entrada, pa.status_entrada], ['saldo', pa.data_saldo, pa.status_saldo],
+       ['parcela', pa.data_parcela, pa.status_parcela]].forEach(function (row) {
+        var dia = row[1] ? String(row[1]).slice(0, 10) : null;
+        if (!dia) return;
+        var st = row[2] || 'pendente';
+        var label = row[0] === 'entrada' ? 'Entrada' : (row[0] === 'saldo' ? 'Saldo' : 'Parcela');
+        pushDia(dia, {
+          kind: 'pagamento', prop: p, titulo: label + ' · #' + p.numero,
+          sub: st === 'pago' ? 'Já pago' : 'Pagamento previsto — toque para enviar comprovante', status: st
+        });
+      });
+    });
+
+    (dados.comprovantes || []).forEach(function (c) {
+      if (!c.data_pagamento) return;
+      var p = pedidos.find(function (x) { return x.id === c.proposta_id; }) || { id: c.proposta_id, numero: '?' };
+      var st = (c.confirmado || c.status === 'aprovado' || c.status === 'pago') ? 'aprovado'
+        : (c.status === 'recusado' ? 'recusado' : 'pendente');
+      pushDia(String(c.data_pagamento).slice(0, 10), {
+        kind: 'comprovante', prop: p, comprovante: c,
+        titulo: (ROTULO_CMP[c.tipo] || 'Comprovante') + ' · #' + (p.numero || ''),
+        sub: BRL(c.valor) + ' · ' + (ST[st] || c.status || 'enviado'), status: st
+      });
+    });
+
+    var agora = new Date();
+    if (calAno == null) { calAno = agora.getFullYear(); calMes = agora.getMonth(); }
+    var y = calAno, m = calMes;
+    var MESES = ['janeiro','fevereiro','março','abril','maio','junho','julho','agosto','setembro','outubro','novembro','dezembro'];
+    $('calMesTitulo').textContent = MESES[m] + ' ' + y;
+
+    var primeiro = new Date(y, m, 1);
+    var inicio = new Date(y, m, 1 - primeiro.getDay());
+    var hojeStr = agora.getFullYear() + '-' + String(agora.getMonth() + 1).padStart(2, '0') + '-' + String(agora.getDate()).padStart(2, '0');
+    var html = ['Dom', 'Seg', 'Ter', 'Qua', 'Qui', 'Sex', 'Sáb'].map(function (h) {
+      return '<div class="hd">' + h + '</div>';
+    }).join('');
+    for (var i = 0; i < 42; i++) {
+      var dia = new Date(inicio);
+      dia.setDate(inicio.getDate() + i);
+      var iso = dia.getFullYear() + '-' + String(dia.getMonth() + 1).padStart(2, '0') + '-' + String(dia.getDate()).padStart(2, '0');
+      var fora = dia.getMonth() !== m;
+      var tem = (datas[iso] || []).some(function (it) { return FILTROS_CAL[it.kind] !== false; });
+      var tipos = ['evento', 'contrato', 'pagamento', 'comprovante'].filter(function (k) {
+        return FILTROS_CAL[k] !== false && (datas[iso] || []).some(function (it) { return it.kind === k; });
+      });
+      var cls = 'd' + (fora ? ' muted' : '') + (tem ? ' tem' : '') + (iso === hojeStr ? ' hoje' : '') + (iso === calDiaSel ? ' sel' : '');
+      html += '<div class="' + cls + '" data-iso="' + iso + '"' + (tipos.length ? ' style="--rgb:' + COR_CAL[tipos[0]].rgb + '"' : '') + '>' + dia.getDate() +
+        (tipos.length ? '<div class="dots">' + tipos.map(function (k) { return '<i style="background:' + COR_CAL[k].hex + '"></i>'; }).join('') + '</div>' : '') + '</div>';
+    }
+    $('calGrid').innerHTML = html;
+    $('calGrid').querySelectorAll('[data-iso]').forEach(function (el) {
+      el.addEventListener('click', function () {
+        calDiaSel = el.getAttribute('data-iso');
+        renderCalendario();
+        var lista = (datas[calDiaSel] || []).filter(function (it) { return FILTROS_CAL[it.kind] !== false; });
+        var box = $('calDiaDetalhe');
+        if (!lista.length) { box.innerHTML = '<div class="vazio">Nada neste dia para você.</div>'; return; }
+        box.innerHTML = lista.map(function (it) {
+          var p = it.prop || it;
+          if (it.kind === 'pagamento') {
+            return '<div class="dia-item" style="border-left-color:#D4AF37"><strong>' + E(it.titulo) + '</strong><small>' + E(it.sub) + '</small>' +
+              '<div><button type="button" class="btn btn-ambar" style="margin-top:8px" data-open-cmp="' + E(p.id) + '">Enviar comprovante</button></div></div>';
+          }
+          if (it.kind === 'comprovante') {
+            var c = it.comprovante || {};
+            var link = c.arquivo_url ? ' · <a href="' + E(c.arquivo_url) + '" target="_blank" rel="noopener" style="color:var(--gold)">Ver comprovante</a>' : '';
+            return '<div class="dia-item" style="border-left-color:#F5D061"><strong>' + E(it.titulo) + '</strong><small>' + E(it.sub) + link + '</small>' +
+              '<div><button type="button" class="btn-s btn-ambar-s" data-open-cmp="' + E(p.id) + '">Enviar outro</button></div></div>';
+          }
+          if (it.kind === 'contrato') {
+            return '<div class="dia-item" style="border-left-color:#3b82f6"><strong>' + E(it.titulo) + '</strong><small>' + E(it.sub) + '</small>' +
+              '<div><a class="btn-s" target="_blank" rel="noopener" href="' + location.origin + '/B2B/visualizar-contrato.html?id=' + encodeURIComponent(p.id) + '">Ver contrato</a></div></div>';
+          }
+          var etapas = (dados.etapas || []).filter(function (e) { return e.proposta_id === p.id; });
+          var pend = etapas.filter(function (e) { return e.situacao === 'pendente'; }).length;
+          var ck = !etapas.length ? 'Sem checklist ainda' : (pend === 0 ? 'Checklist completo' : pend + ' etapa(s) pendente(s)');
+          return '<div class="dia-item"><strong>' + E(it.titulo) + '</strong>' +
+            '<small>' + DATA(p.data_evento) + (p.assinado_em ? ' · Contrato assinado' : ' · Aguardando assinatura') + '</small>' +
+            '<small>' + E(ck) + (p.valor_total != null ? ' · ' + BRL(p.valor_total) : '') + '</small></div>';
+        }).join('');
+        box.querySelectorAll('[data-open-cmp]').forEach(function (b) {
+          b.addEventListener('click', function () { abrirModalCmp(b.getAttribute('data-open-cmp')); });
+        });
+        box.querySelectorAll('[data-pdf]').forEach(function (b) {
+          b.addEventListener('click', async function () {
+            var r = await chamar('contrato_pdf', { proposta_id: b.getAttribute('data-pdf') });
+            if (r.erro) return alert(r.erro);
+            if (r.url) window.open(r.url, '_blank');
+          });
+        });
+      });
+    });
+
+    $('calSub').textContent = pedidos.length
+      ? pedidos.length + ' evento(s) com data · toque no dia para ver o detalhe'
+      : 'Quando houver data de evento no pedido, ela aparece destacada aqui.';
+    $('calLista').innerHTML = pedidos.length
+      ? pedidos.map(function (p) {
+          return '<div class="dl-row"><div><span class="rot">Pedido #' + E(p.numero) + '</span>' +
+            '<span class="val">' + E(p.tipo_evento || 'Evento') + '</span></div>' +
+            '<div class="tags"><span class="pill">' + DATA(p.data_evento) + '</span></div></div>';
+        }).join('')
+      : '<div class="vazio">Nenhum evento com data ainda.</div>';
+  }
+
+  (function bindCalFiltros() {
+    var box = $('calFiltros');
+    if (!box) return;
+    function pintar(b, id) {
+      var on = FILTROS_CAL[id] !== false;
+      b.classList.toggle('on', on);
+      b.setAttribute('aria-pressed', on ? 'true' : 'false');
+    }
+    box.querySelectorAll('button[data-filtro]').forEach(function (b) {
+      var id = b.getAttribute('data-filtro');
+      pintar(b, id);
+      b.addEventListener('click', function () {
+        FILTROS_CAL[id] = FILTROS_CAL[id] === false;
+        pintar(b, id);
+        try { localStorage.setItem('432up_cli_cal_filtros', JSON.stringify(FILTROS_CAL)); } catch (e) {}
+        if (dados) renderCalendario();
+      });
+    });
+  })();
+
+  $('calPrev').addEventListener('click', function () {
+    calMes--; if (calMes < 0) { calMes = 11; calAno--; }
+    if (dados) renderCalendario();
+  });
+  $('calNext').addEventListener('click', function () {
+    calMes++; if (calMes > 11) { calMes = 0; calAno++; }
+    if (dados) renderCalendario();
+  });
+
+  var _cdTimers = [];
+  function contagemTexto(el, iso) {
+    var alvo = parseDataLocal(iso);
+    if (!alvo) { el.textContent = '—'; return; }
+    var agora = Date.now();
+    var noon = alvo.getTime();
+    var meiaNoite = new Date(alvo.getFullYear(), alvo.getMonth(), alvo.getDate(), 0, 0, 0).getTime();
+    var diff = noon - agora;
+    if (diff <= 0) {
+      var passou = Math.floor((agora - noon) / 86400000);
+      el.textContent = passou <= 0 ? 'É hoje!' : ('Há ' + passou + ' dia' + (passou > 1 ? 's' : ''));
+      return;
+    }
+    var dias = Math.max(0, Math.floor((meiaNoite - agora) / 86400000));
+    var horas = Math.floor((diff % 86400000) / 3600000);
+    var mins = Math.floor((diff % 3600000) / 60000);
+    if (dias > 0) el.textContent = dias + 'd ' + horas + 'h ' + mins + 'm';
+    else if (horas > 0) el.textContent = horas + 'h ' + mins + 'm';
+    else el.textContent = mins + ' min';
+  }
+
+  function renderInicio() {
+    var car = $('carrossel');
+    var dots = $('carDots');
+    var pedidos = (dados.propostas || []).filter(function (p) {
+      return p.status !== 'cancelada' && p.data_evento;
+    }).sort(function (a, b) { return String(a.data_evento).localeCompare(String(b.data_evento)); });
+    var hoje = new Date(); hoje.setHours(0, 0, 0, 0);
+    var lista = pedidos.filter(function (p) {
+      var d = parseDataLocal(String(p.data_evento).slice(0, 10));
+      return d && d >= hoje;
+    });
+    if (!lista.length && pedidos.length) lista = pedidos.slice(-1);
+    car._lista = lista;
+
+    _cdTimers.forEach(function (t) { clearInterval(t); });
+    _cdTimers = [];
+
+    if (!lista.length) {
+      car.innerHTML = '<div class="slide vazio">Nenhum evento com data marcada ainda.</div>';
+      dots.style.display = 'none';
+    } else {
+      car.innerHTML = lista.map(function (p) {
+        return '<div class="slide">' +
+          '<p style="margin:0;font-size:16px"><strong>Pedido #' + E(p.numero) + '</strong> · ' + E(p.tipo_evento || 'Evento') + '</p>' +
+          '<div class="pill" style="margin-top:6px">' + DATA(p.data_evento) +
+          (p.valor_total != null ? ' · ' + BRL(p.valor_total) : '') + '</div>' +
+          '<div style="margin-top:16px"><div class="rot" style="margin-bottom:4px">Faltam apenas</div>' +
+          '<div class="hero-num" data-cd="' + E(String(p.data_evento).slice(0, 10)) + '">—</div></div>' +
+          '</div>';
+      }).join('');
+      car.querySelectorAll('[data-cd]').forEach(function (el) {
+        var tick = function () { contagemTexto(el, el.getAttribute('data-cd')); };
+        tick();
+        _cdTimers.push(setInterval(tick, 30000));
+      });
+      dots.innerHTML = lista.map(function (p, i) { return '<i' + (i === 0 ? ' class="on"' : '') + '></i>'; }).join('');
+      dots.style.display = lista.length > 1 ? 'flex' : 'none';
+    }
+
+    if (!car._bound) {
+      car._bound = true;
+      car.addEventListener('scroll', function () {
+        var w = car.clientWidth || 1;
+        var i = Math.round(car.scrollLeft / w);
+        dots.querySelectorAll('i').forEach(function (d, k) { d.classList.toggle('on', k === i); });
+        if (car._lista && car._lista[i]) renderMiniCk(car._lista[i]);
+      }, { passive: true });
+    }
+
+    var total = (dados.propostas || []).length;
+    var ativos = (dados.propostas || []).filter(function (p) { return p.status !== 'cancelada'; }).length;
+    var comps = dados.comprovantes || [];
+    var pend = comps.filter(function (c) { return c.status === 'pendente'; }).length;
+    var ok = comps.filter(function (c) { return c.status === 'aprovado' || c.status === 'pago'; }).length;
+    var etapas = dados.etapas || [];
+    var etPend = etapas.filter(function (e) { return e.situacao === 'pendente'; }).length;
+    $('resumoRapido').innerHTML =
+      '<div class="dl">' +
+        '<div class="dl-item"><span class="rot">Pedidos ativos</span><span class="val">' + ativos + ' de ' + total + '</span></div>' +
+        '<div class="dl-item"><span class="rot">Comprovantes</span><span class="val">' + ok + ' ok' + (pend ? ' · ' + pend + ' em análise' : '') + '</span></div>' +
+        '<div class="dl-item dl-full"><span class="rot">Etapas do checklist</span><span class="val">' +
+          (etapas.length ? (etPend === 0 ? 'todas confirmadas' : etPend + ' pendente' + (etPend > 1 ? 's' : '')) : 'ainda sem etapas') +
+        '</span></div>' +
+      '</div>';
+    renderMiniCk(lista.length ? lista[0] : null);
+  }
+
+  function etapasDe(p) {
+    return p ? (dados.etapas || []).filter(function (e) { return e.proposta_id === p.id; }) : [];
+  }
+  function renderMiniCk(p) {
+    var card = $('cardMiniCk');
+    var et = etapasDe(p);
+    if (!p || !p.assinado_em || !et.length) { card.style.display = 'none'; return; }
+    card.style.display = '';
+    var achouProx = false;
+    $('miniCk').innerHTML = et.map(function (e, i) {
+      var feita = e.situacao === 'concluida';
+      var cls = feita ? 'feita' : (!achouProx ? 'prox' : '');
+      if (!feita) achouProx = true;
+      return (i ? '<span class="mk-seta" aria-hidden="true">›</span>' : '') +
+        '<span class="mk ' + cls + '">' + (feita ? '✓ ' : '') + E(e.nome) + '</span>';
+    }).join('');
+    var ok = et.filter(function (e) { return e.situacao === 'concluida'; }).length;
+    $('miniCkRes').textContent = ok + ' de ' + et.length + ' etapas confirmadas';
+    var atual = $('miniCk').querySelector('.mk.prox');
+    if (atual) {
+      var cont = $('miniCk');
+      cont.scrollLeft = atual.getBoundingClientRect().left - cont.getBoundingClientRect().left + cont.scrollLeft - (cont.clientWidth - atual.offsetWidth) / 2;
+    }
+  }
+  function renderResumoEvento() {
+    var p = pedidoAtivo();
+    var box = $('resumoEvt');
+    var tit = $('resumoTitulo');
+    if (!p) {
+      tit.textContent = 'Resumo do pedido';
+      box.className = 'vazio';
+      box.innerHTML = 'Quando houver um pedido, o resumo do evento aparece aqui.';
+      return;
+    }
+    tit.textContent = 'Resumo do pedido #' + p.numero;
+    var cli = (dados.cadastro && dados.cadastro.nome_razao) || '';
+    function l(r, v) { return v ? '<div class="dl-item"><span class="rot">' + r + '</span><span class="val">' + E(v) + '</span></div>' : ''; }
+    box.className = 'dl';
+    box.innerHTML =
+      l('Cliente', cli) + l('Tipo', p.tipo_evento) +
+      l('Local', p.local_evento) + l('Contato', (dados.cadastro && dados.cadastro.email) || '') +
+      l('Data', p.data_evento ? DATA(p.data_evento) : '') +
+      '<div class="dl-item"><span class="rot">Contrato</span><span class="tag ' + (p.assinado_em ? 't-ok' : 't-pend') + '">' + (p.assinado_em ? 'Assinado' : 'Aguardando assinatura') + '</span></div>';
+  }
+  function renderEquipe() {
+    var p = pedidoAtivo();
+    $('cardEquipe').style.display = '';
+    var box = $('listaEquipe');
+    var eq = p ? (dados.equipe || []).filter(function (m) { return m.proposta_id === p.id; }) : [];
+    if (!eq.length) {
+      box.className = 'vazio';
+      box.textContent = p ? 'A equipe técnica do seu evento aparece aqui assim que for confirmada.' : 'Sua equipe técnica aparecerá aqui quando houver um evento.';
+      $('btnListaEquipe').style.display = 'none';
+      return;
+    }
+    box.className = '';
+    $('btnListaEquipe').style.display = 'inline-block';
+    box.innerHTML = eq.map(function (m) {
+      var nome = m.nome || m.nome_completo || '';
+      var foto = m.avatar_url || m.foto_url || '';
+      var funcao = m.funcao || m.papel || '';
+      return '<div class="eq-item"><div class="eq-foto"' + (foto ? ' style="background-image:url(\'' + E(foto) + '\')"' : '') + '>' +
+        (foto ? '' : E((nome.trim()[0] || '?').toUpperCase())) + '</div>' +
+        '<div class="txt">' + (funcao ? '<span class="rot">' + E(funcao) + '</span>' : '') +
+        '<span class="val">' + E(nome) + '</span></div></div>';
+    }).join('');
+  }
+
+  function montarListaWhatsApp() {
+    var p = pedidoAtivo();
+    var msg = $('msgEquipe');
+    var eq = (dados.equipe || []).filter(function (m) { return !m.proposta_id || !p || m.proposta_id === p.id; });
+    msg.className = 'msg';
+    if (!eq.length) { msg.textContent = 'Nenhum integrante na equipe ainda.'; return; }
+    var c = dados.cadastro || {};
+    var tel = String(c.telefone || '').replace(/\D/g, '');
+    if (!tel) { msg.textContent = 'Telefone da cliente não cadastrado.'; return; }
+    if (tel.length <= 11) tel = '55' + tel;
+    var primeiro = (c.nome_razao || '').split(' ')[0];
+    var texto = 'Olá' + (primeiro ? ', *' + primeiro + '*' : '') + '! Segue a equipe técnica do seu evento' +
+      (p && p.data_evento ? ' (' + DATA(p.data_evento) + ')' : '') + ':\n\n';
+    eq.forEach(function (m) {
+      var nome = m.nome_completo || m.nome || '';
+      var doc = String(m.cpf_cnpj || m.cpf || '');
+      var digitos = doc.replace(/\D/g, '');
+      texto += '*' + nome + '*\n';
+      if (m.funcao || m.papel) texto += 'Função: ' + (m.funcao || m.papel) + '\n';
+      if (doc) texto += (digitos.length === 14 ? 'CNPJ: ' : 'CPF: ') + doc + '\n';
+      if (m.rg) texto += 'RG: ' + m.rg + '\n';
+      if (m.data_nascimento) texto += 'Data de nascimento: ' + DATA(m.data_nascimento) + '\n';
+      var fone = String(m.whatsapp || m.telefone || '').replace(/\D/g, '');
+      if (fone) texto += 'WhatsApp: ' + fone + '\n';
+      texto += '\n';
+    });
+    window.open('https://wa.me/' + tel + '?text=' + encodeURIComponent(texto.trim()), '_blank');
+    msg.className = 'msg ok';
+    msg.textContent = 'WhatsApp aberto com a lista.';
+  }
+  $('btnListaEquipe').addEventListener('click', montarListaWhatsApp);
+
+  function renderAvatar() {
+    var url = (dados && (dados.avatar_url || (dados.cadastro && dados.cadastro.avatar_url))) || null;
+    var prev = $('avatarPreview');
+    var ph = $('avatarPlaceholder');
+    if (url) { prev.style.backgroundImage = 'url(' + url + ')'; ph.style.display = 'none'; }
+    else { prev.style.backgroundImage = ''; ph.style.display = ''; }
+  }
+
+  var LISTA_LB = [], LB_I = 0, LB_ANIM = false, PT = null, SUPRIMIR_CLIQUE = false;
+
+  function midia(f) {
+    if (f.tipo === 'video') {
+      var poster = f.poster_url ? ' poster="' + E(f.poster_url) + '"' : '';
+      return '<video src="' + E(f.url) + '#t=0.01"' + poster + ' muted playsinline preload="metadata"></video><span class="foto-play">▶</span>';
+    }
+    return '<img src="' + E(f.url) + '" alt="' + E(f.legenda || 'Foto do evento') + '" loading="lazy">';
+  }
+
+  function renderFotos() {
+    var fotos = ((dados && dados.fotos) || []).filter(function (f) { return f.visivel !== false; });
+    var porPos = {};
+    fotos.forEach(function (f) {
+      if (!f.na_linha && f.posicao >= 1 && f.posicao <= 6 && !porPos[f.posicao]) porPos[f.posicao] = f;
+    });
+    var linhas = fotos.filter(function (f) { return f.na_linha; });
+    var principais = [];
+    for (var n = 1; n <= 6; n++) if (porPos[n]) principais.push(porPos[n]);
+    LISTA_LB = principais.concat(linhas);
+    var box = $('fotosReais'), ex = $('fotosExemplo'), card = $('cardLinha'), lin = $('fotosLinha');
+    if (!principais.length && !linhas.length) {
+      box.style.display = 'none'; box.innerHTML = ''; ex.style.display = ''; card.style.display = 'none';
+      return;
+    }
+    if (principais.length) {
+      var html = '';
+      for (var m = 1; m <= 6; m++) {
+        var f2 = porPos[m];
+        html += f2
+          ? '<button type="button" class="foto-real s' + m + '" data-k="' + principais.indexOf(f2) + '">' + midia(f2) + '</button>'
+          : '<div class="foto-real vazio s' + m + '" aria-hidden="true">' + CAMERA_SVG + '</div>';
+      }
+      box.innerHTML = html;
+      box.style.display = '';
+    } else {
+      box.style.display = 'none'; box.innerHTML = '';
+    }
+    ex.style.display = principais.length ? 'none' : '';
+    if (linhas.length) {
+      lin.innerHTML = linhas.map(function (f, j) {
+        var k = principais.length + j;
+        return '<button type="button" class="linha-item" data-k="' + k + '">' +
+          '<span class="linha-media">' + midia(f) + '</span>' +
+          '<span class="linha-txt">' +
+            (f.legenda ? '<span class="linha-tit">' + E(f.legenda) + '</span>' : '') +
+            (f.descricao ? '<span class="linha-desc">' + E(f.descricao) + '</span>' : '') +
+          '</span></button>';
+      }).join('');
+      card.style.display = '';
+    } else {
+      lin.innerHTML = ''; card.style.display = 'none';
+    }
+  }
+
+  function infoLb() {
+    var f = LISTA_LB[LB_I];
+    if (!f) return;
+    $('fotoLbLegenda').innerHTML =
+      (f.legenda ? '<strong class="lb-tit">' + E(f.legenda) + '</strong>' : '') +
+      (f.descricao ? '<span class="lb-desc">' + E(f.descricao) + '</span>' : '');
+    $('fotoLbContador').textContent = (LB_I + 1) + ' / ' + LISTA_LB.length;
+    $('btnFotoAnt').style.visibility = LB_I > 0 ? '' : 'hidden';
+    $('btnFotoProx').style.visibility = LB_I < LISTA_LB.length - 1 ? '' : 'hidden';
+  }
+
+  function slideEl(i) {
+    var f = LISTA_LB[i];
+    var d = document.createElement('div');
+    d.className = 'lb-slide';
+    d.style.transform = 'translateX(0)';
+    d.innerHTML = f.tipo === 'video'
+      ? '<video src="' + E(f.url) + '"' + (f.poster_url ? ' poster="' + E(f.poster_url) + '"' : '') + ' controls playsinline preload="auto"></video>'
+      : '<img src="' + E(f.url) + '" alt="" draggable="false">';
+    return d;
+  }
+
+  // Pré-carrega as vizinhas (anterior e próxima) para trocar rápido
+  function preload(i) {
+    [i - 1, i + 1].forEach(function (k) {
+      var f = LISTA_LB[k];
+      if (f && f.tipo !== 'video') { var im = new Image(); im.src = f.url; }
+    });
+  }
+
+  function abrirLb(i) {
+    LB_I = i; LB_ANIM = false;
+    var st = $('lbStage');
+    st.innerHTML = '';
+    st.appendChild(slideEl(i));
+    infoLb(); preload(i);
+    $('modalFoto').classList.add('on');
+  }
+
+  function fecharLb() {
+    $('modalFoto').classList.remove('on');
+    $('lbStage').innerHTML = '';
+    PT = null;
+  }
+
+  // Troca com deslize (botões, clique nas laterais, teclado e arrastar)
+  function irPara(novo, dir) {
+    if (LB_ANIM || novo < 0 || novo >= LISTA_LB.length) return;
+    LB_ANIM = true;
+    var st = $('lbStage');
+    var atual = st.querySelector('.lb-slide');
+    var nova = slideEl(novo);
+    nova.style.transform = 'translateX(' + (dir * 100) + '%)';
+    st.appendChild(nova);
+    void nova.offsetWidth;
+    if (atual) atual.style.transform = 'translateX(' + (-dir * 100) + '%)';
+    nova.style.transform = 'translateX(0)';
+    setTimeout(function () {
+      if (atual) atual.remove();
+      LB_I = novo; infoLb(); preload(novo); LB_ANIM = false;
+    }, 320);
+  }
+
+  ['fotosReais', 'fotosLinha'].forEach(function (id) {
+    $(id).addEventListener('click', function (e) {
+      var b = e.target.closest('[data-k]');
+      if (b) abrirLb(+b.dataset.k);
+    });
+  });
+
+  $('btnFotoAnt').addEventListener('click', function () { irPara(LB_I - 1, -1); });
+  $('btnFotoProx').addEventListener('click', function () { irPara(LB_I + 1, 1); });
+  $('btnFotoFechar').addEventListener('click', fecharLb);
+  $('modalFoto').addEventListener('click', function (e) { if (e.target === this) fecharLb(); });
+
+  document.addEventListener('keydown', function (e) {
+    if (!$('modalFoto').classList.contains('on')) return;
+    if (e.key === 'Escape') fecharLb();
+    if (e.key === 'ArrowLeft') irPara(LB_I - 1, -1);
+    if (e.key === 'ArrowRight') irPara(LB_I + 1, 1);
+  });
+
+  // Arrastar: a foto acompanha o dedo/mouse e a vizinha entra deslizando
+  var stage = $('lbStage');
+  stage.addEventListener('pointerdown', function (e) {
+    if (LB_ANIM || e.target.tagName === 'VIDEO') return;
+    SUPRIMIR_CLIQUE = false;
+    PT = { x: e.clientX, dx: 0, nb: null, nbIdx: -1, dir: 0, moveu: false, atual: this.querySelector('.lb-slide'), W: this.clientWidth };
+    try { this.setPointerCapture(e.pointerId); } catch (err) {}
+  });
+  stage.addEventListener('pointermove', function (e) {
+    if (!PT || !PT.atual) return;
+    var dx = e.clientX - PT.x;
+    if (Math.abs(dx) > 6) PT.moveu = true;
+    PT.dx = dx;
+    var dir = dx < 0 ? 1 : -1;
+    var alvo = LB_I + dir;
+    PT.atual.style.transition = 'none';
+    PT.atual.style.transform = 'translateX(' + dx + 'px)';
+    if (alvo >= 0 && alvo < LISTA_LB.length) {
+      if (PT.nbIdx !== alvo) {
+        if (PT.nb) PT.nb.remove();
+        PT.nb = slideEl(alvo);
+        PT.nb.style.transition = 'none';
+        this.appendChild(PT.nb);
+        PT.nbIdx = alvo; PT.dir = dir;
+      }
+      PT.nb.style.transform = 'translateX(' + (dx + dir * PT.W) + 'px)';
+    } else if (PT.nb) {
+      PT.nb.remove(); PT.nb = null; PT.nbIdx = -1;
+    }
+  });
+  function soltar() {
+    if (!PT) return;
+    var p = PT;
+    PT = null;
+    if (!p.atual) return;
+    p.atual.style.transition = '';
+    if (p.nb) p.nb.style.transition = '';
+    if (p.moveu) SUPRIMIR_CLIQUE = true;
+    if (p.nb && Math.abs(p.dx) > p.W * 0.2) {
+      var novo = p.nbIdx;
+      LB_ANIM = true;
+      p.atual.style.transform = 'translateX(' + (-p.dir * 100) + '%)';
+      p.nb.style.transform = 'translateX(0)';
+      setTimeout(function () {
+        p.atual.remove();
+        LB_I = novo; infoLb(); preload(novo); LB_ANIM = false;
+      }, 320);
+    } else {
+      p.atual.style.transform = 'translateX(0)';
+      if (p.nb) {
+        p.nb.style.transform = 'translateX(' + (p.dir * 100) + '%)';
+        setTimeout(function () { if (p.nb) p.nb.remove(); }, 320);
+      }
+    }
+  }
+  stage.addEventListener('pointerup', soltar);
+  stage.addEventListener('pointercancel', soltar);
+
+  // Clique nas laterais também troca de foto
+  stage.addEventListener('click', function (e) {
+    if (SUPRIMIR_CLIQUE) { SUPRIMIR_CLIQUE = false; return; }
+    if (e.target.tagName === 'VIDEO') return;
+    var r = this.getBoundingClientRect();
+    var x = e.clientX - r.left;
+    if (x < r.width * 0.3) irPara(LB_I - 1, -1);
+    else if (x > r.width * 0.7) irPara(LB_I + 1, 1);
+  });
+
+  function render() {
+    renderFotos();
+    renderCadastro();
+    renderPedidos();
+    renderInicio();
+    renderGuia();
+    renderResumoEvento();
+    renderEquipe();
+    renderCalendario();
+    renderAvatar();
+  }
+
+  async function carregar() {
+    dados = await chamar('dados');
+    if (dados.erro) { $('listaPedidos').textContent = dados.erro; return; }
+    render();
+    atualizarSinoAvisos();
+    sincronizarAvisos();
+  }
+
+  $('formCadastro').addEventListener('submit', async function (e) {
+    e.preventDefault();
+    $('btnCadastro').disabled = true;
+    $('msgCadastro').className = 'msg';
+    $('msgCadastro').textContent = '';
+    var r = await chamar('salvar_cadastro', {
+      campos: {
+        nome_razao: $('c_nome').value, telefone: $('c_tel').value, email: $('c_email').value,
+        cep: $('c_cep').value, uf: $('c_uf').value, logradouro: $('c_log').value,
+        numero: $('c_num').value, complemento: $('c_comp').value,
+        bairro: $('c_bairro').value, cidade: $('c_cidade').value
+      }
+    });
+    $('btnCadastro').disabled = false;
+    if (r.erro) { $('msgCadastro').textContent = r.erro; return; }
+    $('msgCadastro').className = 'msg ok';
+    $('msgCadastro').textContent = 'Dados salvos.';
+    await carregar();
+  });
+
+  $('formObs').addEventListener('submit', async function (e) {
+    e.preventDefault();
+    var txt = $('obsNova').value.trim();
+    if (!txt) return;
+    var ped = pedidoAtivo();
+    if (!ped) { $('msgObs').className = 'msg'; $('msgObs').textContent = 'Você ainda não tem um pedido ativo.'; return; }
+    $('btnObs').disabled = true;
+    var r = await chamar('obs_adicionar', { texto: txt, proposta_id: ped.id });
+    $('btnObs').disabled = false;
+    if (r.erro) { $('msgObs').className = 'msg'; $('msgObs').textContent = r.erro; return; }
+    $('obsNova').value = '';
+    $('msgObs').className = 'msg ok';
+    $('msgObs').textContent = 'Instrução enviada.';
+    await carregar();
+  });
+
+  function b64ToU8(b64) {
+    var pad = '='.repeat((4 - (b64.length % 4)) % 4);
+    var base = (b64 + pad).replace(/-/g, '+').replace(/_/g, '/');
+    var raw = atob(base);
+    var out = new Uint8Array(raw.length);
+    for (var i = 0; i < raw.length; i++) out[i] = raw.charCodeAt(i);
+    return out;
+  }
+
+  /* Avisa o menu (partner-header.js) se o sino pendurado deve aparecer:
+     app instalado + permissão ainda não decidida + pedido vinculado + chave configurada.
+     Não exige contrato assinado: qualquer cliente com acesso à área pode receber avisos. */
+  function pedidoParaAvisos() {
+    var lista = (dados && dados.propostas) || [];
+    return lista.find(function (p) { return p.status !== 'cancelada' && p.assinado_em; }) ||
+      lista.find(function (p) { return p.status !== 'cancelada'; }) || null;
+  }
+  function atualizarSinoAvisos() {
+    var ok = false;
+    try {
+      var pedido = pedidoParaAvisos();
+      var chave = ((typeof CFG !== 'undefined' && (CFG.VAPID_PUBLIC_KEY || CFG.VAPID_PUBLIC)) || '').trim();
+      var instalado = (window.matchMedia && window.matchMedia('(display-mode: standalone)').matches) || window.navigator.standalone === true;
+      ok = !!(pedido && chave && instalado && 'Notification' in window && 'PushManager' in window &&
+        'serviceWorker' in navigator && Notification.permission === 'default');
+    } catch (e) { ok = false; }
+    if (typeof window.mnSetPushPendente === 'function') window.mnSetPushPendente(ok);
+  }
+  window.addEventListener('432up:ativar-avisos', function () { ativarAvisos(true); });
+
+  /* Service worker do cliente (/cliente/sw.js); se ele não existir no servidor, usa o do portal (/B2B/sw.js).
+     Espera o worker ativar pela própria inscrição (navigator.serviceWorker.ready não serve se o escopo não cobre esta página). */
+  function swAtivo(reg) {
+    return new Promise(function (ok) {
+      var sw = reg.installing || reg.waiting || reg.active;
+      if (!sw || sw.state === 'activated') return ok();
+      var t = setTimeout(ok, 8000);
+      sw.addEventListener('statechange', function () {
+        if (sw.state === 'activated') { clearTimeout(t); ok(); }
+      });
+    });
+  }
+  async function registrarSW() {
+    var reg;
+    try {
+      reg = await navigator.serviceWorker.register('/cliente/sw.js', { scope: '/cliente/' });
+    } catch (e) {
+      reg = await navigator.serviceWorker.register('/B2B/sw.js', { scope: '/B2B/' });
+    }
+    await swAtivo(reg);
+    return reg;
+  }
+
+  /* Quem já liberou os avisos: reafirma, sem perguntar nada, o vínculo do aparelho com o pedido
+     (cobre o caso de o contrato ser assinado depois ou de mudar o pedido principal) */
+  async function sincronizarAvisos() {
+    try {
+      if (!('Notification' in window) || Notification.permission !== 'granted') return;
+      if (!('serviceWorker' in navigator) || !('PushManager' in window)) return;
+      var pedido = pedidoParaAvisos();
+      if (!pedido) return;
+      var reg = (await navigator.serviceWorker.getRegistration('/cliente/')) || (await navigator.serviceWorker.getRegistration('/B2B/'));
+      if (!reg) return;
+      var sub = await reg.pushManager.getSubscription();
+      if (!sub) return;
+      var marca = '432up_push_sync_' + pedido.id + (pedido.assinado_em ? '_s' : '');
+      if (sessionStorage.getItem(marca) === '1') return;
+      var j = sub.toJSON();
+      var r = await SB.functions.invoke('registrar-push-cliente', {
+        body: { proposta_id: pedido.id, subscription: { endpoint: j.endpoint, keys: j.keys } }
+      });
+      if (!(r.error || (r.data && r.data.erro))) sessionStorage.setItem(marca, '1');
+    } catch (e) {}
+  }
+
+  async function ativarAvisos(doSino) {
+    var m = $('msgAvisos');
+    m.className = 'msg';
+    var pedido = pedidoParaAvisos();
+    if (!pedido) { m.textContent = 'Ainda não há um pedido vinculado ao seu acesso para ativar os avisos.'; if (doSino === true) alert(m.textContent); return; }
+    var VAPID_PUBLIC = (CFG.VAPID_PUBLIC_KEY || CFG.VAPID_PUBLIC || '').trim();
+    if (!VAPID_PUBLIC) { m.textContent = 'Avisos ainda não configurados neste ambiente.'; return; }
+    if (!('serviceWorker' in navigator) || !('PushManager' in window)) {
+      m.textContent = 'Este navegador não recebe avisos.';
+      return;
+    }
+    $('btnAvisos').disabled = true;
+    m.textContent = 'Ativando…';
+    try {
+      var perm = await Notification.requestPermission();
+      if (perm !== 'granted') { m.textContent = 'Permissão negada.'; $('btnAvisos').disabled = false; atualizarSinoAvisos(); return; }
+      var reg = await registrarSW();
+      var sub = await reg.pushManager.getSubscription() ||
+        await reg.pushManager.subscribe({ userVisibleOnly: true, applicationServerKey: b64ToU8(VAPID_PUBLIC) });
+      var j = sub.toJSON();
+      var r = await SB.functions.invoke('registrar-push-cliente', {
+        body: { proposta_id: pedido.id, subscription: { endpoint: j.endpoint, keys: j.keys } }
+      });
+      if (r.error || (r.data && r.data.erro)) throw new Error((r.data && r.data.erro) || 'Falha ao registrar avisos.');
+      m.className = 'msg ok';
+      m.textContent = 'Avisos ativados neste aparelho.';
+      $('btnAvisos').style.display = 'none';
+      atualizarSinoAvisos();
+    } catch (err) {
+      m.textContent = err.message || 'Não foi possível ativar os avisos.';
+      $('btnAvisos').disabled = false;
+      if (doSino === true) alert(m.textContent);
+      atualizarSinoAvisos();
+    }
+  }
+  $('btnAvisos').addEventListener('click', function () { ativarAvisos(false); });
+
+  $('btnSair').addEventListener('click', async function () {
+    try {
+      ['432up_login_done', '432up_is_logged', '432up_is_cliente', '432up_is_admin', '432up_is_parceiro', '432up_cli_redirect', '432up_auto_rota']
+        .forEach(function (k) { sessionStorage.removeItem(k); });
+      localStorage.removeItem('432up_rota');
+    } catch (e) {}
+    try { await SB.auth.signOut(); } catch (e) {}
+    location.href = '../B2B/login.html?saiu=1';
+  });
+
+  function initSliders(root) {
+    root.querySelectorAll('.slider').forEach(function (s) {
+      var knob = s.querySelector('.slider-knob');
+      var fill = s.querySelector('.slider-fill');
+      var arrastando = false, x0 = 0, max = 0, pos = 0;
+      function mover(p) {
+        pos = Math.max(0, Math.min(p, max));
+        knob.style.transform = 'translateX(' + pos + 'px)';
+        fill.style.width = (pos + knob.offsetWidth) + 'px';
+      }
+      knob.addEventListener('pointerdown', function (ev) {
+        arrastando = true;
+        max = s.clientWidth - knob.offsetWidth - 4;
+        x0 = ev.clientX - pos;
+        knob.setPointerCapture(ev.pointerId);
+      });
+      knob.addEventListener('pointermove', function (ev) { if (arrastando) mover(ev.clientX - x0); });
+      knob.addEventListener('pointerup', async function () {
+        if (!arrastando) return;
+        arrastando = false;
+        if (pos >= max * 0.9) {
+          mover(max);
+          s.classList.add('done');
+          await confirmarEtapa(s.getAttribute('data-etapa'));
+        } else {
+          mover(0);
+        }
+      });
+    });
+  }
+
+  async function confirmarEtapa(etapaId) {
+    var r = await chamar('etapa_confirmar', { etapa_id: etapaId });
+    if (r.erro) alert(r.erro);
+    await carregar();
+    await carregarNotif();
+  }
+
+  function itemNotif(n) {
+    var data = n.criado_em ? new Date(n.criado_em).toLocaleString('pt-BR', { dateStyle: 'short', timeStyle: 'short' }) : '';
+    return '<div class="notif ' + (n.lida ? '' : 'nova') + '" data-notif="' + E(n.id) + '" data-lida="' + (n.lida ? '1' : '0') + '">' +
+      '<div class="t">' + E(n.titulo) + '</div>' +
+      (n.texto ? '<div class="t" style="font-size:13px;color:var(--body)">' + E(n.texto) + '</div>' : '') +
+      '<div class="d">' + E(data) + '</div></div>';
+  }
+
+  async function carregarNotif() {
+    var r = await chamar('notificacoes_listar');
+    if (r.erro) return;
+    var n = r.nao_lidas || 0;
+    var badge = $('sinoBadge');
+    badge.textContent = n > 9 ? '9+' : String(n);
+    badge.style.display = n ? 'flex' : 'none';
+    atualizarBadgesMenu(n);
+    $('notifNovas').innerHTML = (r.nao_lidas_lista || []).length
+      ? r.nao_lidas_lista.map(itemNotif).join('')
+      : '<div class="vazio">Nenhuma notificação nova.</div>';
+    $('btnTodasLidas').style.display = n ? 'inline-block' : 'none';
+    $('notifLidas').innerHTML = (r.lidas_lista || []).length
+      ? r.lidas_lista.map(itemNotif).join('')
+      : '<div class="vazio">Nada por aqui ainda.</div>';
+    document.querySelectorAll('#modalNotif [data-notif][data-lida="0"]').forEach(function (el) {
+      el.addEventListener('click', async function () {
+        await chamar('notificacao_marcar_lida', { id: el.getAttribute('data-notif') });
+        await carregarNotif();
+      });
+    });
+  }
+
+  $('btnSino').addEventListener('click', async function () {
+    $('modalNotif').classList.add('on');
+    await carregarNotif();
+  });
+  $('btnFecharNotif').addEventListener('click', function () { $('modalNotif').classList.remove('on'); });
+  $('modalNotif').addEventListener('click', function (e) {
+    if (e.target === $('modalNotif')) $('modalNotif').classList.remove('on');
+  });
+  $('btnTodasLidas').addEventListener('click', async function () {
+    await chamar('notificacao_marcar_lida', { id: 'todas' });
+    await carregarNotif();
+  });
+
+  function linkCalendario() {
+    if (!dados || !dados.token_ics) return null;
+    return CFG.SB_URL.replace(/\/$/, '') + '/functions/v1/calendario-ics?token=' + encodeURIComponent(dados.token_ics);
+  }
+  $('btnAssinarCal').addEventListener('click', function () {
+    var l = linkCalendario();
+    if (!l) { $('msgCal').textContent = 'Calendário ainda não disponível. Fale com a 432UP!.'; return; }
+    location.href = l.replace(/^https?:/, 'webcal:');
+  });
+  $('btnCopiarCal').addEventListener('click', async function () {
+    var l = linkCalendario();
+    if (!l) { $('msgCal').textContent = 'Calendário ainda não disponível. Fale com a 432UP!.'; return; }
+    try { await navigator.clipboard.writeText(l); $('msgCal').className = 'msg ok'; $('msgCal').textContent = 'Link copiado.'; }
+    catch (e) { $('msgCal').className = 'msg'; $('msgCal').textContent = 'Não foi possível copiar.'; }
+  });
+
+  function abrirModalCmp(propostaId) {
+    $('cmpPropostaId').value = propostaId || '';
+    $('msgCmp').textContent = '';
+    $('cmpValor').value = '';
+    $('cmpData').value = '';
+    $('cmpArquivo').value = '';
+    $('modalCmp').classList.add('on');
+    listarCmpModal(propostaId);
+  }
+  function fecharModalCmp() { $('modalCmp').classList.remove('on'); }
+  $('btnFecharCmp').addEventListener('click', fecharModalCmp);
+  $('modalCmp').addEventListener('click', function (e) { if (e.target === $('modalCmp')) fecharModalCmp(); });
+
+  async function listarCmpModal(propostaId) {
+    var box = $('cmpListaModal');
+    box.innerHTML = 'Carregando…';
+    var r = await SB.functions.invoke('gerenciar-comprovantes', { body: { action: 'listar', proposta_id: propostaId } });
+    if (r.error || (r.data && r.data.erro)) { box.textContent = (r.data && r.data.erro) || 'Não foi possível listar.'; return; }
+    var rows = (r.data && r.data.comprovantes) || [];
+    if (!rows.length) { box.innerHTML = '<div class="vazio">Nenhum comprovante neste pedido.</div>'; return; }
+    box.innerHTML = rows.map(function (c) {
+      var st = c.confirmado ? 'aprovado' : (c.status === 'recusado' ? 'recusado' : 'pendente');
+      return '<div class="dl-row"><div>' +
+        '<span class="rot">' + E(ROTULO_CMP[c.tipo] || c.tipo) + ' · ' + DATA(c.data_pagamento) + '</span>' +
+        '<span class="val">' + BRL(c.valor) +
+        (c.arquivo_url ? ' <a href="' + E(c.arquivo_url) + '" target="_blank" rel="noopener" style="color:var(--gold);font-size:12px;font-weight:700">ver</a>' : '') +
+        '</span></div><div class="tags"><span class="tag ' + (CMP_CLASSE[st] || 't-pend') + '">' + E(ST[st] || c.status) + '</span></div></div>';
+    }).join('');
+  }
+
+  function lerBase64(blob) {
+    return new Promise(function (res, rej) {
+      var r = new FileReader();
+      r.onload = function () { var s = String(r.result || ''); var i = s.indexOf(','); res(i >= 0 ? s.slice(i + 1) : s); };
+      r.onerror = function () { rej(new Error('Falha ao ler arquivo')); };
+      r.readAsDataURL(blob);
+    });
+  }
+
+  function prepararImagem(file, mime) {
+    return new Promise(function (res, rej) {
+      if (mime === 'application/pdf') return res({ blob: file, mime: mime });
+      if (!mime || mime.indexOf('image/') !== 0) return res({ blob: file, mime: mime || file.type });
+      var url = URL.createObjectURL(file);
+      var img = new Image();
+      img.onload = function () {
+        try {
+          var max = 1600;
+          var w = img.naturalWidth, h = img.naturalHeight;
+          var scale = Math.min(1, max / Math.max(w, h));
+          var c = document.createElement('canvas');
+          c.width = Math.round(w * scale); c.height = Math.round(h * scale);
+          c.getContext('2d').drawImage(img, 0, 0, c.width, c.height);
+          c.toBlob(function (blob) {
+            URL.revokeObjectURL(url);
+            if (!blob) return rej(new Error('Falha ao compactar imagem'));
+            res({ blob: blob, mime: 'image/jpeg' });
+          }, 'image/jpeg', 0.82);
+        } catch (e) { URL.revokeObjectURL(url); rej(e); }
+      };
+      img.onerror = function () { URL.revokeObjectURL(url); rej(new Error('Imagem inválida')); };
+      img.src = url;
+    });
+  }
+
+  $('btnEnviarCmp').addEventListener('click', async function () {
+    var btn = this;
+    var propostaId = $('cmpPropostaId').value;
+    var valor = parseFloat($('cmpValor').value);
+    var data = $('cmpData').value;
+    var file = $('cmpArquivo').files[0];
+    var msg = $('msgCmp');
+    if (!propostaId) return msg.textContent = 'Pedido inválido.';
+    if (!valor || valor <= 0) return msg.textContent = 'Informe o valor pago.';
+    if (!data) return msg.textContent = 'Informe a data do pagamento.';
+    if (!file) return msg.textContent = 'Escolha o arquivo do comprovante.';
+    btn.disabled = true;
+    msg.className = 'msg ok';
+    msg.textContent = 'Preparando arquivo…';
+    try {
+      var p = await prepararImagem(file, file.type || '');
+      if (p.blob.size > LIMITE_CMP) throw new Error('Arquivo acima de 4 MB. Envie uma foto menor ou PDF comprimido.');
+      msg.textContent = 'Enviando…';
+      var b64 = await lerBase64(p.blob);
+      var r = await SB.functions.invoke('anexar-comprovante', {
+        body: { kind: 'contrato', proposta_id: propostaId, tipo: $('cmpTipo').value, valor: valor,
+          data_pagamento: data, arquivo_base64: b64, mime: p.mime }
+      });
+      if (r.error || (r.data && r.data.erro)) {
+        var det = (r.data && r.data.erro) || (r.error && r.error.message) || 'Falha no envio';
+        if (r.error && r.error.context) {
+          try { var j = await r.error.context.json(); if (j && j.erro) det = j.erro; } catch (e2) {}
+        }
+        throw new Error(det);
+      }
+      msg.textContent = 'Comprovante enviado. Pode enviar outro se precisar.';
+      $('cmpValor').value = ''; $('cmpData').value = ''; $('cmpArquivo').value = '';
+      await listarCmpModal(propostaId);
+      await carregar();
+    } catch (e) {
+      msg.className = 'msg';
+      msg.textContent = e.message || 'Erro ao enviar.';
+    } finally {
+      btn.disabled = false;
+    }
+  });
+
+  async function uploadParaR2(path, blob) {
+    var sess = await SB.auth.getSession();
+    var token = sess.data && sess.data.session && sess.data.session.access_token;
+    if (!token) throw new Error('Sessão expirada');
+    var resp = await fetch(R2_UPLOAD_URL + '?path=' + encodeURIComponent(path), {
+      method: 'PUT',
+      headers: { 'Authorization': 'Bearer ' + token, 'Content-Type': blob.type || 'image/webp' },
+      body: blob
+    });
+    var result = await resp.json().catch(function () { return null; });
+    if (!resp.ok || !result || !result.ok) {
+      throw new Error((result && result.error) ? result.error : ('Upload falhou (status ' + resp.status + ')'));
+    }
+    return result.url;
+  }
+
+  $('fAvatar').addEventListener('change', function (e) {
+    var file = e.target.files && e.target.files[0];
+    if (!file) return;
+    if (!window.Cropper) { $('msgAvatar').textContent = 'Cropper não carregou. Recarregue a página.'; return; }
+    var img = $('cropImage');
+    img.src = URL.createObjectURL(file);
+    $('msgCrop').textContent = '';
+    $('modalCrop').classList.add('on');
+    if (cropperInst) { try { cropperInst.destroy(); } catch (e2) {} cropperInst = null; }
+    img.onload = function () {
+      cropperInst = new Cropper(img, { aspectRatio: 1, viewMode: 1, autoCropArea: 1, background: false });
+    };
+  });
+  $('btnCropCancel').addEventListener('click', function () {
+    $('modalCrop').classList.remove('on');
+    if (cropperInst) { try { cropperInst.destroy(); } catch (e) {} cropperInst = null; }
+    $('fAvatar').value = '';
+  });
+  $('btnCropOk').addEventListener('click', function () {
+    if (!cropperInst) return;
+    var msgC = $('msgCrop');
+    msgC.textContent = 'Compactando…';
+    try {
+      var canvas = cropperInst.getCroppedCanvas({ width: 512, height: 512 });
+      canvas.toBlob(function (blob) {
+        if (!blob) { msgC.textContent = 'Falha ao gerar imagem.'; return; }
+        novoAvatarBlob = blob;
+        $('avatarPreview').style.backgroundImage = 'url(' + URL.createObjectURL(blob) + ')';
+        $('avatarPlaceholder').style.display = 'none';
+        $('btnSalvarAvatar').style.display = 'inline-block';
+        $('msgAvatar').className = 'msg ok';
+        $('msgAvatar').textContent = 'Pré-visualização pronta. Clique em Salvar foto.';
+        $('modalCrop').classList.remove('on');
+        try { cropperInst.destroy(); } catch (e) {}
+        cropperInst = null;
+      }, 'image/webp', 0.8);
+    } catch (err) {
+      msgC.textContent = err.message || 'Erro no recorte.';
+    }
+  });
+
+  $('btnSalvarAvatar').addEventListener('click', async function () {
+    var msg = $('msgAvatar');
+    if (!novoAvatarBlob) return;
+    var btn = this;
+    btn.disabled = true;
+    msg.className = 'msg ok';
+    msg.textContent = 'Enviando…';
+    try {
+      var sess = await SB.auth.getSession();
+      var uid = sess.data.session.user.id;
+      var token = sess.data.session.access_token;
+      /* Foto antiga (para apagar depois que a nova estiver salva) */
+      var antigaUrl = (dados && (dados.avatar_url || (dados.cadastro && dados.cadastro.avatar_url))) || '';
+      /* Nome novo a cada troca: a URL muda e o navegador não reaproveita a foto antiga do cache */
+      var nomeNovo = uid + '/avatar-cliente-' + Date.now() + '.webp';
+      var url = await uploadParaR2(nomeNovo, novoAvatarBlob);
+      if (!url) throw new Error('URL do upload não retornada');
+      /* Gravação do perfil feita pelo servidor (a tabela não aceita UPDATE direto do cliente).
+         Se falhar, NÃO diz que atualizou e NÃO apaga a foto antiga. */
+      var salvo = await SB.functions.invoke('cliente-area', { body: { acao: 'avatar_salvar', avatar_url: url } });
+      if (salvo.error || !salvo.data || !salvo.data.ok) {
+        throw new Error((salvo.data && salvo.data.erro) || 'Não foi possível salvar a foto no seu perfil. Tente novamente.');
+      }
+      if (dados) { dados.avatar_url = url; if (dados.cadastro) dados.cadastro.avatar_url = url; }
+      /* Só depois de salvar a nova: apaga a foto antiga do mesmo cliente (nunca a que acabou de subir) */
+      try {
+        var marca = 'media.432up.com/';
+        var caminhoAntigo = antigaUrl.indexOf(marca) !== -1 ? antigaUrl.split(marca)[1].split('?')[0] : '';
+        if (caminhoAntigo && caminhoAntigo.indexOf(uid + '/') === 0 && caminhoAntigo !== nomeNovo) {
+          await fetch(R2_UPLOAD_URL + '?path=' + encodeURIComponent(caminhoAntigo), {
+            method: 'DELETE',
+            headers: { 'Authorization': 'Bearer ' + token }
+          });
+        }
+      } catch (e3) {}
+      $('avatarPreview').style.backgroundImage = 'url(' + url + ')';
+      novoAvatarBlob = null;
+      btn.style.display = 'none';
+      msg.textContent = 'Foto atualizada.';
+    } catch (err) {
+      msg.className = 'msg';
+      msg.textContent = err.message || 'Falha ao salvar avatar.';
+    } finally {
+      btn.disabled = false;
+    }
+  });
+
+  var appIniciado = false;
+  async function iniciarApp() {
+    if (appIniciado) return;
+    appIniciado = true;
+    try {
+      sessionStorage.setItem('432up_is_admin', 'true');
+      sessionStorage.setItem('432up_is_logged', 'true');
+    } catch (e) {}
+    try { localStorage.setItem('432up_rota', 'admin-cliente-novo.html'); } catch (e) {}
+    if (typeof window.updateAuthState === 'function') {
+      window.updateAuthState({ loggedIn: true, isCliente: false, isAdmin: true });
+    }
+    await carregar();
+    await carregarNotif();
+  }
+
+  async function escolherCliente() {
+    var main = document.querySelector('main');
+    if (!main) return;
+    var r = await SB.from('co_clientes').select('id,nome_razao').order('nome_razao');
+    var lista = (r && r.data) || [];
+    var box = document.createElement('div');
+    box.className = 'box-full';
+    box.style.cssText = 'margin-top:40px;max-width:520px;margin-left:auto;margin-right:auto';
+    box.innerHTML = '<h2>Escolha o cliente</h2><p class="lead" style="margin:0 0 14px">Área de administração do cliente selecionado.</p>' +
+      '<select id="admCliSel" class="f-select"><option value="">— selecione —</option></select>';
+    main.innerHTML = '';
+    main.appendChild(box);
+    var sel = document.getElementById('admCliSel');
+    lista.forEach(function (c) {
+      var o = document.createElement('option');
+      o.value = c.id; o.textContent = c.nome_razao || c.id;
+      sel.appendChild(o);
+    });
+    sel.addEventListener('change', async function () {
+      if (!this.value) return;
+      try { sessionStorage.setItem('432up_adm_cliente', this.value); } catch (e) {}
+      location.reload();
+    });
+    if (CLIENTE_ID === null) {
+      var salvo = null;
+      try { salvo = sessionStorage.getItem('432up_adm_cliente'); } catch (e) {}
+      if (salvo) { sel.value = salvo; CLIENTE_ID = salvo; }
+    }
+    if (CLIENTE_ID) { await iniciarApp(); }
+  }
+
+  (async function iniciar() {
+    var s = await SB.auth.getSession();
+    if (!(s.data && s.data.session)) {
+      await new Promise(function (r) { setTimeout(r, 500); });
+      s = await SB.auth.getSession();
+    }
+    if (s.data && s.data.session) { await escolherCliente(); return; }
+    var main = document.querySelector('main');
+    if (main) {
+      main.innerHTML = '<div class="box-full" style="margin-top:40px;text-align:center">' +
+        '<h2>Sessão não encontrada</h2>' +
+        '<p class="lead" style="margin:0 auto 14px">Entre pelo portal com o e-mail do cliente.</p>' +
+        '<a class="btn" style="display:inline-block;text-decoration:none;max-width:280px" href="login.html">Ir para o login</a></div>';
+    }
+  })();
+})();
+  </script>
+</body>
+</html>
