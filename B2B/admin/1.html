@@ -390,6 +390,7 @@
     .carrossel::-webkit-scrollbar { display: none; }
     .carrossel > .slide { flex: 0 0 100%; min-width: 0; scroll-snap-align: start; }
   </style>
+<script src="https://cdn.jsdelivr.net/npm/browser-image-compression@2.0.2/dist/browser-image-compression.min.js"></script>
 </head>
 <body class="h-full antialiased overflow-x-hidden">
 
@@ -997,7 +998,7 @@
     var cid = CLIENTE_ID;
     var cad = (await SB.from('co_clientes').select('nome_razao, telefone, email, cep, logradouro, numero, complemento, bairro, cidade, uf').eq('id', cid).maybeSingle()).data || null;
     var pc = (await SB.from('portal_clientes').select('token_ics, avatar_url').eq('cliente_id', cid).maybeSingle()).data || {};
-    var props = (await SB.from('propostas').select('id, numero, cliente_nome, tipo_evento, data_evento, horario_inicio, local_evento, status, assinado_em, cancelada_em, cancelamento_motivo, valor_total, pagamento_agenda').eq('cliente_id', cid).order('data_evento')).data || [];
+    var props = (await SB.from('propostas').select('id, numero, cliente_nome, tipo_evento, data_evento, horario_inicio, local_evento, status, assinado_em, assinatura_dispensada_em, assinatura_dispensada_motivo, cancelada_em, cancelamento_motivo, valor_total, pagamento_agenda').eq('cliente_id', cid).order('data_evento')).data || [];
     var pids = props.map(function (p) { return p.id; });
     var out = { ok: true, token_ics: pc.token_ics || null, avatar_url: pc.avatar_url || null, cadastro: cad, propostas: props,
                 comprovantes: [], etapas: [], observacoes: [], equipe: [], fotos: [] };
@@ -1809,6 +1810,11 @@
     dados = await chamar('dados');
     if (dados.erro) { $('listaPedidos').textContent = dados.erro; return; }
     render();
+    admRenderComprovantes();
+    admRenderPedidos();
+    admRenderBancoChecklist();
+    admRenderEquipe();
+    admRenderFotolog();
     atualizarSinoAvisos();
     sincronizarAvisos();
   }
@@ -2294,6 +2300,449 @@
     }
     await carregar();
     await carregarNotif();
+  }
+
+  /* ---- Administrador: aprovar / recusar / alterar comprovantes (mesmas funções do admin de propostas) ---- */
+  async function admAcaoComprovante(tipo, c) {
+    var r;
+    if (tipo === 'aprovar') {
+      r = await SB.rpc('aprovar_comprovante', { p_id: c.id, p_valor: c.valor, p_motivo: null });
+    } else if (tipo === 'recusar') {
+      var mot = prompt('Motivo da recusa:');
+      if (!mot || !mot.trim()) return;
+      r = await SB.rpc('recusar_comprovante', { p_id: c.id, p_motivo: mot.trim() });
+    } else if (tipo === 'alterar') {
+      var v = prompt('Novo valor confirmado (use ponto para centavos):', String(c.valor || ''));
+      if (v === null) return;
+      var valor = parseFloat(String(v).replace(',', '.'));
+      if (isNaN(valor)) { alert('Valor inválido.'); return; }
+      var m2 = prompt('Motivo da alteração:');
+      if (!m2 || !m2.trim()) return;
+      r = await SB.rpc('alterar_valor_comprovante', { p_id: c.id, p_valor: valor, p_motivo: m2.trim() });
+    }
+    if (r && r.error) { alert('Não foi possível: ' + r.error.message); return; }
+    await carregar();
+  }
+
+  function admRenderComprovantes() {
+    var main = document.querySelector('main');
+    if (!main || !dados || !dados.comprovantes) return;
+    var box = document.getElementById('admComprovantes');
+    if (!box) {
+      box = document.createElement('section');
+      box.id = 'admComprovantes';
+      box.style.cssText = 'margin:0 0 20px;padding:16px;border:1px solid rgba(245,158,11,.28);border-radius:16px;background:#0e1623';
+      main.insertBefore(box, main.firstChild);
+    }
+    var pend = dados.comprovantes.filter(function (c) { return !c.confirmado && c.status !== 'recusado'; });
+    if (!pend.length) { box.innerHTML = '<h3 style="margin:0;color:#fbbf24">Comprovantes</h3><p style="margin:6px 0 0;color:#9ca3af">Nenhum comprovante aguardando aprovação.</p>'; return; }
+    box.innerHTML = '<h3 style="margin:0 0 10px;color:#fbbf24">Comprovantes aguardando aprovação</h3>';
+    pend.forEach(function (c) {
+      var linha = document.createElement('div');
+      linha.style.cssText = 'display:flex;flex-wrap:wrap;gap:8px;align-items:center;justify-content:space-between;padding:10px 0;border-top:1px solid rgba(255,255,255,.06);color:#e5e7eb';
+      var txt = document.createElement('span');
+      txt.textContent = (c.tipo || 'Pagamento') + ' · R$ ' + Number(c.valor || 0).toFixed(2).replace('.', ',') + (c.data_pagamento ? ' · ' + c.data_pagamento : '');
+      var btns = document.createElement('div');
+      btns.style.cssText = 'display:flex;gap:6px;flex-wrap:wrap';
+      [['aprovar','Aprovar'],['alterar','Alterar valor'],['recusar','Recusar']].forEach(function (a) {
+        var b = document.createElement('button');
+        b.type = 'button'; b.textContent = a[1]; b.className = 'btn';
+        b.addEventListener('click', function () { admAcaoComprovante(a[0], c); });
+        btns.appendChild(b);
+      });
+      linha.appendChild(txt); linha.appendChild(btns);
+      box.appendChild(linha);
+    });
+  }
+
+  /* ---- Administrador: cancelar contrato e registrar reembolso (mesmas funções do admin de propostas) ---- */
+  async function admCancelarContrato(p) {
+    var mot = prompt('Motivo do cancelamento do contrato:');
+    if (!mot || !mot.trim()) return;
+    if (!confirm('Confirmar cancelamento do contrato ' + (p.numero || '') + '?')) return;
+    var r = await SB.rpc('cancelar_contrato', { p_id: p.id, p_motivo: mot.trim() });
+    if (r.error) { alert('Não foi possível cancelar: ' + r.error.message); return; }
+    await carregar();
+  }
+
+  async function admRegistrarReembolso(p) {
+    var v = prompt('Valor do reembolso (use ponto para centavos):');
+    if (v === null) return;
+    var valor = parseFloat(String(v).replace(',', '.'));
+    if (isNaN(valor) || valor <= 0) { alert('Valor inválido.'); return; }
+    var data = prompt('Data do reembolso (AAAA-MM-DD):', new Date().toISOString().slice(0, 10));
+    if (!data) return;
+    var url = prompt('Link do comprovante do reembolso (pode deixar em branco):') || null;
+    var mot = prompt('Motivo do reembolso:');
+    if (!mot || !mot.trim()) return;
+    var r = await SB.rpc('registrar_reembolso', { p_id: p.id, p_valor: valor, p_data: data, p_comprovante_url: url, p_motivo: mot.trim() });
+    if (r.error) { alert('Não foi possível registrar: ' + r.error.message); return; }
+    await carregar();
+  }
+
+  async function admAutorizarSemAssinatura(p) {
+    var mot = prompt('Motivo para seguir sem assinatura:');
+    if (!mot || !mot.trim()) return;
+    if (!confirm('Autorizar seguir com o contrato ' + (p.numero || '') + ' sem assinatura?')) return;
+    var u = await SB.auth.getUser();
+    var uid = (u && u.data && u.data.user && u.data.user.id) || null;
+    var r = await SB.from('propostas').update({
+      assinatura_dispensada_em: new Date().toISOString(),
+      assinatura_dispensada_por: uid,
+      assinatura_dispensada_motivo: mot.trim()
+    }).eq('id', p.id);
+    if (r.error) { alert('Não foi possível autorizar: ' + r.error.message); return; }
+    await carregar();
+  }
+
+  function admRenderPedidos() {
+    var main = document.querySelector('main');
+    if (!main || !dados || !dados.propostas) return;
+    var box = document.getElementById('admPedidos');
+    if (!box) {
+      box = document.createElement('section');
+      box.id = 'admPedidos';
+      box.style.cssText = 'margin:0 0 20px;padding:16px;border:1px solid rgba(245,158,11,.28);border-radius:16px;background:#0e1623';
+      main.insertBefore(box, main.firstChild);
+    }
+    box.innerHTML = '<h3 style="margin:0 0 10px;color:#fbbf24">Ações do pedido</h3>';
+    if (!dados.propostas.length) { box.innerHTML += '<p style="color:#9ca3af">Este cliente não tem pedidos.</p>'; return; }
+    dados.propostas.forEach(function (p) {
+      var linha = document.createElement('div');
+      linha.style.cssText = 'display:flex;flex-wrap:wrap;gap:8px;align-items:center;justify-content:space-between;padding:10px 0;border-top:1px solid rgba(255,255,255,.06);color:#e5e7eb';
+      var txt = document.createElement('span');
+      txt.textContent = (p.numero ? 'Nº ' + p.numero + ' · ' : '') + (p.tipo_evento || 'Evento') + (p.status ? ' · ' + p.status : '');
+      var btns = document.createElement('div');
+      btns.style.cssText = 'display:flex;gap:6px;flex-wrap:wrap';
+      var bR = document.createElement('button'); bR.type = 'button'; bR.className = 'btn'; bR.textContent = 'Registrar reembolso';
+      bR.addEventListener('click', function () { admRegistrarReembolso(p); });
+      btns.appendChild(bR);
+      if (!p.assinado_em && !p.assinatura_dispensada_em && !p.cancelada_em) {
+        var bA = document.createElement('button'); bA.type = 'button'; bA.className = 'btn'; bA.textContent = 'Autorizar sem assinatura';
+        bA.addEventListener('click', function () { admAutorizarSemAssinatura(p); });
+        btns.appendChild(bA);
+      }
+      if (p.assinatura_dispensada_em && !p.assinado_em) {
+        txt.textContent += ' · autorizado sem assinatura';
+      }
+      if (!p.cancelada_em) {
+        var bC = document.createElement('button'); bC.type = 'button'; bC.className = 'btn'; bC.textContent = 'Cancelar contrato';
+        bC.addEventListener('click', function () { admCancelarContrato(p); });
+        btns.appendChild(bC);
+      }
+      linha.appendChild(txt); linha.appendChild(btns);
+      box.appendChild(linha);
+    });
+  }
+
+  /* ---- Administrador: banco de checklists (catálogo) e aplicação ao pedido ---- */
+  async function admRenderBancoChecklist() {
+    var main = document.querySelector('main');
+    if (!main) return;
+    var box = document.getElementById('admBancoChecklist');
+    if (!box) {
+      box = document.createElement('section');
+      box.id = 'admBancoChecklist';
+      box.style.cssText = 'margin:0 0 20px;padding:16px;border:1px solid rgba(245,158,11,.28);border-radius:16px;background:#0e1623';
+      main.insertBefore(box, main.firstChild);
+    }
+    var r = await SB.from('evento_etapas_catalogo').select('id,nome,dia_referencia,hora_padrao,ordem,ativo,padrao').order('ordem');
+    var itens = ((r && r.data) || []).filter(function (i) { return i.ativo; });
+    box.innerHTML = '<h3 style="margin:0 0 10px;color:#fbbf24">Banco de checklists</h3>';
+    var ul = document.createElement('div');
+    ul.style.cssText = 'display:flex;flex-direction:column;gap:6px';
+    itens.forEach(function (it) {
+      var row = document.createElement('div');
+      row.style.cssText = 'display:flex;justify-content:space-between;align-items:center;gap:8px;color:#e5e7eb;padding:6px 0;border-top:1px solid rgba(255,255,255,.06)';
+      var t = document.createElement('span');
+      t.textContent = it.nome + (it.hora_padrao ? ' · ' + it.hora_padrao : '');
+      var lbl = document.createElement('label'); lbl.style.cssText = 'display:flex;align-items:center;gap:6px;font-size:.8rem;color:#9ca3af';
+      var cb = document.createElement('input'); cb.type = 'checkbox'; cb.checked = !!it.padrao;
+      cb.addEventListener('change', async function () {
+        var x = await SB.from('evento_etapas_catalogo').update({ padrao: cb.checked }).eq('id', it.id);
+        if (x.error) { alert('Não foi possível salvar o padrão.'); cb.checked = !cb.checked; }
+      });
+      lbl.appendChild(cb); lbl.appendChild(document.createTextNode('Padrão'));
+      var rm = document.createElement('button'); rm.type = 'button'; rm.className = 'btn'; rm.textContent = 'Remover do banco';
+      rm.addEventListener('click', async function () {
+        if (!confirm('Remover "' + it.nome + '" do banco?')) return;
+        var x = await SB.from('evento_etapas_catalogo').update({ ativo: false }).eq('id', it.id);
+        if (x.error) { alert('Não foi possível remover.'); return; }
+        admRenderBancoChecklist();
+      });
+      var esq = document.createElement('div'); esq.style.cssText = 'display:flex;flex-direction:column;gap:2px';
+      esq.appendChild(t); esq.appendChild(lbl);
+      row.appendChild(esq); row.appendChild(rm); ul.appendChild(row);
+    });
+    box.appendChild(ul);
+
+    var add = document.createElement('div');
+    add.style.cssText = 'display:flex;gap:8px;margin-top:12px;flex-wrap:wrap';
+    add.innerHTML = '<input id="admNovoItem" type="text" placeholder="Nome do novo item do checklist" class="f-select" style="flex:1;min-width:200px">' +
+                    '<button type="button" id="admAddItem" class="btn">Adicionar ao banco</button>';
+    box.appendChild(add);
+    document.getElementById('admAddItem').addEventListener('click', async function () {
+      var nome = (document.getElementById('admNovoItem').value || '').trim();
+      if (!nome) return;
+      var prox = itens.length ? Math.max.apply(null, itens.map(function (i) { return i.ordem || 0; })) + 1 : 1;
+      var x = await SB.from('evento_etapas_catalogo').insert({ nome: nome, ordem: prox, ativo: true });
+      if (x.error) { alert('Não foi possível adicionar.'); return; }
+      admRenderBancoChecklist();
+    });
+
+    var aplicar = document.createElement('div');
+    aplicar.style.cssText = 'margin-top:14px;display:flex;flex-direction:column;gap:6px';
+    aplicar.innerHTML = '<strong style="color:#fbbf24">Escolha os itens para este cliente</strong>' +
+      '<div id="admEscolhaChecklist" style="display:flex;flex-direction:column;gap:4px"></div>' +
+      '<button type="button" id="admAplicarChecklist" class="btn" style="align-self:flex-start">Aplicar aos pedidos deste cliente</button>';
+    box.appendChild(aplicar);
+    var escolha = document.getElementById('admEscolhaChecklist');
+    var marcados = {};
+    itens.forEach(function (it) {
+      var l = document.createElement('label'); l.style.cssText = 'display:flex;align-items:center;gap:8px;color:#e5e7eb';
+      var c = document.createElement('input'); c.type = 'checkbox'; c.checked = !!it.padrao;
+      c.addEventListener('change', function () { marcados[it.id] = c.checked; });
+      marcados[it.id] = !!it.padrao;
+      l.appendChild(c); l.appendChild(document.createTextNode(it.nome));
+      escolha.appendChild(l);
+      c.dataset.id = it.id;
+    });
+    document.getElementById('admAplicarChecklist').addEventListener('click', async function () {
+      if (!dados || !dados.propostas || !dados.propostas.length) { alert('Este cliente não tem pedidos.'); return; }
+      var escolhidos = itens.filter(function (it) { return marcados[it.id]; });
+      if (!escolhidos.length) { alert('Marque pelo menos um item.'); return; }
+      if (!confirm('Adicionar ' + escolhidos.length + ' item(ns) aos pedidos deste cliente?')) return;
+      for (const p of dados.propostas) {
+        const linhas = escolhidos.map(function (it, i) {
+          return { proposta_id: p.id, nome: it.nome, hora: it.hora_padrao || null, ordem: i + 1, situacao: 'pendente', origem: 'catalogo' };
+        });
+        const x = await SB.from('evento_etapas').insert(linhas);
+        if (x.error) { alert('Erro ao aplicar: ' + x.error.message); return; }
+      }
+      await carregar();
+    });
+  }
+
+  /* ---- Administrador: equipe técnica do pedido (escalar e remover) ---- */
+  async function admRenderEquipe() {
+    var main = document.querySelector('main');
+    if (!main || !dados || !dados.propostas) return;
+    var box = document.getElementById('admEquipe');
+    if (!box) {
+      box = document.createElement('section');
+      box.id = 'admEquipe';
+      box.style.cssText = 'margin:0 0 20px;padding:16px;border:1px solid rgba(245,158,11,.28);border-radius:16px;background:#0e1623';
+      main.insertBefore(box, main.firstChild);
+    }
+    box.innerHTML = '<h3 style="margin:0 0 10px;color:#fbbf24">Equipe técnica</h3>';
+    if (!dados.propostas.length) { box.innerHTML += '<p style="color:#9ca3af">Este cliente não tem pedidos.</p>'; return; }
+    for (const p of dados.propostas) {
+      var bloco = document.createElement('div');
+      bloco.style.cssText = 'padding:10px 0;border-top:1px solid rgba(255,255,255,.06);color:#e5e7eb';
+      var titulo = document.createElement('div');
+      titulo.style.cssText = 'font-weight:600;margin-bottom:8px';
+      titulo.textContent = (p.numero ? 'Nº ' + p.numero + ' · ' : '') + (p.tipo_evento || 'Evento');
+      bloco.appendChild(titulo);
+
+      var r = await SB.from('projeto_colaboradores').select('id, parceiro_id, nivel').eq('proposta_id', p.id);
+      var colabs = (r && r.data) || [];
+      var nomes = {};
+      if (colabs.length) {
+        var pr = await SB.from('parceiros').select('id, nome_artistico, nome_completo').in('id', colabs.map(function (c) { return c.parceiro_id; }));
+        ((pr && pr.data) || []).forEach(function (x) { nomes[x.id] = x.nome_artistico || x.nome_completo || 'Equipe 432UP'; });
+      }
+      colabs.forEach(function (c) {
+        var linha = document.createElement('div');
+        linha.style.cssText = 'display:flex;justify-content:space-between;align-items:center;gap:8px;padding:4px 0';
+        var t = document.createElement('span');
+        t.textContent = (nomes[c.parceiro_id] || 'Equipe 432UP') + ' · ' + (c.nivel === 'agenda' ? 'só agenda' : 'dados completos');
+        var rm = document.createElement('button'); rm.type = 'button'; rm.className = 'btn'; rm.textContent = 'Remover';
+        rm.addEventListener('click', async function () {
+          if (!confirm('Remover ' + (nomes[c.parceiro_id] || 'este membro') + ' da equipe deste pedido?')) return;
+          var x = await SB.from('projeto_colaboradores').delete().eq('id', c.id);
+          if (x.error) { alert('Não foi possível remover.'); return; }
+          admRenderEquipe();
+        });
+        linha.appendChild(t); linha.appendChild(rm); bloco.appendChild(linha);
+      });
+
+      var busca = document.createElement('div');
+      busca.style.cssText = 'display:flex;gap:6px;flex-wrap:wrap;margin-top:8px';
+      busca.innerHTML = '<input type="search" placeholder="Buscar membro da equipe pelo nome" class="f-select" style="flex:1;min-width:200px">' +
+        '<select class="f-select" style="width:auto"><option value="agenda">Só agenda</option><option value="dados_sensiveis">Dados completos</option></select>';
+      bloco.appendChild(busca);
+      var lista = document.createElement('div');
+      lista.style.cssText = 'display:flex;flex-direction:column;gap:4px;margin-top:6px';
+      bloco.appendChild(lista);
+
+      var inp = busca.querySelector('input'); var sel = busca.querySelector('select');
+      var t2 = null;
+      inp.addEventListener('input', function () {
+        clearTimeout(t2);
+        t2 = setTimeout(async function () {
+          lista.innerHTML = '';
+          var termo = inp.value.trim();
+          if (termo.length < 2) return;
+          var q = await SB.from('parceiros').select('id, nome_artistico, nome_completo').or('nome_artistico.ilike.%' + termo + '%,nome_completo.ilike.%' + termo + '%').limit(10);
+          ((q && q.data) || []).forEach(function (x) {
+            var b = document.createElement('button'); b.type = 'button'; b.className = 'btn'; b.style.cssText = 'text-align:left;justify-content:flex-start';
+            b.textContent = x.nome_artistico || x.nome_completo || x.id;
+            b.addEventListener('click', async function () {
+              var ins = await SB.from('projeto_colaboradores').insert({ proposta_id: p.id, parceiro_id: x.id, nivel: sel.value });
+              if (ins.error) { alert('Não foi possível escalar: ' + ins.error.message); return; }
+              admRenderEquipe();
+            });
+            lista.appendChild(b);
+          });
+        }, 250);
+      });
+
+      box.appendChild(bloco);
+    }
+  }
+
+  /* ---- Administrador: fotolog do pedido (ver, ocultar, legendar, ordenar, excluir) ---- */
+  async function admRenderFotolog() {
+    var main = document.querySelector('main');
+    if (!main || !dados || !dados.propostas) return;
+    var box = document.getElementById('admFotolog');
+    if (!box) {
+      box = document.createElement('section');
+      box.id = 'admFotolog';
+      box.style.cssText = 'margin:0 0 20px;padding:16px;border:1px solid rgba(245,158,11,.28);border-radius:16px;background:#0e1623';
+      main.insertBefore(box, main.firstChild);
+    }
+    box.innerHTML = '<h3 style="margin:0 0 10px;color:#fbbf24">Fotolog</h3>';
+    if (!dados.propostas.length) { box.innerHTML += '<p style="color:#9ca3af">Este cliente não tem pedidos.</p>'; return; }
+    for (const p of dados.propostas) {
+      var r = await SB.from('evento_fotos').select('id, url, poster_url, tipo, legenda, ordem, visivel').eq('proposta_id', p.id).order('ordem');
+      var fotos = (r && r.data) || [];
+      var bloco = document.createElement('div');
+      bloco.style.cssText = 'padding:10px 0;border-top:1px solid rgba(255,255,255,.06);color:#e5e7eb';
+      var titulo = document.createElement('div');
+      titulo.style.cssText = 'font-weight:600;margin-bottom:8px';
+      titulo.textContent = (p.numero ? 'Nº ' + p.numero + ' · ' : '') + (p.tipo_evento || 'Evento') + ' · ' + fotos.length + ' mídia(s)';
+      bloco.appendChild(titulo);
+      if (!fotos.length) { var v = document.createElement('p'); v.style.color = '#9ca3af'; v.textContent = 'Nenhuma mídia neste pedido.'; bloco.appendChild(v); }
+      var grid = document.createElement('div');
+      grid.style.cssText = 'display:grid;grid-template-columns:repeat(auto-fill,minmax(160px,1fr));gap:10px';
+      fotos.forEach(function (f, i) {
+        var card = document.createElement('div');
+        card.style.cssText = 'border-radius:12px;overflow:hidden;background:#06080c;border:1px solid rgba(255,255,255,.08);opacity:' + (f.visivel === false ? '.45' : '1');
+        var m = document.createElement(f.tipo === 'video' ? 'video' : 'img');
+        m.src = f.url; m.style.cssText = 'width:100%;height:120px;object-fit:cover;display:block';
+        if (f.tipo === 'video') { m.muted = true; m.preload = 'metadata'; if (f.poster_url) m.poster = f.poster_url; }
+        else { m.loading = 'lazy'; }
+        card.appendChild(m);
+        var acoes = document.createElement('div');
+        acoes.style.cssText = 'display:flex;flex-wrap:wrap;gap:4px;padding:6px';
+        function mk(txt, fn) { var b = document.createElement('button'); b.type = 'button'; b.className = 'btn'; b.style.cssText = 'padding:4px 8px;font-size:.75rem'; b.textContent = txt; b.addEventListener('click', fn); return b; }
+        acoes.appendChild(mk(f.visivel === false ? 'Mostrar' : 'Ocultar', async function () {
+          var x = await SB.from('evento_fotos').update({ visivel: f.visivel === false }).eq('id', f.id);
+          if (x.error) { alert('Não foi possível alterar.'); return; } admRenderFotolog();
+        }));
+        acoes.appendChild(mk('Legenda', async function () {
+          var t = prompt('Legenda:', f.legenda || ''); if (t === null) return;
+          var x = await SB.from('evento_fotos').update({ legenda: t.trim() || null }).eq('id', f.id);
+          if (x.error) { alert('Não foi possível salvar.'); return; } admRenderFotolog();
+        }));
+        if (i > 0) acoes.appendChild(mk('◀', async function () { await trocarOrdemFoto(fotos[i], fotos[i - 1]); admRenderFotolog(); }));
+        if (i < fotos.length - 1) acoes.appendChild(mk('▶', async function () { await trocarOrdemFoto(fotos[i], fotos[i + 1]); admRenderFotolog(); }));
+        acoes.appendChild(mk('Excluir', async function () {
+          if (!confirm('Excluir esta mídia do fotolog?')) return;
+          var x = await SB.from('evento_fotos').delete().eq('id', f.id);
+          if (x.error) { alert('Não foi possível excluir.'); return; } admRenderFotolog();
+        }));
+        card.appendChild(acoes);
+        grid.appendChild(card);
+      });
+      bloco.appendChild(grid);
+      var up = document.createElement('div');
+      up.style.cssText = 'margin-top:10px;display:flex;flex-wrap:wrap;gap:8px;align-items:center';
+      up.innerHTML = '<input type="file" multiple accept="image/*,video/*" class="f-select" style="flex:1;min-width:200px">' +
+                     '<span style="color:#9ca3af;font-size:.82rem"></span>';
+      bloco.appendChild(up);
+      var fileIn = up.querySelector('input'); var stat = up.querySelector('span');
+      fileIn.addEventListener('change', async function () {
+        var arqs = Array.from(fileIn.files || []);
+        var falhas = 0;
+        for (var i = 0; i < arqs.length; i++) {
+          stat.textContent = 'Enviando ' + (i + 1) + ' de ' + arqs.length + '…';
+          try { await admEnviarFoto(p.id, arqs[i]); } catch (e) { falhas++; }
+        }
+        stat.textContent = falhas ? (falhas + ' arquivo(s) falharam.') : 'Envio concluído.';
+        fileIn.value = '';
+        admRenderFotolog();
+      });
+      box.appendChild(bloco);
+    }
+  }
+
+  /* Envio igual ao admin do fotolog: foto comprimida; vídeo enviado inteiro; ordem no fim da galeria */
+  var R2_UPLOAD_URL_ADM = 'https://432up-r2-upload.432up-producoes.workers.dev/';
+  /* Miniatura do vídeo: quadro em 0,01 s, igual ao admin do fotolog */
+  function gerarPosterAdm(file) {
+    return new Promise(function (resolve) {
+      var url = URL.createObjectURL(file);
+      var v = document.createElement('video');
+      v.muted = true; v.playsInline = true; v.preload = 'auto'; v.src = url;
+      var feito = false;
+      var fim = function (blob) { if (feito) return; feito = true; URL.revokeObjectURL(url); resolve(blob); };
+      v.onerror = function () { fim(null); };
+      v.onloadeddata = function () { try { v.currentTime = 0.01; } catch (e) { fim(null); } };
+      v.onseeked = function () {
+        try {
+          if (!v.videoWidth) return fim(null);
+          var w = Math.min(v.videoWidth, 960);
+          var h = Math.round(w * v.videoHeight / v.videoWidth);
+          var c = document.createElement('canvas');
+          c.width = w; c.height = h;
+          c.getContext('2d').drawImage(v, 0, 0, w, h);
+          c.toBlob(function (b) { fim(b); }, 'image/jpeg', 0.86);
+        } catch (e) { fim(null); }
+      };
+      setTimeout(function () { fim(null); }, 15000);
+    });
+  }
+  async function admEnviarFoto(pid, file) {
+    var sess = await SB.auth.getSession();
+    var tok = sess.data && sess.data.session && sess.data.session.access_token;
+    if (!tok) throw new Error('Sessão expirada');
+    var video = /^video\//.test(file.type || '');
+    var base = 'eventos/' + pid + '/' + (crypto.randomUUID ? crypto.randomUUID() : Date.now());
+    var path = video ? ('eventos/' + pid + '/video_' + Date.now() + '_' + file.name.replace(/[^\w.\-]/g, '_')) : (base + '.jpg');
+    var corpo = file;
+    if (!video && window.imageCompression) {
+      corpo = await window.imageCompression(file, { maxSizeMB: 0.8, maxWidthOrHeight: 1920, useWebWorker: true, fileType: 'image/jpeg' });
+    }
+    var resp = await fetch(R2_UPLOAD_URL_ADM + '?path=' + encodeURIComponent(path), {
+      method: 'PUT', headers: { 'Authorization': 'Bearer ' + tok, 'Content-Type': corpo.type || (video ? 'video/mp4' : 'image/jpeg') }, body: corpo
+    });
+    var j = await resp.json().catch(function () { return null; });
+    if (!resp.ok || !j || !j.ok) throw new Error((j && j.error) || 'Upload falhou');
+    var posterUrl = null;
+    if (video) {
+      var poster = await gerarPosterAdm(file);
+      if (poster) {
+        var rp = await fetch(R2_UPLOAD_URL_ADM + '?path=' + encodeURIComponent(base + '-poster.jpg'), {
+          method: 'PUT', headers: { 'Authorization': 'Bearer ' + tok, 'Content-Type': 'image/jpeg' }, body: poster
+        });
+        var jp = await rp.json().catch(function () { return null; });
+        if (rp.ok && jp && jp.ok) posterUrl = jp.url;
+      }
+    }
+    var ordemAtual = dados && dados.fotos ? dados.fotos.filter(function (f) { return f.proposta_id === pid; }).reduce(function (m, f) { return Math.max(m, f.ordem || 0); }, 0) : 0;
+    var ins = await SB.from('evento_fotos').insert({
+      proposta_id: pid, tipo: video ? 'video' : 'imagem', url: j.url, path: path, poster_url: posterUrl,
+      ordem: ordemAtual + 1, visivel: true, na_linha: false, posicao: null, legenda: null, descricao: null
+    });
+    if (ins.error) throw ins.error;
+  }
+
+  async function trocarOrdemFoto(a, b) {
+    var oa = a.ordem, ob = b.ordem;
+    await SB.from('evento_fotos').update({ ordem: ob }).eq('id', a.id);
+    await SB.from('evento_fotos').update({ ordem: oa }).eq('id', b.id);
   }
 
   var seletorEl = null;
