@@ -406,7 +406,7 @@
         <div>
           <span class="eyebrow">Área do cliente</span>
           <h1 class="titulo" id="saudacao">Olá</h1>
-          <p class="mut" style="margin:0;font-size:14px">Sua área 432UP! — cadastro, evento e memórias num só lugar.</p>
+          <p class="mut" style="margin:0;font-size:14px">Administração do cliente 432UP! — cadastro, evento e memórias num só lugar.</p>
         </div>
         <div class="cli-top-actions" style="display:flex;gap:8px;align-items:center">
           <button type="button" class="btn-s sino" id="btnSino" aria-label="Notificações" style="margin-top:0">🔔<span class="sino-badge" id="sinoBadge">0</span></button>
@@ -429,7 +429,7 @@
       <section class="panel on" id="p0" role="tabpanel">
         <a class="crie-convite" href="convites/index.html" data-convite-link>
           <span aria-hidden="true">✉</span>
-          <span><strong>Crie seu convite</strong><small>Monte o convite do seu evento, com endereço, programação e confirmação de presença.</small></span>
+          <span><strong>Crie seu convite</strong><small>Monte o convite do evento, com endereço, programação e confirmação de presença.</small></span>
           <span aria-hidden="true">→</span>
         </a>
         <div class="box-full i2" id="cardProximo">
@@ -472,7 +472,7 @@
           </div>
           <div class="ck-col">
         <div class="box-full o-obs">
-          <h2>Instruções para o seu evento</h2>
+          <h2>Instruções para o evento</h2>
           <div id="listaObs" class="vazio">Carregando…</div>
           <form id="formObs" style="margin-top:12px">
             <label class="rot" for="obsNova" style="margin-top:12px">Nova instrução</label>
@@ -483,7 +483,7 @@
         </div>
         <div class="box-full i3 o-avisos" id="cardAvisos">
           <h2>Avisos no celular</h2>
-          <p class="lead" style="font-size:14px;margin-bottom:4px">Receba no aparelho quando uma etapa do seu evento for confirmada.</p>
+          <p class="lead" style="font-size:14px;margin-bottom:4px">Receba no aparelho quando uma etapa do evento for confirmada.</p>
           <button type="button" class="btn" id="btnAvisos">Ativar avisos</button>
           <div class="msg" id="msgAvisos"></div>
         </div>
@@ -544,7 +544,7 @@
             <div class="foto-grid" aria-hidden="true">
               <div class="foto"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><path d="M4 8h3l2-3h6l2 3h3v11H4z"/><circle cx="12" cy="13" r="3.5"/></svg></div><div class="foto"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><path d="M4 8h3l2-3h6l2 3h3v11H4z"/><circle cx="12" cy="13" r="3.5"/></svg></div><div class="foto"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><path d="M4 8h3l2-3h6l2 3h3v11H4z"/><circle cx="12" cy="13" r="3.5"/></svg></div><div class="foto"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><path d="M4 8h3l2-3h6l2 3h3v11H4z"/><circle cx="12" cy="13" r="3.5"/></svg></div><div class="foto"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><path d="M4 8h3l2-3h6l2 3h3v11H4z"/><circle cx="12" cy="13" r="3.5"/></svg></div><div class="foto"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><path d="M4 8h3l2-3h6l2 3h3v11H4z"/><circle cx="12" cy="13" r="3.5"/></svg></div>
             </div>
-            <p class="pill" style="margin:12px 0 0;text-align:center">Fotos de exemplo · as fotos reais do seu evento aparecem aqui depois do grande dia.</p>
+            <p class="pill" style="margin:12px 0 0;text-align:center">Fotos de exemplo · as fotos reais do evento aparecem aqui depois do grande dia.</p>
             </div>
           </div>
         </div>
@@ -559,7 +559,7 @@
       <!-- 4 · PERFIL -->
       <section class="panel" id="p4" role="tabpanel">
         <div class="box-full" id="semCadastro" style="display:none">
-          <p class="vazio" style="margin:0">Não encontramos seu cadastro de cliente vinculado a esta conta. Fale com o suporte 432UP!.</p>
+          <p class="vazio" style="margin:0">Este cliente não tem cadastro vinculado a esta conta. Fale com o suporte 432UP!.</p>
         </div>
 
         <div class="box-full" id="formCadastroWrap">
@@ -574,7 +574,7 @@
             <div class="msg" id="msgAvatar"></div>
           </div>
 
-          <h2>Seus dados</h2>
+          <h2>Dados do cliente</h2>
           <p class="perfil-dica" id="perfilDica">Toque em Editar Dados para alterar suas informações.</p>
           <form id="formCadastro">
             <div class="dl">
@@ -992,16 +992,63 @@
   })();
 
   var CLIENTE_ID = null;
+  /* Administrador: lê e grava direto nas tabelas (RLS de admin), sem a função do cliente */
+  async function admDados() {
+    var cid = CLIENTE_ID;
+    var cad = (await SB.from('co_clientes').select('nome_razao, telefone, email, cep, logradouro, numero, complemento, bairro, cidade, uf').eq('id', cid).maybeSingle()).data || null;
+    var pc = (await SB.from('portal_clientes').select('token_ics, avatar_url').eq('cliente_id', cid).maybeSingle()).data || {};
+    var props = (await SB.from('propostas').select('id, numero, cliente_nome, tipo_evento, data_evento, horario_inicio, local_evento, status, assinado_em, cancelada_em, cancelamento_motivo, valor_total, pagamento_agenda').eq('cliente_id', cid).order('data_evento')).data || [];
+    var pids = props.map(function (p) { return p.id; });
+    var out = { ok: true, token_ics: pc.token_ics || null, avatar_url: pc.avatar_url || null, cadastro: cad, propostas: props,
+                comprovantes: [], etapas: [], observacoes: [], equipe: [], fotos: [] };
+    if (!pids.length) return out;
+    out.comprovantes = (await SB.from('contrato_comprovantes').select('id, proposta_id, tipo, valor, data_pagamento, status, confirmado, motivo_recusa, arquivo_url, enviado_em').in('proposta_id', pids).order('enviado_em')).data || [];
+    out.etapas = (await SB.from('evento_etapas').select('id, proposta_id, nome, hora, situacao, ordem, concluida_por, concluida_em').in('proposta_id', pids).order('ordem')).data || [];
+    out.observacoes = (await SB.from('evento_observacoes').select('id, proposta_id, texto, criado_por, alterado_em').in('proposta_id', pids).is('removido_em', null).order('criado_em')).data || [];
+    out.fotos = (await SB.from('evento_fotos').select('id, proposta_id, tipo, url, poster_url, legenda, descricao, ordem, na_linha, posicao').in('proposta_id', pids).eq('visivel', true).order('ordem')).data || [];
+    return out;
+  }
+
   async function chamar(acao, extra) {
-    var r = await SB.functions.invoke('cliente-area', { body: Object.assign({ acao: acao, cliente_id: CLIENTE_ID }, extra || {}) });
-    if (r.error || (r.data && r.data.erro)) {
-      var msg = (r.data && r.data.erro);
-      if (!msg && r.error && r.error.context && typeof r.error.context.json === 'function') {
-        try { var j = await r.error.context.json(); msg = j && j.erro; } catch (e) {}
+    extra = extra || {};
+    try {
+      if (!CLIENTE_ID) return { erro: 'Escolha um cliente.' };
+      if (acao === 'dados') return await admDados();
+      if (acao === 'salvar_cadastro') {
+        var patch = {};
+        ['nome_razao','telefone','email','cep','logradouro','numero','complemento','bairro','cidade','uf'].forEach(function (k) {
+          if (extra.campos && (k in extra.campos)) patch[k] = String(extra.campos[k] || '').trim() || null;
+        });
+        var r1 = await SB.from('co_clientes').update(patch).eq('id', CLIENTE_ID);
+        return r1.error ? { erro: 'Não foi possível salvar.' } : { ok: true };
       }
-      return { erro: msg || 'Não foi possível concluir. Tente novamente.' };
+      if (acao === 'obs_adicionar') {
+        var r2 = await SB.from('evento_observacoes').insert({ proposta_id: extra.proposta_id, texto: extra.texto, criado_por: 'administrador' });
+        return r2.error ? { erro: 'Não foi possível adicionar.' } : { ok: true };
+      }
+      if (acao === 'obs_remover') {
+        var r3 = await SB.from('evento_observacoes').update({ removido_em: new Date().toISOString() }).eq('id', extra.id);
+        return r3.error ? { erro: 'Não foi possível remover.' } : { ok: true };
+      }
+      if (acao === 'etapa_confirmar') {
+        var r4 = await SB.from('evento_etapas').update({ situacao: 'concluida', concluida_por: 'administrador', concluida_em: new Date().toISOString() }).eq('id', extra.etapa_id);
+        return r4.error ? { erro: 'Não foi possível confirmar.' } : { ok: true };
+      }
+      if (acao === 'avatar_salvar') {
+        var r5 = await SB.from('portal_clientes').update({ avatar_url: extra.avatar_url }).eq('cliente_id', CLIENTE_ID);
+        return r5.error ? { erro: 'Não foi possível salvar a foto.' } : { ok: true, avatar_url: extra.avatar_url };
+      }
+      if (acao === 'notificacoes_listar') return { ok: true, nao_lidas_lista: [], lidas_lista: [], nao_lidas: 0 };
+      if (acao === 'notificacao_marcar_lida') return { ok: true };
+      if (acao === 'contrato_pdf') {
+        var r6 = await SB.functions.invoke('gerar-contrato-pdf', { body: { id: extra.proposta_id } });
+        if (r6.error || !r6.data || !r6.data.url) return { erro: 'Não foi possível gerar o contrato agora.' };
+        return { ok: true, url: r6.data.url };
+      }
+      return { erro: 'Ação não disponível no administrador.' };
+    } catch (e) {
+      return { erro: 'Erro ao carregar. Tente novamente.' };
     }
-    return r.data;
   }
 
   function pedidoAtivo() {
@@ -1164,7 +1211,7 @@
       lt.innerHTML =
         '<div class="etapa"><div class="nome mut">Boas-vindas</div><div class="hora">Em breve</div></div>' +
         '<div class="etapa"><div class="nome mut">Setlist e preparativos</div><div class="hora">Em breve</div></div>' +
-        '<div class="etapa"><div class="nome mut">Dia do seu evento</div><div class="hora">Em breve</div></div>';
+        '<div class="etapa"><div class="nome mut">Dia do evento</div><div class="hora">Em breve</div></div>';
     } else {
       lt.innerHTML = etapas.map(function (e) {
         var feita = e.situacao === 'concluida';
@@ -1267,7 +1314,7 @@
         renderCalendario();
         var lista = (datas[calDiaSel] || []).filter(function (it) { return FILTROS_CAL[it.kind] !== false; });
         var box = $('calDiaDetalhe');
-        if (!lista.length) { box.innerHTML = '<div class="vazio">Nada neste dia para você.</div>'; return; }
+        if (!lista.length) { box.innerHTML = '<div class="vazio">Nada neste dia.</div>'; return; }
         box.innerHTML = lista.map(function (it) {
           var p = it.prop || it;
           if (it.kind === 'pagamento') {
@@ -1484,7 +1531,7 @@
     var eq = p ? (dados.equipe || []).filter(function (m) { return m.proposta_id === p.id; }) : [];
     if (!eq.length) {
       box.className = 'vazio';
-      box.textContent = p ? 'A equipe técnica do seu evento aparece aqui assim que for confirmada.' : 'Sua equipe técnica aparecerá aqui quando houver um evento.';
+      box.textContent = p ? 'A equipe técnica do evento aparece aqui assim que for confirmada.' : 'Sua equipe técnica aparecerá aqui quando houver um evento.';
       $('btnListaEquipe').style.display = 'none';
       return;
     }
@@ -1512,7 +1559,7 @@
     if (!tel) { msg.textContent = 'Telefone da cliente não cadastrado.'; return; }
     if (tel.length <= 11) tel = '55' + tel;
     var primeiro = (c.nome_razao || '').split(' ')[0];
-    var texto = 'Olá' + (primeiro ? ', *' + primeiro + '*' : '') + '! Segue a equipe técnica do seu evento' +
+    var texto = 'Olá' + (primeiro ? ', *' + primeiro + '*' : '') + '! Segue a equipe técnica do evento' +
       (p && p.data_evento ? ' (' + DATA(p.data_evento) + ')' : '') + ':\n\n';
     eq.forEach(function (m) {
       var nome = m.nome_completo || m.nome || '';
