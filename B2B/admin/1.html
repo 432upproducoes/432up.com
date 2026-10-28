@@ -307,13 +307,17 @@
     #appDlg .acoes > * { flex: 1; }
     #sheetDet { position: fixed; inset: 0; z-index: 9000; background: rgba(6, 8, 12, .72); display: none; align-items: center; justify-content: center; padding: 16px; }
     #sheetDet.on { display: flex; }
-    #sheetCfg { position: fixed; inset: 0; z-index: 9000; background: rgba(6, 8, 12, .72); display: none; align-items: center; justify-content: center; padding: 16px; }
+    #sheetCfg { position: fixed; inset: 0; z-index: 9000; background: rgba(6, 8, 12, .72); display: none; align-items: center; justify-content: center; padding: 72px 16px 16px; }
     #sheetCfg.on { display: flex; }
     #sheetCfg .glass-card { width: min(92vw, 680px); max-height: 90vh; overflow: auto; }
     #cfgBody .wheel-row { display: flex; gap: 8px; align-items: center; flex-wrap: wrap; }
-    #cfgBody .wheel-row { flex-wrap: nowrap; }
-    #cfgBody .wheel-row select { width: 100%; min-width: 0; flex: 1 1 0; }
-    #cfgBody .wheel-row select:first-child { flex: 1.6 1 0; }
+    #cfgBody .cfg-row { display: grid !important; grid-template-columns: 24px minmax(110px, 1fr) minmax(190px, 1.3fr) auto auto; gap: 10px !important; align-items: center; }
+    #cfgBody .wheel-row { display: grid !important; grid-template-columns: minmax(0, 1.4fr) minmax(0, 1fr) minmax(0, 1.2fr); gap: 8px; }
+    #cfgBody .wheel-row select, #cfgBody .wheel-row input { width: 100%; min-width: 0; }
+    /* Overlay: título e Fechar fixos, só a lista rola */
+    #sheetCfg .glass-card { display: flex; flex-direction: column; max-height: calc(100vh - 120px); overflow: hidden; }
+    #cfgBody { overflow-y: auto; flex: 1 1 auto; min-height: 0; padding-right: 4px; }
+    #sheetCfgFechar { flex-shrink: 0; }
     #sheetDetBody .dl-item { padding: 9px 0; }
     /* Painel de mídia (vídeo) e loader: CSS do Fotolog original — evita vazamento na tela */
     #sheet { position: fixed; inset: 0; z-index: 9000; background: rgba(6, 8, 12, .72); display: none; align-items: center; justify-content: center; padding: 16px; }
@@ -2801,6 +2805,7 @@
     cat.forEach(function (c) {
       var row = document.createElement('div');
       row.style.cssText = 'display:flex;gap:10px;align-items:center;flex-wrap:wrap;padding:6px 0;border-bottom:1px solid rgba(255,255,255,.06)';
+      row.className = 'cfg-row';
       var cb = document.createElement('input'); cb.type = 'checkbox'; cb.checked = !!marcadas[c.nome];
       cb.addEventListener('change', function () { ligar(c, cb.checked); });
       var nm = document.createElement('span'); nm.style.cssText = 'flex:1;min-width:140px'; nm.textContent = c.nome;
@@ -2817,38 +2822,38 @@
           sel.appendChild(op);
         });
       }
-      var hh = document.createElement('select');
-      var mm = document.createElement('select');
-      var horas = []; for (var h = 0; h < 24; h++) horas.push([String(h).padStart(2,'0'), String(h).padStart(2,'0')]);
-      var minutos = []; for (var m = 0; m < 60; m += 5) minutos.push([String(m).padStart(2,'0'), String(m).padStart(2,'0')]);
-      var atualHora = c.hora_padrao ? String(c.hora_padrao).slice(0, 5).split(':') : ['09','00'];
-      opcoes(hh, horas, atualHora[0]);
-      opcoes(mm, minutos, atualHora[1]);
-      var antHoras = []; for (var x = 0; x <= 48; x++) { antHoras.push([String(x/2), (x/2 === Math.floor(x/2) ? String(x/2) : String(x/2)) + (x % 2 ? ' h e 30 min' : ' h')]); }
-      var antDias = []; for (var d = 0; d <= 30; d++) antDias.push([String(d), d + (d === 1 ? ' dia' : ' dias')]);
+      var tm = document.createElement('input');
+      tm.type = 'time';
+      tm.value = c.hora_padrao ? String(c.hora_padrao).slice(0, 5) : '09:00';
+      var antHoras = []; for (var x = 0; x <= 48; x++) {
+        var vh = x / 2;
+        antHoras.push([String(vh), (vh === 1 ? '1 hora antes' : String(vh).replace('.', ',') + ' horas antes')]);
+      }
+      var antDias = []; for (var d = 0; d <= 30; d++) antDias.push([String(d), d + (d === 1 ? ' dia antes' : ' dias antes')]);
       var hv = document.createElement('select');
       opcoes(hv, c.hora_modo === 'antes_dias' ? antDias : antHoras, c.hora_valor != null ? c.hora_valor : (c.hora_modo === 'antes_dias' ? 1 : 2));
       var wrapHora = document.createElement('div'); wrapHora.className = 'wheel-row';
       function ajustarHora() {
         var m = hm.value;
-        hh.style.display = mm.style.display = m === 'fixa' ? '' : 'none';
+        tm.style.display = m === 'fixa' ? '' : 'none';
         hv.style.display = (m === 'antes_horas' || m === 'antes_dias') ? '' : 'none';
-        opcoes(hv, m === 'antes_dias' ? antDias : antHoras, (m === 'antes_dias') ? 1 : 2);
+        opcoes(hv, m === 'antes_dias' ? antDias : antHoras, m === 'antes_dias' ? 1 : 2);
       }
       async function salvarHora() {
         var m = hm.value, patch = { hora_modo: m, hora_valor: null, hora_padrao: null };
-        if (m === 'fixa') patch.hora_padrao = hh.value + ':' + mm.value;
-        else if (m === 'antes_horas' || m === 'antes_dias') patch.hora_valor = Number(hv.value);
+        if (m === 'fixa') {
+          if (!tm.value) { appAlert('Escolha a hora.'); return; }
+          patch.hora_padrao = tm.value;
+        } else if (m === 'antes_horas' || m === 'antes_dias') patch.hora_valor = Number(hv.value);
         var x2 = await SB.from('evento_etapas_catalogo').update(patch).eq('id', c.id);
         if (x2.error) { appAlert(x2.error.message); return; }
         await carregar();
       }
       hm.addEventListener('change', function () { ajustarHora(); salvarHora(); });
-      hh.addEventListener('change', salvarHora);
-      mm.addEventListener('change', salvarHora);
+      tm.addEventListener('change', salvarHora);
       hv.addEventListener('change', salvarHora);
       ajustarHora();
-      wrapHora.appendChild(hm); wrapHora.appendChild(hh); wrapHora.appendChild(mm); wrapHora.appendChild(hv);
+      wrapHora.appendChild(hm); wrapHora.appendChild(tm); wrapHora.appendChild(hv);
       row.appendChild(wrapHora);
       var lb = document.createElement('label'); lb.style.cssText = 'display:flex;align-items:center;gap:5px;font-size:.75rem;opacity:.85';
       var pc = document.createElement('input'); pc.type = 'checkbox'; pc.checked = !!c.padrao;
