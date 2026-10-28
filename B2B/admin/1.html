@@ -294,6 +294,14 @@
     .slot-off { position: absolute; right: 8px; top: 8px; z-index: 2; font-size: 10px; font-weight: 800; padding: 3px 8px; border-radius: 999px; background: rgba(255, 77, 77, .8); color: #fff; text-transform: uppercase; pointer-events: none; }
     .slot.drop-alvo { outline: 3px solid #fbbf24; outline-offset: 3px; }
     .slot-ghost { border-radius: 16px; }
+    /* Diálogos do sistema (confirmar / avisar / pedir texto): mesma moldura do painel de mídia */
+    #appDlg { position: fixed; inset: 0; z-index: 9500; background: rgba(6, 8, 12, .72); display: none; align-items: center; justify-content: center; padding: 16px; }
+    #appDlg.on { display: flex; }
+    #appDlg .glass-card { width: min(92vw, 420px); }
+    #appDlgMsg { font-size: 15px; font-weight: 600; color: var(--text); line-height: 1.45; margin: 0 0 14px; }
+    #appDlgInput { margin-bottom: 14px; }
+    #appDlg .acoes { display: flex; gap: 8px; }
+    #appDlg .acoes > * { flex: 1; }
     #sheetDet { position: fixed; inset: 0; z-index: 9000; background: rgba(6, 8, 12, .72); display: none; align-items: center; justify-content: center; padding: 16px; }
     #sheetDet.on { display: flex; }
     #sheetDetBody .dl-item { padding: 9px 0; }
@@ -1493,7 +1501,7 @@
     el.querySelectorAll('[data-pdf]').forEach(function (b) {
       b.addEventListener('click', async function () {
         var r = await chamar('contrato_pdf', { proposta_id: b.getAttribute('data-pdf') });
-        if (r.erro) return alert(r.erro);
+        if (r.erro) return appAlert(r.erro);
         if (r.url) window.open(r.url, '_blank');
       });
     });
@@ -1502,9 +1510,9 @@
     });
     el.querySelectorAll('[data-del-cmp]').forEach(function (b) {
       b.addEventListener('click', async function () {
-        if (!confirm('Excluir este comprovante?')) return;
+        if (!await appConfirm('Excluir este comprovante?')) return;
         var r = await SB.from('contrato_comprovantes').delete().eq('id', b.getAttribute('data-del-cmp'));
-        if (r.error) { alert(r.error.message || 'Não foi possível excluir.'); return; }
+        if (r.error) { appAlert(r.error.message || 'Não foi possível excluir.'); return; }
         await carregar();
       });
     });
@@ -1548,7 +1556,7 @@
     lo.querySelectorAll('[data-obs]').forEach(function (b) {
       b.addEventListener('click', async function () {
         var r = await chamar('obs_remover', { id: b.getAttribute('data-obs') });
-        if (r.erro) return alert(r.erro);
+        if (r.erro) return appAlert(r.erro);
         await carregar();
       });
     });
@@ -1655,7 +1663,7 @@
         box.querySelectorAll('[data-pdf]').forEach(function (b) {
           b.addEventListener('click', async function () {
             var r = await chamar('contrato_pdf', { proposta_id: b.getAttribute('data-pdf') });
-            if (r.erro) return alert(r.erro);
+            if (r.erro) return appAlert(r.erro);
             if (r.url) window.open(r.url, '_blank');
           });
         });
@@ -2240,7 +2248,7 @@
     var m = $('msgAvisos');
     m.className = 'msg';
     var pedido = pedidoParaAvisos();
-    if (!pedido) { m.textContent = 'Ainda não há um pedido vinculado ao seu acesso para ativar os avisos.'; if (doSino === true) alert(m.textContent); return; }
+    if (!pedido) { m.textContent = 'Ainda não há um pedido vinculado ao seu acesso para ativar os avisos.'; if (doSino === true) appAlert(m.textContent); return; }
     var VAPID_PUBLIC = (CFG.VAPID_PUBLIC_KEY || CFG.VAPID_PUBLIC || '').trim();
     if (!VAPID_PUBLIC) { m.textContent = 'Avisos ainda não configurados neste ambiente.'; return; }
     if (!('serviceWorker' in navigator) || !('PushManager' in window)) {
@@ -2267,7 +2275,7 @@
     } catch (err) {
       m.textContent = err.message || 'Não foi possível ativar os avisos.';
       $('btnAvisos').disabled = false;
-      if (doSino === true) alert(m.textContent);
+      if (doSino === true) appAlert(m.textContent);
       atualizarSinoAvisos();
     }
   }
@@ -2316,7 +2324,7 @@
 
   async function confirmarEtapa(etapaId) {
     var r = await chamar('etapa_confirmar', { etapa_id: etapaId });
-    if (r.erro) alert(r.erro);
+    if (r.erro) appAlert(r.erro);
     await carregar();
     await carregarNotif();
   }
@@ -2661,9 +2669,9 @@
       var b = document.createElement('button'); b.type = 'button'; b.className = 'btn-ghost'; b.textContent = '✕';
       b.title = 'Remover da equipe'; b.style.cssText = 'margin-left:auto;padding:4px 10px';
       b.addEventListener('click', async function () {
-        if (!confirm('Remover ' + (m.nome || 'este integrante') + ' da equipe?')) return;
+        if (!await appConfirm('Remover ' + (m.nome || 'este integrante') + ' da equipe?')) return;
         var x = await SB.from('projeto_colaboradores').delete().eq('id', m.id);
-        if (x.error) { alert(x.error.message); return; }
+        if (x.error) { appAlert(x.error.message); return; }
         await carregar();
       });
       el.style.display = 'flex'; el.style.alignItems = 'center';
@@ -2686,7 +2694,7 @@
       if (!sels[0].value) return;
       var u = await SB.auth.getUser();
       var x = await SB.from('projeto_colaboradores').insert({ proposta_id: p.id, parceiro_id: sels[0].value, nivel: sels[1].value, criado_por: (u && u.data && u.data.user && u.data.user.id) || null });
-      if (x.error) { alert('Não foi possível adicionar: ' + x.error.message); return; }
+      if (x.error) { appAlert('Não foi possível adicionar: ' + x.error.message); return; }
       await carregar();
     });
     box.parentNode.appendChild(ctl);
@@ -2709,28 +2717,28 @@
           (feita ? '<span class="ok">✓ Confirmada pela equipe</span>' + (e.concluida_em ? '<span class="conf">Em ' + DATA_HORA(e.concluida_em) + (e.concluida_por ? ' por ' + E(e.concluida_por) : '') + '</span>' : '') : '<span class="aguarda">Aguardando equipe</span>');
         d.querySelector('input').addEventListener('change', async function () {
           var x = await SB.from('evento_etapas').update({ hora: this.value || null }).eq('id', e.id);
-          if (x.error) alert(x.error.message);
+          if (x.error) appAlert(x.error.message);
         });
         var caps = document.createElement('div'); caps.style.cssText = 'display:flex;gap:6px;flex-wrap:wrap;margin-top:8px';
         if (feita) {
           caps.appendChild(mk('Desfazer', 'btn-ghost', async function () {
             var x = await SB.from('evento_etapas').update({ situacao: 'pendente', concluida_por: null, concluida_em: null }).eq('id', e.id);
-            if (x.error) { alert(x.error.message); return; } await carregar();
+            if (x.error) { appAlert(x.error.message); return; } await carregar();
           }));
         } else {
           caps.appendChild(mk('Concluir e avisar', 'btn-lime', async function () {
-            if (!confirm('Marcar "' + e.nome + '" como concluída e avisar o cliente?')) return;
+            if (!await appConfirm('Marcar "' + e.nome + '" como concluída e avisar o cliente?')) return;
             var x = await SB.from('evento_etapas').update({ situacao: 'concluida' }).eq('id', e.id);
-            if (x.error) { alert(x.error.message); return; }
+            if (x.error) { appAlert(x.error.message); return; }
             try { await fetch('https://www.432up.com/avisos-telegram', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ event: 'etapa_concluida', proposta_id: pedido.id, etapa: e.nome, mensagem: 'Etapa concluída: ' + e.nome }) }); } catch (er) {}
             try { await SB.functions.invoke('notificar-cliente-etapa', { body: { proposta_id: pedido.id, etapa: e.nome } }); } catch (er) {}
             await carregar();
           }));
         }
         caps.appendChild(mk('Remover', 'btn-ghost', async function () {
-          if (!confirm('Remover "' + e.nome + '" do checklist?')) return;
+          if (!await appConfirm('Remover "' + e.nome + '" do checklist?')) return;
           var x = await SB.from('evento_etapas').delete().eq('id', e.id);
-          if (x.error) { alert(x.error.message); return; } await carregar();
+          if (x.error) { appAlert(x.error.message); return; } await carregar();
         }));
         d.appendChild(caps);
         lt.appendChild(d);
@@ -2763,7 +2771,7 @@
     async function ligar(c, on) {
       if (on) {
         var x = await SB.from('evento_etapas').insert({ proposta_id: pedido.id, nome: c.nome, hora: calcHora(c, pedido), data_alvo: calcData(c, pedido), ordem: c.ordem == null ? 500 : c.ordem, origem: 'catalogo' });
-        if (x.error) { alert(x.error.message); }
+        if (x.error) { appAlert(x.error.message); }
       } else {
         await SB.from('evento_etapas').delete().eq('proposta_id', pedido.id).eq('nome', c.nome).neq('situacao', 'concluida');
       }
@@ -2795,14 +2803,14 @@
       async function salvarHora() {
         var m = hm.value, patch = { hora_modo: m, hora_valor: null, hora_padrao: null };
         if (m === 'fixa') {
-          if (!ht.value) { alert('Informe a hora fixa.'); return; }
+          if (!ht.value) { appAlert('Informe a hora fixa.'); return; }
           patch.hora_padrao = ht.value;
         } else if (m === 'antes_horas' || m === 'antes_dias') {
-          if (hv.value === '' || Number(hv.value) < 0) { alert('Informe a antecedência.'); return; }
+          if (hv.value === '' || Number(hv.value) < 0) { appAlert('Informe a antecedência.'); return; }
           patch.hora_valor = Number(hv.value);
         }
         var x = await SB.from('evento_etapas_catalogo').update(patch).eq('id', c.id);
-        if (x.error) { alert(x.error.message); return; }
+        if (x.error) { appAlert(x.error.message); return; }
         await carregar();
       }
       hm.addEventListener('change', function () { ajustarHora(); salvarHora(); });
@@ -2816,13 +2824,13 @@
       var pc = document.createElement('input'); pc.type = 'checkbox'; pc.checked = !!c.padrao;
       pc.addEventListener('change', async function () {
         var x = await SB.from('evento_etapas_catalogo').update({ padrao: pc.checked }).eq('id', c.id);
-        if (x.error) { alert(x.error.message); pc.checked = !pc.checked; }
+        if (x.error) { appAlert(x.error.message); pc.checked = !pc.checked; }
       });
       lb.appendChild(pc); lb.appendChild(document.createTextNode('Padrão'));
       var rm = mk('Tirar do banco', 'btn-ghost', async function () {
-        if (!confirm('Tirar "' + c.nome + '" do banco de etapas? Os eventos que já têm continuam como estão.')) return;
+        if (!await appConfirm('Tirar "' + c.nome + '" do banco de etapas? Os eventos que já têm continuam como estão.')) return;
         var x = await SB.from('evento_etapas_catalogo').update({ ativo: false }).eq('id', c.id);
-        if (x.error) { alert(x.error.message); return; } await carregar();
+        if (x.error) { appAlert(x.error.message); return; } await carregar();
       });
       row.appendChild(cb); row.appendChild(nm); row.appendChild(lb); row.appendChild(rm);
       sel.appendChild(row);
@@ -2845,7 +2853,7 @@
       if (!existente) {
         var prox = cat.length ? Math.max.apply(null, cat.map(function (c) { return c.ordem || 0; })) + 1 : 1;
         var ins = await SB.from('evento_etapas_catalogo').insert({ nome: nome, ordem: prox, ativo: true, padrao: false }).select('id, nome, hora_padrao, ordem, padrao, hora_modo, hora_valor').maybeSingle();
-        if (ins.error) { alert(ins.error.message); return; }
+        if (ins.error) { appAlert(ins.error.message); return; }
         existente = ins.data || { nome: nome, ordem: prox };
       }
       if (!marcadas[existente.nome]) await ligar(existente, true); else await carregar();
@@ -2853,10 +2861,10 @@
     sel.appendChild(add);
     var pad = mk('Aplicar o padrão neste evento', 'btn-ghost', async function () {
       var falta = cat.filter(function (c) { return c.padrao && !marcadas[c.nome]; });
-      if (!falta.length) { alert('As etapas padrão já estão marcadas.'); return; }
+      if (!falta.length) { appAlert('As etapas padrão já estão marcadas.'); return; }
       var linhas = falta.map(function (c) { return { proposta_id: pedido.id, nome: c.nome, hora: calcHora(c, pedido), data_alvo: calcData(c, pedido), ordem: c.ordem == null ? 500 : c.ordem, origem: 'catalogo' }; });
       var x = await SB.from('evento_etapas').insert(linhas);
-      if (x.error) { alert(x.error.message); return; } await carregar();
+      if (x.error) { appAlert(x.error.message); return; } await carregar();
     });
     pad.style.marginTop = '10px';
     sel.appendChild(pad);
@@ -3039,13 +3047,13 @@
     b.type = 'button'; b.className = 'btn-lime'; b.style.cssText = 'margin-bottom:14px';
     b.textContent = 'Autorizar sem assinatura';
     b.addEventListener('click', async function () {
-      var mot = prompt('Motivo para seguir sem assinatura:');
+      var mot = await appPrompt('Motivo para seguir sem assinatura:');
       if (!mot || !mot.trim()) return;
-      if (!confirm('Autorizar seguir com o contrato sem assinatura?')) return;
+      if (!await appConfirm('Autorizar seguir com o contrato sem assinatura?')) return;
       var u = await sbPartner.auth.getUser();
       var uid = (u && u.data && u.data.user && u.data.user.id) || null;
       var r = await sbPartner.from('propostas').update({ assinatura_dispensada_em: new Date().toISOString(), assinatura_dispensada_por: uid, assinatura_dispensada_motivo: mot.trim() }).eq('id', pidAtual);
-      if (r.error) { alert(r.error.message); return; }
+      if (r.error) { appAlert(r.error.message); return; }
       carregarFin();
     });
     box.insertBefore(b, box.children[1] || null);
@@ -3146,18 +3154,18 @@
   window.finAceitarBloqueio = async function () {
     var forma = document.getElementById('finForma').value.trim();
     var lim = document.getElementById('finLimite').value;
-    if (!forma) return alert('Descreva como será feito o pagamento.');
-    if (!lim) return alert('Informe o dia e a hora limite.');
+    if (!forma) return appAlert('Descreva como será feito o pagamento.');
+    if (!lim) return appAlert('Informe o dia e a hora limite.');
     var r = await sbPartner.rpc('aceitar_bloqueio_sem_pagamento', { p_id: pidAtual, p_forma: forma, p_data_limite: new Date(lim).toISOString() });
-    if (r.error) return alert(r.error.message);
+    if (r.error) return appAlert(r.error.message);
     carregarFin();
   };
 
   window.finResolver = async function () {
-    var motivo = prompt('Registre a decisão (ex.: mantido, cliente confirmou nova data):');
+    var motivo = await appPrompt('Registre a decisão (ex.: mantido, cliente confirmou nova data):');
     if (motivo === null) return;
     var r = await sbPartner.rpc('resolver_bloqueio_sem_pagamento', { p_id: pidAtual, p_motivo: motivo });
-    if (r.error) return alert(r.error.message);
+    if (r.error) return appAlert(r.error.message);
     carregarFin();
   };
 
@@ -3205,27 +3213,27 @@
     var valor = num(document.getElementById('fv-' + id).value);
     var motivo = document.getElementById('fm-' + id).value.trim();
     var r = await sbPartner.rpc('aprovar_comprovante', { p_id: id, p_valor: valor, p_motivo: motivo || null });
-    if (r.error) return alert(r.error.message);
+    if (r.error) return appAlert(r.error.message);
     dispararAvisos();
     carregarFin();
   };
 
   window.finRecusar = async function (id) {
-    var motivo = prompt('Motivo da recusa (o cliente verá):');
+    var motivo = await appPrompt('Motivo da recusa (o cliente verá):');
     if (motivo === null) return;
     var r = await sbPartner.rpc('recusar_comprovante', { p_id: id, p_motivo: motivo });
-    if (r.error) return alert(r.error.message);
+    if (r.error) return appAlert(r.error.message);
     dispararAvisos();
     carregarFin();
   };
 
   window.finAlterar = async function (id, atual) {
-    var novo = prompt('Novo valor conferido (atual: ' + atual + '):');
+    var novo = await appPrompt('Novo valor conferido (atual: ' + atual + '):');
     if (novo === null) return;
-    var motivo = prompt('Motivo da alteração (obrigatório):');
+    var motivo = await appPrompt('Motivo da alteração (obrigatório):');
     if (motivo === null) return;
     var r = await sbPartner.rpc('alterar_valor_comprovante', { p_id: id, p_valor: num(novo), p_motivo: motivo });
-    if (r.error) return alert(r.error.message);
+    if (r.error) return appAlert(r.error.message);
     carregarFin();
   };
 
@@ -3255,11 +3263,11 @@
   }
 
   window.finCancelar = async function () {
-    var motivo = prompt('Motivo do cancelamento (obrigatório). Vendedor e cliente serão avisados:');
+    var motivo = await appPrompt('Motivo do cancelamento (obrigatório). Vendedor e cliente serão avisados:');
     if (motivo === null || !motivo.trim()) return;
-    if (!confirm('Cancelar este pedido? A data sai da agenda.')) return;
+    if (!await appConfirm('Cancelar este pedido? A data sai da agenda.')) return;
     var r = await sbPartner.rpc('cancelar_contrato', { p_id: pidAtual, p_motivo: motivo.trim() });
-    if (r.error) return alert(r.error.message);
+    if (r.error) return appAlert(r.error.message);
     dispararAvisos();
     carregarFin();
   };
@@ -3289,9 +3297,9 @@
     var txt = decisao === 'descontar_proximo'
       ? 'Registrar: descontar este valor do próximo repasse do vendedor?'
       : 'Registrar: pedir a devolução deste valor ao vendedor?';
-    if (!confirm(txt)) return;
+    if (!await appConfirm(txt)) return;
     var r = await sbPartner.rpc('resolver_pendencia_comissao', { p_id: id, p_decisao: decisao });
-    if (r.error) return alert(r.error.message);
+    if (r.error) return appAlert(r.error.message);
     carregarFin();
   };
 
@@ -3312,9 +3320,9 @@
 
 
   window.finExcluir = async function (id) {
-    if (!confirm('Excluir este comprovante? Fica registrado no histórico.')) return;
+    if (!await appConfirm('Excluir este comprovante? Fica registrado no histórico.')) return;
     var r = await sbPartner.from('contrato_comprovantes').delete().eq('id', id);
-    if (r.error) return alert(r.error.message);
+    if (r.error) return appAlert(r.error.message);
     carregarFin();
   };
 
@@ -3985,5 +3993,48 @@
 })();
 </script>
 
+  <!-- Diálogo do sistema: confirmar, avisar e pedir texto -->
+  <div id="appDlg" role="dialog" aria-modal="true">
+    <div class="glass-card p-5 sm:p-6">
+      <p id="appDlgMsg"></p>
+      <input id="appDlgInput" type="text" style="display:none">
+      <div class="acoes">
+        <button type="button" class="btn-ghost" id="appDlgNao">Cancelar</button>
+        <button type="button" class="btn-adm-primary" id="appDlgSim">OK</button>
+      </div>
+    </div>
+  </div>
+<script>
+  /* Diálogos do sistema, no visual do site (substituem alert / confirm / prompt nativos) */
+  (function () {
+    var ov = document.getElementById('appDlg');
+    var msgEl = document.getElementById('appDlgMsg');
+    var inp = document.getElementById('appDlgInput');
+    var btnSim = document.getElementById('appDlgSim');
+    var btnNao = document.getElementById('appDlgNao');
+    function abrir(texto, modo, padrao) {
+      return new Promise(function (resolve) {
+        msgEl.textContent = texto || '';
+        inp.style.display = modo === 'prompt' ? '' : 'none';
+        inp.value = padrao || '';
+        btnNao.style.display = modo === 'alert' ? 'none' : '';
+        btnSim.textContent = modo === 'alert' ? 'OK' : 'Sim';
+        ov.classList.add('on');
+        if (modo === 'prompt') setTimeout(function () { inp.focus(); }, 50);
+        function fechar(valor) {
+          ov.classList.remove('on');
+          btnSim.onclick = null; btnNao.onclick = null; ov.onclick = null;
+          resolve(valor);
+        }
+        btnSim.onclick = function () { fechar(modo === 'prompt' ? inp.value : true); };
+        btnNao.onclick = function () { fechar(modo === 'prompt' ? null : false); };
+        ov.onclick = function (e) { if (e.target === ov && modo !== 'alert') fechar(modo === 'prompt' ? null : false); };
+      });
+    }
+    window.appAlert = function (t) { return abrir(t, 'alert'); };
+    window.appConfirm = function (t) { return abrir(t, 'confirm'); };
+    window.appPrompt = function (t, padrao) { return abrir(t, 'prompt', padrao); };
+  })();
+</script>
 </body>
 </html>
