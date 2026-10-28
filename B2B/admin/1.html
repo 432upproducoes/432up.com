@@ -294,6 +294,9 @@
     .slot-off { position: absolute; right: 8px; top: 8px; z-index: 2; font-size: 10px; font-weight: 800; padding: 3px 8px; border-radius: 999px; background: rgba(255, 77, 77, .8); color: #fff; text-transform: uppercase; pointer-events: none; }
     .slot.drop-alvo { outline: 3px solid #fbbf24; outline-offset: 3px; }
     .slot-ghost { border-radius: 16px; }
+    #sheetDet { position: fixed; inset: 0; z-index: 9000; background: rgba(6, 8, 12, .72); display: none; align-items: center; justify-content: center; padding: 16px; }
+    #sheetDet.on { display: flex; }
+    #sheetDetBody .dl-item { padding: 9px 0; }
     /* Painel de mídia (vídeo) e loader: CSS do Fotolog original — evita vazamento na tela */
     #sheet { position: fixed; inset: 0; z-index: 9000; background: rgba(6, 8, 12, .72); display: none; align-items: center; justify-content: center; padding: 16px; }
     #sheet.on { display: flex; }
@@ -2980,6 +2983,14 @@
   })();
 })();
   </script>
+  <!-- Detalhes de um comprovante -->
+  <div id="sheetDet" role="dialog" aria-modal="true" aria-label="Detalhes do comprovante">
+    <div class="glass-card p-5 sm:p-6" style="width:min(92vw,520px);max-height:90vh;overflow:auto">
+      <div id="sheetDetBody"></div>
+      <button type="button" class="btn-ghost" id="sheetDetFechar" style="width:100%;margin-top:12px">Fechar</button>
+    </div>
+  </div>
+
   <!-- Opções de uma mídia do mural -->
   <div id="sheet" role="dialog" aria-modal="true" aria-label="Opções da mídia">
     <div class="glass-card p-5 sm:p-6" style="width:min(92vw,420px)">
@@ -3081,32 +3092,19 @@
     var lista = c.data || [];
     html += '<strong>Comprovantes do cliente</strong>';
     if (!lista.length) html += '<div style="color:#94a3b8;margin:6px 0 14px;">Nenhum comprovante enviado ainda.</div>';
+    window.__cmpDet = window.__cmpDet || {};
     lista.forEach(function (x) {
-      var badge = x.status === 'aprovado' ? '<span style="color:#a3e635;font-weight:700;">Aprovado</span>'
-        : x.status === 'recusado' ? '<span style="color:#fca5a5;font-weight:700;">Recusado</span>'
-        : '<span style="color:#facc15;font-weight:700;">Aguardando conferência</span>';
-      html += '<div style="border:1px solid rgba(255,255,255,.1);border-radius:10px;padding:10px;margin:8px 0;">' +
-        '<div style="display:flex;justify-content:space-between;flex-wrap:wrap;gap:6px;"><strong>' + E(TIPO[x.tipo] || x.tipo) + '</strong>' + badge + '</div>' +
-        '<div style="margin-top:6px;">Valor digitado: <strong>' + BRL(x.valor) + '</strong> · Data: ' + (x.data_pagamento ? x.data_pagamento.split('-').reverse().join('/') : '—') +
-        ' · <a href="' + E(x.arquivo_url) + '" target="_blank" rel="noopener" style="color:#a3e635;">Abrir comprovante</a></div>';
-      if (x.status === 'pendente') {
-        html += '<div style="display:flex;gap:8px;flex-wrap:wrap;margin-top:8px;align-items:end;">' +
-          '<div><div style="font-size:11px;color:#94a3b8;">Valor conferido</div><input id="fv-' + x.id + '" value="' + String(x.valor).replace('.', ',') + '" style="background:#020617;color:#e2e8f0;border:1px solid rgba(255,255,255,.1);border-radius:8px;padding:6px;width:120px;"></div>' +
-          '<div><div style="font-size:11px;color:#94a3b8;">Motivo (se diferente)</div><input id="fm-' + x.id + '" style="background:#020617;color:#e2e8f0;border:1px solid rgba(255,255,255,.1);border-radius:8px;padding:6px;width:220px;"></div>' +
-          '<button onclick="finAprovar(\'' + x.id + '\')" style="padding:6px 12px;border-radius:8px;background:#a3e635;color:#0b1020;border:none;font-weight:700;cursor:pointer;">Aprovar</button>' +
-          '<button onclick="finRecusar(\'' + x.id + '\')" style="padding:6px 12px;border-radius:8px;background:transparent;color:#fca5a5;border:1px solid rgba(248,113,113,.4);cursor:pointer;">Recusar</button>' +
-          '<button onclick="finExcluir(\'' + x.id + '\')" style="padding:6px 12px;border-radius:8px;background:transparent;color:#e2e8f0;border:1px solid rgba(255,255,255,.2);cursor:pointer;">Excluir</button></div>';
-      }
-      if (x.status === 'aprovado') {
-        html += '<div style="margin-top:6px;">Valor conferido: <strong>' + BRL(x.valor_confirmado) + '</strong> · Aprovado em ' + DH(x.aprovado_em) +
-          ' <button onclick="finAlterar(\'' + x.id + '\',' + (x.valor_confirmado || 0) + ')" style="margin-left:8px;padding:4px 10px;border-radius:8px;background:transparent;color:#e2e8f0;border:1px solid rgba(255,255,255,.2);cursor:pointer;">Alterar valor</button></div>';
-      }
-      if (x.status === 'recusado') {
-        html += '<div style="margin-top:6px;color:#fca5a5;">Motivo: ' + E(x.motivo_recusa || '—') + ' · <button onclick="finExcluir(\'' + x.id + '\')" style="padding:4px 10px;border-radius:8px;background:transparent;color:#e2e8f0;border:1px solid rgba(255,255,255,.2);cursor:pointer;">Excluir</button></div>';
-      }
-      html += '</div>';
+      window.__cmpDet[x.id] = x;
+      var stTxt = x.status === 'aprovado' ? 'Aprovado' : x.status === 'recusado' ? 'Recusado' : 'Aguardando conferência';
+      var dataTxt = x.data_pagamento ? x.data_pagamento.split('-').reverse().join('/') : '—';
+      html += '<div class="dl-item" style="display:flex;justify-content:space-between;align-items:center;gap:10px;flex-wrap:wrap">' +
+        '<div style="min-width:0"><span class="rot">' + E(TIPO[x.tipo] || x.tipo) + ' · ' + dataTxt + '</span>' +
+        '<span class="val">' + BRL(x.valor) + '</span></div>' +
+        '<div style="display:flex;gap:8px;align-items:center;flex-wrap:wrap">' +
+        '<span class="pill">' + stTxt + '</span>' +
+        '<button type="button" class="btn-s" onclick="finVerDetalhe(\'' + x.id + '\')">Detalhes</button>' +
+        '</div></div>';
     });
-
     // ---- Venda: troca de painel com transição (cancelada: reembolso; ativa: envio em nome do cliente) ----
     var cancelada = P.status === 'cancelada';
     var recebidoAprov = lista.filter(function (x) { return x.status === 'aprovado'; })
@@ -3184,6 +3182,45 @@
     var r = await sbPartner.rpc('resolver_bloqueio_sem_pagamento', { p_id: pidAtual, p_motivo: motivo });
     if (r.error) return alert(r.error.message);
     carregarFin();
+  };
+
+  function fecharDet() { document.getElementById('sheetDet').classList.remove('on'); }
+  document.getElementById('sheetDetFechar').addEventListener('click', fecharDet);
+  document.getElementById('sheetDet').addEventListener('click', function (e) { if (e.target === this) fecharDet(); });
+  window.finVerDetalhe = function (id) {
+    var x = (window.__cmpDet || {})[id];
+    if (!x) return;
+    var nome = x.aprovado_por ? 'Administrador' : '—';
+    var linha = function (k, v) { return '<div class="dl-item"><span class="rot">' + k + '</span><span class="val">' + v + '</span></div>'; };
+    var h = '<span class="rot">Comprovante</span><strong class="val" style="margin-bottom:10px;display:block">' + E(TIPO[x.tipo] || x.tipo) + '</strong>' +
+      linha('Valor digitado', BRL(x.valor)) +
+      linha('Data do pagamento', x.data_pagamento ? x.data_pagamento.split('-').reverse().join('/') : '—') +
+      linha('Enviado em', DH(x.enviado_em)) +
+      linha('Enviado por', E(x.enviado_por || 'cliente')) +
+      linha('Status', x.status === 'aprovado' ? 'Aprovado' : x.status === 'recusado' ? 'Recusado' : 'Aguardando conferência');
+    if (x.status === 'aprovado') {
+      h += linha('Valor conferido', BRL(x.valor_confirmado)) +
+        linha('Aprovado em', DH(x.aprovado_em)) +
+        linha('Aprovado por', nome) +
+        linha('Motivo da alteração', E(x.motivo_alteracao || '—'));
+    }
+    if (x.status === 'recusado') h += linha('Motivo da recusa', E(x.motivo_recusa || '—'));
+    h += '<div style="margin-top:12px"><a class="btn-s" href="' + E(x.arquivo_url) + '" target="_blank" rel="noopener">Abrir comprovante</a></div>';
+    if (x.status === 'pendente') {
+      h += '<div class="dl-item" style="display:grid;gap:8px;grid-template-columns:1fr 1fr;margin-top:12px">' +
+        '<div><span class="rot">Valor conferido</span><input id="fv-' + x.id + '" value="' + String(x.valor).replace('.', ',') + '"></div>' +
+        '<div><span class="rot">Motivo (se diferente)</span><input id="fm-' + x.id + '"></div></div>' +
+        '<div style="display:flex;gap:8px;flex-wrap:wrap;margin-top:10px">' +
+        '<button type="button" class="btn-s" onclick="fecharDet();finAprovar(\'' + x.id + '\')">Aprovar</button>' +
+        '<button type="button" class="btn-s" onclick="fecharDet();finRecusar(\'' + x.id + '\')">Recusar</button>' +
+        '<button type="button" class="btn-s" onclick="fecharDet();finExcluir(\'' + x.id + '\')">Excluir</button></div>';
+    } else if (x.status === 'aprovado') {
+      h += '<div style="margin-top:12px"><button type="button" class="btn-s" onclick="fecharDet();finAlterar(\'' + x.id + '\',' + (x.valor_confirmado || 0) + ')">Alterar valor</button></div>';
+    } else {
+      h += '<div style="margin-top:12px"><button type="button" class="btn-s" onclick="fecharDet();finExcluir(\'' + x.id + '\')">Excluir</button></div>';
+    }
+    document.getElementById('sheetDetBody').innerHTML = h;
+    document.getElementById('sheetDet').classList.add('on');
   };
 
   window.finAprovar = async function (id) {
