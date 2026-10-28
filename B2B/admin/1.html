@@ -394,22 +394,230 @@
   <link rel="stylesheet" href="css/admin.css">
 
   <style id="admEstilos">
-    .adm-field{width:100%;background:rgba(255,255,255,.05);border:1px solid rgba(245,158,11,.28);padding:10px 14px;border-radius:12px;color:#fff;font-size:.88rem;outline:none;box-sizing:border-box;font-family:inherit}
-    .adm-field:focus{border-color:#f59e0b;box-shadow:0 0 12px rgba(245,158,11,.25)}
-    .adm-field option{background:#17122b}
-    .adm-btn{background:rgba(255,255,255,.04);border:1px solid rgba(255,255,255,.12);color:#cbd5e1;font-weight:600;padding:8px 14px;border-radius:20px;cursor:pointer;font-size:.8rem;transition:all .2s;font-family:inherit;width:auto;display:inline-flex;align-items:center;justify-content:center;gap:6px}
-    .adm-btn:hover{border-color:rgba(255,255,255,.28);color:#fff}
-    .adm-btn.adm-btn-p{background:linear-gradient(135deg,rgba(245,158,11,.16),rgba(245,158,11,.05));border-color:#fbbf24;color:#fbbf24;font-weight:700}
-    .adm-btn.adm-btn-p:hover{background:#fbbf24;color:#08080A;box-shadow:0 0 22px rgba(245,158,11,.4)}
-    .adm-btn.adm-btn-d{border-color:rgba(248,113,113,.45);color:#fca5a5}
-    .adm-btn.adm-btn-d:hover{background:rgba(248,113,113,.14);color:#fff}
-    .adm-sec{margin-top:16px;padding-top:12px;border-top:1px solid rgba(245,158,11,.2)}
-    .adm-sec h3{margin:0 0 10px;color:#fbbf24;font-size:.78rem;letter-spacing:.12em;text-transform:uppercase}
-    .adm-linha{display:flex;flex-wrap:wrap;gap:8px;align-items:center;justify-content:space-between;padding:10px 0;border-top:1px solid rgba(255,255,255,.06);color:#e5e7eb}
-    .adm-acoes{display:flex;gap:6px;flex-wrap:wrap}
+
+    .adm-input {
+      width: 100%; background: rgba(255,255,255,0.05);
+      border: 1px solid rgba(var(--accent-rgb),0.28);
+      padding: 10px 14px; border-radius: 12px; color: #fff; font-size: 0.88rem;
+      outline: none; box-sizing: border-box; font-family: inherit;
+      transition: border-color .2s, box-shadow .2s;
+    }
+    .adm-input:focus { border-color: var(--accent); box-shadow: 0 0 12px rgba(var(--accent-rgb),0.25); }
+    textarea.adm-input { resize: vertical; min-height: 72px; }
+
+    .btn-adm-primary {
+      background: linear-gradient(135deg, rgba(var(--accent-rgb),0.18), rgba(var(--accent-rgb),0.06));
+      border: 1px solid var(--accent); color: var(--accent-lighter); font-weight: 700;
+      padding: 10px 18px; border-radius: 20px; cursor: pointer;
+      display: inline-flex; align-items: center; justify-content: center; gap: 8px;
+      font-size: 0.84rem; transition: all .25s ease; white-space: nowrap;
+    }
+    .btn-adm-primary:hover { background: var(--accent); color: #08080A; box-shadow: 0 0 22px rgba(var(--accent-rgb),0.45); transform: translateY(-1px); }
+    .btn-adm-primary:disabled { opacity: .55; cursor: not-allowed; transform: none; }
+
+    .btn-lime {
+      background: linear-gradient(135deg, rgba(var(--accent-rgb),0.14), rgba(var(--accent-rgb),0.04));
+      border: 1px solid var(--accent-light); color: var(--accent-light); font-weight: 700;
+      padding: 10px 18px; border-radius: 20px; cursor: pointer;
+      display: inline-flex; align-items: center; gap: 8px; font-size: 0.84rem;
+      transition: all .25s ease; white-space: nowrap;
+    }
+    .btn-lime:hover { background: var(--accent-light); color: #08080A; box-shadow: 0 0 22px rgba(var(--accent-rgb),0.4); }
+
+    .btn-ghost {
+      background: rgba(255,255,255,0.04); border: 1px solid rgba(255,255,255,0.12);
+      color: #cbd5e1; font-weight: 600; padding: 10px 16px; border-radius: 20px;
+      cursor: pointer; font-size: 0.82rem; transition: all .2s;
+    }
+    .btn-ghost:hover { border-color: rgba(255,255,255,0.28); color: #fff; }
+
+    .btn-danger-outline {
+      background: linear-gradient(135deg, rgba(255,77,77,0.12), rgba(255,77,77,0.04));
+      border: 1px solid #FF4D4D; color: #FF8080; font-weight: 700;
+      padding: 10px 18px; border-radius: 20px; cursor: pointer;
+      display: inline-flex; align-items: center; gap: 8px; font-size: 0.84rem;
+      transition: all .25s;
+    }
+    .btn-danger-outline:hover { background: #FF4D4D; color: #08080A; }
+
+    .file-upload-wrap { display: flex; flex-wrap: wrap; align-items: center; gap: 10px; }
+    .file-upload-input { position: absolute; width: 1px; height: 1px; padding: 0; margin: -1px; overflow: hidden; clip: rect(0,0,0,0); white-space: nowrap; border: 0; }
+    .btn-file-upload {
+      background: linear-gradient(135deg, rgba(var(--accent-rgb),0.12), rgba(var(--accent-rgb),0.04));
+      border: 1px solid var(--accent-light); color: var(--accent-light); font-weight: 700;
+      padding: 10px 16px; border-radius: 18px; cursor: pointer;
+      display: inline-flex; align-items: center; gap: 8px; font-size: 0.8rem;
+      transition: all .25s; user-select: none;
+    }
+    .btn-file-upload:hover { background: var(--accent-light); color: #08080A; }
+    .file-upload-filename { font-size: 0.76rem; color: #94a3b8; max-width: 180px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+
+    .glass-card {
+      background: rgba(14,14,22,0.75); backdrop-filter: blur(20px); -webkit-backdrop-filter: blur(20px);
+      border: 1px solid rgba(var(--accent-rgb),0.22); border-radius: 20px;
+    }
+
+    .marca-chip {
+      display: inline-flex; align-items: center; gap: 8px;
+      background: rgba(255,255,255,0.04); border: 1px solid rgba(255,255,255,0.1);
+      padding: 6px 10px 6px 12px; border-radius: 999px; font-size: 0.82rem; font-weight: 600;
+    }
+    .marca-chip img { height: 22px; width: auto; object-fit: contain; }
+    .marca-chip .chip-btn {
+      background: none; border: none; cursor: pointer; padding: 0 2px;
+      font-size: 0.85rem; line-height: 1; opacity: .75;
+    }
+    .marca-chip .chip-btn:hover { opacity: 1; }
+    .marca-chip .chip-edit { color: var(--accent-lighter); }
+    .marca-chip .chip-del { color: #FF8080; }
+
+    .admin-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(280px, 1fr)); gap: 18px; }
+    .adm-card {
+      background: rgba(14,14,22,0.8); border: 1px solid rgba(var(--accent-rgb),0.2);
+      border-radius: 18px; overflow: hidden; display: flex; flex-direction: column;
+      transition: transform .2s, border-color .2s, box-shadow .2s;
+    }
+    .adm-card:hover { border-color: var(--accent); transform: translateY(-3px); box-shadow: 0 16px 36px rgba(0,0,0,0.5), 0 0 18px rgba(var(--accent-rgb),0.12); }
+    .adm-card-media { width: 100%; height: 170px; object-fit: cover; background: #111; cursor: pointer; }
+    .adm-card-body { padding: 14px 16px 16px; flex: 1; display: flex; flex-direction: column; gap: 6px; }
+    .adm-card-title { font-size: 1rem; font-weight: 800; color: #fff; }
+    .adm-card-sub { font-size: 0.72rem; color: #94a3b8; text-transform: uppercase; letter-spacing: 0.3px; }
+    .btn-edit-modal {
+      background: linear-gradient(135deg, rgba(var(--accent-rgb),0.15), rgba(var(--accent-rgb),0.05));
+      color: var(--accent-lighter); border: 1px solid var(--accent); padding: 7px 14px; border-radius: 16px;
+      font-weight: 700; font-size: 0.76rem; cursor: pointer; transition: all .2s; white-space: nowrap;
+    }
+    .btn-edit-modal:hover { background: var(--accent); color: #08080A; }
+    .btn-icon-action {
+      background: rgba(255,255,255,0.04); border: 1px solid rgba(255,255,255,0.12); color: #fff;
+      width: 30px; height: 30px; border-radius: 8px; cursor: pointer; font-size: 0.78rem;
+      display: inline-flex; align-items: center; justify-content: center;
+    }
+    .btn-icon-action:hover { border-color: var(--accent); background: rgba(var(--accent-rgb),0.15); }
+
+    #edit-modal-overlay {
+      position: fixed; inset: 0; z-index: 100050;
+      display: flex; align-items: center; justify-content: center;
+      opacity: 0; pointer-events: none; visibility: hidden;
+      transition: opacity .3s, visibility .3s; padding: 20px;
+    }
+    #edit-modal-overlay.open { opacity: 1; pointer-events: auto; visibility: visible; }
+    .glx-backdrop { position: absolute; inset: 0; background: rgba(6,8,12,0.82); backdrop-filter: blur(18px); }
+    .glx-stage {
+      position: relative; width: min(96vw, 900px); max-height: 90vh;
+      transform: scale(0.96) translateY(12px); transition: transform .3s cubic-bezier(0.22,1,0.36,1); z-index: 2;
+    }
+    #edit-modal-overlay.open .glx-stage { transform: scale(1) translateY(0); }
+    .glx-panel {
+      max-height: 90vh; overflow-y: auto;
+      background: linear-gradient(135deg, rgba(14,14,22,0.98), rgba(28,20,48,0.94));
+      border: 1px solid rgba(var(--accent-rgb),0.3); border-radius: 22px;
+      box-shadow: 0 25px 60px rgba(0,0,0,0.85), 0 0 36px rgba(var(--accent-rgb),0.15);
+      padding: 28px;
+    }
+    .glx-close {
+      position: absolute; top: 16px; right: 16px; z-index: 5;
+      width: 36px; height: 36px; border-radius: 50%;
+      background: rgba(255,255,255,0.08); border: 1px solid rgba(255,255,255,0.15);
+      color: #fff; font-size: 1.2rem; cursor: pointer; display: flex; align-items: center; justify-content: center;
+    }
+    .glx-close:hover { color: var(--accent-light); border-color: var(--accent-light); }
+
+    .edit-section-title {
+      font-size: 0.7rem; font-weight: 700; text-transform: uppercase; letter-spacing: 1.4px;
+      color: var(--accent-lighter); margin: 22px 0 12px;
+    }
+    .edit-media-grid { display: flex; gap: 12px; overflow-x: auto; padding-bottom: 10px; }
+    .edit-media-thumb {
+      flex: 0 0 auto; width: 132px; height: 100px; border-radius: 12px; overflow: hidden;
+      position: relative; border: 1px solid rgba(var(--accent-rgb),0.3); background: rgba(0,0,0,0.4);
+    }
+    .edit-media-thumb img, .edit-media-thumb video { width: 100%; height: 100%; object-fit: cover; }
+    .edit-media-thumb.selecionavel { cursor: pointer; transition: border-color .15s, transform .15s; }
+    .edit-media-thumb.selecionavel:hover { border-color: var(--accent); transform: translateY(-2px); }
+    .btn-del-media {
+      position: absolute; top: 6px; right: 6px; background: rgba(255,77,77,0.9); border: none;
+      color: #fff; width: 22px; height: 22px; border-radius: 50%; cursor: pointer; font-weight: 800; font-size: 0.7rem; z-index: 10;
+    }
+    .specs-edit-list { display: flex; flex-direction: column; gap: 8px; margin-bottom: 10px; }
+    .spec-edit-item { display: flex; gap: 8px; align-items: center; }
+    .spec-drag-handle { cursor: grab; padding: 8px 6px; color: var(--accent-lighter); font-size: 1rem; user-select: none; }
+    .spec-edit-item.sortable-ghost, .admin-card-draggable.sortable-ghost { opacity: 0.35; }
+
+    .heic-warning, .slug-warning {
+      font-size: 0.74rem; padding: 8px 12px; border-radius: 10px; margin-top: 6px;
+      display: none; align-items: center; gap: 6px;
+    }
+    .heic-warning { background: rgba(255,184,0,0.1); border: 1px solid rgba(255,184,0,0.4); color: #FFB800; }
+    .slug-warning { background: rgba(255,77,77,0.08); border: 1px solid rgba(255,77,77,0.35); color: #FF8080; }
+
+    .toggle-switch {
+      position: relative; width: 42px; height: 24px; border-radius: 999px;
+      background: rgba(255,255,255,0.12); border: 1px solid rgba(255,255,255,0.18);
+      cursor: pointer; transition: background .2s;
+    }
+    .toggle-switch.on { background: rgba(var(--accent-rgb),0.35); border-color: var(--accent-light); }
+    .toggle-switch::after {
+      content: ''; position: absolute; top: 2px; left: 2px; width: 18px; height: 18px;
+      border-radius: 50%; background: #cbd5e1; transition: transform .2s, background .2s;
+    }
+    .toggle-switch.on::after { transform: translateX(18px); background: var(--accent-light); }
+
+    /* tip / help */
+    .help-tip {
+      display: inline-flex; align-items: center; justify-content: center;
+      width: 18px; height: 18px; border-radius: 50%;
+      border: 1px solid rgba(var(--accent-rgb),0.45); color: var(--accent-lighter);
+      font-size: 0.7rem; font-weight: 800; cursor: help; position: relative;
+      flex-shrink: 0; line-height: 1;
+    }
+    .help-tip .help-bubble {
+      display: none; position: absolute; bottom: calc(100% + 8px); left: 50%;
+      transform: translateX(-50%); width: min(260px, 70vw); padding: 10px 12px;
+      background: rgba(14,14,22,0.98); border: 1px solid rgba(var(--accent-rgb),0.4);
+      border-radius: 12px; font-size: 0.72rem; font-weight: 500; color: #e2e8f0;
+      line-height: 1.45; text-align: left; z-index: 40;
+      box-shadow: 0 12px 28px rgba(0,0,0,0.55); pointer-events: none;
+      white-space: normal;
+    }
+    .help-tip:hover .help-bubble, .help-tip:focus .help-bubble { display: block; }
+
+    /* crop modal */
+    #crop-modal-overlay {
+      position: fixed; inset: 0; z-index: 100080;
+      display: flex; align-items: center; justify-content: center;
+      opacity: 0; pointer-events: none; visibility: hidden;
+      transition: opacity .25s, visibility .25s; padding: 16px;
+      background: rgba(6,8,12,0.88); backdrop-filter: blur(14px);
+    }
+    #crop-modal-overlay.open { opacity: 1; pointer-events: auto; visibility: visible; }
+    .crop-panel {
+      width: min(96vw, 720px); max-height: 92vh; overflow: auto;
+      background: linear-gradient(135deg, rgba(14,14,22,0.98), rgba(28,20,48,0.95));
+      border: 1px solid rgba(var(--accent-rgb),0.35); border-radius: 20px;
+      box-shadow: 0 24px 60px rgba(0,0,0,0.85); padding: 20px;
+    }
+    .crop-stage {
+      width: 100%; max-height: 55vh; background: #0a0a10; border-radius: 12px; overflow: hidden;
+    }
+    .crop-stage img { display: block; max-width: 100%; }
+    .marca-chip { cursor: grab; }
+    .marca-chip.sortable-ghost { opacity: 0.35; }
+    @media (max-width: 720px) {
+      .glx-panel { padding: 20px 16px; }
+      .admin-grid { grid-template-columns: 1fr; }
+    }
+  
     #cardAvisos,#btnAvisos,#btnSino,#sinoBadge{display:none!important}
-    #admFotologFrame{width:100%;min-height:900px;border:0;border-radius:16px;background:transparent}
+    #fotosReais,#fotosExemplo,#cardLinha{display:none!important}
+    #admFotologBox .mural{margin-top:8px}
+    #sheet,#loadingOverlay{z-index:99999}
   </style>
+  <script src="https://cdn.tailwindcss.com"></script>
+  <script>tailwind.config = {
+    corePlugins: { preflight: false },
+    theme: { extend: { colors: { ink: '#06080c', panel: 'rgba(14,14,22,0.72)', lilac: '#f59e0b', lime: '#fbbf24', cyan: '#fbbf24', amber: '#f59e0b' }, fontFamily: { sans: ['Inter', 'system-ui', 'sans-serif'] } } }
+  };</script>
 </head>
 <body class="h-full antialiased overflow-x-hidden">
 
@@ -559,6 +767,53 @@
         <div class="box-full">
           <h2>Galeria</h2>
           <div id="memGaleria">
+            
+          <div id="admFotologBox">
+            <div class="flex flex-wrap items-center justify-between gap-3" style="margin-bottom:14px">
+              <div class="flex items-center gap-2 px-3 py-2 rounded-full border border-white/10 bg-white/5 text-xs text-slate-300">
+                <span>Modo Drag</span>
+                <button type="button" id="toggle-drag" class="toggle-switch" title="Ativar/desativar arrastar" aria-pressed="false"></button>
+                <span id="drag-label" class="text-slate-500">Arrastar bloqueado</span>
+              </div>
+              <div class="flex flex-wrap items-center gap-3">
+                <button type="button" class="btn-lime" id="btn-enviar" style="display:none">+ Enviar fotos e vídeos</button>
+                <button type="button" class="btn-ghost" id="btn-atualizar" style="display:none">Atualizar</button>
+              </div>
+            </div>
+            <div id="msg" class="text-xs mt-3 min-h-[16px] text-amber-300"></div>
+            <div style="display:none"><input id="busca-pedido"><div id="resultados"></div><p id="sem-resultado"></p><span id="pedido-chip"></span><div id="pedido-busca"></div><div id="pedido-escolhido"></div><button type="button" id="btn-trocar-pedido"></button></div>
+      <section id="area" class="space-y-6" style="display:none">
+
+        <div class="glass-card p-5 sm:p-6">
+          <h2 class="text-xs font-bold uppercase tracking-widest text-amber-300 mb-1">Galeria como o cliente vê</h2>
+          <p class="text-xs text-slate-500 mb-4">
+            Cada quadrado é uma posição fixa do mural. Clique num quadrado com foto para substituir, tirar do mural ou excluir.
+            Clique num quadrado vazio para enviar foto ou vídeo nele. Com Modo Drag ativo, arraste uma foto para outro quadrado (vazio ou não) e ela muda de lugar. Toda ação pede confirmação.
+          </p>
+          <div id="mural" class="mural"></div>
+        </div>
+
+        <div class="glass-card p-5 sm:p-6">
+          <div class="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-2 mb-1">
+            <h2 class="text-xs font-bold uppercase tracking-widest text-amber-300">Todas as mídias</h2>
+            <button type="button" class="btn-file-upload" id="btn-enviar-lista">+ Enviar fotos e vídeos</button>
+          </div>
+          <p class="text-xs text-slate-500 mb-4">
+            <strong class="text-slate-300">Mural:</strong> ocupa uma das 6 posições.
+            <strong class="text-slate-300">Em linha:</strong> aparece no card “Veja mais momentos”, com título e descrição.
+            <strong class="text-slate-300">Reserva:</strong> fora do mural e da linha, guardada no evento.
+          </p>
+          <div id="lista" class="grid gap-4" style="grid-template-columns:repeat(auto-fill,minmax(220px,1fr))"></div>
+          <p id="vazio" class="text-sm text-slate-500 mt-4" style="display:none">Nenhuma mídia neste pedido ainda.</p>
+        </div>
+      </section>
+
+      <input type="file" id="input-arquivos" accept="image/*,video/*" multiple hidden>
+      <input type="file" id="input-slot" accept="image/*,video/*" hidden>
+      <input type="file" id="input-replace" accept="image/*,video/*" hidden>
+
+          </div>
+
             <div id="fotosReais" class="mural" style="display:none"></div>
             <div id="fotosExemplo">
             <div class="foto-grid" aria-hidden="true">
@@ -1025,6 +1280,17 @@
     out.comprovantes = (await SB.from('contrato_comprovantes').select('id, proposta_id, tipo, valor, data_pagamento, status, confirmado, motivo_recusa, arquivo_url, enviado_em').in('proposta_id', pids).order('enviado_em')).data || [];
     out.etapas = (await SB.from('evento_etapas').select('id, proposta_id, nome, hora, situacao, ordem, concluida_por, concluida_em').in('proposta_id', pids).order('ordem')).data || [];
     out.observacoes = (await SB.from('evento_observacoes').select('id, proposta_id, texto, criado_por, alterado_em').in('proposta_id', pids).is('removido_em', null).order('criado_em')).data || [];
+    var tax = {};
+    ((await SB.from('perfis_parceiros').select('id, nome, pai_id')).data || []).forEach(function (t) { tax[t.id] = t; });
+    var LEG = { agencia_corporativa: 'Agência', cerimonialista: 'Cerimonialista', hotelaria_espaco: 'Hotelaria / Espaço', produtor_independente: 'Produtor' };
+    var col = (await SB.from('projeto_colaboradores').select('id, nivel, parceiro_id, proposta_id, parceiros:parceiros!parceiro_id(id, nome_completo, email, avatar_url, perfil, perfil_parceiro_id, categoria_artistica, especialidade_artistica)').in('proposta_id', pids).order('criado_em')).data || [];
+    out.equipe = col.map(function (c) {
+      var p = c.parceiros || {};
+      var it = p.perfil_parceiro_id ? tax[p.perfil_parceiro_id] : null;
+      var fn = it ? ((it.pai_id && tax[it.pai_id]) ? tax[it.pai_id].nome + ' · ' + it.nome : it.nome)
+        : ((p.perfil === 'outro' && (p.categoria_artistica || p.especialidade_artistica)) ? 'Artista' : (LEG[p.perfil] || ''));
+      return { id: c.id, proposta_id: c.proposta_id, parceiro_id: c.parceiro_id, nivel: c.nivel, nome: (p.nome_completo || p.email || '').trim(), avatar_url: p.avatar_url || '', funcao: fn };
+    });
     out.fotos = (await SB.from('evento_fotos').select('id, proposta_id, tipo, url, poster_url, legenda, descricao, ordem, na_linha, posicao').in('proposta_id', pids).eq('visivel', true).order('ordem')).data || [];
     return out;
   }
@@ -1208,13 +1474,8 @@
     el.querySelectorAll('[data-del-cmp]').forEach(function (b) {
       b.addEventListener('click', async function () {
         if (!confirm('Excluir este comprovante?')) return;
-        var r = await SB.functions.invoke('gerenciar-comprovantes', {
-          body: { action: 'excluir', proposta_id: b.getAttribute('data-prop'), comprovante_id: b.getAttribute('data-del-cmp') }
-        });
-        if (r.error || (r.data && r.data.erro)) {
-          alert((r.data && r.data.erro) || 'Não foi possível excluir.');
-          return;
-        }
+        var r = await SB.from('contrato_comprovantes').delete().eq('id', b.getAttribute('data-del-cmp'));
+        if (r.error) { alert(r.error.message || 'Não foi possível excluir.'); return; }
         await carregar();
       });
     });
@@ -1226,7 +1487,7 @@
     var etapas = pedido ? (dados.etapas || []).filter(function (e) { return e.proposta_id === pedido.id; }) : [];
     var lt = $('linhaTempo');
     if (!pedido) {
-      lt.innerHTML = '<div class="vazio">Sua linha do tempo aparecerá aqui quando houver um evento.</div>';
+      lt.innerHTML = '<div class="vazio">A linha do tempo aparecerá aqui quando houver um evento.</div>';
     } else if (!etapas.length) {
       lt.innerHTML =
         '<div class="etapa"><div class="nome mut">Boas-vindas</div><div class="hora">Em breve</div></div>' +
@@ -1244,7 +1505,7 @@
           '</div>';
       }).join('');
     }
-    admControlesChecklist(pedido, etapas);
+    admChecklist(pedido, etapas);
     var obs = pedido ? (dados.observacoes || []).filter(function (o) { return o.proposta_id === pedido.id; }) : [];
     var lo = $('listaObs');
     if (!obs.length) lo.innerHTML = '<div class="vazio">Nenhuma instrução ainda.</div>';
@@ -1545,14 +1806,14 @@
       l('Data', p.data_evento ? DATA(p.data_evento) : '') +
       '<div class="dl-item"><span class="rot">Contrato</span><span class="tag ' + (p.assinado_em ? 't-ok' : 't-pend') + '">' + (p.assinado_em ? 'Assinado' : 'Aguardando assinatura') + '</span></div>';
   }
-  function renderEquipe() {
+  function renderEquipeBase() {
     var p = pedidoAtivo();
     $('cardEquipe').style.display = '';
     var box = $('listaEquipe');
     var eq = p ? (dados.equipe || []).filter(function (m) { return m.proposta_id === p.id; }) : [];
     if (!eq.length) {
       box.className = 'vazio';
-      box.textContent = p ? 'A equipe técnica do evento aparece aqui assim que for confirmada.' : 'Sua equipe técnica aparecerá aqui quando houver um evento.';
+      box.textContent = p ? 'A equipe técnica do evento aparece aqui assim que for confirmada.' : 'A equipe técnica aparecerá aqui quando houver um evento.';
       $('btnListaEquipe').style.display = 'none';
       return;
     }
@@ -1824,17 +2085,13 @@
     renderEquipe();
     renderCalendario();
     renderAvatar();
+    admAposRender();
   }
 
   async function carregar() {
     dados = await chamar('dados');
     if (dados.erro) { $('listaPedidos').textContent = dados.erro; return; }
     render();
-    admRenderComprovantes();
-    admRenderPedidos();
-    admRenderBancoChecklist();
-    admRenderEquipe();
-    admRenderFotolog();
     atualizarSinoAvisos();
     sincronizarAvisos();
   }
@@ -2111,9 +2368,9 @@
   async function listarCmpModal(propostaId) {
     var box = $('cmpListaModal');
     box.innerHTML = 'Carregando…';
-    var r = await SB.functions.invoke('gerenciar-comprovantes', { body: { action: 'listar', proposta_id: propostaId } });
-    if (r.error || (r.data && r.data.erro)) { box.textContent = (r.data && r.data.erro) || 'Não foi possível listar.'; return; }
-    var rows = (r.data && r.data.comprovantes) || [];
+    var r = await SB.from('contrato_comprovantes').select('*').eq('proposta_id', propostaId).order('enviado_em');
+    if (r.error) { box.textContent = r.error.message || 'Não foi possível listar.'; return; }
+    var rows = r.data || [];
     if (!rows.length) { box.innerHTML = '<div class="vazio">Nenhum comprovante neste pedido.</div>'; return; }
     box.innerHTML = rows.map(function (c) {
       var st = c.confirmado ? 'aprovado' : (c.status === 'recusado' ? 'recusado' : 'pendente');
@@ -2180,7 +2437,7 @@
       msg.textContent = 'Enviando…';
       var b64 = await lerBase64(p.blob);
       var r = await SB.functions.invoke('anexar-comprovante', {
-        body: { kind: 'contrato', proposta_id: propostaId, tipo: $('cmpTipo').value, valor: valor,
+        body: { kind: 'admin', proposta_id: propostaId, tipo: $('cmpTipo').value, valor: valor,
           data_pagamento: data, arquivo_base64: b64, mime: p.mime }
       });
       if (r.error || (r.data && r.data.erro)) {
@@ -2323,391 +2580,185 @@
     await carregarNotif();
   }
 
-  /* ---- Administrador: aprovar / recusar / alterar comprovantes (mesmas funções do admin de propostas) ---- */
-  async function admAcaoComprovante(tipo, c) {
-    var r;
-    if (tipo === 'aprovar') {
-      r = await SB.rpc('aprovar_comprovante', { p_id: c.id, p_valor: c.valor, p_motivo: null });
-    } else if (tipo === 'recusar') {
-      var mot = prompt('Motivo da recusa:');
-      if (!mot || !mot.trim()) return;
-      r = await SB.rpc('recusar_comprovante', { p_id: c.id, p_motivo: mot.trim() });
-    } else if (tipo === 'alterar') {
-      var v = prompt('Novo valor confirmado (use ponto para centavos):', String(c.valor || ''));
-      if (v === null) return;
-      var valor = parseFloat(String(v).replace(',', '.'));
-      if (isNaN(valor)) { alert('Valor inválido.'); return; }
-      var m2 = prompt('Motivo da alteração:');
-      if (!m2 || !m2.trim()) return;
-      r = await SB.rpc('alterar_valor_comprovante', { p_id: c.id, p_valor: valor, p_motivo: m2.trim() });
-    }
-    if (r && r.error) { alert('Não foi possível: ' + r.error.message); return; }
-    await carregar();
-  }
-
-  function admRenderComprovantes() {
-    var main = document.querySelector('main');
-    if (!main || !dados || !dados.comprovantes) return;
-    var box = document.getElementById('admComprovantes');
-    if (!box) {
-      box = document.createElement('section');
-      box.id = 'admComprovantes';
-      box.style.cssText = 'margin-top:16px;padding-top:12px;border-top:1px solid rgba(245,158,11,.2)';
-      $('listaPedidos').parentNode.appendChild(box);
-    }
-    var pend = dados.comprovantes.filter(function (c) { return !c.confirmado && c.status !== 'recusado'; });
-    if (!pend.length) { box.innerHTML = '<h3 style="margin:0;color:#fbbf24">Comprovantes</h3><p style="margin:6px 0 0;color:#9ca3af">Nenhum comprovante aguardando aprovação.</p>'; return; }
-    box.innerHTML = '<h3 style="margin:0 0 10px;color:#fbbf24">Comprovantes aguardando aprovação</h3>';
-    pend.forEach(function (c) {
-      var linha = document.createElement('div');
-      linha.style.cssText = 'display:flex;flex-wrap:wrap;gap:8px;align-items:center;justify-content:space-between;padding:10px 0;border-top:1px solid rgba(255,255,255,.06);color:#e5e7eb';
-      var txt = document.createElement('span');
-      txt.textContent = (c.tipo || 'Pagamento') + ' · R$ ' + Number(c.valor || 0).toFixed(2).replace('.', ',') + (c.data_pagamento ? ' · ' + c.data_pagamento : '');
-      var btns = document.createElement('div');
-      btns.style.cssText = 'display:flex;gap:6px;flex-wrap:wrap';
-      [['aprovar','Aprovar'],['alterar','Alterar valor'],['recusar','Recusar']].forEach(function (a) {
-        var b = document.createElement('button');
-        b.type = 'button'; b.textContent = a[1]; b.className = 'adm-btn';
-        b.addEventListener('click', function () { admAcaoComprovante(a[0], c); });
-        btns.appendChild(b);
+  /* ================= Administrador: equipe (dentro do card da equipe) ================= */
+  var PARC_ADM = null;
+  function renderEquipe() { renderEquipeBase(); admEquipe(); }
+  async function admEquipe() {
+    var p = pedidoAtivo();
+    var card = $('cardEquipe'); var box = $('listaEquipe');
+    if (!card || !box) return;
+    var ant = document.getElementById('admEquipeCtl'); if (ant) ant.remove();
+    if (!p) return;
+    var eq = (dados.equipe || []).filter(function (m) { return m.proposta_id === p.id; });
+    var itens = box.querySelectorAll('.eq-item');
+    eq.forEach(function (m, i) {
+      var el = itens[i]; if (!el) return;
+      var b = document.createElement('button'); b.type = 'button'; b.className = 'btn-ghost'; b.textContent = '✕';
+      b.title = 'Remover da equipe'; b.style.cssText = 'margin-left:auto;padding:4px 10px';
+      b.addEventListener('click', async function () {
+        if (!confirm('Remover ' + (m.nome || 'este integrante') + ' da equipe?')) return;
+        var x = await SB.from('projeto_colaboradores').delete().eq('id', m.id);
+        if (x.error) { alert(x.error.message); return; }
+        await carregar();
       });
-      linha.appendChild(txt); linha.appendChild(btns);
-      box.appendChild(linha);
+      el.style.display = 'flex'; el.style.alignItems = 'center';
+      el.appendChild(b);
     });
-  }
-
-  /* ---- Administrador: cancelar contrato e registrar reembolso (mesmas funções do admin de propostas) ---- */
-  async function admCancelarContrato(p) {
-    var mot = prompt('Motivo do cancelamento do contrato:');
-    if (!mot || !mot.trim()) return;
-    if (!confirm('Confirmar cancelamento do contrato ' + (p.numero || '') + '?')) return;
-    var r = await SB.rpc('cancelar_contrato', { p_id: p.id, p_motivo: mot.trim() });
-    if (r.error) { alert('Não foi possível cancelar: ' + r.error.message); return; }
-    await carregar();
-  }
-
-  async function admRegistrarReembolso(p) {
-    var v = prompt('Valor do reembolso (use ponto para centavos):');
-    if (v === null) return;
-    var valor = parseFloat(String(v).replace(',', '.'));
-    if (isNaN(valor) || valor <= 0) { alert('Valor inválido.'); return; }
-    var data = prompt('Data do reembolso (AAAA-MM-DD):', new Date().toISOString().slice(0, 10));
-    if (!data) return;
-    var url = prompt('Link do comprovante do reembolso (pode deixar em branco):') || null;
-    var mot = prompt('Motivo do reembolso:');
-    if (!mot || !mot.trim()) return;
-    var r = await SB.rpc('registrar_reembolso', { p_id: p.id, p_valor: valor, p_data: data, p_comprovante_url: url, p_motivo: mot.trim() });
-    if (r.error) { alert('Não foi possível registrar: ' + r.error.message); return; }
-    await carregar();
-  }
-
-  async function admAutorizarSemAssinatura(p) {
-    var mot = prompt('Motivo para seguir sem assinatura:');
-    if (!mot || !mot.trim()) return;
-    if (!confirm('Autorizar seguir com o contrato ' + (p.numero || '') + ' sem assinatura?')) return;
-    var u = await SB.auth.getUser();
-    var uid = (u && u.data && u.data.user && u.data.user.id) || null;
-    var r = await SB.from('propostas').update({
-      assinatura_dispensada_em: new Date().toISOString(),
-      assinatura_dispensada_por: uid,
-      assinatura_dispensada_motivo: mot.trim()
-    }).eq('id', p.id);
-    if (r.error) { alert('Não foi possível autorizar: ' + r.error.message); return; }
-    await carregar();
-  }
-
-  function admRenderPedidos() {
-    var main = document.querySelector('main');
-    if (!main || !dados || !dados.propostas) return;
-    var box = document.getElementById('admPedidos');
-    if (!box) {
-      box = document.createElement('section');
-      box.id = 'admPedidos';
-      box.style.cssText = 'margin-top:16px;padding-top:12px;border-top:1px solid rgba(245,158,11,.2)';
-      $('cardResumoEvt').appendChild(box);
+    if (!PARC_ADM) {
+      var r = await SB.from('parceiros').select('id, nome_completo, email, status').eq('status', 'aprovado').order('nome_completo');
+      if (r.error || !(r.data && r.data.length)) r = await SB.from('parceiros').select('id, nome_completo, email, status').order('nome_completo');
+      PARC_ADM = r.data || [];
     }
-    box.innerHTML = '<h3 style="margin:0 0 10px;color:#fbbf24">Ações do pedido</h3>';
-    if (!dados.propostas.length) { box.innerHTML += '<p style="color:#9ca3af">Este cliente não tem pedidos.</p>'; return; }
-    dados.propostas.forEach(function (p) {
-      var linha = document.createElement('div');
-      linha.style.cssText = 'display:flex;flex-wrap:wrap;gap:8px;align-items:center;justify-content:space-between;padding:10px 0;border-top:1px solid rgba(255,255,255,.06);color:#e5e7eb';
-      var txt = document.createElement('span');
-      txt.textContent = (p.numero ? 'Nº ' + p.numero + ' · ' : '') + (p.tipo_evento || 'Evento') + (p.status ? ' · ' + p.status : '');
-      var btns = document.createElement('div');
-      btns.style.cssText = 'display:flex;gap:6px;flex-wrap:wrap';
-      var bR = document.createElement('button'); bR.type = 'button'; bR.className = 'adm-btn'; bR.textContent = 'Registrar reembolso';
-      bR.addEventListener('click', function () { admRegistrarReembolso(p); });
-      btns.appendChild(bR);
-      if (!p.assinado_em && !p.assinatura_dispensada_em && !p.cancelada_em) {
-        var bA = document.createElement('button'); bA.type = 'button'; bA.className = 'adm-btn'; bA.textContent = 'Autorizar sem assinatura';
-        bA.addEventListener('click', function () { admAutorizarSemAssinatura(p); });
-        btns.appendChild(bA);
-      }
-      if (p.assinatura_dispensada_em && !p.assinado_em) {
-        txt.textContent += ' · autorizado sem assinatura';
-      }
-      if (!p.cancelada_em) {
-        var bC = document.createElement('button'); bC.type = 'button'; bC.className = 'adm-btn adm-btn-d'; bC.textContent = 'Cancelar contrato';
-        bC.addEventListener('click', function () { admCancelarContrato(p); });
-        btns.appendChild(bC);
-      }
-      linha.appendChild(txt); linha.appendChild(btns);
-      box.appendChild(linha);
-    });
-  }
-
-  /* ---- Administrador: banco de checklists (catálogo) e aplicação ao pedido ---- */
-  async function admRenderBancoChecklist() {
-    var main = document.querySelector('main');
-    if (!main) return;
-    var box = document.getElementById('admBancoChecklist');
-    if (!box) {
-      box = document.createElement('section');
-      box.id = 'admBancoChecklist';
-      box.style.cssText = 'margin-top:16px;padding-top:12px;border-top:1px solid rgba(245,158,11,.2)';
-      $('cardLinhaTempo').appendChild(box);
-    }
-    var r = await SB.from('evento_etapas_catalogo').select('id,nome,dia_referencia,hora_padrao,ordem,ativo,padrao').order('ordem');
-    var itens = ((r && r.data) || []).filter(function (i) { return i.ativo; });
-    box.innerHTML = '<h3 style="margin:0 0 10px;color:#fbbf24">Banco de checklists</h3>';
-    var ul = document.createElement('div');
-    ul.style.cssText = 'display:flex;flex-direction:column;gap:6px';
-    itens.forEach(function (it) {
-      var row = document.createElement('div');
-      row.style.cssText = 'display:flex;justify-content:space-between;align-items:center;gap:8px;color:#e5e7eb;padding:6px 0;border-top:1px solid rgba(255,255,255,.06)';
-      var t = document.createElement('span');
-      t.textContent = it.nome + (it.hora_padrao ? ' · ' + it.hora_padrao : '');
-      var lbl = document.createElement('label'); lbl.style.cssText = 'display:flex;align-items:center;gap:6px;font-size:.8rem;color:#9ca3af';
-      var cb = document.createElement('input'); cb.type = 'checkbox'; cb.checked = !!it.padrao;
-      cb.addEventListener('change', async function () {
-        var x = await SB.from('evento_etapas_catalogo').update({ padrao: cb.checked }).eq('id', it.id);
-        if (x.error) { alert('Não foi possível salvar o padrão.'); cb.checked = !cb.checked; }
-      });
-      lbl.appendChild(cb); lbl.appendChild(document.createTextNode('Padrão'));
-      var rm = document.createElement('button'); rm.type = 'button'; rm.className = 'adm-btn'; rm.textContent = 'Remover do banco';
-      rm.addEventListener('click', async function () {
-        if (!confirm('Remover "' + it.nome + '" do banco?')) return;
-        var x = await SB.from('evento_etapas_catalogo').update({ ativo: false }).eq('id', it.id);
-        if (x.error) { alert('Não foi possível remover.'); return; }
-        admRenderBancoChecklist();
-      });
-      var esq = document.createElement('div'); esq.style.cssText = 'display:flex;flex-direction:column;gap:2px';
-      esq.appendChild(t); esq.appendChild(lbl);
-      row.appendChild(esq); row.appendChild(rm); ul.appendChild(row);
-    });
-    box.appendChild(ul);
-
-    var add = document.createElement('div');
-    add.style.cssText = 'display:flex;gap:8px;margin-top:12px;flex-wrap:wrap';
-    add.innerHTML = '<input id="admNovoItem" type="text" placeholder="Nome do novo item do checklist" class="adm-field" style="flex:1;min-width:200px">' +
-                    '<button type="button" id="admAddItem" class="adm-btn adm-btn-p">Adicionar ao banco</button>';
-    box.appendChild(add);
-    document.getElementById('admAddItem').addEventListener('click', async function () {
-      var nome = (document.getElementById('admNovoItem').value || '').trim();
-      if (!nome) return;
-      var prox = itens.length ? Math.max.apply(null, itens.map(function (i) { return i.ordem || 0; })) + 1 : 1;
-      var x = await SB.from('evento_etapas_catalogo').insert({ nome: nome, ordem: prox, ativo: true });
-      if (x.error) { alert('Não foi possível adicionar.'); return; }
-      admRenderBancoChecklist();
-    });
-
-    var aplicar = document.createElement('div');
-    aplicar.style.cssText = 'margin-top:14px;display:flex;flex-direction:column;gap:6px';
-    aplicar.innerHTML = '<strong style="color:#fbbf24">Escolha os itens para este cliente</strong>' +
-      '<div id="admEscolhaChecklist" style="display:flex;flex-direction:column;gap:4px"></div>' +
-      '<button type="button" id="admAplicarChecklist" class="adm-btn adm-btn-p" style="align-self:flex-start">Aplicar aos pedidos deste cliente</button>';
-    box.appendChild(aplicar);
-    var escolha = document.getElementById('admEscolhaChecklist');
-    var marcados = {};
-    itens.forEach(function (it) {
-      var l = document.createElement('label'); l.style.cssText = 'display:flex;align-items:center;gap:8px;color:#e5e7eb';
-      var c = document.createElement('input'); c.type = 'checkbox'; c.checked = !!it.padrao;
-      c.addEventListener('change', function () { marcados[it.id] = c.checked; });
-      marcados[it.id] = !!it.padrao;
-      l.appendChild(c); l.appendChild(document.createTextNode(it.nome));
-      escolha.appendChild(l);
-      c.dataset.id = it.id;
-    });
-    document.getElementById('admAplicarChecklist').addEventListener('click', async function () {
-      if (!dados || !dados.propostas || !dados.propostas.length) { alert('Este cliente não tem pedidos.'); return; }
-      var escolhidos = itens.filter(function (it) { return marcados[it.id]; });
-      if (!escolhidos.length) { alert('Marque pelo menos um item.'); return; }
-      if (!confirm('Adicionar ' + escolhidos.length + ' item(ns) aos pedidos deste cliente?')) return;
-      for (const p of dados.propostas) {
-        const linhas = escolhidos.map(function (it, i) {
-          return { proposta_id: p.id, nome: it.nome, hora: it.hora_padrao || null, ordem: i + 1, situacao: 'pendente', origem: 'catalogo' };
-        });
-        const x = await SB.from('evento_etapas').insert(linhas);
-        if (x.error) { alert('Erro ao aplicar: ' + x.error.message); return; }
-      }
+    var ctl = document.createElement('div');
+    ctl.id = 'admEquipeCtl';
+    ctl.style.cssText = 'display:flex;flex-wrap:wrap;gap:8px;margin-top:12px';
+    ctl.innerHTML = '<select class="adm-input" style="flex:1;min-width:200px">' +
+      PARC_ADM.map(function (x) { return '<option value="' + E(x.id) + '">' + E((x.nome_completo || x.email || x.id)) + '</option>'; }).join('') + '</select>' +
+      '<select class="adm-input" style="width:auto"><option value="agenda">Só agenda</option><option value="dados_sensiveis">Dados completos</option></select>' +
+      '<button type="button" class="btn-lime">Adicionar à equipe</button>';
+    var sels = ctl.querySelectorAll('select');
+    ctl.querySelector('button').addEventListener('click', async function () {
+      if (!sels[0].value) return;
+      var u = await SB.auth.getUser();
+      var x = await SB.from('projeto_colaboradores').insert({ proposta_id: p.id, parceiro_id: sels[0].value, nivel: sels[1].value, criado_por: (u && u.data && u.data.user && u.data.user.id) || null });
+      if (x.error) { alert('Não foi possível adicionar: ' + x.error.message); return; }
       await carregar();
     });
+    box.parentNode.appendChild(ctl);
   }
 
-  /* ---- Administrador: equipe técnica do pedido (escalar e remover) ---- */
-  async function admRenderEquipe() {
-    var main = document.querySelector('main');
-    if (!main || !dados || !dados.propostas) return;
-    var box = document.getElementById('admEquipe');
-    if (!box) {
-      box = document.createElement('section');
-      box.id = 'admEquipe';
-      box.style.cssText = 'margin-top:16px;padding-top:12px;border-top:1px solid rgba(245,158,11,.2)';
-      $('cardEquipe').appendChild(box);
-    }
-    box.innerHTML = '<h3 style="margin:0 0 10px;color:#fbbf24">Equipe técnica</h3>';
-    if (!dados.propostas.length) { box.innerHTML += '<p style="color:#9ca3af">Este cliente não tem pedidos.</p>'; return; }
-    for (const p of dados.propostas) {
-      var bloco = document.createElement('div');
-      bloco.style.cssText = 'padding:10px 0;border-top:1px solid rgba(255,255,255,.06);color:#e5e7eb';
-      var titulo = document.createElement('div');
-      titulo.style.cssText = 'font-weight:600;margin-bottom:8px';
-      titulo.textContent = (p.numero ? 'Nº ' + p.numero + ' · ' : '') + (p.tipo_evento || 'Evento');
-      bloco.appendChild(titulo);
-
-      var r = await SB.from('projeto_colaboradores').select('id, parceiro_id, nivel').eq('proposta_id', p.id);
-      var colabs = (r && r.data) || [];
-      var nomes = {};
-      if (colabs.length) {
-        var pr = await SB.from('parceiros').select('id, nome_artistico, nome_completo').in('id', colabs.map(function (c) { return c.parceiro_id; }));
-        ((pr && pr.data) || []).forEach(function (x) { nomes[x.id] = x.nome_artistico || x.nome_completo || 'Equipe 432UP'; });
-      }
-      colabs.forEach(function (c) {
-        var linha = document.createElement('div');
-        linha.style.cssText = 'display:flex;justify-content:space-between;align-items:center;gap:8px;padding:4px 0';
-        var t = document.createElement('span');
-        t.textContent = (nomes[c.parceiro_id] || 'Equipe 432UP') + ' · ' + (c.nivel === 'agenda' ? 'só agenda' : 'dados completos');
-        var rm = document.createElement('button'); rm.type = 'button'; rm.className = 'adm-btn'; rm.textContent = 'Remover';
-        rm.addEventListener('click', async function () {
-          if (!confirm('Remover ' + (nomes[c.parceiro_id] || 'este membro') + ' da equipe deste pedido?')) return;
-          var x = await SB.from('projeto_colaboradores').delete().eq('id', c.id);
-          if (x.error) { alert('Não foi possível remover.'); return; }
-          admRenderEquipe();
-        });
-        linha.appendChild(t); linha.appendChild(rm); bloco.appendChild(linha);
-      });
-
-      var busca = document.createElement('div');
-      busca.style.cssText = 'display:flex;gap:6px;flex-wrap:wrap;margin-top:8px';
-      busca.innerHTML = '<input type="search" placeholder="Buscar membro da equipe pelo nome" class="adm-field" style="flex:1;min-width:200px">' +
-        '<select class="adm-field" style="width:auto"><option value="agenda">Só agenda</option><option value="dados_sensiveis">Dados completos</option></select>';
-      bloco.appendChild(busca);
-      var lista = document.createElement('div');
-      lista.style.cssText = 'display:flex;flex-direction:column;gap:4px;margin-top:6px';
-      bloco.appendChild(lista);
-
-      var inp = busca.querySelector('input'); var sel = busca.querySelector('select');
-      var t2 = null;
-      inp.addEventListener('input', function () {
-        clearTimeout(t2);
-        t2 = setTimeout(async function () {
-          lista.innerHTML = '';
-          var termo = inp.value.trim();
-          if (termo.length < 2) return;
-          var q = await SB.from('parceiros').select('id, nome_artistico, nome_completo').or('nome_artistico.ilike.%' + termo + '%,nome_completo.ilike.%' + termo + '%').limit(10);
-          ((q && q.data) || []).forEach(function (x) {
-            var b = document.createElement('button'); b.type = 'button'; b.className = 'adm-btn'; b.style.cssText = 'text-align:left;justify-content:flex-start';
-            b.textContent = x.nome_artistico || x.nome_completo || x.id;
-            b.addEventListener('click', async function () {
-              var ins = await SB.from('projeto_colaboradores').insert({ proposta_id: p.id, parceiro_id: x.id, nivel: sel.value });
-              if (ins.error) { alert('Não foi possível escalar: ' + ins.error.message); return; }
-              admRenderEquipe();
-            });
-            lista.appendChild(b);
-          });
-        }, 250);
-      });
-
-      box.appendChild(bloco);
-    }
-  }
-
-  /* ---- Administrador: fotolog = o próprio Admin Fotolog, embutido na Galeria e já no pedido ativo ---- */
-  function admRenderFotolog() {
-    var host = $('memGaleria') && $('memGaleria').parentNode;
-    if (!host) return;
-    var box = document.getElementById('admFotolog');
-    if (!box) {
-      box = document.createElement('section');
-      box.id = 'admFotolog';
-      box.className = 'adm-sec';
-      host.appendChild(box);
-    }
-    var p = pedidoAtivo();
-    if (!p) { box.innerHTML = '<h3>Fotolog</h3><p class="pill">Este cliente não tem pedidos.</p>'; return; }
-    var src = 'admin-fotolog.html?embed=1&pedido=' + encodeURIComponent(p.id);
-    var atual = document.getElementById('admFotologFrame');
-    if (atual && atual.getAttribute('data-pid') === p.id) return;
-    box.innerHTML = '<h3>Fotolog · pedido ' + (p.numero ? 'Nº ' + E(String(p.numero)) : '') + '</h3>' +
-      '<iframe id="admFotologFrame" data-pid="' + E(p.id) + '" src="' + src + '" title="Admin Fotolog"></iframe>';
-  }
-
-
-
-  /* ---- Checklist do evento: ações do administrador dentro da própria seção (mesmo comportamento do B2B) ---- */
-  function admControlesChecklist(pedido, etapas) {
+  /* ================= Administrador: checklist (dentro da própria linha do tempo) ================= */
+  async function admChecklist(pedido, etapas) {
     var lt = $('linhaTempo');
-    var antigo = document.getElementById('admCkControles');
-    if (antigo) antigo.remove();
+    var ant = document.getElementById('admCkSel'); if (ant) ant.remove();
     if (!pedido || !lt) return;
-    var box = document.createElement('div');
-    box.id = 'admCkControles';
-    box.style.cssText = 'margin-top:14px;display:flex;flex-direction:column;gap:8px';
-    var titulo = document.createElement('div');
-    titulo.style.cssText = 'font-size:.75rem;letter-spacing:.12em;text-transform:uppercase;color:#fbbf24';
-    titulo.textContent = 'Administrar checklist';
-    box.appendChild(titulo);
-    etapas.forEach(function (e) {
-      var linha = document.createElement('div');
-      linha.style.cssText = 'display:flex;flex-wrap:wrap;gap:6px;align-items:center;justify-content:space-between;padding:6px 0;border-top:1px solid rgba(255,255,255,.06)';
-      var nome = document.createElement('span');
-      nome.style.cssText = 'color:#e5e7eb';
-      nome.textContent = e.nome + (e.hora ? ' · ' + e.hora : '') + (e.situacao === 'concluida' ? ' · ✓' : ' · pendente');
-      var btns = document.createElement('div'); btns.style.cssText = 'display:flex;gap:6px;flex-wrap:wrap';
-      function mk(txt, cls, fn) { var b = document.createElement('button'); b.type = 'button'; b.className = cls; b.textContent = txt; b.addEventListener('click', fn); return b; }
-      if (e.situacao === 'concluida') {
-        btns.appendChild(mk('Desfazer', 'adm-btn', async function () {
-          var x = await SB.from('evento_etapas').update({ situacao: 'pendente', concluida_por: null, concluida_em: null }).eq('id', e.id);
-          if (x.error) { alert('Não foi possível desfazer.'); return; } await carregar();
-        }));
-      } else {
-        btns.appendChild(mk('Marcar feita', 'adm-btn adm-btn-p', async function () {
-          var x = await SB.from('evento_etapas').update({ situacao: 'concluida', concluida_por: 'administrador', concluida_em: new Date().toISOString() }).eq('id', e.id);
-          if (x.error) { alert('Não foi possível marcar.'); return; } await carregar();
-        }));
-      }
-      btns.appendChild(mk('Remover', 'adm-btn', async function () {
-        if (!confirm('Remover esta etapa do checklist?')) return;
-        var x = await SB.from('evento_etapas').delete().eq('id', e.id);
-        if (x.error) { alert('Não foi possível remover.'); return; } await carregar();
-      }));
-      linha.appendChild(nome); linha.appendChild(btns);
-      box.appendChild(linha);
-    });
-    var add = document.createElement('div');
-    add.style.cssText = 'display:flex;flex-wrap:wrap;gap:6px;margin-top:6px';
-    add.innerHTML = '<input type="text" class="adm-field" placeholder="Nome da etapa" style="flex:1;min-width:180px">' +
-                    '<input type="text" class="adm-field" placeholder="Hora (ex.: 18:00)" style="width:140px">' +
-                    '<button type="button" class="adm-btn adm-btn-p">Adicionar etapa</button>';
-    var ins = add.querySelectorAll('input'); var btnAdd = add.querySelector('button');
-    btnAdd.addEventListener('click', async function () {
-      var nome = (ins[0].value || '').trim(); if (!nome) { alert('Informe o nome da etapa.'); return; }
-      var hora = (ins[1].value || '').trim() || null;
-      var prox = etapas.length ? Math.max.apply(null, etapas.map(function (x) { return x.ordem || 0; })) + 1 : 1;
-      var x = await SB.from('evento_etapas').insert({ proposta_id: pedido.id, nome: nome, hora: hora, situacao: 'pendente', ordem: prox });
-      if (x.error) { alert('Não foi possível adicionar.'); return; } await carregar();
-    });
-    box.appendChild(add);
+    function mk(txt, cls, fn) { var b = document.createElement('button'); b.type = 'button'; b.className = cls; b.style.cssText = 'padding:4px 12px;font-size:.72rem'; b.textContent = txt; b.addEventListener('click', fn); return b; }
     if (etapas.length) {
-      var apagar = mk2('Apagar checklist inteiro deste pedido', async function () {
-        if (!confirm('Apagar TODO o checklist deste pedido? Esta ação não pode ser desfeita.')) return;
-        var x = await SB.from('evento_etapas').delete().eq('proposta_id', pedido.id);
-        if (x.error) { alert('Não foi possível apagar.'); return; } await carregar();
+      lt.innerHTML = '';
+      etapas.forEach(function (e) {
+        var feita = e.situacao === 'concluida';
+        var d = document.createElement('div');
+        d.className = 'etapa ' + (feita ? 'feita' : '');
+        d.innerHTML = '<div class="nome">' + E(e.nome) + '</div>' +
+          '<div class="hora"><input type="time" class="adm-input" value="' + E(e.hora || '') + '" style="width:auto;padding:4px 8px"></div>' +
+          (feita ? '<span class="ok">✓ Confirmada pela equipe</span>' + (e.concluida_em ? '<span class="conf">Em ' + DATA_HORA(e.concluida_em) + (e.concluida_por ? ' por ' + E(e.concluida_por) : '') + '</span>' : '') : '<span class="aguarda">Aguardando equipe</span>');
+        d.querySelector('input').addEventListener('change', async function () {
+          var x = await SB.from('evento_etapas').update({ hora: this.value || null }).eq('id', e.id);
+          if (x.error) alert(x.error.message);
+        });
+        var caps = document.createElement('div'); caps.style.cssText = 'display:flex;gap:6px;flex-wrap:wrap;margin-top:8px';
+        if (feita) {
+          caps.appendChild(mk('Desfazer', 'btn-ghost', async function () {
+            var x = await SB.from('evento_etapas').update({ situacao: 'pendente', concluida_por: null, concluida_em: null }).eq('id', e.id);
+            if (x.error) { alert(x.error.message); return; } await carregar();
+          }));
+        } else {
+          caps.appendChild(mk('Concluir e avisar', 'btn-lime', async function () {
+            if (!confirm('Marcar "' + e.nome + '" como concluída e avisar o cliente?')) return;
+            var x = await SB.from('evento_etapas').update({ situacao: 'concluida' }).eq('id', e.id);
+            if (x.error) { alert(x.error.message); return; }
+            try { await fetch('https://www.432up.com/avisos-telegram', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ event: 'etapa_concluida', proposta_id: pedido.id, etapa: e.nome, mensagem: 'Etapa concluída: ' + e.nome }) }); } catch (er) {}
+            try { await SB.functions.invoke('notificar-cliente-etapa', { body: { proposta_id: pedido.id, etapa: e.nome } }); } catch (er) {}
+            await carregar();
+          }));
+        }
+        caps.appendChild(mk('Remover', 'btn-ghost', async function () {
+          if (!confirm('Remover "' + e.nome + '" do checklist?')) return;
+          var x = await SB.from('evento_etapas').delete().eq('id', e.id);
+          if (x.error) { alert(x.error.message); return; } await carregar();
+        }));
+        d.appendChild(caps);
+        lt.appendChild(d);
       });
-      box.appendChild(apagar);
     }
-    lt.parentNode.insertBefore(box, lt.nextSibling);
-    function mk2(txt, fn) { var b = document.createElement('button'); b.type = 'button'; b.className = 'adm-btn'; b.style.alignSelf = 'flex-start'; b.textContent = txt; b.addEventListener('click', fn); return b; }
+    var cat = ((await SB.from('evento_etapas_catalogo').select('id, nome, hora_padrao, ordem, padrao').eq('ativo', true).order('ordem')).data) || [];
+    var marcadas = {}; etapas.forEach(function (e) { marcadas[e.nome] = e; });
+    var sel = document.createElement('div');
+    sel.id = 'admCkSel';
+    sel.style.cssText = 'margin-top:16px;padding-top:12px;border-top:1px solid rgba(245,158,11,.2)';
+    sel.innerHTML = '<div style="font-size:.72rem;letter-spacing:.12em;text-transform:uppercase;color:#fbbf24;margin-bottom:6px">Etapas deste evento</div>' +
+      '<div style="font-size:.75rem;opacity:.7;margin-bottom:8px">Marque as etapas do evento. “Padrão” aplica a etapa a todos os próximos.</div>';
+    async function ligar(c, on) {
+      if (on) {
+        var x = await SB.from('evento_etapas').insert({ proposta_id: pedido.id, nome: c.nome, hora: c.hora_padrao || null, ordem: c.ordem == null ? 500 : c.ordem, origem: 'catalogo' });
+        if (x.error) { alert(x.error.message); }
+      } else {
+        await SB.from('evento_etapas').delete().eq('proposta_id', pedido.id).eq('nome', c.nome).neq('situacao', 'concluida');
+      }
+      await carregar();
+    }
+    cat.forEach(function (c) {
+      var row = document.createElement('div');
+      row.style.cssText = 'display:flex;gap:10px;align-items:center;flex-wrap:wrap;padding:6px 0;border-bottom:1px solid rgba(255,255,255,.06)';
+      var cb = document.createElement('input'); cb.type = 'checkbox'; cb.checked = !!marcadas[c.nome];
+      cb.addEventListener('change', function () { ligar(c, cb.checked); });
+      var nm = document.createElement('span'); nm.style.cssText = 'flex:1;min-width:140px'; nm.textContent = c.nome;
+      var lb = document.createElement('label'); lb.style.cssText = 'display:flex;align-items:center;gap:5px;font-size:.75rem;opacity:.85';
+      var pc = document.createElement('input'); pc.type = 'checkbox'; pc.checked = !!c.padrao;
+      pc.addEventListener('change', async function () {
+        var x = await SB.from('evento_etapas_catalogo').update({ padrao: pc.checked }).eq('id', c.id);
+        if (x.error) { alert(x.error.message); pc.checked = !pc.checked; }
+      });
+      lb.appendChild(pc); lb.appendChild(document.createTextNode('Padrão'));
+      var rm = mk('Tirar do banco', 'btn-ghost', async function () {
+        if (!confirm('Tirar "' + c.nome + '" do banco de etapas? Os eventos que já têm continuam como estão.')) return;
+        var x = await SB.from('evento_etapas_catalogo').update({ ativo: false }).eq('id', c.id);
+        if (x.error) { alert(x.error.message); return; } await carregar();
+      });
+      row.appendChild(cb); row.appendChild(nm); row.appendChild(lb); row.appendChild(rm);
+      sel.appendChild(row);
+    });
+    var nomesCat = cat.map(function (c) { return c.nome; });
+    etapas.forEach(function (e) {
+      if (nomesCat.indexOf(e.nome) >= 0) return;
+      var row = document.createElement('div');
+      row.style.cssText = 'display:flex;gap:10px;align-items:center;padding:6px 0;border-bottom:1px solid rgba(255,255,255,.06)';
+      var cb = document.createElement('input'); cb.type = 'checkbox'; cb.checked = true;
+      cb.addEventListener('change', function () { ligar({ nome: e.nome }, false); });
+      var nm = document.createElement('span'); nm.textContent = e.nome + ' (avulsa)';
+      row.appendChild(cb); row.appendChild(nm); sel.appendChild(row);
+    });
+    var add = document.createElement('div'); add.style.cssText = 'display:flex;gap:8px;margin-top:10px;flex-wrap:wrap';
+    add.innerHTML = '<input type="text" class="adm-input" placeholder="Nova etapa (entra no banco)" style="flex:1;min-width:180px"><button type="button" class="btn-lime">+ Adicionar</button>';
+    add.querySelector('button').addEventListener('click', async function () {
+      var nome = add.querySelector('input').value.trim(); if (!nome) return;
+      var existente = cat.find(function (c) { return c.nome.toLowerCase() === nome.toLowerCase(); });
+      if (!existente) {
+        var prox = cat.length ? Math.max.apply(null, cat.map(function (c) { return c.ordem || 0; })) + 1 : 1;
+        var ins = await SB.from('evento_etapas_catalogo').insert({ nome: nome, ordem: prox, ativo: true, padrao: false }).select('id, nome, hora_padrao, ordem, padrao').maybeSingle();
+        if (ins.error) { alert(ins.error.message); return; }
+        existente = ins.data || { nome: nome, ordem: prox };
+      }
+      if (!marcadas[existente.nome]) await ligar(existente, true); else await carregar();
+    });
+    sel.appendChild(add);
+    var pad = mk('Aplicar o padrão neste evento', 'btn-ghost', async function () {
+      var falta = cat.filter(function (c) { return c.padrao && !marcadas[c.nome]; });
+      if (!falta.length) { alert('As etapas padrão já estão marcadas.'); return; }
+      var linhas = falta.map(function (c) { return { proposta_id: pedido.id, nome: c.nome, hora: c.hora_padrao || null, ordem: c.ordem == null ? 500 : c.ordem, origem: 'catalogo' }; });
+      var x = await SB.from('evento_etapas').insert(linhas);
+      if (x.error) { alert(x.error.message); return; } await carregar();
+    });
+    pad.style.marginTop = '10px';
+    sel.appendChild(pad);
+    lt.parentNode.insertBefore(sel, lt.nextSibling);
+  }
+
+  /* ================= Administrador: financeiro e fotolog (cópias do index e do admin fotolog) ================= */
+  var ULT_FOTOLOG = null;
+  function admAposRender() {
+    var p = pedidoAtivo();
+    var host = $('listaPedidos') && $('listaPedidos').parentNode;
+    if (host) {
+      var fin = document.getElementById('finConteudo');
+      if (!fin) { fin = document.createElement('div'); fin.id = 'finConteudo'; fin.style.cssText = 'margin-top:16px;padding-top:12px;border-top:1px solid rgba(245,158,11,.2)'; host.appendChild(fin); }
+      if (p && window.admFinAbrir) window.admFinAbrir(p.id);
+      else fin.innerHTML = '<div class="vazio">Este cliente não tem pedidos.</div>';
+    }
+    if (window.__admFotologAbrir) {
+      if (p) { if (ULT_FOTOLOG !== p.id) { ULT_FOTOLOG = p.id; window.__admFotologAbrir(p.id); } }
+      else { ULT_FOTOLOG = null; window.__admFotologVazio(); }
+    }
   }
 
   var seletorEl = null;
@@ -2814,5 +2865,1004 @@
   })();
 })();
   </script>
+  <!-- Opções de uma mídia do mural -->
+  <div id="sheet" role="dialog" aria-modal="true" aria-label="Opções da mídia">
+    <div class="glass-card p-5 sm:p-6" style="width:min(92vw,420px)">
+      <div id="sheet-midia" class="rounded-2xl overflow-hidden border border-white/10 bg-black mb-4" style="aspect-ratio:4/3"></div>
+      <p id="sheet-info" class="text-xs text-slate-400 mb-4"></p>
+      <div class="flex flex-col gap-2">
+        <button type="button" class="btn-adm-primary" id="sheet-replace">Substituir por outra foto ou vídeo</button>
+        <button type="button" class="btn-ghost" id="sheet-tirar">Tirar do mural (vai para a reserva)</button>
+        <button type="button" class="btn-danger-outline" id="sheet-del">Excluir</button>
+        <button type="button" class="btn-ghost" id="sheet-fechar">Fechar</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- Carregamento: mesmo visualizador do perfil do B2B -->
+  <div id="loadingOverlay">
+    <div class="glass-b2b p-8 rounded-2xl max-w-sm w-full text-center space-y-4 border border-cyan-500/40 shadow-[0_0_35px_rgba(0,240,255,0.25)]">
+      <div class="w-12 h-12 border-4 border-cyan-400 border-t-transparent rounded-full animate-spin mx-auto mb-2"></div>
+      <div>
+        <span id="loadingMessage" class="text-xs font-bold text-cyan-300 uppercase tracking-wider block">Enviando…</span>
+        <span id="loadingPercentageText" class="text-2xl font-extrabold text-white mt-1 block">0%</span>
+      </div>
+      <div class="w-full bg-slate-950/80 rounded-full h-2.5 overflow-hidden border border-cyan-500/30">
+        <div id="loadingProgressBar" class="bg-gradient-to-r from-cyan-500 via-cyan-400 to-amber-400 h-2.5 rounded-full transition-all duration-150 shadow-[0_0_12px_rgba(0,240,255,0.8)]" style="width: 0%"></div>
+      </div>
+    </div>
+  </div>
+
+
+<script>
+(function () {
+  'use strict';
+  var pidAtual = null;
+  var BRL = function (v) { return v == null || v === '' ? '—' : 'R$ ' + Number(v).toFixed(2).replace('.', ','); };
+  var DH = function (v) { return v ? new Date(v).toLocaleString('pt-BR') : '—'; };
+  var E = function (t) { return String(t == null ? '' : t).replace(/[&<>"']/g, function (c) { return {'&':'&amp;','<':'&lt;','"':'&quot;',"'":'&#39;'}[c]; }); };
+  var TIPO = { sinal:'Entrada / Sinal', parcela:'Parcela', saldo:'Saldo', outro:'Outro' };
+  var EVT = { valor_conferido:'Valor conferido', valor_alterado:'Valor alterado', aprovado:'Aprovado', recusado:'Recusado', pendente:'Reaberto', excluido:'Excluído', bloqueio_aceito:'Bloqueio sem pagamento aceito', bloqueio_resolvido:'Bloqueio resolvido' };
+  var num = function (v) { return parseFloat(String(v || '').replace(/\./g, '').replace(',', '.')); };
+  var dispararAvisos = function () { sbPartner.functions.invoke('enviar-notificacoes', { body: { proposta_id: pidAtual } }).catch(function () {}); };
+
+  function admExtrasFin(P, box) {
+    if (P.assinado_em || P.assinatura_dispensada_em || P.cancelada_em) return;
+    var b = document.createElement('button');
+    b.type = 'button'; b.className = 'btn-lime'; b.style.cssText = 'margin-bottom:14px';
+    b.textContent = 'Autorizar sem assinatura';
+    b.addEventListener('click', async function () {
+      var mot = prompt('Motivo para seguir sem assinatura:');
+      if (!mot || !mot.trim()) return;
+      if (!confirm('Autorizar seguir com o contrato sem assinatura?')) return;
+      var u = await sbPartner.auth.getUser();
+      var uid = (u && u.data && u.data.user && u.data.user.id) || null;
+      var r = await sbPartner.from('propostas').update({ assinatura_dispensada_em: new Date().toISOString(), assinatura_dispensada_por: uid, assinatura_dispensada_motivo: mot.trim() }).eq('id', pidAtual);
+      if (r.error) { alert(r.error.message); return; }
+      carregarFin();
+    });
+    box.insertBefore(b, box.children[1] || null);
+  }
+
+  async function carregarFin() {
+    var box = document.getElementById('finConteudo');
+    box.innerHTML = 'Carregando…';
+    var p = await sbPartner.from('propostas').select('status, cancelada_em, cancelamento_motivo, numero, cliente_nome, valor_total, assinado_em, bloqueio_sem_pagamento, bloqueio_forma, bloqueio_data_limite, bloqueio_alerta_em, bloqueio_resolvido_em').eq('id', pidAtual).maybeSingle();
+    var c = await sbPartner.from('contrato_comprovantes').select('*').eq('proposta_id', pidAtual).order('enviado_em');
+    var l = await sbPartner.from('financeiro_log').select('*').eq('proposta_id', pidAtual).order('criado_em', { ascending: false });
+    var rb = await sbPartner.from('reembolsos').select('*').eq('proposta_id', pidAtual).order('criado_em');
+    var pd = await sbPartner.from('comissao_pendencias').select('*').eq('proposta_id', pidAtual).eq('status', 'aberta');
+    if (p.error || !p.data) { box.innerHTML = 'Proposta não encontrada.'; return; }
+    var P = p.data;
+    var dsp = await sbPartner.from('propostas').select('assinatura_dispensada_em').eq('id', pidAtual).maybeSingle();
+    P.assinatura_dispensada_em = (dsp && dsp.data && dsp.data.assinatura_dispensada_em) || null;
+
+    var html = '<div style="margin-bottom:14px;"><strong>Proposta #' + E(P.numero) + '</strong> · ' + E(P.cliente_nome) +
+      ' · Total ' + BRL(P.valor_total) + ' · ' + (P.assinado_em ? 'Contrato assinado em ' + DH(P.assinado_em) : (P.assinatura_dispensada_em ? 'Autorizado sem assinatura em ' + DH(P.assinatura_dispensada_em) : 'Contrato não assinado')) + '</div>';
+
+    html += '<div style="border:1px solid rgba(255,255,255,.1);border-radius:10px;padding:12px;margin-bottom:14px;">' +
+      '<strong>Bloqueio sem pagamento prévio</strong>';
+    if (!P.assinado_em) {
+      html += '<div style="color:#94a3b8;margin-top:6px;">Disponível depois que o contrato for assinado.</div>';
+    } else if (P.bloqueio_sem_pagamento) {
+      var vencido = P.bloqueio_alerta_em && !P.bloqueio_resolvido_em;
+      html += '<div style="margin-top:6px;">Forma: ' + E(P.bloqueio_forma) + '<br>Limite: ' + DH(P.bloqueio_data_limite) + '</div>';
+      if (P.bloqueio_resolvido_em) {
+        html += '<div style="margin-top:6px;color:#a3e635;">Decisão registrada em ' + DH(P.bloqueio_resolvido_em) + '.</div>';
+      } else if (vencido) {
+        html += '<div style="margin-top:6px;color:#fca5a5;font-weight:700;">⚠️ Prazo vencido. Decida: manter ou resolver.</div>' +
+          '<div style="margin-top:8px;"><button onclick="finResolver()" style="padding:6px 12px;border-radius:8px;background:#a3e635;color:#0b1020;border:none;font-weight:700;cursor:pointer;">Registrar decisão</button></div>';
+      } else {
+        html += '<div style="margin-top:6px;color:#94a3b8;">Aguardando pagamento até o limite.</div>';
+      }
+    } else {
+      html += '<div style="margin-top:8px;display:grid;gap:8px;">' +
+        '<textarea id="finForma" rows="2" placeholder="Como será feito o pagamento (ex.: PIX, tudo ou parte)" style="background:#020617;color:#e2e8f0;border:1px solid rgba(255,255,255,.1);border-radius:8px;padding:8px;"></textarea>' +
+        '<input id="finLimite" type="datetime-local" style="background:#020617;color:#e2e8f0;border:1px solid rgba(255,255,255,.1);border-radius:8px;padding:8px;">' +
+        '<div><button onclick="finAceitarBloqueio()" style="padding:7px 14px;border-radius:8px;background:#a3e635;color:#0b1020;border:none;font-weight:700;cursor:pointer;">Aceitar bloqueio</button></div></div>';
+    }
+    html += '</div>';
+
+    var lista = c.data || [];
+    html += '<strong>Comprovantes do cliente</strong>';
+    if (!lista.length) html += '<div style="color:#94a3b8;margin:6px 0 14px;">Nenhum comprovante enviado ainda.</div>';
+    lista.forEach(function (x) {
+      var badge = x.status === 'aprovado' ? '<span style="color:#a3e635;font-weight:700;">Aprovado</span>'
+        : x.status === 'recusado' ? '<span style="color:#fca5a5;font-weight:700;">Recusado</span>'
+        : '<span style="color:#facc15;font-weight:700;">Aguardando conferência</span>';
+      html += '<div style="border:1px solid rgba(255,255,255,.1);border-radius:10px;padding:10px;margin:8px 0;">' +
+        '<div style="display:flex;justify-content:space-between;flex-wrap:wrap;gap:6px;"><strong>' + E(TIPO[x.tipo] || x.tipo) + '</strong>' + badge + '</div>' +
+        '<div style="margin-top:6px;">Valor digitado: <strong>' + BRL(x.valor) + '</strong> · Data: ' + (x.data_pagamento ? x.data_pagamento.split('-').reverse().join('/') : '—') +
+        ' · <a href="' + E(x.arquivo_url) + '" target="_blank" rel="noopener" style="color:#a3e635;">Abrir comprovante</a></div>';
+      if (x.status === 'pendente') {
+        html += '<div style="display:flex;gap:8px;flex-wrap:wrap;margin-top:8px;align-items:end;">' +
+          '<div><div style="font-size:11px;color:#94a3b8;">Valor conferido</div><input id="fv-' + x.id + '" value="' + String(x.valor).replace('.', ',') + '" style="background:#020617;color:#e2e8f0;border:1px solid rgba(255,255,255,.1);border-radius:8px;padding:6px;width:120px;"></div>' +
+          '<div><div style="font-size:11px;color:#94a3b8;">Motivo (se diferente)</div><input id="fm-' + x.id + '" style="background:#020617;color:#e2e8f0;border:1px solid rgba(255,255,255,.1);border-radius:8px;padding:6px;width:220px;"></div>' +
+          '<button onclick="finAprovar(\'' + x.id + '\')" style="padding:6px 12px;border-radius:8px;background:#a3e635;color:#0b1020;border:none;font-weight:700;cursor:pointer;">Aprovar</button>' +
+          '<button onclick="finRecusar(\'' + x.id + '\')" style="padding:6px 12px;border-radius:8px;background:transparent;color:#fca5a5;border:1px solid rgba(248,113,113,.4);cursor:pointer;">Recusar</button>' +
+          '<button onclick="finExcluir(\'' + x.id + '\')" style="padding:6px 12px;border-radius:8px;background:transparent;color:#e2e8f0;border:1px solid rgba(255,255,255,.2);cursor:pointer;">Excluir</button></div>';
+      }
+      if (x.status === 'aprovado') {
+        html += '<div style="margin-top:6px;">Valor conferido: <strong>' + BRL(x.valor_confirmado) + '</strong> · Aprovado em ' + DH(x.aprovado_em) +
+          ' <button onclick="finAlterar(\'' + x.id + '\',' + (x.valor_confirmado || 0) + ')" style="margin-left:8px;padding:4px 10px;border-radius:8px;background:transparent;color:#e2e8f0;border:1px solid rgba(255,255,255,.2);cursor:pointer;">Alterar valor</button></div>';
+      }
+      if (x.status === 'recusado') {
+        html += '<div style="margin-top:6px;color:#fca5a5;">Motivo: ' + E(x.motivo_recusa || '—') + ' · <button onclick="finExcluir(\'' + x.id + '\')" style="padding:4px 10px;border-radius:8px;background:transparent;color:#e2e8f0;border:1px solid rgba(255,255,255,.2);cursor:pointer;">Excluir</button></div>';
+      }
+      html += '</div>';
+    });
+
+    // ---- Venda: troca de painel com transição (cancelada: reembolso; ativa: envio em nome do cliente) ----
+    var cancelada = P.status === 'cancelada';
+    var recebidoAprov = lista.filter(function (x) { return x.status === 'aprovado'; })
+      .reduce(function (a, x) { return a + Number(x.valor_confirmado || 0); }, 0);
+    var jaReembolsado = (rb.data || []).reduce(function (a, x) { return a + Number(x.valor || 0); }, 0);
+    var aReembolsar = Math.max(0, recebidoAprov - jaReembolsado);
+    var campo = 'background:#020617;color:#e2e8f0;border:1px solid rgba(255,255,255,.1);border-radius:8px;padding:6px;';
+    var botaoPrincipal = 'padding:7px 14px;border-radius:8px;background:#a3e635;color:#0b1020;border:none;font-weight:700;cursor:pointer;';
+
+    html += '<style>@keyframes finTroca{from{opacity:0;transform:translateY(6px) scale(.985);filter:blur(2px)}to{opacity:1;transform:none;filter:none}}' +
+      '.finPainel{animation:finTroca .55s cubic-bezier(.22,.61,.36,1) both;}</style>';
+
+    if (cancelada) {
+      html += '<div class="finPainel" style="border:1px solid rgba(248,113,113,.35);border-radius:10px;padding:12px;margin-bottom:14px;">' +
+        '<strong>Pedido cancelado</strong>' +
+        '<div style="margin-top:6px;color:#fca5a5;">Cancelado em ' + DH(P.cancelada_em) + ' · Motivo: ' + E(P.cancelamento_motivo) + '</div>' +
+        '<div style="margin-top:6px;">Recebido e aprovado: ' + BRL(recebidoAprov) + ' · Já reembolsado: ' + BRL(jaReembolsado) +
+        ' · <strong>A reembolsar: ' + BRL(aReembolsar) + '</strong></div>';
+      if (aReembolsar > 0) {
+        html += '<div style="margin-top:12px;"><strong>Registrar reembolso</strong>' +
+          '<div style="display:grid;gap:8px;margin-top:8px;grid-template-columns:repeat(auto-fit,minmax(160px,1fr));">' +
+          '<input id="rbValor" value="' + String(aReembolsar).replace('.', ',') + '" placeholder="Valor (R$)" style="' + campo + '">' +
+          '<input id="rbData" type="date" value="' + new Date().toISOString().slice(0, 10) + '" style="' + campo + '">' +
+          '<input id="rbMotivo" placeholder="Observação (opcional)" style="' + campo + '">' +
+          '<input id="rbArq" type="file" accept="image/*,application/pdf" style="color:#94a3b8;font-size:12px;"></div>' +
+          '<div style="margin-top:8px;"><button onclick="finRegistrarReembolso()" style="' + botaoPrincipal + '">Registrar reembolso</button> <span id="rbMsg" style="font-size:12px;margin-left:8px;"></span></div></div>';
+      }
+      (rb.data || []).forEach(function (x) {
+        html += '<div style="margin-top:6px;font-size:12px;">Reembolso ' + BRL(x.valor) + ' em ' + DH(x.data_reembolso) +
+          ' · <a href="' + E(x.comprovante_url) + '" target="_blank" rel="noopener" style="color:#a3e635;">comprovante</a></div>';
+      });
+      html += '</div>';
+    } else {
+      html += '<div class="finPainel" style="border:1px solid rgba(255,255,255,.1);border-radius:10px;padding:12px;margin-bottom:14px;">' +
+        '<strong>Enviar comprovante em nome do cliente</strong>' +
+        '<div style="font-size:12px;color:#94a3b8;margin-top:4px;">Use quando o cliente mandar o comprovante por outro canal. Depois ele segue para conferência, como os demais.</div>' +
+        '<div style="display:grid;gap:8px;margin-top:8px;grid-template-columns:repeat(auto-fit,minmax(160px,1fr));">' +
+        '<select id="ecTipo" style="' + campo + '"><option value="sinal">Entrada / Sinal</option><option value="parcela">Parcela</option><option value="saldo">Saldo</option><option value="outro">Outro</option></select>' +
+        '<input id="ecValor" placeholder="Valor (R$)" style="' + campo + '">' +
+        '<input id="ecData" type="date" style="' + campo + '">' +
+        '<input id="ecArq" type="file" accept="image/*,application/pdf" style="color:#94a3b8;font-size:12px;"></div>' +
+        '<div style="margin-top:8px;"><button onclick="finEnviarEmNomeDoCliente()" style="' + botaoPrincipal + '">Enviar comprovante</button> <span id="ecMsg" style="font-size:12px;margin-left:8px;"></span></div>' +
+        '<div style="margin-top:12px;border-top:1px solid rgba(255,255,255,.08);padding-top:10px;"><button onclick="finCancelar()" style="padding:6px 12px;border-radius:8px;background:transparent;color:#fca5a5;border:1px solid rgba(248,113,113,.4);cursor:pointer;">Cancelar pedido</button></div>' +
+        '</div>';
+    }
+
+    if ((pd.data || []).length) {
+      html += '<div style="border:1px solid rgba(250,204,21,.35);border-radius:10px;padding:12px;margin-bottom:14px;"><strong>Comissão a decidir (venda cancelada)</strong>';
+      (pd.data || []).forEach(function (x) {
+        html += '<div style="margin-top:8px;display:flex;gap:8px;flex-wrap:wrap;align-items:center;">' +
+          '<span>' + BRL(x.valor) + ' já paga ao vendedor.</span>' +
+          '<button onclick="finDecidirComissao(\'' + x.id + '\',\'descontar_proximo\')" style="padding:5px 10px;border-radius:8px;background:transparent;color:#e2e8f0;border:1px solid rgba(255,255,255,.2);cursor:pointer;">Descontar do próximo repasse</button>' +
+          '<button onclick="finDecidirComissao(\'' + x.id + '\',\'devolucao\')" style="padding:5px 10px;border-radius:8px;background:transparent;color:#e2e8f0;border:1px solid rgba(255,255,255,.2);cursor:pointer;">Pedir devolução</button></div>';
+      });
+      html += '</div>';
+    }
+
+    html += '<strong style="display:block;margin-top:14px;">Histórico financeiro (interno)</strong>';
+    if (!l.data || !l.data.length) html += '<div style="color:#94a3b8;margin-top:6px;">Nada registrado ainda.</div>';
+    else html += '<table style="width:100%;border-collapse:collapse;font-size:12px;margin-top:6px;"><thead><tr style="color:#94a3b8;text-align:left;"><th style="padding:6px;">Quando</th><th style="padding:6px;">Evento</th><th style="padding:6px;">Digitado</th><th style="padding:6px;">Anterior → Novo</th><th style="padding:6px;">Motivo</th></tr></thead><tbody>' +
+      l.data.map(function (e) {
+        var troca = (e.valor_anterior != null || e.valor_novo != null) ? BRL(e.valor_anterior) + ' → ' + BRL(e.valor_novo) : '—';
+        return '<tr style="border-top:1px solid rgba(255,255,255,.08);"><td style="padding:6px;">' + DH(e.criado_em) + '</td><td style="padding:6px;">' + E(EVT[e.evento] || e.evento) +
+          '</td><td style="padding:6px;">' + BRL(e.valor_digitado) + '</td><td style="padding:6px;">' + troca + '</td><td style="padding:6px;">' + E(e.motivo || '') + '</td></tr>';
+      }).join('') + '</tbody></table>';
+
+    box.innerHTML = html;
+    admExtrasFin(P, box);
+  }
+
+  window.finAceitarBloqueio = async function () {
+    var forma = document.getElementById('finForma').value.trim();
+    var lim = document.getElementById('finLimite').value;
+    if (!forma) return alert('Descreva como será feito o pagamento.');
+    if (!lim) return alert('Informe o dia e a hora limite.');
+    var r = await sbPartner.rpc('aceitar_bloqueio_sem_pagamento', { p_id: pidAtual, p_forma: forma, p_data_limite: new Date(lim).toISOString() });
+    if (r.error) return alert(r.error.message);
+    carregarFin();
+  };
+
+  window.finResolver = async function () {
+    var motivo = prompt('Registre a decisão (ex.: mantido, cliente confirmou nova data):');
+    if (motivo === null) return;
+    var r = await sbPartner.rpc('resolver_bloqueio_sem_pagamento', { p_id: pidAtual, p_motivo: motivo });
+    if (r.error) return alert(r.error.message);
+    carregarFin();
+  };
+
+  window.finAprovar = async function (id) {
+    var valor = num(document.getElementById('fv-' + id).value);
+    var motivo = document.getElementById('fm-' + id).value.trim();
+    var r = await sbPartner.rpc('aprovar_comprovante', { p_id: id, p_valor: valor, p_motivo: motivo || null });
+    if (r.error) return alert(r.error.message);
+    dispararAvisos();
+    carregarFin();
+  };
+
+  window.finRecusar = async function (id) {
+    var motivo = prompt('Motivo da recusa (o cliente verá):');
+    if (motivo === null) return;
+    var r = await sbPartner.rpc('recusar_comprovante', { p_id: id, p_motivo: motivo });
+    if (r.error) return alert(r.error.message);
+    dispararAvisos();
+    carregarFin();
+  };
+
+  window.finAlterar = async function (id, atual) {
+    var novo = prompt('Novo valor conferido (atual: ' + atual + '):');
+    if (novo === null) return;
+    var motivo = prompt('Motivo da alteração (obrigatório):');
+    if (motivo === null) return;
+    var r = await sbPartner.rpc('alterar_valor_comprovante', { p_id: id, p_valor: num(novo), p_motivo: motivo });
+    if (r.error) return alert(r.error.message);
+    carregarFin();
+  };
+
+  function lerArquivo(file) {
+    return new Promise(function (res, rej) {
+      var r = new FileReader();
+      r.onload = function () { res(String(r.result).split(',')[1]); };
+      r.onerror = function () { rej(new Error('Não foi possível ler o arquivo.')); };
+      r.readAsDataURL(file);
+    });
+  }
+  async function enviarArquivo(file, corpo) {
+    var t = file.type || '';
+    if (!(t === 'application/pdf' || (t.indexOf('image/') === 0 && t !== 'image/svg+xml'))) throw new Error('Envie uma imagem ou PDF.');
+    if (file.size > 5 * 1024 * 1024) throw new Error('Arquivo maior que 5 MB.');
+    var b64 = await lerArquivo(file);
+    var r = await sbPartner.functions.invoke('anexar-comprovante', { body: Object.assign({}, corpo, { arquivo_base64: b64, mime: t }) });
+    if (r.error || (r.data && r.data.erro)) throw new Error((r.data && r.data.erro) || 'Falha ao enviar o arquivo.');
+    return r.data;
+  }
+  function escolherArquivo(cb) {
+    var inp = document.createElement('input');
+    inp.type = 'file';
+    inp.accept = 'image/*,application/pdf';
+    inp.onchange = function () { if (inp.files[0]) cb(inp.files[0]); };
+    inp.click();
+  }
+
+  window.finCancelar = async function () {
+    var motivo = prompt('Motivo do cancelamento (obrigatório). Vendedor e cliente serão avisados:');
+    if (motivo === null || !motivo.trim()) return;
+    if (!confirm('Cancelar este pedido? A data sai da agenda.')) return;
+    var r = await sbPartner.rpc('cancelar_contrato', { p_id: pidAtual, p_motivo: motivo.trim() });
+    if (r.error) return alert(r.error.message);
+    dispararAvisos();
+    carregarFin();
+  };
+
+  window.finRegistrarReembolso = async function () {
+    var msg = document.getElementById('rbMsg');
+    var arq = document.getElementById('rbArq').files[0];
+    var valor = num(document.getElementById('rbValor').value);
+    var data = document.getElementById('rbData').value;
+    var motivo = document.getElementById('rbMotivo').value.trim();
+    if (!valor || valor <= 0) { msg.style.color = '#fca5a5'; msg.textContent = 'Informe o valor.'; return; }
+    if (!data) { msg.style.color = '#fca5a5'; msg.textContent = 'Informe a data.'; return; }
+    if (!arq) { msg.style.color = '#fca5a5'; msg.textContent = 'Anexe o comprovante do PIX de devolução.'; return; }
+    msg.style.color = '#94a3b8'; msg.textContent = 'Enviando…';
+    try {
+      var up = await enviarArquivo(arq, { kind: 'reembolso', proposta_id: pidAtual });
+      var r = await sbPartner.rpc('registrar_reembolso', {
+        p_id: pidAtual, p_valor: valor, p_data: data, p_comprovante_url: up.url, p_motivo: motivo
+      });
+      if (r.error) { msg.style.color = '#fca5a5'; msg.textContent = r.error.message; return; }
+      dispararAvisos();
+      carregarFin();
+    } catch (e) { msg.style.color = '#fca5a5'; msg.textContent = e.message; }
+  };
+
+  window.finDecidirComissao = async function (id, decisao) {
+    var txt = decisao === 'descontar_proximo'
+      ? 'Registrar: descontar este valor do próximo repasse do vendedor?'
+      : 'Registrar: pedir a devolução deste valor ao vendedor?';
+    if (!confirm(txt)) return;
+    var r = await sbPartner.rpc('resolver_pendencia_comissao', { p_id: id, p_decisao: decisao });
+    if (r.error) return alert(r.error.message);
+    carregarFin();
+  };
+
+  window.finEnviarEmNomeDoCliente = async function () {
+    var msg = document.getElementById('ecMsg');
+    var arq = document.getElementById('ecArq').files[0];
+    var valor = num(document.getElementById('ecValor').value);
+    var data = document.getElementById('ecData').value;
+    if (!arq) { msg.style.color = '#fca5a5'; msg.textContent = 'Escolha o arquivo.'; return; }
+    if (!valor || valor <= 0) { msg.style.color = '#fca5a5'; msg.textContent = 'Informe o valor.'; return; }
+    if (!data) { msg.style.color = '#fca5a5'; msg.textContent = 'Informe a data.'; return; }
+    msg.style.color = '#94a3b8'; msg.textContent = 'Enviando…';
+    try {
+      await enviarArquivo(arq, { kind: 'admin', proposta_id: pidAtual, tipo: document.getElementById('ecTipo').value, valor: valor, data_pagamento: data });
+      carregarFin();
+    } catch (e) { msg.style.color = '#fca5a5'; msg.textContent = e.message; }
+  };
+
+
+  window.finExcluir = async function (id) {
+    if (!confirm('Excluir este comprovante? Fica registrado no histórico.')) return;
+    var r = await sbPartner.from('contrato_comprovantes').delete().eq('id', id);
+    if (r.error) return alert(r.error.message);
+    carregarFin();
+  };
+
+  window.admFinAbrir = function (id) { pidAtual = id; carregarFin(); };
+})();
+</script>
+
+<script>
+(function () {
+'use strict';
+
+    const R2_UPLOAD_URL = 'https://432up-r2-upload.432up-producoes.workers.dev/';
+    const _sb = (typeof sbPartner !== 'undefined') ? sbPartner : null;
+    const $ = (id) => document.getElementById(id);
+    const esc = (s) => String(s ?? '').replace(/[&<>"']/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
+    const norm = (s) => String(s ?? '').normalize('NFD').replace(/[\u0300-\u036f]/g, '').toLowerCase().trim();
+    const CAMERA_SVG = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round" width="28" height="28"><path d="M4 8h3l2-3h6l2 3h3v11H4z"/><circle cx="12" cy="13" r="3.5"/></svg>';
+
+    let PEDIDOS = [];
+    let PID = '';
+    let FOTOS = [];
+    let DRAG = false;
+    let SORT = null;
+    let SLOT_ALVO = null;
+    let PD = null;
+    let SUPRIMIR_TAP = false;
+
+    function msg(t, erro) {
+      const el = $('msg');
+      el.textContent = t || '';
+      el.className = 'text-xs mt-3 min-h-[16px] ' + (erro ? 'text-red-300' : 'text-amber-300');
+    }
+
+    /*
+     * Barra de progresso.
+     * fracao entre 0 e 1: progresso real (bytes enviados ou etapa concluída).
+     * fracao null: o aparelho ainda não informa bytes enviados; a barra fica animada (sem número).
+     */
+    function progresso(texto, fracao) {
+      const barra = $('loadingProgressBar');
+      $('loadingMessage').textContent = texto || 'Enviando…';
+      if (fracao === null) {
+        $('loadingPercentageText').textContent = 'enviando…';
+        barra.style.width = '100%';
+        barra.classList.add('animate-pulse');
+      } else {
+        const pct = Math.round(Math.max(0, Math.min(1, fracao || 0)) * 100);
+        $('loadingPercentageText').textContent = pct + '%';
+        barra.style.width = pct + '%';
+        barra.classList.remove('animate-pulse');
+      }
+      $('loadingOverlay').classList.add('active');
+    }
+    function progressoFim() {
+      $('loadingProgressBar').classList.remove('animate-pulse');
+      $('loadingOverlay').classList.remove('active');
+    }
+
+    function ehVideo(file) {
+      return (file.type || '').startsWith('video/') || /\.(mp4|mov|m4v|webm|3gp)$/i.test(file.name || '');
+    }
+
+    // Vídeo: poster (miniatura) ou primeiro frame (#t=0.01)
+    function midia(f, controles) {
+      if (f.tipo === 'video') {
+        const poster = f.poster_url ? ` poster="${esc(f.poster_url)}"` : '';
+        return `<video src="${esc(f.url)}#t=0.01"${poster} muted playsinline preload="metadata" ${controles ? 'controls' : ''} style="width:100%;height:100%;object-fit:cover;display:block;background:#0b0b10"></video>`;
+      }
+      return `<img src="${esc(f.url)}" alt="" loading="lazy" style="width:100%;height:100%;object-fit:cover;display:block">`;
+    }
+
+    async function token() {
+      const { data } = await _sb.auth.getSession();
+      const t = data && data.session && data.session.access_token;
+      if (!t) throw new Error('Sessão expirada. Entre novamente.');
+      return t;
+    }
+
+    /*
+     * Vídeo: lê o arquivo inteiro para a memória e envia como Blob, com progresso por XHR.
+     * onFrac recebe null enquanto o navegador não informa bytes, e um valor de 0 a 1 quando informa.
+     */
+    async function enviarVideoR2(path, file, onFrac) {
+      const t = await token();
+
+      let corpo;
+      try {
+        const buf = await file.arrayBuffer();
+        if (!buf.byteLength) {
+          throw new Error('o aparelho não conseguiu ler o arquivo (0 bytes)');
+        }
+        corpo = new Blob([buf], { type: file.type || 'video/mp4' });
+      } catch (e) {
+        throw new Error('Não foi possível ler o vídeo no aparelho: ' + (e && e.message ? e.message : e));
+      }
+
+      return new Promise((resolve, reject) => {
+        const xhr = new XMLHttpRequest();
+        xhr.open('PUT', R2_UPLOAD_URL + '?path=' + encodeURIComponent(path));
+        xhr.setRequestHeader('Authorization', 'Bearer ' + t);
+        xhr.setRequestHeader('Content-Type', file.type || 'application/octet-stream');
+        xhr.upload.onprogress = (e) => {
+          if (e.lengthComputable && onFrac) onFrac(e.loaded / e.total);
+        };
+        xhr.onload = () => {
+          let j = null;
+          try { j = JSON.parse(xhr.responseText); } catch (err) {}
+          if (xhr.status >= 200 && xhr.status < 300 && j && j.ok) resolve(j);
+          else reject(new Error((j && j.error) || ('Upload falhou (status ' + xhr.status + ')')));
+        };
+        xhr.onerror = () => reject(new Error('Falha de rede no envio'));
+        if (onFrac) onFrac(null);
+        xhr.send(corpo);
+      });
+    }
+
+    // Até 3 tentativas com o mesmo caminho
+    async function enviarVideoComTentativas(path, file, onFrac) {
+      let ultimo = null;
+      for (let t = 1; t <= 3; t++) {
+        try { return await enviarVideoR2(path, file, onFrac); }
+        catch (err) {
+          ultimo = err;
+          if (t < 3) await new Promise(r => setTimeout(r, t * 1500));
+        }
+      }
+      throw ultimo;
+    }
+
+    // Até 3 tentativas com o mesmo caminho (mesmo padrão do perfil do B2B)
+    async function enviarR2(path, blob, raw, onFrac) {
+      let ultimo = null;
+      for (let t = 1; t <= 3; t++) {
+        try { return await enviarR2Uma(path, blob, raw, onFrac); }
+        catch (err) {
+          ultimo = err;
+          if (t < 3) await new Promise(r => setTimeout(r, t * 1500));
+        }
+      }
+      throw ultimo;
+    }
+
+    // Envio com progresso real (XHR) para fotos e posters
+    async function enviarR2Uma(path, blob, raw, onFrac) {
+      const t = await token();
+      return new Promise((resolve, reject) => {
+        const xhr = new XMLHttpRequest();
+        xhr.open('PUT', R2_UPLOAD_URL + '?path=' + encodeURIComponent(path) + (raw ? '&raw=1' : ''));
+        xhr.setRequestHeader('Authorization', 'Bearer ' + t);
+        xhr.setRequestHeader('Content-Type', blob.type || 'application/octet-stream');
+        xhr.upload.onprogress = (e) => { if (e.lengthComputable && onFrac) onFrac(e.loaded / e.total); };
+        xhr.onload = () => {
+          let j = null;
+          try { j = JSON.parse(xhr.responseText); } catch (err) {}
+          if (xhr.status >= 200 && xhr.status < 300 && j && j.ok) resolve(j);
+          else reject(new Error((j && j.error) || ('Upload falhou (status ' + xhr.status + ')')));
+        };
+        xhr.onerror = () => reject(new Error('Falha de rede no envio'));
+        xhr.send(blob);
+      });
+    }
+
+    async function r2Apagar(path) {
+      if (!path) return;
+      await fetch(R2_UPLOAD_URL + '?path=' + encodeURIComponent(path), {
+        method: 'DELETE',
+        headers: { 'Authorization': 'Bearer ' + await token() }
+      }).catch(() => {});
+    }
+
+    // Miniatura: captura o frame em 0.01 s
+    function gerarPoster(file) {
+      return new Promise((resolve) => {
+        const url = URL.createObjectURL(file);
+        const v = document.createElement('video');
+        v.muted = true; v.playsInline = true; v.preload = 'auto'; v.src = url;
+        let feito = false;
+        const fim = (blob) => { if (feito) return; feito = true; URL.revokeObjectURL(url); resolve(blob); };
+        v.onerror = () => fim(null);
+        v.onloadeddata = () => { try { v.currentTime = 0.01; } catch (e) { fim(null); } };
+        v.onseeked = () => {
+          try {
+            if (!v.videoWidth) return fim(null);
+            const w = Math.min(v.videoWidth, 960);
+            const h = Math.round(w * v.videoHeight / v.videoWidth);
+            const c = document.createElement('canvas');
+            c.width = w; c.height = h;
+            c.getContext('2d').drawImage(v, 0, 0, w, h);
+            c.toBlob((b) => fim(b), 'image/jpeg', 0.86);
+          } catch (e) { fim(null); }
+        };
+        setTimeout(() => fim(null), 15000);
+      });
+    }
+
+    async function up(id, patch) {
+      const { error } = await _sb.from('evento_fotos').update(patch).eq('id', id);
+      if (error) { msg('Erro: ' + error.message, true); return false; }
+      return true;
+    }
+
+    async function gravarOrdem(ids) {
+      await Promise.all(ids.map((id, i) => up(id, { ordem: i + 1 })));
+      await carregar();
+    }
+
+    // ----- Pedido: busca por nome, número ou data -----
+    async function carregarPedidos() {
+      const { data, error } = await _sb.from('propostas')
+        .select('id, numero, cliente_nome, data_evento, status')
+        .order('data_evento', { ascending: false }).limit(800);
+      if (error) { msg('Erro ao carregar pedidos: ' + error.message, true); return; }
+      PEDIDOS = data || [];
+      buscarPedido('');
+    }
+
+    function pedidosQue(termo) {
+      const t = norm(termo);
+      if (!t) return PEDIDOS.slice(0, 20);
+      let iso = null, sufixo = null, prefixo = null;
+      let m = t.match(/^(\d{1,2})[\/.-](\d{1,2})[\/.-](\d{4})$/);
+      if (m) iso = `${m[3]}-${m[2].padStart(2, '0')}-${m[1].padStart(2, '0')}`;
+      m = !iso && t.match(/^(\d{1,2})[\/.-](\d{1,2})$/);
+      if (m) sufixo = `-${m[2].padStart(2, '0')}-${m[1].padStart(2, '0')}`;
+      m = !iso && !sufixo && t.match(/^(\d{4})-(\d{1,2})(?:-(\d{1,2}))?$/);
+      if (m) prefixo = [m[1], m[2] && m[2].padStart(2, '0'), m[3] && m[3].padStart(2, '0')].filter(Boolean).join('-');
+      const digitos = t.replace(/\D/g, '');
+      return PEDIDOS.filter(p => {
+        const d = String(p.data_evento || '').slice(0, 10);
+        if (iso) return d === iso;
+        if (sufixo) return d.endsWith(sufixo);
+        if (prefixo) return d.startsWith(prefixo);
+        const nomeOk = norm(p.cliente_nome).includes(t);
+        const numOk = digitos && String(p.numero ?? '') === digitos;
+        return nomeOk || numOk;
+      }).slice(0, 20);
+    }
+
+    function formatarData(d) {
+      if (!d) return 'sem data';
+      const [y, m, dd] = String(d).slice(0, 10).split('-');
+      return `${dd}/${m}/${y}`;
+    }
+
+    function buscarPedido(termo) {
+      const lista = pedidosQue(termo);
+      $('resultados').innerHTML = lista.map(p => `
+        <button type="button" class="res-item" data-pid="${esc(p.id)}">
+          <strong>${p.numero ? '#' + esc(p.numero) : 'Sem número'}</strong> · ${esc(p.cliente_nome || 'Sem nome')} · ${formatarData(p.data_evento)}${p.status ? ' · ' + esc(p.status) : ''}
+        </button>`).join('');
+      $('sem-resultado').style.display = (termo && !lista.length) ? '' : 'none';
+    }
+
+    function escolherPedido(id) {
+      const p = PEDIDOS.find(x => x.id === id);
+      if (!p) return;
+      PID = id;
+      $('pedido-chip').textContent = `${p.numero ? '#' + p.numero + ' · ' : ''}${p.cliente_nome || 'Sem nome'} · ${formatarData(p.data_evento)}`;
+      $('pedido-busca').style.display = 'none';
+      $('pedido-escolhido').style.display = 'flex';
+      $('area').style.display = '';
+      $('btn-enviar').style.display = '';
+      $('btn-atualizar').style.display = '';
+      msg('');
+      carregar();
+    }
+
+    function trocarPedido() {
+      PID = ''; FOTOS = [];
+      $('pedido-busca').style.display = '';
+      $('pedido-escolhido').style.display = 'none';
+      $('area').style.display = 'none';
+      $('btn-enviar').style.display = 'none';
+      $('btn-atualizar').style.display = 'none';
+      $('busca-pedido').value = '';
+      buscarPedido('');
+      $('busca-pedido').focus();
+    }
+
+    // ----- Fotos -----
+    async function carregar() {
+      if (!PID) return;
+      const { data, error } = await _sb.from('evento_fotos').select('*')
+        .eq('proposta_id', PID).order('ordem', { ascending: true });
+      if (error) { msg('Erro ao carregar: ' + error.message, true); return; }
+      FOTOS = data || [];
+      render();
+    }
+
+    function render() {
+      renderMural();
+      renderLista();
+    }
+
+    function noSlot(n) {
+      return FOTOS.find(f => f.posicao === n) || null;
+    }
+
+    function renderMural() {
+      let h = '';
+      for (let n = 1; n <= 6; n++) {
+        const f = noSlot(n);
+        const rotulo = n === 1 ? '1 · grande' : String(n);
+        if (f) {
+          h += `<div class="slot s${n}" data-id="${f.id}" data-n="${n}">
+                  <span class="slot-tag">${rotulo}</span>
+                  ${f.visivel ? '' : '<span class="slot-off">oculta</span>'}
+                  ${midia(f)}
+                </div>`;
+        } else {
+          h += `<div class="slot vazio s${n}" data-n="${n}">
+                  <span class="slot-tag">${rotulo}</span>
+                  <div class="slot-cta">${CAMERA_SVG}<span>Enviar aqui</span></div>
+                </div>`;
+        }
+      }
+      const el = $('mural');
+      el.innerHTML = h;
+      el.classList.toggle('drag-on', DRAG);
+    }
+
+    function renderLista() {
+      $('vazio').style.display = FOTOS.length ? 'none' : '';
+      $('lista').innerHTML = FOTOS.map(f => {
+        let badge;
+        if (!f.visivel) badge = 'Oculta';
+        else if (f.na_linha) badge = 'Em linha';
+        else if (f.posicao) badge = 'Mural · ' + f.posicao + (f.posicao === 1 ? ' · grande' : '');
+        else badge = 'Reserva';
+        return `
+          <div class="adm-card" data-id="${f.id}" style="${f.visivel ? '' : 'opacity:.5'}">
+            <div style="position:relative;aspect-ratio:4/3;background:#0b0b10;overflow:hidden">
+              ${midia(f)}
+              <span style="position:absolute;left:8px;top:8px;font-size:10px;font-weight:800;padding:3px 8px;border-radius:999px;background:rgba(0,0,0,.6);color:#fbbf24;text-transform:uppercase">${esc(badge)}</span>
+            </div>
+            <div class="adm-card-body" style="display:grid;gap:8px">
+              <input type="text" class="adm-input" maxlength="160" placeholder="Título (legenda)" value="${esc(f.legenda || '')}" data-leg="${f.id}">
+              <input type="text" class="adm-input" maxlength="300" placeholder="Descrição (opcional)" value="${esc(f.descricao || '')}" data-desc="${f.id}">
+              <div class="flex flex-wrap gap-2">
+                <button type="button" class="btn-ghost" data-linha="${f.id}">${f.na_linha ? 'Tirar da linha' : 'Pôr na linha'}</button>
+                <button type="button" class="btn-ghost" data-vis="${f.id}">${f.visivel ? 'Ocultar' : 'Mostrar'}</button>
+                <button type="button" class="btn-danger-outline" data-del="${f.id}">Apagar</button>
+              </div>
+            </div>
+          </div>`;
+      }).join('');
+
+      if (!SORT) {
+        SORT = Sortable.create($('lista'), {
+          animation: 180,
+          disabled: true,
+          forceFallback: true,
+          filter: 'input, button, video',
+          preventOnFilter: false,
+          onEnd: async () => {
+            const ids = [...$('lista').children].map(el => el.dataset.id);
+            if (!window.confirm(`Gravar a nova ordem da lista (${ids.length} mídias)?`)) return carregar();
+            gravarOrdem(ids);
+          }
+        });
+      }
+      SORT.option('disabled', !DRAG);
+    }
+
+    // Envio de uma mídia. Foto: compactada no navegador. Vídeo: enviado original, o worker compacta.
+    async function enviarArquivo(file, extras, onFrac) {
+      const e = extras || {};
+      const fr = onFrac || (() => {});
+      const video = ehVideo(file);
+      const base = `eventos/${PID}/${crypto.randomUUID()}`;
+      let r;
+      let posterUrl = null;
+      if (video) {
+        fr(0.05);
+        r = await enviarVideoComTentativas(
+          `eventos/${PID}/video_${Date.now()}_${file.name}`,
+          file,
+          (x) => fr(x === null ? null : 0.05 + x * 0.7)
+        );
+        fr(0.8);
+        const poster = await gerarPoster(file);
+        if (poster) posterUrl = (await enviarR2(`${base}-poster.jpg`, poster, false, null)).url;
+      } else {
+        fr(0.05);
+        const arquivo = await imageCompression(file, { maxSizeMB: 0.8, maxWidthOrHeight: 1920, useWebWorker: true, fileType: 'image/jpeg' });
+        fr(0.15);
+        r = await enviarR2(`${base}.jpg`, arquivo, false, (x) => fr(0.15 + x * 0.8));
+      }
+      fr(0.96);
+      const ordemBase = FOTOS.reduce((m, x) => Math.max(m, x.ordem || 0), 0);
+      const { data, error } = await _sb.from('evento_fotos').insert({
+        proposta_id: PID,
+        tipo: video ? 'video' : 'imagem',
+        url: r.url,
+        path: r.path,
+        poster_url: posterUrl,
+        ordem: e.ordem !== undefined ? e.ordem : ordemBase + 1,
+        visivel: e.visivel !== undefined ? e.visivel : true,
+        na_linha: e.na_linha !== undefined ? e.na_linha : false,
+        posicao: e.posicao || null,
+        legenda: e.legenda || null,
+        descricao: e.descricao || null
+      }).select('id').single();
+      if (error) throw error;
+      fr(1);
+      return data.id;
+    }
+
+    async function enviarLista(files) {
+      if (!PID) return msg('Escolha um pedido antes.', true);
+      let falhas = 0;
+      try {
+        for (let i = 0; i < files.length; i++) {
+          const nome = `Enviando ${i + 1} de ${files.length}`;
+          try {
+            await enviarArquivo(files[i], null, (f) => progresso(nome, f === null ? null : (i + f) / files.length));
+          }
+          catch (err) { falhas++; msg('Falha em "' + files[i].name + '": ' + err.message, true); }
+        }
+        progresso('Atualizando galeria', 1);
+        await carregar();
+      } finally { progressoFim(); }
+      if (!falhas) msg('Envio concluído.');
+    }
+
+    // Envio direto numa vaga vazia do mural
+    async function enviarParaSlot(file, n) {
+      if (noSlot(n)) return msg('Essa posição já está ocupada. Atualize a tela.', true);
+      if (!window.confirm(`Enviar "${file.name}" para a posição ${n === 1 ? '1 (grande)' : n} do mural?`)) return;
+      try {
+        await enviarArquivo(file, { posicao: n }, (f) => progresso('Enviando para a posição ' + n, f));
+        progresso('Atualizando galeria', 1);
+        await carregar();
+        msg('Enviado para a posição ' + n + '.');
+      } catch (err) {
+        msg('Falha ao enviar: ' + err.message, true);
+      } finally { progressoFim(); }
+    }
+
+    // Substitui a mídia mantendo a mesma posição, legenda, linha e ordem
+    async function substituir(alvoId, file) {
+      const antigo = FOTOS.find(x => x.id === alvoId);
+      if (!antigo) return;
+      if (!window.confirm(`Substituir esta mídia por "${file.name}"? A mídia atual será apagada.`)) return;
+      try {
+        const novoId = await enviarArquivo(file, {
+          legenda: antigo.legenda, descricao: antigo.descricao,
+          na_linha: antigo.na_linha, visivel: antigo.visivel, ordem: antigo.ordem
+        }, (f) => progresso('Substituindo', f));
+        if (antigo.posicao) {
+          await up(antigo.id, { posicao: null });
+          await up(novoId, { posicao: antigo.posicao });
+        }
+        await _sb.from('evento_fotos').delete().eq('id', antigo.id);
+        await r2Apagar(antigo.path);
+        await r2Apagar(caminhoDe(antigo.poster_url));
+        progresso('Atualizando galeria', 1);
+        await carregar();
+        msg('Mídia substituída.');
+      } catch (err) {
+        msg('Falha ao substituir: ' + err.message, true);
+      } finally { progressoFim(); }
+    }
+
+    function caminhoDe(url) {
+      if (!url) return null;
+      try { return new URL(url).pathname.replace(/^\//, ''); } catch (e) { return null; }
+    }
+
+    async function apagar(id) {
+      const f = FOTOS.find(x => x.id === id);
+      if (!f || !window.confirm('Apagar esta mídia? Ela some do painel do cliente.')) return;
+      const { error } = await _sb.from('evento_fotos').delete().eq('id', id);
+      if (error) return msg('Erro ao apagar: ' + error.message, true);
+      await r2Apagar(f.path);
+      await r2Apagar(caminhoDe(f.poster_url));
+      msg('Mídia apagada.');
+      await carregar();
+    }
+
+    // Move a mídia para a posição destino (1 a 6) ou para a reserva (null). Se o destino está ocupado, as duas trocam.
+    async function mover(id, destino) {
+      const f = FOTOS.find(x => x.id === id);
+      if (!f || f.posicao === destino) return;
+      const origem = f.posicao;
+      const ocupante = destino ? FOTOS.find(x => x.posicao === destino && x.id !== id) : null;
+      if (ocupante && !(await up(ocupante.id, { posicao: null }))) return;
+      if (!(await up(id, { posicao: destino }))) return;
+      if (ocupante && origem && !(await up(ocupante.id, { posicao: origem }))) return;
+      await carregar();
+    }
+
+    function abrirSheet(id) {
+      const f = FOTOS.find(x => x.id === id);
+      if (!f) return;
+      $('sheet-midia').innerHTML = midia(f, true);
+      $('sheet-info').textContent = (f.posicao ? 'Posição ' + f.posicao + (f.posicao === 1 ? ' (grande)' : '') + ' no mural' : 'Fora do mural') +
+        (f.legenda ? ' · ' + f.legenda : '');
+      $('sheet-replace').dataset.alvo = id;
+      $('sheet-tirar').dataset.alvo = id;
+      $('sheet-tirar').style.display = f.posicao ? '' : 'none';
+      $('sheet-del').dataset.alvo = id;
+      $('sheet').classList.add('on');
+    }
+    function fecharSheet() {
+      $('sheet').classList.remove('on');
+      $('sheet-midia').innerHTML = '';
+    }
+
+    // ----- Eventos -----
+    $('busca-pedido').addEventListener('input', (e) => buscarPedido(e.target.value));
+    $('resultados').addEventListener('click', (e) => {
+      const b = e.target.closest('[data-pid]');
+      if (b) escolherPedido(b.dataset.pid);
+    });
+    $('btn-trocar-pedido').addEventListener('click', trocarPedido);
+    $('btn-atualizar').addEventListener('click', () => carregar());
+
+    $('btn-enviar').addEventListener('click', () => { $('input-arquivos').value = ''; $('input-arquivos').click(); });
+    $('btn-enviar-lista').addEventListener('click', () => { $('input-arquivos').value = ''; $('input-arquivos').click(); });
+    $('input-arquivos').addEventListener('change', (e) => {
+      const files = [...e.target.files];
+      if (!files.length) return;
+      if (!window.confirm(`Enviar ${files.length} arquivo(s) para este pedido?`)) return;
+      enviarLista(files);
+    });
+
+    $('input-slot').addEventListener('change', (e) => {
+      const file = e.target.files[0];
+      const n = SLOT_ALVO;
+      SLOT_ALVO = null;
+      if (file && n) enviarParaSlot(file, n);
+    });
+
+    $('input-replace').addEventListener('change', (e) => {
+      const file = e.target.files[0];
+      const alvo = $('sheet-replace').dataset.alvo;
+      fecharSheet();
+      if (file && alvo) substituir(alvo, file);
+    });
+
+    $('toggle-drag').addEventListener('click', function () {
+      DRAG = !DRAG;
+      this.classList.toggle('on', DRAG);
+      this.setAttribute('aria-pressed', DRAG ? 'true' : 'false');
+      $('drag-label').textContent = DRAG ? 'Arrastar ativo' : 'Arrastar bloqueado';
+      if (SORT) SORT.option('disabled', !DRAG);
+      renderMural();
+    });
+
+    // Espelho: arrastar uma foto para outro quadrado (vazio ou com foto) muda de lugar, com confirmação
+    const MURAL_EL = $('mural');
+    MURAL_EL.addEventListener('pointerdown', (e) => {
+      const el = e.target.closest('.slot[data-id]');
+      SUPRIMIR_TAP = false;
+      if (!el) return;
+      PD = { id: el.dataset.id, n: Number(el.dataset.n), el, x: e.clientX, y: e.clientY, ativo: false, ghost: null, alvoEl: null };
+    });
+    window.addEventListener('pointermove', (e) => {
+      if (!PD) return;
+      const dx = e.clientX - PD.x, dy = e.clientY - PD.y;
+      if (!PD.ativo) {
+        if (!DRAG || Math.hypot(dx, dy) < 8) return;
+        PD.ativo = true;
+        SUPRIMIR_TAP = true;
+        const r = PD.el.getBoundingClientRect();
+        const g = PD.el.cloneNode(true);
+        g.classList.add('slot-ghost');
+        g.style.cssText = `position:fixed;left:${r.left}px;top:${r.top}px;width:${r.width}px;height:${r.height}px;opacity:.9;pointer-events:none;z-index:9500;box-shadow:0 14px 34px rgba(0,0,0,.55);`;
+        document.body.appendChild(g);
+        PD.ghost = g;
+        PD.el.style.opacity = '.35';
+      }
+      PD.ghost.style.transform = `translate(${dx}px, ${dy}px)`;
+      PD.ghost.style.display = 'none';
+      const sob = document.elementFromPoint(e.clientX, e.clientY);
+      PD.ghost.style.display = '';
+      const alvo = sob && sob.closest('#mural .slot[data-n]');
+      if (PD.alvoEl && PD.alvoEl !== alvo) PD.alvoEl.classList.remove('drop-alvo');
+      PD.alvoEl = (alvo && Number(alvo.dataset.n) !== PD.n) ? alvo : null;
+      if (PD.alvoEl) PD.alvoEl.classList.add('drop-alvo');
+    });
+    function finalizarPonteiro() {
+      if (!PD) return;
+      const p = PD;
+      PD = null;
+      if (p.ghost) p.ghost.remove();
+      p.el.style.opacity = '';
+      if (p.alvoEl) p.alvoEl.classList.remove('drop-alvo');
+      if (p.ativo && p.alvoEl) {
+        const a = FOTOS.find(f => f.id === p.id);
+        const destino = Number(p.alvoEl.dataset.n);
+        const ocupado = FOTOS.find(f => f.posicao === destino);
+        const pergunta = ocupado
+          ? `Trocar a foto da posição ${p.n} com a da posição ${destino}?`
+          : `Mover a foto da posição ${p.n} para a posição ${destino}?`;
+        if (a && window.confirm(pergunta)) mover(a.id, destino);
+      }
+    }
+    window.addEventListener('pointerup', finalizarPonteiro);
+    window.addEventListener('pointercancel', finalizarPonteiro);
+
+    MURAL_EL.addEventListener('click', (e) => {
+      if (SUPRIMIR_TAP) { SUPRIMIR_TAP = false; return; }
+      const vazio = e.target.closest('.slot.vazio[data-n]');
+      if (vazio) {
+        SLOT_ALVO = Number(vazio.dataset.n);
+        $('input-slot').value = '';
+        $('input-slot').click();
+        return;
+      }
+      const el = e.target.closest('.slot[data-id]');
+      if (el) abrirSheet(el.dataset.id);
+    });
+
+    $('sheet-replace').addEventListener('click', () => { $('input-replace').value = ''; $('input-replace').click(); });
+    $('sheet-tirar').addEventListener('click', () => {
+      const id = $('sheet-tirar').dataset.alvo;
+      fecharSheet();
+      if (window.confirm('Tirar esta mídia do mural? Ela vai para a reserva e some do painel do cliente.')) mover(id, null);
+    });
+    $('sheet-del').addEventListener('click', () => {
+      const id = $('sheet-del').dataset.alvo;
+      fecharSheet();
+      apagar(id);
+    });
+    $('sheet-fechar').addEventListener('click', fecharSheet);
+    $('sheet').addEventListener('click', (e) => { if (e.target === $('sheet')) fecharSheet(); });
+
+    $('lista').addEventListener('change', async (e) => {
+      if (e.target.dataset.leg) {
+        if (await up(e.target.dataset.leg, { legenda: e.target.value.trim() || null })) msg('Título salvo.');
+      } else if (e.target.dataset.desc) {
+        if (await up(e.target.dataset.desc, { descricao: e.target.value.trim() || null })) msg('Descrição salva.');
+      }
+    });
+
+    $('lista').addEventListener('click', async (e) => {
+      const t = e.target;
+      if (t.dataset.linha) {
+        const f = FOTOS.find(x => x.id === t.dataset.linha);
+        if (!f) return;
+        const patch = f.na_linha ? { na_linha: false } : { na_linha: true, posicao: null };
+        if (await up(f.id, patch)) carregar();
+      } else if (t.dataset.vis) {
+        const f = FOTOS.find(x => x.id === t.dataset.vis);
+        if (f && await up(f.id, { visivel: !f.visivel })) carregar();
+      } else if (t.dataset.del) {
+        apagar(t.dataset.del);
+      }
+    });
+
+    window.__admFotologAbrir = function (pid) {
+      PID = pid; FOTOS = [];
+      $('area').style.display = '';
+      $('btn-enviar').style.display = '';
+      $('btn-atualizar').style.display = '';
+      msg('');
+      carregar();
+    };
+    window.__admFotologVazio = function () {
+      PID = ''; FOTOS = [];
+      $('area').style.display = 'none';
+      $('btn-enviar').style.display = 'none';
+      $('btn-atualizar').style.display = 'none';
+    };
+  
+})();
+</script>
+
 </body>
 </html>
