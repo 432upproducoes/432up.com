@@ -305,6 +305,11 @@
     #appDlg .acoes > * { flex: 1; }
     #sheetDet { position: fixed; inset: 0; z-index: 9000; background: rgba(6, 8, 12, .72); display: none; align-items: center; justify-content: center; padding: 16px; }
     #sheetDet.on { display: flex; }
+    #sheetCfg { position: fixed; inset: 0; z-index: 9000; background: rgba(6, 8, 12, .72); display: none; align-items: center; justify-content: center; padding: 16px; }
+    #sheetCfg.on { display: flex; }
+    #sheetCfg .glass-card { width: min(92vw, 680px); max-height: 90vh; overflow: auto; }
+    #cfgBody .wheel-row { display: flex; gap: 8px; align-items: center; flex-wrap: wrap; }
+    #cfgBody .wheel-row select { width: auto; min-width: 92px; }
     #sheetDetBody .dl-item { padding: 9px 0; }
     /* Painel de mídia (vídeo) e loader: CSS do Fotolog original — evita vazamento na tela */
     #sheet { position: fixed; inset: 0; z-index: 9000; background: rgba(6, 8, 12, .72); display: none; align-items: center; justify-content: center; padding: 16px; }
@@ -724,7 +729,7 @@
         <div class="ck-grid">
           <div class="ck-col">
         <div class="box-full o-linha" id="cardLinhaTempo">
-          <h2>Linha do tempo</h2>
+          <div class="mk-topo"><h2 style="margin:0">Linha do tempo</h2><button type="button" class="btn-s" id="btnCfgCk">⚙ Configurar</button></div>
           <div class="trilha" id="linhaTempo"><div class="vazio">Carregando…</div></div>
         </div>
         <div class="box-full o-equipe" id="cardEquipe">
@@ -1788,10 +1793,23 @@
     var ok = comps.filter(function (c) { return c.status === 'aprovado' || c.status === 'pago'; }).length;
     var etapas = dados.etapas || [];
     var etPend = etapas.filter(function (e) { return e.situacao === 'pendente'; }).length;
+    var pr = lista.length ? lista[0] : null;
+    var etsPend = pr ? etapasDe(pr).filter(function (e) { return e.situacao === 'pendente'; })
+      .sort(function (x, y) { return (x.ordem || 0) - (y.ordem || 0); }) : [];
+    var prox = etsPend[0];
+    var proxTxt = prox
+      ? E(prox.nome) + (prox.hora ? ' · ' + String(prox.hora).slice(0, 5)
+        : (prox.data_alvo ? ' · ' + prox.data_alvo.split('-').reverse().join('/') : ' · horário a definir'))
+      : 'nenhuma pendente';
     $('resumoRapido').innerHTML =
       '<div class="dl">' +
         '<div class="dl-item"><span class="rot">Pedidos ativos</span><span class="val">' + ativos + ' de ' + total + '</span></div>' +
         '<div class="dl-item"><span class="rot">Comprovantes</span><span class="val">' + ok + ' ok' + (pend ? ' · ' + pend + ' em análise' : '') + '</span></div>' +
+        '<div class="dl-item"><span class="rot">Início do evento</span><span class="val">' +
+          (pr && pr.horario_inicio ? String(pr.horario_inicio).slice(0, 5) : '—') +
+          (pr && pr.data_evento ? ' · ' + pr.data_evento.split('-').reverse().join('/') : '') + '</span></div>' +
+        '<div class="dl-item"><span class="rot">Local</span><span class="val">' + (pr && pr.local_evento ? E(pr.local_evento) : '—') + '</span></div>' +
+        '<div class="dl-item dl-full"><span class="rot">Próxima etapa</span><span class="val">' + proxTxt + '</span></div>' +
         '<div class="dl-item dl-full"><span class="rot">Etapas do checklist</span><span class="val">' +
           (etapas.length ? (etPend === 0 ? 'todas confirmadas' : etPend + ' pendente' + (etPend > 1 ? 's' : '')) : 'ainda sem etapas') +
         '</span></div>' +
@@ -2782,43 +2800,51 @@
       var cb = document.createElement('input'); cb.type = 'checkbox'; cb.checked = !!marcadas[c.nome];
       cb.addEventListener('change', function () { ligar(c, cb.checked); });
       var nm = document.createElement('span'); nm.style.cssText = 'flex:1;min-width:140px'; nm.textContent = c.nome;
-      var hm = document.createElement('select'); hm.style.cssText = '';
+      var hm = document.createElement('select');
       [['vazia','Sem hora'],['fixa','Hora fixa'],['antes_horas','Horas antes'],['antes_dias','Dias antes']].forEach(function (o) {
         var op = document.createElement('option'); op.value = o[0]; op.textContent = o[1]; hm.appendChild(op);
       });
       hm.value = c.hora_modo || 'vazia';
-      var hv = document.createElement('input'); hv.type = 'number'; hv.min = '0'; hv.step = '0.5';
-      hv.style.cssText = '';
-      hv.value = c.hora_valor != null ? c.hora_valor : '';
-      var ht = document.createElement('input'); ht.type = 'time';
-      ht.style.cssText = '';
-      ht.value = c.hora_padrao ? String(c.hora_padrao).slice(0, 5) : '';
+      function opcoes(sel, lista, atual) {
+        sel.innerHTML = '';
+        lista.forEach(function (v) {
+          var op = document.createElement('option'); op.value = v[0]; op.textContent = v[1];
+          if (String(v[0]) === String(atual)) op.selected = true;
+          sel.appendChild(op);
+        });
+      }
+      var hh = document.createElement('select');
+      var mm = document.createElement('select');
+      var horas = []; for (var h = 0; h < 24; h++) horas.push([String(h).padStart(2,'0'), String(h).padStart(2,'0')]);
+      var minutos = []; for (var m = 0; m < 60; m += 5) minutos.push([String(m).padStart(2,'0'), String(m).padStart(2,'0')]);
+      var atualHora = c.hora_padrao ? String(c.hora_padrao).slice(0, 5).split(':') : ['09','00'];
+      opcoes(hh, horas, atualHora[0]);
+      opcoes(mm, minutos, atualHora[1]);
+      var antHoras = []; for (var x = 0; x <= 48; x++) { antHoras.push([String(x/2), (x/2 === Math.floor(x/2) ? String(x/2) : String(x/2)) + (x % 2 ? ' h e 30 min' : ' h')]); }
+      var antDias = []; for (var d = 0; d <= 30; d++) antDias.push([String(d), d + (d === 1 ? ' dia' : ' dias')]);
+      var hv = document.createElement('select');
+      opcoes(hv, c.hora_modo === 'antes_dias' ? antDias : antHoras, c.hora_valor != null ? c.hora_valor : (c.hora_modo === 'antes_dias' ? 1 : 2));
+      var wrapHora = document.createElement('div'); wrapHora.className = 'wheel-row';
       function ajustarHora() {
         var m = hm.value;
-        ht.style.display = m === 'fixa' ? '' : 'none';
+        hh.style.display = mm.style.display = m === 'fixa' ? '' : 'none';
         hv.style.display = (m === 'antes_horas' || m === 'antes_dias') ? '' : 'none';
-        hv.placeholder = m === 'antes_dias' ? 'dias' : 'horas';
+        opcoes(hv, m === 'antes_dias' ? antDias : antHoras, (m === 'antes_dias') ? 1 : 2);
       }
       async function salvarHora() {
         var m = hm.value, patch = { hora_modo: m, hora_valor: null, hora_padrao: null };
-        if (m === 'fixa') {
-          if (!ht.value) { appAlert('Informe a hora fixa.'); return; }
-          patch.hora_padrao = ht.value;
-        } else if (m === 'antes_horas' || m === 'antes_dias') {
-          if (hv.value === '' || Number(hv.value) < 0) { appAlert('Informe a antecedência.'); return; }
-          patch.hora_valor = Number(hv.value);
-        }
-        var x = await SB.from('evento_etapas_catalogo').update(patch).eq('id', c.id);
-        if (x.error) { appAlert(x.error.message); return; }
+        if (m === 'fixa') patch.hora_padrao = hh.value + ':' + mm.value;
+        else if (m === 'antes_horas' || m === 'antes_dias') patch.hora_valor = Number(hv.value);
+        var x2 = await SB.from('evento_etapas_catalogo').update(patch).eq('id', c.id);
+        if (x2.error) { appAlert(x2.error.message); return; }
         await carregar();
       }
       hm.addEventListener('change', function () { ajustarHora(); salvarHora(); });
-      ht.addEventListener('change', salvarHora);
+      hh.addEventListener('change', salvarHora);
+      mm.addEventListener('change', salvarHora);
       hv.addEventListener('change', salvarHora);
       ajustarHora();
-      var wrapHora = document.createElement('span'); wrapHora.style.cssText = 'display:flex;gap:5px;align-items:center;flex-wrap:wrap';
-      wrapHora.appendChild(hm); wrapHora.appendChild(hv); wrapHora.appendChild(ht);
-      row.appendChild(wrapHora);
+      wrapHora.appendChild(hm); wrapHora.appendChild(hh); wrapHora.appendChild(mm); wrapHora.appendChild(hv);
       var lb = document.createElement('label'); lb.style.cssText = 'display:flex;align-items:center;gap:5px;font-size:.75rem;opacity:.85';
       var pc = document.createElement('input'); pc.type = 'checkbox'; pc.checked = !!c.padrao;
       pc.addEventListener('change', async function () {
@@ -2867,7 +2893,8 @@
     });
     pad.style.marginTop = '10px';
     sel.appendChild(pad);
-    lt.parentNode.insertBefore(sel, lt.nextSibling);
+    var cfgBody = document.getElementById('cfgBody');
+    if (cfgBody) { cfgBody.innerHTML = ''; cfgBody.appendChild(sel); }
   }
 
   /* ================= Administrador: financeiro e fotolog (cópias do index e do admin fotolog) ================= */
@@ -3992,6 +4019,15 @@
 })();
 </script>
 
+  <!-- Configurar checklist de trabalho -->
+  <div id="sheetCfg" role="dialog" aria-modal="true" aria-label="Configurar checklist">
+    <div class="glass-card p-5 sm:p-6">
+      <div class="mk-topo"><h2 style="margin:0">Configurar checklist</h2></div>
+      <div id="cfgBody" style="margin-top:12px"></div>
+      <button type="button" class="btn-ghost" id="sheetCfgFechar" style="width:100%;margin-top:14px">Fechar</button>
+    </div>
+  </div>
+
   <!-- Diálogo do sistema: confirmar, avisar e pedir texto -->
   <div id="appDlg" role="dialog" aria-modal="true">
     <div class="glass-card p-5 sm:p-6">
@@ -4004,6 +4040,13 @@
     </div>
   </div>
 <script>
+  (function () {
+    var cfg = document.getElementById('sheetCfg');
+    var btn = document.getElementById('btnCfgCk');
+    if (btn) btn.addEventListener('click', function () { cfg.classList.add('on'); });
+    document.getElementById('sheetCfgFechar').addEventListener('click', function () { cfg.classList.remove('on'); });
+    cfg.addEventListener('click', function (e) { if (e.target === cfg) cfg.classList.remove('on'); });
+  })();
   /* Diálogos do sistema, no visual do site (substituem alert / confirm / prompt nativos) */
   (function () {
     var ov = document.getElementById('appDlg');
