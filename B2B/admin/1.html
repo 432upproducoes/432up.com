@@ -1453,6 +1453,7 @@
           '</div>' +
           '<div class="tags">' +
             '<span class="tag ' + (CMP_CLASSE[st] || 't-pend') + '">' + E(ST[st] || c.status) + '</span>' +
+            '<button type="button" class="btn-s" onclick="finVerDetalhe(\'' + E(c.id) + '\')">Detalhes</button>' +
             (podeExcluir ? '<button type="button" class="x" aria-label="Excluir comprovante" title="Excluir comprovante" data-del-cmp="' + E(c.id) + '" data-prop="' + E(p.id) + '">' + ICON_X + '</button>' : '') +
           '</div></div>';
       }).join('') || '<div class="vazio">Nenhum comprovante enviado ainda.</div>';
@@ -3063,11 +3064,10 @@
     var dsp = await sbPartner.from('propostas').select('assinatura_dispensada_em').eq('id', pidAtual).maybeSingle();
     P.assinatura_dispensada_em = (dsp && dsp.data && dsp.data.assinatura_dispensada_em) || null;
 
-    var html = '<div style="margin-bottom:14px;"><strong>Proposta #' + E(P.numero) + '</strong> · ' + E(P.cliente_nome) +
+    var html = '<div class="box-full" style="margin-bottom:14px"><strong>Proposta #' + E(P.numero) + '</strong> · ' + E(P.cliente_nome) +
       ' · Total ' + BRL(P.valor_total) + ' · ' + (P.assinado_em ? 'Contrato assinado em ' + DH(P.assinado_em) : (P.assinatura_dispensada_em ? 'Autorizado sem assinatura em ' + DH(P.assinatura_dispensada_em) : 'Contrato não assinado')) + '</div>';
 
-    html += '<div style="border:1px solid rgba(255,255,255,.1);border-radius:10px;padding:12px;margin-bottom:14px;">' +
-      '<strong>Bloqueio sem pagamento prévio</strong>';
+    html += '<div class="box-full"><h2>Bloqueio sem pagamento prévio</h2>';
     if (!P.assinado_em) {
       html += '<div style="color:#94a3b8;margin-top:6px;">Disponível depois que o contrato for assinado.</div>';
     } else if (P.bloqueio_sem_pagamento) {
@@ -3083,28 +3083,13 @@
       }
     } else {
       html += '<div style="margin-top:8px;display:grid;gap:8px;">' +
-        '<textarea id="finForma" rows="2" placeholder="Como será feito o pagamento (ex.: PIX, tudo ou parte)" style="background:#020617;color:#e2e8f0;border:1px solid rgba(255,255,255,.1);border-radius:8px;padding:8px;"></textarea>' +
-        '<input id="finLimite" type="datetime-local" style="background:#020617;color:#e2e8f0;border:1px solid rgba(255,255,255,.1);border-radius:8px;padding:8px;">' +
-        '<div><button onclick="finAceitarBloqueio()" style="padding:7px 14px;border-radius:8px;background:#a3e635;color:#0b1020;border:none;font-weight:700;cursor:pointer;">Aceitar bloqueio</button></div></div>';
+        '<textarea id="finForma" rows="2" placeholder="Como será feito o pagamento (ex.: PIX, tudo ou parte)"></textarea>' +
+        '<input id="finLimite" type="datetime-local">' +
+        '<div><button class="btn-s" onclick="finAceitarBloqueio()">Aceitar bloqueio</button></div></div>';
     }
     html += '</div>';
 
     var lista = c.data || [];
-    html += '<strong>Comprovantes do cliente</strong>';
-    if (!lista.length) html += '<div style="color:#94a3b8;margin:6px 0 14px;">Nenhum comprovante enviado ainda.</div>';
-    window.__cmpDet = window.__cmpDet || {};
-    lista.forEach(function (x) {
-      window.__cmpDet[x.id] = x;
-      var stTxt = x.status === 'aprovado' ? 'Aprovado' : x.status === 'recusado' ? 'Recusado' : 'Aguardando conferência';
-      var dataTxt = x.data_pagamento ? x.data_pagamento.split('-').reverse().join('/') : '—';
-      html += '<div class="dl-item" style="display:flex;justify-content:space-between;align-items:center;gap:10px;flex-wrap:wrap">' +
-        '<div style="min-width:0"><span class="rot">' + E(TIPO[x.tipo] || x.tipo) + ' · ' + dataTxt + '</span>' +
-        '<span class="val">' + BRL(x.valor) + '</span></div>' +
-        '<div style="display:flex;gap:8px;align-items:center;flex-wrap:wrap">' +
-        '<span class="pill">' + stTxt + '</span>' +
-        '<button type="button" class="btn-s" onclick="finVerDetalhe(\'' + x.id + '\')">Detalhes</button>' +
-        '</div></div>';
-    });
     // ---- Venda: troca de painel com transição (cancelada: reembolso; ativa: envio em nome do cliente) ----
     var cancelada = P.status === 'cancelada';
     var recebidoAprov = lista.filter(function (x) { return x.status === 'aprovado'; })
@@ -3139,14 +3124,6 @@
       html += '</div>';
     } else {
       html += '<div class="finPainel" style="border:1px solid rgba(255,255,255,.1);border-radius:10px;padding:12px;margin-bottom:14px;">' +
-        '<strong>Enviar comprovante em nome do cliente</strong>' +
-        '<div style="font-size:12px;color:#94a3b8;margin-top:4px;">Use quando o cliente mandar o comprovante por outro canal. Depois ele segue para conferência, como os demais.</div>' +
-        '<div style="display:grid;gap:8px;margin-top:8px;grid-template-columns:repeat(auto-fit,minmax(160px,1fr));">' +
-        '<select id="ecTipo" style="' + campo + '"><option value="sinal">Entrada / Sinal</option><option value="parcela">Parcela</option><option value="saldo">Saldo</option><option value="outro">Outro</option></select>' +
-        '<input id="ecValor" placeholder="Valor (R$)" style="' + campo + '">' +
-        '<input id="ecData" type="date" style="' + campo + '">' +
-        '<input id="ecArq" type="file" accept="image/*,application/pdf" style="color:#94a3b8;font-size:12px;"></div>' +
-        '<div style="margin-top:8px;"><button onclick="finEnviarEmNomeDoCliente()" style="' + botaoPrincipal + '">Enviar comprovante</button> <span id="ecMsg" style="font-size:12px;margin-left:8px;"></span></div>' +
         '<div style="margin-top:12px;border-top:1px solid rgba(255,255,255,.08);padding-top:10px;"><button onclick="finCancelar()" style="padding:6px 12px;border-radius:8px;background:transparent;color:#fca5a5;border:1px solid rgba(248,113,113,.4);cursor:pointer;">Cancelar pedido</button></div>' +
         '</div>';
     }
@@ -3187,8 +3164,9 @@
   function fecharDet() { document.getElementById('sheetDet').classList.remove('on'); }
   document.getElementById('sheetDetFechar').addEventListener('click', fecharDet);
   document.getElementById('sheetDet').addEventListener('click', function (e) { if (e.target === this) fecharDet(); });
-  window.finVerDetalhe = function (id) {
-    var x = (window.__cmpDet || {})[id];
+  window.finVerDetalhe = async function (id) {
+    var rq = await sbPartner.from('contrato_comprovantes').select('*').eq('id', id).maybeSingle();
+    var x = rq.data;
     if (!x) return;
     var nome = x.aprovado_por ? 'Administrador' : '—';
     var linha = function (k, v) { return '<div class="dl-item"><span class="rot">' + k + '</span><span class="val">' + v + '</span></div>'; };
