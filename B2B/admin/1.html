@@ -294,6 +294,8 @@
     .slot-off { position: absolute; right: 8px; top: 8px; z-index: 2; font-size: 10px; font-weight: 800; padding: 3px 8px; border-radius: 999px; background: rgba(255, 77, 77, .8); color: #fff; text-transform: uppercase; pointer-events: none; }
     .slot.drop-alvo { outline: 3px solid #fbbf24; outline-offset: 3px; }
     .slot-ghost { border-radius: 16px; }
+    .tags .btn-s { height: 36px; display: inline-flex; align-items: center; padding: 0 14px; }
+    .tags button.x { width: 36px; height: 36px; display: inline-flex; align-items: center; justify-content: center; padding: 0; }
     input[type="checkbox"] { width: auto; accent-color: var(--gold); }
     /* Diálogos do sistema (confirmar / avisar / pedir texto): mesma moldura do painel de mídia */
     #appDlg { position: fixed; inset: 0; z-index: 9500; background: rgba(6, 8, 12, .72); display: none; align-items: center; justify-content: center; padding: 16px; }
@@ -2801,7 +2803,7 @@
       cb.addEventListener('change', function () { ligar(c, cb.checked); });
       var nm = document.createElement('span'); nm.style.cssText = 'flex:1;min-width:140px'; nm.textContent = c.nome;
       var hm = document.createElement('select');
-      [['vazia','Sem hora'],['fixa','Hora fixa'],['antes_horas','Horas antes'],['antes_dias','Dias antes']].forEach(function (o) {
+      [['vazia','Sem hora'],['fixa','Hora fixa'],['antes_horas','Antes da hora do evento'],['antes_dias','Dias antes do evento']].forEach(function (o) {
         var op = document.createElement('option'); op.value = o[0]; op.textContent = o[1]; hm.appendChild(op);
       });
       hm.value = c.hora_modo || 'vazia';
@@ -2845,6 +2847,7 @@
       hv.addEventListener('change', salvarHora);
       ajustarHora();
       wrapHora.appendChild(hm); wrapHora.appendChild(hh); wrapHora.appendChild(mm); wrapHora.appendChild(hv);
+      row.appendChild(wrapHora);
       var lb = document.createElement('label'); lb.style.cssText = 'display:flex;align-items:center;gap:5px;font-size:.75rem;opacity:.85';
       var pc = document.createElement('input'); pc.type = 'checkbox'; pc.checked = !!c.padrao;
       pc.addEventListener('change', async function () {
@@ -3202,7 +3205,12 @@
     var rq = await sbPartner.from('contrato_comprovantes').select('*').eq('id', id).maybeSingle();
     var x = rq.data;
     if (!x) return;
-    var nome = x.aprovado_por ? 'Administrador' : '—';
+    var nome = '—';
+    if (x.aprovado_por) {
+      var pq = await sbPartner.from('parceiros').select('nome_completo, nome_artistico').eq('user_id', x.aprovado_por).maybeSingle();
+      nome = pq.data ? (pq.data.nome_completo || pq.data.nome_artistico || 'Administrador') : 'Administrador';
+    }
+    nome = E(nome);
     var linha = function (k, v) { return '<div class="dl-item"><span class="rot">' + k + '</span><span class="val">' + v + '</span></div>'; };
     var h = '<span class="rot">Comprovante</span><strong class="val" style="margin-bottom:10px;display:block">' + E(TIPO[x.tipo] || x.tipo) + '</strong>' +
       linha('Valor digitado', BRL(x.valor)) +
