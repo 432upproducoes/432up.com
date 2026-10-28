@@ -317,6 +317,16 @@
     #cfgBody .wheel-row select:first-child { min-width: 184px; }
     #cfgBody .wheel-row select:not(:first-child) { min-width: 150px; }
     #cfgBody .wheel-row input[type="time"] { width: 104px; text-align: center; }
+    #cfgBody.reordenando .cfg-row { cursor: grab; outline: 1px dashed rgba(245, 158, 11, .45); outline-offset: 2px; }
+    #sheetCfg .glass-card { width: min(92vw, 720px); }
+    @media (max-width: 760px) {
+      #sheetCfg { padding: 64px 8px 8px; }
+      #sheetCfg .glass-card { width: 100%; padding: 16px; }
+      #cfgBody .cfg-row { grid-template-columns: 24px minmax(0, 1fr) auto auto; gap: 8px !important; }
+      #cfgBody .wheel-row { grid-column: 2 / -1; grid-row: 2; flex-wrap: wrap; }
+      #cfgBody .wheel-row select, #cfgBody .wheel-row input { min-width: 0; flex: 1 1 140px; }
+      #cfgBody .wheel-row select:first-child { flex: 1 1 100%; }
+    }
     /* Overlay: título e Fechar fixos, só a lista rola */
     #sheetCfg .glass-card { display: flex; flex-direction: column; max-height: calc(100vh - 120px); overflow: hidden; }
     #cfgBody { overflow-y: auto; flex: 1 1 auto; min-height: 0; padding-right: 4px; }
@@ -709,10 +719,10 @@
       <section class="panel on" id="p0" role="tabpanel">
         <a class="crie-convite" href="convites/index.html" data-convite-link>
           <span aria-hidden="true">✉</span>
-          <span><strong>Crie seu convite</strong><small>Monte o convite do evento, com endereço, programação e confirmação de presença.</small></span>
+          <span><strong>Veja os convites</strong><small>Veja os convites criados para este cliente.</small></span>
           <span aria-hidden="true">→</span>
         </a>
-        <div class="box-full i2" id="cardProximo">
+        <div class="box-full i2" id="cardProximo" style="display:none">
           <div class="carrossel" id="carrossel" data-noswipe></div>
           <div class="slider-dots" id="carDots" style="display:none"></div>
         </div>
@@ -771,7 +781,7 @@
 
           </div>
           <div class="ck-col">
-        <div class="box-full o-resumo" id="cardResumoEvt">
+        <div class="box-full o-resumo" id="cardResumoEvt" style="display:none">
           <h2 id="resumoTitulo">Resumo do pedido</h2>
           <div id="resumoEvt" class="vazio">Carregando…</div>
         </div>
@@ -1495,7 +1505,7 @@
       }
       var topo = '<div class="pedido-topo"><div>' +
         '<div class="pedido-titulo">Proposta / Pedido #' + E(p.numero) + '</div>' +
-        '<div class="pill" style="margin-top:4px">' + E(p.tipo_evento || '') + ' · ' + DATA(p.data_evento) + ' · ' + BRL(p.valor_total) + '</div>' +
+        '<div class="pill" style="margin-top:4px">' + E(p.tipo_evento || '') + ' · ' + BRL(p.valor_total) + '</div>' +
         '</div><div class="pedido-tags">' + tags + '</div></div>';
       if (cancelado) return '<div class="pedido-card">' + topo + '</div>';
       var BASE_DOC = location.origin + '/B2B/';
@@ -1820,10 +1830,6 @@
           (pr && pr.horario_inicio ? String(pr.horario_inicio).slice(0, 5) : '—') +
           (pr && pr.data_evento ? ' · ' + pr.data_evento.split('-').reverse().join('/') : '') + '</span></div>' +
         '<div class="dl-item"><span class="rot">Local</span><span class="val">' + (pr && pr.local_evento ? E(pr.local_evento) : '—') + '</span></div>' +
-        '<div class="dl-item dl-full"><span class="rot">Próxima etapa</span><span class="val">' + proxTxt + '</span></div>' +
-        '<div class="dl-item dl-full"><span class="rot">Etapas do checklist</span><span class="val">' +
-          (etapas.length ? (etPend === 0 ? 'todas confirmadas' : etPend + ' pendente' + (etPend > 1 ? 's' : '')) : 'ainda sem etapas') +
-        '</span></div>' +
       '</div>';
     renderMiniCk(lista.length ? lista[0] : null);
   }
@@ -2772,6 +2778,46 @@
         lt.appendChild(d);
       });
     }
+    if (!window.__ckDnD) {
+      window.__ckDnD = true;
+      var cfgEl = document.getElementById('cfgBody');
+      var dragId = null;
+      document.getElementById('btnOrdemCk').addEventListener('click', function () {
+        var on = cfgEl.classList.toggle('reordenando');
+        this.textContent = on ? 'Concluir ordem' : 'Reordenar';
+        carregar();
+      });
+      cfgEl.addEventListener('dragstart', function (e) {
+        var r = e.target.closest && e.target.closest('.cfg-row');
+        if (!r || !cfgEl.classList.contains('reordenando')) return;
+        dragId = r.dataset.id;
+        r.style.opacity = '.5';
+        e.dataTransfer.effectAllowed = 'move';
+        e.dataTransfer.setData('text/plain', dragId);
+      });
+      cfgEl.addEventListener('dragover', function (e) { if (dragId != null) e.preventDefault(); });
+      cfgEl.addEventListener('dragend', function () {
+        dragId = null;
+        cfgEl.querySelectorAll('.cfg-row').forEach(function (r) { r.style.opacity = ''; });
+      });
+      cfgEl.addEventListener('drop', async function (e) {
+        var t = e.target.closest && e.target.closest('.cfg-row');
+        if (!t || dragId == null) return;
+        e.preventDefault();
+        var src = cfgEl.querySelector('.cfg-row[data-id="' + dragId + '"]');
+        dragId = null;
+        if (!src || src === t) return;
+        var rect = t.getBoundingClientRect();
+        var depois = e.clientY > rect.top + rect.height / 2;
+        t.parentNode.insertBefore(src, depois ? t.nextSibling : t);
+        var linhas = [].slice.call(cfgEl.querySelectorAll('.cfg-row'));
+        for (var i = 0; i < linhas.length; i++) {
+          var up = await SB.from('evento_etapas_catalogo').update({ ordem: i + 1 }).eq('id', linhas[i].dataset.id);
+          if (up.error) { appAlert(up.error.message); break; }
+        }
+        await carregar();
+      });
+    }
     function calcHora(c, pd) {
       var m = c.hora_modo || 'vazia';
       if (m === 'fixa') return c.hora_padrao || null;
@@ -2809,6 +2855,8 @@
       var row = document.createElement('div');
       row.style.cssText = 'display:flex;gap:10px;align-items:center;flex-wrap:wrap;padding:6px 0;border-bottom:1px solid rgba(255,255,255,.06)';
       row.className = 'cfg-row';
+      row.dataset.id = c.id;
+      row.draggable = document.getElementById('cfgBody') ? document.getElementById('cfgBody').classList.contains('reordenando') : false;
       var cb = document.createElement('input'); cb.type = 'checkbox'; cb.checked = !!marcadas[c.nome];
       cb.addEventListener('change', function () { ligar(c, cb.checked); });
       var nm = document.createElement('span'); nm.style.cssText = 'flex:1;min-width:140px'; nm.textContent = c.nome;
@@ -3112,8 +3160,7 @@
     var dsp = await sbPartner.from('propostas').select('assinatura_dispensada_em').eq('id', pidAtual).maybeSingle();
     P.assinatura_dispensada_em = (dsp && dsp.data && dsp.data.assinatura_dispensada_em) || null;
 
-    var html = '<div class="box-full" style="margin-bottom:14px"><strong>Proposta #' + E(P.numero) + '</strong> · ' + E(P.cliente_nome) +
-      ' · Total ' + BRL(P.valor_total) + ' · ' + (P.assinado_em ? 'Contrato assinado em ' + DH(P.assinado_em) : (P.assinatura_dispensada_em ? 'Autorizado sem assinatura em ' + DH(P.assinatura_dispensada_em) : 'Contrato não assinado')) + '</div>';
+    var html = '';
 
     html += '<div class="box-full"><h2>Bloqueio sem pagamento prévio</h2>';
     if (!P.assinado_em) {
@@ -4047,7 +4094,7 @@
   <!-- Configurar checklist de trabalho -->
   <div id="sheetCfg" role="dialog" aria-modal="true" aria-label="Configurar checklist">
     <div class="glass-card p-5 sm:p-6">
-      <div class="mk-topo"><h2 style="margin:0">Configurar checklist</h2></div>
+      <div class="mk-topo"><h2 style="margin:0">Configurar checklist</h2><button type="button" class="btn-s" id="btnOrdemCk">Reordenar</button></div>
       <div id="cfgBody" style="margin-top:12px"></div>
       <button type="button" class="btn-ghost" id="sheetCfgFechar" style="width:100%;margin-top:14px">Fechar</button>
     </div>
