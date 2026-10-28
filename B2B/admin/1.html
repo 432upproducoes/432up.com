@@ -279,6 +279,30 @@
     .foto-real { position: relative; aspect-ratio: 4 / 3; border-radius: 16px; overflow: hidden; padding: 0; cursor: pointer; border: 1px solid rgba(255, 255, 255, .12); background: #0b0b10; font: inherit; color: inherit; }
     .foto-real.s1 { aspect-ratio: auto; }
     .foto-real img, .foto-real video { width: 100%; height: 100%; object-fit: cover; display: block; }
+    /* Mural do Fotolog: CSS copiado do admin-fotolog original (slots 4:3, vazios, tags) */
+    .mural .s1 { grid-area: s1; } .mural .s2 { grid-area: s2; } .mural .s3 { grid-area: s3; }
+    .mural .s4 { grid-area: s4; } .mural .s5 { grid-area: s5; } .mural .s6 { grid-area: s6; }
+    .slot { position: relative; aspect-ratio: 4 / 3; border-radius: 16px; overflow: hidden; border: 1px solid rgba(255, 255, 255, .12); background: #0b0b10; display: flex; align-items: center; justify-content: center; color: rgba(255, 255, 255, .55); cursor: pointer; user-select: none; -webkit-user-select: none; -webkit-touch-callout: none; }
+    .slot.s1 { aspect-ratio: auto; }
+    .drag-on .slot[data-id] { touch-action: none; cursor: grab; }
+    .slot.vazio { background: linear-gradient(135deg, rgba(168, 85, 247, .22), rgba(6, 182, 212, .12)); }
+    .slot.vazio.s2, .slot.vazio.s4, .slot.vazio.s6 { background: linear-gradient(135deg, rgba(255, 0, 127, .16), rgba(168, 85, 247, .14)); }
+    .slot-cta { display: flex; flex-direction: column; align-items: center; gap: 6px; font-size: 12px; }
+    .slot-cta svg { width: 28px; height: 28px; }
+    .slot img, .slot video { width: 100%; height: 100%; object-fit: cover; display: block; pointer-events: none; }
+    .slot-tag { position: absolute; left: 8px; top: 8px; z-index: 2; font-size: 10px; font-weight: 800; padding: 3px 8px; border-radius: 999px; background: rgba(0, 0, 0, .6); color: #fbbf24; text-transform: uppercase; letter-spacing: .04em; pointer-events: none; }
+    .slot-off { position: absolute; right: 8px; top: 8px; z-index: 2; font-size: 10px; font-weight: 800; padding: 3px 8px; border-radius: 999px; background: rgba(255, 77, 77, .8); color: #fff; text-transform: uppercase; pointer-events: none; }
+    .slot.drop-alvo { outline: 3px solid #fbbf24; outline-offset: 3px; }
+    .slot-ghost { border-radius: 16px; }
+    /* Painel de mídia (vídeo) e loader: CSS do Fotolog original — evita vazamento na tela */
+    #sheet { position: fixed; inset: 0; z-index: 9000; background: rgba(6, 8, 12, .72); display: none; align-items: center; justify-content: center; padding: 16px; }
+    #sheet.on { display: flex; }
+    #loadingOverlay { position: fixed; top: 0; left: 0; width: 100vw; height: 100vh; background: rgba(14, 10, 20, 0.88); backdrop-filter: blur(18px); -webkit-backdrop-filter: blur(18px); z-index: 100000; display: none; flex-direction: column; align-items: center; justify-content: center; padding: 20px; transition: opacity 0.3s ease; }
+    #loadingOverlay.active { display: flex; }
+    @media (max-width: 640px) {
+      .mural { grid-template-columns: 1fr 1fr; grid-template-areas: "s1 s1" "s2 s3" "s4 s5" "s6 s6"; }
+      .mural .slot.s1, .mural .slot.s6 { aspect-ratio: 16 / 9; }
+    }
     .foto-real.vazio { cursor: default; display: flex; align-items: center; justify-content: center; color: rgba(255, 255, 255, .55); background: linear-gradient(135deg, rgba(168, 85, 247, .22), rgba(6, 182, 212, .12)); }
     .foto-real.vazio.s2, .foto-real.vazio.s4, .foto-real.vazio.s6 { background: linear-gradient(135deg, rgba(255, 0, 127, .16), rgba(168, 85, 247, .14)); }
     .foto-real.vazio svg { width: 28px; height: 28px; }
@@ -665,6 +689,11 @@
           <div class="slider-dots" id="carDots" style="display:none"></div>
         </div>
 
+        <div class="box-full" id="resumoTopo">
+          <h2>Resumo rápido (admin)</h2>
+          <div id="resumoRapido" class="vazio">Carregando…</div>
+        </div>
+
         <div class="box-full" id="cardMiniCk" style="display:none">
           <div class="mk-topo"><h2>Checklist do evento</h2><button type="button" class="btn-s" id="btnVerCk">Ver checklist ›</button></div>
           <div class="mini-ck" id="miniCk"></div>
@@ -676,10 +705,6 @@
           <div id="listaPedidos" class="vazio">Carregando…</div>
         </div>
 
-        <div class="box-full">
-          <h2>Resumo rápido</h2>
-          <div id="resumoRapido" class="vazio">Carregando…</div>
-        </div>
       </section>
 
       <!-- 1 · MEU EVENTO -->
@@ -912,13 +937,13 @@
       <input type="hidden" id="cmpPropostaId">
       <label class="rot" for="cmpTipo" style="margin-top:14px">Tipo</label>
       <select id="cmpTipo">
-        <option value="entrada">Entrada / sinal</option>
+        <option value="sinal">Entrada / sinal</option>
         <option value="parcela">Parcela</option>
         <option value="saldo">Saldo / restante</option>
         <option value="outro">Outro</option>
       </select>
       <label class="rot" for="cmpValor" style="margin-top:12px">Valor pago (R$)</label>
-      <input id="cmpValor" type="number" min="0" step="0.01" inputmode="decimal">
+      <input id="cmpValor" type="text" inputmode="decimal" placeholder="0,00">
       <label class="rot" for="cmpData" style="margin-top:12px">Data do pagamento</label>
       <input id="cmpData" type="date">
       <label class="rot" for="cmpArquivo" style="margin-top:12px">Foto ou PDF</label>
@@ -1018,7 +1043,7 @@
   var ST_CLASSE = { pendente: 't-pend', aprovado: 't-ok', recusado: 't-rec', pago: 't-ok' };
   /* Pagamentos e comprovantes ficam na cor âmbar (pago = preenchido, pendente = contorno) */
   var CMP_CLASSE = { pendente: 't-pend', aprovado: 't-pago', recusado: 't-rec', pago: 't-pago' };
-  var ROTULO_CMP = { entrada: 'Entrada', parcela: 'Parcela', saldo: 'Saldo', outro: 'Outro' };
+  var ROTULO_CMP = { sinal: 'Entrada', entrada: 'Entrada', parcela: 'Parcela', saldo: 'Saldo', outro: 'Outro' };
   var LIMITE_CMP = 4 * 1024 * 1024;
   var ICON_X = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" aria-hidden="true"><path d="M6 6l12 12M18 6L6 18"/></svg>';
   var R2_UPLOAD_URL = 'https://432up-r2-upload.432up-producoes.workers.dev/';
@@ -2417,14 +2442,48 @@
     });
   }
 
+  function parseBRL(v) {
+    var t = String(v || '').trim();
+    if (!t) return NaN;
+    return parseFloat(t.replace(/\./g, '').replace(',', '.'));
+  }
+  async function sugerirCmp() {
+    var pid = typeof propostaId !== 'undefined' ? propostaId : null;
+    if (!pid) return;
+    var p = await SB.from('propostas').select('valor_total').eq('id', pid).maybeSingle();
+    var c = await SB.from('contrato_comprovantes').select('valor,status,tipo').eq('proposta_id', pid);
+    if (!p.data) return;
+    var lista = c.data || [];
+    var usado = lista.filter(function (x) { return x.status !== 'recusado'; })
+      .reduce(function (a, x) { return a + Number(x.valor || 0); }, 0);
+    var rest = Math.max(0, Number(p.data.valor_total || 0) - usado);
+    var temAlgum = lista.some(function (x) { return x.status !== 'recusado'; });
+    var sel = $('cmpTipo');
+    if (!sel.dataset.manual) {
+      if (!temAlgum) sel.value = 'sinal';
+      else if (rest > 0) sel.value = 'parcela';
+    }
+    if (!$('cmpValor').value && rest > 0) $('cmpValor').value = rest.toLocaleString('pt-BR', { minimumFractionDigits: 2 });
+  }
+  $('cmpTipo').addEventListener('change', function () { this.dataset.manual = '1'; $('cmpValor').value = ''; sugerirCmp(); });
+  $('cmpValor').addEventListener('focus', function () { if (!this.value) sugerirCmp(); });
+  $('cmpValor').addEventListener('blur', function () {
+    var v = parseBRL(this.value);
+    if (!isNaN(v)) this.value = v.toLocaleString('pt-BR', { minimumFractionDigits: 2 });
+  });
   $('btnEnviarCmp').addEventListener('click', async function () {
     var btn = this;
     var propostaId = $('cmpPropostaId').value;
-    var valor = parseFloat($('cmpValor').value);
+    var valor = parseBRL($('cmpValor').value);
     var data = $('cmpData').value;
     var file = $('cmpArquivo').files[0];
     var msg = $('msgCmp');
     if (!propostaId) return msg.textContent = 'Pedido inválido.';
+    if (!$('cmpTipo').value) return msg.textContent = 'Escolha o tipo do pagamento: entrada, parcela, saldo ou outro.';
+    if ($('cmpTipo').value === 'sinal') {
+      var jaSinal = await SB.from('contrato_comprovantes').select('id').eq('proposta_id', propostaId).eq('tipo', 'sinal').neq('status', 'recusado').limit(1);
+      if (jaSinal.data && jaSinal.data.length) return msg.textContent = 'A entrada já foi enviada. Envie a próxima parcela ou o saldo restante.';
+    }
     if (!valor || valor <= 0) return msg.textContent = 'Informe o valor pago.';
     if (!data) return msg.textContent = 'Informe a data do pagamento.';
     if (!file) return msg.textContent = 'Escolha o arquivo do comprovante.';
@@ -2435,6 +2494,7 @@
       var p = await prepararImagem(file, file.type || '');
       if (p.blob.size > LIMITE_CMP) throw new Error('Arquivo acima de 4 MB. Envie uma foto menor ou PDF comprimido.');
       msg.textContent = 'Enviando…';
+      $('loadingOverlay').classList.add('active');
       var b64 = await lerBase64(p.blob);
       var r = await SB.functions.invoke('anexar-comprovante', {
         body: { kind: 'admin', proposta_id: propostaId, tipo: $('cmpTipo').value, valor: valor,
@@ -2455,6 +2515,7 @@
       msg.className = 'msg';
       msg.textContent = e.message || 'Erro ao enviar.';
     } finally {
+      $('loadingOverlay').classList.remove('active');
       btn.disabled = false;
     }
   });
@@ -2671,7 +2732,24 @@
         lt.appendChild(d);
       });
     }
-    var cat = ((await SB.from('evento_etapas_catalogo').select('id, nome, hora_padrao, ordem, padrao').eq('ativo', true).order('ordem')).data) || [];
+    function calcHora(c, pd) {
+      var m = c.hora_modo || 'vazia';
+      if (m === 'fixa') return c.hora_padrao || null;
+      if (m === 'antes_horas' && pd && pd.horario_inicio && c.hora_valor != null) {
+        var pt = String(pd.horario_inicio).slice(0, 5).split(':');
+        var mins = (+pt[0]) * 60 + (+pt[1]) - Math.round(Number(c.hora_valor) * 60);
+        mins = ((mins % 1440) + 1440) % 1440;
+        return String(Math.floor(mins / 60)).padStart(2, '0') + ':' + String(mins % 60).padStart(2, '0');
+      }
+      return null; /* 'antes_dias': evento_etapas guarda só hora, não data — fica em branco */
+    }
+    function calcData(c, pd) {
+      if (c.hora_modo !== 'antes_dias' || !pd || !pd.data_evento || c.hora_valor == null) return null;
+      var pt = String(pd.data_evento).slice(0, 10).split('-');
+      var d = new Date(Date.UTC(+pt[0], +pt[1] - 1, +pt[2]) - Math.round(Number(c.hora_valor)) * 86400000);
+      return d.toISOString().slice(0, 10);
+    }
+    var cat = ((await SB.from('evento_etapas_catalogo').select('id, nome, hora_padrao, ordem, padrao, hora_modo, hora_valor').eq('ativo', true).order('ordem')).data) || [];
     var marcadas = {}; etapas.forEach(function (e) { marcadas[e.nome] = e; });
     var sel = document.createElement('div');
     sel.id = 'admCkSel';
@@ -2680,7 +2758,7 @@
       '<div style="font-size:.75rem;opacity:.7;margin-bottom:8px">Marque as etapas do evento. “Padrão” aplica a etapa a todos os próximos.</div>';
     async function ligar(c, on) {
       if (on) {
-        var x = await SB.from('evento_etapas').insert({ proposta_id: pedido.id, nome: c.nome, hora: c.hora_padrao || null, ordem: c.ordem == null ? 500 : c.ordem, origem: 'catalogo' });
+        var x = await SB.from('evento_etapas').insert({ proposta_id: pedido.id, nome: c.nome, hora: calcHora(c, pedido), data_alvo: calcData(c, pedido), ordem: c.ordem == null ? 500 : c.ordem, origem: 'catalogo' });
         if (x.error) { alert(x.error.message); }
       } else {
         await SB.from('evento_etapas').delete().eq('proposta_id', pedido.id).eq('nome', c.nome).neq('situacao', 'concluida');
@@ -2693,6 +2771,43 @@
       var cb = document.createElement('input'); cb.type = 'checkbox'; cb.checked = !!marcadas[c.nome];
       cb.addEventListener('change', function () { ligar(c, cb.checked); });
       var nm = document.createElement('span'); nm.style.cssText = 'flex:1;min-width:140px'; nm.textContent = c.nome;
+      var hm = document.createElement('select'); hm.style.cssText = 'background:#0f172a;color:#e2e8f0;border:1px solid rgba(245,158,11,.3);border-radius:8px;padding:4px;font-size:.75rem';
+      [['vazia','Sem hora'],['fixa','Hora fixa'],['antes_horas','Horas antes'],['antes_dias','Dias antes']].forEach(function (o) {
+        var op = document.createElement('option'); op.value = o[0]; op.textContent = o[1]; hm.appendChild(op);
+      });
+      hm.value = c.hora_modo || 'vazia';
+      var hv = document.createElement('input'); hv.type = 'number'; hv.min = '0'; hv.step = '0.5';
+      hv.style.cssText = 'width:70px;background:#0f172a;color:#e2e8f0;border:1px solid rgba(245,158,11,.3);border-radius:8px;padding:4px;font-size:.75rem';
+      hv.value = c.hora_valor != null ? c.hora_valor : '';
+      var ht = document.createElement('input'); ht.type = 'time';
+      ht.style.cssText = 'background:#0f172a;color:#e2e8f0;border:1px solid rgba(245,158,11,.3);border-radius:8px;padding:4px;font-size:.75rem';
+      ht.value = c.hora_padrao ? String(c.hora_padrao).slice(0, 5) : '';
+      function ajustarHora() {
+        var m = hm.value;
+        ht.style.display = m === 'fixa' ? '' : 'none';
+        hv.style.display = (m === 'antes_horas' || m === 'antes_dias') ? '' : 'none';
+        hv.placeholder = m === 'antes_dias' ? 'dias' : 'horas';
+      }
+      async function salvarHora() {
+        var m = hm.value, patch = { hora_modo: m, hora_valor: null, hora_padrao: null };
+        if (m === 'fixa') {
+          if (!ht.value) { alert('Informe a hora fixa.'); return; }
+          patch.hora_padrao = ht.value;
+        } else if (m === 'antes_horas' || m === 'antes_dias') {
+          if (hv.value === '' || Number(hv.value) < 0) { alert('Informe a antecedência.'); return; }
+          patch.hora_valor = Number(hv.value);
+        }
+        var x = await SB.from('evento_etapas_catalogo').update(patch).eq('id', c.id);
+        if (x.error) { alert(x.error.message); return; }
+        await carregar();
+      }
+      hm.addEventListener('change', function () { ajustarHora(); salvarHora(); });
+      ht.addEventListener('change', salvarHora);
+      hv.addEventListener('change', salvarHora);
+      ajustarHora();
+      var wrapHora = document.createElement('span'); wrapHora.style.cssText = 'display:flex;gap:5px;align-items:center;flex-wrap:wrap';
+      wrapHora.appendChild(hm); wrapHora.appendChild(hv); wrapHora.appendChild(ht);
+      row.appendChild(wrapHora);
       var lb = document.createElement('label'); lb.style.cssText = 'display:flex;align-items:center;gap:5px;font-size:.75rem;opacity:.85';
       var pc = document.createElement('input'); pc.type = 'checkbox'; pc.checked = !!c.padrao;
       pc.addEventListener('change', async function () {
@@ -2725,7 +2840,7 @@
       var existente = cat.find(function (c) { return c.nome.toLowerCase() === nome.toLowerCase(); });
       if (!existente) {
         var prox = cat.length ? Math.max.apply(null, cat.map(function (c) { return c.ordem || 0; })) + 1 : 1;
-        var ins = await SB.from('evento_etapas_catalogo').insert({ nome: nome, ordem: prox, ativo: true, padrao: false }).select('id, nome, hora_padrao, ordem, padrao').maybeSingle();
+        var ins = await SB.from('evento_etapas_catalogo').insert({ nome: nome, ordem: prox, ativo: true, padrao: false }).select('id, nome, hora_padrao, ordem, padrao, hora_modo, hora_valor').maybeSingle();
         if (ins.error) { alert(ins.error.message); return; }
         existente = ins.data || { nome: nome, ordem: prox };
       }
@@ -2735,7 +2850,7 @@
     var pad = mk('Aplicar o padrão neste evento', 'btn-ghost', async function () {
       var falta = cat.filter(function (c) { return c.padrao && !marcadas[c.nome]; });
       if (!falta.length) { alert('As etapas padrão já estão marcadas.'); return; }
-      var linhas = falta.map(function (c) { return { proposta_id: pedido.id, nome: c.nome, hora: c.hora_padrao || null, ordem: c.ordem == null ? 500 : c.ordem, origem: 'catalogo' }; });
+      var linhas = falta.map(function (c) { return { proposta_id: pedido.id, nome: c.nome, hora: calcHora(c, pedido), data_alvo: calcData(c, pedido), ordem: c.ordem == null ? 500 : c.ordem, origem: 'catalogo' }; });
       var x = await SB.from('evento_etapas').insert(linhas);
       if (x.error) { alert(x.error.message); return; } await carregar();
     });
@@ -3048,15 +3163,6 @@
       });
       html += '</div>';
     }
-
-    html += '<strong style="display:block;margin-top:14px;">Histórico financeiro (interno)</strong>';
-    if (!l.data || !l.data.length) html += '<div style="color:#94a3b8;margin-top:6px;">Nada registrado ainda.</div>';
-    else html += '<table style="width:100%;border-collapse:collapse;font-size:12px;margin-top:6px;"><thead><tr style="color:#94a3b8;text-align:left;"><th style="padding:6px;">Quando</th><th style="padding:6px;">Evento</th><th style="padding:6px;">Digitado</th><th style="padding:6px;">Anterior → Novo</th><th style="padding:6px;">Motivo</th></tr></thead><tbody>' +
-      l.data.map(function (e) {
-        var troca = (e.valor_anterior != null || e.valor_novo != null) ? BRL(e.valor_anterior) + ' → ' + BRL(e.valor_novo) : '—';
-        return '<tr style="border-top:1px solid rgba(255,255,255,.08);"><td style="padding:6px;">' + DH(e.criado_em) + '</td><td style="padding:6px;">' + E(EVT[e.evento] || e.evento) +
-          '</td><td style="padding:6px;">' + BRL(e.valor_digitado) + '</td><td style="padding:6px;">' + troca + '</td><td style="padding:6px;">' + E(e.motivo || '') + '</td></tr>';
-      }).join('') + '</tbody></table>';
 
     box.innerHTML = html;
     admExtrasFin(P, box);
