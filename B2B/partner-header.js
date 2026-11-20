@@ -1,36 +1,6 @@
 (function () {
   'use strict';
-
-  /* ---------- Rastreamento de cliques no WhatsApp ---------- */
-  // Delegação global: também captura botões/links inseridos dinamicamente.
-  // Não bloqueia a navegação nem altera o destino do link.
-  if (!window.__432upWhatsAppTrackingInstalled) {
-    window.__432upWhatsAppTrackingInstalled = true;
-
-    document.addEventListener('click', function (event) {
-      var target = event.target;
-      var link = target && target.closest ? target.closest('a[href]') : null;
-      if (!link) return;
-
-      var href = link.href || link.getAttribute('href') || '';
-      if (!/(^|\.)wa\.me\//i.test(href) &&
-          !/api\.whatsapp\.com/i.test(href) &&
-          !/whatsapp\.com\/send/i.test(href)) return;
-
-      // Evita duplicação caso outro código encaminhe o mesmo clique.
-      if (event.__432upWhatsAppTracked) return;
-      event.__432upWhatsAppTracked = true;
-
-      window.dataLayer = window.dataLayer || [];
-      window.dataLayer.push({
-        event: 'whatsapp_click',
-        whatsapp_url: href,
-        whatsapp_link_text: (link.innerText || link.getAttribute('aria-label') || '').trim(),
-        page_location: window.location.href
-      });
-    }, true);
-  }
-
+  
   /* ---------- 1. Nível do usuário (leitura síncrona do cache) ---------- */
   var cachedIsAdmin = false;
   var cachedLoggedIn = false;
