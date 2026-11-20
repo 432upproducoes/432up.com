@@ -30,13 +30,26 @@
   promessa.then(aplicarTodos);
   document.addEventListener('DOMContentLoaded', aplicarTodos);
 
-  // Links criados depois (ex.: modais montados por JS) são corrigidos no clique
+  // Links criados depois (ex.: modais montados por JS) são corrigidos no clique.
+  // O GA4 é chamado diretamente porque o site carrega gtag.js, mas o ZIP-base
+  // não contém a instalação do container GTM usado no Preview.
   document.addEventListener('click', function (e) {
     var a = e.target.closest && e.target.closest('a[href*="wa.me/"]');
     if (!a) return;
+
+    var hrefOriginal = a.getAttribute('href') || '';
+    if (typeof window.gtag === 'function') {
+      window.gtag('event', 'whatsapp_click', {
+        link_url: hrefOriginal,
+        link_text: (a.innerText || a.getAttribute('aria-label') || '').trim().slice(0, 100),
+        page_location: window.location.href,
+        transport_type: 'beacon'
+      });
+    }
+
     if (numero) { aplicar(a); return; }
     e.preventDefault();
-    var alvo = a.getAttribute('href');
+    var alvo = hrefOriginal;
     promessa.then(function (n) {
       if (!n) return;
       window.open(alvo.replace(/wa\.me\/\d*/, 'wa.me/' + n), '_blank');
