@@ -1,19 +1,36 @@
 (function () {
   'use strict';
 
-// Inicializa o Google Tag Manager (GTM-NVVG7HV7)
-(function(w, d, s, l, i) {
-  w[l] = w[l] || [];
-  w[l].push({ 'gtm.start': new Date().getTime(), event: 'gtm.js' });
-  var f = d.getElementsByTagName(s)[0],
-      j = d.createElement(s),
-      dl = l != 'dataLayer' ? '&l=' + l : '';
-  j.async = true;
-  j.src = 'https://www.googletagmanager.com/gtm.js?id=' + i + dl;
-  f.parentNode.insertBefore(j, f);
-})(window, document, 'script', 'dataLayer', 'GTM-NVVG7HV7');
+  /* ---------- Rastreamento de cliques no WhatsApp ---------- */
+  // Delegação global: também captura botões/links inseridos dinamicamente.
+  // Não bloqueia a navegação nem altera o destino do link.
+  if (!window.__432upWhatsAppTrackingInstalled) {
+    window.__432upWhatsAppTrackingInstalled = true;
 
-  
+    document.addEventListener('click', function (event) {
+      var target = event.target;
+      var link = target && target.closest ? target.closest('a[href]') : null;
+      if (!link) return;
+
+      var href = link.href || link.getAttribute('href') || '';
+      if (!/(^|\.)wa\.me\//i.test(href) &&
+          !/api\.whatsapp\.com/i.test(href) &&
+          !/whatsapp\.com\/send/i.test(href)) return;
+
+      // Evita duplicação caso outro código encaminhe o mesmo clique.
+      if (event.__432upWhatsAppTracked) return;
+      event.__432upWhatsAppTracked = true;
+
+      window.dataLayer = window.dataLayer || [];
+      window.dataLayer.push({
+        event: 'whatsapp_click',
+        whatsapp_url: href,
+        whatsapp_link_text: (link.innerText || link.getAttribute('aria-label') || '').trim(),
+        page_location: window.location.href
+      });
+    }, true);
+  }
+
   /* ---------- 1. Nível do usuário (leitura síncrona do cache) ---------- */
   var cachedIsAdmin = false;
   var cachedLoggedIn = false;
