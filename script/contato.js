@@ -47,6 +47,18 @@
       });
     }
 
+    // Envia o mesmo clique ao Pixel da OpenAI como evento personalizado.
+    if (typeof window.oaiq === 'function') {
+      try {
+        window.oaiq('measure', 'custom', { type: 'custom' }, {
+          custom_event_name: 'whatsapp_click',
+          event_id: '432up-wa-' + Date.now() + '-' + Math.random().toString(36).slice(2)
+        });
+      } catch (err) {
+        console.warn('Pixel OpenAI whatsapp_click:', err);
+      }
+    }
+
     if (numero) { aplicar(a); return; }
     e.preventDefault();
     var alvo = hrefOriginal;
