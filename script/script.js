@@ -4,6 +4,23 @@
 
 let isUranoActive = false;
 
+/* ---------- OPENAI ADS MEASUREMENT PIXEL ---------- */
+(function (w, d, s, u) {
+  if (w.oaiq) return;
+  var q = function () { q.q.push(arguments); };
+  q.q = [];
+  w.oaiq = q;
+  var js = d.createElement(s);
+  js.async = true;
+  js.src = u;
+  var firstScript = d.getElementsByTagName(s)[0];
+  firstScript.parentNode.insertBefore(js, firstScript);
+})(window, document, 'script', 'https://bzrcdn.openai.com/sdk/oaiq.min.js');
+
+window.oaiq('init', {
+  pixelId: 'Mj6nUP8RdqJqfwVKEMxDRk'
+});
+
 function applySystemTheme(e) {
   isUranoActive = e.matches;
   document.documentElement.setAttribute('data-theme', isUranoActive ? 'light' : 'dark');
@@ -371,9 +388,7 @@ async function handleProgressFormSubmit(e) {
     btn.disabled = true;
   }
 
-
   let leadSaved = false;
-
   if (supabaseClient) {
     try {
       const { error } = await supabaseClient.from('co_leads').insert([{
@@ -389,7 +404,7 @@ async function handleProgressFormSubmit(e) {
       } else {
         leadSaved = true;
 
-        // Conversão OpenAI: somente após salvar o lead
+        // Conversão OpenAI: somente após confirmação da gravação no Supabase.
         if (typeof window.oaiq === 'function') {
           window.oaiq(
             'measure',
@@ -405,8 +420,9 @@ async function handleProgressFormSubmit(e) {
     } catch (err) {
       console.error('Erro ao salvar lead:', err);
     }
+  } else {
+    console.error('Supabase não inicializado: lead não foi registrado.');
   }
-
 
   const encoded = encodeURIComponent(
     `Olá! Meu nome é ${name}.\nContato: ${contact}\nGostaria de iniciar um alinhamento técnico.\n\nDetalhes: ${msg || 'Nenhum'}`
