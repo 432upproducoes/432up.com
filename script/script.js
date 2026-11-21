@@ -371,7 +371,9 @@ async function handleProgressFormSubmit(e) {
     btn.disabled = true;
   }
 
-  let leadSaved = true;
+
+  let leadSaved = false;
+
   if (supabaseClient) {
     try {
       const { error } = await supabaseClient.from('co_leads').insert([{
@@ -381,15 +383,30 @@ async function handleProgressFormSubmit(e) {
         origem: 'modal_home_nova',
         created_at: new Date().toISOString()
       }]);
+
       if (error) {
         console.error('Erro Supabase:', error);
-        leadSaved = false;
+      } else {
+        leadSaved = true;
+
+        // Conversão OpenAI: somente após salvar o lead
+        if (typeof window.oaiq === 'function') {
+          window.oaiq(
+            'measure',
+            'lead_created',
+            { type: 'customer_action' },
+            {
+              event_id: '432up-' + Date.now() + '-' +
+                Math.random().toString(36).slice(2)
+            }
+          );
+        }
       }
     } catch (err) {
       console.error('Erro ao salvar lead:', err);
-      leadSaved = false;
     }
   }
+
 
   const encoded = encodeURIComponent(
     `Olá! Meu nome é ${name}.\nContato: ${contact}\nGostaria de iniciar um alinhamento técnico.\n\nDetalhes: ${msg || 'Nenhum'}`
